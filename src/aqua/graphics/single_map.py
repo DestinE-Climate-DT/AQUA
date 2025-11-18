@@ -218,6 +218,8 @@ def plot_single_map(data: xr.DataArray,
     if return_fig:
         logger.debug("Returning figure and axes")
         return fig, ax
+    else:
+        plt.close(fig)
 
 
 def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
@@ -339,3 +341,5 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
 
     if return_fig:
         return fig, ax
+    else:
+        plt.close(fig)

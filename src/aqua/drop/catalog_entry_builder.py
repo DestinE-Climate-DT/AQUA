@@ -1,10 +1,15 @@
 """Class to create a catalog entry for DROP"""
 
+import pandas as pd
 from aqua.logger import log_configure
-from aqua.util import format_realization, to_list
-from .output_path_builder import OutputPathBuilder
+from aqua.util import format_realization
 from aqua.util import replace_intake_vars, replace_urlpath_jinja
+from aqua.util import frequency_string_to_pandas
+from .output_path_builder import OutputPathBuilder
 
+
+# default grid name for DROP outputs, if not specified otherwise
+DEFAULT_DROP_GRID = 'lon-lat-r100'  
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for DROP"""
@@ -73,7 +78,40 @@ class CatalogEntryBuilder():
 
     #     return old if len(old) > 1 else old[0]
 
-    def create_entry_details(self, basedir=None, catblock=None, driver='netcdf', source_grid_name='lon-lat'):
+    def define_optimal_chunks(self, baseyear=1990):
+        """Define optimal chunking for DROP outputs.
+        
+        Args:
+            baseyear (int): Base year to define time chunking. Defaults to 1990
+            
+        Returns:
+            dict: Dictionary with optimal chunk sizes for 'time', 'lat', and 'lon'."""
+
+        chunks = {}
+
+        # guessing cases for rXXX and rXXXs resolutions: all other cases stay undefined
+        if len(self.resolution) == 4 and self.resolution.startswith('r'):
+            ref_value = int(self.resolution[1:])
+            chunks.update({'lat': 18000 // ref_value, 'lon': 36000 // ref_value})
+        if len(self.resolution) == 5 and self.resolution.endswith('s'):
+            ref_value = int(self.resolution[1:-1])
+            chunks.update({'lat': (18000 // ref_value) + 1, 'lon': (36000 // ref_value)})
+
+        # self guessing ot time chunking based on frequency
+        freq = frequency_string_to_pandas(self.frequency)
+        if freq:
+            rng = pd.date_range(
+                f'{baseyear}-01-01', f'{baseyear+1}-01-01',
+                freq=freq, 
+                inclusive="left"
+            )
+            chunks.update({'time': len(rng)})
+
+        return chunks
+
+    def create_entry_details(self, basedir=None, catblock=None, 
+                             driver='netcdf', 
+                             source_grid_name=DEFAULT_DROP_GRID):
         """
         Create an entry in the catalog for DROP
 
@@ -93,6 +131,9 @@ class CatalogEntryBuilder():
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
         self.logger.info('New urlpath with intake variables is %s', urlpath)
 
+        # define optimal chunks for DROP outputs
+        chunks = self.define_optimal_chunks()
+
         if catblock is None:
             # if the entry is not there, define the block to be uploaded into the catalog
             catblock = {
@@ -100,7 +141,7 @@ class CatalogEntryBuilder():
                 'description': f'AQUA {driver} DROP-generated data {self.frequency} at {self.resolution}',
                 'args': {
                     'urlpath': urlpath,
-                    'chunks': {},
+                    'chunks': chunks,
                 },
                 'metadata': {
                     'source_grid_name': source_grid_name,
@@ -118,13 +159,17 @@ class CatalogEntryBuilder():
                 'combine': 'by_coords'
             }
 
-            # TODO: add kwargs in form of key-value pairs to be added to the intake jinja strings
-            catblock = replace_urlpath_jinja(catblock, self.realization, 'realization')
-            self.logger.debug("Urlpath after replacing realization: %s", catblock['args']['urlpath'])
-            catblock = replace_urlpath_jinja(catblock, self.region, 'region')
-            self.logger.debug("Urlpath after replacing region: %s", catblock['args']['urlpath'])
-            catblock = replace_urlpath_jinja(catblock, self.stat, 'stat')
-            self.logger.debug("Urlpath after replacing stat: %s", catblock['args']['urlpath'])
+            # Jinja parameters to be replaced in the urlpath
+            jinja_params = {
+                'realization': self.realization,
+                'region': self.region,
+                'stat': self.stat
+            }
+
+            # Apply replacements
+            for param_name, param_value in jinja_params.items():
+                catblock = replace_urlpath_jinja(catblock, param_value, param_name)
+                self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock['args']['urlpath'])
 
             # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
             # catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))

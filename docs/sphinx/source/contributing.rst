@@ -103,6 +103,35 @@ Have a look at the ``tests`` directory for more tests.
    More markers are available such as ``slow`` and ``graphics``.
    To run the graphics tests, you will need to download the teleconnections data by running the ``tests/teleconnections/download_data_for_tests.sh`` script.
 
+Running Tests in Parallel
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To speed up test execution, AQUA supports parallel testing using the ``pytest-xdist`` plugin. 
+This allows tests to run on multiple CPU cores simultaneously, significantly reducing the total test runtime.
+
+To run the tests in parallel, use the ``-n`` flag followed by the number of cores you want to use.
+
+.. code-block:: bash
+
+    pytest -n 4
+
+This will run the test suite using 4 parallel workers. You can adjust this number based on your available CPU cores.  
+For more control over parallel execution, you can also use the ``--max-worker-restart`` option to automatically restart workers that fail:
+
+.. code-block:: bash
+
+    pytest -n 4 --max-worker-restart=3
+
+.. note::
+   Some tests in AQUA use the ``xdist_group`` marker to ensure they run on the same worker process.
+   This is necessary for tests that perform operations that could conflict when run in parallel,
+   such as Dask operations or diagnostic setup. These groups include:
+   
+   - ``dask_operations``: Tests that perform distributed computing operations
+   - ``diagnostic_setup_class``: Tests that set up diagnostic classes with shared state
+   
+   You don't need to worry about these groups when running tests - pytest will automatically handle them.  
+
 Writing Tests
 ^^^^^^^^^^^^^
 

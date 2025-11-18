@@ -2,6 +2,7 @@ import pytest
 import os
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
@@ -10,23 +11,53 @@ from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
 from aqua.graphics import plot_vertical_lines
 from aqua.graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
+from conftest import DPI, LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
+# Aliases with module scope for fixtures
+@pytest.fixture(scope='module')
+def reader_era5(era5_hpz3_monthly_reader):
+    return era5_hpz3_monthly_reader
+
+@pytest.fixture(scope='module')
+def data_era5(era5_hpz3_monthly_data):
+    return era5_hpz3_monthly_data
+
+@pytest.fixture(scope='module')
+def reader_era5_r100(era5_hpz3_monthly_r100_reader):
+    return era5_hpz3_monthly_r100_reader
+
+@pytest.fixture(scope='module')
+def data_era5_r100(era5_hpz3_monthly_r100_data):
+    return era5_hpz3_monthly_r100_data
+
+@pytest.fixture(scope='module')
+def fesom_r200_fixFalse_reader(fesom_test_pi_original_2d_r200_fixFalse_reader):
+    return fesom_test_pi_original_2d_r200_fixFalse_reader
+
+@pytest.fixture(scope='module')
+def fesom_r200_fixFalse_data(fesom_test_pi_original_2d_r200_fixFalse_data):
+    return fesom_test_pi_original_2d_r200_fixFalse_data
+
+@pytest.fixture(scope='module')
+def reader_ifs_tc():
+    return Reader(model='IFS', exp='test-tco79', source='teleconnections', fix=True)
+
+@pytest.fixture(scope='module')
+def data_ifs_tc(reader_ifs_tc):
+    return reader_ifs_tc.retrieve(var='skt')
 
 @pytest.mark.graphics
 class TestMaps:
     """Basic tests for the Single map functions"""
-    def setup_method(self):
-        reader = Reader(model="FESOM", exp="test-pi", source="original_2d",
-                        regrid="r200", fix=False, loglevel=loglevel)
-        self.data = reader.retrieve(var='sst')
 
-    def test_plot_single_map(self, tmp_path):
+    def test_plot_single_map(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """
         Test the plot_single_map function
         """
-        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        plot_data = data_regrid["sst"].isel(time=0)
         fig, ax = plot_single_map(data=plot_data,
                                   proj=ccrs.PlateCarree(),
                                   contour=False,
@@ -41,7 +72,7 @@ class TestMaps:
                                   transform_first=False,
                                   title='Test plot',
                                   cbar_label='Sea surface temperature [°C]',
-                                  dpi=100,
+                                  dpi=DPI,
                                   nxticks=5,
                                   nyticks=5,
                                   ticks_rounding=1,
@@ -53,12 +84,15 @@ class TestMaps:
         fig.savefig(tmp_path / 'test_plot_single_map.png')
         assert os.path.exists(tmp_path / 'test_plot_single_map.png')
 
-    def test_plot_single_map_diff(self, tmp_path):
+    def test_plot_single_map_diff(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """
         Test the plot_single_map_diff function
         """
-        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
-        plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
+        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        plot_data = data_regrid["sst"].isel(time=0)
+        data_regrid2 = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        plot_data2 = data_regrid2["sst"].isel(time=1)
+
         fig, ax = plot_single_map_diff(data=plot_data,
                                        data_ref=plot_data2,
                                        nlevels=5,
@@ -73,7 +107,7 @@ class TestMaps:
                                        return_fig=True,
                                        title='Test plot',
                                        cbar_label='Sea surface temperature [°C]',
-                                       dpi=100,
+                                       dpi=DPI,
                                        nxticks=5,
                                        nyticks=5,
                                        gridlines=True,
@@ -84,11 +118,12 @@ class TestMaps:
         fig.savefig(tmp_path / 'test_plot_single_map_diff.png')
         assert os.path.exists(tmp_path / 'test_plot_single_map_diff.png')
 
-    def test_plot_single_map_no_diff(self):
+    def test_plot_single_map_no_diff(self, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """
         Test the plot_single_map_diff function
         """
-        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
+        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        plot_data = data_regrid["sst"].isel(time=0)
         plot_data2 = plot_data.copy()
 
         fig, ax = plot_single_map_diff(data=plot_data, return_fig=True,
@@ -97,10 +132,12 @@ class TestMaps:
         assert fig is not None
         assert ax is not None
 
-    def test_maps(self, tmp_path):
+    def test_maps(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """Test plot_maps function"""
-        plot_data = self.data["sst"].isel(time=0).aqua.regrid()
-        plot_data2 = self.data["sst"].isel(time=1).aqua.regrid()
+        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        plot_data = data_regrid["sst"].isel(time=0)
+        data_regrid2 = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        plot_data2 = data_regrid2["sst"].isel(time=1)
         fig = plot_maps(maps=[plot_data, plot_data2],
                         nlevels=5,
                         vmin=-2, vmax=30,
@@ -113,7 +150,7 @@ class TestMaps:
                         return_fig=True, loglevel=loglevel)
         assert fig is not None
 
-        fig.savefig(tmp_path / 'test_plot_maps.png')
+        fig.savefig(tmp_path / 'test_plot_maps.png', dpi=DPI)
         assert os.path.exists(tmp_path / 'test_plot_maps.png')
 
         fig2 = plot_maps_diff(maps=[plot_data, plot_data],
@@ -131,7 +168,7 @@ class TestMaps:
 
         assert fig2 is not None
 
-        fig2.savefig(tmp_path / 'test_plot_maps_diff.png')
+        fig2.savefig(tmp_path / 'test_plot_maps_diff.png', dpi=DPI)
         assert os.path.exists(tmp_path / 'test_plot_maps_diff.png')
 
     def test_maps_error(self):
@@ -147,16 +184,12 @@ class TestMaps:
 class TestVerticalProfiles:
     """Basic tests for the Vertical Profile functions"""
 
-    def setup_method(self):
-        """Setup method to retrieve data for testing"""
-        model = 'ERA5'
-        exp = 'era5-hpz3'
-        source = 'monthly'
-        self.reader = Reader(model=model, exp=exp, source=source, regrid='r100')
-        self.data = self.reader.retrieve(['q'])
+    @pytest.fixture(autouse=True)
+    def setup(self, reader_era5_r100, data_era5_r100):
+        self.reader = reader_era5_r100
+        self.data = data_era5_r100
         self.data = self.reader.regrid(self.data)
-
-
+        
     def test_plot_vertical_profile(self, tmp_path):
         """Test the plot_vertical_profile function"""
         fig, ax = plot_vertical_profile(data=self.data['q'].isel(time=0).mean('lon'),
@@ -170,7 +203,7 @@ class TestVerticalProfiles:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig(tmp_path / 'test_plot_vertical_profile.png')
+        fig.savefig(tmp_path / 'test_plot_vertical_profile.png', dpi=DPI)
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_plot_vertical_profile.png')
@@ -192,7 +225,7 @@ class TestVerticalProfiles:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig(tmp_path / 'test_plot_vertical_profile_diff.png')
+        fig.savefig(tmp_path / 'test_plot_vertical_profile_diff.png', dpi=DPI)
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_plot_vertical_profile_diff.png')
@@ -234,7 +267,7 @@ class TestTimeseries:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig(tmp_path / 'test_plot_timeseries.png')
+        fig.savefig(tmp_path / 'test_plot_timeseries.png', dpi=DPI)
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_plot_timeseries.png')
@@ -255,7 +288,7 @@ class TestTimeseries:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig(tmp_path / 'test_seasonalcycle.png')
+        fig.savefig(tmp_path / 'test_seasonalcycle.png', dpi=DPI)
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_seasonalcycle.png')
@@ -291,7 +324,7 @@ class TestTimeseries:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig(tmp_path / 'test_plot_ensemble.png')
+        fig.savefig(tmp_path / 'test_plot_ensemble.png', dpi=DPI)
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_plot_ensemble.png')
@@ -326,7 +359,7 @@ class TestHovmoller:
         assert fig2 is not None
         assert ax2 is not None
 
-        fig2.savefig(tmp_path / 'test_hovmoller2.png')
+        fig2.savefig(tmp_path / 'test_hovmoller2.png', dpi=DPI)
         assert os.path.exists(tmp_path / 'test_hovmoller2.png')
 
         fig, _ = plot_hovmoller(data=self.data,
@@ -338,7 +371,7 @@ class TestHovmoller:
 
         assert fig is not None
 
-        fig.savefig(tmp_path / 'test_hovmoller3.png')
+        fig.savefig(tmp_path / 'test_hovmoller3.png', dpi=DPI)
 
         assert os.path.exists(tmp_path / 'test_hovmoller3.png')
 
@@ -352,14 +385,11 @@ class TestHovmoller:
 class TestVerticalLines:
     """Basic tests for the Vertical Line functions"""
 
-    def setup_method(self):
-        """Setup method to retrieve data for testing"""
-        model = 'ERA5'
-        exp = 'era5-hpz3'
-        source = 'monthly'
-        self.reader = Reader(model=model, exp=exp, source=source)
-        self.data = self.reader.retrieve(['q'])['q'].isel(time=0, cells=0)
-
+    @pytest.fixture(autouse=True)
+    def setup(self, reader_era5, data_era5):
+        self.reader = reader_era5
+        self.data = data_era5['q'].isel(time=0, cells=0)
+        
     def test_plot_vertical_lines(self, tmp_path):
         """Test the plot_vertical_lines function"""
         fig, ax = plot_vertical_lines(data=self.data,
@@ -375,7 +405,7 @@ class TestVerticalLines:
         assert fig is not None
         assert ax is not None
 
-        fig.savefig(tmp_path / 'test_plot_vertical_lines.png')
+        fig.savefig(tmp_path / 'test_plot_vertical_lines.png', dpi=DPI)
 
         # Check the file was created
         assert os.path.exists(tmp_path / 'test_plot_vertical_lines.png')
@@ -384,36 +414,33 @@ class TestVerticalLines:
 class TestLatLonProfiles:
     """Basic tests for the lat_lon_profiles function"""
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup(self, data_ifs_tc):
         """Setup method to retrieve data for testing"""
-        model = 'IFS'
-        exp = 'test-tco79'
-        source = 'teleconnections'
-        var = 'skt'
-        self.reader = Reader(model=model, exp=exp, source=source, fix=True)
-        data = self.reader.retrieve(var=var)
+        data = data_ifs_tc
         
-        self.lat_profile = data[var].mean(dim='lon')
-        self.lon_profile = data[var].mean(dim='lat')
+        self.lat_profile = data['skt'].mean(dim='lon')
+        self.lon_profile = data['skt'].mean(dim='lat')
+
+    def _save_and_check(self, fig, tmp_path, filename):
+        """Helper to save figure and verify file exists"""
+        filepath = tmp_path / filename
+        fig.savefig(filepath)
+        assert os.path.exists(filepath)
 
     def test_plot_lat_lon_profiles_single(self, tmp_path):
         """Test plot_lat_lon_profiles with single DataArray"""
-        
-        # Test with latitude profile
         fig, ax = plot_lat_lon_profiles(data=self.lat_profile.isel(time=0),
                                         title='Latitude profile test',
                                         data_labels=['Test data'],
                                         loglevel=loglevel)
-        
+
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lat_profile.png')
-        assert os.path.exists(tmp_path / 'test_lat_profile.png')
+        self._save_and_check(fig, tmp_path, 'test_lat_profile.png')
 
     def test_plot_lat_lon_profiles_multiple(self, tmp_path):
         """Test plot_lat_lon_profiles with multiple DataArrays"""
-        
         data_list = [self.lat_profile.isel(time=0), 
                      self.lat_profile.isel(time=1)]
         
@@ -424,13 +451,10 @@ class TestLatLonProfiles:
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lat_profiles_multiple.png')
-        assert os.path.exists(tmp_path / 'test_lat_profiles_multiple.png')
+        self._save_and_check(fig, tmp_path, 'test_lat_profiles_multiple.png')
 
     def test_plot_lat_lon_profiles_with_ref(self, tmp_path):
         """Test plot_lat_lon_profiles with reference data"""
-        
         data = self.lat_profile.isel(time=0)
         ref = self.lat_profile.isel(time=1)
         ref_std = self.lat_profile.std(dim='time')
@@ -445,61 +469,45 @@ class TestLatLonProfiles:
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lat_profile_with_ref.png')
-        assert os.path.exists(tmp_path / 'test_lat_profile_with_ref.png')
+        self._save_and_check(fig, tmp_path, 'test_lat_profile_with_ref.png')
 
     def test_plot_lon_profile(self, tmp_path):
         """Test plot_lat_lon_profiles with longitude profile"""
-        
         fig, ax = plot_lat_lon_profiles(data=self.lon_profile.isel(time=0),
                                         title='Longitude profile test',
                                         loglevel=loglevel)
         
         assert fig is not None
         assert ax is not None
-        
-        fig.savefig(tmp_path / 'test_lon_profile.png')
-        assert os.path.exists(tmp_path / 'test_lon_profile.png')
+        self._save_and_check(fig, tmp_path, 'test_lon_profile.png')
 
     def test_plot_lat_lon_profiles_no_spatial_coords(self, tmp_path):
-            """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
-            
-            # Create a DataArray without spatial coordinates
-            data_no_coords = xr.DataArray(
-                np.random.rand(10),
-                dims=['time'],
-                coords={'time': range(10)}
-            )
-            
-            # This should trigger the warning and skip the data
-            fig, ax = plot_lat_lon_profiles(data=data_no_coords,
-                                            title='No spatial coordinates test',
-                                            loglevel=loglevel)
-            
-            assert fig is not None
-            assert ax is not None
-            
-            # The plot should be empty (no lines plotted)
-            assert len(ax.lines) == 0
-            
-            fig.savefig(tmp_path / 'test_lat_profile_no_coords.png')
-            assert os.path.exists(tmp_path / 'test_lat_profile_no_coords.png')
+        """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
+        data_no_coords = xr.DataArray(
+            np.random.rand(10),
+            dims=['time'],
+            coords={'time': range(10)}
+        )
+
+        fig, ax = plot_lat_lon_profiles(data=data_no_coords,
+                                        title='No spatial coordinates test',
+                                        loglevel=loglevel)
+
+        assert fig is not None
+        assert ax is not None
+        assert len(ax.lines) == 0  # No lines should be plotted
+        self._save_and_check(fig, tmp_path, 'test_lat_profile_no_coords.png')
 
 @pytest.mark.graphics
 class TestSeasonalMeans:
     """Basic tests for the Seasonal Means functions"""
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def setup(self, data_ifs_tc):
         """Setup method to retrieve data for testing"""
-        model = 'IFS'
-        exp = 'test-tco79'
-        source = 'teleconnections'
-        var = 'skt'
-        self.reader = Reader(model=model, exp=exp, source=source, fix=True)
-        data = self.reader.retrieve(var=var)
+        data = data_ifs_tc
         
-        self.data_seasonal = data[var].mean(dim='lon')
+        self.data_seasonal = data['skt'].mean(dim='lon')
         
         # Create seasonal data for DJF, MAM, JJA, SON
         # Using simple time slicing for testing purposes
@@ -522,7 +530,9 @@ class TestSeasonalMeans:
         assert axs is not None
         assert len(axs) == 4
         
-        fig.savefig(tmp_path / 'test_seasonal_profiles.png')
+
+        fig.savefig(tmp_path / 'test_seasonal_profiles.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles.png')
 
     def test_plot_seasonal_lat_lon_profiles_with_ref(self, tmp_path):
@@ -546,7 +556,8 @@ class TestSeasonalMeans:
         assert fig is not None
         assert axs is not None
         
-        fig.savefig(tmp_path / 'test_seasonal_profiles_with_ref.png')
+        fig.savefig(tmp_path / 'test_seasonal_profiles_with_ref.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles_with_ref.png')
 
     def test_plot_seasonal_lat_lon_profiles_multiple(self, tmp_path):
@@ -569,7 +580,8 @@ class TestSeasonalMeans:
         assert fig is not None
         assert axs is not None
         
-        fig.savefig(tmp_path / 'test_seasonal_profiles_multiple.png')
+        fig.savefig(tmp_path / 'test_seasonal_profiles_multiple.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles_multiple.png')
 
     def test_plot_seasonal_lat_lon_profiles_error(self):
@@ -604,5 +616,6 @@ class TestSeasonalMeans:
         assert fig is not None
         assert axs is not None
         
-        fig.savefig(tmp_path / 'test_seasonal_none_ref_std.png')
+        fig.savefig(tmp_path / 'test_seasonal_none_ref_std.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_none_ref_std.png')

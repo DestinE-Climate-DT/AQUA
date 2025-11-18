@@ -214,7 +214,7 @@ class Plot2DSeaIce:
             )
         self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
                          description=description, extra_keys={'method': self.method, 'region': region})
-
+        plt.close(fig)
 
     def _plot_var_map(self, region, **kwargs):
         """
@@ -289,7 +289,8 @@ class Plot2DSeaIce:
         )
         self._save_plots(fig=fig, data=mondat, data_ref=None, 
                          diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
-
+        plt.close(fig)
+        
     def _get_colorbar_ticks(self, data, vmin=None, vmax=None, norm=None,
                             boundaries=None, sym=False, ticks_rounding=1):
         """
@@ -550,9 +551,8 @@ class Plot2DSeaIce:
             return False
         return True
 
-    def _save_figure(self, fig, diagnostic_product,
-                     data, description, data_ref=None,
-                     extra_keys=None, format='png'):
+    def _save_plots(self, fig, data, diagnostic_product, description, 
+                    data_ref=None, extra_keys=None):
         """
         Handles the saving of a figure using OutputSaver.
 
@@ -562,13 +562,15 @@ class Plot2DSeaIce:
             data_ref (xarray.Dataset, optional): Reference dataset.
             diagnostic_product (str): Name of the diagnostic product.
             description (str): Description of the figure.
-            var (str): Variable name.
-            format (str): Format to save the figure ('png' or 'pdf').
+            extra_keys (dict, optional): Extra keys for filename.
         """
         # Ensure data is not None
         if data is None:
             raise ValueError("Data cannot be None for saving figures")
-            
+
+        if not self.save_pdf and not self.save_png:
+            return
+        
         outputsaver = OutputSaver(
             diagnostic='seaice',
             catalog=data.attrs.get('AQUA_catalog',''),
@@ -579,28 +581,11 @@ class Plot2DSeaIce:
             outputdir=self.outputdir,
             loglevel=self.loglevel
         )
-        metadata = {"Description": description}
-
-        if format == 'pdf':
-            outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product,
-                                 extra_keys=extra_keys, metadata=metadata, rebuild=self.rebuild)
-        elif format == 'png':
-            outputsaver.save_png(fig, diagnostic_product=diagnostic_product,
-                                 extra_keys=extra_keys, metadata=metadata, rebuild=self.rebuild)
-        else:
-            raise ValueError(f'Format {format} not supported. Use png or pdf.')
-
-    def _save_plots(self, fig, data, data_ref, 
-                    diagnostic_product, description, 
-                    **kwargs):
-        """
-        Save plots in both PDF and PNG formats.
-        """
-        extra_keys = kwargs.get('extra_keys', {})
         
-        if self.save_pdf:
-            self._save_figure(fig=fig, format='pdf', data=data, data_ref=data_ref, 
-                              diagnostic_product=diagnostic_product, description=description, extra_keys=extra_keys)
-        if self.save_png:
-            self._save_figure(fig=fig, format='png', data=data, data_ref=data_ref, 
-                              diagnostic_product=diagnostic_product, description=description, extra_keys=extra_keys)
+        metadata = {"Description": description}
+        extra_keys = {} if extra_keys is None else dict(extra_keys)
+        
+        outputsaver.save_figure(fig, diagnostic_product,
+                                extra_keys=extra_keys, metadata=metadata,
+                                save_pdf=self.save_pdf, save_png=self.save_png,
+                                rebuild=self.rebuild, dpi=self.dpi)

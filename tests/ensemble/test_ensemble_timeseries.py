@@ -4,6 +4,7 @@ import pytest
 from aqua.diagnostics import EnsembleTimeseries
 from aqua.diagnostics.ensemble.util import reader_retrieve_and_merge
 from aqua.diagnostics import PlotEnsembleTimeseries
+from conftest import DPI
 
 
 @pytest.mark.ensemble
@@ -91,6 +92,7 @@ def test_ensemble_timeseries():
         "annual_data_std":ts.annual_data_mean,
         "ref_monthly_data":ts.monthly_data_mean,
         "ref_annual_data":ts.annual_data_mean,
+        "dpi": DPI,
     }
 
     fig, ax = ts_plot.plot(**plot_arguments) 

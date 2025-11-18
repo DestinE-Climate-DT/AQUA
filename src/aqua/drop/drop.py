@@ -22,9 +22,12 @@ import dask
 import xarray as xr
 import numpy as np
 import pandas as pd
+
 from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
 from dask.distributed.diagnostics import MemorySampler
+
+from aqua.lock import SafeFileLock
 from aqua.logger import log_configure, log_history
 from aqua.reader import Reader
 from aqua.util.io_util import create_folder, file_is_complete
@@ -78,7 +81,7 @@ class Drop():
         Initialize the DROP class
 
         Args:
-            catalog (string):        The catalog you want to reader. If None, guessed by the reader.
+            catalog (string):        The catalog you want to read. If None, guessed by the reader.
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
@@ -229,16 +232,18 @@ class Drop():
     @staticmethod
     def _validate_date(startdate, enddate):
         """Validate date format for startdate and enddate"""
+        
         if startdate is not None:
             try:
-                pd.to_datetime(startdate, format='%Y-%m-%d')
-            except ValueError:
-                raise ValueError('startdate must be in YYYY-MM-DD format')
+                pd.to_datetime(startdate)
+            except (ValueError, TypeError):
+                raise ValueError('startdate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
+        
         if enddate is not None:
             try:
-                pd.to_datetime(enddate, format='%Y-%m-%d')
-            except ValueError:
-                raise ValueError('enddate must be in YYYY-MM-DD format')
+                pd.to_datetime(enddate)
+            except (ValueError, TypeError):
+                raise ValueError('enddate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
 
     def _issue_info_warning(self):
         """
@@ -368,25 +373,28 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        cat_file = load_yaml(catalogfile)
+        
+        with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
+            cat_file = load_yaml(catalogfile)
 
-        # define the entry name
-        entry_name = self.catbuilder.create_entry_name()
-        sgn = self._define_source_grid_name()
+            # define the entry name
+            entry_name = self.catbuilder.create_entry_name()
+            sgn = self._define_source_grid_name()
 
-        if entry_name in cat_file['sources']:
-            catblock = cat_file['sources'][entry_name]
-        else:
-            catblock = None
+            if entry_name in cat_file['sources']:
+                catblock = cat_file['sources'][entry_name]
+            else:
+                catblock = None
 
-        block = self.catbuilder.create_entry_details(
-            basedir=self.basedir, catblock=catblock, source_grid_name=sgn
-        )
+            block = self.catbuilder.create_entry_details(
+                basedir=self.basedir, catblock=catblock, 
+                source_grid_name=sgn
+            )
 
-        cat_file['sources'][entry_name] = block
+            cat_file['sources'][entry_name] = block
 
-        # dump the update file
-        dump_yaml(outfile=catalogfile, cfg=cat_file)
+            # dump the update file
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def create_zarr_entry(self, verify=True):
         """
@@ -429,26 +437,28 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        cat_file = load_yaml(catalogfile)
+        
+        with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
+            cat_file = load_yaml(catalogfile)
 
-        # define the entry name - zarr entries never have lra- prefix
-        base_name = f'{self.catbuilder.resolution}-{self.catbuilder.frequency}'
-        entry_name = base_name + '-zarr'
-        self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
-        sgn = self._define_source_grid_name()
+            # define the entry name - zarr entries never have lra- prefix
+            base_name = f'{self.catbuilder.resolution}-{self.catbuilder.frequency}'
+            entry_name = base_name + '-zarr'
+            self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
+            sgn = self._define_source_grid_name()
 
-        if entry_name in cat_file['sources']:
-            catblock = cat_file['sources'][entry_name]
-        else:
-            catblock = None
+            if entry_name in cat_file['sources']:
+                catblock = cat_file['sources'][entry_name]
+            else:
+                catblock = None
 
-        block = self.catbuilder.create_entry_details(
-            basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
-        )
-        block['args']['urlpath'] = urlpath
-        cat_file['sources'][entry_name] = block
+            block = self.catbuilder.create_entry_details(
+                basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
+            )
+            block['args']['urlpath'] = urlpath
+            cat_file['sources'][entry_name] = block
 
-        dump_yaml(outfile=catalogfile, cfg=cat_file)
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
 
         # verify the zarr entry makes sense
         if verify:
@@ -462,9 +472,10 @@ class Drop():
                 self.logger.error('Zarr source is not accessible by the Reader likely due to irregular amount of NetCDF file')
                 self.logger.error('To avoid issues in the catalog, the entry will be removed')
                 self.logger.error('In case you want to keep it, please run with verify=False')
-                cat_file = load_yaml(catalogfile)
-                del cat_file['sources'][entry_name]
-                dump_yaml(outfile=catalogfile, cfg=cat_file)
+                with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
+                    cat_file = load_yaml(catalogfile)
+                    del cat_file['sources'][entry_name]
+                    dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def _set_dask(self):
         """
@@ -609,6 +620,11 @@ class Drop():
             temp_data = self.reader.timstat(temp_data, self.stat, freq=self.frequency,
                                             exclude_incomplete=self.exclude_incomplete)
 
+        # temp_data could be empty after time statistics if everything was excluded
+        if 'time' in temp_data.coords and len(temp_data.time) == 0:
+            self.logger.warning('No data available for variable %s after time statistics, skipping...', var)
+            return
+        
         # regrid
         if self.resolution:
             temp_data = self.reader.regrid(temp_data)

@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 import xarray as xr
 from aqua.diagnostics.lat_lon_profiles import PlotLatLonProfiles
+from conftest import DPI, LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
 @pytest.fixture
 def sample_lat_lon_data():
@@ -102,10 +103,10 @@ class TestPlotLatLonProfilesCore:
         assert 'IFS' in ref_label
     
     @pytest.mark.parametrize("data_type,diagnostic_name,mean_type,expected_diagnostic,expected_product", [
-        ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_zonal'),
-        ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'custom_profile_zonal'),
-        ('seasonal', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'lat_lon_profiles_seasonal_zonal'),
-        ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'my_diagnostic_seasonal_meridional'),
+        ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'zonal_profile'),
+        ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'zonal_profile'),
+        ('seasonal', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'seasonal_zonal_profile'),
+        ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'seasonal_meridional_profile'),
     ])
     def test_diagnostic_product_construction(self, sample_lat_lon_data, tmp_path,
                                             data_type, diagnostic_name, mean_type, 
@@ -124,7 +125,7 @@ class TestPlotLatLonProfilesCore:
         # Verify diagnostic_name is stored
         assert plotter.diagnostic_name == diagnostic_name
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0, f"No PNG files created for {diagnostic_name} {data_type}"
         
@@ -199,7 +200,8 @@ class TestPlotLatLonProfilesIntegration:
         plotter.run(
             outputdir=str(tmp_path),
             rebuild=True,
-            format=format
+            format=format,
+            dpi=DPI
         )
         
         files = list(tmp_path.rglob(f'*.{format}'))
@@ -218,7 +220,7 @@ class TestPlotLatLonProfilesIntegration:
             loglevel=loglevel
         )
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0
@@ -238,3 +240,31 @@ class TestPlotLatLonProfilesErrors:
         
         with pytest.raises(ValueError, match="data_type must be 'longterm' or 'seasonal'"):
             PlotLatLonProfiles(data=data, data_type='invalid', loglevel=loglevel)
+
+@pytest.mark.diagnostics
+class TestPlotLatLonProfilesRealization:
+    """Test realization extraction and usage in plot filenames"""
+    
+    def test_realization_in_plot_filename(self, sample_lat_lon_data, tmp_path):
+        """Test that AQUA_realization is extracted and used in plot filenames"""
+        data = sample_lat_lon_data()
+        
+        # Add AQUA_realization to data
+        data.attrs['AQUA_realization'] = 'r3'
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
+            data_type='longterm',
+            loglevel=loglevel
+        )
+        
+        # Check realization was extracted
+        assert hasattr(plotter, 'realizations')
+        assert plotter.realizations[0] == 'r3'
+        
+        # Run and check filename
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0
+        assert any('r3' in f.name for f in png_files), "Realization 'r3' not found in any filename"

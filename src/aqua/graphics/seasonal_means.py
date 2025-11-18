@@ -108,7 +108,7 @@ def plot_seasonal_lat_lon_profiles(seasonal_data,
     if title:
         fig.suptitle(title, fontsize=14, fontweight='bold', y=0.98)
 
-    fig.tight_layout()
+    fig.set_layout_engine('tight')
 
     return fig, axs
     

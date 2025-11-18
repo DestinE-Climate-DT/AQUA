@@ -1,0 +1,42 @@
+# Template according to #1613
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+datasets:
+  - catalog: null
+    model: FESOM
+    exp: hpz3
+    source: monthly-3d
+    regrid: null
+    # reader_kwargs: {chunks: {"time": 12, "level": null}}
+    # startdate: 1990-01
+    # enddate: 1990-12
+
+references:
+  - catalog: null
+    model: EN4
+    exp: v4.2.2
+    source: monthly
+    regrid: r100  # EN4 is on 1x1 grid different from r100
+    reader_kwargs: null  # it can be a dictionary with reader kwargs
+    # startdate: 1990-01
+    # enddate: 1990-12
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+
+diagnostics:
+  ocean_stratification:
+    stratification:
+      diagnostic_name: 'ocean3d'
+      run: true
+      var: ['thetao', 'so']
+      # Note: region and climatology are zipped together, so if you want the same region with different climatologies, you need to repeat it
+      regions: ['ls', 'is', 'ws', 'gs', 'ros']  # removed ros/DJF
+      climatology: ['DJF', 'JJA', 'JJA', 'DJF', 'DJF']
+      # dim_mean: ['lat', 'lon']

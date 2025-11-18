@@ -1,8 +1,9 @@
 from aqua.graphics import plot_seasonal_lat_lon_profiles
 from aqua.logger import log_configure
-from aqua.util import to_list, strlist_to_phrase
+from aqua.util import to_list, strlist_to_phrase, DEFAULT_REALIZATION
 from aqua.graphics import plot_lat_lon_profiles
 from aqua.diagnostics.core import OutputSaver
+import matplotlib.pyplot as plt
 
 class PlotLatLonProfiles():
     """
@@ -93,6 +94,7 @@ class PlotLatLonProfiles():
     def get_data_info(self):
         """Extract metadata from data arrays based on data_type."""
         self.catalogs, self.models, self.exps = [], [], []
+        self.realizations = []
         self.region = None
         self.short_name = None
         self.standard_name = None
@@ -115,6 +117,14 @@ class PlotLatLonProfiles():
                 self.catalogs.append(data_item.AQUA_catalog)
                 self.models.append(data_item.AQUA_model)
                 self.exps.append(data_item.AQUA_exp)
+                
+                # Extract realization if available
+                if hasattr(data_item, 'AQUA_realization'):
+                    self.realizations.append(data_item.AQUA_realization)
+                    self.logger.debug(f'Extracted realization: {data_item.AQUA_realization}')
+                else:
+                    self.realizations.append(DEFAULT_REALIZATION)
+                    self.logger.debug(f'No realization found in data, using default: {DEFAULT_REALIZATION}')
 
                 # Extract region if not already set
                 if self.region is None and hasattr(data_item, 'AQUA_region'):
@@ -131,11 +141,12 @@ class PlotLatLonProfiles():
                     self.units = data_item.units
 
         # Set mean_type from first data item if not already set
-        first_data = data_items[0]
+        first_data = data_items[0] if data_items else None
         if first_data is not None and hasattr(first_data, 'AQUA_mean_type'):
             self.mean_type = first_data.AQUA_mean_type
         
         self.logger.debug(f'Extracted metadata for {len(self.models)} datasets: {list(zip(self.models, self.exps))}')
+        self.logger.debug(f'Extracted realizations: {self.realizations}')
         self.logger.debug(f'Extracted region: {self.region}')
         
         # Handle std dates
@@ -203,6 +214,11 @@ class PlotLatLonProfiles():
             'exp': getattr(self, 'exps', ['unknown_exp'])[0]
         }
         
+        # Add realization
+        if self.realizations:
+            metadata['realization'] = self.realizations[0]
+            self.logger.debug(f'Using realization for plot filename: {self.realizations[0]}')
+                
         # Use class attributes
         var = getattr(self, 'short_name', None) or getattr(self, 'standard_name', None)
         region = self.region
@@ -210,7 +226,7 @@ class PlotLatLonProfiles():
         # Build extra_keys
         extra_keys = {}
         if var: extra_keys['var'] = var
-        if region: extra_keys['region'] = region.replace(' ', '').lower()
+        if region: extra_keys['region'] = region
         
         # diagnostic_product must match the one used in OutputSaver
         base_diagnostic = diagnostic if diagnostic else self.diagnostic_name
@@ -219,17 +235,17 @@ class PlotLatLonProfiles():
         
         # Build diagnostic_product with data_type info
         if self.data_type == 'seasonal':
-            diagnostic_product = f"{base_diagnostic}_seasonal_{self.mean_type}"
+            diagnostic_product = f"seasonal_{self.mean_type}_profile"
         else:  # longterm
-            diagnostic_product = f"{base_diagnostic}_{self.mean_type}"
-           
+            diagnostic_product = f"{self.mean_type}_profile"
+        
         # Save based on format
         if format == 'png':
             outputsaver.save_png(fig, diagnostic_product, extra_keys=extra_keys, 
-                            metadata={'Description': description, 'dpi': dpi}, rebuild=rebuild)
+                            metadata={'description': description, 'dpi': dpi}, rebuild=rebuild)
         else:
             outputsaver.save_pdf(fig, diagnostic_product, extra_keys=extra_keys, 
-                            metadata={'Description': description, 'dpi': dpi}, rebuild=rebuild)
+                            metadata={'description': description, 'dpi': dpi}, rebuild=rebuild)
 
     def _check_data_length(self):
         """
@@ -387,7 +403,8 @@ class PlotLatLonProfiles():
 
         self.save_plot(fig, description=description, rebuild=rebuild,
                        outputdir=outputdir, dpi=dpi, format=format, diagnostic=self.diagnostic_name)
-        
+        plt.close(fig)
+
         self.logger.info('PlotLatLonProfiles completed successfully')
 
     def _run_seasonal(self, outputdir, rebuild, dpi, format, style):
@@ -402,6 +419,7 @@ class PlotLatLonProfiles():
         self.save_plot(fig, description=description, 
                        rebuild=rebuild, outputdir=outputdir, dpi=dpi, format=format, 
                        diagnostic=self.diagnostic_name)
+        plt.close(fig)
         
         self.logger.info('PlotLatLonProfiles completed successfully')
 

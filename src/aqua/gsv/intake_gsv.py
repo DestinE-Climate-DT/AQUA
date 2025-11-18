@@ -639,7 +639,7 @@ class GSVSource(base.DataSource):
     def read(self):
         """Return a in-memory dask dataset"""
         ds = [self._get_partition(i) for i in range(self._npartitions)]
-        ds = xr.concat(ds, dim='time')
+        ds = xr.concat(ds, dim='time', coords='different')
         return ds
 
     def get_part_delayed(self, ii, var, shape, dtype):

@@ -18,14 +18,16 @@ cdo-paths: # to be checked
 grids:
   # default
   lon-lat:
-    vert_coord: ["2d"]
     space_coord: [lon, lat]
   lon-lat-depth:
     vert_coord: ["depth"]
     space_coord: [lon, lat]
   longitude-latitude:
-    vert_coord: ["2d"]
     space_coord: [longitude, latitude]
+  lon-lat-r100:
+    path:
+      2d: '{{ grids }}/lonlat/r100_grid.nc'
+    space_coord: [lon, lat]
 
   # target regrid
   # Regular lon/lat grids

@@ -17,8 +17,7 @@ from .sci_util import select_season, merge_attrs, find_vert_coord
 from .string import generate_random_string, strlist_to_phrase, lat_to_phrase
 from .string import clean_filename, extract_literal_and_numeric
 from .units import multiply_units, normalize_units, convert_units, convert_data_units
-from .util import get_arg, to_list
-from .util import extract_attrs, username
+from .util import expand_env_vars, extract_attrs, get_arg, to_list, username
 from .yaml import load_yaml, dump_yaml, load_multi_yaml
 from .time import check_chunk_completeness, frequency_string_to_pandas, pandas_freq_to_string
 from .time import time_to_string, int_month_name, xarray_to_pandas_freq
@@ -41,8 +40,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'generate_random_string', 'strlist_to_phrase', 'lat_to_phrase', 
            'clean_filename', 'extract_literal_and_numeric',
            'multiply_units', 'normalize_units', 'convert_units', 'convert_data_units',
-           'get_arg', 'to_list',
-           'extract_attrs','username',
+           'expand_env_vars', 'extract_attrs', 'get_arg', 'to_list','username',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas', 'pandas_freq_to_string',
            'time_to_string', 'int_month_name',  'xarray_to_pandas_freq',

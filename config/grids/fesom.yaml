@@ -10,7 +10,6 @@ grids:
     path: 
       level: '{{ grids }}/HealPix/fesom-NG5_hpz5_nested_oce_level_v1.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   # for hpz7, 53512 missing values
   fesom-NG5-hpz7-nested-v1:
     cdo_options: "--force"
@@ -21,7 +20,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_level_v1.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   # for hpz9, 923769 missing values
   fesom-NG5-hpz9-nested-v1:
     cdo_options: "--force"
@@ -32,7 +30,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level_v1.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   fesom-D3-hpz7-nested:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -42,7 +39,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce_level.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
 
   # FESOM oceanic healpix after 2023 update in land-sea-mask.
   # Notice that these are different from those above due to different land-sea mask
@@ -57,7 +53,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_level_v2.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   # for hpz9, 984749 missing values
   fesom-NG5-hpz9-nested-v2:
     cdo_options: "--force"
@@ -68,7 +63,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level_v2.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   fesom-NG5-hpz10-nested-v2:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -78,7 +72,6 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_level_v2.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   
   # FESOM v3: These are grids for DestinE O-25.1 cycle.
   # Interpolation to HealPix is now conservative and this
@@ -93,7 +86,6 @@ grids:
     path:
       level: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_level_v3.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   fesom-NG5-hpz9-nested-v3:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -103,7 +95,6 @@ grids:
     path:
       level: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_level_v3.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   fesom-NG5-hpz7-nested-v3:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -113,7 +104,6 @@ grids:
     path:
       level: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_level_v3.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   fesom-CORE2-hpz5-nested-v3:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -123,7 +113,6 @@ grids:
     path:
       level: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_level_v3.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   fesom-D3-hpz7-nested-v3:
     cdo_options: "--force"
     space_coord: ["ncells"]
@@ -133,7 +122,6 @@ grids:
     path:
       level: '{{ grids }}/FESOM/fesom-D3_hpz7_nested_oce_level_v3.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   
   #FESOM
   ng5-nodes-2d:
@@ -144,7 +132,6 @@ grids:
       nz: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz.nc'
       nz1: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz1.nc'
     space_coord: ["nod2"]
-    vert_coord: ["nz", "nz1"]
     cdo_extra: 
     - -setgrid,'{{ grids }}/FESOM/NG5_griddes_nodes_IFS.nc' 
   ng5-elems-2d:
@@ -155,7 +142,6 @@ grids:
     path:
       nz1: '{{ grids }}/FESOM/NG5_elem_fesom_mask_nz1.nc'
     space_coord: ["elem"]
-    vert_coord: ["nz1"]
     cdo_extra: 
     - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc'
 
@@ -166,4 +152,3 @@ grids:
   fesom-interpolated-3d:
     path: '{{ grids }}/FESOM/fesom_tco2559_interpolated_3d.nc'
     space_coord: ["lon", "lat"]
-    vert_coord: depth

@@ -70,6 +70,7 @@ class Trends(Diagnostic):
         """
         self.logger.info("Starting trend analysis workflow")
         super().retrieve(var=var, reader_kwargs=reader_kwargs)
+        # self.data = self.data.chunk(chunks={"time": 12, "level": 1})  # this is needed to avoid a too large graph
 
         # If a region is specified, apply area selection to self.data
         if region:
@@ -172,6 +173,10 @@ class Trends(Diagnostic):
         trend_data = xr.Dataset(trend_dict)
         trend_data.attrs["AQUA_region"] = self.region
         self.logger.info("Trend value calculated")
+
+        self.logger.debug("Loading trend data in memory")
+        trend_data.load()
+        self.logger.debug("Loaded trend data in memory")
         return trend_data
 
     def save_netcdf(
@@ -196,6 +201,6 @@ class Trends(Diagnostic):
             outputdir=outputdir,
             rebuild=rebuild,
             data=self.trend_coef,
-            extra_keys={"region": self.region.replace(" ", "_") if self.region else None},
+            extra_keys={"region": self.region},
         )
         self.logger.info("Trend coefficients saved to NetCDF file")
