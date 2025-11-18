@@ -203,22 +203,18 @@ class Plot2DSeaIce:
                     for ax in axs:
                         apply_circular_window(ax, extent=ext_coords)
 
-
-        if self.save_pdf or self.save_png:
-            description = (
-                f"Spatial map and total bias of the sea ice {monmod.attrs.get('AQUA_method', '')} climatology "
-                f"in the {monmod.attrs.get('AQUA_region', 'geographic')} region. "
-                f"The model data is {monmod.attrs.get('AQUA_model')} with experiment {monmod.attrs.get('AQUA_exp')} "
-                f"spanning from {time_to_string(monmod.attrs.get('AQUA_startdate', ''))} to {time_to_string(monmod.attrs.get('AQUA_enddate', ''))}. "
-                f"The reference dataset is {monref.attrs.get('AQUA_model')} with experiment {monref.attrs.get('AQUA_exp')} "
-                f"spanning from {time_to_string(monref.attrs.get('AQUA_startdate', ''))} to {time_to_string(monref.attrs.get('AQUA_enddate', ''))}. "
-                f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
-                )
-            self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
-                             description=description, extra_keys={'method': self.method, 'region': region})
-        else:
-            plt.close(fig)
-
+        description = (
+            f"Spatial map and total bias of the sea ice {monmod.attrs.get('AQUA_method', '')} climatology "
+            f"in the {monmod.attrs.get('AQUA_region', 'geographic')} region. "
+            f"The model data is {monmod.attrs.get('AQUA_model')} with experiment {monmod.attrs.get('AQUA_exp')} "
+            f"spanning from {time_to_string(monmod.attrs.get('AQUA_startdate', ''))} to {time_to_string(monmod.attrs.get('AQUA_enddate', ''))}. "
+            f"The reference dataset is {monref.attrs.get('AQUA_model')} with experiment {monref.attrs.get('AQUA_exp')} "
+            f"spanning from {time_to_string(monref.attrs.get('AQUA_startdate', ''))} to {time_to_string(monref.attrs.get('AQUA_enddate', ''))}. "
+            f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
+            )
+        self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
+                         description=description, extra_keys={'method': self.method, 'region': region})
+        plt.close(fig)
 
     def _plot_var_map(self, region, **kwargs):
         """
@@ -284,19 +280,17 @@ class Plot2DSeaIce:
 
         fig.suptitle(f"{set_map_title(datarr)}", fontsize=13)
         
-        if self.save_pdf or self.save_png:
-            description = (
-                f"Spatial map of the sea ice {mondat.attrs.get('AQUA_method','')} climatology "
-                f"for the {mondat.attrs.get('AQUA_model','')} model, experiment {mondat.attrs.get('AQUA_exp','')} "
-                f"over {mondat.attrs.get('AQUA_region', 'geographic')} region "
-                f"from {time_to_string(mondat.attrs.get('AQUA_startdate',''))} to {time_to_string(mondat.attrs.get('AQUA_enddate',''))}. "
-                f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' and self.plot_ref_contour else ''}"
-            )
-            self._save_plots(fig=fig, data=mondat, data_ref=None, 
-                             diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
-        else:
-            plt.close(fig)
-
+        description = (
+            f"Spatial map of the sea ice {mondat.attrs.get('AQUA_method','')} climatology "
+            f"for the {mondat.attrs.get('AQUA_model','')} model, experiment {mondat.attrs.get('AQUA_exp','')} "
+            f"over {mondat.attrs.get('AQUA_region', 'geographic')} region "
+            f"from {time_to_string(mondat.attrs.get('AQUA_startdate',''))} to {time_to_string(mondat.attrs.get('AQUA_enddate',''))}. "
+            f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' and self.plot_ref_contour else ''}"
+        )
+        self._save_plots(fig=fig, data=mondat, data_ref=None, 
+                         diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
+        plt.close(fig)
+        
     def _get_colorbar_ticks(self, data, vmin=None, vmax=None, norm=None,
                             boundaries=None, sym=False, ticks_rounding=1):
         """
@@ -573,6 +567,9 @@ class Plot2DSeaIce:
         # Ensure data is not None
         if data is None:
             raise ValueError("Data cannot be None for saving figures")
+
+        if not self.save_pdf and not self.save_png:
+            return
         
         outputsaver = OutputSaver(
             diagnostic='seaice',

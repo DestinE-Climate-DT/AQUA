@@ -182,7 +182,7 @@ class PlotHovmoller:
                 else: 
                     new_data = data.interp(level=level, method='nearest')
                 new_data_level_list.append(new_data)
-            merged_data = xr.concat(new_data_level_list, dim='level')
+            merged_data = xr.concat(new_data_level_list, dim='level', coords='different')
             new_data_list.append(merged_data)
         self.data = new_data_list
 

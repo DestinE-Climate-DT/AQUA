@@ -2,6 +2,7 @@ import pytest
 import os
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
@@ -529,7 +530,9 @@ class TestSeasonalMeans:
         assert axs is not None
         assert len(axs) == 4
         
+
         fig.savefig(tmp_path / 'test_seasonal_profiles.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles.png')
 
     def test_plot_seasonal_lat_lon_profiles_with_ref(self, tmp_path):
@@ -554,6 +557,7 @@ class TestSeasonalMeans:
         assert axs is not None
         
         fig.savefig(tmp_path / 'test_seasonal_profiles_with_ref.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles_with_ref.png')
 
     def test_plot_seasonal_lat_lon_profiles_multiple(self, tmp_path):
@@ -577,6 +581,7 @@ class TestSeasonalMeans:
         assert axs is not None
         
         fig.savefig(tmp_path / 'test_seasonal_profiles_multiple.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles_multiple.png')
 
     def test_plot_seasonal_lat_lon_profiles_error(self):
@@ -612,4 +617,5 @@ class TestSeasonalMeans:
         assert axs is not None
         
         fig.savefig(tmp_path / 'test_seasonal_none_ref_std.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_none_ref_std.png')

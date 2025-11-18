@@ -220,7 +220,7 @@ class GlobalBiases(Diagnostic):
                 season_stat = getattr(season_data, stat_funcs[seasons_stat])(dim='time')
                 seasonal_data.append(season_stat.expand_dims(season=[season]))
 
-            self.seasonal_climatology = xr.concat(seasonal_data, dim='season').to_dataset(name=var)
+            self.seasonal_climatology = xr.concat(seasonal_data, dim='season', coords='different').to_dataset(name=var)
             self.seasonal_climatology.attrs.update({
                 'catalog': self.catalog,
                 'model': self.model,
