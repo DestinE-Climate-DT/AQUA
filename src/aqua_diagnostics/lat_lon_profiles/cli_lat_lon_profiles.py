@@ -231,32 +231,21 @@ if __name__ == '__main__':
         datasets = cli.config_dict.get('datasets', [])
         references = cli.config_dict.get('references', [])
         
-        # Process variables
-        for var in tool_dict.get('variables', []):
-            var_config, regions = load_var_config(cli.config_dict, var, diagnostic='lat_lon_profiles')
-            
-            process_variable(
-                cli=cli,
-                var_config=var_config,
-                regions=regions,
-                datasets=datasets,
-                references=references,
-                mean_type=mean_type,
-                diagnostic_name=diagnostic_name,
-                freq=freq,
-                compute_std=compute_std,
-                exclude_incomplete=exclude_incomplete,
-                center_time=center_time,
-                box_brd=box_brd,
-                compute_longterm=compute_longterm,
-                compute_seasonal=compute_seasonal,
-                regions_file_path=regions_file_path,
-                formula=False
-            )
+        variables = tool_dict.get('variables', [])
+        formulae = tool_dict.get('formulae', [])
+        all_vars = [(v, False) for v in variables] + [(f, True) for f in formulae]
         
-        # Process formulae
-        for formula_config in tool_dict.get('formulae', []):
-            var_config, regions = load_var_config(cli.config_dict, formula_config, diagnostic='lat_lon_profiles')
+        # Process all variables and formulae
+        for var, is_formula in all_vars:
+            cli.logger.info(
+                "Running LatLonProfiles diagnostic for %s: %s",
+                "formula" if is_formula else "variable", var)
+            
+            var_config, regions = load_var_config(
+                cli.config_dict, 
+                var, 
+                diagnostic='lat_lon_profiles'
+            )
             
             process_variable(
                 cli=cli,
@@ -274,7 +263,7 @@ if __name__ == '__main__':
                 compute_longterm=compute_longterm,
                 compute_seasonal=compute_seasonal,
                 regions_file_path=regions_file_path,
-                formula=True
+                formula=is_formula
             )
     
     cli.close_dask_cluster()
