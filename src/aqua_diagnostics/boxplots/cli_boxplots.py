@@ -41,11 +41,10 @@ if __name__ == '__main__':
     if regrid:
         logger.info(f"Regrid option is set to {regrid}")
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        logger.info(f"Realization option is set to {realization}")
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = {}
+        reader_kwargs['realization'] = realization
 
     # Output options
     outputdir = config_dict['output'].get('outputdir', './')
@@ -63,35 +62,58 @@ if __name__ == '__main__':
             diagnostic_name = config_dict['diagnostics']['boxplots'].get('diagnostic_name', 'boxplots')
             datasets = config_dict['datasets']
             references = config_dict['references']
-            variables = config_dict['diagnostics']['boxplots'].get('variables', [])
+            variable_groups = config_dict['diagnostics']['boxplots'].get('variables', [])
 
-            fldmeans = []
-            for dataset in datasets:
-                dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
-                                'exp': dataset['exp'], 'source': dataset['source'],
-                                'regrid': dataset.get('regrid', regrid),
-                                'startdate': dataset.get('startdate'),
-                                'enddate': dataset.get('enddate')}
+            for group in variable_groups:
+                variables = group.get('vars', [])
+                plot_kwargs = {k: v for k, v in group.items() if k != 'vars'}
 
-                boxplots = Boxplots(**dataset_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
-                boxplots.run(var=variables, reader_kwargs=reader_kwargs)
-                fldmeans.append(boxplots.fldmeans)
-            
-            fldmeans_ref = []
-            for reference in references:
-                reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
-                                  'exp': reference['exp'], 'source': reference['source'],
-                                  'regrid': reference.get('regrid', regrid),
-                                  'startdate': reference.get('startdate'),
-                                  'enddate': reference.get('enddate')}
+                logger.info(f"Running boxplots for {variables} with options {plot_kwargs}")
 
-                boxplots_ref = Boxplots(**reference_args, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
-                boxplots_ref.run(var=variables, reader_kwargs=reader_kwargs)
-                fldmeans_ref.append(boxplots_ref.fldmeans)
+                fldmeans = []
+                for dataset in datasets:
+                    dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
+                                    'exp': dataset['exp'], 'source': dataset['source'],
+                                    'regrid': dataset.get('regrid', regrid),
+                                    'startdate': dataset.get('startdate'),
+                                    'enddate': dataset.get('enddate')}
 
+                    boxplots = Boxplots(**dataset_args, diagnostic=diagnostic_name, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots.run(var=variables, reader_kwargs=reader_kwargs)
+                    fldmeans.append(boxplots.fldmeans)
+                
+                fldmeans_ref = []
+                for reference in references:
+                    reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
+                                    'exp': reference['exp'], 'source': reference['source'],
+                                    'regrid': reference.get('regrid', regrid),
+                                    'startdate': reference.get('startdate'),
+                                    'enddate': reference.get('enddate')}
 
-            plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
-            plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables)
+                    boxplots_ref = Boxplots(**reference_args, diagnostic=diagnostic_name, save_netcdf=save_netcdf, outputdir=outputdir, loglevel=loglevel)
+                    boxplots_ref.run(var=variables) 
+                    # , reader_kwargs=reader_kwargs) # we remove this, realization should not be applied to references
+
+                    if getattr(boxplots_ref, "fldmeans", None) is None:
+                        logger.warning(
+                            f"No data retrieved for reference {reference['model']} ({reference['exp']}, {reference['source']}). Skipping."
+                        )
+                        continue 
+
+                    fldmeans_ref.append(boxplots_ref.fldmeans)
+
+                all_entries = datasets + references
+                model_exp_list = [f"{entry['model']} ({entry['exp']})" for entry in all_entries]
+                model_exp_list_unique = list(dict.fromkeys(model_exp_list))
+
+                title=None
+                if variables == ['-snlwrf', 'snswrf', 'slhtf', 'ishf']:
+                    title = "Boxplot of Surface Radiation Fluxes for: " + ", ".join(model_exp_list_unique)
+                elif variables == ['-tnlwrf', 'tnswrf']:
+                    title = "Boxplot of TOA Radiation Fluxes for: " + ", " .join(model_exp_list_unique)
+
+                plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
+                plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, title=title, **plot_kwargs)
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 

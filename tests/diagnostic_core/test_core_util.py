@@ -6,8 +6,9 @@ from aqua import Reader
 from aqua.diagnostics.core import template_parse_arguments, load_diagnostic_config
 from aqua.diagnostics.core import open_cluster, close_cluster, merge_config_args
 from aqua.diagnostics.core import start_end_dates
+from conftest import LOGLEVEL
 
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 
 @pytest.mark.aqua
@@ -69,10 +70,12 @@ def test_load_diagnostic_config():
     parser = template_parse_arguments(parser)
     args = parser.parse_args(["--loglevel", "DEBUG"])
     ts_dict = load_diagnostic_config(diagnostic='timeseries',
-                                     default_config='config_timeseries_atm.yaml',
+                                     default_config='config-timeseries.yaml',
+                                     folder="templates",
                                      config=args.config, loglevel=loglevel)
 
-    assert ts_dict['datasets'] == [{'catalog': None, 'exp': None, 'model': None, 'source': 'lra-r100-monthly', 'regrid': None}]
+    assert ts_dict['datasets'] == [{'catalog': None, 'exp': None, 'model': None, 'source': 'lra-r100-monthly',
+                                    'regrid': None, 'reader_kwargs': None}]
 
 
 @pytest.mark.aqua
@@ -114,4 +117,12 @@ def test_start_end_dates():
     )
     assert start_end_dates(startdate="2020-01-01", enddate="20200102") == (
         pd.Timestamp("2020-01-01"), pd.Timestamp("2020-01-02")
+    )
+
+    assert start_end_dates(start_std="2020-01-01", end_std="2020-01-02") == (
+        None, None
+    )
+
+    assert start_end_dates(startdate="2020-01-01", end_std="2020-01-02") == (
+        pd.Timestamp("2020-01-01"), None
     )

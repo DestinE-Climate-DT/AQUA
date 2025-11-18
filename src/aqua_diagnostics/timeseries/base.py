@@ -162,6 +162,9 @@ class BaseMixin(Diagnostic):
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
         data = data.sel(time=slice(self.std_startdate, self.std_enddate))
+        if self.std_startdate is None or self.std_enddate is None:
+            self.std_startdate = data.time.min().values
+            self.std_enddate = data.time.max().values
         if freq_dict[str_freq]['groupdby'] is not None:
             data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
         else:  # For annual data, we compute the std over all years
@@ -174,6 +177,11 @@ class BaseMixin(Diagnostic):
         # pd.Timestamp cannot be used as attribute, so we convert to a string
         data.attrs['std_startdate'] = time_to_string(self.std_startdate)
         data.attrs['std_enddate'] = time_to_string(self.std_enddate)
+
+        # Load data in memory for faster plot
+        self.logger.debug(f"Loading std data for frequency {str_freq} in memory")
+        data.load()
+        self.logger.debug(f"Loaded std data for frequency {str_freq} in memory")
 
         # Assign the data to the correct attribute based on frequency
         if str_freq == 'hourly':
@@ -223,18 +231,19 @@ class BaseMixin(Diagnostic):
             data.name = var
 
         # In order to have a catalog entry we want to have a key region even in the global case
-        region = self.region.replace(' ', '').lower() if self.region is not None else 'global'
+        region = self.region if self.region is not None else 'global'
         extra_keys.update({'region': region})
 
         self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
 
+        # Loading data in memory before saving to netcdf
         super().save_netcdf(data=data, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                             outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys,
                             create_catalog_entry=create_catalog_entry, dict_catalog_entry=dict_catalog_entry)
         if data_std is not None:
             extra_keys.update({'std': 'std'})
             self.logger.info('Saving %s data for %s to netcdf in %s', str_freq, diagnostic_product, outputdir)
-            #TODO: Check if the catalog entry generation is required for the std values
+            # TODO: Check if the catalog entry generation is required for the std values
             super().save_netcdf(data=data_std, diagnostic=self.diagnostic_name, diagnostic_product=diagnostic_product,
                                 outputdir=outputdir, rebuild=rebuild, extra_keys=extra_keys)
 
@@ -328,8 +337,8 @@ class PlotBaseMixin():
             title (str): Title for the plot.
         """
         title = f'{diagnostic} '
-        if self.short_name is not None:
-            title += f'for {self.short_name} '
+        if self.long_name is not None:
+            title += f'of {self.long_name} '
 
         if self.units is not None:
             title += f'[{self.units}] '
@@ -361,25 +370,31 @@ class PlotBaseMixin():
 
         description += f'of {self.long_name} '
         if self.units is not None:
-            description += f'[{self.units}] '
+          units = self.units.replace("**", r"\*\*")
+          description += f'[{units}] '
+        if self.short_name is not None:
+          description += f'({self.short_name}) '
 
         if self.region is not None:
             description += f'for region {self.region} '
 
         description += 'for '
         description += strlist_to_phrase(items=[f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(self.len_data)])
-        description += ' '
 
-        for i in range(self.len_ref):
-            if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
-                description += f'with reference ERA5 '
-            elif isinstance(self.ref_models, list):
-                description += f'with reference {self.ref_models[i]} {self.ref_exps[i]} '
-            else:
-                description += f'with reference {self.ref_models} {self.ref_exps} '
+        if self.len_ref > 0:
+            description += f' with reference'
+            for i in range(self.len_ref):
+                if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
+                    description += f' ERA5 '
+                elif isinstance(self.ref_models, list):
+                    description += f' {self.ref_models[i]} {self.ref_exps[i]} '
+                else:
+                    description += f' {self.ref_models} {self.ref_exps} '
+        elif self.len_ref == 0:
+            description += '.'
 
         if self.std_startdate is not None and self.std_enddate is not None:
-            description += f'with standard deviation from {self.std_startdate} to {self.std_enddate}.'
+            description += f'with standard deviation from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}.'
             description += ' The shaded area represents 2 standard deviations.'
 
         self.logger.debug('Description: %s', description)
@@ -403,7 +418,7 @@ class PlotBaseMixin():
                                   catalog=self.catalogs,
                                   model=self.models,
                                   exp=self.exps,
-                                  # This is needed for the Gregory diagnostic, which save the reference models and experiments
+                                  # This is needed for the Gregory diagnostic, which saves the reference models and experiments
                                   # as dictionaries to build correct labels and descriptions
                                   catalog_ref=list(self.ref_catalogs.values()) if isinstance(self.ref_catalogs, dict) else self.ref_catalogs,
                                   model_ref=list(self.ref_models.values()) if isinstance(self.ref_models, dict) else self.ref_models,
@@ -417,12 +432,10 @@ class PlotBaseMixin():
         if self.short_name is not None:
             extra_keys.update({'var': self.short_name})
         if self.region is not None:
-            region = self.region.replace(' ', '').lower()
-            extra_keys.update({'region': region})
+            extra_keys.update({'region': self.region})
 
-        if format == 'png':
-            outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild, extra_keys=extra_keys, metadata=metadata)
-        elif format == 'pdf':
-            outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild, extra_keys=extra_keys, metadata=metadata)
-        else:
-            raise ValueError(f'Format {format} not supported. Use png or pdf.')
+        outputsaver.save_figure(fig, diagnostic_product,
+                                extra_keys=extra_keys, metadata=metadata,
+                                save_pdf=format in ['pdf', 'both'], 
+                                save_png=format in ['png', 'both'],
+                                rebuild=rebuild, dpi=dpi)

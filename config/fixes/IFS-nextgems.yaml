@@ -1,13 +1,13 @@
 fixer_name:
     ifs-nextgems:
-        convenction: eccodes
+        convention: eccodes
         deltat: 3600
         jump: month
         vars:
             tprate:
                 decumulate: true
                 src_units: m
-            cprea:
+            cpr:
                 decumulate: true
                 src_units: m
             lsprate:

@@ -1,0 +1,25 @@
+# Run with: nc2zarr -vv -c era5_monthly.yml
+# When providing a list of directories use the "-s name" option
+
+input:
+  paths:
+     - /pfs/lustrep3/appl/local/climatedt/data/AQUA/datasets/ERA5/mon/ERA5*.nc
+
+#  decode_cf: true
+  multi_file: true
+
+process:
+  rechunk:
+    '*':
+      lon: null  # no chunking for lon dim in all variables
+      lat: null  # no chunking for lon dim in all variables
+      time: 1    # chunk size 1 for time dim in all variables
+    lon: null    # no chunking for lon dim in lon variable
+    lat: null    # no chunking for lat dim in lat variable
+    time: 1
+
+output:
+  path: /pfs/lustrep3/appl/local/climatedt/data/AQUA/datasets/ERA5/zarr/era5_monthly_1940-2024.zarr
+  overwrite: false
+  consolidated: true
+  append_dim: time

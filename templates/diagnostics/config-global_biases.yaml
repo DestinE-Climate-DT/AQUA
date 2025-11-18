@@ -1,0 +1,72 @@
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: null
+    regrid: null
+    reader_kwargs: null # it can be a dictionary with reader kwargs
+    startdate: null
+    enddate: null
+
+references:
+  - catalog: 'obs'
+    model: 'ERA5'
+    exp: 'era5'
+    source: 'monthly'
+    regrid: 'r100'
+    startdate: null
+    enddate: null
+
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+  create_catalog_entry: true
+
+diagnostics:
+  globalbiases:
+    run: true
+    diagnostic_name: 'globalbiases'
+    variables: ['tprate', 'u']
+    formulae: ['(10u^2+10v^2)^0.5']
+    params:
+      default:
+        plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
+        seasons: true
+        seasons_stat: 'mean' # May become a list
+        vertical: true     # Vertical profile if variable 3d
+        #TODO: to remove
+        startdate_data: null
+        enddate_data: null
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2020-12-31"
+      tprate:
+        standard_name: "tprate"
+        long_name: "Precipitation"
+        units: "mm/day"
+      (10u^2+10v^2)^0.5:
+        short_name: "10si"
+        long_name: "Wind speed at 10m"
+    plot_params:
+      default: 
+        projection: 'robinson'
+        projection_params: {}
+      tprate:
+        vmin: -8
+        vmax: 8
+      u:
+        vmin: -10
+        vmax: 10
+        vmin_v: -25
+        vmax_v: 25
+      (10u^2+10v^2)^0.5:
+        vmin: -2.5
+        vmax: 2.5
+        cmap: 'RdBu_r'
+  

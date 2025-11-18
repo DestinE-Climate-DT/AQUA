@@ -17,7 +17,7 @@ def plot_maps(maps: list,
               proj: ccrs.Projection = ccrs.Robinson(), extent: list = None,
               style=None, figsize: tuple = None,
               vmin: float = None, vmax: float = None, nlevels: int = 11,
-              title: str = None, titles: list = None, titles_size: int = None, 
+              title: str = None, title_size: int = 16, titles: list = None, titles_size: int = None, 
               cmap='RdBu_r', cbar_label: str = None,
               transform_first=False, cyclic_lon=True,
               return_fig=False, loglevel='WARNING', **kwargs):
@@ -39,6 +39,7 @@ def plot_maps(maps: list,
         vmax (float,opt):     maximum value for the colorbar, default is None
         nlevels (int,opt):    number of levels for the colorbar, default is 11
         title (str,opt):      super title for the figure
+        title_size (int,opt):  size of the super title, default is 16
         titles (list,opt):    list of titles for the maps
         titles_size (int,opt): size of the titles, default is None
         cmap (str,opt):       colormap, default is 'RdBu_r'
@@ -116,7 +117,7 @@ def plot_maps(maps: list,
     # Add a super title
     if title:
         logger.debug('Setting super title to %s', title)
-        fig.suptitle(title, fontsize=16)
+        fig.suptitle(title, fontsize=title_size)
 
     if return_fig:
         return fig

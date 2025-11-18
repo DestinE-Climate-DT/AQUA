@@ -388,4 +388,4 @@ if __name__ == '__main__':
     #     cluster.close()
     #     logger.debug("Dask cluster closed.")
 
-    logger.info('Teleconnections diagnostic finished.')
+    logger.info('Teleconnections diagnostic completed.')

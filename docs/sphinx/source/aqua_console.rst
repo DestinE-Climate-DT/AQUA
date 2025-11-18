@@ -11,7 +11,7 @@ The AQUA console (introduced since v0.9.0) has two main purposes:
 - A central access to manage where the configuration and catalog files are stored has been added. This can also handle fixes and grids files.
 - A tool for more complex operations:
 
-    - LRA generator (see :ref:`aqua-lra` and :ref:`lra`) 
+    - DROP (see :ref:`aqua-drop` and :ref:`drop`) 
     - FDB catalog generator (see :ref:`catalog_generator`).
     - Diagnostics wrapper for a complete experiment analysis (see :ref:`aqua_analysis`).
 
@@ -31,7 +31,7 @@ It has the following subcommands:
 - :ref:`aqua-update`
 - :ref:`aqua-fixes`
 - :ref:`aqua-grids`
-- :ref:`aqua-lra`
+- :ref:`aqua-drop`
 - :ref:`aqua-analysis`
 
 The main command has some options listed below:
@@ -383,13 +383,13 @@ The following options are available for ``aqua grids build``:
     Please keep in mind that this is not verified yet. 
 
 
-.. _aqua-lra:
+.. _aqua-drop:
 
-aqua lra -c <config_file> <lra-options>
----------------------------------------
+aqua drop -c <config_file> <drop-options>
+-----------------------------------------
 
-This subcommand launch the LRA generation based on the LRA tool.
-For full description of the LRA generator functionalities, please refer to the :ref:`lra` section.
+This subcommand launch DROP (Data Reduction OPerator).
+For full description of the DROP functionalities, please refer to the :ref:`drop` section.
 In most of cases, it is better to embed this tool within a batch job.
 
 .. _aqua-analysis:

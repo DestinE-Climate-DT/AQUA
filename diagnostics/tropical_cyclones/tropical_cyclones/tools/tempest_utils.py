@@ -59,7 +59,7 @@ def getTrajectories(filename, nVars, headerDelimStr, isUnstruc):
     else:
         prodata = np.empty((nVars, numtraj, maxNumPts))
 
-    prodata[:] = np.NAN
+    prodata[:] = np.nan
 
     for _, line in enumerate(data):
         if headerDelimStr in line:  # check if header string is satisfied

@@ -1,0 +1,34 @@
+# Spatial delimitations of sub-regions of the Northern and Southern Hemispheres
+regions:
+  arctic:
+    longname: Arctic
+    lon_limits: [0, 360]
+    lat_limits: [0, 90]
+  hudson_bay:
+    longname: Hudson Bay
+    lon_limits: [265,285]
+    lat_limits: [50, 63]
+  antarctic:
+    longname: Antarctic
+    lon_limits: [0,360]
+    lat_limits: [-90, 0]
+  ross_sea:
+    longname: Ross Sea
+    lon_limits: [160,230]
+    lat_limits: [-90, 0]
+  amundsen_bellingshausen_seas:
+    longname: Amundsen-Bellingshausen Seas
+    lon_limits: [230,300]
+    lat_limits: [-90, 0]
+  weddell_sea:
+    longname: Weddell Sea
+    lon_limits: [300,20]
+    lat_limits: [-90, 0]
+  indian_ocean:
+    longname: Indian Ocean
+    lon_limits: [20,90]
+    lat_limits: [-90, 0]
+  pacific_ocean:
+    longname: Pacific Ocean
+    lon_limits: [90,160]
+    lat_limits: [-90, 0]

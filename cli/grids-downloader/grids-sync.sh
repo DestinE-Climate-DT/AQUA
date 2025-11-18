@@ -2,7 +2,7 @@
 set -e
 # This script synchronizes the grids from the Levante server to the LUMI server
 # It may be generalized to synchronize grids between any two servers
-# and for other folders (e.g. LRA created from an high-res experiment
+# and for other folders (e.g. DROP output files created from an high-res experiment
 # available only on one cluster)
 
 # Usage: ./grids-sync.sh [levante_to_lumi | lumi_to_levante]

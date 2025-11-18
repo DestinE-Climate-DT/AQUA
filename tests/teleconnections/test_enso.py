@@ -3,10 +3,11 @@ import matplotlib
 import pytest
 from aqua.exceptions import NotEnoughDataError
 from aqua.diagnostics.teleconnections import ENSO, PlotENSO
+from conftest import APPROX_REL, LOGLEVEL, DPI
 
 # pytest approximation, to bear with different machines
-approx_rel = 1e-4
-loglevel = 'DEBUG'
+approx_rel = APPROX_REL
+loglevel = LOGLEVEL
 
 
 @pytest.mark.diagnostics
@@ -62,7 +63,7 @@ def test_ENSO(tmp_path):
     description = plot_ref.set_index_description()
     assert description == 'ENSO3.4 index for ERA5 era5-hpz3 using reference data from ERA5 era5-hpz3.'
     assert isinstance(fig, matplotlib.figure.Figure), "Figure should be a matplotlib Figure"
-    plot_ref.save_plot(fig, diagnostic_product='index', metadata={'description': description})
+    plot_ref.save_plot(fig, diagnostic_product='index', metadata={'description': description}, dpi=DPI)
     assert (os.path.exists(os.path.join(tmp_path, 'png', 'enso.index.ci.ERA5.era5-hpz3.r1.ci.ERA5.era5-hpz3.png'))) is True
 
     # Regression plotting
@@ -70,8 +71,8 @@ def test_ENSO(tmp_path):
     fig_reg = plot_ref.plot_maps(maps=reg, ref_maps=reg, statistic='regression')
     assert isinstance(fig_reg, matplotlib.figure.Figure)
     description = plot_ref.set_map_description(maps=reg, ref_maps=reg, statistic='regression')
-    assert description == 'ENSO3.4 regression map (tos) ERA5 era5-hpz3 compared to ERA5 era5-hpz3. The contour lines are the model regression map and the filled contour map is the defference between the model and the reference regression map.'  # noqa: E501
-    plot_ref.save_plot(fig_reg, diagnostic_product='regression_annual', metadata={'description': description}, format='pdf')
+    assert description == 'ENSO3.4 regression map (tos) ERA5 era5-hpz3 compared to ERA5 era5-hpz3. The contour lines are the model regression map and the filled contour map is the difference between the model and the reference regression map.'  # noqa: E501
+    plot_ref.save_plot(fig_reg, diagnostic_product='regression_annual', metadata={'description': description}, format='pdf', dpi=DPI)
     assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'enso.regression_annual.ci.ERA5.era5-hpz3.r1.ci.ERA5.era5-hpz3.pdf'))) is True
 
     # Correlation plotting
@@ -81,7 +82,7 @@ def test_ENSO(tmp_path):
     assert isinstance(fig_cor, matplotlib.figure.Figure)
     description = plot_single.set_map_description(maps=cor, statistic='correlation')
     assert description == 'ENSO3.4 correlation map (Correlation of Sea surface temperature with index evaluated with Sea surface temperature) ERA5 era5-hpz3.'
-    plot_single.save_plot(fig_cor, diagnostic_product='correlation', metadata={'description': description}, format='pdf')
+    plot_single.save_plot(fig_cor, diagnostic_product='correlation', metadata={'description': description}, format='pdf', dpi=DPI)
     assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'enso.correlation.ci.ERA5.era5-hpz3.r1.pdf'))) is True
 
     # We add the attribute to increase coverage covering also the season case

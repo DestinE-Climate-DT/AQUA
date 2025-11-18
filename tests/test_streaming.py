@@ -3,10 +3,11 @@
 import pytest
 import pandas as pd
 from aqua import Reader
+from conftest import APPROX_REL, LOGLEVEL
 
 # pytest approximation, to bear with different machines
-approx_rel = 1e-4
-loglevel = "DEBUG"
+approx_rel = APPROX_REL
+loglevel = LOGLEVEL
 
 # streaming class for tests
 @pytest.mark.aqua

@@ -14,7 +14,36 @@ from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type
 xr.set_options(keep_attrs=True)
 
 class PlotSeaIce:
-    """ A class for processing and visualizing timeseries of integrated sea ice extent or volume. """
+    """ 
+    A class for processing and visualizing timeseries of integrated sea ice extent or volume.
+    It is designed to work with AQUA-computed outputs (from the `SeaIce` diagnostic)
+    repacking them into a unified format for easy comparison, labeling, and plotting.
+
+    Args:
+        monthly_models (xr.Dataset | list[xr.Dataset] | None, optional): 
+            Monthly model datasets to be processed. Defaults to None.
+        annual_models (xr.Dataset | list[xr.Dataset] | None, optional): 
+            Annual model datasets to be processed. Defaults to None.
+        monthly_ref (xr.Dataset | list[xr.Dataset] | None, optional): 
+            Monthly reference datasets for comparison. Defaults to None.
+        annual_ref (xr.Dataset | list[xr.Dataset] | None, optional): 
+            Annual reference datasets for comparison. Defaults to None.
+        monthly_std_ref (str, optional): Monthly standard deviation reference dataset identifier. Defaults to None.
+        annual_std_ref (str, optional): Annual standard deviation reference dataset identifier. Defaults to None.
+        model (str, optional): Name of the model associated with the dataset. Defaults to None.
+        exp (str, optional): Experiment name related to the dataset. Defaults to None.
+        source (str, optional): Source of the dataset. Defaults to None.
+        catalog (str, optional): Catalog name of the dataset. Defaults to None.
+        regions_to_plot (list, optional): 
+            List of region names to be plotted (e.g., ['arctic', 'antarctic']). 
+            If None, all available regions are plotted. Defaults to None.
+        outputdir (str, optional): Directory to save output plots. Defaults to './'.
+        rebuild (bool, optional): Whether to rebuild (overwrite) figure outputs if they already exist. Defaults to True.
+        (overwrite) figure outputs if exists. (list, optional): 
+            List of keys to include in the output filenames. If None, all keys are included. Defaults to None.
+        dpi (int, optional): Resolution of saved figures (dots per inch). Defaults to 300.
+        loglevel (str, optional): Logging level for debugging and information messages. Defaults to 'WARNING'.
+    """
 
     def __init__(self, monthly_models=None, annual_models=None,
                  monthly_ref=None, annual_ref=None,
@@ -25,45 +54,6 @@ class PlotSeaIce:
                  rebuild=True,
                  filename_keys=None,  # List of keys to keep in the filename. Default is None, which includes all keys.
                  dpi=300, loglevel='WARNING'):
-        """
-        Initializes the PlotSeaIce class.
-        This constructor sets up logging, initializes input datasets, processes data, and configures output settings
-        for plotting sea ice extent and volume.
-        Args:
-            monthly_models (xr.Dataset | list[xr.Dataset] | None, optional): 
-                Monthly model datasets to be processed. Defaults to None.
-            annual_models (xr.Dataset | list[xr.Dataset] | None, optional): 
-                Annual model datasets to be processed. Defaults to None.
-            monthly_ref (xr.Dataset | list[xr.Dataset] | None, optional): 
-                Monthly reference datasets for comparison. Defaults to None.
-            annual_ref (xr.Dataset | list[xr.Dataset] | None, optional): 
-                Annual reference datasets for comparison. Defaults to None.
-            monthly_std_ref (str, optional): 
-                Monthly standard deviation reference dataset identifier. Defaults to None.
-            annual_std_ref (str, optional): 
-                Annual standard deviation reference dataset identifier. Defaults to None.
-            model (str, optional): 
-                Name of the model associated with the dataset. Defaults to None.
-            exp (str, optional): 
-                Experiment name related to the dataset. Defaults to None.
-            source (str, optional): 
-                Source of the dataset. Defaults to None.
-            catalog (str, optional): 
-                Catalog name of the dataset. Defaults to None.
-            regions_to_plot (list, optional): 
-                List of region names to be plotted (e.g., `['arctic', 'antarctic']`). 
-                If None, all available regions are plotted. Defaults to None.
-            outputdir (str, optional): 
-                Directory to save output plots. Defaults to './'.
-            rebuild (bool, optional): 
-                Whether to rebuild (overwrite) figure outputs if they already exist. Defaults to True.
-            (overwrite) figure outputs if exists. (list, optional): 
-                List of keys to include in the output filenames. If None, all keys are included. Defaults to None.
-            dpi (int, optional): 
-                Resolution of saved figures (dots per inch). Defaults to 300.
-            loglevel (str, optional): 
-                Logging level for debugging and information messages. Defaults to 'WARNING'.
-        """
 
         # logging setup
         self.loglevel = loglevel
@@ -142,13 +132,13 @@ class PlotSeaIce:
     def repack_datasetlists(self, **kwargs) -> dict:
         """
         Repack input datasets into a nested dictionary organized by method and region.
-            The output dictionary is structured as:
-                { method: { region: { str_data: [list of data arrays] }}}
-            where:
-            - 'method' is extracted from the dataset attributes (defaulting to "Unknown")
-            - 'region' is determined by self._get_region(dataset, data_var)
-            - 'str_data' is the keyword with the data in input, and each value is a list of 
-            data arrays corresponding to that keyword
+        The output dictionary is structured as::
+
+            { method: { region: { str_data: [list of data arrays] }}}
+
+        where: 'method' is extracted from the dataset attributes (defaulting to "Unknown").
+        'region' is determined by self._get_region(dataset, data_var).
+        'str_data' is the keyword with the data in input, and each value is a list of data arrays corresponding to that keyword.
         
         Args:
             **kwargs (dict): Keyword arguments, where each str_data is linked to 
@@ -352,7 +342,7 @@ class PlotSeaIce:
 
         # generate plot type name
         if hasattr(self, "plot_type") and self.plot_type:
-            if self.plot_type == 'seasonal_cycle':
+            if self.plot_type == 'seasonalcycle':
                 pl_type = 'Seasonal cycle of the '
             elif self.plot_type == 'timeseries':
                 pl_type = 'Time series of the '
@@ -381,7 +371,7 @@ class PlotSeaIce:
         
         self.num_regions = len(region_dict)
 
-        fig_height = 6 if self.plot_type == 'seasonal_cycle' else 10
+        fig_height = 6 if self.plot_type == 'seasonalcycle' else 10
 
         fig, axes = plt.subplots(nrows=self.num_regions, ncols=1, 
                                  figsize=(fig_height, 4 * self.num_regions), squeeze=False)
@@ -423,7 +413,7 @@ class PlotSeaIce:
                                           ax=ax,
                                           **kwargs)
 
-            elif self.plot_type == 'seasonal_cycle':
+            elif self.plot_type == 'seasonalcycle':
                 fig, ax = plot_seasonalcycle(data=monthly_models,
                                              ref_data=monthly_ref,
                                              std_data=monthly_std,
@@ -448,7 +438,7 @@ class PlotSeaIce:
         
         Args:
             plot_type (str, optional): Type of plot to generate. Options are 
-                `'timeseries'` or `'seasonal_cycle'`. Defaults to `'timeseries'`.
+                `'timeseries'` or `'seasonalcycle'`. Defaults to `'timeseries'`.
             save_pdf (bool, optional): Whether to save the figure as a PDF. Defaults to True.
             save_png (bool, optional): Whether to save the figure as a PNG. Defaults to True.
             style (str, optional): Override the plotting style. Default to None (which will get the style from config file or fallback to'aqua').
@@ -458,7 +448,7 @@ class PlotSeaIce:
 
         self.logger.info(f"Plotting sea ice {self.plot_type}")
 
-        valid_type_plots = ['timeseries', 'seasonal_cycle']
+        valid_type_plots = ['timeseries', 'seasonalcycle']
 
         if self.plot_type not in valid_type_plots:
             raise ValueError(f"Invalid plot_type. Allowed plots are: {valid_type_plots}")
@@ -502,7 +492,7 @@ class PlotSeaIce:
             diagnostic_product = self.plot_type
             
             extra_keys = {'method': self.method,
-                          'regions': '_'.join(region_dict.keys())}
+                          'region': '_'.join(region_dict.keys())}
             
             if save_pdf: 
                 output_saver.save_pdf(fig=fig, diagnostic_product=diagnostic_product, metadata=metadata,

@@ -37,7 +37,7 @@ class Reader():
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
                  regrid=None, regrid_method=None,
-                 areas=True, 
+                 areas=True,
                  streaming=False,
                  startdate=None, enddate=None,
                  rebuild=False, loglevel=None, nproc=4,
@@ -82,7 +82,7 @@ class Reader():
 
         Keyword Args: 
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
-            realization (int, optional): The ensemble realization number, included in the output filename.
+            realization (int, optional): The ensemble realization number.
             **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
 
         Returns:
@@ -153,7 +153,13 @@ class Reader():
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
+
+        # intake parameters
+        self.intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
+
         self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine)
+        self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
+        self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
@@ -200,6 +206,9 @@ class Reader():
             )
         self.tgt_fldstat = None
         if regrid:
+            if not areas:
+                self.logger.warning("Regridding requires info on areas. As areas can usually be generated with smmregrid, setting areas to 'True'")
+                areas = True
             self.tgt_fldstat = FldStat(
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
@@ -277,7 +286,7 @@ class Reader():
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
 
-        # generate destination areas, expost them and the associated space coordinates
+        # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
             if self.fix:
@@ -285,7 +294,7 @@ class Reader():
                 self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
-        # activste time statistics
+        # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
 
     def retrieve(self, var=None, level=None,
@@ -381,7 +390,7 @@ class Reader():
             if data is None or len(data.data_vars) == 0:
                 self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
 
-            if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+            if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
                 data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
@@ -395,8 +404,11 @@ class Reader():
         info_metadata = {'AQUA_model': self.model, 'AQUA_exp': self.exp,
                          'AQUA_source': self.source, 'AQUA_catalog': self.catalog,
                          'AQUA_version': aqua_version}
+        for kwarg in self.kwargs:
+            info_metadata[f'AQUA_{kwarg}'] = str(self.kwargs[kwarg])
+
         data = set_attrs(data, info_metadata)
-        
+
         return data
 
     def _add_index(self, data):
@@ -456,12 +468,21 @@ class Reader():
         data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
         return data
     
-    def fldmean(self, data, lon_limits=None, lat_limits=None, **kwargs):
-        """Fldmean average on the data. If regridded, it will use the target grid areas."""
 
+    def select_area(self, data, lon=None, lat=None, **kwargs):
+        """
+        Select a specific area from the dataset based on longitude and latitude ranges.
+        
+        Args:
+            lon (list, optional): Longitude limits for the area selection.
+            lat (list, optional): Latitude limits for the area selection.
+            **kwargs: Additional keyword arguments to pass to the selection function. (See AreaSelection)
+        """
+        # We're keeping the fldstat call separate, however at the current stage there is
+        # no difference in behavior between the src and tgt fldstat calls.
         if self._check_if_regridded(data):
-            return self.tgt_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
-        return self.src_fldstat.fldmean(data, lon_limits=lon_limits, lat_limits=lat_limits, **kwargs)
+            return self.tgt_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
+        return self.src_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
 
     def set_default(self):
         """Sets this reader as the default for the accessor."""
@@ -566,6 +587,40 @@ class Reader():
     #                             name, list(drop_coords))
     #     return data.drop_vars(drop_coords)
 
+    def _format_realization_reader_kwargs(self, kwargs: dict):
+        """
+        Reformats the realization string for the access to the reader
+        If realization is in the format rXX and the intake type is int, it converts to int XX.
+        """
+        realization = kwargs.get('realization')
+        if realization is None:
+            return kwargs
+
+        param_types = {p['name']: p['type'] for p in self.intake_user_parameters}
+        realization_type = param_types.get('realization')
+
+        if realization_type is None:
+            self.logger.info("'realization' not in intake parameters %s — removing it.", list(param_types))
+            kwargs.pop('realization', None)
+            return kwargs
+
+        # if type is string, return as is
+        if realization_type == 'str':
+            self.logger.debug('realization parameter is of type string, will use it is as is: %s', str(realization))
+            kwargs['realization'] = str(realization)
+            return kwargs
+
+        # if it is in the rXX format and the type is int, convert to int
+        if realization_type == 'int':
+            if isinstance(realization, str) and realization.startswith('r') and realization[1:].isdigit():
+                kwargs['realization'] = int(realization[1:])
+                self.logger.info('realization parameter converted from rXXX format to int: %d', kwargs['realization'])
+                return kwargs
+            if isinstance(realization, int):
+                return kwargs  # already an int
+
+        raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
+
     def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb'):
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
@@ -579,11 +634,7 @@ class Reader():
         Returns:
             A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
         """
-        esm_dict = self.esmcat.describe().get('user_parameters', {})
-        len_esmcat = len(esm_dict)
-
-        # This contains both the intake_vars and the esmcat parameters
-        params = [esm_dict[i]['name'] for i in range(len_esmcat)]
+        params = [elem.get('name') for elem in self.intake_user_parameters]
 
         # List comprehension to filter out kwargs that are not in the params
         filtered_kwargs = {k: v for k, v in kwargs.items() if k in params}
@@ -598,20 +649,26 @@ class Reader():
         intake_vars_list = list(intake_vars.keys())
         for param in params:
             if param not in filtered_list and param not in intake_vars_list:
-                self.logger.warning('%s parameter is required but is missing, setting to default %s',
-                                    param, esm_dict[params.index(param)]['default'])
-                allowed = esm_dict[params.index(param)].get('allowed', None)
+                element = self.intake_user_parameters[params.index(param)]
+                self.logger.info('%s parameter is required but is missing, setting to default %s',
+                                    param, element['default'])
+                allowed = element.get('allowed', None)
                 # It is possible to have intake_vars which are not specified for the machine,
                 # so that we still need to check whether there is an allowed list
                 if allowed is not None:
-                    self.logger.warning('Available values for %s are: %s', param, allowed)
-                filtered_kwargs[param] = esm_dict[params.index(param)]['default']
+                    self.logger.info('Available values for %s are: %s', param, allowed)
+                filtered_kwargs.update({param: element['default']})
 
         if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             # If the engine is fdb, we need to add the engine parameter
             if 'engine' not in filtered_kwargs:
-                filtered_kwargs['engine'] = engine
+                filtered_kwargs.update({'engine': engine})
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
+        # HACK: Keep chunking info if present as reader kwarg
+        if self.chunks is not None:
+            self.logger.warning('Keeping chunks=%s in the filtered kwargs', self.chunks)
+            filtered_kwargs.update({'chunks': self.chunks})
 
         return filtered_kwargs
 
@@ -682,9 +739,17 @@ class Reader():
 
         return final
 
-
     def reader_esm(self, esmcat, var):
-        """Reads intake-esm entry. Returns a dataset."""
+        """
+        Read intake-esm entry. Returns a dataset.
+
+        Args:
+            esmcat (intake_esm.core.esm_datastore): The intake-esm catalog datastore to read from.
+            var (str or list): Variable(s) to retrieve. If None, uses the query from catalog metadata.
+
+        Returns:
+            xarray.Dataset: The dataset retrieved from the intake-esm catalog.
+        """
         cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
         query = esmcat.metadata['query']
         if var:
@@ -916,7 +981,8 @@ class Reader():
         """
         Retrieve data without any additional processing.
         Making use of GridInspector, provide a sample data which has minimum
-        size by subselecting along variables and time dimensions 
+        size by subselecting along variables and time dimensions.
+        Uses Reader's startdate/enddate if set.
 
         Args:
             *args: arguments to be passed to retrieve
@@ -930,8 +996,9 @@ class Reader():
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, streaming=False,
-                                   startdate=None, enddate=None, preproc=None):
+        with self._temporary_attrs(aggregation=None, chunks=None, 
+                                   fix=False, streaming=False,
+                                   preproc=None):
             self.logger.debug('Getting sample data through _retrieve_plain()...')
             data = self.retrieve(history=False, *args, **kwargs)
 
@@ -965,10 +1032,84 @@ class Reader():
             data = data.isel({t: 0 for t in minimal_time})
         return data
 
-    def timstat(self, data, stat, freq=None, exclude_incomplete=False,
-             time_bounds=False, center_time=False):
+    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, **kwargs):
         """
-        Time averaging wrapper which is calling the timstat module
+        Field statistic wrapper which is calling the fldstat module from FldStat class. 
+        This method is exposing and providing field functions as Reader class 
+        methods through the wrapper accessors.
+
+        Args:
+            data (xr.DataArray or xarray.Dataset):  the input data
+            stat (str):  the statistical function to be applied
+            lon_limits (list, optional):  the longitude limits of the subset
+            lat_limits (list, optional):  the latitude limits of the subset
+            dims (list, optional):  the dimensions to average over
+            **kwargs: additional arguments passed to fldstat
+        """
+        # Handle regridding logic - use appropriate fldstat module
+        if self._check_if_regridded(data):
+            data = self.tgt_fldstat.fldstat(
+                data, stat=stat,
+                lon_limits=lon_limits, lat_limits=lat_limits,
+                dims=dims, **kwargs)
+        else:
+            data = self.src_fldstat.fldstat(
+                data, stat=stat,
+                lon_limits=lon_limits, lat_limits=lat_limits,
+                dims=dims, **kwargs)
+        
+        data.aqua.set_default(self)
+        return data
+    
+    # Field stats wrapper. If regridded, uses the target grid areas.
+    def fldmean(self, data, **kwargs):
+        """
+        Field mean wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='mean', **kwargs)
+
+    def fldmax(self, data, **kwargs):
+        """
+        Field max wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='max', **kwargs)
+    
+    def fldmin(self, data, **kwargs):
+        """
+        Field min wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='min', **kwargs)
+    
+    def fldstd(self, data, **kwargs):
+        """
+        Field standard deviation wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='std', **kwargs)
+    
+    def fldsum(self, data, **kwargs):
+        """
+        Field sum wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='sum', **kwargs)
+
+    def fldintg(self, data, **kwargs):
+        """
+        Field integral wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='integral', **kwargs)
+    
+    def fldarea(self, data, **kwargs):
+        """
+        Field area wrapper which is calling the fldstat module.
+        """
+        return self.fldstat(data, stat='areasum', **kwargs)
+
+    def timstat(self, data, stat, freq=None, exclude_incomplete=False,
+             time_bounds=False, center_time=False, **kwargs):
+        """
+        Time statistic wrapper which is calling the timstat module from TimStat class. 
+        This method is exposing and providing time functions as Reader class 
+        methods through the wrapper accessors.
 
         Args:
             data (xr.DataArray or xarray.Dataset):  the input data
@@ -977,36 +1118,58 @@ class Reader():
             exclude_incomplete (bool):  exclude incomplete time averages
             time_bounds (bool):  produce time bounds after averaging
             center_time (bool):  center time for averaging
+            kwargs:  additional arguments to be passed to the statistical function
         """
-
         data = self.timemodule.timstat(
             data, stat=stat, freq=freq,
             exclude_incomplete=exclude_incomplete,
             time_bounds=time_bounds,
-            center_time=center_time)
+            center_time=center_time, **kwargs)
         data.aqua.set_default(self) #accessor linking
         return data
     
     def timmean(self, data, **kwargs):
+        """
+        Time mean wrapper which is calling the timstat module.
+        """
         return self.timstat(data, stat='mean', **kwargs)
 
     def timmax(self, data, **kwargs):
+        """
+        Time max wrapper which is calling the timstat module.
+        """
         return self.timstat(data, stat='max', **kwargs)
     
     def timmin(self, data, **kwargs):
+       """
+       Time min wrapper which is calling the timstat module.
+       """
        return self.timstat(data, stat='min', **kwargs)
     
     def timstd(self, data, **kwargs):
+       """
+       Time standard deviation wrapper which is calling the timstat module.
+       """
        return self.timstat(data, stat='std', **kwargs)
     
     def timsum(self, data, **kwargs):
-       return self.timstat(data, stat='sum', **kwargs)
+        """
+        Time sum wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat='sum', **kwargs)
+
+    def timhist(self, data, **kwargs):
+        """
+        Wrapper for the histogram function, with added timstat functionality.
+        It accepts arguments of timstat to resample in time before computing the histogram.
+        """
+        return self.timstat(data, stat=histogram, **kwargs)
 
     def histogram(self, data, **kwargs):
-        """ Wrapper for the histogram function. """
-
+        """
+        Wrapper for the histogram function
+        """
         return histogram(data, **kwargs)
-
 
 def units_extra_definition():
     """Add units to the pint registry"""

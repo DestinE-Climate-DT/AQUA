@@ -25,6 +25,8 @@ templates_path = ["_templates"]
 autoclass_content = 'both'
 exclude_patterns = []
 
+# Mock imports for modules that are not available during docs build, can be expanded
+autodoc_mock_imports = ["dummy"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -42,4 +44,3 @@ sys.path.insert(0, os.path.relpath('../../diagnostics'))
 sys.path.insert(0, os.path.relpath('../../diagnostics/teleconnections'))
 sys.path.insert(0, os.path.relpath('../../diagnostics/ocean3d'))
 sys.path.insert(0, os.path.relpath('../../diagnostics/tropical_cyclones'))
-#sys.path.insert(0, os.path.relpath('../../diagnostics/ensemble'))

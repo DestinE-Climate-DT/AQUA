@@ -44,6 +44,7 @@ class Hovmoller(Diagnostic):
             regrid (str, optional): Regridding method.
             startdate (str, optional): Start date for data retrieval.
             enddate (str, optional): End date for data retrieval.
+            diagnostic_name (str, optional): Name of the diagnostic for filenames. Defaults to "oceandrift".
             loglevel (str, optional): Logging level. Defaults to "WARNING".
         """
         super().__init__(
@@ -90,10 +91,14 @@ class Hovmoller(Diagnostic):
         self.logger.info("Running Hovmoller diagram generation")
         # This will populate self.data
         super().retrieve(var=var, reader_kwargs=reader_kwargs, months_required=2)
+        # HACK: some LRA datasets have levels in 'NEMO model layers' (also non NEMO models due to multi-IO)
+        if self.data.level.attrs['units']=='NEMO model layers':
+            self.data.level.attrs['units'] = 'm'
+        super()._check_data(data= self.data.level, var='level', units='m' )
         self.logger.debug("Data retrieved successfully")
         # If a region is specified, apply area selection to self.data
         if region:
-            self.logger.info(f"Selecting region: {region} for diagnostic 'ocean3d'.")
+            self.logger.info(f"Selecting region: {region} for diagnostic '{self.diagnostic_name}'.")
             res_dict = super()._select_region(
                 data=self.data, region=region, diagnostic="ocean3d", drop=True
             )
@@ -107,7 +112,8 @@ class Hovmoller(Diagnostic):
         self.stacked_data = self.compute_hovmoller(
             dim_mean=dim_mean, anomaly_ref=anomaly_ref
         )
-        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=region)
+        
+        self.save_netcdf(outputdir=outputdir, rebuild=rebuild, region=self.region)
         self.logger.info("Hovmoller diagram saved to netCDF file")
 
     def _get_anomaly(
@@ -267,5 +273,6 @@ class Hovmoller(Diagnostic):
                 diagnostic_product=f"{diagnostic_product}",
                 outputdir=outputdir,
                 rebuild=rebuild,
-                extra_keys={"region": region, 'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
+                extra_keys={"region": self.region,
+                            'ocean_drift_type': processed_data.attrs['AQUA_ocean_drift_type']}
             )

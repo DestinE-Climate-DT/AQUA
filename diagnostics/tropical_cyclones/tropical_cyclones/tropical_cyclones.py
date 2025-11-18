@@ -28,7 +28,7 @@ class TCs(DetectNodes, StitchNodes):
                  stream_step=1, stream_unit='days', stream_startdate=None,
                  loglevel='INFO',
                  orography=False,
-                 nproc=1):
+                 nproc=1, write_fullres=False):
         """
         Constructor method that initializes the class attributes based on the
         input arguments or tdict dictionary.
@@ -50,6 +50,7 @@ class TCs(DetectNodes, StitchNodes):
             stream_unit (str): The unit of stream_step in streaming mode. Default is 'days'.
             stream_startdate (str): The start date for processing the TCs diagnostic in streaming mode.
             loglevel (str): The logging level for the TCs diagnostic. Default is 'INFO'.
+            write_fullres (bool): A flag indicating whether to write full-resolution output files. Default is False.
 
         Returns:
             A TCs object
@@ -75,6 +76,7 @@ class TCs(DetectNodes, StitchNodes):
             self.startdate = tdict['time']['startdate']
             self.enddate = tdict['time']['enddate']
             self.orography = orography
+            self.write_fullres = tdict["detect"].get("write_fullres", False)
             if self.orography:
                 self.orography_file = os.path.join(tdict['orography']['file_path'], tdict['orography']['file_name'])
         else:
@@ -95,6 +97,9 @@ class TCs(DetectNodes, StitchNodes):
             self.frequency = frequency
             self.startdate = startdate
             self.enddate = enddate
+            self.write_fullres = write_fullres
+
+        self.orog = None
 
         self.streaming = streaming
         if self.streaming:
@@ -107,6 +112,8 @@ class TCs(DetectNodes, StitchNodes):
             self.paths['tmpdir'], self.model, self.exp)
         self.paths['fulldir'] = os.path.join(
             self.paths['fulldir'], self.model, self.exp)
+        self.paths['trackdir'] = os.path.join(
+            self.paths['trackdir'], self.model, self.exp)
 
         for path in self.paths:
             os.makedirs(self.paths[path], exist_ok=True)
@@ -145,14 +152,15 @@ class TCs(DetectNodes, StitchNodes):
             2*tdict['stitch']['n_days_ext']
         last_run_stitch = self.stream_startdate
 
-
         # loop to simulate streaming
-        while len(np.unique(self.data2d.time.dt.day)) == streamstep_n:   
+        # while len(np.unique(self.data2d.time.dt.day)) == streamstep_n:   
+        while self.data_retrieve():
             self.logger.warning(
-                "New streaming from %s to %s", pd.to_datetime(self.stream_startdate), pd.to_datetime(self.stream_enddate))
+                "Streaming from %s to %s", pd.to_datetime(self.stream_startdate), pd.to_datetime(self.stream_enddate))
 
             # retrieve data and call to Tempest DetectNodes
-            self.data_retrieve()
+            # self.data_retrieve()
+
             self.detect_nodes_zoomin()
 
             # add one hour since time ends at 23
@@ -187,7 +195,26 @@ class TCs(DetectNodes, StitchNodes):
         if self.streaming:
             self.logger.warning(
                 'Initialised streaming for %s %s starting on %s', self.stream_step, self.stream_units, pd.to_datetime(self.stream_startdate))
-        if self.model in 'IFS':
+        
+        if self.model == 'ERA5':
+            self.varlist2d = ['msl', '10u', '10v']
+
+            self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            self.varlist3d = ['z']
+            self.reader3d = Reader(model=self.model, exp=self.exp, source=self.source3d,
+                                         regrid=self.lowgrid,
+                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                         startdate=self.startdate, enddate=self.enddate)
+            if self.write_fullres:
+                self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                            regrid=self.highgrid,
+                                            streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                            startdate=self.startdate, enddate=self.enddate)
+            
+        elif self.model == 'IFS':
             self.varlist2d = ['msl', '10u', '10v', 'z']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
                                          regrid=self.lowgrid,
@@ -198,11 +225,12 @@ class TCs(DetectNodes, StitchNodes):
                                          regrid=self.lowgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
-            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
-                                         regrid=self.highgrid,
-                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
-                                         startdate=self.startdate, enddate=self.enddate)
-            
+            if self.write_fullres:
+                self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                             regrid=self.highgrid,
+                                             streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                             startdate=self.startdate, enddate=self.enddate)
+
         elif self.model in ['IFS-NEMO', 'IFS-FESOM']:
             self.varlist2d = ['msl', '10u', '10v']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
@@ -214,12 +242,13 @@ class TCs(DetectNodes, StitchNodes):
                                          regrid=self.lowgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
-            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
-                                         regrid=self.highgrid,
-                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
-                                         startdate=self.startdate, enddate=self.enddate)
+            if self.write_fullres:
+                self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                            regrid=self.highgrid,
+                                            streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                             startdate=self.startdate, enddate=self.enddate)
 
-        elif self.model in 'ICON':
+        elif self.model == 'ICON':
             self.varlist2d = ['msl', '10u', '10v']
             self.reader2d = Reader(model=self.model, exp=self.exp, source=self.source2d,
                                          regrid=self.lowgrid,
@@ -230,10 +259,11 @@ class TCs(DetectNodes, StitchNodes):
                                          regrid=self.lowgrid,
                                          streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
                                          startdate=self.startdate, enddate=self.enddate)
-            self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
-                                         regrid=self.highgrid,
-                                         streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
-                                         startdate=self.startdate, enddate=self.enddate)
+            if self.write_fullres:
+                self.reader_fullres = Reader(model=self.model, exp=self.exp, source=self.source2d,
+                                             regrid=self.highgrid,
+                                            streaming=self.streaming, aggregation=self.stream_step, loglevel=self.loglevel,
+                                            startdate=self.startdate, enddate=self.enddate)
         else:
             raise ValueError(f'Model {self.model} not supported')
 
@@ -252,25 +282,17 @@ class TCs(DetectNodes, StitchNodes):
         # now retrieve 2d and 3d data needed
 
         self.data2d = self.reader2d.retrieve(var=self.varlist2d)
-        if self.model == "IFS-FESOM": # plev are in Pa
-            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[30000, 50000])
+
+        if self.model in ["ERA5", "IFS-FESOM"]: # plev are in Pa
+            self.data3d = self.reader3d.retrieve(var=self.varlist3d)
+            if self.data3d is not None:
+                self.data3d = self.data3d.sel(plev=[30000, 50000], method="nearest")
         else: # plev are in hPa
-            self.data3d = self.reader3d.retrieve(var=self.varlist3d, level=[300, 500])
-        self.fullres = self.reader_fullres.retrieve(var=self.var2store)
-        
-        # in case data2d is empty, we reached the end of the data
-        if isinstance(self.data2d, type(None)):
-            self.logger.warning("End of data/streaming")
-            raise SystemExit
-
-        if self.streaming:
-            self.stream_enddate = self.data2d.time[-1].values
-            self.stream_startdate = self.data2d.time[0].values
-
+            self.data3d = self.reader3d.retrieve(var=self.varlist3d)
+            if self.data3d is not None:
+                self.data3d = self.data3d.sel(plev=[300, 500], method="nearest")
             
-        #if orography is provided in a file access it without reader
-            
-        if self.orography:
+        if self.orography and not self.orog:  # only if not already done
             self.logger.info("orography retrieved from file")
             self.orog = xr.open_dataset(self.orography_file)
             if self.model == "IFS" or self.model == "IFS-NEMO" or self.model == "IFS-FESOM":
@@ -280,9 +302,23 @@ class TCs(DetectNodes, StitchNodes):
             elif self.model == "ICON":
                 self.logger.info(f"orography file for {self.model} is {self.orography_file}")
                 self.orog = self.orog.rename({'oromea': 'zs'})
+            elif self.model == "ERA5":
+                self.logger.info(f"orography file for {self.model} is {self.orography_file}")
+                self.orog = self.orog.rename({'z': 'zs'})
+                self.orog = self.orog.rename({'longitude': 'lon', 'latitude': 'lat'})
             else:
                 raise ValueError(f'Orography variable of {self.model} not recognised!')
 
+        if self.data2d is not None and self.data3d is not None:
+            if self.write_fullres:
+                self.fullres = self.reader_fullres.retrieve(var=self.var2store)
+
+            if self.streaming:
+                self.stream_enddate = self.data2d.time[-1].values
+                self.stream_startdate = self.data2d.time[0].values
+            return True
+        else:
+            return False
 
     def store_fullres_field(self, xfield, nodes):
         """

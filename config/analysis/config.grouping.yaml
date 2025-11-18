@@ -1,0 +1,50 @@
+# Configuration file used by make_contents to determine dashboard grouping
+
+diagnostics:
+    Climate metrics, Gregory plot: [climate_metrics.gregory, radiation.gregory., global_time_series_gregory, timeseries.gregory, gregory_plot_ifs, gregory_plot_icon]
+    Climate metrics, performance indices: [climate_metrics.performance_indices, ecmean.performance_indices., PI4]
+    Climate metrics, global biases: [climate_metrics.global_mean, ecmean.global_mean., global_mean_]
+
+    Radiation, boxplot: [radiation_toa.boxplot, radiation_surface.boxplot, radiation.boxplot, boxplot_]
+    Radiation, timeseries: [radiation_toa.timeseries, radiation_surface.timeseries, radiation.timeseries., timeseries_ifs, timeseries_icon]
+    Radiation, annual bias: [radiation_toa.bias, radiation_surface.bias, radiation.bias., toa_mean_biases_]
+    Radiation, seasonal bias: [radiation_toa.seasonal_bias, radiation_surface.seasonal_bias, radiation.seasonal_bias]
+
+    Atmosphere 2D, time series: [atmosphere2d.timeseries, atmosphere.timeseries, global_time_series_timeseries, global_time_series_IFS]
+    Atmosphere 2D, seasonal cycle: [atmosphere2d.seasonalcycles, atmosphere.seasonalcycles, global_time_series_seasonalcycle, timeseries.seasonalcycle]
+    Atmosphere 2D, annual bias: [atmosphere2d.bias, "globalbiases.bias*[!0].png", global_biases.total_bias_map, global_biases.seasonal_bias_map]
+    Atmosphere 2D, seasonal bias: [atmosphere2d.seasonal_bias, "globalbiases.seasonal_bias*[!0].png", Seasonal_Bias_Plot, atmglobalmean.seasonal_bias]
+    Atmosphere 2D, profiles: [atmosphere2d.zonal_profile, atmosphere2d.seasonal_zonal_profile]
+
+    Atmosphere 3D, vertical bias: [atmosphere3d.vertical_bias, global_biases.vertical_bias, globalbiases.vertical_bias, atmglobalmean.vertical_bias, Vertical_biases]
+    Atmosphere 3D, annual bias: [atmosphere3d.bias, "globalbiases.bias*0.png"]
+    Atmosphere 3D, seasonal bias: [atmosphere3d.seasonal_bias, "globalbiases.seasonal_bias*0.png"]
+
+    Water cycle, timeseries: water_cycle.timeseries
+    Water cycle, seasonal cycle: water_cycle.seasonalcycles
+    Water cycle, annual bias: water_cycle.bias
+    Water cycle, seasonal bias: water_cycle.seasonal_bias
+    Water cycle, profiles: [water_cycle.zonal_profile,  water_cycle.seasonal_zonal_profile]
+    Water cycle, tropical rainfall: trop_rainfall
+
+    Teleconnections, NAO: [teleconnections.nao, teleconnections.NAO, nao.]
+    Teleconnections, ENSO: [teleconnections.enso, teleconnections.ENSO, enso.]
+
+    Ocean 2D, time series: ocean2d.timeseries, ocean.timeseries
+    Ocean 2D, annual bias: ocean2d.bias
+    Ocean 2D, seasonal bias: ocean2d.seasonal_bias
+
+    Ocean 3D, time series: [ocean3d.timeseries, monthly_time_series_, Ocean_time_series, ea_time_series, _time_series_arctic_ocean, _time_series_atlantic_ocean, _time_series_global_ocean, _time_series_indian_ocean, _time_series_pacific_ocean, _time_series_southern_ocean]
+    Ocean 3D, Hovmöller: [ocean3d.hovmoller, _hovmoller_plot]
+    Ocean 3D, trends: [ocean3d.multilevel_trend, ocean3d.trend, zonal_mean_trend, multilevel_t_s_trend]
+    Ocean 3D, stratification: [ocean3d.stratification,  _stratification_]
+    Ocean 3D, zonal mean: [ocean3d.zonal_mean]
+    Ocean 3D, mixed layer depth: [ocean3d.mld, MLD., MLD_]
+
+    SSH variability: ssh.
+
+    Sea Ice, time series: [seaice.timeseries, PlotSeaIce.timeseries]
+    Sea Ice, seasonal cycle: [seaice.seasonalcycle, seaice.seasonal_cycles, PlotSeaIce.seasonalcycle]
+    Sea Ice, bias: [seaice.bias, PlotSeaIce.bias]
+
+    Global maps: [Statistics_maps, atmglobalmean.statistics_maps]  # these apply only to old results, not produced anymore by AQUA

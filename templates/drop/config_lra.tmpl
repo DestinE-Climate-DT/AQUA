@@ -1,0 +1,42 @@
+# Configuration template for standard LRA generation (1° monthly resolution)
+# This is the simplified template for basic LRA usage
+
+# Target configuration - standard LRA settings
+target:
+  resolution: r100      # 1° resolution (standard LRA)
+  frequency: monthly    # monthly frequency (standard LRA)
+  catalog: {{ catalog }}
+  startdate: {{ startdate }}
+  enddate: {{ enddate }}
+
+# Output paths
+paths:
+  outdir: {{ outputdir }}
+  tmpdir: {{ tmpdir }}
+
+# Basic options
+options: 
+  loglevel: INFO
+  # Set to True to create Zarr reference files for faster access
+  zarr: False
+  verify_zarr: False
+
+# SLURM job definitions
+slurm:
+  partition: {{ partition }}
+  username: {{ username }}
+  account: {{ project }}
+  time: {{ walltime }}
+  mem: {{ memory }}
+
+# Data configuration
+# Specify model-experiment-source hierarchy with variables to process
+data:
+  ICON:
+    historical-1990:
+      hourly-hpz10-atm2d:
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc']
+        workers: 12
+      hourly-hpz10-atm3d:
+        vars: ['q', 't', 'u', 'v']
+        workers: 6

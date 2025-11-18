@@ -25,7 +25,7 @@ Welcome to AQUA's documentation!
    new_diagnostics/index
    adding_data
    catalog_generator
-   lra
+   drop
    aqua-analysis
    dashboard
    examples_tutorials

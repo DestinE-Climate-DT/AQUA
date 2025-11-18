@@ -2,10 +2,11 @@ import os
 import pytest
 import xarray as xr
 from aqua.diagnostics.timeseries import SeasonalCycles, PlotSeasonalCycles
+from conftest import APPROX_REL, DPI, LOGLEVEL
 
 # pytest approximation, to bear with different machines
-approx_rel = 1e-4
-loglevel = 'DEBUG'
+approx_rel = APPROX_REL
+loglevel = LOGLEVEL
 
 
 @pytest.mark.diagnostics
@@ -22,14 +23,14 @@ class TestSeasonalCycles:
         self.var = 'tcc'
         self.region = 'tropics'
         self.regrid = 'r100'
-        self.std_startdate = '1990-01-01'
-        self.std_enddate = '1991-12-31'
+        self.startdate = '1990-01-01'
+        self.enddate = '1991-12-31'
 
     def test_no_region(self, tmp_path):
         sc = SeasonalCycles(diagnostic_name=self.diagnostic_name,
                             catalog=self.catalog, model=self.model, exp=self.exp,
                             source=self.source, regrid=self.regrid,
-                            std_startdate=self.std_startdate, std_enddate=self.std_enddate,
+                            startdate=self.startdate, enddate=self.enddate,
                             loglevel=loglevel)
         
         assert sc.lon_limits is None
@@ -53,7 +54,7 @@ class TestSeasonalCycles:
         plt = PlotSeasonalCycles(diagnostic_name=self.diagnostic_name,
                                  monthly_data = sc.monthly, ref_monthly_data = sc.monthly,
                                  std_monthly_data = sc.std_monthly, loglevel=loglevel)
-        plt.run(outputdir=tmp_path)
+        plt.run(outputdir=tmp_path, dpi=DPI)
 
         filename = f'{self.diagnostic_name}.seasonalcycles.{self.catalog}.{self.model}.{self.exp}.r1.{self.catalog}.{self.model}.{self.exp}.{self.var}.png'
         file = os.path.join(tmp_path, 'png', filename)

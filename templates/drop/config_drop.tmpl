@@ -1,0 +1,114 @@
+# Advanced configuration template for DROP (Data Reduction OPerator)
+# This template showcases all DROP capabilities including:
+# - Custom resolutions and frequencies
+# - Regional extraction
+# - Statistical computations beyond mean
+# - Advanced processing options
+
+# Target configuration
+target:
+  resolution: r100      # Options: r100 (1°), r25 (0.25°), r360 (0.25°), native, or custom
+  frequency: monthly    # Options: monthly, daily, 3hourly, 6hourly, etc.
+  catalog: {{ catalog }}
+  startdate: {{ startdate }}  # Optional: starting date for Drop analysis
+  enddate: {{ enddate }}      # Optiona: ending date for Drop analysis
+  
+  # Optional: Regional selection
+  # Uncomment to extract specific regions
+  #region:
+  #  name: Europe        # Region identifier
+  #  lat: [35, 70]       # Latitude range [min, max]
+  #  lon: [-10, 40]      # Longitude range [min, max]
+  
+  # Optional: Statistical operator (default: mean)
+  # Options: mean, std, max, min
+  #stat: mean
+
+# Output paths
+paths:
+  outdir: {{ outputdir }}
+  tmpdir: {{ tmpdir }}
+
+# Processing options
+options: 
+  loglevel: INFO
+  
+  # Zarr reference creation for faster data access
+  zarr: False
+  verify_zarr: False
+  
+  # Overwrite existing files
+  overwrite: False
+  
+  # Exclude incomplete time chunks when averaging
+  exclude_incomplete: False
+  
+  # Rebuild regridding weights
+  rebuild: False
+  
+  # Compacting method: xarray, cdo, or null for no compacting
+  compact: xarray
+  
+  # CDO options (used if compact: cdo)
+  cdo_options: ["-f", "nc4", "-z", "zip_1"]
+  
+  # Performance monitoring (creates HTML report)
+  performance_reporting: False
+
+# SLURM job definitions
+slurm:
+  partition: {{ partition }}
+  username: {{ username }}
+  account: {{ project }}
+  time: {{ walltime }}
+  mem: {{ memory }}
+
+# Data configuration with advanced options
+data:
+  ICON:
+    historical-1990:
+      hourly-hpz10-atm2d:
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
+               'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
+        workers: 12
+        
+        # Optional: process specific realizations
+        #realizations: [0, 1, 2] #process only r0, r1 and r2 (if supported by the catalog)
+        
+        # Optional: zoom level (if supported by catalog)
+        #zoom: 8
+        
+        # Optional: custom resolution for this source (overrides target.resolution)
+        #resolution: r25
+        
+        # Optional: custom frequency for this source (overrides target.frequency)
+        #frequency: daily
+        
+        # Optional: custom statistic for this source (overrides target.stat)
+        #stat: std
+        
+      hourly-hpz10-atm3d:
+        vars: ['q', 't', 'u', 'v']
+        workers: 6
+        
+      daily-hpz10-oce2d:
+        vars: ['avg_sithick', 'avg_siconc']
+        workers: 16
+        
+      daily-hpz10-oce3d:
+        vars: ['avg_thetao', 'avg_so']
+        workers: 10
+
+# Example: Multiple experiments with different configurations
+#  IFS-NEMO:
+#    historical-1950:
+#      daily:
+#        vars: ['2t', 'tp']
+#        workers: 8
+#        # Regional European extraction with daily maxima
+#        region:
+#          name: Europe
+#          lat: [35, 70]
+#          lon: [-10, 40]
+#        stat: max
+#        frequency: daily

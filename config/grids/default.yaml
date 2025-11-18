@@ -24,6 +24,10 @@ grids:
     space_coord: [lon, lat]
   longitude-latitude:
     space_coord: [longitude, latitude]
+  lon-lat-r100:
+    path:
+      2d: '{{ grids }}/lonlat/r100_grid.nc'
+    space_coord: [lon, lat]
 
   # target regrid
   # Regular lon/lat grids

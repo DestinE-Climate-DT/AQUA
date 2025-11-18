@@ -26,6 +26,10 @@ def compute_mld_cont(rho, loglevel="WARNING"):
     xarray.DataArray
         Estimated MLD with same horizontal dimensions as `rho`.
     """
+    # HACK: ensure level units are in meters, not model layers
+    if rho["level"].attrs["units"] == "NEMO model layers":
+        rho["level"].attrs["units"] = "m"
+
     logger = log_configure(loglevel, "compute_mld_cont")
     logger.info("Starting computation of mixed layer depth (MLD) from density field.")
     # Identify the first level to represent the ocean surface
@@ -72,4 +76,15 @@ def compute_mld_cont(rho, loglevel="WARNING"):
     mld = xr.ufuncs.fmin(mld, depth)
     mld = mld.rename({"rho": "mld"})
     logger.info("MLD computation completed and variable renamed.")
+    # adding important attributes
+    aqua_dict = {
+        key: rho.rho.attrs[key]
+        for key in rho.rho.attrs.keys()
+        if key.startswith("AQUA")
+    }
+    mld.mld.attrs.update(aqua_dict)
+
+    mld.mld.attrs["long_name"] = "Mixed Layer Depth"
+    mld.mld.attrs["standard_name"] = "ocean_mixed_layer_depth"
+    # mld.mld.attrs["units"] = "m"
     return mld
