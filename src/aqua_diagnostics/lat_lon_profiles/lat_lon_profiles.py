@@ -8,8 +8,15 @@ class LatLonProfiles(Diagnostic):
 	Class to compute lat-lon profiles of a variable over a specified region.
 	It retrieves the data from the catalog, computes the mean and standard deviation
 	over the specified period and saves the results to netcdf files.
-	The class evaluates a seasonal frequency and the entire period (longterm).
-	It supports two different types of means (zonal or meridional).
+
+	Supported Frequencies:
+		- 'seasonal': Computes seasonal means (DJF, MAM, JJA, SON)
+		- 'longterm': Computes the temporal mean over the entire analysis period
+
+    Supported Mean Types:
+        - 'zonal': Average over longitude, producing latitude profiles
+        - 'meridional': Average over latitude, producing longitude profilesThe class evaluates a seasonal frequency and the entire period (longterm).
+		
 	"""
 	def __init__(self, model: str, exp: str, source: str, 
 			  	 catalog: str = None, regrid: str = None,
@@ -353,7 +360,9 @@ class LatLonProfiles(Diagnostic):
 				units (str): The units of the variable.
 				standard_name (str): The standard name of the variable.
 				std (bool): Whether to compute the standard deviation.
-				freq (list): The frequencies to compute ('seasonal', 'longterm').
+				freq (list): The frequencies to compute. Options:
+					- 'seasonal': Seasonal means (DJF, MAM, JJA, SON)
+					- 'longterm': Long-term mean over the entire analysis period
 				exclude_incomplete (bool): Whether to exclude incomplete time periods.
 				center_time (bool): Whether to center the time coordinate.
 				box_brd (bool): Whether to include the box boundaries.
