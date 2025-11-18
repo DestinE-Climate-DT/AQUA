@@ -403,6 +403,65 @@ AQUA diagnostics complete list:
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1696)
 - Diagnostic core: A common parser and fuctions to open/close the dask cluster are provided (#1703)
 
+## [v0.13.9]
+
+Hotfixes:
+- Added catgen support for storyline experiments (#2305)
+
+## [v0.13.8]
+
+Hotfixes:
+- Ocean3d: Fix for weighted mean calculation (#2242)
+
+## [v0.13.7]
+
+- Pinning specific version of dask/xarray/numpy (#1974)
+- Fix for time axis in container timeseries plots (#1973)
+
+## [v0.13.6]
+
+Hotfixes:
+- AQUA console uses token as in main to access the catalog repository without authentication (#1954)
+- Data Portfolio tag specified in tests in order to keep testing the operational tag (#1954)
+- Cartopy offline maps available due to MN5 missing internet connection (#1954)
+- Hardcode regrid='r100' in setup_checker (#1945)
+- Fix for make_content failing to accept expected argument (#1898)
+- Update experiments.yaml needed by the dashboard (#1951)
+
+## [v0.13.5]
+
+Hotfixes:
+- Fix for Healpix zoom 7 grid for ICON R02B08 native oceanic grid, missing in yaml files (#1821)
+- Fix for Tropical Rainfall diagnostic to work with new E cycle and O cycle machines (#1814)
+- Fix for target tcc grib code (#1812)
+- Fix for the Timeseries diagnostic which was not creating a ylabel in the plot for some variables (#1783)
+
+AQUA core complete list:
+- Update GSV to 2.9.6 (#1813)
+
+## [v0.13.4]
+
+Hotfixes:
+- Fix for the `fdb_info_file` feature, that now can have a `data` only block when no data is on the bridge (#1761)
+
+## [v0.13.3]
+
+Hotfixes:
+- Fix for the `aqua-analysis` that was changing the AQUA_CONFIG environment variable with a wrong path (#1752)
+- Fix catalog generator when fdb_info_file is used (#1742)
+
+## [v0.13.2]
+
+AQUA core complete list:
+- Fix push_analysis options and aqua_analysis config paths (#1731)
+- Enable tests for the operational v0.13-operational branch (#1730)
+- push_s3 compatibility with boto3>=1.36.0 (#1709)
+- Enable the option to read FDB data info from file, and refactor start/end hpc/bridge dates handling (#1656)
+
+AQUA diagnostics complete list:
+- Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1697)
+- Tropical Rainfall: Update of the precomputed histograms paths for lumi and MN5 operational (#1702)
+
 ## [v0.13.1]
 
 Main changes are:
@@ -1213,6 +1272,14 @@ Documentations is completed and notebooks are working.
 [v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
 [v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0
 [v0.14.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.14.0
+[v0.13.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.8...v0.13.9
+[v0.13.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.7...v0.13.8
+[v0.13.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.6...v0.13.7
+[v0.13.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.5...v0.13.6
+[v0.13.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.4...v0.13.5
+[v0.13.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.3...v0.13.4
+[v0.13.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.2...v0.13.3
+[v0.13.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.13.2
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
 [v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0
 [v0.13-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-alpha...v0.13-beta
