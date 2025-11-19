@@ -277,7 +277,7 @@ if __name__ == '__main__':
             diagnostic_name =  ecmean_config.get(diagnostic, 'ecmean').get('diagnostic_name', 'ecmean')
             outputsaver = OutputSaver(diagnostic=diagnostic_name,
                                   catalog=catalog, model=model, exp=exp,
-                                  outputdir=outputdir, loglevel=loglevel)
+                                  outputdir=outputdir, realization=realization, loglevel=loglevel)
 
             # setting options from configuration files
             atm_vars = ecmean_config[diagnostic]['atm_vars']

@@ -11,7 +11,7 @@ from .graphics import get_nside, get_npix, healpix_resample
 from .io_util import files_exist, create_folder, file_is_complete, open_image
 from .io_util import add_pdf_metadata, add_png_metadata, update_metadata
 from .projections import get_projection
-from .realizations import format_realization, DEFAULT_REALIZATION
+from .realizations import format_realization, get_realizations, DEFAULT_REALIZATION
 from .sci_util import lon_to_180, lon_to_360, check_coordinates
 from .sci_util import select_season, merge_attrs, find_vert_coord
 from .string import generate_random_string, strlist_to_phrase, lat_to_phrase
@@ -34,7 +34,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'files_exist', 'create_folder', 'file_is_complete', 'open_image', 
            'add_pdf_metadata', 'add_png_metadata', 'update_metadata',
            'get_projection',
-           'format_realization', 'DEFAULT_REALIZATION',
+           'format_realization', 'get_realizations', 'DEFAULT_REALIZATION',
            'lon_to_180', 'lon_to_360', 'check_coordinates',
            'select_season', 'merge_attrs', 'find_vert_coord',
            'generate_random_string', 'strlist_to_phrase', 'lat_to_phrase', 
