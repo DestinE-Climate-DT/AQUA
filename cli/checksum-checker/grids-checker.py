@@ -3,7 +3,8 @@
 
 import os
 import argparse
-from aqua.util import ConfigPath, load_yaml
+from aqua.configurer import ConfigPath
+from aqua.util import load_yaml
 from aqua.util.checksum import generate_checksums, verify_checksums
 
 # default grids to be scanned by the grids-checker tool

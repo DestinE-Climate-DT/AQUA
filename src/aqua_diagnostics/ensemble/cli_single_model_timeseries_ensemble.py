@@ -11,14 +11,12 @@ import sys
 from aqua import Reader
 from aqua.diagnostics import EnsembleTimeseries, PlotEnsembleTimeseries, reader_retrieve_and_merge, extract_realizations
 from aqua.diagnostics.core import (
-    close_cluster,
-    load_diagnostic_config,
-    merge_config_args,
-    open_cluster,
-    template_parse_arguments,
+    close_cluster, load_diagnostic_config, merge_config_args,
+    open_cluster, template_parse_arguments,
 )
 from aqua.logger import log_configure
-from aqua.util import get_arg, ConfigPath
+from aqua.util import get_arg
+from aqua.configurer import ConfigPath
 
 def parse_arguments(args):
     """Parse command-line arguments for EnsembleTimeseries diagnostic.

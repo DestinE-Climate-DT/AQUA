@@ -2,7 +2,7 @@ import os
 import xarray as xr
 from metpy.units import units
 from aqua.logger import log_configure, log_history
-from .config import ConfigPath
+from aqua.configurer import ConfigPath
 from .yaml import load_yaml
 
 

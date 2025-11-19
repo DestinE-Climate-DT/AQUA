@@ -6,7 +6,8 @@ AQUA analysis module for running diagnostics and handling configurations.
 import os
 import sys
 import subprocess
-from aqua.util import create_folder, ConfigPath, to_list
+from aqua.util import create_folder, to_list
+from aqua.configurer import ConfigPath
 from aqua import __path__ as pypath
 
 

@@ -14,7 +14,6 @@ The grids are defined in specific yaml files in the grids folder of the installa
 grids:
   hpz5-nested:
     space_coord: ["ncells"]
-    vert_coord: ["2d"]
     path: '{{ grids }}/HealPix/hpz5_nested_atm.nc'
 ```
 

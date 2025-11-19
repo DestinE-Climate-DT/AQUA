@@ -10,17 +10,23 @@ ClimateDT workflow modifications:
 Unreleased in the current development version (target v0.20.0):
 - Parallelise tests execution using `pytest-xdist` module, centralise common fixtures to speed up tests execution time (#2402)
 
-ClimateDT workflow modifications:
-
 AQUA core complete list:
+- Expose `ConfigPath`and separate the resolver `ConfigLocator`. Add catalog utility `show_catalog_content` (#2469)
+- Simplify grid files by removing `vert_coord` which is detected from the path dictionary (#2276)
+- Remove some warnings and adapt the code to the incoming standards (#2436)
 - Fix DROP CLI support for enddate, startdate and catalog (#2472)
 - Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2450)
 - eORCA025 nested grid for o25.1 and o26.1 support (#2459)
 - Safe dumping yaml with a temporary file and SoftFileLock (#2445)
 - Add filelock when modifying catalog sources (#2432)
+- Updated SSH diagnotic (#1842)
 
 AQUA diagnostics complete list:
-- Homogenise sea ice CLI to centralized `DiagnosticCLI` (#2470)
+- Introduce a centralised `DiagnosticCLI` to control CLI for diagnostics in a common way, including dask cluster and config file access (#2360, #2470, #2466)
+- Biases: results are stored in memory before netcdf saving and plotting (#2481)
+- LatLonProfiles: Documentation (#2442)
+- Include the correct realization in output names for all diagnostics (#2457)
+- Histogram: new Histogram diagnostic tool (#2372)
 - Tropical Cyclones: restore TC diagnostic functionality (#2206)
 - Add unique random key to dask graph tokens for each CLI (#2462)
 - Ocean3D: removed old diagnostic files (#2467)
@@ -28,6 +34,7 @@ AQUA diagnostics complete list:
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2433)
 - Area selection full support for regions across the dateline (#2430, #2434)
 - LatLonProfiles: Documentation (#2442), adjustments on lines plotting order (#2431) and AQUA_realization management (#2421)
+- Updated SSH diagnotic (#1842)
 
 ## [v0.19.0]
 
@@ -58,6 +65,8 @@ AQUA core complete list:
 - AQUA analysis now can receive ``startdate`` and ``enddate`` (#2368, #2423)
 
 AQUA diagnostics complete list:
+- Tropical Rainfall: speedup histogram computation and other fixes (#2390, #2375)
+- Ensemble: CLI for single experiment ensemble analysis for timeseries and climatology (#2387, #2393)
 - Cleanup diagnostic code, remove lower() and replace() for regions (#2422)
 - Radiation surface and Gregory: update to CERES EBAF 4.2.1 (#2424)
 - Ocean3D diagnostics: improve description, titles and notebook (#2397, #2414)
@@ -401,6 +410,66 @@ AQUA diagnostics complete list:
 - Global bias: Handling plev and using scientific notation in contour plots (#1649)
 - Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1696)
 - Diagnostic core: A common parser and fuctions to open/close the dask cluster are provided (#1703)
+- ssh: Updated the SSH diagnostics. Updating the notebooks is remaining (#1601). 
+
+## [v0.13.9]
+
+Hotfixes:
+- Added catgen support for storyline experiments (#2305)
+
+## [v0.13.8]
+
+Hotfixes:
+- Ocean3d: Fix for weighted mean calculation (#2242)
+
+## [v0.13.7]
+
+- Pinning specific version of dask/xarray/numpy (#1974)
+- Fix for time axis in container timeseries plots (#1973)
+
+## [v0.13.6]
+
+Hotfixes:
+- AQUA console uses token as in main to access the catalog repository without authentication (#1954)
+- Data Portfolio tag specified in tests in order to keep testing the operational tag (#1954)
+- Cartopy offline maps available due to MN5 missing internet connection (#1954)
+- Hardcode regrid='r100' in setup_checker (#1945)
+- Fix for make_content failing to accept expected argument (#1898)
+- Update experiments.yaml needed by the dashboard (#1951)
+
+## [v0.13.5]
+
+Hotfixes:
+- Fix for Healpix zoom 7 grid for ICON R02B08 native oceanic grid, missing in yaml files (#1821)
+- Fix for Tropical Rainfall diagnostic to work with new E cycle and O cycle machines (#1814)
+- Fix for target tcc grib code (#1812)
+- Fix for the Timeseries diagnostic which was not creating a ylabel in the plot for some variables (#1783)
+
+AQUA core complete list:
+- Update GSV to 2.9.6 (#1813)
+
+## [v0.13.4]
+
+Hotfixes:
+- Fix for the `fdb_info_file` feature, that now can have a `data` only block when no data is on the bridge (#1761)
+
+## [v0.13.3]
+
+Hotfixes:
+- Fix for the `aqua-analysis` that was changing the AQUA_CONFIG environment variable with a wrong path (#1752)
+- Fix catalog generator when fdb_info_file is used (#1742)
+
+## [v0.13.2]
+
+AQUA core complete list:
+- Fix push_analysis options and aqua_analysis config paths (#1731)
+- Enable tests for the operational v0.13-operational branch (#1730)
+- push_s3 compatibility with boto3>=1.36.0 (#1709)
+- Enable the option to read FDB data info from file, and refactor start/end hpc/bridge dates handling (#1656)
+
+AQUA diagnostics complete list:
+- Ecmean: Fix net surface radiative flux and wind stresses in ecmean (#1697)
+- Tropical Rainfall: Update of the precomputed histograms paths for lumi and MN5 operational (#1702)
 
 ## [v0.13.1]
 
@@ -1212,6 +1281,14 @@ Documentations is completed and notebooks are working.
 [v0.16.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.15.0...v0.16.0
 [v0.15.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.14.0...v0.15.0
 [v0.14.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.14.0
+[v0.13.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.8...v0.13.9
+[v0.13.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.7...v0.13.8
+[v0.13.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.6...v0.13.7
+[v0.13.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.5...v0.13.6
+[v0.13.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.4...v0.13.5
+[v0.13.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.3...v0.13.4
+[v0.13.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.2...v0.13.3
+[v0.13.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.1...v0.13.2
 [v0.13.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.0...v0.13.1
 [v0.13.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-beta...v0.13.0
 [v0.13-beta]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13-alpha...v0.13-beta

@@ -7,7 +7,8 @@ from matplotlib import pyplot as plt
 from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, get_projection, plot_box, to_list
+from aqua.configurer import ConfigPath
+from aqua.util import get_projection, plot_box, to_list, get_realizations
 from aqua.util import evaluate_colorbar_limits, set_map_title, time_to_string
 from aqua.util import generate_colorbar_ticks, int_month_name, apply_circular_window
 from .util import extract_dates, _check_list_regions_type
@@ -38,6 +39,8 @@ class Plot2DSeaIce:
 
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='Plot2DSeaIce')
+
+        self.realizations = get_realizations(models)
 
         self.ref = self._handle_data(ref)
         self.models = self._handle_data(models)
@@ -203,22 +206,18 @@ class Plot2DSeaIce:
                     for ax in axs:
                         apply_circular_window(ax, extent=ext_coords)
 
-
-        if self.save_pdf or self.save_png:
-            description = (
-                f"Spatial map and total bias of the sea ice {monmod.attrs.get('AQUA_method', '')} climatology "
-                f"in the {monmod.attrs.get('AQUA_region', 'geographic')} region. "
-                f"The model data is {monmod.attrs.get('AQUA_model')} with experiment {monmod.attrs.get('AQUA_exp')} "
-                f"spanning from {time_to_string(monmod.attrs.get('AQUA_startdate', ''))} to {time_to_string(monmod.attrs.get('AQUA_enddate', ''))}. "
-                f"The reference dataset is {monref.attrs.get('AQUA_model')} with experiment {monref.attrs.get('AQUA_exp')} "
-                f"spanning from {time_to_string(monref.attrs.get('AQUA_startdate', ''))} to {time_to_string(monref.attrs.get('AQUA_enddate', ''))}. "
-                f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
-                )
-            self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
-                             description=description, extra_keys={'method': self.method, 'region': region})
-        else:
-            plt.close(fig)
-
+        description = (
+            f"Spatial map and total bias of the sea ice {monmod.attrs.get('AQUA_method', '')} climatology "
+            f"in the {monmod.attrs.get('AQUA_region', 'geographic')} region. "
+            f"The model data is {monmod.attrs.get('AQUA_model')} with experiment {monmod.attrs.get('AQUA_exp')} "
+            f"spanning from {time_to_string(monmod.attrs.get('AQUA_startdate', ''))} to {time_to_string(monmod.attrs.get('AQUA_enddate', ''))}. "
+            f"The reference dataset is {monref.attrs.get('AQUA_model')} with experiment {monref.attrs.get('AQUA_exp')} "
+            f"spanning from {time_to_string(monref.attrs.get('AQUA_startdate', ''))} to {time_to_string(monref.attrs.get('AQUA_enddate', ''))}. "
+            f"{'The red contour line represents the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' else ''}"
+            )
+        self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
+                         description=description, extra_keys={'method': self.method, 'region': region})
+        plt.close(fig)
 
     def _plot_var_map(self, region, **kwargs):
         """
@@ -284,19 +283,17 @@ class Plot2DSeaIce:
 
         fig.suptitle(f"{set_map_title(datarr)}", fontsize=13)
         
-        if self.save_pdf or self.save_png:
-            description = (
-                f"Spatial map of the sea ice {mondat.attrs.get('AQUA_method','')} climatology "
-                f"for the {mondat.attrs.get('AQUA_model','')} model, experiment {mondat.attrs.get('AQUA_exp','')} "
-                f"over {mondat.attrs.get('AQUA_region', 'geographic')} region "
-                f"from {time_to_string(mondat.attrs.get('AQUA_startdate',''))} to {time_to_string(mondat.attrs.get('AQUA_enddate',''))}. "
-                f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' and self.plot_ref_contour else ''}"
-            )
-            self._save_plots(fig=fig, data=mondat, data_ref=None, 
-                             diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
-        else:
-            plt.close(fig)
-
+        description = (
+            f"Spatial map of the sea ice {mondat.attrs.get('AQUA_method','')} climatology "
+            f"for the {mondat.attrs.get('AQUA_model','')} model, experiment {mondat.attrs.get('AQUA_exp','')} "
+            f"over {mondat.attrs.get('AQUA_region', 'geographic')} region "
+            f"from {time_to_string(mondat.attrs.get('AQUA_startdate',''))} to {time_to_string(mondat.attrs.get('AQUA_enddate',''))}. "
+            f"{'The red contour line represent the regional sea ice fraction equal to 0.2.' if self.method == 'fraction' and self.plot_ref_contour else ''}"
+        )
+        self._save_plots(fig=fig, data=mondat, data_ref=None, 
+                         diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
+        plt.close(fig)
+        
     def _get_colorbar_ticks(self, data, vmin=None, vmax=None, norm=None,
                             boundaries=None, sym=False, ticks_rounding=1):
         """
@@ -573,6 +570,9 @@ class Plot2DSeaIce:
         # Ensure data is not None
         if data is None:
             raise ValueError("Data cannot be None for saving figures")
+
+        if not self.save_pdf and not self.save_png:
+            return
         
         outputsaver = OutputSaver(
             diagnostic='seaice',
@@ -582,7 +582,8 @@ class Plot2DSeaIce:
             model_ref=data_ref.attrs.get('AQUA_model','') if data_ref is not None else None,
             exp_ref=data_ref.attrs.get('AQUA_exp','') if data_ref is not None else None,
             outputdir=self.outputdir,
-            loglevel=self.loglevel
+            loglevel=self.loglevel,
+            realization=self.realizations
         )
         
         metadata = {"Description": description}

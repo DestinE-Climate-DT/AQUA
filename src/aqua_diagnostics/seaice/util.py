@@ -4,13 +4,16 @@ import os
 import xarray as xr
 from aqua.logger import log_configure
 from collections import defaultdict
-from aqua.util import load_yaml, ConfigPath
+from aqua.util import load_yaml
+from aqua.configurer import ConfigPath
 
 def defaultdict_to_dict(d):
     """ Recursively converts a defaultdict to a normal dict."""
     if isinstance(d, defaultdict):
         return {k: defaultdict_to_dict(v) for k, v in d.items()}
     return d
+
+
 
 def filter_region_list(regions_dict, regions_list, domain, logger, valid_domains=None):
     """ Filters a list of string regions based on config_file defined coords values and specified domain.

@@ -1,4 +1,4 @@
-from .config import ConfigPath
+from aqua.configurer import ConfigPath
 from .util import to_list
 
 def replace_intake_vars(path: str, catalog: str | None = None) -> str:

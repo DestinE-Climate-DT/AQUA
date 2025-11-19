@@ -12,7 +12,7 @@ import xarray as xr
 from aqua import Reader
 from aqua.exceptions import NoDataError
 from aqua.logger import log_configure
-from aqua.util import ConfigPath
+from aqua.configurer import ConfigPath
 
 def reader_retrieve_and_merge(
     variable: str = None,

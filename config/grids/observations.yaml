@@ -4,14 +4,12 @@ grids:
   # AVISO
   aviso:
     space_coord: ["longitude", "latitude"]
-
   # EN4
   en4:
     path:
       2d: '{{ grids }}/EN4/en4-grid.nc'
       lev: '{{ grids }}/EN4/en4-grid.nc'
     space_coord: ["lon", "lat"]
-    vert_coord: ["lev"]
 
   # ERA5
   era5-n320:
@@ -24,7 +22,7 @@ grids:
     masked: 
       vars: ["SSTK", "sst", "tos"]
     space_coord: ["lon", "lat"]
-    vert_coord: ["2d", "2dm"]
+    
 
   # OSI-SAF
   # osi-saf-nh:
@@ -59,7 +57,6 @@ grids:
   woa:
     path:
       depth: '{{ grids }}/WOA18/grid-woa18.nc'
-    vert_coord: depth
     space_coord: ["lon", "lat"]
 
   # PSC
@@ -79,6 +76,5 @@ grids:
   # WAGHC
   waghc:
     space_coord: ["lon", "lat"]
-    vert_coord: ["depth"]
     path:
       depth: '{{ grids }}/WAGHC/grid-waghc.nc'

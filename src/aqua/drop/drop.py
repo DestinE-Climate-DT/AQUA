@@ -31,7 +31,8 @@ from aqua.lock import SafeFileLock
 from aqua.logger import log_configure, log_history
 from aqua.reader import Reader
 from aqua.util.io_util import create_folder, file_is_complete
-from aqua.util import dump_yaml, load_yaml, ConfigPath
+from aqua.util import dump_yaml, load_yaml
+from aqua.configurer import ConfigPath
 from aqua.util import create_zarr_reference, replace_intake_vars
 from aqua.util.string import generate_random_string
 from .drop_util import move_tmp_files, list_drop_files_complete

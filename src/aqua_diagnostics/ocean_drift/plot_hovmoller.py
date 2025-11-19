@@ -2,6 +2,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
+from aqua.util import get_realizations
 from .multiple_hovmoller import plot_multi_hovmoller
 from .multiple_timeseries import plot_multi_timeseries
 
@@ -45,6 +46,7 @@ class PlotHovmoller:
         self.exp = self.data[0][self.vars[0]].AQUA_exp
         self.region = self.data[0].AQUA_region
         self.levels = None  # To be set when plotting timeseries
+        self.realizations = get_realizations(self.data[0][self.vars[0]])
 
         self.outputsaver = OutputSaver(
             diagnostic=self.diagnostic,
@@ -52,6 +54,7 @@ class PlotHovmoller:
             model=self.model,
             exp=self.exp, 
             outputdir=outputdir, 
+            realization=self.realizations,
             loglevel=self.loglevel)
 
     def plot_hovmoller(self, rebuild: bool = True, save_pdf: bool = True,
@@ -182,7 +185,7 @@ class PlotHovmoller:
                 else: 
                     new_data = data.interp(level=level, method='nearest')
                 new_data_level_list.append(new_data)
-            merged_data = xr.concat(new_data_level_list, dim='level')
+            merged_data = xr.concat(new_data_level_list, dim='level', coords='different')
             new_data_list.append(merged_data)
         self.data = new_data_list
 

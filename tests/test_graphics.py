@@ -2,13 +2,14 @@ import pytest
 import os
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from aqua import Reader
 from aqua.graphics import plot_single_map, plot_single_map_diff
 from aqua.graphics import plot_vertical_profile, plot_vertical_profile_diff
 from aqua.graphics import plot_timeseries, plot_seasonalcycle
 from aqua.graphics import plot_maps, plot_maps_diff, plot_hovmoller
-from aqua.graphics import plot_vertical_lines
+from aqua.graphics import plot_vertical_lines, plot_histogram
 from aqua.graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
 from conftest import DPI, LOGLEVEL
 
@@ -529,7 +530,9 @@ class TestSeasonalMeans:
         assert axs is not None
         assert len(axs) == 4
         
+
         fig.savefig(tmp_path / 'test_seasonal_profiles.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles.png')
 
     def test_plot_seasonal_lat_lon_profiles_with_ref(self, tmp_path):
@@ -554,6 +557,7 @@ class TestSeasonalMeans:
         assert axs is not None
         
         fig.savefig(tmp_path / 'test_seasonal_profiles_with_ref.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles_with_ref.png')
 
     def test_plot_seasonal_lat_lon_profiles_multiple(self, tmp_path):
@@ -577,6 +581,7 @@ class TestSeasonalMeans:
         assert axs is not None
         
         fig.savefig(tmp_path / 'test_seasonal_profiles_multiple.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_profiles_multiple.png')
 
     def test_plot_seasonal_lat_lon_profiles_error(self):
@@ -612,4 +617,72 @@ class TestSeasonalMeans:
         assert axs is not None
         
         fig.savefig(tmp_path / 'test_seasonal_none_ref_std.png', dpi=DPI)
+        plt.close(fig)
         assert os.path.exists(tmp_path / 'test_seasonal_none_ref_std.png')
+
+@pytest.mark.graphics
+class TestHistogram:
+    """Basic tests for the Histogram functions"""
+
+    def setup_method(self):
+        """Setup method to create histogram data for testing"""
+        # Create simple histogram data with center_of_bin dimension
+        bins = np.linspace(0, 10, 20)
+        values = np.random.exponential(scale=2, size=20)
+        
+        self.hist_data = xr.DataArray(
+            values,
+            dims=['center_of_bin'],
+            coords={'center_of_bin': bins}
+        )
+        self.hist_data.center_of_bin.attrs['units'] = 'm/s'
+        self.hist_data.attrs['units'] = 'count'
+
+    def test_plot_histogram_basic(self, tmp_path):
+        """Test basic histogram plotting"""
+        fig, ax = plot_histogram(data=self.hist_data,
+                                 title='Test Histogram',
+                                 loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        
+        fig.savefig(tmp_path / 'test_histogram_basic.png', dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / 'test_histogram_basic.png')
+
+    def test_plot_histogram_multiple_with_ref(self, tmp_path):
+        """Test histogram with multiple data and reference"""
+        data_list = [self.hist_data, self.hist_data * 0.8]
+        ref_data = self.hist_data * 1.2
+        
+        fig, ax = plot_histogram(data=data_list,
+                                ref_data=ref_data,
+                                data_labels=['Data 1', 'Data 2'],
+                                ref_label='Reference',
+                                smooth=True,
+                                smooth_window=3,
+                                xlogscale=True,
+                                loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        assert len(ax.lines) == 3  # 2 data + 1 ref
+        
+        fig.savefig(tmp_path / 'test_histogram_multi_ref.png', dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / 'test_histogram_multi_ref.png')
+
+    def test_plot_histogram_no_center_of_bin(self, tmp_path):
+        """Test histogram with data missing center_of_bin dimension"""
+        bad_data = xr.DataArray(np.random.rand(10), dims=['time'])
+        
+        fig, ax = plot_histogram(data=bad_data, loglevel=loglevel)
+        
+        assert fig is not None
+        assert ax is not None
+        assert len(ax.lines) == 0  # No lines plotted
+        
+        fig.savefig(tmp_path / 'test_histogram_no_bins.png', dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / 'test_histogram_no_bins.png')

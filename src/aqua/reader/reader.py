@@ -8,8 +8,8 @@ from metpy.units import units
 
 from smmregrid import GridInspector
 
-from aqua.util import load_multi_yaml, files_exist, to_list
-from aqua.util import ConfigPath, find_vert_coord
+from aqua.util import load_multi_yaml, files_exist, to_list, find_vert_coord
+from aqua.configurer import ConfigPath
 from aqua.logger import log_configure, log_history
 from aqua.exceptions import NoDataError, NoRegridError
 from aqua.version import __version__ as aqua_version
@@ -69,7 +69,7 @@ class Reader():
             nproc (int, optional): Number of processes to use for weights generation. Defaults to 4.
             aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
                                          Defaults to None (using default from catalog, recommended).
-            chunks (str or dict, optional): chunking to be used for GSV access.
+            chunks (str or dict, optional): chunking to be used for data access.
                                             Defaults to None (using default from catalog, recommended).
                                             If it is a string time chunking is assumed.
                                             If it is a dictionary the keys 'time' and 'vertical' are looked for.
@@ -750,14 +750,15 @@ class Reader():
         Returns:
             xarray.Dataset: The dataset retrieved from the intake-esm catalog.
         """
-        cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
+        xarray_open_kwargs = esmcat.metadata.get('xarray_open_kwargs', 
+                                         esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}}))
         query = esmcat.metadata['query']
         if var:
             query_var = esmcat.metadata.get('query_var', 'short_name')
             # Convert to list if not already
             query[query_var] = var.split() if isinstance(var, str) else var
         subcat = esmcat.search(**query)
-        data = subcat.to_dataset_dict(cdf_kwargs=cdf_kwargs,
+        data = subcat.to_dataset_dict(xarray_open_kwargs=xarray_open_kwargs,
                                       # zarr_kwargs=dict(consolidated=True),
                                       # decode_times=True,
                                       # use_cftime=True)

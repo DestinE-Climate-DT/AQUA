@@ -4,7 +4,7 @@ from .graphics import plot_single_map, plot_maps, plot_single_map_diff, plot_tim
 from .graphics import plot_hovmoller
 from .graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
 from .drop import Drop
-from .reader import Reader, catalog, Streaming, inspect_catalog
+from .reader import Reader, catalog, Streaming, inspect_catalog, show_catalog_content
 from .regridder import Regridder
 from .gridbuilder import GridBuilder
 from .fldstat import FldStat
@@ -17,6 +17,6 @@ __all__ = ["plot_single_map", "plot_maps", "plot_single_map_diff", "plot_timeser
            "plot_hovmoller", "histogram",
            "plot_lat_lon_profiles", "plot_seasonal_lat_lon_profiles",
            "Drop",
-           "Reader", "catalog", "Streaming", "inspect_catalog",
+           "Reader", "catalog", "Streaming", "inspect_catalog", "show_catalog_content",
            "Regridder", "GridBuilder", 
            "Fixer", "FldStat"]
