@@ -85,7 +85,13 @@ class TestLatLonProfilesZonal:
         
         std_data = getattr(self.diagnostic, std_attr)
         assert std_data is not None
-        assert isinstance(std_data, xr.DataArray)
+        # 4 element of DataArray list for seasonal, single DataArray for longterm
+        if freq == 'seasonal':
+            assert len(std_data) == 4
+            for season_std in std_data:
+                assert isinstance(season_std, xr.DataArray)
+        elif freq == 'longterm':
+            assert isinstance(std_data, xr.DataArray)
     
     @pytest.mark.parametrize("freq,with_std", [
         ('seasonal', False),
