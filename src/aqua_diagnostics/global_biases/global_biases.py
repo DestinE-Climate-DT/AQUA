@@ -197,6 +197,11 @@ class GlobalBiases(Diagnostic):
             'enddate': str(self.enddate)
         })
 
+        # Load data in memory for faster plot
+        self.logger.debug(f"Loading climatology data in memory")
+        self.climatology.load()
+        self.logger.debug(f"Loaded climatology data in memory")
+
         if save_netcdf:
             extra_keys = {
                 k: v for k, v in {
@@ -236,6 +241,11 @@ class GlobalBiases(Diagnostic):
                 'enddate': str(self.enddate)
             })
 
+            # Load data in memory for faster plot
+            self.logger.debug(f"Loading seasonal climatology data in memory")
+            self.seasonal_climatology.load()
+            self.logger.debug(f"Loaded seasonal climatology data in memory")
+
             if save_netcdf:
                 extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
                 self.savenetcdf(
@@ -245,4 +255,3 @@ class GlobalBiases(Diagnostic):
                     extra_keys=extra_keys
                 )
                 self.logger.info(f'Seasonal climatology saved to {self.outputdir}.')
-
