@@ -76,8 +76,6 @@ if __name__ == '__main__':
 
             # Get info
             regions   = conf_dict_ts['regions']
-            startdate = conf_dict_ts['startdate']
-            enddate   = conf_dict_ts['enddate']
             
             # Initialise monthly_models with the number of datasets
             monthly_mod = [None] * len(datasets)
@@ -128,8 +126,6 @@ if __name__ == '__main__':
                     # Get reference args and override specific fields
                     reference_args = cli.dataset_args(reference)
                     reference_args['regions'] = regs_indomain
-                    reference_args['startdate'] = reference.get('startdate', startdate)
-                    reference_args['enddate'] = reference.get('enddate', enddate)
                     reference_args['regrid'] = regrid or reference.get('regrid', None)
                     
                     # Integrate by method the reference data and store them in a list
@@ -183,8 +179,6 @@ if __name__ == '__main__':
 
             # Get info
             regions   = conf_dict_ts['regions']
-            startdate = conf_dict_ts['startdate']
-            enddate   = conf_dict_ts['enddate']
 
             # Initialise monthly_models with the number of datasets
             monthly_mod = [None] * len(datasets)
@@ -236,8 +230,6 @@ if __name__ == '__main__':
                     # Get reference args and override specific fields
                     reference_args = cli.dataset_args(reference)
                     reference_args['regions'] = regs_indomain
-                    reference_args['startdate'] = reference.get('startdate', startdate)
-                    reference_args['enddate'] = reference.get('enddate', enddate)
                     reference_args['regrid'] = regrid or reference.get('regrid', None)
                     
                     # Integrate by method the reference data and store them in a list.
@@ -286,8 +278,6 @@ if __name__ == '__main__':
 
         # Get info
         regions = conf_dict_2d['regions']
-        startdate = conf_dict_2d['startdate']
-        enddate = conf_dict_2d['enddate']
         months = conf_dict_2d.get('months', [3, 9])
 
         # Loop over the methods (fraction and thickness)
@@ -343,8 +333,6 @@ if __name__ == '__main__':
                     # Get reference args and override specific fields
                     reference_args = cli.dataset_args(reference)
                     reference_args['regions'] = regs_indomain
-                    reference_args['startdate'] = reference.get('startdate', startdate)
-                    reference_args['enddate'] = reference.get('enddate', enddate)
                     reference_args['regrid'] = regrid or reference.get('regrid', None)
                     
                     # Get by method the reference data and store them in a list.

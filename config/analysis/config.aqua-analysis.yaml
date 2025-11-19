@@ -136,7 +136,8 @@ diagnostics:
 
   seaice:
     seaice:
-      config: "${AQUA_CONFIG}/diagnostics/seaice/config-seaice.yaml"
+      config: ["${AQUA_CONFIG}/diagnostics/seaice/config-seaice-osi.yaml",
+               "${AQUA_CONFIG}/diagnostics/seaice/config-seaice-psc.yaml"]
 
   teleconnections:
     nao:
