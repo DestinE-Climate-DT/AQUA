@@ -68,7 +68,6 @@ diagnostics:
     ref_std_freq: 'monthly' # set to 'monthly' 'annual'
     varname:
       volume: 'sithick'
-      thickness: 'sithick'     # for 2D bias
   
     # ====  Update Datasets and reference entries  ====
     references:
@@ -92,7 +91,6 @@ diagnostics:
     ref_std_freq: 'monthly' # set to 'monthly' 'annual'
     varname:
       volume: 'sithick'
-      thickness: 'sithick'     # for 2D bias
   
     # ====  Update Datasets and reference entries  ====
     references:
