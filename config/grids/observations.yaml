@@ -4,7 +4,6 @@ grids:
   # AVISO
   aviso:
     space_coord: ["longitude", "latitude"]
-
   # EN4
   en4:
     path:
