@@ -74,12 +74,10 @@ diagnostics:
     # -- PSC for "volume" in NH --
     - <<: *ref_psc_nh
       use_for_method: "volume"
-      varname: "sithick"
   
     # -- PSC for "volume" in SH --
     - <<: *ref_psc_sh
       use_for_method: "volume"
-      varname: "sithick"
 
   # =======  Config for seasonal cycle Sea Ice  =======
   # ===================================================
@@ -97,12 +95,10 @@ diagnostics:
     # -- PSC for "volume" in NH --
     - <<: *ref_psc_nh
       use_for_method: "volume"
-      varname: "sithick"
   
     # -- PSC for "volume" in SH --
     - <<: *ref_psc_sh
       use_for_method: "volume"
-      varname: "sithick"
 
   # =======  Config for 2d bias maps =======
   # =========================================
@@ -135,10 +131,8 @@ diagnostics:
     # -- PSC for thickness in NH --
     - <<: *ref_psc_nh
       use_for_method: "thickness"
-      varname: "sithick"
   
     # -- PSC for thickness in SH --
     - <<: *ref_psc_sh
       use_for_method: "thickness"
-      varname: "sithick"
 

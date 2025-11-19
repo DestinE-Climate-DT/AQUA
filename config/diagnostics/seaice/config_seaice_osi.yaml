@@ -74,12 +74,10 @@ diagnostics:
     # -- OSI-SAF for "extent" in NH --
     - <<: *ref_osi_nh
       use_for_method: "extent"
-      varname: "siconc"
   
     # -- OSI-SAF for "extent" in SH --
     - <<: *ref_osi_sh
       use_for_method: "extent"
-      varname: "siconc"
 
   # =======  Config for seasonal cycle Sea Ice  =======
   # ===================================================
@@ -97,12 +95,10 @@ diagnostics:
     # -- OSI-SAF for "extent" in NH --
     - <<: *ref_osi_nh
       use_for_method: "extent"
-      varname: "siconc"
       
     # -- OSI-SAF for "extent" in SH --
     - <<: *ref_osi_sh
       use_for_method: "extent"
-      varname: "siconc"
 
   # =======  Config for 2d bias maps =======
   # =========================================
@@ -135,10 +131,8 @@ diagnostics:
     # -- OSI-SAF for fraction in NH --
     - <<: *ref_osi_nh
       use_for_method: "fraction"
-      varname: "siconc"
   
     # -- OSI-SAF for fraction in SH --
     - <<: *ref_osi_sh
       use_for_method: "fraction"
-      varname: "siconc"
 
