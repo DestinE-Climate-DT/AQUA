@@ -8,22 +8,19 @@
 #SBATCH --mem={{ memory }}
 #SBATCH --error={{ log_error }}
 #SBATCH --output={{ log_output }}
-
-
-aqua lra -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
+{% if dependency %}
+#SBATCH --dependency={{ dependency }}
 {% endif %}
-<<<<<<< HEAD:cli/lra/aqua_lra.j2
-=======
+
+
+{% if singularity %}
+{% if machine == 'lumi' %}
+unset SINGULARITY_BIND  # Lumi specific fix for singularity
+{% endif %}
 bash {{ aqua }}/cli/aqua-container/load-aqua-container.sh {{ machine }} <<EOF
 #!/bin/bash
 aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} --realization {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
 EOF
 {% else %}
-<<<<<<< HEAD
-aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} -r {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
-{% endif %}
->>>>>>> main:cli/drop/aqua_drop.j2
-=======
 aqua drop -l info -c {{ config }} -m {{ model }} -e {{ exp }} -s {{ source }} -v {{ varname }} --realization {{ realization }} -w {{ ntasks_per_node }} {{ '-d' if definitive }} {{ '-o' if overwrite }}
 {% endif %}
->>>>>>> main
