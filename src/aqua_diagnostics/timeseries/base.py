@@ -393,8 +393,6 @@ class PlotBaseMixin():
         elif self.len_ref == 0:
             description += '.'
 
-        
-
         if self.std_startdate is not None and self.std_enddate is not None:
             description += f'with standard deviation from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}.'
             description += ' The shaded area represents 2 standard deviations.'
@@ -420,7 +418,7 @@ class PlotBaseMixin():
                                   catalog=self.catalogs,
                                   model=self.models,
                                   exp=self.exps,
-                                  # This is needed for the Gregory diagnostic, which save the reference models and experiments
+                                  # This is needed for the Gregory diagnostic, which saves the reference models and experiments
                                   # as dictionaries to build correct labels and descriptions
                                   catalog_ref=list(self.ref_catalogs.values()) if isinstance(self.ref_catalogs, dict) else self.ref_catalogs,
                                   model_ref=list(self.ref_models.values()) if isinstance(self.ref_models, dict) else self.ref_models,
@@ -434,12 +432,10 @@ class PlotBaseMixin():
         if self.short_name is not None:
             extra_keys.update({'var': self.short_name})
         if self.region is not None:
-            region = self.region
-            extra_keys.update({'region': region})
+            extra_keys.update({'region': self.region})
 
-        if format == 'png':
-            outputsaver.save_png(fig, diagnostic_product=diagnostic_product, rebuild=rebuild, extra_keys=extra_keys, metadata=metadata)
-        elif format == 'pdf':
-            outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product, rebuild=rebuild, extra_keys=extra_keys, metadata=metadata)
-        else:
-            raise ValueError(f'Format {format} not supported. Use png or pdf.')
+        outputsaver.save_figure(fig, diagnostic_product,
+                                extra_keys=extra_keys, metadata=metadata,
+                                save_pdf=format in ['pdf', 'both'], 
+                                save_png=format in ['png', 'both'],
+                                rebuild=rebuild, dpi=dpi)

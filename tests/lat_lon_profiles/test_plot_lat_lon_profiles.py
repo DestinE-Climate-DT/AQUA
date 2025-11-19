@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 import xarray as xr
 from aqua.diagnostics.lat_lon_profiles import PlotLatLonProfiles
+from conftest import DPI, LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
 @pytest.fixture
 def sample_lat_lon_data():
@@ -12,22 +13,29 @@ def sample_lat_lon_data():
         coord_name = 'lat' if mean_type == 'zonal' else 'lon'
         coord_values = np.linspace(-90, 90, 20) if mean_type == 'zonal' else np.linspace(0, 360, 30)
         
+        # Base attributes template
+        base_attrs = {
+            'AQUA_mean_type': mean_type,
+            'AQUA_region': 'Global',
+            'short_name': 'skt',
+            'standard_name': 'skin_temperature',
+            'long_name': 'Skin Temperature',
+            'units': 'K'
+        }
+        
         def make_single_array(i=0):
+            attrs = base_attrs.copy()
+            attrs.update({
+                'AQUA_catalog': f'catalog_{i}' if num_datasets > 1 else 'test_catalog',
+                'AQUA_model': ['IFS', 'GFS', 'ECMWF'][i % 3] if num_datasets > 1 else 'IFS',
+                'AQUA_exp': f'test-exp{i}' if num_datasets > 1 else 'test-tco79',
+            })
+            
             return xr.DataArray(
                 np.random.rand(len(coord_values)) + i * 0.1,
                 dims=[coord_name],
                 coords={coord_name: coord_values},
-                attrs={
-                    'AQUA_catalog': f'catalog_{i}' if num_datasets > 1 else 'test_catalog',
-                    'AQUA_model': ['IFS', 'GFS', 'ECMWF'][i % 3] if num_datasets > 1 else 'IFS',
-                    'AQUA_exp': f'test-exp{i}' if num_datasets > 1 else 'test-tco79',
-                    'AQUA_mean_type': mean_type,
-                    'AQUA_region': 'Global',
-                    'short_name': 'skt',
-                    'standard_name': 'skin_temperature',
-                    'long_name': 'Skin Temperature',
-                    'units': 'K'
-                }
+                attrs=attrs
             )
         
         if seasonal:
@@ -41,36 +49,21 @@ def sample_lat_lon_data():
 
 @pytest.mark.diagnostics
 class TestPlotLatLonProfilesCore:
-    """Core functionality tests - covers most scenarios efficiently"""
+    """Core functionality tests"""
     
     @pytest.mark.parametrize("mean_type", ['zonal', 'meridional'])
     def test_initialization_and_metadata(self, sample_lat_lon_data, mean_type):
-        """Test initialization and metadata extraction for both mean types"""
+        """Test initialization and metadata extraction"""
         data = sample_lat_lon_data(mean_type=mean_type)
         plotter = PlotLatLonProfiles(data=data, data_type='longterm', loglevel=loglevel)
         
         assert plotter.data_type == 'longterm'
         assert plotter.mean_type == mean_type
         assert plotter.region == 'Global'
-        assert plotter.diagnostic_name == 'lat_lon_profiles'  # default
+        assert plotter.diagnostic_name == 'lat_lon_profiles'
         
-        # Test title generation
         title = plotter.set_title()
         assert mean_type.capitalize() in title
-        
-    def test_custom_diagnostic_name(self, sample_lat_lon_data):
-        """Test custom diagnostic_name parameter"""
-        data = sample_lat_lon_data()
-        custom_name = 'my_custom_profile'
-        
-        plotter = PlotLatLonProfiles(
-            data=data, 
-            data_type='longterm',
-            diagnostic_name=custom_name,
-            loglevel=loglevel
-        )
-        
-        assert plotter.diagnostic_name == custom_name
     
     @pytest.mark.parametrize("num_datasets", [1, 2, 3])
     def test_multiple_datasets(self, sample_lat_lon_data, num_datasets):
@@ -80,9 +73,7 @@ class TestPlotLatLonProfilesCore:
         
         assert len(plotter.data) == num_datasets
         assert len(plotter.models) == num_datasets
-        
-        labels = plotter.set_data_labels()
-        assert len(labels) == num_datasets
+        assert len(plotter.set_data_labels()) == num_datasets
     
     def test_reference_data(self, sample_lat_lon_data):
         """Test with reference data"""
@@ -91,7 +82,7 @@ class TestPlotLatLonProfilesCore:
         ref_data.attrs = data.attrs.copy()
         
         plotter = PlotLatLonProfiles(
-            data=data, 
+            data=data,
             ref_data=ref_data,
             data_type='longterm',
             loglevel=loglevel
@@ -101,6 +92,27 @@ class TestPlotLatLonProfilesCore:
         assert ref_label is not None
         assert 'IFS' in ref_label
     
+    def test_custom_diagnostic_name_full(self, sample_lat_lon_data, tmp_path):
+        """Test custom diagnostic_name in class and output"""
+        data = sample_lat_lon_data()
+        custom_name = 'my_custom_profile'
+        
+        plotter = PlotLatLonProfiles(
+            data=data,
+            data_type='longterm',
+            diagnostic_name=custom_name,
+            loglevel=loglevel
+        )
+        
+        # Check class attribute
+        assert plotter.diagnostic_name == custom_name
+        
+        # Check output filename
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        png_files = list(tmp_path.rglob('*.png'))
+        assert len(png_files) > 0
+        assert custom_name in png_files[0].name
+    
     @pytest.mark.parametrize("data_type,diagnostic_name,mean_type,expected_diagnostic,expected_product", [
         ('longterm', 'lat_lon_profiles', 'zonal', 'lat_lon_profiles', 'zonal_profile'),
         ('longterm', 'custom_profile', 'zonal', 'custom_profile', 'zonal_profile'),
@@ -108,9 +120,9 @@ class TestPlotLatLonProfilesCore:
         ('seasonal', 'my_diagnostic', 'meridional', 'my_diagnostic', 'seasonal_meridional_profile'),
     ])
     def test_diagnostic_product_construction(self, sample_lat_lon_data, tmp_path,
-                                            data_type, diagnostic_name, mean_type, 
-                                            expected_diagnostic, expected_product):
-        """Test that diagnostic and diagnostic_product are correctly constructed in OutputSaver filenames"""
+                                             data_type, diagnostic_name, mean_type,
+                                             expected_diagnostic, expected_product):
+        """Test diagnostic and diagnostic_product in filenames"""
         seasonal = (data_type == 'seasonal')
         data = sample_lat_lon_data(mean_type=mean_type, seasonal=seasonal)
         
@@ -121,28 +133,18 @@ class TestPlotLatLonProfilesCore:
             loglevel=loglevel
         )
         
-        # Verify diagnostic_name is stored
         assert plotter.diagnostic_name == diagnostic_name
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         png_files = list(tmp_path.rglob('*.png'))
-        assert len(png_files) > 0, f"No PNG files created for {diagnostic_name} {data_type}"
+        assert len(png_files) > 0
         
-        # Check filename structure
         filename = png_files[0].name
+        assert expected_diagnostic in filename
+        assert expected_product in filename
         
-        # Verify both diagnostic and diagnostic_product appear in filename
-        assert expected_diagnostic in filename, \
-            f"Expected diagnostic '{expected_diagnostic}' not found in filename: {filename}"
-        
-        assert expected_product in filename, \
-            f"Expected diagnostic_product '{expected_product}' not found in filename: {filename}"
-        
-        # Verify they appear in correct order (diagnostic before diagnostic_product)
-        diagnostic_pos = filename.find(expected_diagnostic)
-        product_pos = filename.find(expected_product)
-        assert diagnostic_pos < product_pos, \
-            f"'diagnostic' should appear before 'diagnostic_product' in filename: {filename}"
+        # Verify correct order
+        assert filename.find(expected_diagnostic) < filename.find(expected_product)
 
 
 @pytest.mark.diagnostics  
@@ -163,8 +165,8 @@ class TestPlotLatLonProfilesSeasonal:
         assert len(plotter.data) == 4
     
     def test_seasonal_insufficient_data(self, sample_lat_lon_data):
-        """Test error when seasonal data has insufficient elements"""
-        seasonal_data = sample_lat_lon_data(seasonal=True)[:2]  # Only 2 seasons
+        """Test error with insufficient seasonal data"""
+        seasonal_data = sample_lat_lon_data(seasonal=True)[:2]
         
         plotter = PlotLatLonProfiles(
             data=seasonal_data,
@@ -199,7 +201,8 @@ class TestPlotLatLonProfilesIntegration:
         plotter.run(
             outputdir=str(tmp_path),
             rebuild=True,
-            format=format
+            format=format,
+            dpi=DPI
         )
         
         files = list(tmp_path.rglob(f'*.{format}'))
@@ -218,7 +221,7 @@ class TestPlotLatLonProfilesIntegration:
             loglevel=loglevel
         )
         
-        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
+        plotter.run(outputdir=str(tmp_path), rebuild=True, format='png', dpi=DPI)
         
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0
@@ -233,7 +236,7 @@ class TestPlotLatLonProfilesErrors:
     """Error handling tests"""
     
     def test_invalid_data_type(self, sample_lat_lon_data):
-        """Test that invalid data_type raises error"""
+        """Test invalid data_type raises error"""
         data = sample_lat_lon_data()
         
         with pytest.raises(ValueError, match="data_type must be 'longterm' or 'seasonal'"):
@@ -241,13 +244,11 @@ class TestPlotLatLonProfilesErrors:
 
 @pytest.mark.diagnostics
 class TestPlotLatLonProfilesRealization:
-    """Test realization extraction and usage in plot filenames"""
+    """Test realization extraction"""
     
-    def test_realization_in_plot_filename(self, sample_lat_lon_data, tmp_path):
-        """Test that AQUA_realization is extracted and used in plot filenames"""
+    def test_realization_in_filename(self, sample_lat_lon_data, tmp_path):
+        """Test AQUA_realization in filenames"""
         data = sample_lat_lon_data()
-        
-        # Add AQUA_realization to data
         data.attrs['AQUA_realization'] = 'r3'
         
         plotter = PlotLatLonProfiles(
@@ -256,13 +257,11 @@ class TestPlotLatLonProfilesRealization:
             loglevel=loglevel
         )
         
-        # Check realization was extracted
         assert hasattr(plotter, 'realizations')
         assert plotter.realizations[0] == 'r3'
         
-        # Run and check filename
         plotter.run(outputdir=str(tmp_path), rebuild=True, format='png')
         
         png_files = list(tmp_path.rglob('*.png'))
         assert len(png_files) > 0
-        assert any('r3' in f.name for f in png_files), "Realization 'r3' not found in any filename"
+        assert any('r3' in f.name for f in png_files)

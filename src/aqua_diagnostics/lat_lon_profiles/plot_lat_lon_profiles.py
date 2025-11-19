@@ -83,9 +83,16 @@ class PlotLatLonProfiles():
         ref_label = None
         
         if self.ref_data is not None:
-            model = self.ref_data.attrs.get('AQUA_model', 'Unknown')
-            exp = self.ref_data.attrs.get('AQUA_exp', 'Unknown')
-            ref_label = f'{model} {exp}'
+            # Handle seasonal (list) vs longterm (single DataArray)
+            if self.data_type == 'seasonal' and isinstance(self.ref_data, list):
+                ref_item = self.ref_data[0] if self.ref_data else None
+            else:
+                ref_item = self.ref_data 
+            
+            if ref_item is not None and hasattr(ref_item, 'AQUA_model'):
+                model = ref_item.attrs.get('AQUA_model', 'Unknown')
+                exp = ref_item.attrs.get('AQUA_exp', 'Unknown')
+                ref_label = f'{model} {exp}'
         
         self.logger.debug('Reference label: %s', ref_label)
         return ref_label
@@ -254,7 +261,7 @@ class PlotLatLonProfiles():
         """
         len_data = len(self.data) if self.data else 0
         
-        if self.data_type == 'annual':
+        if self.data_type == 'longterm':
             len_ref = 1 if self.ref_data is not None else 0
         elif self.data_type == 'seasonal':
             len_ref = len(self.ref_data) if self.ref_data else 0

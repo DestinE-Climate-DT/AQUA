@@ -5,16 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+ClimateDT workflow modifications:
+
 Unreleased in the current development version (target v0.20.0):
+- Parallelise tests execution using `pytest-xdist` module, centralise common fixtures to speed up tests execution time (#2402)
 
 ClimateDT workflow modifications:
 
 AQUA core complete list:
+- Fix DROP CLI support for enddate, startdate and catalog (#2472)
+- Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2450)
+- eORCA025 nested grid for o25.1 and o26.1 support (#2459)
 - Safe dumping yaml with a temporary file and SoftFileLock (#2445)
 - Add filelock when modifying catalog sources (#2432)
 
 AQUA diagnostics complete list:
 - Homogenise sea ice CLI to centralized `DiagnosticCLI` (#2470)
+- Tropical Cyclones: restore TC diagnostic functionality (#2206)
+- Add unique random key to dask graph tokens for each CLI (#2462)
+- Ocean3D: removed old diagnostic files (#2467)
 - Teleconnections: ENSO better vmin/vmax for regression plots (#2453)
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2433)
 - Area selection full support for regions across the dateline (#2430, #2434)
@@ -29,13 +38,14 @@ ClimateDT workflow modifications:
 - New position for push_analysis `config.grouping.yaml` in `$AQUA/config/analysis`
 
 AQUA core complete list:
+- Centralise `save_figure` in OutputSaver class (#2425)
 - Allow longer time default for connection to dask cluster (#2420)
 - Safe parallel creation of area and weight files (#2412)
 - New grid lat-lon-r100 with explicit grid file, new default in DROP catgen (#2410, #2413)
-- Realization formatting correctly processed by the Reader (#2392) 
+- Realization formatting correctly processed by the Reader (#2392)
 - Realization (and other intake kwargs) are an attribute of the Reader (#2392)
 - Refactoring of aqua analysis to allow config file with diagnostic groups and reorganization of diagnostic config files (#2371)
-- Optimizations of diagnostic parallel execution (#2371) 
+- Optimizations of diagnostic parallel execution (#2371)
 - Including minor fixes to output filenames, figure descriptions and color ranges (#2371)
 - Enumerate aqua analysis log file for multiple config files (#2407)
 - Fix push_analysis.sh rsync functionality to not use ssh (#2403)

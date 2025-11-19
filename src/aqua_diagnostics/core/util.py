@@ -4,9 +4,22 @@ Utility functions for the CLI
 import argparse
 import os
 from dask.distributed import Client, LocalCluster
+
+from dask.base import tokenize
+import dask
+import uuid
+
 from aqua.logger import log_configure
 from aqua.util import load_yaml, get_arg
 from aqua.util import ConfigPath
+
+# This creates a unique job token for this instance of the module
+# so that all dask keys generated during this run are unique
+_job_token = uuid.uuid4().hex
+_original_tokenize = tokenize
+def _unique_tokenize(*args, **kwargs):
+    """Tokenize function that includes job token for uniqueness."""
+    return _original_tokenize(_job_token, *args, **kwargs)
 
 
 def template_parse_arguments(parser: argparse.ArgumentParser):
@@ -73,7 +86,9 @@ def open_cluster(nworkers, cluster, loglevel: str = 'WARNING'):
             logger.info(f"Initializing private cluster {cluster.scheduler_address} with {nworkers} workers.")
             private_cluster = True
         else:
-            logger.info(f"Connecting to cluster {cluster}.")
+            logger.info(f"Connecting to cluster {cluster} with client ID {_job_token}.")
+            dask.base.tokenize = _unique_tokenize
+
         client = Client(cluster)
     else:
         client = None

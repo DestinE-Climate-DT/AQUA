@@ -8,8 +8,15 @@ class LatLonProfiles(Diagnostic):
 	Class to compute lat-lon profiles of a variable over a specified region.
 	It retrieves the data from the catalog, computes the mean and standard deviation
 	over the specified period and saves the results to netcdf files.
-	The class evaluates a seasonal frequency and the entire period (longterm).
-	It supports two different types of means (zonal or meridional).
+
+	Supported Frequencies:
+		- 'seasonal': Computes seasonal means (DJF, MAM, JJA, SON)
+		- 'longterm': Computes the temporal mean over the entire analysis period
+
+    Supported Mean Types:
+        - 'zonal': Average over longitude, producing latitude profiles
+        - 'meridional': Average over latitude, producing longitude profilesThe class evaluates a seasonal frequency and the entire period (longterm).
+		
 	"""
 	def __init__(self, model: str, exp: str, source: str, 
 			  	 catalog: str = None, regrid: str = None,
@@ -167,12 +174,21 @@ class LatLonProfiles(Diagnostic):
 		if freq == 'seasonal':
 			# Group by season and compute std
 			seasonal_std = monthly_data.groupby('time.season').std('time')
-			seasonal_std.attrs['std_startdate'] = time_to_string(self.std_startdate)
-			seasonal_std.attrs['std_enddate'] = time_to_string(self.std_enddate)
-			self.std_seasonal = seasonal_std
+			
+			# Convert to list [DJF, MAM, JJA, SON]
+			seasons = ['DJF', 'MAM', 'JJA', 'SON']
+			seasonal_std_list = []
+			for season in seasons:
+				season_data = seasonal_std.sel(season=season)
+				season_data.attrs['std_startdate'] = time_to_string(self.std_startdate)
+				season_data.attrs['std_enddate'] = time_to_string(self.std_enddate)
+				seasonal_std_list.append(season_data)
+			
+			self.std_seasonal = seasonal_std_list
 
 			self.logger.debug("Loading data in memory")
-			self.std_seasonal.load()
+			for season_data in self.std_seasonal:
+				season_data.load()
 			self.logger.debug("Loaded data in memory")
 
 		elif freq == 'longterm':
@@ -260,7 +276,7 @@ class LatLonProfiles(Diagnostic):
 				# Handle longterm std data
 				var = getattr(data_std, 'standard_name', 'unknown')
 
-				extra_keys = {'freq': 'annual', 'std': 'std', 'var': var}
+				extra_keys = {'freq': 'longterm', 'std': 'std', 'var': var}
 				if self.region is not None:
 					region = self.region
 					extra_keys['AQUA_region'] = region
@@ -344,7 +360,9 @@ class LatLonProfiles(Diagnostic):
 				units (str): The units of the variable.
 				standard_name (str): The standard name of the variable.
 				std (bool): Whether to compute the standard deviation.
-				freq (list): The frequencies to compute ('seasonal', 'longterm').
+				freq (list): The frequencies to compute. Options:
+					- 'seasonal': Seasonal means (DJF, MAM, JJA, SON)
+					- 'longterm': Long-term mean over the entire analysis period
 				exclude_incomplete (bool): Whether to exclude incomplete time periods.
 				center_time (bool): Whether to center the time coordinate.
 				box_brd (bool): Whether to include the box boundaries.
