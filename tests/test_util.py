@@ -8,7 +8,7 @@ from aqua import Reader
 from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
 from aqua.util import format_realization, extract_attrs, time_to_string
 from aqua.util.string import strlist_to_phrase, lat_to_phrase
-from aqua.util.units import multiply_units
+from aqua.util.units import multiply_units, units_to_latex
 from conftest import LOGLEVEL
 
 @pytest.fixture
@@ -238,3 +238,62 @@ def test_multiply_units_no_normalization():
     """Test multiply_units without normalization"""
     result = multiply_units("m", "m", normalise_units=False)
     assert result == "meter ** 2"
+
+
+@pytest.mark.parametrize("input_unit, expected", [
+    # Basic units with powers (powers wrapped in braces in LaTeX)
+    ("km^2", "$\\mathrm{km}^{2}$"),
+    ("m**3", "$\\mathrm{m}^{3}$"),
+    
+    # Units with prefixes
+    ("million km^2", "million $\\mathrm{km}^{2}$"),
+    ("thousands km^3", "thousands $\\mathrm{km}^{3}$"),
+    
+    # Division (single)
+    ("W/m^2", "$\\mathrm{W}\\,\\mathrm{m}^{-2}$"),
+    
+    # Multiple divisions (no power notation, returned as-is)
+    ("kg/m/s", "kg/m/s"),
+    
+    # Negative powers
+    ("m s^-1", "$\\mathrm{m}\\,\\mathrm{s}^{-1}$"),
+    ("m s**-1", "$\\mathrm{m}\\,\\mathrm{s}^{-1}$"),
+    ("kg m-2 s-1", "$\\mathrm{kg}\\,\\mathrm{m}^{-2}\\,\\mathrm{s}^{-1}$"),
+    
+    # Parentheses in exponents
+    ("m**(2)", "$\\mathrm{m}^{2}$)"),
+    ("km^(3)", "$\\mathrm{km}^{3}$)"),
+    
+    # Complex units
+    ("kg m^-2 s^-1", "$\\mathrm{kg}\\,\\mathrm{m}^{-2}\\,\\mathrm{s}^{-1}$"),
+    ("W m^-2 K^-1", "$\\mathrm{W}\\,\\mathrm{m}^{-2}\\,\\mathrm{K}^{-1}$"),
+    
+    # Parentheses in division
+    ("W/(m^2 s)", "$\\mathrm{W}\\,\\mathrm{m}^{-2}\\,\\mathrm{s}$"),
+    
+    # Unicode characters
+    ("µg m^-3", "$\\mathrm{µg}\\,\\mathrm{m}^{-3}$"),
+    ("°C", "°C"),  # No power notation, returned as-is
+    
+    # Already LaTeX formatted
+    ("$\\mathrm{km}^2$", "$\\mathrm{km}^2$"),
+    ("million $\\mathrm{km}^2$", "million $\\mathrm{km}^2$"),
+])
+@pytest.mark.aqua
+def test_units_to_latex(input_unit, expected):
+    """Test units_to_latex function with various unit formats"""
+    result = units_to_latex(input_unit)
+    assert result == expected
+
+
+@pytest.mark.aqua
+def test_units_to_latex_edge_cases():
+    """Test edge cases for units_to_latex"""
+    # Empty string
+    assert units_to_latex(None) is None
+    # Mixed case prefixes
+    assert units_to_latex("Million km^2") == "Million $\\mathrm{km}^{2}$"
+    # Units with trailing punctuation
+    assert units_to_latex("kg m^-2)") == "$\\mathrm{kg}\\,\\mathrm{m}^{-2}$)"
+    # Very complex unit
+    assert units_to_latex("million kg m^-2 s^-1") == "million $\\mathrm{kg}\\,\\mathrm{m}^{-2}\\,\\mathrm{s}^{-1}$"
