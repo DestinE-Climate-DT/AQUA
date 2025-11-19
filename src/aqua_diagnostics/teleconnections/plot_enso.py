@@ -98,10 +98,10 @@ class PlotENSO(PlotBaseMixin):
             vmin_diff = -0.5
             vmax_diff = 0.5
         elif statistic == 'regression' and vmin is None and vmax is None and var == 'tos':
-            vmin = -2.5
-            vmax = 2.5
-            vmin_diff = -2.0
-            vmax_diff = 2.0
+            vmin = -1.0
+            vmax = 1.0
+            vmin_diff = -1.0
+            vmax_diff = 1.0
 
         maps, ref_maps = _homogeneize_maps(maps=maps, ref_maps=ref_maps, var=var)
 

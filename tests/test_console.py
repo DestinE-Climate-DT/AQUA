@@ -9,10 +9,10 @@ from aqua.cli.main import AquaConsole, query_yes_no
 from aqua.util import dump_yaml, load_yaml
 from aqua import __version__ as version
 from aqua import __path__ as pypath
-from aqua.cli.diagnostic_config import diagnostic_config
+#from aqua.cli.diagnostic_config import diagnostic_config
 
-testfile = 'testfile.txt'
-machine = 'github'
+TESTFILE = 'testfile.txt'
+MACHINE = 'github'
 
 def set_args(args):
     """Helper function to simulate command line arguments"""
@@ -64,14 +64,14 @@ def run_aqua_console_with_input(tmpdir):
             input_text (str): input text
         """
         set_args(args)
-        testfile = os.path.join(tmpdir, 'testfile')
-        with open(testfile, 'w') as f:
+        myfile = os.path.join(tmpdir, TESTFILE)
+        with open(myfile, 'w', encoding='utf-8') as f:
             f.write(input_text)
-        sys.stdin = open(testfile)
+        sys.stdin = open(myfile, 'r', encoding='utf-8')
         aquacli = AquaConsole()
         aquacli.execute()
         sys.stdin.close()
-        os.remove(testfile)
+        os.remove(myfile)
     return _run_aqua_console
 
 
@@ -84,28 +84,29 @@ def run_aqua():
         aquacli.execute()
     return _run_aqua_console
 
-def verify_config_files(base_dir, diagnostic_config):
-    """
-    Verify that the configuration files were copied correctly.
 
-    Args:
-        base_dir (str): The base directory where the files should be copied.
-        diagnostic_config (dict): The diagnostic configuration dictionary.
+# def verify_config_files(base_dir, diagnostic_config):
+#     """
+#     Verify that the configuration files were copied correctly.
 
-    Returns:
-        bool: True if all files are present, False otherwise.
-    """
-    all_files_present = True
-    for diagnostic, configs in diagnostic_config.items():
-        for config in configs:
-            target_path = os.path.join(base_dir, config['target_path'], config['config_file'])
-            print(f"Checking file: {target_path}")
-            if not os.path.isfile(target_path):
-                print(f"Missing file: {target_path}")
-                all_files_present = False
-            else:
-                print(f"File exists: {target_path}")
-    return all_files_present
+#     Args:
+#         base_dir (str): The base directory where the files should be copied.
+#         diagnostic_config (dict): The diagnostic configuration dictionary.
+
+#     Returns:
+#         bool: True if all files are present, False otherwise.
+#     """
+#     all_files_present = True
+#     for diagnostic, configs in diagnostic_config.items():
+#         for config in configs:
+#             target_path = os.path.join(base_dir, config['target_path'], config['config_file'])
+#             print(f"Checking file: {target_path}")
+#             if not os.path.isfile(target_path):
+#                 print(f"Missing file: {target_path}")
+#                 all_files_present = False
+#             else:
+#                 print(f"File exists: {target_path}")
+#     return all_files_present
 
 
 @pytest.mark.aqua
@@ -138,12 +139,12 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install', machine])
+        run_aqua(['install', MACHINE])
         assert os.path.isdir(os.path.join(mydir, '.aqua'))
         assert os.path.isfile(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
 
         # do it twice!
-        run_aqua_console_with_input(['-vv', 'install', machine], 'yes')
+        run_aqua_console_with_input(['-vv', 'install', MACHINE], 'yes')
         assert os.path.exists(os.path.join(mydir, '.aqua'))
         for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.isdir(os.path.join(mydir, '.aqua', folder))
@@ -235,7 +236,7 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install', machine])
+        run_aqua(['install', MACHINE])
         run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
         # create fake config file
@@ -285,10 +286,11 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install', machine])
+        run_aqua(['install', MACHINE])
         run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
-        config_path = 'tests/analysis/config.aqua-analysis-test.yaml'
+        test_dir = os.path.dirname(os.path.abspath(__file__)) 
+        config_path = os.path.join(test_dir, 'analysis', 'config.aqua-analysis-test.yaml')
 
         # Run details
         catalog = 'ci'
@@ -300,18 +302,24 @@ class TestAquaConsole():
 
         # run the analysis and verify that at least one file exist
         run_aqua(['analysis', '--config', config_path, '-m', model, '-e', experiment,
-                  '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
+                '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
         
-        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'experiment.yaml')), \
+        output_path = os.path.join(output_dir, catalog, model, experiment, 'r1')
+        
+        assert os.path.exists(os.path.join(output_path, 'experiment.yaml')), \
             "experiment.yaml not found"
-        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'dummy.log')), \
-            "dummy.log not found"
-        # Check if "This is a dummy CLI script that does nothing." is in the dummy.log
-        with open(os.path.join(output_dir, catalog, model, experiment, 'r1', 'dummy.log'), 'r') as f:
+        
+        log_file = os.path.join(output_path, 'dummy-dummy_tool.log')
+        assert os.path.exists(log_file), \
+            f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) if os.path.exists(output_path) else 'directory does not exist'}"
+        
+        # Check if "This is a dummy CLI script that does nothing." is in the log
+        with open(log_file, 'r', encoding='utf-8') as f:
             content = f.read()
         assert "This is a dummy CLI script that does nothing." in content, \
-            "Expected content not found in dummy.log"
-        assert os.path.exists(os.path.join(output_dir, catalog, model, experiment, 'r1', 'setup_checker.log')), \
+            "Expected content not found in dummy-dummy_tool.log"
+        
+        assert os.path.exists(os.path.join(output_path, 'setup_checker.log')), \
             "setup_checker.log not found"
 
         # remove aqua
@@ -339,7 +347,7 @@ class TestAquaConsole():
             assert excinfo.value.code == 1
 
         # a new install
-        run_aqua(['install', machine])
+        run_aqua(['install', MACHINE])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
 
         # add catalog with editable option
@@ -435,23 +443,23 @@ class TestAquaConsole():
         run_aqua_console_with_input(['uninstall'], 'yes')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
-    def test_install_copies_config_files(self, tmpdir, set_home, run_aqua):
-        """Test that configuration files are copied correctly during install.
+    # def test_install_copies_config_files(self, tmpdir, set_home, run_aqua):
+    #     """Test that configuration files are copied correctly during install.
 
-        Args:
-            tmpdir (str): Temporary directory
-            set_home (fixture): Fixture to modify the HOME environment variable
-            run_aqua (fixture): Fixture to run AQUA console with some interactive command
-        """
-        # Setup temporary home directory
-        mydir = str(tmpdir)
-        set_home(mydir)
+    #     Args:
+    #         tmpdir (str): Temporary directory
+    #         set_home (fixture): Fixture to modify the HOME environment variable
+    #         run_aqua (fixture): Fixture to run AQUA console with some interactive command
+    #     """
+    #     # Setup temporary home directory
+    #     mydir = str(tmpdir)
+    #     set_home(mydir)
 
-        # Run aqua install
-        run_aqua(['install', machine])
+    #     # Run aqua install
+    #     run_aqua(['install', machine])
 
-        # Verify the configuration files were copied correctly
-        assert verify_config_files(os.path.join(mydir, '.aqua'), diagnostic_config)
+    #     # Verify the configuration files were copied correctly
+    #     assert verify_config_files(os.path.join(mydir, '.aqua'), diagnostic_config)
 
     def test_console_with_links(self, tmpdir, set_home, run_aqua_console_with_input):
 
@@ -461,7 +469,7 @@ class TestAquaConsole():
 
         # check unexesting installation
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua_console_with_input(['-v', 'install', machine, '-p', 'environment.yml'], 'yes')
+            run_aqua_console_with_input(['-v', 'install', MACHINE, '-p', 'environment.yml'], 'yes')
             assert excinfo.value.code == 1
 
         # install from path with grids
@@ -473,7 +481,7 @@ class TestAquaConsole():
         # assert not os.path.exists(os.path.join(mydir,'.aqua'))
 
         # install from path
-        run_aqua_console_with_input(['-v', 'install', machine, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
+        run_aqua_console_with_input(['-v', 'install', MACHINE, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
         assert os.path.exists(os.path.join(mydir, 'vicesindaco'))
 
         # uninstall everything again
@@ -486,26 +494,31 @@ class TestAquaConsole():
         mydir = str(tmpdir)
         set_home(mydir)
 
+        # find the correct AQUA root and config paths
+        test_dir = os.path.dirname(os.path.abspath(__file__))  # /path/to/AQUA/tests
+        aqua_root = os.path.abspath(os.path.join(test_dir, '..'))  # /path/to/AQUA
+        config_dir = os.path.join(aqua_root, 'config')  # /path/to/AQUA/config
+
         # check unexesting installation
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(['-vv', 'install', machine, '-e', '.'])
+            run_aqua(['-vv', 'install', MACHINE, '-e', '.'])
             assert excinfo.value.code == 1
 
         # install from path with grids
-        run_aqua(['-vv', 'install', machine, '--editable', 'config'])
+        run_aqua(['-vv', 'install', MACHINE, '--editable', config_dir])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
         for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.islink(os.path.join(mydir, '.aqua', folder))
         assert os.path.isdir(os.path.join(mydir, '.aqua', 'catalogs'))
 
         # install from path in editable mode
-        run_aqua_console_with_input(['-vv', 'install', machine, '--editable', 'config',
+        run_aqua_console_with_input(['-vv', 'install', MACHINE, '--editable', config_dir,
                                      '--path', os.path.join(mydir, 'vicesindaco2')], 'yes')
         assert os.path.islink(os.path.join(mydir, '.aqua'))
         run_aqua_console_with_input(['uninstall'], 'yes')
 
-        # install from path in editable mode but withoyt aqua link
-        run_aqua_console_with_input(['-vv', 'install', machine, '--editable', 'config',
+        # install from path in editable mode but without aqua link
+        run_aqua_console_with_input(['-vv', 'install', MACHINE, '--editable', config_dir,
                                      '--path', os.path.join(mydir, 'vicesindaco1')], 'no')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
         assert os.path.isdir(os.path.join(mydir, 'vicesindaco1', 'catalogs'))
@@ -526,7 +539,7 @@ class TestAquaConsole():
         set_home(mydir)
 
         # aqua install
-        run_aqua(['install', machine])
+        run_aqua(['install', MACHINE])
         run_aqua(['add', 'ci'])
         run_aqua(['add', 'ciccio', '-e', 'AQUA_tests/catalog_copy'])
         run_aqua(['list', '-a'])
@@ -563,12 +576,12 @@ class TestAquaConsole():
 
         # check unexesting installation
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(['install', machine])
+            run_aqua(['install', MACHINE])
             assert excinfo.value.code == 1
 
         # install from path without home
         shutil.rmtree(os.path.join(mydir, 'vicesindaco'))
-        run_aqua_console_with_input(['-v', 'install', machine, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
+        run_aqua_console_with_input(['-v', 'install', MACHINE, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
         assert os.path.isdir(os.path.join(mydir, 'vicesindaco'))
         assert os.path.isfile(os.path.join(mydir, 'vicesindaco', 'config-aqua.yaml'))
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
@@ -578,10 +591,10 @@ class TestAquaConsole():
 @pytest.fixture
 def run_query_with_input(tmpdir):
     def _run_query(input_text, default_answer):
-        testfile = os.path.join(tmpdir, 'testfile')
-        with open(testfile, 'w') as f:
+        testfile = os.path.join(tmpdir, TESTFILE)
+        with open(testfile, 'w', encoding='utf-8') as f:
             f.write(input_text)
-        sys.stdin = open(testfile)
+        sys.stdin = open(testfile, 'r', encoding='utf-8')
         try:
             result = query_yes_no("Question?", default_answer)
         finally:

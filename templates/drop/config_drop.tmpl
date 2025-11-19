@@ -10,6 +10,8 @@ target:
   resolution: r100      # Options: r100 (1°), r25 (0.25°), r360 (0.25°), native, or custom
   frequency: monthly    # Options: monthly, daily, 3hourly, 6hourly, etc.
   catalog: {{ catalog }}
+  startdate: {{ startdate }}  # Optional: starting date for Drop analysis
+  enddate: {{ enddate }}      # Optiona: ending date for Drop analysis
   
   # Optional: Regional selection
   # Uncomment to extract specific regions

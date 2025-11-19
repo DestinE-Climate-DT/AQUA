@@ -141,7 +141,7 @@ class Diagnostic():
             catalog (str): The catalog used to retrieve the data.
         """
         reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                        regrid=regrid, startdate=startdate, enddate=enddate,
+                        regrid=regrid,
                         loglevel=loglevel, **reader_kwargs)
 
         data = reader.retrieve(var=var)
@@ -149,7 +149,9 @@ class Diagnostic():
         # If the data is empty, raise an error
         if not data:
             raise ValueError(f"No data found for {model} {exp} {source} with variable {var}")
-
+        
+        data = data.sel(time=slice(startdate, enddate))
+        
         # If there is a month requirement we infer the data frequency,
         # then we check how many months are available in the data
         # and finally raise an error if the requirement is not met.
@@ -209,17 +211,17 @@ class Diagnostic():
 
         Args:
             diagnostic (str): The diagnostic name. Used for creating the diagnostic file paths.
-        
+
         Returns:
             str: The path to the regions file.
         """
         regions_file = ConfigPath().get_config_dir()
-        regions_file = os.path.join(regions_file, 'diagnostics', diagnostic, 'definitions', 'regions.yaml')
+        regions_file = os.path.join(regions_file, 'tools', diagnostic, 'definitions', 'regions.yaml')
         if os.path.exists(regions_file):
             return regions_file
         else:
             raise FileNotFoundError(f'Region file path not found at: {regions_file}')
-    
+
     def _read_regions_file(self, regions_file: str):
         """
         Read the regions list from the regions file.
@@ -231,7 +233,7 @@ class Diagnostic():
             dict: A dictionary containing the regions and their properties form parsed YAML file.
         """
         return load_yaml(regions_file)
-    
+
     def _load_regions_from_file(self, diagnostic: str = None, regions_file_path: str = None) -> dict:
         """
         Retrieve the regions dictionary from the specified or default regions file.
@@ -246,7 +248,7 @@ class Diagnostic():
         """
         if regions_file_path is None:
             regions_file_path = self._get_default_regions_file(diagnostic)
-        
+
         return self._read_regions_file(regions_file_path)
 
     def _set_region(self, diagnostic: str, region: str = None, regions_file_path: str = None,
@@ -304,7 +306,7 @@ class Diagnostic():
         """
         res_dict = self._select_region(data=self.data, region=region, diagnostic=diagnostic, drop=drop)
         return res_dict['region'], res_dict['lon_limits'], res_dict['lat_limits']
-    
+
     def _select_region(self, data: xr.Dataset, region: str = None, diagnostic: str = None, drop: bool = True, **kwargs):
         """
         Select a geographic region from the dataset. Used when selection is not on the self.data attribute.

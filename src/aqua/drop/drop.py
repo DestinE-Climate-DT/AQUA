@@ -22,15 +22,18 @@ import dask
 import xarray as xr
 import numpy as np
 import pandas as pd
+
 from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
 from dask.distributed.diagnostics import MemorySampler
+
+from aqua.lock import SafeFileLock
 from aqua.logger import log_configure, log_history
 from aqua.reader import Reader
-from aqua.util import create_folder, generate_random_string
-from aqua.util import dump_yaml, load_yaml
-from aqua.util import ConfigPath, file_is_complete
+from aqua.util.io_util import create_folder, file_is_complete
+from aqua.util import dump_yaml, load_yaml, ConfigPath
 from aqua.util import create_zarr_reference, replace_intake_vars
+from aqua.util.string import generate_random_string
 from .drop_util import move_tmp_files, list_drop_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
 
@@ -62,6 +65,7 @@ class Drop():
                  catalog=None, model=None, exp=None, source=None,
                  var=None, configdir=None,
                  resolution=None, frequency=None, fix=True,
+                 startdate=None, enddate=None,
                  outdir=None, tmpdir=None, nproc=1,
                  loglevel=None,
                  region=None, drop=False,
@@ -77,7 +81,7 @@ class Drop():
         Initialize the DROP class
 
         Args:
-            catalog (string):        The catalog you want to reader. If None, guessed by the reader.
+            catalog (string):        The catalog you want to read. If None, guessed by the reader.
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
@@ -88,6 +92,10 @@ class Drop():
                                      DROP output, if no frequency is specified,
                                      no time average is performed
             fix (bool, opt):         True to fix the data, default is True
+            startdate (string,opt): Start date for the data to be processed,
+                                     format YYYYMMDD, default is None
+            enddate (string,opt):   End date for the data to be processed,
+                                     format YYYYMMDD, default is None
             outdir (string):         Where the DROP output is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
@@ -138,6 +146,11 @@ class Drop():
         self.rebuild = rebuild
         self.kwargs = kwargs
         self.fix = fix
+
+        # configure start date and end date
+        self.startdate = startdate
+        self.enddate = enddate
+        self._validate_date(startdate, enddate)
 
         # configure statistics
         self.stat = stat
@@ -216,10 +229,30 @@ class Drop():
             return param
         raise KeyError(msg or f"Please specify {name}.")
 
+    @staticmethod
+    def _validate_date(startdate, enddate):
+        """Validate date format for startdate and enddate"""
+        
+        if startdate is not None:
+            try:
+                pd.to_datetime(startdate)
+            except (ValueError, TypeError):
+                raise ValueError('startdate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
+        
+        if enddate is not None:
+            try:
+                pd.to_datetime(enddate)
+            except (ValueError, TypeError):
+                raise ValueError('enddate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
+
     def _issue_info_warning(self):
         """
         Print information about the DROP settings
         """
+
+        if self.startdate is not None or self.enddate is not None:
+            self.logger.info('startdate is %s, enddate is %s', self.startdate, self.enddate)
+            self.logger.info('startdate or enddate are set, please be sure to process one experiment at the time.')
 
         if not self.frequency:
             self.logger.info('Frequency not specified, no time averaging will be performed.')
@@ -276,6 +309,8 @@ class Drop():
                              catalog=self.catalog,
                              loglevel=self.loglevel,
                              rebuild=self.rebuild,
+                             startdate=self.startdate,
+                             enddate=self.enddate,
                              fix=self.fix, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
@@ -338,25 +373,28 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        cat_file = load_yaml(catalogfile)
+        
+        with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
+            cat_file = load_yaml(catalogfile)
 
-        # define the entry name
-        entry_name = self.catbuilder.create_entry_name()
-        sgn = self._define_source_grid_name()
+            # define the entry name
+            entry_name = self.catbuilder.create_entry_name()
+            sgn = self._define_source_grid_name()
 
-        if entry_name in cat_file['sources']:
-            catblock = cat_file['sources'][entry_name]
-        else:
-            catblock = None
+            if entry_name in cat_file['sources']:
+                catblock = cat_file['sources'][entry_name]
+            else:
+                catblock = None
 
-        block = self.catbuilder.create_entry_details(
-            basedir=self.basedir, catblock=catblock, source_grid_name=sgn
-        )
+            block = self.catbuilder.create_entry_details(
+                basedir=self.basedir, catblock=catblock, 
+                source_grid_name=sgn
+            )
 
-        cat_file['sources'][entry_name] = block
+            cat_file['sources'][entry_name] = block
 
-        # dump the update file
-        dump_yaml(outfile=catalogfile, cfg=cat_file)
+            # dump the update file
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def create_zarr_entry(self, verify=True):
         """
@@ -399,26 +437,28 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        cat_file = load_yaml(catalogfile)
+        
+        with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
+            cat_file = load_yaml(catalogfile)
 
-        # define the entry name - zarr entries never have lra- prefix
-        base_name = f'{self.catbuilder.resolution}-{self.catbuilder.frequency}'
-        entry_name = base_name + '-zarr'
-        self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
-        sgn = self._define_source_grid_name()
+            # define the entry name - zarr entries never have lra- prefix
+            base_name = f'{self.catbuilder.resolution}-{self.catbuilder.frequency}'
+            entry_name = base_name + '-zarr'
+            self.logger.info('Creating zarr files for %s %s %s', self.model, self.exp, entry_name)
+            sgn = self._define_source_grid_name()
 
-        if entry_name in cat_file['sources']:
-            catblock = cat_file['sources'][entry_name]
-        else:
-            catblock = None
+            if entry_name in cat_file['sources']:
+                catblock = cat_file['sources'][entry_name]
+            else:
+                catblock = None
 
-        block = self.catbuilder.create_entry_details(
-            basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
-        )
-        block['args']['urlpath'] = urlpath
-        cat_file['sources'][entry_name] = block
+            block = self.catbuilder.create_entry_details(
+                basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver='zarr'
+            )
+            block['args']['urlpath'] = urlpath
+            cat_file['sources'][entry_name] = block
 
-        dump_yaml(outfile=catalogfile, cfg=cat_file)
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
 
         # verify the zarr entry makes sense
         if verify:
@@ -432,9 +472,10 @@ class Drop():
                 self.logger.error('Zarr source is not accessible by the Reader likely due to irregular amount of NetCDF file')
                 self.logger.error('To avoid issues in the catalog, the entry will be removed')
                 self.logger.error('In case you want to keep it, please run with verify=False')
-                cat_file = load_yaml(catalogfile)
-                del cat_file['sources'][entry_name]
-                dump_yaml(outfile=catalogfile, cfg=cat_file)
+                with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
+                    cat_file = load_yaml(catalogfile)
+                    del cat_file['sources'][entry_name]
+                    dump_yaml(outfile=catalogfile, cfg=cat_file)
 
     def _set_dask(self):
         """
@@ -473,39 +514,49 @@ class Drop():
         from the same year
         """
 
-        infiles = self.get_filename(var, year, month='??')
-        if len(glob.glob(infiles)) == 12:
+        infiles_pattern = self.get_filename(var, year, month='??')
+        monthly_files = sorted(glob.glob(infiles_pattern))
 
+        if len(monthly_files) == 12:
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
+            tmp_outfile = self.get_filename(var, year, tmp=True)
+            
+            # Move monthly files to tmp for safety
+            for monthly_file in monthly_files:
+                shutil.move(monthly_file, self.tmpdir)
+            
+            # Clean any existing output files
+            for f in [tmp_outfile, outfile]:
+                if os.path.exists(f):
+                    os.remove(f)
 
-            # clean older file
-            if os.path.exists(outfile):
-                os.remove(outfile)
+            # Get the moved files in tmpdir - they keep the same basename
+            tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
 
+            # Concatenation with CDO or Xarray
             if self.compact == 'cdo':
-                infiles_list = sorted(glob.glob(infiles))
                 command = [
                     'cdo',
                     *self.cdo_options,
                     'cat',
-                    *infiles_list,
-                    outfile
+                    *tmp_monthly_files,
+                    tmp_outfile
                 ]
                 self.logger.debug("Using CDO command: %s", command)
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
             else:
-                # these XarrayDatasets are made of a single variable
                 self.logger.debug("Using xarray to concatenate files")
-                xfield = xr.open_mfdataset(infiles)
+                xfield = xr.open_mfdataset(tmp_monthly_files, combine='by_coords', parallel=True)
                 name = list(xfield.data_vars)[0]
-                xfield.to_netcdf(outfile,
+                xfield.to_netcdf(tmp_outfile,
                                  encoding={'time': self.time_encoding, name: self.var_encoding})
 
-            # clean of monthly files
-            for infile in glob.glob(infiles):
-                self.logger.info('Cleaning %s...', infile)
-                os.remove(infile)
+            # Move back the yearly file and cleanup
+            shutil.move(tmp_outfile, outfile)
+            for tmp_file in tmp_monthly_files:
+                self.logger.info('Cleaning %s...', tmp_file)
+                os.remove(tmp_file)
 
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""
@@ -569,6 +620,11 @@ class Drop():
             temp_data = self.reader.timstat(temp_data, self.stat, freq=self.frequency,
                                             exclude_incomplete=self.exclude_incomplete)
 
+        # temp_data could be empty after time statistics if everything was excluded
+        if 'time' in temp_data.coords and len(temp_data.time) == 0:
+            self.logger.warning('No data available for variable %s after time statistics, skipping...', var)
+            return
+        
         # regrid
         if self.resolution:
             temp_data = self.reader.regrid(temp_data)
@@ -592,8 +648,7 @@ class Drop():
                 if not self.overwrite:
                     self.logger.info('Yearly file %s already exists, skipping...', yearfile)
                     continue
-                else:
-                    self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
+                self.logger.warning('Yearly file %s already exists, overwriting as requested...', yearfile)
             year_data = temp_data.sel(time=temp_data.time.dt.year == year)
 
             # Splitting data into monthly files
@@ -610,8 +665,7 @@ class Drop():
                     if not self.overwrite:
                         self.logger.info('Monthly file %s already exists, skipping...', outfile)
                         continue
-                    else:
-                        self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
+                    self.logger.warning('Monthly file %s already exists, overwriting as requested...', outfile)
 
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
 

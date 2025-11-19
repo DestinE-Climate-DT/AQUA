@@ -12,11 +12,8 @@ rsync_with_mkdir() {
     local remote_host="${rsync_target%%:*}"
     local remote_path="${rsync_target#*:}"
 
-    # Ensure the remote directory exists
-    ssh "$remote_host" "mkdir -p \"$remote_path\""
-
     # Run rsync
-    rsync -avz "$local_path/" "$rsync_target/"
+    rsync -avz "$local_path/" "$rsync_target/" --relative --chmod=D775,F664
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
         log_message ERROR "Rsync failed with exit code $exit_code"
@@ -58,8 +55,8 @@ push_lumio() {
         if [ -f "content/experiments.yaml" ]; then
             rsync -avz content/experiments.yaml $3/content/experiments.yaml
         fi
-        rsync_with_mkdir content/png/$2/ $3/content/png/$2/
-        rsync_with_mkdir content/pdf/$2/ $3/content/pdf/$2/
+        rsync_with_mkdir content/png/$2/ $3
+        rsync_with_mkdir content/pdf/$2/ $3
         return
     else
         log_message INFO "Pushing figures to bucket $1 on LUMI-O, experiment: $2"
@@ -148,7 +145,7 @@ print_help() {
     echo
     echo "Options:"
     echo "  -b, --bucket BUCKET    push to the specified bucket (defaults to 'aqua-web')"
-    echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml)"
+    echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml in \$AQUA/config/analysis)"
     echo "  -d, --no-update        do not update the remote github repository"  
     echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
@@ -174,7 +171,7 @@ bucket="aqua-web"
 repository="DestinE-Climate-DT/aqua-web"
 update=1
 rsync=""
-config="$SCRIPT_DIR/config.grouping.yaml"
+config="$SCRIPT_DIR/../../config/analysis/config.grouping.yaml"
 ensemble=1  # Default to new ensemble structure with 4 levels (catalog/model/experiment/realization)
 
 # Parse all options first

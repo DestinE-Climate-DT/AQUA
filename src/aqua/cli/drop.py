@@ -60,7 +60,14 @@ def drop_parser(parser = None):
                         help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
                         help="Resolution of the DROP output. Can be anything in the AQUA resolution.")
-
+    parser.add_argument('--startdate', type=str,
+                        help="Start date to subset the data. Format YYYY-MM-DD")
+    parser.add_argument('--enddate', type=str,
+                        help="End date to subset the data. Format YYYY-MM-DD")
+    parser.add_argument('--zarr', action="store_true",
+                        help='Create zarr')
+    parser.add_argument('--verify-zarr', action="store_true",
+                        help='Verify the created zarr')  
     #return parser.parse_args(arguments)
     return parser
 
@@ -91,29 +98,27 @@ def drop_execute(args):
         if not item in config:
             raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
 
-    # main arguments
-    resolution = config['target'].get('resolution')
-    frequency = config['target'].get('frequency')
-    region = config['target'].get('region', None)
-    catalog = config['target'].get('catalog', None)
-    stat = config['target'].get('stat', 'mean')
-    
-    # assig paths
+    # paths
     paths = config['paths']
     outdir = paths['outdir']
     tmpdir = paths['tmpdir']
 
-    # options
-    loglevel = config['options'].get('loglevel', 'WARNING')
-    do_zarr = config['options'].get('zarr', False)
-    verify_zarr = config['options'].get('verify_zarr', False)
+    # main arguments, ony from config file
+    region = config['target'].get('region', None)
 
-    # command line override
-    stat = get_arg(args, 'stat', stat)
-    frequency = get_arg(args, 'frequency', frequency)
-    resolution = get_arg(args, 'resolution', resolution)
-    loglevel = get_arg(args, 'loglevel', loglevel)
+    # Command line argumens override config file
+    catalog = get_arg(args, 'catalog', config['target'].get('catalog'))
+    stat = get_arg(args, 'stat', config['target'].get('stat', 'mean'))
+    frequency = get_arg(args, 'frequency', config['target'].get('frequency'))
+    resolution = get_arg(args, 'resolution', config['target'].get('resolution'))
+    startdate = get_arg(args, 'startdate', config['target'].get('startdate'))
+    enddate = get_arg(args, 'enddate', config['target'].get('enddate'))
 
+    loglevel = get_arg(args, 'loglevel', config['options'].get('loglevel', 'WARNING'))
+    do_zarr = get_arg(args, 'zarr', config['options'].get('zarr', False))
+    verify_zarr = get_arg(args, 'verify_zarr', config['options'].get('verify_zarr', False))
+
+    # Other options, only from command line
     definitive = get_arg(args, 'definitive', False)
     monitoring = get_arg(args, 'monitoring', False)
     overwrite = get_arg(args, 'overwrite', False)
@@ -122,23 +127,24 @@ def drop_execute(args):
     if only_catalog:
         print('--only-catalog selected, doing a lot of noise but in the end producing only catalog update!')
     fix = get_arg(args, 'fix', True)
+
     default_workers = get_arg(args, 'workers', 1)
-    
 
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
-            frequency=frequency, fix=fix,
+            frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
             region=region, stat=stat,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
-def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, loglevel,
-            region=None, stat='mean',
-            definitive=False, overwrite=False,
-            rebuild=False, monitoring=False,
-            default_workers=1, do_zarr=False, verify_zarr=False,
-            only_catalog=False):
+def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=None,
+             startdate=None, enddate=None, outdir=None, tmpdir=None, loglevel=None,
+             region=None, stat='mean',
+             definitive=False, overwrite=False,
+             rebuild=False, monitoring=False,
+             default_workers=1, do_zarr=False, verify_zarr=False,
+             only_catalog=False):
     """
     Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
     Optional feature for each source can be defined as `zoom`, `workers` and `realizations`
@@ -203,6 +209,7 @@ def drop_cli(args, config, catalog, resolution, frequency, fix, outdir, tmpdir, 
                         # init the DROP
                         drop = Drop(catalog=catalog, model=model, exp=exp, source=source,
                                         var=varname, resolution=resolution,
+                                        startdate=startdate, enddate=enddate,
                                         frequency=frequency, fix=fix,
                                         outdir=outdir, tmpdir=tmpdir,
                                         nproc=workers, loglevel=loglevel,

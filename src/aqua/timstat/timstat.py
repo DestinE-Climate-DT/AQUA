@@ -102,7 +102,7 @@ class TimStat():
         else:  # we can safely assume that it is a callable function now
             self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
             if resample_freq is not None:
-                out = resample_data.apply(partial(stat, **func_kwargs, **kwargs))
+                out = resample_data.map(partial(stat, **func_kwargs, **kwargs))
             else:
                 out = stat(resample_data, **func_kwargs, **kwargs)
 
@@ -131,7 +131,7 @@ class TimStat():
         # Add a variable to create time_bounds
         if time_bounds:
             resampled = data.time.resample(time=resample_freq)
-            time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds').transpose()
+            time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds', coords='different').transpose()
             time_bnds['time'] = out.time
             time_bnds.name = 'time_bnds'
             out = xr.merge([out, time_bnds])

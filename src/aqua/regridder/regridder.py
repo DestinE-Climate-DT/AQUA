@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+from tempfile import TemporaryDirectory
 import xarray as xr
 from smmregrid import CdoGenerate, GridInspector
 from smmregrid import Regridder as SMMRegridder
@@ -230,6 +231,26 @@ class Regridder():
             self.src_grid_area = grid_area
 
         return grid_area
+    
+    def _safe_to_netcdf(self, data, filename):
+        """Save to netcdf safely using a temporary file.
+        
+        Args:
+            data (xr.Dataset or xr.DataArray): Data to save.
+            filename (str): Destination file path.
+        """
+        # Ensure parent directory exists
+        dest_dir = os.path.dirname(os.path.abspath(filename))
+        if dest_dir:  # Handle edge case where filename has no directory component
+            os.makedirs(dest_dir, exist_ok=True)
+        else:
+            dest_dir = '.'  # Use current directory
+        
+        # Create temp file in same directory as destination (same filesystem)
+        with TemporaryDirectory(dir=dest_dir) as tmpdirname:
+            tmp_file = os.path.join(tmpdirname, "temp.nc")
+            data.to_netcdf(tmp_file)
+            os.replace(tmp_file, filename)
 
     def _load_area(self, grid_name, grid_dict, reader_kwargs, rebuild=False):
         """
@@ -255,7 +276,7 @@ class Regridder():
 
         # generate and save the area
         grid_area = self._generate_area(grid_name, grid_dict, area_filename, area_type)
-        grid_area.to_netcdf(area_filename)
+        self._safe_to_netcdf(grid_area, area_filename)
         self.logger.info("Saved %s area to %s.", area_type, area_filename)
 
         return grid_area
@@ -283,7 +304,6 @@ class Regridder():
         # clean if necessary
         if os.path.exists(area_filename):
             self.logger.info("%s areas file %s exists. Regenerating.", area_type, area_filename)
-            os.remove(area_filename)
 
         self.logger.info("Generating %s area for %s", area_type, grid_name)
 
@@ -339,11 +359,9 @@ class Regridder():
             # check if weights already exist, if not, generate them
             if rebuild or not check_existing_file(weights_filename):
 
-                # clean if necessary
                 if os.path.exists(weights_filename):
                     self.logger.info(
                         "Weights file %s exists. Regenerating.", weights_filename)
-                    os.remove(weights_filename)
                 else:
                     self.logger.info(
                         "Generating weights for %s grid: %s", tgt_grid_name, vertical_dim)
@@ -365,13 +383,14 @@ class Regridder():
                 weights = generator.weights(method=regrid_method,
                                             vertical_dim=smm_vertical_dim,
                                             nproc=nproc)
-                weights.to_netcdf(weights_filename)
+                self._safe_to_netcdf(weights, weights_filename)
 
             else:
                 self.logger.info(
                     "Loading existing weights from %s.", weights_filename)
-                # load the weights
-                weights = xr.open_dataset(weights_filename)
+                
+            # load the weights
+            weights = xr.open_dataset(weights_filename)
 
             # initialize the regridder
             self.smmregridder[vertical_dim] = SMMRegridder(

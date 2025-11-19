@@ -5,8 +5,9 @@ import numpy as np
 from typeguard import TypeCheckError
 from aqua.fldstat import AreaSelection
 from aqua.util import select_season
+from conftest import LOGLEVEL
 
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 @pytest.fixture
 def sample_data():

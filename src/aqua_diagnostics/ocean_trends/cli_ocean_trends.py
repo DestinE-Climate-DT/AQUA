@@ -40,11 +40,11 @@ if __name__ == '__main__':
     cluster = get_arg(args, 'cluster', None)
     nworkers = get_arg(args, 'nworkers', None)
 
-    client, cluster, private_cluster, = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
+    client, cluster, private_cluster = open_cluster(nworkers=nworkers, cluster=cluster, loglevel=loglevel)
 
     # Load the configuration file and then merge itTimeseries with the command-line arguments,
     # overwriting the configuration file values with the command-line arguments.
-    config_dict = load_diagnostic_config(diagnostic='ocean3d',
+    config_dict = load_diagnostic_config(diagnostic='ocean3d', config=args.config,
                                          default_config='config_ocean_trends.yaml',
                                          loglevel=loglevel)
     config_dict = merge_config_args(config=config_dict, args=args, loglevel=loglevel)
@@ -54,11 +54,12 @@ if __name__ == '__main__':
     exp = get_arg(args, 'exp', config_dict['datasets'][0]['exp'])
     source = get_arg(args, 'source', config_dict['datasets'][0]['source'])
     regrid = get_arg(args, 'regrid', config_dict['datasets'][0]['regrid'])
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
     realization = get_arg(args, 'realization', None)
+    # This reader_kwargs will be used if the dataset corresponding value is None or not present
+    reader_kwargs = config_dict['datasets'][0].get('reader_kwargs') or {}
     if realization:
-        reader_kwargs = {'realization': realization}
-    else:
-        reader_kwargs = config_dict['datasets'][0].get('reader_kwargs', {})
+        reader_kwargs['realization'] = realization
     logger.info(f"Catalog: {catalog}, Model: {model}, Experiment: {exp}, Source: {source}, Regrid: {regrid}")
 
     # Output options
@@ -67,12 +68,6 @@ if __name__ == '__main__':
     save_pdf = config_dict['output'].get('save_pdf', True)
     save_png = config_dict['output'].get('save_png', True)
     dpi = config_dict['output'].get('dpi', 300)
-
-    formats = []
-    if save_pdf:
-        formats.append('pdf')
-    if save_png:
-        formats.append('png')
 
     if 'multilevel' in config_dict['diagnostics']['ocean_trends']:
         trends_config = config_dict['diagnostics']['ocean_trends']['multilevel']
@@ -83,8 +78,8 @@ if __name__ == '__main__':
             var = trends_config.get('var', None)
             dim_mean = trends_config.get('dim_mean', None) 
             # Add the global region if not present
-            if regions != [None] or 'go' not in regions:
-                regions.append('go')
+            # if regions != [None] or 'go' not in regions:
+            #     regions.append('go')
             for region in regions:
                 logger.info(f"Processing region: {region}")
 
@@ -104,6 +99,7 @@ if __name__ == '__main__':
                         # dim_mean=dim_mean,
                         outputdir=outputdir,
                         rebuild=rebuild,
+                        reader_kwargs=reader_kwargs
                     )
                     trends_plot = PlotTrends(
                         data=data_trends.trend_coef,
@@ -112,8 +108,8 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    trends_plot.plot_multilevel(formats=formats, dpi=dpi)
-                    
+                    trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+
                     zonal_trend_plot = PlotTrends(
                         data=data_trends.trend_coef.mean('lon'),
                         diagnostic_name=diagnostic_name,
@@ -121,10 +117,10 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    zonal_trend_plot.plot_zonal(formats=formats, dpi=dpi)
+                    zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
 
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
-    logger.info("OceanTrends diagnostic completed.")
+    logger.info("Ocean Trends diagnostic completed.")

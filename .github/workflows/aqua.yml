@@ -1,10 +1,11 @@
 name: AQUA tests
+# This workflow uses pytest-xdist to run tests in parallel across 4 cores
 
 on:
   push:
-    branches: [ main, v0.13-operational ]
+    branches: [ main, v0.13-operational, v0.19-operational, v0.19-development ]
   pull_request:
-    branches: [ main, v0.13-operational ]
+    branches: [ main, v0.13-operational, v0.19-operational, v0.19-development ]
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
@@ -43,7 +44,9 @@ jobs:
       # github token: this is a personal access token (PAT) with read access to the repository.
       # It is used to download the AQUA catalog and is available also to dependabot.
       GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }}
-
+    
+    # This job runs on a Ubuntu machine with 4 cores 
+    # see https://docs.github.com/en/actions/reference/runners/github-hosted-runners.
     runs-on: ubuntu-latest
     # This option applies to the individual job of a matrix.
     continue-on-error: false
@@ -193,12 +196,36 @@ jobs:
             "user_key": "${{ secrets.POLYTOPE_KEY }}"
           }
           EOF
-      - name: Run tests
+      - name: Run tests (4 parallel cores with xdist groups)
         run: |
-          # Produce the XML report
           cd AQUA
-          # produce a xml report and a junit report to be used by codecov. Please notice other options are set in pyproject.toml
-          pytest --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -m "aqua or slow or gsv or graphics or catgen or diagnostics or ensemble" 2>&1 | tee aqua_pytest.log
+          
+          echo "=========================================="
+          echo "Running all tests with pytest-xdist (4 cores)"
+          echo "Tests with xdist_group markers will run on dedicated workers"
+          echo "=========================================="
+          
+          # produce xml reports and junit to be used by codecov. Please notice other options are set in pyproject.toml
+
+          pytest -n 4 \
+            --max-worker-restart=3 \
+            --cov \
+            --junitxml=junit.xml \
+            -o junit_family=legacy \
+            -m "aqua or slow or gsv or graphics or catgen or diagnostics or ensemble" \
+            2>&1 | tee aqua_pytest.log
+          
+          TEST_EXIT=$?
+          
+          # Generate coverage reports
+          coverage xml
+          coverage report
+          
+          # Check if tests passed
+          if [ $TEST_EXIT -ne 0 ]; then
+            echo "Tests failed with exit code: $TEST_EXIT"
+            exit 1
+          fi
       - name: Upload coverage reports to Codecov
         if: ${{ github.actor != 'dependabot[bot]' && !cancelled() }}
         uses: codecov/codecov-action@v5

@@ -6,9 +6,10 @@ import numpy as np
 import pandas as pd
 from aqua import Reader
 from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
-from aqua.util import format_realization, extract_attrs
+from aqua.util import format_realization, extract_attrs, time_to_string
 from aqua.util.string import strlist_to_phrase, lat_to_phrase
 from aqua.util.units import multiply_units
+from conftest import LOGLEVEL
 
 @pytest.fixture
 def test_text():
@@ -25,7 +26,7 @@ def test_extract_literal_and_numeric(test_text):
         result = extract_literal_and_numeric(input_text)
         assert result == expected_output
 
-loglevel = 'DEBUG'
+loglevel = LOGLEVEL
 
 @pytest.mark.aqua
 def test_convert_data_units():
@@ -54,7 +55,6 @@ def test_convert_data_units():
 @pytest.mark.aqua
 class TestFileIsComplete:
     """The File is Complete testing class"""
-
 
     @pytest.fixture
     def sample_netcdf(self, tmp_path):

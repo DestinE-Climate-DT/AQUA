@@ -39,3 +39,4 @@ plot_attributes:
   xlogscale: False
   number_of_axe_ticks: 4
   number_of_bar_ticks: 6
+  dpi: 300

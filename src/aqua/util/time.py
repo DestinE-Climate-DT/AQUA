@@ -236,17 +236,13 @@ def time_to_string(time=None, format='%Y-%m-%d'):
     """
     if time is None:
         raise ValueError('time_to_string() requires a time argument')
-    elif isinstance(time, str):
-        # if time is a string, we assume it is already in the right format
-        return time
-    elif isinstance(time, pd.Timestamp):
-        # if time is a pandas timestamp, we convert it to a string
-        return time.strftime(format)
-    elif isinstance(time, np.datetime64):
-        # if time is a numpy datetime64 object, we convert it to a string
-        return pd.to_datetime(time).strftime(format)
+
+    # Convert supported types into pandas.Timestamp
+    if isinstance(time, (str, pd.Timestamp, np.datetime64)):
+        ts = pd.to_datetime(time)
     else:
         raise ValueError('time_to_string() requires a time argument of type str, pd.Timestamp or np.datetime64')
+    return ts.strftime(format)
 
 
 def int_month_name(month, abbreviated=False):

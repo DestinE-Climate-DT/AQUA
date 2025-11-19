@@ -100,7 +100,7 @@ class GlobalBiases(Diagnostic):
             super().retrieve(var=self.var, reader_kwargs=reader_kwargs)
 
         if self.data is None:
-            self.logger.error("Data could not be retrieved for %s, %s, %s", self.model, self.exp, self.source)
+            self.logger.error("Data could not be retrieved for %s, %s, %s", self.AQUA_model, self.AQUA_exp, self.AQUA_source)
             raise NoDataError("No data retrieved.")
 
         # Customize metadata and attributes
@@ -131,13 +131,37 @@ class GlobalBiases(Diagnostic):
         else:
             self.logger.info("All variables retrieved; no variable-specific operations applied.")
 
+    def savenetcdf(self, data: xr.Dataset, diagnostic_product: str, 
+                    rebuild: bool = True, create_catalog_entry: bool = False, extra_keys = None,
+                    dict_catalog_entry: dict = {'jinjalist': ['realization'],
+                                                'wildcardlist': ['var']}):
+        """
+        data (xr.Dataset): Input dataset.
+        diagnostic_product (str): The product name to be used in the filename (e.g., 'annual_climatology').
+        rebuild (bool): If True, rebuild the data from the original files.
+        create_catalog_entry (bool): If True, create a catalog entry for the data. Default is False.
+        extra_keys (dict): Extra keys for filename generation.
+        dict_catalog_entry (dict): A dictionary with catalog entry information. 
+            Default is {'jinjalist': ['freq', 'region', 'realization'], 'wildcardlist': ['var']}.
+        """
+        super().save_netcdf(data=data,
+                diagnostic=self.diagnostic,
+                diagnostic_product=diagnostic_product,
+                outputdir=self.outputdir,
+                create_catalog_entry=create_catalog_entry,
+                dict_catalog_entry=dict_catalog_entry,
+                extra_keys=extra_keys)
+
+    
     def compute_climatology(self,
                             data: xr.Dataset = None,
                             var: str = None,
                             plev: float = None,
                             save_netcdf: bool = None,
                             seasonal: bool = False,
-                            seasons_stat: str = 'mean') -> None:
+                            seasons_stat: str = 'mean',
+                            create_catalog_entry: bool = False
+                            ) -> None:
         """
         Compute total and optionally seasonal climatology for a variable.
 
@@ -148,7 +172,7 @@ class GlobalBiases(Diagnostic):
             save_netcdf (bool, optional): If True, save output to NetCDF.
             seasonal (bool): If True, compute seasonal climatology (DJF, MAM, JJA, SON).
             seasons_stat (str): Aggregation statistic: 'mean', 'std', 'max', 'min'.
-
+            create_catalog_entry (bool): If True, create a catalog entry for the data. Default is False.
         Raises:
             ValueError: If `seasons_stat` is invalid.
         """
@@ -165,20 +189,25 @@ class GlobalBiases(Diagnostic):
 
         self.climatology = xr.Dataset({var: data[var].mean(dim='time')})
         self.climatology.attrs.update({
-            'catalog': self.catalog,
-            'model': self.model,
-            'exp': self.exp,
+            'AQUA_catalog': self.catalog,
+            'AQUA_model': self.model,
+            'AQUA_exp': self.exp,
+            'AQUA_realization': self.realization,
             'startdate': str(self.startdate),
             'enddate': str(self.enddate)
         })
 
         if save_netcdf:
-            extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
-            super().save_netcdf(
+            extra_keys = {
+                k: v for k, v in {
+                    'var': var,
+                    'plev': plev,
+                }.items() if v is not None
+            }
+            self.savenetcdf(
                 data=self.climatology,
-                diagnostic=self.diagnostic,
-                diagnostic_product='climatology',
-                outputdir=self.outputdir,
+                diagnostic_product='annual_climatology',
+                create_catalog_entry=create_catalog_entry,
                 extra_keys=extra_keys
             )
 
@@ -197,22 +226,23 @@ class GlobalBiases(Diagnostic):
                 season_stat = getattr(season_data, stat_funcs[seasons_stat])(dim='time')
                 seasonal_data.append(season_stat.expand_dims(season=[season]))
 
-            self.seasonal_climatology = xr.concat(seasonal_data, dim='season').to_dataset(name=var)
+            self.seasonal_climatology = xr.concat(seasonal_data, dim='season', coords='different').to_dataset(name=var)
             self.seasonal_climatology.attrs.update({
-                'catalog': self.catalog,
-                'model': self.model,
-                'exp': self.exp,
+                'AQUA_catalog': self.catalog,
+                'AQUA_model': self.model,
+                'AQUA_exp': self.exp,
+                'AQUA_realization': self.realization,
                 'startdate': str(self.startdate),
                 'enddate': str(self.enddate)
             })
 
             if save_netcdf:
                 extra_keys = {k: v for k, v in [('var', var), ('plev', plev)] if v is not None}
-                super().save_netcdf(
-                    data=self.seasonal_climatology,
-                    diagnostic='globalbiases',
+                self.savenetcdf(
+                    data=self.climatology,
                     diagnostic_product='seasonal_climatology',
-                    outputdir=self.outputdir,
+                    create_catalog_entry=create_catalog_entry,
                     extra_keys=extra_keys
                 )
                 self.logger.info(f'Seasonal climatology saved to {self.outputdir}.')
+
