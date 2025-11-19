@@ -432,7 +432,6 @@ class PlotBaseMixin():
         if self.short_name is not None:
             extra_keys.update({'var': self.short_name})
         if self.region is not None:
-            region = self.region
             extra_keys.update({'region': self.region})
 
         outputsaver.save_figure(fig, diagnostic_product,
