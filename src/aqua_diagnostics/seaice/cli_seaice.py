@@ -76,15 +76,13 @@ if __name__ == '__main__':
 
             # Get info
             regions   = conf_dict_ts['regions']
-            startdate = conf_dict_ts['startdate']
-            enddate   = conf_dict_ts['enddate']
             
             # Initialise monthly_models with the number of datasets
             monthly_mod = [None] * len(datasets)
 
             for i, dataset in enumerate(datasets):
                 # Get the variable name for this method from the diagnostic configuration
-                mod_var = conf_dict_ts['varname'][method]
+                varname = conf_dict_ts['varname'][method]
                 dataset_args = cli.dataset_args(dataset)
 
                 # Integrate by method the model data and store them in a list.
@@ -93,7 +91,7 @@ if __name__ == '__main__':
                                 outputdir=cli.outputdir,
                                 loglevel=cli.loglevel)
 
-                monthly_mod[i] = seaice.compute_seaice(method=method, var=mod_var, reader_kwargs=reader_kwargs)
+                monthly_mod[i] = seaice.compute_seaice(method=method, var=varname, reader_kwargs=reader_kwargs)
 
                 seaice.save_netcdf(monthly_mod[i], 'seaice', diagnostic_product='timeseries', 
                                    extra_keys={'method': method, 'source': dataset['source'], 'regions_domain': "_".join(regions)})
@@ -128,8 +126,6 @@ if __name__ == '__main__':
                     # Get reference args and override specific fields
                     reference_args = cli.dataset_args(reference)
                     reference_args['regions'] = regs_indomain
-                    reference_args['startdate'] = reference.get('startdate', startdate)
-                    reference_args['enddate'] = reference.get('enddate', enddate)
                     reference_args['regrid'] = regrid or reference.get('regrid', None)
                     
                     # Integrate by method the reference data and store them in a list
@@ -138,13 +134,13 @@ if __name__ == '__main__':
                                         loglevel=cli.loglevel)
 
                     if conf_dict_ts['calc_ref_std']:
-                        monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
+                        monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(method=method, var=varname, 
                                                                                        calc_std_freq=calc_std_freq) #, reader_kwargs=reader_kwargs)
 
                         seaice_ref.save_netcdf(monthly_std_ref[i], 'seaice', diagnostic_product='timeseries_std',
                                                extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
                     else:
-                        monthly_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname')) #, reader_kwargs=reader_kwargs)
+                        monthly_ref[i] = seaice_ref.compute_seaice(method=method, var=varname) #, reader_kwargs=reader_kwargs)
                     
                     seaice_ref.save_netcdf(monthly_ref[i], 'seaice', diagnostic_product='timeseries',
                                            extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
@@ -183,15 +179,13 @@ if __name__ == '__main__':
 
             # Get info
             regions   = conf_dict_ts['regions']
-            startdate = conf_dict_ts['startdate']
-            enddate   = conf_dict_ts['enddate']
 
             # Initialise monthly_models with the number of datasets
             monthly_mod = [None] * len(datasets)
 
             for i, dataset in enumerate(datasets):
                 # Get the variable name for this method from the diagnostic configuration
-                mod_var = conf_dict_ts['varname'][method]
+                varname = conf_dict_ts['varname'][method]
                 dataset_args = cli.dataset_args(dataset)
                 dataset_args['regions'] = regions
 
@@ -200,7 +194,7 @@ if __name__ == '__main__':
                                 outputdir=cli.outputdir,
                                 loglevel=cli.loglevel)
 
-                monthly_mod[i] = seaice.compute_seaice(method=method, var=mod_var, 
+                monthly_mod[i] = seaice.compute_seaice(method=method, var=varname, 
                                                        get_seasonal_cycle=True, reader_kwargs=reader_kwargs)
 
                 seaice.save_netcdf(monthly_mod[i], 'seaice', diagnostic_product='seasonalcycle', 
@@ -236,8 +230,6 @@ if __name__ == '__main__':
                     # Get reference args and override specific fields
                     reference_args = cli.dataset_args(reference)
                     reference_args['regions'] = regs_indomain
-                    reference_args['startdate'] = reference.get('startdate', startdate)
-                    reference_args['enddate'] = reference.get('enddate', enddate)
                     reference_args['regrid'] = regrid or reference.get('regrid', None)
                     
                     # Integrate by method the reference data and store them in a list.
@@ -246,13 +238,13 @@ if __name__ == '__main__':
                                         loglevel=cli.loglevel)
 
                     if conf_dict_ts['calc_ref_std']:
-                        monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
+                        monthly_ref[i], monthly_std_ref[i] = seaice_ref.compute_seaice(method=method, var=varname, 
                                                                                        calc_std_freq=calc_std_freq, 
                                                                                        get_seasonal_cycle=True) #, reader_kwargs=reader_kwargs)
                         seaice_ref.save_netcdf(monthly_std_ref[i], 'seaice', diagnostic_product='seasonalcycle_std',
                                                extra_keys={'method': method, 'source': reference['source'], 'regions_domain': "_".join(regs_indomain)})
                     else:
-                        monthly_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
+                        monthly_ref[i] = seaice_ref.compute_seaice(method=method, var=varname, 
                                                                    get_seasonal_cycle=True) # ,
                                                                    # reader_kwargs=reader_kwargs)
                                                                    
@@ -286,8 +278,6 @@ if __name__ == '__main__':
 
         # Get info
         regions = conf_dict_2d['regions']
-        startdate = conf_dict_2d['startdate']
-        enddate = conf_dict_2d['enddate']
         months = conf_dict_2d.get('months', [3, 9])
 
         # Loop over the methods (fraction and thickness)
@@ -302,7 +292,7 @@ if __name__ == '__main__':
 
             for i, dataset in enumerate(datasets):
                 # Get the variable name for this method from the diagnostic configuration
-                mod_var = conf_dict_2d['varname'][method]
+                varname = conf_dict_2d['varname'][method]
                 dataset_args = cli.dataset_args(dataset)
                 dataset_args['regions'] = regions
 
@@ -312,7 +302,7 @@ if __name__ == '__main__':
                                 loglevel=cli.loglevel)
 
                 # Compute 2D data for each region
-                clims_mod[i] = seaice.compute_seaice(method=method, var=mod_var, stat='mean', freq='monthly', reader_kwargs=reader_kwargs)
+                clims_mod[i] = seaice.compute_seaice(method=method, var=varname, stat='mean', freq='monthly', reader_kwargs=reader_kwargs)
                 
                 seaice.save_netcdf(clims_mod[i], 'seaice', diagnostic_product='bias',
                                    extra_keys={'method': method, 'source':dataset['source'], 
@@ -343,8 +333,6 @@ if __name__ == '__main__':
                     # Get reference args and override specific fields
                     reference_args = cli.dataset_args(reference)
                     reference_args['regions'] = regs_indomain
-                    reference_args['startdate'] = reference.get('startdate', startdate)
-                    reference_args['enddate'] = reference.get('enddate', enddate)
                     reference_args['regrid'] = regrid or reference.get('regrid', None)
                     
                     # Get by method the reference data and store them in a list.
@@ -352,7 +340,7 @@ if __name__ == '__main__':
                                         outputdir=cli.outputdir,
                                         loglevel=cli.loglevel)
 
-                    clims_ref[i] = seaice_ref.compute_seaice(method=method, var=reference.get('varname'), 
+                    clims_ref[i] = seaice_ref.compute_seaice(method=method, var=varname, 
                                                              stat='mean', freq='monthly') # , reader_kwargs=reader_kwargs)
                     
                     seaice_ref.save_netcdf(clims_ref[i], 'seaice', diagnostic_product='bias',
