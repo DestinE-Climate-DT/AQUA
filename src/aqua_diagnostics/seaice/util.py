@@ -12,6 +12,8 @@ def defaultdict_to_dict(d):
         return {k: defaultdict_to_dict(v) for k, v in d.items()}
     return d
 
+
+
 def filter_region_list(regions_dict, regions_list, domain, logger, valid_domains=None):
     """ Filters a list of string regions based on config_file defined coords values and specified domain.
     This function checks if regions fall within the appropriate hemisphere based on their latitude bounds.

@@ -2,7 +2,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import cartopy.crs as ccrs
-from aqua.util import cbar_get_label
+from aqua.util import cbar_get_label, get_realizations
 import math
 
 from .mld_profiles import plot_maps
@@ -33,6 +33,7 @@ class PlotStratification:
         self.catalog = self.data[self.vars[0]].AQUA_catalog
         self.model = self.data[self.vars[0]].AQUA_model
         self.exp = self.data[self.vars[0]].AQUA_exp
+        self.realizations = get_realizations(self.data[self.vars[0]])
         self.region = self.data.attrs.get("AQUA_region", "global")
 
         self.outputsaver = OutputSaver(
@@ -41,6 +42,7 @@ class PlotStratification:
             model=self.model,
             exp=self.exp,
             outputdir=outputdir,
+            realization=self.realizations,
             loglevel=self.loglevel,
         )
 

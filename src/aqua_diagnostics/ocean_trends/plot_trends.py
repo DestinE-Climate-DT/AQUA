@@ -1,6 +1,7 @@
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
+from aqua.util import get_realizations
 import cartopy.crs as ccrs
 
 from .multiple_maps import plot_maps
@@ -47,7 +48,8 @@ class PlotTrends:
             model=self.model,
             exp=self.exp,
             outputdir=outputdir,
-            loglevel=self.loglevel,
+            realization = self.realizations,
+            loglevel=self.loglevel
         )
 
     def plot_multilevel(self,
@@ -257,4 +259,5 @@ class PlotTrends:
         self.catalog = self.data[self.vars[0]].AQUA_catalog
         self.model = self.data[self.vars[0]].AQUA_model
         self.exp = self.data[self.vars[0]].AQUA_exp
+        self.realizations = self.data[self.vars[0]].AQUA_realization
         self.region = self.data.attrs.get("AQUA_region", "global")
