@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.19.4]
+
+AQUA core complete list:
 - Include the correct realization in output names for all diagnostics (#2480)
 - Centralise `save_figure` in OutputSaver class (#2480)
 - Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2474)
@@ -1210,7 +1216,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.3
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.4
+[v0.19.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.1...v0.19.2
 [v0.19.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.19.1
