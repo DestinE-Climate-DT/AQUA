@@ -2,7 +2,6 @@ from typing import Optional, Tuple
 import matplotlib.pyplot as plt
 import xarray as xr
 from aqua.util import to_list
-from aqua.util.units import units_to_latex
 from aqua.logger import log_configure
 from .styles import ConfigStyle
 
@@ -77,17 +76,8 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
     var_name = data[0].long_name or data[0].short_name
     var_units = data[0].attrs.get("units", "")
 
-    if var_units:
-        var_units_latex = units_to_latex(var_units)
-        xlabel = f"{var_name} ({var_units_latex})" if var_name else "Unknown variable"
-    else:
-        xlabel = f"{var_name}" if var_name else "Unknown variable"
-    
-    if units:
-        units_latex = units_to_latex(units)
-        ylabel = f"{lev_name} ({units_latex})"
-    else:
-        ylabel = f"{lev_name}"
+    xlabel = f"{var_name} ({var_units})" if var_name and var_units else "Unknown variable"
+    ylabel = f"{lev_name} ({units})"  # Replace 'units' with actual units if available
 
     ax.set_ylabel(ylabel, fontsize=axis_label_size)
     ax.set_xlabel(xlabel, fontsize=axis_label_size)

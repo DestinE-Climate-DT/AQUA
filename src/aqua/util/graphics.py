@@ -14,7 +14,6 @@ import matplotlib.patches as mpatches
 
 from aqua.logger import log_configure
 from .sci_util import check_coordinates
-from .units import units_to_latex
 
 
 def add_cyclic_lon(da: xr.DataArray):
@@ -154,7 +153,7 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
         units = getattr(data, 'units', None)
 
         if units:
-            cbar_label = f"{cbar_label} [{units_to_latex(units)}]"
+            cbar_label = f"{cbar_label} [{units}]"
             logger.debug("Adding units to colorbar label")
 
     if cbar_label is None:
@@ -216,7 +215,7 @@ def set_map_title(data: xr.DataArray, title: str = None,
     if varname and not skip_varname:
         title += varname
         if units and put_units:
-            title += f" [{units_to_latex(units)}]"
+            title += f" [{units}]"
     if put_model_name and model:
             title += f" {model}"
     if put_exp_name and exp:
