@@ -3,7 +3,7 @@ datasets:
   - catalog: 'climatedt-o25.1'
     model: 'IFS-NEMO'
     exp: 'hist-1990-ensemble'
-    source: 'aqua-atmosphere2d-annual_climatology'
+    source: 'aqua-ocean2d-annual_climatology'
     regrid: null
     #areas: False
     #fix: True
@@ -22,32 +22,18 @@ output:
 diagnostics:
   EnsembleLatLon:
     run: true
-    diagnostic_name: 'atmosphere2d'
-    variable: ['2t','msl']
+    diagnostic_name: 'ocean2d'
+    variable: ['tos']
     params:
       default:
-      tprate:
-        standard_name: "tprate"
-        long_name: "Precipitation"
-        units: "mm/day"
     plot_params:
       default:
         projection: 'robinson'
         projection_params: {}
-      2t:
+      tos:
         vmin:
         vmax: 
         vmin_std: 
         vmax_std: 
         cmap: 'RdBu_r'
-      msl:
-        vmin: 
-        vmax: 
-        vmin_std: 
-        vmax_std: 
-      tprate:
-        vmin: 
-        vmax: 
-        vmin_std: 
-        vmax_std:
 

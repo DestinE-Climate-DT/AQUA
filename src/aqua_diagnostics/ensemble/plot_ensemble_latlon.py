@@ -1,6 +1,7 @@
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import xarray as xr
+import math
 from aqua.exceptions import NoDataError
 from aqua.graphics import plot_single_map
 from aqua.util import get_projection
@@ -112,6 +113,7 @@ class PlotEnsembleLatLon(BaseMixin):
         transform_first=False,
         cyclic_lon=True,
         contour=True,
+        add_land=False,
         coastlines=True,
         cbar_label=None,
         units=None,
@@ -141,6 +143,7 @@ class PlotEnsembleLatLon(BaseMixin):
             transform_first (bool, optional): Whether to transform data before plotting. Default is False.
             cyclic_lon (bool, optional): Whether longitude is cyclic. Default is False.
             contour (bool, optional): Overlay contours. Default is True.
+            add_land (bool):   If True, add land to the map. Defaults to False. IMPORTANT to keep it True in ocean plots. 
             coastlines (bool, optional): Draw coastlines. Default is True.
             cbar_label (str, optional): Label for the colorbar. Auto-generated if None.
             units (str, optional): Units of the variable. Used for titles and labels.
@@ -204,19 +207,34 @@ class PlotEnsembleLatLon(BaseMixin):
             vmin_mean = dataset_mean.values.min()
         if vmax_mean is None:
             vmax_mean = dataset_mean.values.max()
-        fig1, ax1 = plot_single_map(
-            dataset_mean,
-            proj=proj,
-            proj_params=proj_params,
-            contour=contour,
-            cyclic_lon=cyclic_lon,
-            coastlines=coastlines,
-            # transform_first=transform_first,
-            return_fig=True,
-            title=title_mean,
-            vmin=vmin_mean,
-            vmax=vmax_mean,
-        )
+        if math.isnan(vmin_mean) or math.isnan(vmax_mean) or vmin_mean == vmax_mean: 
+            fig1, ax1 = plot_single_map(
+                dataset_mean,
+                proj=proj,
+                proj_params=proj_params,
+                contour=contour,
+                cyclic_lon=cyclic_lon,
+                add_land=add_land,
+                coastlines=coastlines,
+                # transform_first=transform_first,
+                return_fig=True,
+                title=title_mean,
+            )
+        else:
+            fig1, ax1 = plot_single_map(
+                dataset_mean,
+                proj=proj,
+                proj_params=proj_params,
+                contour=contour,
+                cyclic_lon=cyclic_lon,
+                add_land=add_land,
+                coastlines=coastlines,
+                # transform_first=transform_first,
+                return_fig=True,
+                title=title_mean,
+                vmin=vmin_mean,
+                vmax=vmax_mean,
+            )
         ax1.set_xlabel("Longitude")
         ax1.set_ylabel("Latitude")
         self.logger.debug(f"Saving 2D map of mean")
@@ -233,19 +251,35 @@ class PlotEnsembleLatLon(BaseMixin):
         if vmin_std == vmax_std:
             self.logger.info("STD is Zero everywhere")
             return {"mean_plot": [fig1, ax1]}
-        fig2, ax2 = plot_single_map(
-            dataset_std,
-            proj=proj,
-            proj_params=proj_params,
-            contour=contour,
-            cyclic_lon=cyclic_lon,
-            coastlines=coastlines,
-            # transform_first=transform_first,
-            return_fig=True,
-            title=title_std,
-            vmin=vmin_std,
-            vmax=vmax_std,
-        )
+        if math.isnan(vmin_std) or math.isnan(vmax_std) or vmin_std == vmax_std: 
+            fig2, ax2 = plot_single_map(
+                dataset_std,
+                proj=proj,
+                proj_params=proj_params,
+                contour=contour,
+                cyclic_lon=cyclic_lon,
+                add_land=add_land,
+                coastlines=coastlines,
+                # transform_first=transform_first,
+                return_fig=True,
+                title=title_std,
+            )
+        else:
+            fig2, ax2 = plot_single_map(
+                dataset_std,
+                proj=proj,
+                proj_params=proj_params,
+                contour=contour,
+                cyclic_lon=cyclic_lon,
+                add_land=add_land,
+                coastlines=coastlines,
+                # transform_first=transform_first,
+                return_fig=True,
+                title=title_std,
+                vmin=vmin_std,
+                vmax=vmax_std,
+            )
+
         ax2.set_xlabel("Longitude")
         ax2.set_ylabel("Latitude")
 

@@ -37,7 +37,7 @@ if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
 
     loglevel = get_arg(args, "loglevel", "WARNING")
-    logger = log_configure(loglevel, "CLI single-model Global Bias 2D lat-lon ensemble")
+    logger = log_configure(loglevel, "CLI single-model Global Bias 2D lat-lon ocean ensemble")
     logger.info("Starting Ensemble Global Bias (lat-lon) diagnostic")
 
     cluster = get_arg(args, "cluster", None)
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     config_dict = load_diagnostic_config(
         diagnostic="ensemble",
         config=args.config,
-        default_config="config_single_model_latlon_ensemble.yaml",
+        default_config="config_single_model_latlon_ensemble_ocean2D.yaml",
         loglevel=loglevel,
     )
 
@@ -161,8 +161,9 @@ if __name__ == "__main__":
                     "vmax_std": vmax_std,
                     "proj": proj,
                     "transform_first": False,
-                    "cyclic_lon": False,
+                    "cyclic_lon": True,
                     "contour": True,
+                    "add_land": True,
                     "coastlines": True,
                     "cbar_label": None,
                     "units": units,

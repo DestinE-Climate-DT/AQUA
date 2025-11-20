@@ -1,4 +1,6 @@
-# Currently, the diagnostic supports comparing one dataset against one reference dataset at a time.
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
 datasets:
   - catalog: 'climatedt-o25.1'
     model: 'IFS-NEMO'
@@ -13,16 +15,16 @@ setup:
 
 output:
   outputdir: "./"
-  rebuild: true
+  #rebuild: true
   save_netcdf: true
   save_pdf: true
   save_png: true
   dpi: 300
 
 diagnostics:
-  EnsembleLatLon:
+  ensemble:
     run: true
-    diagnostic_name: 'atmosphere2d'
+    diagnostic_name: 'EnsembleLatLon'
     variable: ['2t','msl']
     params:
       default:
@@ -49,5 +51,5 @@ diagnostics:
         vmin: 
         vmax: 
         vmin_std: 
-        vmax_std:
+        vmax_std: 
 
