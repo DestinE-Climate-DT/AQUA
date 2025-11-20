@@ -29,6 +29,7 @@ AQUA diagnostics complete list:
 - Ocean Stratification and Ocean Trend: full support for regions across the dateline (#2433)
 - Area selection full support for regions across the dateline (#2430, #2434)
 - LatLonProfiles: Documentation (#2442), adjustments on lines plotting order (#2431) and AQUA_realization management (#2421)
+- EnsembleLatLon: Included config files for single model ensemble lat-lon for atmosphere2D and ocean2D (#2485)
 
 ## [v0.19.0]
 
