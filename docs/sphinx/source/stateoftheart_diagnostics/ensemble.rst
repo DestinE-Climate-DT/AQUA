@@ -38,16 +38,21 @@ Structure
 * ``plot_ensemble_latlon.py``: contains the ``PlotEnsembleLatLon.py`` class.
 * ``ensembleZonal.py``: contains the ``EnsembleZonal`` class.
 * ``plot_ensemble_zonal.py``: contains the ``PlotEnsembleLatLon.py`` class.
-* ``cli_multi_model_timeseries_ensemble``: the command line interfance (CLI) script to run the ensemble-timeseries ``1D`` diagnostic (mulit-model).
-* ``cli_single_model_timeseries_ensemble``: the command line interfance (CLI) script to run the ensemble-timeseries ``1D`` diagnostic (single-model-ensemble).
+* ``cli_multi_model_timeseries_ensemble``: the command line interfance (CLI) script to run the ensemble timeseries ``1D`` diagnostic (mulit-model).
+* ``cli_single_model_timeseries_ensemble``: the command line interfance (CLI) script to run the ensemble timeseries ``1D`` diagnostic (single-model-ensemble).
+* ``cli_single_model_latlon_ensemble_atmosphere2D.py``: the command line interfance (CLI) script to run the ensemble atmosphere2D fields ``2D`` diagnostic (single-model-ensemble).
+* ``cli_single_model_latlon_ensemble_ocean2D.py``: the command line interfance (CLI) script to run the ensemble ocean2D fields ``2D`` diagnostic (single-model-ensemble).
 * ``cli_global_2D_ensemble.py``: the command line interfance (CLI) script to run the ensemble-2D-maps in ``Lat-Lon`` diagnostic.
 * ``cli_zonal_ensemble.py``: the command line interfance (CLI) script to run the ensemble-zonal ``Lev-Lon`` diagnostic.
 * ``util.py``: contains the ``reader_retrieve_and_merge``, ``merge_from_data_files`` and ``compute_statistics`` functions.
 * ``base.py``: contains the base class which contains functions for saving the output as png, pdf and netcdf.
-* ``config/diagnostics/ensemble/config_global_2D_ensemble.yaml``: config file for ``cli_global_2D_ensemble.py``.
-* ``config/diagnostics/ensemble/config_multi_model_timeseries_ensemble.yaml``: config file for ``ensembleTimeseries.py``.
-* ``config/diagnostics/ensemble/config_single_model_timeseries_ensemble.yaml``: config file for ``ensembleTimeseries.py``.
-* ``config/diagnostics/ensemble/config_zonalmean_ensemble.yaml``: config file for ``ensembleZonal.py``.
+* ``config/diagnostics/ensemble/config_global_2D_ensemble.yaml``: config file for CLI ``cli_latlon_ensemble.py``.
+* ``config/diagnostics/ensemble/config_multi_model_timeseries_ensemble.yaml``: config file for CLI ``cli_multi_model_timeseries_ensemble.py``.
+* ``config/diagnostics/ensemble/config_single_model_timeseries_ensemble.yaml``: config file for CLI ``cli_single_model_timeseries_ensemble.py``.
+* ``config/diagnostics/ensemble/config_zonalmean_ensemble.yaml``: config file for CLI ``cli_zonal_ensemble.py``.
+* ``config/diagnostics/ensemble/config_single_model_latlon_ensemble_atmosphere2D.yaml``: config file for CLI ``cli_single_model_latlon_ensemble_atmosphere2D.py``.
+* ``config/diagnostics/ensemble/config_single_model_latlon_ensemble_ocean2D.yaml``: config file for CLI ``cli_single_model_latlon_ensemble_ocean2D.py``. 
+
 
 Input variables
 ---------------
@@ -167,9 +172,9 @@ The basic usage of this diagnostics is explained with working examples in the no
 
 Notebooks are stored in ``notebooks/ensemble``:
 
-* ``ensemble_timeseries.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ensemble/ensemble_timeseries.ipynb>`` _
-* ``ensemble_global_2D.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ensemble/ensemble_global_2D.ipynb>`` _
-* ``ensemble_zonalaverage.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ensemble/ensemble_zonalaverage.ipynb>`` _
+* `ensemble_timeseries.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ensemble/ensemble_timeseries.ipynb>`_
+* `ensemble_global_2D.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ensemble/ensemble_global_2D.ipynb>`_
+* `ensemble_zonalaverage.ipynb <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/diagnostics/ensemble/ensemble_zonalaverage.ipynb>`_
 
 Example Plots
 -------------
