@@ -1,7 +1,6 @@
 """Utilities module"""
 
 from .catalog_entry import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
-from .config import ConfigPath
 from .eccodes import get_eccodes_attr
 from .graphics import add_cyclic_lon, plot_box, minmax_maps
 from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
@@ -23,8 +22,7 @@ from .time import check_chunk_completeness, frequency_string_to_pandas, pandas_f
 from .time import time_to_string, int_month_name, xarray_to_pandas_freq
 from .zarr import create_zarr_reference
 
-__all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard',
-           'ConfigPath',
+__all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard', 
            'get_eccodes_attr',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
            'evaluate_colorbar_limits', 'cbar_get_label', 'set_map_title',

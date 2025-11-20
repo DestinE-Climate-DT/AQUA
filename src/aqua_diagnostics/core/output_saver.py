@@ -5,7 +5,6 @@ AQUA diagnostics.
 """
 
 import os
-
 from typing import Optional, Union
 
 import xarray as xr
@@ -16,7 +15,8 @@ from aqua.logger import log_configure, log_history
 from aqua.util import create_folder, add_pdf_metadata, add_png_metadata, update_metadata
 from aqua.util import dump_yaml, load_yaml
 from aqua.util import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
-from aqua.util import ConfigPath, format_realization
+from aqua.configurer import ConfigPath
+from aqua.util import format_realization
 from aqua.util.string import clean_filename
 
 class OutputSaver:

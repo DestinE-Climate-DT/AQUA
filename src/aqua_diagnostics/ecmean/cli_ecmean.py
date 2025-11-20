@@ -16,10 +16,10 @@ from aqua.logger import log_configure
 from aqua.exceptions import NoDataError, NotEnoughDataError
 
 from aqua.diagnostics import PerformanceIndices, GlobalMean
-from aqua.diagnostics.core import template_parse_arguments
 from aqua.diagnostics.core import load_diagnostic_config, merge_config_args, get_diagnostic_configpath
-from aqua.diagnostics.core import OutputSaver
-from aqua.util import strlist_to_phrase, lat_to_phrase, ConfigPath
+from aqua.diagnostics.core import template_parse_arguments, OutputSaver
+from aqua.util import strlist_to_phrase, lat_to_phrase
+from aqua.configurer import ConfigPath
 
 
 def parse_arguments(arguments):

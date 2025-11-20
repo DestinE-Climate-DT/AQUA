@@ -3,7 +3,7 @@ import xarray as xr
 from aqua import Reader
 from aqua.exceptions import NotEnoughDataError
 from aqua.logger import log_configure
-from aqua.util import ConfigPath
+from aqua.configurer import ConfigPath
 from aqua.util import load_yaml, convert_units
 from aqua.util import xarray_to_pandas_freq, pandas_freq_to_string
 from aqua.util import DEFAULT_REALIZATION

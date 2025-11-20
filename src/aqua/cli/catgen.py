@@ -11,7 +11,8 @@ import sys
 import argparse
 import jinja2
 
-from aqua.util import load_yaml, dump_yaml, get_arg, ConfigPath
+from aqua.util import load_yaml, dump_yaml, get_arg
+from aqua.configurer import ConfigPath
 from aqua.logger import log_configure
 
 from aqua.lock import SafeFileLock

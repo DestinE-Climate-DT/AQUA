@@ -7,7 +7,8 @@ import pandas as pd
 import xarray as xr
 from datetime import datetime
 from typing import Union
-from aqua.util import ConfigPath, convert_units
+from aqua.configurer import ConfigPath
+from aqua.util import convert_units
 from aqua.logger import log_configure
 import yaml
 from os.path import isfile, join, exists, isdir

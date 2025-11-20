@@ -15,7 +15,8 @@ from aqua.lock import SafeFileLock
 from aqua import __path__ as pypath
 from aqua import catalog as print_catalog
 from aqua.util import load_yaml, dump_yaml, load_multi_yaml
-from aqua.util import create_folder, ConfigPath
+from aqua.util import create_folder
+from aqua.configurer import ConfigPath
 from aqua.logger import log_configure
 from aqua.util.util import HiddenPrints, to_list
 

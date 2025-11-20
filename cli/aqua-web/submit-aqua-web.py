@@ -14,7 +14,8 @@ from jinja2 import Template
 from ruamel.yaml import YAML
 from tempfile import NamedTemporaryFile
 from aqua.logger import log_configure
-from aqua.util import get_arg, ConfigPath
+from aqua.util import get_arg
+from aqua.configurer import ConfigPath
 
 
 class Submitter():

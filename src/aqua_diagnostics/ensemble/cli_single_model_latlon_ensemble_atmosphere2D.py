@@ -11,14 +11,12 @@ import sys
 from aqua import Reader
 from aqua.diagnostics import EnsembleLatLon, PlotEnsembleLatLon, reader_retrieve_and_merge
 from aqua.diagnostics.core import (
-    close_cluster,
-    load_diagnostic_config,
-    merge_config_args,
-    open_cluster,
-    template_parse_arguments,
+    close_cluster, load_diagnostic_config, merge_config_args,
+    open_cluster, template_parse_arguments,
 )
 from aqua.logger import log_configure
-from aqua.util import get_arg, ConfigPath
+from aqua.util import get_arg
+from aqua.configurer import ConfigPath
 # This is no circular import because this is a CLI so far
 from aqua.diagnostics.ensemble import extract_realizations
 

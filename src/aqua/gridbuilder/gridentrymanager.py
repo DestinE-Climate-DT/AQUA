@@ -9,7 +9,7 @@ import glob
 import re
 from typing import Optional, Any, Dict
 from aqua.util import load_yaml, dump_yaml
-from aqua.util import ConfigPath
+from aqua.configurer import ConfigPath
 from aqua.logger import log_configure
 
 

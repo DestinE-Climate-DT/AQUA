@@ -7,7 +7,8 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dask.distributed import LocalCluster
 from aqua.analysis import run_diagnostic_func, run_command, get_aqua_paths
-from aqua.util import load_yaml, create_folder, ConfigPath, format_realization
+from aqua.util import load_yaml, create_folder, format_realization
+from aqua.configurer import ConfigPath
 from aqua.util import expand_env_vars
 from aqua.logger import log_configure
 

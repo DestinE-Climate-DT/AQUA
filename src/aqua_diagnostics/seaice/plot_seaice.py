@@ -7,7 +7,8 @@ from aqua.diagnostics.core import OutputSaver
 from aqua.exceptions import NoDataError, NotEnoughDataError
 from aqua.logger import log_configure, log_history
 from aqua.graphics import plot_timeseries, plot_seasonalcycle, ConfigStyle
-from aqua.util import ConfigPath, get_realizations
+from aqua.configurer import ConfigPath
+from aqua.util import get_realizations
 from collections import defaultdict
 from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type
 

@@ -2,7 +2,8 @@
 import os
 import matplotlib.pyplot as plt
 from aqua.logger import log_configure
-from aqua.util import ConfigPath, load_yaml
+from aqua.configurer import ConfigPath
+from aqua.util import load_yaml
 
 
 class ConfigStyle(ConfigPath):

@@ -10,6 +10,7 @@ from .ensemble import PlotEnsembleTimeseries, PlotEnsembleLatLon, PlotEnsembleZo
 from .ensemble import reader_retrieve_and_merge, merge_from_data_files, load_premerged_ensemble_dataset, extract_realizations
 from .ecmean import PerformanceIndices, GlobalMean
 from .seaice import SeaIce, PlotSeaIce, Plot2DSeaIce
+from .sshVariability import sshVariabilityCompute, sshVariabilityPlot
 
 __all__ = ["NAO", "ENSO", "MJO",
            "PlotNAO", "PlotENSO", "PlotMJO",
@@ -18,10 +19,12 @@ __all__ = ["NAO", "ENSO", "MJO",
            "Histogram", "PlotHistogram",
            "GlobalBiases", "PlotGlobalBiases",
            "Radiation",
-           "EnsembleTimeseries", "EnsembleLatLon", 
-           "EnsembleZonal", "PlotEnsembleTimeseries", 
-           "PlotEnsembleLatLon", "PlotEnsembleZonal",
            "reader_retrieve_and_merge", "merge_from_data_files", "load_premerged_ensemble_dataset",
+           "EnsembleTimeseries", "EnsembleLatLon", "EnsembleZonal",
+           "PlotEnsembleTimeseries", "PlotEnsembleLatLon", "PlotEnsembleZonal",
+           "PerformanceIndices", "GlobalMean",
+           "SeaIce", "PlotSeaIce", "Plot2DSeaIce",
+           "sshVariabilityCompute", "sshVariabilityPlot",
            "Boxplots", "PlotBoxplots", "extract_realizations",
            "GlobalMean", "PerformanceIndices", "SeaIce", "PlotSeaIce", "Plot2DSeaIce",
            "Boxplots", "PlotBoxplots"]

@@ -267,6 +267,12 @@ fixer_name:
                 source: sftof
                 src_units: frac
                 units: frac
+   
+    ssh-adt:
+        data_model: false  # Do not attempt to fix coordinates
+        vars:
+            zos:
+                source: adt 
     
     WAGHC:
         convention: eccodes

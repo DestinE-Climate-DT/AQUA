@@ -4,7 +4,8 @@ import os
 import xarray as xr
 from metpy.units import units
 from aqua.logger import log_configure, log_history
-from aqua.util import load_yaml, ConfigPath
+from aqua.util import load_yaml
+from aqua.configurer import ConfigPath
 from .coordidentifier import CoordIdentifier
 from pint.errors import DimensionalityError
 
