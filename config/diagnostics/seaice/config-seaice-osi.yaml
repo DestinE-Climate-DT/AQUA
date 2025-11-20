@@ -13,8 +13,8 @@ datasets:
     source: 'lra-r100-monthly' # mandatory
     regrid: null               # if the diagnostic supports it
     reader_kwargs: null        # it can be a dictionary with reader kwargs
-    startdate: '1991-01-01'    # e.g. '1990-01-01'
-    enddate: '2000-12-31'      # e.g. '2000-12-31'
+    startdate: null            # e.g. '1990-01-01'
+    enddate: null              # e.g. '2000-12-31'
 
 # =======  Reference Datasets  =======
 references:
@@ -26,8 +26,8 @@ references:
     source: 'nh-monthly'       # mandatory
     regrid: 'r100'
     domain: "nh"
-    startdate: '1991-01-01'
-    enddate: '2000-12-31'
+    startdate: '1990-01-01'
+    enddate: '2020-12-31'
 
   # ---- Extent in SH ----
   - &ref_osi_sh
@@ -37,8 +37,8 @@ references:
     source: 'sh-monthly'       # mandatory
     regrid: 'r100'
     domain: "sh"
-    startdate: '1991-01-01'
-    enddate: '2000-12-31'
+    startdate: '1990-01-01'
+    enddate: '2020-12-31'
 
 # =======  Setup Configuration  =======
 setup:
