@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
 from aqua.logger import log_configure, log_history
-from aqua.util import ConfigPath, get_projection, plot_box, to_list
+from aqua.util import ConfigPath, get_projection, plot_box, to_list, get_realizations
 from aqua.util import evaluate_colorbar_limits, set_map_title, time_to_string
 from aqua.util import generate_colorbar_ticks, int_month_name, apply_circular_window
 from .util import extract_dates, _check_list_regions_type
@@ -38,6 +38,8 @@ class Plot2DSeaIce:
 
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name='Plot2DSeaIce')
+
+        self.realizations = get_realizations(models)
 
         self.ref = self._handle_data(ref)
         self.models = self._handle_data(models)
@@ -214,7 +216,7 @@ class Plot2DSeaIce:
             )
         self._save_plots(fig=fig, data=monmod, data_ref=monref, diagnostic_product='bias', 
                          description=description, extra_keys={'method': self.method, 'region': region})
-
+        plt.close(fig)
 
     def _plot_var_map(self, region, **kwargs):
         """
@@ -289,7 +291,8 @@ class Plot2DSeaIce:
         )
         self._save_plots(fig=fig, data=mondat, data_ref=None, 
                          diagnostic_product='varmap', description=description, extra_keys={'method': self.method, 'region': region})
-
+        plt.close(fig)
+        
     def _get_colorbar_ticks(self, data, vmin=None, vmax=None, norm=None,
                             boundaries=None, sym=False, ticks_rounding=1):
         """
@@ -550,9 +553,8 @@ class Plot2DSeaIce:
             return False
         return True
 
-    def _save_figure(self, fig, diagnostic_product,
-                     data, description, data_ref=None,
-                     extra_keys=None, format='png'):
+    def _save_plots(self, fig, data, diagnostic_product, description, 
+                    data_ref=None, extra_keys=None):
         """
         Handles the saving of a figure using OutputSaver.
 
@@ -562,13 +564,15 @@ class Plot2DSeaIce:
             data_ref (xarray.Dataset, optional): Reference dataset.
             diagnostic_product (str): Name of the diagnostic product.
             description (str): Description of the figure.
-            var (str): Variable name.
-            format (str): Format to save the figure ('png' or 'pdf').
+            extra_keys (dict, optional): Extra keys for filename.
         """
         # Ensure data is not None
         if data is None:
             raise ValueError("Data cannot be None for saving figures")
-            
+
+        if not self.save_pdf and not self.save_png:
+            return
+        
         outputsaver = OutputSaver(
             diagnostic='seaice',
             catalog=data.attrs.get('AQUA_catalog',''),
@@ -577,30 +581,14 @@ class Plot2DSeaIce:
             model_ref=data_ref.attrs.get('AQUA_model','') if data_ref is not None else None,
             exp_ref=data_ref.attrs.get('AQUA_exp','') if data_ref is not None else None,
             outputdir=self.outputdir,
-            loglevel=self.loglevel
+            loglevel=self.loglevel,
+            realization=self.realizations
         )
-        metadata = {"Description": description}
-
-        if format == 'pdf':
-            outputsaver.save_pdf(fig, diagnostic_product=diagnostic_product,
-                                 extra_keys=extra_keys, metadata=metadata, rebuild=self.rebuild)
-        elif format == 'png':
-            outputsaver.save_png(fig, diagnostic_product=diagnostic_product,
-                                 extra_keys=extra_keys, metadata=metadata, rebuild=self.rebuild)
-        else:
-            raise ValueError(f'Format {format} not supported. Use png or pdf.')
-
-    def _save_plots(self, fig, data, data_ref, 
-                    diagnostic_product, description, 
-                    **kwargs):
-        """
-        Save plots in both PDF and PNG formats.
-        """
-        extra_keys = kwargs.get('extra_keys', {})
         
-        if self.save_pdf:
-            self._save_figure(fig=fig, format='pdf', data=data, data_ref=data_ref, 
-                              diagnostic_product=diagnostic_product, description=description, extra_keys=extra_keys)
-        if self.save_png:
-            self._save_figure(fig=fig, format='png', data=data, data_ref=data_ref, 
-                              diagnostic_product=diagnostic_product, description=description, extra_keys=extra_keys)
+        metadata = {"Description": description}
+        extra_keys = {} if extra_keys is None else dict(extra_keys)
+        
+        outputsaver.save_figure(fig, diagnostic_product,
+                                extra_keys=extra_keys, metadata=metadata,
+                                save_pdf=self.save_pdf, save_png=self.save_png,
+                                rebuild=self.rebuild, dpi=self.dpi)

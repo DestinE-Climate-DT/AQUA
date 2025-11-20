@@ -2,9 +2,10 @@
 import pytest
 from aqua import Reader, Regridder
 from aqua.regridder.griddicthandler import GridDictHandler
+from conftest import APPROX_REL, LOGLEVEL
 
-LOGLEVEL = "DEBUG"
-approx_rel = 1e-4
+approx_rel = APPROX_REL
+
 
 @pytest.fixture(
     params=[
@@ -38,7 +39,6 @@ cfg_dict = {
         "tests": { "path": { "pizza please!" } }
     }
 }
-
 
 @pytest.mark.aqua
 class TestRegridder():
@@ -238,7 +238,6 @@ class TestRegridder():
         data = reader.retrieve(level=[2.5, 2275])
         val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
         assert val == pytest.approx(274.9045)
-
 
 @pytest.mark.aqua
 def test_non_latlon_interpolation():

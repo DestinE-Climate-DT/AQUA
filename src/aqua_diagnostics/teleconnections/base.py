@@ -1,7 +1,8 @@
 import os
 import xarray as xr
 from aqua.logger import log_configure
-from aqua.util import ConfigPath, load_yaml, select_season, to_list, convert_data_units
+from aqua.util import ConfigPath, load_yaml, select_season
+from aqua.util import to_list, convert_data_units, get_realizations
 from aqua.diagnostics.core import Diagnostic, OutputSaver
 
 xr.set_options(keep_attrs=True)
@@ -169,7 +170,8 @@ class PlotBaseMixin():
 
         self.outputsaver = OutputSaver(diagnostic=diagnostic,  catalog=self.catalogs, model=self.models,
                                        exp=self.exps, catalog_ref=self.ref_catalogs, model_ref=self.ref_models,
-                                       exp_ref=self.ref_exps, outputdir=outputdir, loglevel=self.loglevel)
+                                       exp_ref=self.ref_exps, outputdir=outputdir,
+                                       realization = self.realizations, loglevel=self.loglevel)
 
     def get_data_info(self):
         """
@@ -185,6 +187,7 @@ class PlotBaseMixin():
             self.catalogs = [d.AQUA_catalog for d in self.indexes]
             self.models = [d.AQUA_model for d in self.indexes]
             self.exps = [d.AQUA_exp for d in self.indexes]
+            self.realizations = get_realizations(self.indexes)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
         self.logger.debug(f'Exps: {self.exps}')
@@ -324,7 +327,7 @@ class PlotBaseMixin():
             description = description[:-2]
         description += "."
         if ref_maps is not None:
-            description += f" The contour lines are the model regression map and the filled contour map is the defference between the model and the reference {statistic} map."
+            description += f" The contour lines are the model regression map and the filled contour map is the difference between the model and the reference {statistic} map."
         self.logger.debug(f'Map description: {description}')
 
         return description

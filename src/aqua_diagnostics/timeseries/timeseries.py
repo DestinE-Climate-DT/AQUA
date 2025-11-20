@@ -168,7 +168,7 @@ class Timeseries(BaseMixin):
                 self.logger.info('Extending back the start date from %s to %s', start_date, class_startdate)
                 loop = loop_seasonalcycle(data=data, startdate=class_startdate, enddate=start_date,
                                           freq=freq, center_time=center_time, loglevel=self.loglevel)
-                data = xr.concat([loop, data], dim='time')
+                data = xr.concat([loop, data], dim='time', coords='different', compat='equals')
                 data = data.sortby('time')
             else:
                 self.logger.debug(f'No extension needed for the start date: {start_date} <= {class_startdate}')
@@ -177,7 +177,7 @@ class Timeseries(BaseMixin):
                 self.logger.info('Extending the end date from %s to %s', end_date, class_enddate)
                 loop = loop_seasonalcycle(data=data, startdate=end_date, enddate=class_enddate,
                                           freq=freq, center_time=center_time, loglevel=self.loglevel)
-                data = xr.concat([data, loop], dim='time')
+                data = xr.concat([data, loop], dim='time', coords='different', compat='equals')
                 data = data.sortby('time')
             else:
                 self.logger.debug(f'No extension needed for the end date: {class_enddate} >= {end_date}')

@@ -390,7 +390,7 @@ class Reader():
             if data is None or len(data.data_vars) == 0:
                 self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
 
-            if startdate and enddate and not ffdb:  # do not select if data come from FDB (already done)
+            if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
                 data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
@@ -750,14 +750,15 @@ class Reader():
         Returns:
             xarray.Dataset: The dataset retrieved from the intake-esm catalog.
         """
-        cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
+        xarray_open_kwargs = esmcat.metadata.get('xarray_open_kwargs', 
+                                         esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}}))
         query = esmcat.metadata['query']
         if var:
             query_var = esmcat.metadata.get('query_var', 'short_name')
             # Convert to list if not already
             query[query_var] = var.split() if isinstance(var, str) else var
         subcat = esmcat.search(**query)
-        data = subcat.to_dataset_dict(cdf_kwargs=cdf_kwargs,
+        data = subcat.to_dataset_dict(xarray_open_kwargs=xarray_open_kwargs,
                                       # zarr_kwargs=dict(consolidated=True),
                                       # decode_times=True,
                                       # use_cftime=True)

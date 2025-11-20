@@ -15,6 +15,7 @@ The following functions are available:
 - plot_maps: Plot multiple maps using plot_single_map
 """
 from .gregory import plot_gregory_monthly, plot_gregory_annual
+from .histogram import plot_histogram
 from .hovmoller import plot_hovmoller
 from .boxplot import boxplot
 from .index_plot import index_plot, indexes_plot
@@ -29,6 +30,7 @@ from .vertical_line import plot_vertical_lines
 
 
 __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
+           "plot_histogram",
            "plot_hovmoller", "boxplot",
            "index_plot", "indexes_plot",
            "plot_single_map", "plot_single_map_diff",

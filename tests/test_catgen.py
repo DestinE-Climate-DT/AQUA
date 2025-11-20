@@ -6,8 +6,9 @@ import pytest
 import logging
 from aqua.util import load_yaml, dump_yaml
 from aqua.cli.catgen import AquaFDBGenerator
+from conftest import LOGLEVEL
 
-loglevel = "DEBUG"
+loglevel = LOGLEVEL
 
 def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
     """

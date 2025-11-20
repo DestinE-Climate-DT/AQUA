@@ -77,6 +77,7 @@ def test_ensemble_2D_LatLon():
 
     plot_arguments = {
         "var": var,
+        "dpi": 50,
         "save_pdf": True,
         "save_png": True,
         "title_mean": "Test data",

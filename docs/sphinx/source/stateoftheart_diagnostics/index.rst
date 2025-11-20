@@ -28,6 +28,7 @@ Currently implemented diagnostics are:
    teleconnections
    ensemble
    lat_lon_profiles
+   histogram
 
 .. _diagnostics-configuration-files:
 
