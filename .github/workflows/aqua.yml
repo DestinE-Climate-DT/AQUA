@@ -48,7 +48,7 @@ jobs:
     # This job runs on a Ubuntu machine with 4 cores 
     # see https://docs.github.com/en/actions/reference/runners/github-hosted-runners.
     runs-on: ubuntu-latest
-    # Add timeout at job level as a safety net (10 minutes)
+    # Add timeout at job level
     timeout-minutes: 16
     # This option applies to the individual job of a matrix.
     continue-on-error: false
@@ -205,7 +205,7 @@ jobs:
           echo "=========================================="
           echo "Running all tests with pytest-xdist (4 cores)"
           echo "Tests with xdist_group markers will run on dedicated workers"
-          echo "Timeout set to ${{ job.timeout-minutes }} minutes - will retry only if timeout occurs"
+          echo "Timeout set to 16 minutes - will retry only if timeout occurs"
           echo "=========================================="
           
           # Use timeout command: returns 124 if timeout occurs.
@@ -239,7 +239,7 @@ jobs:
             # Check if timeout occurred
             if [ $TEST_EXIT -eq 124 ]; then
               if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "Tests timed out after ${{ job.timeout-minutes }} minutes on attempt $RETRY_COUNT. Retrying..."
+                echo "Tests timed out after 16 minutes on attempt $RETRY_COUNT. Retrying..."
                 sleep 10  # Brief pause before retry
                 continue
               else
