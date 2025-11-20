@@ -48,6 +48,8 @@ jobs:
     # This job runs on a Ubuntu machine with 4 cores 
     # see https://docs.github.com/en/actions/reference/runners/github-hosted-runners.
     runs-on: ubuntu-latest
+    # Add timeout at job level as a safety net (10 minutes)
+    timeout-minutes: 16
     # This option applies to the individual job of a matrix.
     continue-on-error: false
     container:
@@ -203,25 +205,60 @@ jobs:
           echo "=========================================="
           echo "Running all tests with pytest-xdist (4 cores)"
           echo "Tests with xdist_group markers will run on dedicated workers"
+          echo "Timeout set to ${{ job.timeout-minutes }} minutes - will retry only if timeout occurs"
           echo "=========================================="
           
-          # produce xml reports and junit to be used by codecov. Please notice other options are set in pyproject.toml
+          # Use timeout command: returns 124 if timeout occurs.
+          # produce xml reports and junit to be used by codecov.
 
-          pytest -n 4 \
-            --max-worker-restart=3 \
-            --cov \
-            --junitxml=junit.xml \
-            -o junit_family=legacy \
-            -m "aqua or slow or gsv or graphics or catgen" \
-            2>&1 | tee aqua_pytest.log
+          # Retry logic: try up to 3 times ONLY if timeout occurs
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          TEST_EXIT=0
           
-          TEST_EXIT=$?
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            
+            if [ $RETRY_COUNT -gt 1 ]; then
+              echo "=========================================="
+              echo "Retry attempt $RETRY_COUNT of $MAX_RETRIES"
+              echo "=========================================="
+            fi
+            
+            # Use timeout command: returns 124 if timeout occurs
+            timeout 960 pytest -n 4 \
+              --max-worker-restart=3 \
+              --cov \
+              --junitxml=junit.xml \
+              -o junit_family=legacy \
+              -m "aqua or slow or gsv or graphics or catgen or diagnostics or ensemble" \
+              2>&1 | tee aqua_pytest.log
           
-          # Generate coverage reports
+            TEST_EXIT=$?
+
+            # Check if timeout occurred
+            if [ $TEST_EXIT -eq 124 ]; then
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Tests timed out after ${{ job.timeout-minutes }} minutes on attempt $RETRY_COUNT. Retrying..."
+                sleep 10  # Brief pause before retry
+                continue
+              else
+                echo "Tests timed out after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            elif [ $TEST_EXIT -eq 0 ]; then
+              echo "Tests passed on attempt $RETRY_COUNT"
+              break
+            else
+              # Tests failed
+              echo "Tests failed with exit code: $TEST_EXIT"
+              exit 1
+            fi
+          done
+          
           coverage xml
           coverage report
           
-          # Check if tests passed
           if [ $TEST_EXIT -ne 0 ]; then
             echo "Tests failed with exit code: $TEST_EXIT"
             exit 1
