@@ -13,7 +13,7 @@ import uuid
 from jinja2 import Template
 from ruamel.yaml import YAML
 from tempfile import NamedTemporaryFile
-from aqua import log_configure
+from aqua.core.logger import log_configure
 from aqua.core.util import get_arg
 from aqua.core.configurer import ConfigPath
 
