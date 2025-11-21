@@ -27,7 +27,7 @@ class TestAccessor():
 
     def test_accessor_fldmean(self, data):
         """Test fldmean as accessor"""
-        avg = data.aqua.core.fldmean()['2t'].values
+        avg = data.aqua.fldmean()['2t'].values
         assert avg[1] == pytest.approx(285.75920)
 
     def test_accessor_histogram(self, data):
@@ -46,13 +46,13 @@ class TestAccessor():
 
         # Check if the accessor still works with the result
         reader_instance.set_default()  # Make sure that the correct reader is used
-        avg = data1r.aqua.core.fldmean()['2t'].values
+        avg = data1r.aqua.fldmean()['2t'].values
         assert avg[1] == pytest.approx(285.7543, rel=1e-4)
 
         # Alternative way to do it
-        avg = data2r.aqua.set_default(reader_instance2).aqua.core.fldmean()['2t'].values
+        avg = data2r.aqua.set_default(reader_instance2).aqua.fldmean()['2t'].values
         assert avg[1] == pytest.approx(285.7543, rel=1e-4)
 
         # Test accessor on dataarray (should be using the previous default)
-        avgda = data2['2t'].aqua.core.fldmean().values
+        avgda = data2['2t'].aqua.fldmean().values
         assert avgda[1] == pytest.approx(285.7543, rel=1e-4)
