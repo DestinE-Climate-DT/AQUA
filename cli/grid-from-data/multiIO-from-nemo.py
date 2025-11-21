@@ -7,7 +7,7 @@ import argparse
 import sys
 from aqua import Reader
 from aqua.core.util import load_yaml, get_arg, create_folder
-from aqua import log_configure
+from aqua.core.util import log_configure
 
 
 def parse_arguments(args):
