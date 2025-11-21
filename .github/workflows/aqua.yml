@@ -213,7 +213,7 @@ jobs:
           TEST_EXIT=0
             
           # Use timeout command: returns 124 if timeout occurs
-          timeout 960 pytest -n 4 \
+          timeout 1800 pytest -n 4 \
             --max-worker-restart=3 \
             --cov \
             --junitxml=junit.xml \
