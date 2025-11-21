@@ -90,7 +90,7 @@ all = [
 ]
 
 [project.scripts]
-aqua = "aqua.console.main:main"
+aqua = "aqua.core.src.console.main:main"
 
 [project.urls]
 homepage = "https://github.com/DestinE-Climate-DT/AQUA/"
@@ -98,14 +98,12 @@ documentation = "https://aqua.readthedocs.io/en/latest/index.html"
 repository = "https://github.com/DestinE-Climate-DT/AQUA/"
 issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 
-[tool.setuptools.package-data]
-platforms = ["any"]
-
-[tool.setuptools.package-dir]
-"aqua" = "aqua/core/src"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aqua*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "aqua.version.__version__"}
+version = {attr = "aqua.core.src.version.__version__"}
 
 [tool.pytest.ini_options]
 # verbose to have full test, run coverage on src folder and use pyproject as a configuration file
