@@ -221,22 +221,22 @@ class TestRegridder():
         data = reader.retrieve()
 
         layers = [0, 2]
-        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.core.fldmean().values
+        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.fldmean().values
         assert val == pytest.approx(8.6758228e-08)
-        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.core.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.fldmean().values
         assert val == pytest.approx(8.6758228e-08)
-        val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.core.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.fldmean().values
         assert val == pytest.approx(8.6758228e-08)
-        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.core.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
         assert val == pytest.approx(274.9045)
-        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.core.fldmean().values
+        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
         assert val == pytest.approx(274.9045)
-        val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.core.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
         assert val == pytest.approx(274.9045)
 
         # test reading specific levels for first vertical coordinate (nz1)
         data = reader.retrieve(level=[2.5, 2275])
-        val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.core.fldmean().values
+        val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
         assert val == pytest.approx(274.9045)
 
 @pytest.mark.aqua
