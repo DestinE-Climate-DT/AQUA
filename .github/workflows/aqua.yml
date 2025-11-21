@@ -127,7 +127,7 @@ jobs:
       - name: Compile code to check for syntax errors
         run: |
           cd AQUA
-          python -W error -m compileall -f -q src
+          python -W error -m compileall -f -q aqua
       - name: Lint with flake8
         run: |
           cd AQUA

@@ -7,13 +7,13 @@ AQUA command line main functions
 import os
 import shutil
 import sys
-from urllib.error import HTTPError
-import fsspec
 from importlib import resources as pypath
+from urllib.error import HTTPError
+
+import fsspec
 
 from aqua.core.lock import SafeFileLock
-
-from aqua import catalog as print_catalog
+from aqua.core.reader.catalog import catalog as print_catalog
 from aqua.core.util import load_yaml, dump_yaml, load_multi_yaml
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
@@ -25,15 +25,21 @@ from aqua.core.console.drop import drop_execute
 from aqua.core.console.catgen import catgen_execute
 from aqua.core.console.builder import builder_execute
 
+try:
+    from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES
+    from aqua.diagnostics import DIAGNOSTIC_TEMPLATES_DIRECTORIES
+    #print(f'Dx installed diagnostic config dirs: {DIAGNOSTIC_CONFIG_DIRECTORIES}')
+    #print(f'Dx installed diagnostic templates dirs: {DIAGNOSTIC_TEMPLATES_DIRECTORIES}')
+except ImportError:
+    DIAGNOSTIC_CONFIG_DIRECTORIES = []
+    DIAGNOSTIC_TEMPLATES_DIRECTORIES = []
 
 # folder used for reading/storing catalogs
 CATPATH = 'catalogs'
 
 # directories to be installed in the AQUA config folder
-CORE_DIRECTORIES = ['catgen', 'data_model',
+CORE_CONFIG_DIRECTORIES = ['catgen', 'data_model',
                     'fixes', 'grids', 'styles']
-
-DIAGNOSTIC_DIRECTORIES = ['analysis', 'diagnostics', 'tools']
 
 
 class AquaConsole():
@@ -44,8 +50,11 @@ class AquaConsole():
         """The main AQUA command line interface"""
 
         # NOTE: self.pypath points to $AQUA/aqua folder
-        self.pypath = pypath.files('aqua.core')
-        self.aquapath = os.path.join(self.pypath, 'config')
+        self.corepath = os.path.join(pypath.files('aqua.core'), 'config')
+        if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATES_DIRECTORIES:
+            self.diagpath = os.path.join(pypath.files('aqua.diagnostics'), 'config')
+        else:
+            self.diagpath = None
         self.configpath = None
         self.configfile = 'config-aqua.yaml'
         self.grids = None
@@ -193,13 +202,20 @@ class AquaConsole():
         print("Installing AQUA to", self.configpath)
         for file in ['config-aqua.tmpl']:
             target_file = os.path.splitext(file)[0] + '.yaml'  # replace the tmpl with yaml
-            self._copy_update_folder_file(f'{self.aquapath}/{file}', f'{self.configpath}/{target_file}')
-        for directory in CORE_DIRECTORIES:
-            self._copy_update_folder_file(os.path.join(self.aquapath, directory),
+            self._copy_update_folder_file(f'{self.corepath}/{file}', f'{self.configpath}/{target_file}')
+        for directory in CORE_CONFIG_DIRECTORIES:
+            self._copy_update_folder_file(os.path.join(self.corepath, directory),
                                      os.path.join(self.configpath, directory))
         for directory in ['templates']:
-            self._copy_update_folder_file(os.path.join(self.aquapath, '..', directory),
+            self._copy_update_folder_file(os.path.join(self.corepath, '..', directory),
                                      os.path.join(self.configpath, directory))
+        if self.diagpath is not None:
+            for directory in DIAGNOSTIC_CONFIG_DIRECTORIES:
+                self._copy_update_folder_file(os.path.join(self.diagpath, directory),
+                                         os.path.join(self.configpath, directory))
+            for directory in ['templates']:
+                self._copy_update_folder_file(os.path.join(self.diagpath, '..', directory),
+                                         os.path.join(self.configpath, directory))
         os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
 
     def _install_editable(self, editable):
@@ -218,12 +234,12 @@ class AquaConsole():
         for file in ['config-aqua.tmpl']:
             target_file = os.path.splitext(file)[0] + '.yaml'
             if os.path.isfile(os.path.join(editable, file)):
-                self._copy_update_folder_file(f'{self.aquapath}/{file}', f'{self.configpath}/{target_file}')
+                self._copy_update_folder_file(f'{self.corepath}/{file}', f'{self.configpath}/{target_file}')
             else:
                 self.logger.error('%s folder does not include AQUA configuration files. Please use AQUA', editable)
                 os.rmdir(self.configpath)
                 sys.exit(1)
-        for directory in CORE_DIRECTORIES:
+        for directory in CORE_CONFIG_DIRECTORIES:
             self._copy_update_folder_file(f'{editable}/{directory}', f'{self.configpath}/{directory}', link=True)
 
         for directory in ['templates']:
@@ -277,7 +293,7 @@ class AquaConsole():
         self._list_folder(cdir)
 
         if args.all:
-            for content in CORE_DIRECTORIES:
+            for content in CORE_CONFIG_DIRECTORIES:
                 print(f'AQUA current installed {content} in {self.configpath}:')
                 self._list_folder(os.path.join(self.configpath, content))
 
@@ -592,13 +608,13 @@ class AquaConsole():
                 self._update_catalog(args.catalog)
         else:
             self.logger.info('Updating AQUA installation...')
-            for directory in CORE_DIRECTORIES:
-                self._copy_update_folder_file(os.path.join(self.aquapath, directory),
+            for directory in CORE_CONFIG_DIRECTORIES:
+                self._copy_update_folder_file(os.path.join(self.corepath, directory),
                                          os.path.join(self.configpath, directory),
                                          update=True)
 
             for directory in ['templates']:
-                self._copy_update_folder_file(os.path.join(self.aquapath, '..', directory),
+                self._copy_update_folder_file(os.path.join(self.corepath, '..', directory),
                                          os.path.join(self.configpath, directory),
                                          update=True)
     
@@ -609,7 +625,7 @@ class AquaConsole():
             catalog (str): the catalog to be updated
         """
         cdir = f'{self.configpath}/{CATPATH}/{catalog}'
-        sdir = f'{self.aquapath}/{CATPATH}/{catalog}'
+        sdir = f'{self.corepath}/{CATPATH}/{catalog}'
         if os.path.exists(cdir):
             if os.path.islink(cdir):
                 self.logger.error('%s catalog has been installed in editable mode, no need to update', catalog)
