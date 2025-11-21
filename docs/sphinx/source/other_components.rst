@@ -283,7 +283,7 @@ we can write:
 
 .. code-block:: python
 
-    data.tcc.aqua.timmean(freq="Y").aqua.core.fldmean()
+    data.tcc.aqua.timmean(freq="Y").aqua.fldmean()
 
 .. note::
     The accessor always assumes that the Reader instance to be used is either
