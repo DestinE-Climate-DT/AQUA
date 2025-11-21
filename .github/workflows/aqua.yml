@@ -151,13 +151,10 @@ jobs:
         uses: actions/cache@v4
         id: dvc-cache
         with:
-          path: |
-            AQUA/AQUA_tests/*
-            !AQUA/AQUA_tests/fdb
-            $HOME/.cache/dvc
-          key: dvc-data-${{ runner.os }}-${{ hashFiles('aqua-dvc/data-tests/**/*.dvc') }}
+          path: AQUA/AQUA_tests
+          key: dvc-data-v2-${{ runner.os }}-${{ hashFiles('aqua-dvc/data-tests/**/*.dvc') }}
           restore-keys: |
-            dvc-data-${{ runner.os }}-
+            dvc-data-v2-${{ runner.os }}-
             dvc-data-
       - name: Pull and prepare DVC data
         if: steps.dvc-cache.outputs.cache-hit != 'true'
@@ -174,26 +171,24 @@ jobs:
           fi
       - name: Verify DVC data exists
         run: |
+          if [ "${{ steps.dvc-cache.outputs.cache-hit }}" == "true" ]; then
+            echo "✓ Using cached data (no DVC pull needed)"
+          else
+            echo "✓ Pulled fresh data from DVC/S3"
+          fi
           if [ ! -d "AQUA/AQUA_tests" ] || [ -z "$(ls -A AQUA/AQUA_tests 2>/dev/null)" ]; then
             echo "Error: AQUA/AQUA_tests is missing or empty"
             exit 1
           fi
-          echo "DVC data verified: $(du -sh AQUA/AQUA_tests | cut -f1)"
-      - name: Always pull FDB directory fresh
-        run: |
-          echo "Pulling FDB directory from DVC"
-          cd aqua-dvc
-          git checkout main
-          dvc pull data-tests/fdb
-          mkdir -p ../AQUA/AQUA_tests
-          cp -r data-tests/fdb ../AQUA/AQUA_tests/
-          # Verify FDB structure
-          if [ ! -f "../AQUA/AQUA_tests/fdb/etc/fdb/config.yaml" ]; then
-            echo "Error: fdb config.yaml missing after pull"
-            ls -la ../AQUA/AQUA_tests/fdb/ || echo "fdb directory doesn't exist"
+          # Verify fdb directory exists and has the required structure
+          if [ ! -f "AQUA/AQUA_tests/fdb/etc/fdb/config.yaml" ]; then
+            echo "Error: fdb config.yaml missing"
+            ls -la AQUA/AQUA_tests/ || echo "AQUA_tests directory doesn't exist"
+            ls -la AQUA/AQUA_tests/fdb/ 2>/dev/null || echo "fdb directory doesn't exist"
             exit 1
           fi
-          echo "FDB directory verified and ready"
+          echo "DVC data verified: $(du -sh AQUA/AQUA_tests | cut -f1)"
+          echo "FDB directory structure verified"
       - name: Set up FDB
         run: |
           export
