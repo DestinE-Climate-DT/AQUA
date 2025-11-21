@@ -3,7 +3,7 @@
 
 import xarray as xr
 from aqua import Reader
-from aqua import log_configure
+from aqua.core.util import log_configure
 from aqua.core.util import create_folder
 
 xr.set_options(keep_attrs=True)
