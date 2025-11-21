@@ -15,7 +15,6 @@ from aqua.core.lock import SafeFileLock
 
 from aqua import catalog as print_catalog
 from aqua.core.util import load_yaml, dump_yaml, load_multi_yaml
-from aqua.core.util import create_folder
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
 from aqua.core.util.util import HiddenPrints, to_list
@@ -45,8 +44,8 @@ class AquaConsole():
         """The main AQUA command line interface"""
 
         # NOTE: self.pypath points to $AQUA/aqua folder
-        self.pypath = pypath.files('aqua')
-        self.aquapath = os.path.join(os.path.dirname(self.pypath), 'config')
+        self.pypath = pypath.files('aqua.core')
+        self.aquapath = os.path.join(self.pypath, 'config')
         self.configpath = None
         self.configfile = 'config-aqua.yaml'
         self.grids = None

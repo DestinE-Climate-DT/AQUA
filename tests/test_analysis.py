@@ -5,7 +5,7 @@ The more structured test of aqua analysis console command is
 in tests/test_console.py
 """
 import pytest
-from aqua import log_configure
+from aqua.core.logger import log_configure
 from aqua.core.analysis import run_command, run_diagnostic_func
 from aqua.core.analysis.analysis import _build_extra_args
 
