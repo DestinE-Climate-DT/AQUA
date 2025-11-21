@@ -178,6 +178,16 @@ jobs:
             exit 1
           fi
           echo "DVC data verified: $(du -sh AQUA/AQUA_tests | cut -f1)"
+      - name: Verify FDB directory exists
+        run: |
+          if [ ! -d "AQUA/AQUA_tests/fdb" ]; then
+            echo "Warning: AQUA/AQUA_tests/fdb directory missing from cache, re-pulling DVC data"
+            cd aqua-dvc
+            git checkout main
+            dvc pull -R data-tests/*
+            mkdir -p ../AQUA/AQUA_tests
+            cp -r data-tests/* ../AQUA/AQUA_tests/
+          fi
       - name: Set up FDB
         run: |
           export
