@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import tempfile
 import subprocess
-from aqua.util.checksum import compute_md5, generate_checksums, verify_checksums
+from aqua.core.util.checksum import compute_md5, generate_checksums, verify_checksums
 
 
 @pytest.mark.aqua

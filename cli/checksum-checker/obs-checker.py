@@ -3,9 +3,9 @@
 
 import os
 import argparse
-from aqua.configurer import ConfigPath
-from aqua.util import load_yaml
-from aqua.util.checksum import generate_checksums, verify_checksums
+from aqua.core.configurer import ConfigPath
+from aqua.core.util import load_yaml
+from aqua.core.util.checksum import generate_checksums, verify_checksums
 
 # default grids to be scanned by the grids-checker tool
 OBS_FOLDERS = ['CERES', 'EN4', 'ERA5', 'ESA-CCI-L4',

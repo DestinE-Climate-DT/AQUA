@@ -1,5 +1,5 @@
 import pytest
-from aqua.graphics import ConfigStyle
+from aqua.core.graphics import ConfigStyle
 
 @pytest.mark.graphics
 class TestConfigStyle:

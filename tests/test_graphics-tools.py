@@ -6,11 +6,11 @@ from scipy.interpolate import griddata
 from pypdf import PdfReader
 
 from aqua import Reader
-from aqua.util.graphics import add_cyclic_lon, plot_box, minmax_maps
-from aqua.util import cbar_get_label, evaluate_colorbar_limits, add_pdf_metadata
-from aqua.util import get_nside, get_npix, healpix_resample
-from aqua.util import coord_names, set_map_title
-from aqua.graphics import plot_single_map
+from aqua.core.util.graphics import add_cyclic_lon, plot_box, minmax_maps
+from aqua.core.util import cbar_get_label, evaluate_colorbar_limits, add_pdf_metadata
+from aqua.core.util import get_nside, get_npix, healpix_resample
+from aqua.core.util import coord_names, set_map_title
+from aqua.core.graphics import plot_single_map
 from conftest import DPI, LOGLEVEL
 
 loglevel = LOGLEVEL

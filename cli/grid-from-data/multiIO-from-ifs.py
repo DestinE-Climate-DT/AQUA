@@ -7,9 +7,9 @@ import argparse
 import sys
 import os
 from aqua import Reader
-from aqua.util import load_yaml, get_arg, create_folder
-from aqua.logger import log_configure
-from aqua.configurer import ConfigPath
+from aqua.core.util import load_yaml, get_arg, create_folder
+from aqua.core.logger import log_configure
+from aqua.core.configurer import ConfigPath
 from cdo import *   # python version
 cdo = Cdo()
 

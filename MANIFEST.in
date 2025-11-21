@@ -1,3 +1,0 @@
-# MANIFEST.in to include the data files in the distributed package
-graft aqua/core/config
-graft aqua/core/templates

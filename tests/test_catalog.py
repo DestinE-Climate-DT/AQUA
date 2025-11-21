@@ -4,7 +4,7 @@ import pytest
 import types
 import xarray
 from aqua import Reader, catalog, inspect_catalog
-from aqua.reader.reader_utils import check_catalog_source
+from aqua.core.reader.reader_utils import check_catalog_source
 from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL

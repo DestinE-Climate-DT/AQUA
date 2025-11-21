@@ -4,9 +4,9 @@ import os
 import pytest
 from aqua import GridBuilder
 from aqua import Reader
-from aqua.gridbuilder.gridentrymanager import GridEntryManager
-from aqua.configurer import ConfigPath
-from aqua.util import load_yaml
+from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
+from aqua.core.configurer import ConfigPath
+from aqua.core.util import load_yaml
 
 pytestmark = [
     pytest.mark.aqua,

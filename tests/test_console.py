@@ -5,8 +5,8 @@ import shutil
 import sys
 import subprocess
 import pytest
-from aqua.console.main import AquaConsole, query_yes_no
-from aqua.util import dump_yaml, load_yaml
+from aqua.core.console.main import AquaConsole, query_yes_no
+from aqua.core.util import dump_yaml, load_yaml
 from aqua import __version__ as version
 from aqua import __path__ as pypath
 

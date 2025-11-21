@@ -1,8 +1,7 @@
 """Test for timmean method"""
 import pytest
 import numpy as np
-from aqua import Reader
-from aqua.histogram import histogram
+from aqua.core.histogram import histogram
 
 @pytest.fixture(scope='module')
 def reader(ifs_tco79_long_fixFalse_reader):

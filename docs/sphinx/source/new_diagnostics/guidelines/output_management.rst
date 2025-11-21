@@ -143,7 +143,7 @@ To open a PDF file and display its metadata:
 
 .. code-block:: python
 
-    from aqua.util import open_image
+    from aqua.core.util import open_image
 
     open_image("/path/to/my/file/dummy.mean.climatedt-phase1.IFS-NEMO.historical-1990.obs.ERA5.era5.pdf")
 

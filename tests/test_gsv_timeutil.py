@@ -2,7 +2,7 @@
 
 import pytest
 import pandas as pd
-from aqua.gsv.timeutil import floor_datetime
+from aqua.core.gsv.timeutil import floor_datetime
 
 # Assuming floor_datetime is already imported
 

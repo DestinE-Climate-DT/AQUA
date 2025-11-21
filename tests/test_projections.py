@@ -2,7 +2,7 @@
 
 import pytest
 import cartopy.crs as ccrs
-from aqua.util import get_projection
+from aqua.core.util import get_projection
 
 # List of (projection name, expected class, required kwargs if any)
 projection_cases = [

@@ -1,11 +1,10 @@
 import pytest
-import types
 import xarray as xr
 
 from dask.distributed import LocalCluster, Client
 
-from aqua.gsv.intake_gsv import GSVSource, gsv_available
-from aqua.configurer import ConfigPath
+from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
+from aqua.core.configurer import ConfigPath
 from aqua import Reader
 from conftest import LOGLEVEL
 

@@ -346,5 +346,5 @@ The metadata includes information about the model, experiment, source and AQUA v
 Additionally the ``history`` attribute is updated with details of the operations performed on the data.
 This is done by the ``Reader`` and it is under implementation for diagnostics as well.
 
-A function ``log_history`` is available in the ``aqua.logger`` module to log in this attribute for a specific dataset.
+A function ``log_history`` is available in the ``aqua.core.logger`` module to log in this attribute for a specific dataset.
 This can be used as well to log the history of the operations performed on the data in custom scripts.
