@@ -1,5 +1,4 @@
 import pytest
-import types
 import xarray as xr
 
 from dask.distributed import LocalCluster, Client

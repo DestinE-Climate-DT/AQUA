@@ -32,7 +32,7 @@ class TestTrender:
     def test_trend_dataarray(self, reader, data):
         """Trivial test for trend on DataArray"""
         block1 = data['2t'].isel(time=slice(0, 1000))
-        trend1 = reader.trender.trend(block1).aqua.core.fldmean()
+        trend1 = reader.trender.trend(block1).aqua.fldmean()
 
         assert trend1.shape == (1000,)
         assert pytest.approx(trend1.values[300]) == 285.908
@@ -40,7 +40,7 @@ class TestTrender:
     def test_detrend_dataarray(self, reader, data):
         """Trivial test for detrending on DataArray"""
         block1 = data['2t'].isel(time=slice(0, 1000))
-        det1 = reader.detrend(block1).aqua.core.fldmean()
+        det1 = reader.detrend(block1).aqua.fldmean()
 
         assert det1.shape == (1000,)
         assert pytest.approx(det1.values[300]) == 0.3778275

@@ -1,7 +1,6 @@
 """Test for timmean method"""
 import pytest
 import numpy as np
-from aqua import Reader
 from aqua.core.histogram import histogram
 
 @pytest.fixture(scope='module')
@@ -95,7 +94,7 @@ class TestTimmean():
 
     def test_timmean_pandas_accessor(self, reader, data):
         """Timmean test for weekly aggregation based on pandas labels"""
-        avg = data.aqua.core.timmean(freq='W-MON')
+        avg = data.aqua.timmean(freq='W-MON')
         assert avg['2t'].shape == (29, 9, 18)
 
     def test_timmean_time_bounds(self, reader, data):
