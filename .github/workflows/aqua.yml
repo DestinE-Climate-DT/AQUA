@@ -152,7 +152,8 @@ jobs:
         id: dvc-cache
         with:
           path: |
-            AQUA/AQUA_tests
+            AQUA/AQUA_tests/*
+            !AQUA/AQUA_tests/fdb
             $HOME/.cache/dvc
           key: dvc-data-${{ runner.os }}-${{ hashFiles('aqua-dvc/data-tests/**/*.dvc') }}
           restore-keys: |
@@ -178,16 +179,21 @@ jobs:
             exit 1
           fi
           echo "DVC data verified: $(du -sh AQUA/AQUA_tests | cut -f1)"
-      - name: Verify FDB directory exists
+      - name: Always pull FDB directory fresh
         run: |
-          if [ ! -d "AQUA/AQUA_tests/fdb" ]; then
-            echo "Warning: AQUA/AQUA_tests/fdb directory missing from cache, re-pulling DVC data"
-            cd aqua-dvc
-            git checkout main
-            dvc pull -R data-tests/*
-            mkdir -p ../AQUA/AQUA_tests
-            cp -r data-tests/* ../AQUA/AQUA_tests/
+          echo "Pulling FDB directory from DVC"
+          cd aqua-dvc
+          git checkout main
+          dvc pull data-tests/fdb
+          mkdir -p ../AQUA/AQUA_tests
+          cp -r data-tests/fdb ../AQUA/AQUA_tests/
+          # Verify FDB structure
+          if [ ! -f "../AQUA/AQUA_tests/fdb/etc/fdb/config.yaml" ]; then
+            echo "Error: fdb config.yaml missing after pull"
+            ls -la ../AQUA/AQUA_tests/fdb/ || echo "fdb directory doesn't exist"
+            exit 1
           fi
+          echo "FDB directory verified and ready"
       - name: Set up FDB
         run: |
           export
