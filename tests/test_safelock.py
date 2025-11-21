@@ -7,7 +7,7 @@ import threading
 from unittest.mock import patch
 from filelock import Timeout
 
-from aqua.lock import SafeFileLock
+from aqua.core.lock import SafeFileLock
 
 
 @pytest.fixture

@@ -98,7 +98,7 @@ You can also filter by specific catalog(s), model, experiment, or source:
     
     .. code-block:: python
     
-        from aqua.configurer import ConfigPath
+        from aqua.core.configurer import ConfigPath
         config = ConfigPath(loglevel='info')
         results = config.show_catalog_content()
 

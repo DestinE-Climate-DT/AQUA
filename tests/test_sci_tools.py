@@ -3,8 +3,8 @@ import pytest
 import xarray as xr
 import numpy as np
 from typeguard import TypeCheckError
-from aqua.fldstat import AreaSelection
-from aqua.util import select_season
+from aqua.core.fldstat import AreaSelection
+from aqua.core.util import select_season
 from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL

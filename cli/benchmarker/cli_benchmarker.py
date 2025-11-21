@@ -11,7 +11,7 @@ import dask
 from dask.distributed import Client, LocalCluster
 from aqua import Reader
 from aqua import __version__ as version
-from aqua.logger import log_configure
+from aqua import log_configure
 
 print('AQUA version is: ' + version)
 
@@ -112,7 +112,7 @@ class Benchmarker():
         """
         self.logger.info('Benchmarking fldmean')
         reader = Reader(self.model, self.exp, self.source)
-        single = timeit(lambda: reader.retrieve(var='2t').isel(time=slice(0,tsteps)).aqua.fldmean().compute(),
+        single = timeit(lambda: reader.retrieve(var='2t').isel(time=slice(0,tsteps)).aqua.core.fldmean().compute(),
                                 number=self.nrepeat)
         return round(single / self.nrepeat, 1)
 

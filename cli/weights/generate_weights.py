@@ -9,8 +9,8 @@ import os
 import sys
 import argparse
 from aqua import Reader, inspect_catalog
-from aqua.logger import log_configure
-from aqua.util import load_yaml, get_arg, to_list
+from aqua import log_configure
+from aqua.core.util import load_yaml, get_arg, to_list
 import subprocess
 import time
 

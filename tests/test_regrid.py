@@ -1,7 +1,7 @@
 """Test regridding from Reader"""
 import pytest
 from aqua import Reader, Regridder
-from aqua.regridder.griddicthandler import GridDictHandler
+from aqua.core.regridder.griddicthandler import GridDictHandler
 from conftest import APPROX_REL, LOGLEVEL
 
 approx_rel = APPROX_REL
@@ -221,22 +221,22 @@ class TestRegridder():
         data = reader.retrieve()
 
         layers = [0, 2]
-        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.fldmean().values
+        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.core.fldmean().values
         assert val == pytest.approx(8.6758228e-08)
-        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.core.fldmean().values
         assert val == pytest.approx(8.6758228e-08)
-        val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.core.fldmean().values
         assert val == pytest.approx(8.6758228e-08)
-        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.core.fldmean().values
         assert val == pytest.approx(274.9045)
-        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
+        val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.core.fldmean().values
         assert val == pytest.approx(274.9045)
-        val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
+        val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.core.fldmean().values
         assert val == pytest.approx(274.9045)
 
         # test reading specific levels for first vertical coordinate (nz1)
         data = reader.retrieve(level=[2.5, 2275])
-        val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
+        val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.core.fldmean().values
         assert val == pytest.approx(274.9045)
 
 @pytest.mark.aqua

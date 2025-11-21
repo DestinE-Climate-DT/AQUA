@@ -43,7 +43,7 @@ Can you reproduce the result of the exercise 1, but making use of AQUA built-in 
   <summary>Need the solution? (Spoiler alert)</summary>
     
     from aqua import Reader
-    from aqua.graphics import plot_timeseries
+    from aqua.core.graphics import plot_timeseries
 
     reader_era5 = Reader(catalog='obs', model='ERA5', exp='era5', source='monthly')
     reader_ifs_fesom = Reader(catalog='nextgems4', model='IFS-FESOM', exp='historical-1990', source='lra-r100-monthly')

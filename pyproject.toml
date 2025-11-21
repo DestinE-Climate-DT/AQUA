@@ -90,7 +90,7 @@ all = [
 ]
 
 [project.scripts]
-aqua = "aqua.core.src.console.main:main"
+aqua = "aqua.core.console.main:main"
 
 [project.urls]
 homepage = "https://github.com/DestinE-Climate-DT/AQUA/"
@@ -102,8 +102,15 @@ issues = "https://github.com/DestinE-Climate-DT/AQUA/issues/"
 where = ["."]
 include = ["aqua*"]
 
+# Include non-Python files inside aqua/config and aqua/templates
+[tool.setuptools.package-data]
+"aqua" = [
+    "core/config/**/*",
+    "core/templates/**/*"
+]
+
 [tool.setuptools.dynamic]
-version = {attr = "aqua.core.src.version.__version__"}
+version = {attr = "aqua.core.version.__version__"}
 
 [tool.pytest.ini_options]
 # verbose to have full test, run coverage on src folder and use pyproject as a configuration file
@@ -124,7 +131,7 @@ markers = [
 [tool.coverage.run]
 branch = true
 command_line = '-m pytest tests'
-source = ["aqua/core/src"]
+source = ["aqua/core"]
 omit = [
     "tests/*", 
     "**/__init__.py",

@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from aqua.configurer import ConfigPath
+from aqua.core.configurer import ConfigPath
 from aqua import show_catalog_content
 
 @pytest.mark.aqua

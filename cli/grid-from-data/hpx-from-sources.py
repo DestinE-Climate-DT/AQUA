@@ -8,8 +8,8 @@ import sys
 import os
 from cdo import Cdo
 from aqua import Reader
-from aqua.util import load_yaml, get_arg, create_folder
-from aqua.logger import log_configure
+from aqua.core.util import load_yaml, get_arg, create_folder
+from aqua import log_configure
 
 reasonable_vert_coords = ['depth_full', 'depth_half', 'level']
 
