@@ -1,7 +1,8 @@
 "Module defining a new aqua accessor to extend xarray"
 
 import xarray as xr
-import aqua
+from .reader import Reader
+from .graphics import plot_single_map
 
 
 # For now not distinguishing between dataarray and dataset methods
@@ -11,7 +12,7 @@ class AquaAccessor:
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self.instance = aqua.core.reader.instance  # by default use the latest available instance of the Reader class
+        self.instance = Reader.instance  # by default use the latest available instance of the Reader class
 
     def set_default(self, reader):
         """
@@ -28,7 +29,7 @@ class AquaAccessor:
 
     def plot_single_map(self, **kwargs):
         """Plot contour or pcolormesh map of a single variable."""
-        aqua.graphics.plot_single_map(self._obj, **kwargs)
+        plot_single_map(self._obj, **kwargs)
 
     def select_area(self, **kwargs):
         """Extract a custom area"""
