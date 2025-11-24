@@ -25,14 +25,18 @@ from aqua.core.console.drop import drop_execute
 from aqua.core.console.catgen import catgen_execute
 from aqua.core.console.builder import builder_execute
 
+print('TEST')
+
 try:
     from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES
-    from aqua.diagnostics import DIAGNOSTIC_TEMPLATES_DIRECTORIES
-    #print(f'Dx installed diagnostic config dirs: {DIAGNOSTIC_CONFIG_DIRECTORIES}')
-    #print(f'Dx installed diagnostic templates dirs: {DIAGNOSTIC_TEMPLATES_DIRECTORIES}')
+    from aqua.diagnostics import DIAGNOSTIC_TEMPLATE_DIRECTORIES
+    print(f'AQUA-diagnostics installation found')
+
 except ImportError:
     DIAGNOSTIC_CONFIG_DIRECTORIES = []
-    DIAGNOSTIC_TEMPLATES_DIRECTORIES = []
+    DIAGNOSTIC_TEMPLATE_DIRECTORIES = []
+
+
 
 # folder used for reading/storing catalogs
 CATPATH = 'catalogs'
@@ -51,7 +55,7 @@ class AquaConsole():
 
         # NOTE: self.pypath points to $AQUA/aqua folder
         self.corepath = os.path.join(pypath.files('aqua.core'), 'config')
-        if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATES_DIRECTORIES:
+        if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATE_DIRECTORIES:
             self.diagpath = os.path.join(pypath.files('aqua.diagnostics'), 'config')
         else:
             self.diagpath = None
@@ -213,9 +217,10 @@ class AquaConsole():
             for directory in DIAGNOSTIC_CONFIG_DIRECTORIES:
                 self._copy_update_folder_file(os.path.join(self.diagpath, directory),
                                          os.path.join(self.configpath, directory))
-            for directory in ['templates']:
-                self._copy_update_folder_file(os.path.join(self.diagpath, '..', directory),
-                                         os.path.join(self.configpath, directory))
+            for directory in DIAGNOSTIC_TEMPLATE_DIRECTORIES:
+                print('Installing diagnostic templates from', os.path.join(self.diagpath, '..', 'templates', directory))
+                self._copy_update_folder_file(os.path.join(self.diagpath, '..', 'templates', directory),
+                                         os.path.join(self.configpath, 'templates', directory))
         os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
 
     def _install_editable(self, editable):
