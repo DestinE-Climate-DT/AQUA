@@ -250,6 +250,7 @@ class AquaConsole():
         for directory in CORE_CONFIG_DIRECTORIES:
             self._copy_update_folder_file(f'{editable}/{directory}', f'{self.configpath}/{directory}', link=True)
 
+        os.makedirs(f'{self.configpath}/templates', exist_ok=True)
         for directory in CORE_TEMPLATE_DIRECTORIES:
             self._copy_update_folder_file(os.path.join(editable, '..', 'templates', directory), f'{self.templatepath}/{directory}', link=True)
 
