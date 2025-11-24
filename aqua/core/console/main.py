@@ -25,8 +25,8 @@ from aqua.core.console.drop import drop_execute
 from aqua.core.console.catgen import catgen_execute
 from aqua.core.console.builder import builder_execute
 
-print('TEST')
 
+# check if aqua.diagnostics is installed
 try:
     from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES
     from aqua.diagnostics import DIAGNOSTIC_TEMPLATE_DIRECTORIES
