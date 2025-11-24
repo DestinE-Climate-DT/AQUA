@@ -42,8 +42,8 @@ except ImportError:
 CATPATH = 'catalogs'
 
 # directories to be installed in the AQUA config folder
-CORE_CONFIG_DIRECTORIES = ['catgen', 'data_model',
-                    'fixes', 'grids', 'styles']
+CORE_CONFIG_DIRECTORIES = ['catgen', 'data_model', 'fixes', 'grids', 'styles']
+CORE_TEMPLATE_DIRECTORIES = ['catgen', 'drop', 'gridbuilder']
 
 
 class AquaConsole():
@@ -60,6 +60,7 @@ class AquaConsole():
         else:
             self.diagpath = None
         self.configpath = None
+        self.templatepath = None
         self.configfile = 'config-aqua.yaml'
         self.grids = None
         self.logger = None
@@ -133,6 +134,9 @@ class AquaConsole():
             self._config_home()
         else:
             self._config_path(args.path)
+    
+        # define the template path
+        self.templatepath = os.path.join(self.configpath, 'templates')
 
         # define from where aqua is installed and copy/link the files
         if args.editable is None:
@@ -210,17 +214,16 @@ class AquaConsole():
         for directory in CORE_CONFIG_DIRECTORIES:
             self._copy_update_folder_file(os.path.join(self.corepath, directory),
                                      os.path.join(self.configpath, directory))
-        for directory in ['templates']:
-            self._copy_update_folder_file(os.path.join(self.corepath, '..', directory),
-                                     os.path.join(self.configpath, directory))
+        for directory in CORE_TEMPLATE_DIRECTORIES:
+            self._copy_update_folder_file(os.path.join(self.corepath, '..', 'templates', directory),
+                                     os.path.join(self.templatepath, directory))
         if self.diagpath is not None:
             for directory in DIAGNOSTIC_CONFIG_DIRECTORIES:
                 self._copy_update_folder_file(os.path.join(self.diagpath, directory),
                                          os.path.join(self.configpath, directory))
             for directory in DIAGNOSTIC_TEMPLATE_DIRECTORIES:
-                print('Installing diagnostic templates from', os.path.join(self.diagpath, '..', 'templates', directory))
                 self._copy_update_folder_file(os.path.join(self.diagpath, '..', 'templates', directory),
-                                         os.path.join(self.configpath, 'templates', directory))
+                                         os.path.join(self.templatepath, directory))
         os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
 
     def _install_editable(self, editable):
@@ -247,8 +250,8 @@ class AquaConsole():
         for directory in CORE_CONFIG_DIRECTORIES:
             self._copy_update_folder_file(f'{editable}/{directory}', f'{self.configpath}/{directory}', link=True)
 
-        for directory in ['templates']:
-            self._copy_update_folder_file(os.path.join(editable, '..', directory), f'{self.configpath}/{directory}', link=True)
+        for directory in CORE_TEMPLATE_DIRECTORIES:
+            self._copy_update_folder_file(os.path.join(editable, '..', 'templates', directory), f'{self.templatepath}/{directory}', link=True)
 
         os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
 
@@ -292,13 +295,12 @@ class AquaConsole():
         self._check()
 
         cdir = f'{self.configpath}/{CATPATH}'
-        contents = os.listdir(cdir)
 
         print('AQUA current installed catalogs in', cdir, ':')
         self._list_folder(cdir)
 
         if args.all:
-            for content in CORE_CONFIG_DIRECTORIES:
+            for content in CORE_CONFIG_DIRECTORIES + DIAGNOSTIC_CONFIG_DIRECTORIES:
                 print(f'AQUA current installed {content} in {self.configpath}:')
                 self._list_folder(os.path.join(self.configpath, content))
 
@@ -327,11 +329,10 @@ class AquaConsole():
                 if not silent:
                     print(f"\t - {file}")
                 list_files.append(file)
-        
+ 
         if return_list:
             return list_files
-        else:
-            return None
+        return None
 
     def fixes_add(self, args):
         """Add a fix file
@@ -618,10 +619,19 @@ class AquaConsole():
                                          os.path.join(self.configpath, directory),
                                          update=True)
 
-            for directory in ['templates']:
-                self._copy_update_folder_file(os.path.join(self.corepath, '..', directory),
-                                         os.path.join(self.configpath, directory),
+            for directory in CORE_TEMPLATE_DIRECTORIES:
+                self._copy_update_folder_file(os.path.join(self.corepath, '..', 'templates', directory),
+                                         os.path.join(self.templatepath, directory),
                                          update=True)
+            if self.diagpath is not None:
+                for directory in DIAGNOSTIC_CONFIG_DIRECTORIES:
+                    self._copy_update_folder_file(os.path.join(self.diagpath, directory),
+                                             os.path.join(self.configpath, directory),
+                                             update=True)
+                for directory in DIAGNOSTIC_TEMPLATE_DIRECTORIES:
+                    self._copy_update_folder_file(os.path.join(self.diagpath, '..', 'templates', directory),
+                                             os.path.join(self.templatepath, directory),
+                                             update=True)
     
     def _update_catalog(self, catalog):
         """Update a catalog by copying it if not installed in editable mode
