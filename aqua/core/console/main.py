@@ -747,6 +747,7 @@ class AquaConsole():
         try:
             self.configpath = ConfigPath(loglevel=checklevel).configdir
             self.configfile = os.path.join(self.configpath, 'config-aqua.yaml')
+            self.templatepath = os.path.join(self.configpath, 'templates')
             self.logger.debug('AQUA found in %s', self.configpath)
         except FileNotFoundError:
             self.logger.error('No AQUA installation found!')
