@@ -231,7 +231,7 @@ class BaseMixin(Diagnostic):
 
         data, data_std = freq_mapping[str_freq]
         if data is None:
-            self.logger.error('No %s data available, skipping', str_freq)
+            self.logger.warning('No %s data available, nothing to save', str_freq)
             return
 
         var = getattr(data, 'short_name', None)
