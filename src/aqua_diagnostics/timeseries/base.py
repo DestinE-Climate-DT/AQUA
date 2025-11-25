@@ -173,6 +173,7 @@ class BaseMixin(Diagnostic):
             if self.std_startdate is None or self.std_enddate is None:
                 self.std_startdate = data.time.min().values
                 self.std_enddate = data.time.max().values
+            self.logger.critical(f'Standard deviation period from {self.std_startdate} to {self.std_enddate}')
             if freq_dict[str_freq]['groupdby'] is not None:
                 data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
             else:  # For annual data, we compute the std over all years
