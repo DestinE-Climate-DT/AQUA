@@ -162,6 +162,9 @@ class BaseMixin(Diagnostic):
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
         # Check that after data reduction we still have data
+        self.logger.critical(f'data: {data}')
+        self.logger.critical(f'data.time: {data.time}')
+        self.logger.critical(f'data.time.size: {data.time.size}')
         if data.time.size == 0:
             self.logger.error(f'Not enough data to compute {str_freq} standard deviation')
             data = None
