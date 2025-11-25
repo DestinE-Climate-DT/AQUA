@@ -121,21 +121,25 @@ class Timeseries(BaseMixin):
         data = self.reader.fldmean(data, box_brd=box_brd, lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete, center_time=center_time)
 
-        if extend:
-            extended_data = self._extend_data(data=data, freq=str_freq, center_time=center_time)
-            extended_data.attrs = data.attrs.copy()
-            data = extended_data
+        # If no data is available after the time mean, return
+        if data is None:
+            self.logger.error(f'Not enough data available to compute {str_freq} mean')
+        else:
+            if extend:
+                extended_data = self._extend_data(data=data, freq=str_freq, center_time=center_time)
+                extended_data.attrs = data.attrs.copy()
+                data = extended_data
 
-        if self.region is not None:
-            data.attrs['AQUA_region'] = self.region
+            if self.region is not None:
+                data.attrs['AQUA_region'] = self.region
 
-        # Due to the possible usage of the standard period, the time may need to be reselected correctly
-        data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
+            # Due to the possible usage of the standard period, the time may need to be reselected correctly
+            data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 
-        # Load data in memory for faster plot
-        self.logger.debug(f"Loading data for frequency {str_freq} in memory")
-        data.load()
-        self.logger.debug(f"Loaded data for frequency {str_freq} in memory")
+            # Load data in memory for faster plot
+            self.logger.debug(f"Loading data for frequency {str_freq} in memory")
+            data.load()
+            self.logger.debug(f"Loaded data for frequency {str_freq} in memory")
 
         if str_freq == 'hourly':
             self.hourly = data
