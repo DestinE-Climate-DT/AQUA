@@ -73,7 +73,6 @@ class PlotTimeseries(PlotBaseMixin):
         # Filling them
         self.get_data_info()
 
-
     def run(self, outputdir: str = './', rebuild: bool = True, dpi: int = 300, format: str = 'png'):
         """
         Run the PlotTimeseries class.
