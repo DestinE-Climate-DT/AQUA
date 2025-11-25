@@ -161,7 +161,7 @@ class BaseMixin(Diagnostic):
                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
-        
+
         # Check that after data reduction we still have data
         if data.time.size == 0:
             self.logger.error(f'Not enough data to compute {str_freq} standard deviation')
@@ -171,7 +171,7 @@ class BaseMixin(Diagnostic):
             if self.std_startdate is None or self.std_enddate is None:
                 self.std_startdate = data.time.min().values
                 self.std_enddate = data.time.max().values
-            self.logger.critical(f'Standard deviation period from {self.std_startdate} to {self.std_enddate}')
+            self.logger.debug(f'Standard deviation period from {self.std_startdate} to {self.std_enddate}')
             if freq_dict[str_freq]['groupdby'] is not None:
                 data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
             else:  # For annual data, we compute the std over all years
