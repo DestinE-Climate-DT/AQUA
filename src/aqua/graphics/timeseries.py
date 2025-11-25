@@ -93,7 +93,6 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
                 data_labels = {'monthly': data_labels, 'annual': None}
     else:
         data_labels = empty_label
-    logger.warning(f'Data labels: {data_labels}')
 
     # Same for ref_label and ens_label, but they are strings
     if ref_label is not None and suffix:
