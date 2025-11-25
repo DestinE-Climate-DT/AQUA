@@ -18,6 +18,7 @@ AQUA core complete list:
 - Fix DROP CLI support for enddate, startdate and catalog (#2473)
 
 AQUA diagnostics complete list:
+- Biases: fix contour in vertical biases plots (#2513)
 - Biases: results are stored in memory before netcdf saving and plotting (#2482)
 
 ## [v0.19.3]
