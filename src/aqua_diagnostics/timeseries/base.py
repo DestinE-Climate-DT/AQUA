@@ -308,11 +308,13 @@ class PlotBaseMixin():
             data_labels (list): List of data labels for the plot.
         """
         data_labels = []
+        self.logger.critical(f'Setting data labels for {self.len_data} data arrays')
         for i in range(self.len_data):
             label = f'{self.models[i]} {self.exps[i]}'
+            self.logger.critical(f'Data label for data array {i}: {label}')
             data_labels.append(label)
 
-        self.logger.warning('Data labels: %s', data_labels)
+        self.logger.critical('Data labels: %s', data_labels)
         return data_labels
 
     def set_ref_label(self):
