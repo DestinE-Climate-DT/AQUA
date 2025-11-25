@@ -161,27 +161,32 @@ class BaseMixin(Diagnostic):
                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
-        data = data.sel(time=slice(self.std_startdate, self.std_enddate))
-        if self.std_startdate is None or self.std_enddate is None:
-            self.std_startdate = data.time.min().values
-            self.std_enddate = data.time.max().values
-        if freq_dict[str_freq]['groupdby'] is not None:
-            data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
-        else:  # For annual data, we compute the std over all years
-            data = data.std('time')
+        # Check that after data reduction we still have data
+        if data.time.size == 0:
+            self.logger.error(f'Not enough data to compute {str_freq} standard deviation')
+            data = None
+        else:
+            data = data.sel(time=slice(self.std_startdate, self.std_enddate))
+            if self.std_startdate is None or self.std_enddate is None:
+                self.std_startdate = data.time.min().values
+                self.std_enddate = data.time.max().values
+            if freq_dict[str_freq]['groupdby'] is not None:
+                data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
+            else:  # For annual data, we compute the std over all years
+                data = data.std('time')
 
-        if self.region is not None:
-            data.attrs['AQUA_region'] = self.region
+            if self.region is not None:
+                data.attrs['AQUA_region'] = self.region
 
-        # Store start and end dates for the standard deviation.
-        # pd.Timestamp cannot be used as attribute, so we convert to a string
-        data.attrs['std_startdate'] = time_to_string(self.std_startdate)
-        data.attrs['std_enddate'] = time_to_string(self.std_enddate)
+            # Store start and end dates for the standard deviation.
+            # pd.Timestamp cannot be used as attribute, so we convert to a string
+            data.attrs['std_startdate'] = time_to_string(self.std_startdate)
+            data.attrs['std_enddate'] = time_to_string(self.std_enddate)
 
-        # Load data in memory for faster plot
-        self.logger.debug(f"Loading std data for frequency {str_freq} in memory")
-        data.load()
-        self.logger.debug(f"Loaded std data for frequency {str_freq} in memory")
+            # Load data in memory for faster plot
+            self.logger.debug(f"Loading std data for frequency {str_freq} in memory")
+            data.load()
+            self.logger.debug(f"Loaded std data for frequency {str_freq} in memory")
 
         # Assign the data to the correct attribute based on frequency
         if str_freq == 'hourly':
