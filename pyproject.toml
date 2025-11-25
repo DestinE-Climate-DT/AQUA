@@ -54,6 +54,7 @@ dependencies = [
     "pypdf",
     "pyYAML",
     "ruamel.yaml",
+    "scipy",
     "seaborn",
     "smmregrid==0.1.3",
     #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
