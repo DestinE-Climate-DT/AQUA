@@ -123,7 +123,8 @@ class Timeseries(BaseMixin):
 
         # If no data is available after the time mean, return
         if data.time.size == 0:
-            self.logger.error(f'Not enough data available to compute {str_freq} mean')
+            self.logger.warning(f'Not enough data available to compute {str_freq} mean')
+            data = None
         else:
             if extend:
                 extended_data = self._extend_data(data=data, freq=str_freq, center_time=center_time)

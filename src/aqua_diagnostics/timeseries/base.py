@@ -164,7 +164,7 @@ class BaseMixin(Diagnostic):
 
         # Check that after data reduction we still have data
         if data.time.size == 0:
-            self.logger.error(f'Not enough data to compute {str_freq} standard deviation')
+            self.logger.warning(f'Not enough data to compute {str_freq} standard deviation')
             data = None
         else:
             data = data.sel(time=slice(self.std_startdate, self.std_enddate))
