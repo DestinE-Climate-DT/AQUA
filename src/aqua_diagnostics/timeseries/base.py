@@ -211,22 +211,25 @@ class BaseMixin(Diagnostic):
         """
         str_freq = pandas_freq_to_string(freq)
 
-        if str_freq == 'hourly':
-            data = self.hourly if self.hourly is not None else self.logger.error('No hourly data available')
-            data_std = self.std_hourly if self.std_hourly is not None else None
-        elif str_freq == 'daily':
-            data = self.daily if self.daily is not None else self.logger.error('No daily data available')
-            data_std = self.std_daily if self.std_daily is not None else None
-        elif str_freq == 'monthly':
-            data = self.monthly if self.monthly is not None else self.logger.error('No monthly data available')
-            data_std = self.std_monthly if self.std_monthly is not None else None
-        elif str_freq == 'annual':
-            data = self.annual if self.annual is not None else self.logger.error('No annual data available')
-            data_std = self.std_annual if self.std_annual is not None else None
+        freq_mapping = {
+            'hourly': (self.hourly, self.std_hourly),
+            'daily': (self.daily, self.std_daily),
+            'monthly': (self.monthly, self.std_monthly),
+            'annual': (self.annual, self.std_annual)
+        }
+
+        if str_freq not in freq_mapping:
+            self.logger.error('Invalid frequency: %s', str_freq)
+            return
+
+        data, data_std = freq_mapping[str_freq]
+        if data is None:
+            self.logger.error('No %s data available, skipping', str_freq)
+            return
 
         var = getattr(data, 'short_name', None)
         extra_keys = {'var': var, 'freq': str_freq}
-        
+
         if data.name is None:
             data.name = var
 
