@@ -121,11 +121,8 @@ class Timeseries(BaseMixin):
         data = self.reader.fldmean(data, box_brd=box_brd, lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete, center_time=center_time)
 
-        self.logger.critical(f'data: {data}')
-        self.logger.critical(f'data.time: {data.time}')
-        self.logger.critical(f'data.time.size: {data.time.size}')
         # If no data is available after the time mean, return
-        if data is None:
+        if data.time.size == 0:
             self.logger.error(f'Not enough data available to compute {str_freq} mean')
         else:
             if extend:
