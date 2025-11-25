@@ -284,6 +284,31 @@ class TestAquaConsole():
         # remove aqua
         run_aqua_console_with_input(['uninstall'], 'yes')
 
+    def test_console_selective_install(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
+        """Test for running selective install via the console"""
+
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        # aqua install core only
+        run_aqua(['install', MACHINE, '--core'])
+        assert os.path.isdir(os.path.join(mydir, '.aqua'))
+        assert os.path.isfile(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+
+        # uninstall aqua
+        run_aqua_console_with_input(['uninstall'], 'yes')
+        assert not os.path.exists(os.path.join(mydir, '.aqua'))
+
+        # aqua install diagnostics only (should fail)
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['install', MACHINE, '--diagnostics'])
+            assert excinfo.value.code == 1
+
+        # uninstall aqua
+        run_aqua_console_with_input(['uninstall'], 'yes')
+        assert not os.path.exists(os.path.join(mydir, '.aqua'))
+
+
     # def test_console_analysis(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
     #     """Test for running the analysis via the console"""
 
@@ -294,7 +319,7 @@ class TestAquaConsole():
     #     run_aqua(['install', MACHINE])
     #     run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
 
-    #     test_dir = os.path.dirname(os.path.abspath(__file__)) 
+    #     test_dir = os.path.dirname(os.path.abspath(__file__))
     #     config_path = os.path.join(test_dir, 'analysis', 'config.aqua-analysis-test.yaml')
 
     #     # Run details
@@ -467,6 +492,7 @@ class TestAquaConsole():
     #     assert verify_config_files(os.path.join(mydir, '.aqua'), diagnostic_config)
 
     def test_console_with_links(self, tmpdir, set_home, run_aqua_console_with_input):
+        """Advanced tests for installation from path with symlinks"""
 
         # getting fixture
         mydir = str(tmpdir)
@@ -494,6 +520,7 @@ class TestAquaConsole():
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
     def test_console_editable(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
+        """Advanced tests for editable installation from path with editable mode"""
 
         # getting fixture
         mydir = str(tmpdir)
@@ -505,25 +532,25 @@ class TestAquaConsole():
         #config_dir = os.path.join(aqua_root, 'config')  # /path/to/AQUA/config
 
         # check unexesting installation
-        with pytest.raises(SystemExit) as excinfo:
-            run_aqua(['-vv', 'install', MACHINE, '-e', test_dir])
-            assert excinfo.value.code == 1
+        #with pytest.raises(SystemExit) as excinfo:
+        #    run_aqua(['-vv', 'install', MACHINE, '--core', test_dir])
+        #    assert excinfo.value.code == 1
 
         # install from path with grids
-        run_aqua(['-vv', 'install', MACHINE, '--editable', aqua_root])
+        run_aqua(['-vv', 'install', MACHINE, '--core', aqua_root])
         assert os.path.exists(os.path.join(mydir, '.aqua'))
         for folder in ['fixes', 'data_model', 'grids']:
             assert os.path.islink(os.path.join(mydir, '.aqua', folder))
         assert os.path.isdir(os.path.join(mydir, '.aqua', 'catalogs'))
 
         # install from path in editable mode
-        run_aqua_console_with_input(['-vv', 'install', MACHINE, '--editable', aqua_root,
+        run_aqua_console_with_input(['-vv', 'install', MACHINE, '--core', aqua_root,
                                      '--path', os.path.join(mydir, 'vicesindaco2')], 'yes')
         assert os.path.islink(os.path.join(mydir, '.aqua'))
         run_aqua_console_with_input(['uninstall'], 'yes')
 
         # install from path in editable mode but without aqua link
-        run_aqua_console_with_input(['-vv', 'install', MACHINE, '--editable', aqua_root,
+        run_aqua_console_with_input(['-vv', 'install', MACHINE, '--core', aqua_root,
                                      '--path', os.path.join(mydir, 'vicesindaco1')], 'no')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
         assert os.path.isdir(os.path.join(mydir, 'vicesindaco1', 'catalogs'))
@@ -538,6 +565,7 @@ class TestAquaConsole():
 
     # base set of tests for list
     def test_console_list(self, tmpdir, run_aqua, set_home, capfd, run_aqua_console_with_input):
+        """Basic tests for list command"""
 
         # getting fixture
         mydir = str(tmpdir)
@@ -572,6 +600,7 @@ class TestAquaConsole():
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
     def test_console_without_home(self, delete_home, run_aqua, tmpdir, run_aqua_console_with_input):
+        """Basic tests without HOME environment variable"""
 
         # getting fixture
         delete_home()

@@ -60,8 +60,13 @@ def parse_arguments():
                                 help="Machine on which install AQUA")
     install_parser.add_argument('-p', '--path', type=str, metavar="AQUA_TARGET_PATH",
                                 help='Path where to install AQUA. Default is $HOME/.aqua')
-    install_parser.add_argument('-e', '--editable', type=str, metavar="AQUA_SOURCE_PATH",
-                                help='Install AQUA in editable mode from the original source')
+    install_parser.add_argument('-c', '--core', nargs='?', const='standard', type=str, metavar="AQUA_CORE_PATH",
+                                help='Install AQUA core. Without path: standard installation of core only. '
+                                     'With path: editable installation from that path')
+    install_parser.add_argument('-d', '--diagnostics', nargs='?', const='standard', type=str, metavar="AQUA_DIAG_PATH",
+                                help='Install AQUA diagnostics. Without path: standard installation of diagnostics only. '
+                                     'With path: editable installation from that path')
+    
 
     catalog_add_parser.add_argument("catalog", metavar="CATALOG_NAME",
                                     help="Catalog to be installed")
