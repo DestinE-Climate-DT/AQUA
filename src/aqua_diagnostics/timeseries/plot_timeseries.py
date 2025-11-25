@@ -113,7 +113,6 @@ class PlotTimeseries(PlotBaseMixin):
         """
         for data in [self.monthly_data, self.annual_data]:
             if data is not None:
-                self.logger.critical(f'Extracting data info from {data}')
                 # Make a list from the data array attributes
                 self.catalogs = [d.AQUA_catalog for d in data]
                 self.models = [d.AQUA_model for d in data]
@@ -124,10 +123,10 @@ class PlotTimeseries(PlotBaseMixin):
                 self.units = data[0].units if hasattr(data[0], 'units') else None
                 break
         self.realizations = get_realizations(self.monthly_data)
-        self.logger.critical(f'Catalogs: {self.catalogs}')
-        self.logger.critical(f'Models: {self.models}')
-        self.logger.critical(f'Experiments: {self.exps}')
-        self.logger.critical(f'Region: {self.region}')
+        self.logger.debug(f'Catalogs: {self.catalogs}')
+        self.logger.debug(f'Models: {self.models}')
+        self.logger.debug(f'Experiments: {self.exps}')
+        self.logger.debug(f'Region: {self.region}')
 
         # TODO: support ref list
         for ref in [self.ref_monthly_data, self.ref_annual_data]:
