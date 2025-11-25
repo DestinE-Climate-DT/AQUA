@@ -98,10 +98,10 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         self.logger = log_configure(self.loglevel, 'AQUA')
 
         command = args.command
-        method = self.command_map.get(command, parser_dict['main'].print_help)
+        method = self.command_map.get(command, parser.print_help)
 
         if command not in self.command_map:
-            parser_dict['main'].print_help()
+            parser.print_help()
         else:
             # nested map
             if isinstance(self.command_map[command], dict):
