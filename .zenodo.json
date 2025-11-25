@@ -50,45 +50,18 @@
         "name": "Koldunov, Nikolay",
         "orcid": "0000-0002-3365-8146"
       },
-      { 
-        "name": "Massonnet, François",
-        "affiliation": "University of Louvain, Belgium",
-        "orcid": "0000-0002-4697-5781"
-      },
       {
         "name": "Rajput, Maqsood Mubarak",
         "affiliation": "AWI, Germany",
         "orcid": "0009-0002-8409-7171"
       },
       { 
-        "name": "Sayed, Susan",
-        "affiliation": "DWD, Germany"
-      },
-      {
-        "name": "Sharma, Tamvi",
-        "affiliation": "AWI, Germany"
-      },
-      { 
-        "name": "Sunny, Jaleena",
-        "affiliation": "AWI, Germany"
-      },
-      {
-        "name": "Kluft, Lukas",
-        "affiliation": "MPI-M, Germany",
-        "orcid": "0000-0002-6533-3928"
-      },
-      { 
         "name": "Kinoshita, Bruno",
         "affiliation": "BSC, Spain",
         "orcid": "0000-0001-8250-4074"
-      },
-      {
-        "name": "Ortega, Pablo",
-        "affiliation": "BSC, Spain",
-        "orcid": "0000-0002-4135-9621"
       }
     ],
-    "description": "AQUA: The Application for QUality Assessment of the Destination Earth Climate DT.",
+    "description": "AQUA-core: The core framework of the Application for QUality Assessment of the Destination Earth Climate DT.",
     "license": "Apache-2.0",
-    "title": "AQUA"
+    "title": "AQUA-core"
   }
