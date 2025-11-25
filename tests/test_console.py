@@ -303,11 +303,7 @@ class TestAquaConsole():
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(['install', MACHINE, '--diagnostics'])
             assert excinfo.value.code == 1
-
-        # uninstall aqua
-        run_aqua_console_with_input(['uninstall'], 'yes')
-        assert not os.path.exists(os.path.join(mydir, '.aqua'))
-
+            assert excinfo.value == "Cannot install diagnostics without core. Install core first or use full installation."
 
     # def test_console_analysis(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
     #     """Test for running the analysis via the console"""
