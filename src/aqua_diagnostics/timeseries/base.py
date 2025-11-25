@@ -312,7 +312,7 @@ class PlotBaseMixin():
             label = f'{self.models[i]} {self.exps[i]}'
             data_labels.append(label)
 
-        self.logger.debug('Data labels: %s', data_labels)
+        self.logger.warning('Data labels: %s', data_labels)
         return data_labels
 
     def set_ref_label(self):
