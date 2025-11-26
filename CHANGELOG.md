@@ -9,6 +9,7 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - Timeseries: Timeseries and Gregory correctly work with less that one year of data (#2514)
+- Ocean Trend: bugfix realization handling (#2516)
 
 ## [v0.19.4]
 
@@ -19,6 +20,7 @@ AQUA core complete list:
 - Fix DROP CLI support for enddate, startdate and catalog (#2473)
 
 AQUA diagnostics complete list:
+- Biases: fix contour in vertical biases plots (#2513)
 - Biases: results are stored in memory before netcdf saving and plotting (#2482)
 
 ## [v0.19.3]

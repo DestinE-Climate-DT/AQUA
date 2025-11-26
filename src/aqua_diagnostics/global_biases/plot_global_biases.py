@@ -263,7 +263,8 @@ class PlotGlobalBiases:
                           description=description, var=var, plev=plev, realization=realization)
 
 
-    def plot_vertical_bias(self, data, data_ref, var, plev_min=None, plev_max=None, vmin=None, vmax=None, nlevels=18):
+    def plot_vertical_bias(self, data, data_ref, var, plev_min=None, plev_max=None, 
+                            vmin=None, vmax=None, vmin_contour=None, vmax_contour=None, nlevels=18):
         """
         Calculates and plots the vertical bias between two datasets.
 
@@ -275,6 +276,8 @@ class PlotGlobalBiases:
             plev_max (float, optional): Maximum pressure level.
             vmin (float, optional): Minimum colorbar value.
             vmax (float, optional): Maximum colorbar value.
+            vmin_contour (float, optional): Minimum contour value.
+            vmax_contour (float, optional): Maximum contour value.
             nlevels (int, optional): Number of contour levels for the plot.
         """
         self.logger.info('Plotting vertical biases for variable: %s', var)
@@ -300,8 +303,8 @@ class PlotGlobalBiases:
             lev_max=plev_max,
             vmin=vmin,
             vmax=vmax,
-            vmin_contour=vmin,
-            vmax_contour=vmax,
+            vmin_contour=vmin_contour,
+            vmax_contour=vmax_contour,
             logscale=True,
             add_contour=True, 
             cmap=self.cmap,
