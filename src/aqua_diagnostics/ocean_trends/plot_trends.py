@@ -259,5 +259,5 @@ class PlotTrends:
         self.catalog = self.data[self.vars[0]].AQUA_catalog
         self.model = self.data[self.vars[0]].AQUA_model
         self.exp = self.data[self.vars[0]].AQUA_exp
-        self.realizations = self.data[self.vars[0]].AQUA_realization
+        self.realizations = get_realizations(self.data[self.vars[0]])
         self.region = self.data.attrs.get("AQUA_region", "global")
