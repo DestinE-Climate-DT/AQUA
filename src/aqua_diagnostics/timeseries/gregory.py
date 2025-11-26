@@ -131,10 +131,17 @@ class Gregory(Diagnostic):
 
         if 'monthly' in freq:
             self.t2m_monthly = self.reader.timmean(t2m, freq='MS', exclude_incomplete=exclude_incomplete)
+            if self.t2m_monthly.time.size == 0:
+                self.logger.warning('No complete months found for the monthly mean computation.')
+                self.t2m_monthly = None
         if 'annual' in freq:
             self.t2m_annual = self.reader.timmean(t2m, freq='YS', exclude_incomplete=exclude_incomplete)
-            if std:
-                self.t2m_std = self.t2m_annual.std()
+            if self.t2m_annual.time.size == 0:
+                self.logger.warning('No complete years found for the annual mean computation.')
+                self.t2m_annual = None
+            if std and self.t2m_annual is not None:
+                if self.t2m_annual.time.size > 1:
+                    self.t2m_std = self.t2m_annual.std()
 
     def compute_net_toa(self, freq: list = ['monthly', 'annual'], std: bool = False,
                         exclude_incomplete=True):
@@ -151,10 +158,17 @@ class Gregory(Diagnostic):
 
         if 'monthly' in freq:
             self.net_toa_monthly = self.reader.timmean(net_toa, freq='MS', exclude_incomplete=exclude_incomplete)
+            if self.net_toa_monthly.time.size == 0:
+                self.logger.warning('No complete months found for the monthly mean computation.')
+                self.net_toa_monthly = None
         if 'annual' in freq:
             self.net_toa_annual = self.reader.timmean(net_toa, freq='YS', exclude_incomplete=exclude_incomplete)
-            if std:
-                self.net_toa_std = self.net_toa_annual.std()
+            if self.net_toa_annual.time.size == 0:
+                self.logger.warning('No complete years found for the annual mean computation.')
+                self.net_toa_annual = None
+            if std and self.net_toa_annual is not None:
+                if self.net_toa_annual.time.size > 1:
+                    self.net_toa_std = self.net_toa_annual.std()
 
     def save_netcdf(self, freq: list = ['monthly', 'annual'], std: bool = False,
                     t2m: bool = True, net_toa: bool = True,
@@ -173,28 +187,28 @@ class Gregory(Diagnostic):
         diagnostic_product = 'gregory'
 
         if t2m:
-            if std: 
+            if std and self.t2m_std is not None:
                 super().save_netcdf(data=self.t2m_std, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
                                     outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'annual', 'std':'std'})
-            if 'monthly' in freq:
+            if 'monthly' in freq and self.t2m_monthly is not None:
                 super().save_netcdf(data=self.t2m_monthly, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
                                     outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'monthly'})
-            if 'annual' in freq:
+            if 'annual' in freq and self.t2m_annual is not None:
                 super().save_netcdf(data=self.t2m_annual, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
                                     outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'2t', 'freq':'annual'})
         if net_toa:
-            if std:
+            if std and self.net_toa_std is not None:
                 super().save_netcdf(data=self.net_toa_std, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
                                     outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'annual', 'std':'std'})
-            if 'monthly' in freq:
+            if 'monthly' in freq and self.net_toa_monthly is not None:
                 super().save_netcdf(data=self.net_toa_monthly, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
                                     outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'monthly'})
-            if 'annual' in freq:
+            if 'annual' in freq and self.net_toa_annual is not None:
                 super().save_netcdf(data=self.net_toa_annual, diagnostic=self.diagnostic_name,
                                     diagnostic_product=diagnostic_product,
                                     outputdir=outputdir, rebuild=rebuild, extra_keys={'var':'net_toa', 'freq':'annual'})

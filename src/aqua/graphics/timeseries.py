@@ -87,10 +87,10 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
             data_labels = {'monthly': [f"{label} monthly" for label in data_labels],
                            'annual': [f"{label} annual" for label in data_labels]}
         else:
-            if monthly_data is not None and annual_data is None:
-                data_labels = {'monthly': data_labels, 'annual': None}
-            else:
+            if annual_data is not None:
                 data_labels = {'monthly': None, 'annual': data_labels}
+            else:
+                data_labels = {'monthly': data_labels, 'annual': None}
     else:
         data_labels = empty_label
 

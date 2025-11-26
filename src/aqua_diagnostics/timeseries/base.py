@@ -161,27 +161,34 @@ class BaseMixin(Diagnostic):
                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq=freq, exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
-        data = data.sel(time=slice(self.std_startdate, self.std_enddate))
-        if self.std_startdate is None or self.std_enddate is None:
-            self.std_startdate = data.time.min().values
-            self.std_enddate = data.time.max().values
-        if freq_dict[str_freq]['groupdby'] is not None:
-            data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
-        else:  # For annual data, we compute the std over all years
-            data = data.std('time')
 
-        if self.region is not None:
-            data.attrs['AQUA_region'] = self.region
+        # Check that after data reduction we still have data
+        if data.time.size == 0:
+            self.logger.warning(f'Not enough data to compute {str_freq} standard deviation')
+            data = None
+        else:
+            data = data.sel(time=slice(self.std_startdate, self.std_enddate))
+            if self.std_startdate is None or self.std_enddate is None:
+                self.std_startdate = data.time.min().values
+                self.std_enddate = data.time.max().values
+            self.logger.debug(f'Standard deviation period from {self.std_startdate} to {self.std_enddate}')
+            if freq_dict[str_freq]['groupdby'] is not None:
+                data = data.groupby(freq_dict[str_freq]['groupdby']).std('time')
+            else:  # For annual data, we compute the std over all years
+                data = data.std('time')
 
-        # Store start and end dates for the standard deviation.
-        # pd.Timestamp cannot be used as attribute, so we convert to a string
-        data.attrs['std_startdate'] = time_to_string(self.std_startdate)
-        data.attrs['std_enddate'] = time_to_string(self.std_enddate)
+            if self.region is not None:
+                data.attrs['AQUA_region'] = self.region
 
-        # Load data in memory for faster plot
-        self.logger.debug(f"Loading std data for frequency {str_freq} in memory")
-        data.load()
-        self.logger.debug(f"Loaded std data for frequency {str_freq} in memory")
+            # Store start and end dates for the standard deviation.
+            # pd.Timestamp cannot be used as attribute, so we convert to a string
+            data.attrs['std_startdate'] = time_to_string(self.std_startdate)
+            data.attrs['std_enddate'] = time_to_string(self.std_enddate)
+
+            # Load data in memory for faster plot
+            self.logger.debug(f"Loading std data for frequency {str_freq} in memory")
+            data.load()
+            self.logger.debug(f"Loaded std data for frequency {str_freq} in memory")
 
         # Assign the data to the correct attribute based on frequency
         if str_freq == 'hourly':
@@ -211,22 +218,25 @@ class BaseMixin(Diagnostic):
         """
         str_freq = pandas_freq_to_string(freq)
 
-        if str_freq == 'hourly':
-            data = self.hourly if self.hourly is not None else self.logger.error('No hourly data available')
-            data_std = self.std_hourly if self.std_hourly is not None else None
-        elif str_freq == 'daily':
-            data = self.daily if self.daily is not None else self.logger.error('No daily data available')
-            data_std = self.std_daily if self.std_daily is not None else None
-        elif str_freq == 'monthly':
-            data = self.monthly if self.monthly is not None else self.logger.error('No monthly data available')
-            data_std = self.std_monthly if self.std_monthly is not None else None
-        elif str_freq == 'annual':
-            data = self.annual if self.annual is not None else self.logger.error('No annual data available')
-            data_std = self.std_annual if self.std_annual is not None else None
+        freq_mapping = {
+            'hourly': (self.hourly, self.std_hourly),
+            'daily': (self.daily, self.std_daily),
+            'monthly': (self.monthly, self.std_monthly),
+            'annual': (self.annual, self.std_annual)
+        }
+
+        if str_freq not in freq_mapping:
+            self.logger.error('Invalid frequency: %s', str_freq)
+            return
+
+        data, data_std = freq_mapping[str_freq]
+        if data is None:
+            self.logger.warning('No %s data available, nothing to save', str_freq)
+            return
 
         var = getattr(data, 'short_name', None)
         extra_keys = {'var': var, 'freq': str_freq}
-        
+
         if data.name is None:
             data.name = var
 
@@ -298,6 +308,7 @@ class PlotBaseMixin():
             data_labels (list): List of data labels for the plot.
         """
         data_labels = []
+
         for i in range(self.len_data):
             label = f'{self.models[i]} {self.exps[i]}'
             data_labels.append(label)

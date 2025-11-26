@@ -73,7 +73,6 @@ class PlotTimeseries(PlotBaseMixin):
         # Filling them
         self.get_data_info()
 
-
     def run(self, outputdir: str = './', rebuild: bool = True, dpi: int = 300, format: str = 'png'):
         """
         Run the PlotTimeseries class.
@@ -214,7 +213,7 @@ class PlotTimeseries(PlotBaseMixin):
             data_length (int): Length of the data arrays.
             ref_length (int): Length of the reference data arrays.
         """
-        data_length = 0
+        data_length = 1
         ref_length = 0
 
         if self.monthly_data and self.annual_data:
@@ -222,6 +221,10 @@ class PlotTimeseries(PlotBaseMixin):
                 raise ValueError('Monthly and annual data list must have the same length')
             else:
                 data_length = len(self.monthly_data)
+        elif self.monthly_data:
+            data_length = len(self.monthly_data)
+        elif self.annual_data:
+            data_length = len(self.annual_data)
 
         if self.ref_monthly_data is not None or self.ref_annual_data is not None:
             ref_length = 1
