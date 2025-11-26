@@ -131,9 +131,15 @@ class Gregory(Diagnostic):
 
         if 'monthly' in freq:
             self.t2m_monthly = self.reader.timmean(t2m, freq='MS', exclude_incomplete=exclude_incomplete)
+            if self.t2m_monthly.time.size == 0:
+                self.logger.warning('No complete months found for the monthly mean computation.')
+                self.t2m_monthly = None
         if 'annual' in freq:
             self.t2m_annual = self.reader.timmean(t2m, freq='YS', exclude_incomplete=exclude_incomplete)
-            if std:
+            if self.t2m_annual.time.size == 0:
+                self.logger.warning('No complete years found for the annual mean computation.')
+                self.t2m_annual = None
+            if std and self.t2m_annual.time.size > 1:
                 self.t2m_std = self.t2m_annual.std()
 
     def compute_net_toa(self, freq: list = ['monthly', 'annual'], std: bool = False,
@@ -153,7 +159,7 @@ class Gregory(Diagnostic):
             self.net_toa_monthly = self.reader.timmean(net_toa, freq='MS', exclude_incomplete=exclude_incomplete)
         if 'annual' in freq:
             self.net_toa_annual = self.reader.timmean(net_toa, freq='YS', exclude_incomplete=exclude_incomplete)
-            if std:
+            if std and self.net_toa_annual.time.size > 1:
                 self.net_toa_std = self.net_toa_annual.std()
 
     def save_netcdf(self, freq: list = ['monthly', 'annual'], std: bool = False,
