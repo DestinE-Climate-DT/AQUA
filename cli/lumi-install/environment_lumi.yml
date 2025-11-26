@@ -16,7 +16,6 @@ dependencies:
   - pandas
   - pip
   - hdf5 #explicit to avoid issues with pypi
-  - tempest-extremes # for TCs
-  - xesmf # for ECmean
   - intake-esm
   - imagemagick
+  - healpy

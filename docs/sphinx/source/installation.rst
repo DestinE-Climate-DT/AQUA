@@ -109,7 +109,7 @@ Run the installation script:
 
 .. code-block:: bash
 
-    ./lumi-install.sh
+    ./lumi_install.sh
 
 This installs the AQUA environment into a container, and then set up the correct modules
 via a ``load_aqua.sh`` script that is generated and then called from the ``.bash_profile``.

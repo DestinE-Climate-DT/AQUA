@@ -3,9 +3,7 @@ name: AQUA tests
 
 on:
   push:
-    branches: [ main, v0.13-operational, v0.19-operational, v0.19-development ]
   pull_request:
-    branches: [ main, v0.13-operational, v0.19-operational, v0.19-development ]
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
@@ -29,13 +27,19 @@ defaults:
 jobs:
   aqua_test:
     # NOTE: this option can be uncommented to run the job only when
-    #       a pull request contains a label with the name "Run Tests" or "Ready to Merge" or if run by Dependabot.
+    #       a pull request contains:
+    #       1)  label with the name "Run Tests" or "Ready to Merge" 
+    #       2)  if run by Dependabot.
+    #      3)  if triggered manually (workflow_dispatch)
+    #      4)  if triggered by schedule
+    #      5)  if pushed to main branch
     if: >
       contains(github.event.pull_request.labels.*.name, 'run tests') ||
       contains(github.event.pull_request.labels.*.name, 'ready to merge') ||
       github.actor == 'dependabot[bot]' ||
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule'
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     env:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
