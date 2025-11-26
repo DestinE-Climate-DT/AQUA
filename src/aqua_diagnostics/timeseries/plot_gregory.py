@@ -62,11 +62,11 @@ class PlotGregory(PlotBaseMixin):
 
         has_monthly = (
             'monthly' in freq and
-            any(len(d) >= 2 for d in self.monthly_data['t2m'])
+            any(len(d) >= 2 for d in self.monthly_data['t2m'] if d is not None)
         )
         has_annual = (
             'annual' in freq and
-            any(len(d) >= 2 for d in self.annual_data['t2m'])
+            any(len(d) >= 2 for d in self.annual_data['t2m'] if d is not None)
         )
 
         self.logger.debug(f'Requested plot freq: {freq}, has_monthly: {has_monthly}, has_annual: {has_annual}')
@@ -131,14 +131,14 @@ class PlotGregory(PlotBaseMixin):
     def set_ref_label(self):
         """Set the reference label for the plot"""
         t2m_model, toa_model = self.ref_models.get("t2m"), self.ref_models.get("net_toa")
-        t2m_exp, toa_exp     = self.ref_exps.get("t2m"), self.ref_exps.get("net_toa")
+        t2m_exp, toa_exp = self.ref_exps.get("t2m"), self.ref_exps.get("net_toa")
 
         if None in (t2m_model, t2m_exp, toa_model, toa_exp):
             return None
 
         ref_label = f"{t2m_model} {t2m_exp} {toa_model} {toa_exp}"
         return ref_label
-        
+ 
     def set_description(self):
         """Set the description for the plot"""
         description = 'Gregory plot of'
@@ -296,7 +296,6 @@ class PlotGregory(PlotBaseMixin):
             for var, d in data.items():
                 # Filter out None values to avoid AttributeError
                 valid_data = [item for item in d if item is not None]
-                self.logger.critical(f'Checking length of {var} {freq} data: valid data are {valid_data}')
                 if valid_data != []:
                     if len(valid_data) > 0:
                         if len_data is None:
@@ -304,5 +303,5 @@ class PlotGregory(PlotBaseMixin):
                         elif len_data != len(valid_data):
                             raise ValueError(f'Length of {var} {freq} data is not the same')
                 else:
-                    self.logger.critical(f'No valid data found for {var} {freq}')
+                    self.logger.info(f'No valid data found for {var} {freq}')
         return len_data
