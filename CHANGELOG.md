@@ -12,6 +12,7 @@ Unreleased in the current development version (target v0.21.0):
 - Introducing preliminary support for aqua-diagnostics installation with console (#2503, #2507)
 - Unpacking of console class in multiple smaller mixin classes (#2507)
 - Restructuring the folder structure of core removing the src (#2499) 
+- Add timer in GitHub action if tests hang (#2496)
 - The big repository split (in aqua-core and aqua-diagnostics) (#2487)
 
 ## [v0.20.0]
