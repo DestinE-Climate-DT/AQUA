@@ -409,6 +409,11 @@ class TestAquaConsole():
             assert os.path.islink(os.path.join(mydir, '.aqua', folder))
         assert os.path.isdir(os.path.join(mydir, '.aqua', 'catalogs'))
 
+        # try to install diagnostics only on top of existing installation (should fail)
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['install', MACHINE, '--diagnostics', test_dir])
+            assert excinfo.value.code == 1
+
         # install from path in editable mode
         run_aqua_console_with_input(['-vv', 'install', MACHINE, '--core', aqua_root,
                                      '--path', os.path.join(mydir, 'vicesindaco2')], 'yes')

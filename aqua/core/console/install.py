@@ -182,9 +182,14 @@ class InstallMixin:
                 f'{component} is already installed in {existing_mode} mode. '
                 f'Proceeding will replace it with {install_mode} mode.'
             )
-            if not query_yes_no('Do you want to continue?', default='no'):
-                self.logger.info(f'Skipping {component} installation')
-                return
+            check = query_yes_no(f"Do you want to overwrite AQUA installation in {self.configpath}. "
+                                    "You will lose all catalogs installed.", "no")
+            if not check:
+                sys.exit()
+            else:
+                self.logger.warning('Removing the content of %s', self.configpath)
+                shutil.rmtree(self.configpath)
+                os.makedirs(self.configpath, exist_ok=True)
 
         self.logger.info(f'Installing {component} in {install_mode} mode')
 
@@ -197,7 +202,7 @@ class InstallMixin:
             actual_source = os.path.join(
                 os.path.abspath(custom_path), 'aqua', component, 'config'
             )
-            
+
             # Validate the path exists
             if not os.path.exists(actual_source):
                 self.logger.error(f'{actual_source} does not exist for {component}')
@@ -205,15 +210,15 @@ class InstallMixin:
         else:
             # Use the default source path
             actual_source = source_path
-        
+    
         # Install config directories
         os.makedirs(self.configpath, exist_ok=True)
         for directory in config_dirs:
             source = os.path.join(actual_source, directory)
             target = os.path.join(self.configpath, directory)
-            
-            self._copy_update_folder_file(source, target, link=link)
         
+            self._copy_update_folder_file(source, target, link=link)
+    
         # do the same for the templates
         template_source_base = os.path.join(actual_source, '..', 'templates')
 
@@ -221,7 +226,7 @@ class InstallMixin:
         for directory in template_dirs:
             source = os.path.join(template_source_base, directory)
             target = os.path.join(self.templatepath, directory)
-            
+    
             if os.path.exists(source):
                 self._copy_update_folder_file(source, target, link=link)
 
@@ -280,14 +285,6 @@ class InstallMixin:
             self.logger.info('Core already installed (%s mode), adding diagnostics component',
                            install_info['core']['mode'])
 
-        # Create config-aqua.yaml if not present only if installing the core
-        if core_mode:
-            self.logger.debug('Creating config-aqua.yaml configuration file')
-            self._copy_update_folder_file(
-                f'{self.corepath}/config-aqua.tmpl',
-                f'{self.configpath}/config-aqua.yaml'
-            )
-
         # Install core
         if core_mode:
             self.logger.debug('Installing core component')
@@ -297,6 +294,14 @@ class InstallMixin:
                 source_path=self.corepath,
                 config_dirs=CORE_CONFIG_DIRECTORIES,
                 template_dirs=CORE_TEMPLATE_DIRECTORIES
+            )
+        
+        # Create config-aqua.yaml if not present only if installing the core
+        if core_mode:
+            self.logger.debug('Creating config-aqua.yaml configuration file')
+            self._copy_update_folder_file(
+                f'{self.corepath}/config-aqua.tmpl',
+                f'{self.configpath}/config-aqua.yaml'
             )
 
         # Install diagnostics if available and not skipped
@@ -310,7 +315,11 @@ class InstallMixin:
                 template_dirs=DIAGNOSTIC_TEMPLATE_DIRECTORIES
             )
         elif self.diagpath is None and diag_mode is not False:
-            self.logger.warning('aqua.diagnostics package not found. Skipping diagnostics installation.')
+            if core_mode:
+                self.logger.warning('aqua.diagnostics package not found. Skipping diagnostics installation.')
+            else:
+                self.logger.error('aqua.diagnostics package not found. Skipping diagnostics installation.')
+                sys.exit(1)
 
         # Create catalogs directory
         os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
@@ -327,15 +336,7 @@ class InstallMixin:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
             else:
-                self.logger.warning('AQUA already installed in %s', path)
-                check = query_yes_no(f"Do you want to overwrite AQUA installation in {path}. "
-                                     "You will lose all catalogs installed.", "no")
-                if not check:
-                    sys.exit()
-                else:
-                    self.logger.warning('Removing the content of %s', path)
-                    shutil.rmtree(path)
-                    os.makedirs(path, exist_ok=True)
+                self.logger.warning('AQUA installation found in %s', path)
         else:
             self.logger.error('$HOME not found.'
                               'Please specify a path where to install AQUA and define AQUA_CONFIG as environment variable')
@@ -376,57 +377,7 @@ class InstallMixin:
             self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable',
                                 path)
 
-    # def _install_default(self):
-    #     """Copying the installation file"""
 
-    #     print("Installing AQUA to", self.configpath)
-    #     for file in ['config-aqua.tmpl']:
-    #         target_file = os.path.splitext(file)[0] + '.yaml'  # replace the tmpl with yaml
-    #         self._copy_update_folder_file(f'{self.corepath}/{file}', f'{self.configpath}/{target_file}')
-    #     for directory in CORE_CONFIG_DIRECTORIES:
-    #         self._copy_update_folder_file(os.path.join(self.corepath, directory),
-    #                                  os.path.join(self.configpath, directory))
-    #     for directory in CORE_TEMPLATE_DIRECTORIES:
-    #         self._copy_update_folder_file(os.path.join(self.corepath, '..', 'templates', directory),
-    #                                  os.path.join(self.templatepath, directory))
-    #     if self.diagpath is not None:
-    #         for directory in DIAGNOSTIC_CONFIG_DIRECTORIES:
-    #             self._copy_update_folder_file(os.path.join(self.diagpath, directory),
-    #                                      os.path.join(self.configpath, directory))
-    #         for directory in DIAGNOSTIC_TEMPLATE_DIRECTORIES:
-    #             self._copy_update_folder_file(os.path.join(self.diagpath, '..', 'templates', directory),
-    #                                      os.path.join(self.templatepath, directory))
-    #     os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
-
-    # def _install_editable(self, editable):
-    #     """
-    #     Linking the installation file in editable mode.
-    #     The editable folder must be the main level of the AQUA repository.
-
-    #     Args:
-    #         editable (str): the path where to link the AQUA installation files
-    #     """
-
-    #     editable = os.path.abspath(editable)
-    #     self.logger.info('Installing AQUA in editable mode from %s', editable)
-    #     editable = os.path.join(editable, 'aqua', 'core', 'config')
-    #     print("Installing AQUA with a link from ", editable, " to ", self.configpath)
-    #     for file in ['config-aqua.tmpl']:
-    #         target_file = os.path.splitext(file)[0] + '.yaml'
-    #         if os.path.isfile(os.path.join(editable, file)):
-    #             self._copy_update_folder_file(f'{self.corepath}/{file}', f'{self.configpath}/{target_file}')
-    #         else:
-    #             self.logger.error('%s folder does not include AQUA configuration files. Please use AQUA', editable)
-    #             os.rmdir(self.configpath)
-    #             sys.exit(1)
-    #     for directory in CORE_CONFIG_DIRECTORIES:
-    #         self._copy_update_folder_file(f'{editable}/{directory}', f'{self.configpath}/{directory}', link=True)
-
-    #     os.makedirs(f'{self.configpath}/templates', exist_ok=True)
-    #     for directory in CORE_TEMPLATE_DIRECTORIES:
-    #         self._copy_update_folder_file(os.path.join(editable, '..', 'templates', directory), f'{self.templatepath}/{directory}', link=True)
-
-    #     os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
 
     def _set_machine(self, args):
         """Modify the config-aqua.yaml with the identified machine"""
@@ -603,7 +554,7 @@ class InstallMixin:
                 if not silent:
                     print(f"\t - {file}")
                 list_files.append(file)
- 
+
         if return_list:
             return list_files
         return None
