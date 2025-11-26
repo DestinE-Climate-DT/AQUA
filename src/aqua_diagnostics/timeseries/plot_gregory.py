@@ -240,7 +240,7 @@ class PlotGregory(PlotBaseMixin):
                     ]
                     self.realizations = get_realizations(valid_data)
 
-        self.logger.critical(f'Catalogs: {self.catalogs}, Models: {self.models}, Exps: {self.exps}, Startdates: {self.startdate}, Enddates: {self.enddate}, Realizations: {self.realizations}')
+        self.logger.debug(f'Catalogs: {self.catalogs}, Models: {self.models}, Exps: {self.exps}, Startdates: {self.startdate}, Enddates: {self.enddate}, Realizations: {self.realizations}')
 
         if self.ref_dict['monthly']['t2m'] is not None:
             t2m_catalog = self.ref_dict['monthly']['t2m'].AQUA_catalog
@@ -294,9 +294,11 @@ class PlotGregory(PlotBaseMixin):
         len_data = None
         for freq, data in self.data_dict.items():
             for var, d in data.items():
-                if len(d) > 0:
+                # Filter out None values to avoid AttributeError
+                valid_data = [item for item in d if item is not None]
+                if len(valid_data) > 0:
                     if len_data is None:
-                        len_data = len(d)
-                    elif len_data != len(d):
+                        len_data = len(valid_data)
+                    elif len_data != len(valid_data):
                         raise ValueError(f'Length of {var} {freq} data is not the same')
         return len_data
