@@ -9,8 +9,8 @@ Unreleased in the current development version (target v0.21.0):
 
 AQUA core complete list:
 - AQUA-core and AQUA-diagnostic coupling (#2504)
-- Introducing preliminary support for aqua-diagnostics installation with console (#2503)
-- Unpacking of console class in multiple smaller mixin classes (#2503)
+- Introducing preliminary support for aqua-diagnostics installation with console (#2503, #2507)
+- Unpacking of console class in multiple smaller mixin classes (#2507)
 - Restructuring the folder structure of core removing the src (#2499) 
 - The big repository split (in aqua-core and aqua-diagnostics) (#2487)
 
