@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.21.0):
 
 AQUA core complete list:
+- Console installation is more flexible with `--core` and `--diagnostics` options (#2512)
 - AQUA-core and AQUA-diagnostic coupling (#2504)
 - Introducing preliminary support for aqua-diagnostics installation with console (#2503)
 - Unpacking of console class in multiple smaller mixin classes (#2503)
