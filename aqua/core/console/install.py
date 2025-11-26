@@ -99,13 +99,10 @@ class InstallMixin:
         # If specific_arg is a string path (not 'standard'), use editable mode
         if isinstance(specific_arg, str) and specific_arg != 'standard':
             return {'mode': 'editable', 'path': specific_arg}
-        
+
         # If specific_arg is 'standard' (flag without value), use standard mode
-        if specific_arg == 'standard':
-            return {'mode': 'standard', 'path': None}
-        
-        # Default to standard (shouldn't reach here normally)
         return {'mode': 'standard', 'path': None}
+        
 
     def _check_component_installed(self, component):
         """
@@ -118,6 +115,7 @@ class InstallMixin:
             bool: True if component is installed
         """
 
+        # get the first config directory for the component
         directories = self._get_config_dirs(component)
         for directory in directories:
             if os.path.exists(os.path.join(self.configpath, directory)):
@@ -150,16 +148,34 @@ class InstallMixin:
         Returns:
             str: 'editable', 'standard', or 'not_installed'
         """
+        # Check the installation mode based on the first config directory
         directories = self._get_config_dirs(component)
-            
         for directory in directories:
             path = os.path.join(self.configpath, directory)
             if os.path.islink(path):
                 return 'editable'
             if os.path.exists(path):
                 return 'standard'
-                
-        return 'not_installed'
+
+        return None
+
+    def _validate_component_path(self, component, custom_path):
+        """Validate that editable install path exists and return the source path
+        
+        Args:
+            component (str): 'core' or 'diagnostics'
+            custom_path (str): Path to the editable installation
+            
+        Returns:
+            str: Absolute path to the component config directory
+        """
+        actual_source = os.path.join(
+            os.path.abspath(custom_path), 'aqua', component, 'config'
+        )
+        if not os.path.exists(actual_source):
+            self.logger.error(f'{actual_source} does not exist for {component}')
+            sys.exit(1)
+        return actual_source
 
     def _install_component(self, component, mode, source_path, config_dirs, template_dirs):
         """
@@ -177,7 +193,7 @@ class InstallMixin:
 
         # Check if component is already installed
         existing_mode = self._get_component_mode(component)
-        if existing_mode != 'not_installed':
+        if existing_mode is not None:
             self.logger.warning(
                 f'{component} is already installed in {existing_mode} mode. '
                 f'Proceeding will replace it with {install_mode} mode.'
@@ -194,19 +210,11 @@ class InstallMixin:
         self.logger.info(f'Installing {component} in {install_mode} mode')
 
         # define if we need to link
-        link = True if install_mode == 'editable' else False
+        link = bool(install_mode == 'editable')
 
         # Determine the actual source path
         if link:
-            # User provided a custom path
-            actual_source = os.path.join(
-                os.path.abspath(custom_path), 'aqua', component, 'config'
-            )
-
-            # Validate the path exists
-            if not os.path.exists(actual_source):
-                self.logger.error(f'{actual_source} does not exist for {component}')
-                sys.exit(1)
+            actual_source = self._validate_component_path(component, custom_path)
         else:
             # Use the default source path
             actual_source = source_path
@@ -230,25 +238,31 @@ class InstallMixin:
             if os.path.exists(source):
                 self._copy_update_folder_file(source, target, link=link)
 
-    def _determine_component_mode(self, component_arg, selective_install):
+    def _determine_component_mode(self, core_arg, diag_arg, component):
         """
         Determine installation mode for a component based on CLI arguments.
         
         Args:
-            component_arg: CLI argument for component (--core or --diagnostics)
-            selective_install (bool): True if any component-specific flag was set
+            core_arg: CLI argument for --core
+            diag_arg: CLI argument for --diagnostics
+            component (str): 'core' or 'diagnostics' - which component to check
             
         Returns:
             dict or False: Installation mode dict {'mode': str, 'path': str|None} 
                           or False to skip component
         """
-        if component_arg is not None:
-            # User explicitly specified this component
-            return self._get_install_mode(component_arg)
-        if selective_install:
-            # User specified other component, skip this one
-            return False
-        # Full install: standard mode for all
+        if component == 'core':
+            if core_arg is not None:
+                return self._get_install_mode(core_arg)
+            if diag_arg is not None:
+                return False
+        else:  # diagnostics
+            if diag_arg is not None:
+                return self._get_install_mode(diag_arg)
+            if core_arg is not None:
+                return False
+  
+        # Neither specified: full install in standard mode
         return {'mode': 'standard', 'path': None}
 
     def install(self, args):
@@ -272,9 +286,8 @@ class InstallMixin:
         install_info = self._check(silent=True, return_info=True)
         
         # Determine installation mode for each component
-        selective_install = args.core is not None or args.diagnostics is not None
-        core_mode = self._determine_component_mode(args.core, selective_install)
-        diag_mode = self._determine_component_mode(args.diagnostics, selective_install)
+        core_mode = self._determine_component_mode(args.core, args.diagnostics, 'core')
+        diag_mode = self._determine_component_mode(args.core, args.diagnostics, 'diagnostics')
         self.logger.debug('Installation modes - core: %s, diagnostics: %s', core_mode, diag_mode)
 
         # Validation: if installing only diagnostics, core must already be installed
@@ -296,33 +309,32 @@ class InstallMixin:
                 template_dirs=CORE_TEMPLATE_DIRECTORIES
             )
         
-        # Create config-aqua.yaml if not present only if installing the core
-        if core_mode:
             self.logger.debug('Creating config-aqua.yaml configuration file')
             self._copy_update_folder_file(
-                f'{self.corepath}/config-aqua.tmpl',
-                f'{self.configpath}/config-aqua.yaml'
+                os.path.join(self.corepath, 'config-aqua.tmpl'),
+                os.path.join(self.configpath, 'config-aqua.yaml')
             )
 
         # Install diagnostics if available and not skipped
-        if self.diagpath and diag_mode:
-            self.logger.debug('Installing diagnostics component')
-            self._install_component(
-                component='diagnostics',
-                mode=diag_mode,
-                source_path=self.diagpath,
-                config_dirs=DIAGNOSTIC_CONFIG_DIRECTORIES,
-                template_dirs=DIAGNOSTIC_TEMPLATE_DIRECTORIES
-            )
-        elif self.diagpath is None and diag_mode is not False:
-            if core_mode:
-                self.logger.warning('aqua.diagnostics package not found. Skipping diagnostics installation.')
+        if diag_mode:
+            if self.diagpath is not None:
+                self.logger.debug('Installing diagnostics component')
+                self._install_component(
+                    component='diagnostics',
+                    mode=diag_mode,
+                    source_path=self.diagpath,
+                    config_dirs=DIAGNOSTIC_CONFIG_DIRECTORIES,
+                    template_dirs=DIAGNOSTIC_TEMPLATE_DIRECTORIES
+                )
             else:
-                self.logger.error('aqua.diagnostics package not found. Skipping diagnostics installation.')
-                sys.exit(1)
+                if core_mode:
+                    self.logger.warning('aqua.diagnostics package not found. Skipping diagnostics installation.')
+                else:
+                    self.logger.error('aqua.diagnostics package not found. Skipping diagnostics installation.')
+                    sys.exit(1)
 
         # Create catalogs directory
-        os.makedirs(f'{self.configpath}/{CATPATH}', exist_ok=True)
+        os.makedirs(os.path.join(self.configpath, CATPATH), exist_ok=True)
 
         # set machine
         self._set_machine(args)
@@ -376,8 +388,6 @@ class InstallMixin:
         else:
             self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable',
                                 path)
-
-
 
     def _set_machine(self, args):
         """Modify the config-aqua.yaml with the identified machine"""
@@ -557,4 +567,3 @@ class InstallMixin:
 
         if return_list:
             return list_files
-        return None
