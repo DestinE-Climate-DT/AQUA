@@ -161,7 +161,7 @@ if __name__ == "__main__":
                     "vmax_std": vmax_std,
                     "proj": proj,
                     "transform_first": False,
-                    "cyclic_lon": False,
+                    "cyclic_lon": True,
                     "contour": True,
                     "coastlines": True,
                     "cbar_label": None,
