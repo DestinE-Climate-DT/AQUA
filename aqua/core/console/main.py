@@ -67,19 +67,6 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             'catgen': self.catgen
         }
 
-    def _check(self, silent=False):
-        """check installation"""
-
-        checklevel = 'ERROR' if silent else self.loglevel
-        try:
-            self.configpath = ConfigPath(loglevel=checklevel).configdir
-            self.configfile = os.path.join(self.configpath, 'config-aqua.yaml')
-            self.templatepath = os.path.join(self.configpath, 'templates')
-            self.logger.debug('AQUA found in %s', self.configpath)
-        except FileNotFoundError:
-            self.logger.error('No AQUA installation found!')
-            sys.exit(1)
-
     def execute(self):
         """Parse AQUA class and run the required command"""
 
