@@ -222,13 +222,26 @@ class PlotGregory(PlotBaseMixin):
         """
         for var in self.data_dict.values():
             for data in var.values():
-                self.catalogs = [d.AQUA_catalog for d in data]
-                self.models = [d.AQUA_model for d in data]
-                self.exps = [d.AQUA_exp for d in data]
-                self.startdate = [time_to_string(d.time.values[0]) for d in data]
-                self.enddate = [time_to_string(d.time.values[-1]) for d in data]
-                self.realizations = get_realizations(data)
-                
+                # Filter out None values to avoid AttributeError
+                valid_data = [d for d in data if d is not None]
+                if valid_data:
+                    self.catalogs = [
+                        d.AQUA_catalog for d in valid_data
+                    ]
+                    self.models = [d.AQUA_model for d in valid_data]
+                    self.exps = [d.AQUA_exp for d in valid_data]
+                    self.startdate = [
+                        time_to_string(d.time.values[0])
+                        for d in valid_data
+                    ]
+                    self.enddate = [
+                        time_to_string(d.time.values[-1])
+                        for d in valid_data
+                    ]
+                    self.realizations = get_realizations(valid_data)
+
+        self.logger.critical(f'Catalogs: {self.catalogs}, Models: {self.models}, Exps: {self.exps}, Startdates: {self.startdate}, Enddates: {self.enddate}, Realizations: {self.realizations}')
+
         if self.ref_dict['monthly']['t2m'] is not None:
             t2m_catalog = self.ref_dict['monthly']['t2m'].AQUA_catalog
             t2m_model = self.ref_dict['monthly']['t2m'].AQUA_model
