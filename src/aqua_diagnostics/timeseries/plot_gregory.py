@@ -296,6 +296,7 @@ class PlotGregory(PlotBaseMixin):
             for var, d in data.items():
                 # Filter out None values to avoid AttributeError
                 valid_data = [item for item in d if item is not None]
+                self.logger.critical(f'Checking length of {var} {freq} data: valid data are {valid_data}')
                 if len(valid_data) > 0:
                     if len_data is None:
                         len_data = len(valid_data)
