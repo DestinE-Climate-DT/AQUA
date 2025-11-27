@@ -3,177 +3,28 @@ name: AQUA monthly tests
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 1 5 * *" #run every fifth day of the month at 1AM UTC
+    - cron: "0 1 5 * *" # run every fifth day of the month at 1AM UTC
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
-defaults:
-  run:
-    # NOTE: We must take care with the shell value here. We have steps
-    #       with mutiline YAML strings. 
-    #       These get converted into shell scripts.
-    #       If execute as ``bash -l fail_first_command.sh``
-    #       then it would fail the first command but run the second
-    #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
-    #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
-    #       We removed the noprofile and norc so we have pytest set by Conda in our PATH.
-    # NOTE2: login should be kept becuse the action micromamba/setup-micromamba
-    #        writes the environment activation script in the .bashrc file.
-    shell: bash -l -eo pipefail {0}
 jobs:
-  aqua_test:
-    # NOTE: this option can be uncommented to run the job only when
-    #       a pull request contains a label with the name "Run Tests" or "Ready to Merge".
-    env:
-      # You can disable coverage by changing this to false. You can
-      # also add other Python versions to the matrix, pinning the
-      # coverage job to be executed only on certain versions.
-      DEBIAN_FRONTEND: noninteractive
-      GRID_DEFINITION_PATH: /tmp
-      # This is needed for the FDB tests.
-      FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
-      # github token
-      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }}
-    runs-on: ubuntu-latest
-    # This option applies to the individual job of a matrix.
-    continue-on-error: false
-    container:
-      # To run FDB tests we need to use a Docker image with FDB installed.
-      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
-      options: --user root
-    permissions:
-      contents: read
-      issues: write
-      pull-requests: write
-    strategy:
-      # This option applies to all jobs in the matrix.
-      # If true, the entire matrix will stop running when one of the jobs fails.
+  # Call the reusable workflow with multiple Python versions
+  aqua-complete-tests:
+    uses: ./.github/workflows/aqua-test-reusable.yml
+    with:
+      python-versions: '["3.10", "3.11", "3.12"]'
+      pytest-markers: 'aqua or slow or gsv or graphics or catgen'
+      enable-parallel: false
+      enable-coverage: false
       fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
-    steps:
-      # checkout the AQUA code, the Climate-DT-catalog and the aqua-dvc repository
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          path: AQUA
-      - name: Checkout Climate-DT-catalog repository
-        uses: actions/checkout@v5
-        with:
-          repository: DestinE-Climate-DT/Climate-DT-catalog
-          path: Climate-DT-catalog
-          token: ${{ secrets.AQUA_GITHUB_PAT }}
-      - name: Checkout DVC repo
-        uses: actions/checkout@v5
-        with:
-          repository: DestinE-Climate-DT/aqua-dvc
-          path: aqua-dvc
-          token: ${{ secrets.AQUA_DVC_PAT }}
-      # The FDB docker image does not have git and other dependencies
-      - name: Install GH Actions dependencies
-        run: |
-          # Ubuntu dependencies (Git, curl, ...)
-          apt-get update && \
-            apt-get install -y \
-              curl \
-              git \
-              gpg
-      - name: Clone GitLab data-portfolio repository
-        run: |
-          git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-2/data-portfolio data-portfolio
-          cd data-portfolio
-          git checkout tags/v2.1.0
-      - name: List Workspace Contents
-        run: |
-          echo "Current Directory: $PWD"
-          ls -l
-      - name: Set up Micromamba
-        uses: mamba-org/setup-micromamba@v2
-        with:
-          micromamba-version: 'latest'
-          environment-file: AQUA/environment.yml 
-          environment-name: aqua
-          cache-downloads: true
-          cache-environment: false
-          condarc: |
-            channels:
-              - conda-forge
-          create-args: >-
-            python=${{ matrix.python-version }}
-      - name: Install Flake8
-        run: |
-          python -m pip install flake8
-      - name: Lint with flake8
-        run: |
-          # compile code to check for syntax errors
-          python -W error -m compileall -f -q src
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
-      - name: Install DVC s3
-        run: |
-          python -m pip install "dvc[s3]"
-      - name: Configure AWS credentials for DVC
-        run: |
-          mkdir -p $HOME/.aws
-          cat >$HOME/.aws/credentials << EOF
-          [default]
-          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          EOF
-      - name: Pull DVC data and move to the right folder
-        run: |
-          cd aqua-dvc
-          git checkout main
-          dvc pull -R data-tests/*
-          mkdir -p ../AQUA/AQUA_tests
-          # Move the entire data-tests folder contents into AQUA_tests
-          mv data-tests/* ../AQUA/AQUA_tests
-      - name: Set up FDB
-        run: |
-          export
-          # FDB for GSV
-          rm -rf /app/
-          cp -r ./AQUA/AQUA_tests/fdb/ /app/
-          cat /app/etc/fdb/config.yaml
-          mkdir -pv /app/localroot/
-          cd /app/
-          fdb-write sample_test_data.grib
-          fdb-write sample_test_data_d1.grib
-          ls -l /app/localroot
-          # The fdb-list command is a good smoke test.
-          fdb-list class=ea,expver=0001
-          # But the fdb-read using a request is more like what pyfdb does.
-          # When it fails, the test.grib file will have 0 (zero) messages.
-          fdb-read sample_test_data_fdb_request test.grib
-          grib_dump test.grib
-      - name: Set up AQUA
-        run: |
-          # Initialize the AQUA catalog in the $HOME/.aqua folder
-          aqua -vv install github
-          # Add the climatedt-phase1 catalog (for polytope testing)
-          aqua -vv add climatedt-phase1
-          # Add the ci/cd catalog
-          aqua -vv add ci
-          # Double check the catalogs
-          aqua -vv list
-          # add default paths to the config
-          cat >> $HOME/.aqua/config-aqua.yaml <<EOF
-          paths:
-              grids: ./AQUA_tests/grids
-              weights: ./AQUA_tests/weights
-              areas: ./AQUA_tests/weights
-          EOF
-          # Set up polytope secrets
-          cat >$HOME/.polytopeapirc << EOF
-          {
-            "user_key": "${{ secrets.POLYTOPE_KEY }}"
-          }
-          EOF
-      - name: Run tests
-        run: |
-          cd AQUA
-          # Produce the HTML report. Defaults to writing in htmlcov/index.html.
-          pytest -m "aqua or slow or gsv or graphics or catgen"
+    secrets:
+      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
+      BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

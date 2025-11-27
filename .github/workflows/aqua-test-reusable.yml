@@ -1,0 +1,356 @@
+name: AQUA Test Runner (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      python-versions:
+        description: 'JSON array of Python versions to test'
+        required: true
+        type: string
+        default: '["3.12"]'
+      pytest-markers:
+        description: 'Pytest markers to run (e.g., "aqua or slow")'
+        required: true
+        type: string
+        default: 'aqua or slow or gsv or graphics or catgen'
+      enable-parallel:
+        description: 'Enable pytest-xdist parallel execution'
+        required: false
+        type: boolean
+        default: true
+      enable-coverage:
+        description: 'Enable code coverage reporting'
+        required: false
+        type: boolean
+        default: true
+      fail-fast:
+        description: 'Stop all jobs if one fails'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      AQUA_GITHUB_PAT:
+        required: true
+      AQUA_DVC_PAT:
+        required: true
+      BSC_GITLAB:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      POLYTOPE_KEY:
+        required: true
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # NOTE: We must take care with the shell value here. We have steps
+    #       with multiline YAML strings. 
+    #       These get converted into shell scripts.
+    #       If execute as ``bash -l fail_first_command.sh``
+    #       then it would fail the first command but run the second
+    #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
+    #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
+    #       We removed the noprofile and norc so we have pytest set by Conda in our PATH.
+    # NOTE2: login should be kept because the action micromamba/setup-micromamba
+    #        writes the environment activation script in the .bashrc file.
+    shell: bash -l -eo pipefail {0}
+
+jobs:
+  aqua_test:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    
+    container:
+      # To run FDB tests we need to use a Docker image with FDB installed.
+      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
+      options: --user root
+    
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+    
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      GRID_DEFINITION_PATH: /tmp
+      FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
+      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }}
+    
+    steps:
+      # ========================================
+      # 1. CHECKOUT REPOSITORIES
+      # ========================================
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          path: AQUA
+      
+      - name: Checkout Climate-DT-catalog repository
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/Climate-DT-catalog
+          path: Climate-DT-catalog
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
+      
+      - name: Checkout DVC repo
+        uses: actions/checkout@v5
+        with:
+          repository: DestinE-Climate-DT/aqua-dvc
+          path: aqua-dvc
+          token: ${{ secrets.AQUA_DVC_PAT }}
+      
+      # ========================================
+      # 2. INSTALL SYSTEM DEPENDENCIES
+      # ========================================
+      - name: Install GH Actions dependencies
+        run: |
+          # Ubuntu dependencies (Git, curl, gpg...)
+          apt-get update && \
+            apt-get install -y \
+              curl \
+              git \
+              gpg
+      
+      - name: Clone GitLab data-portfolio repository
+        run: |
+          git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-2/data-portfolio data-portfolio
+          cd data-portfolio
+          git checkout tags/v2.1.0
+      
+      # ========================================
+      # 3. SETUP PYTHON ENVIRONMENT
+      # ========================================
+      - name: Set up Micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          micromamba-version: 'latest'
+          environment-file: AQUA/environment.yml 
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          condarc: |
+            channels:
+              - conda-forge
+          create-args: >-
+            python=${{ matrix.python-version }}
+      
+      # ========================================
+      # 4. LINTING
+      # ========================================
+      - name: Install Flake8
+        run: python -m pip install flake8
+      
+      - name: Lint with flake8
+        run: |
+          # compile code to check for syntax errors
+          python -W error -m compileall -f -q AQUA/aqua
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 AQUA --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 AQUA --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
+      
+      # ========================================
+      # 5. SETUP DVC AND TEST DATA
+      # ========================================
+      - name: Install DVC s3
+        run: python -m pip install "dvc[s3]"
+      
+      - name: Configure AWS credentials for DVC
+        run: |
+          mkdir -p $HOME/.aws
+          cat >$HOME/.aws/credentials << EOF
+          [default]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
+      
+      - name: Pull DVC data and move to the right folder
+        run: |
+          cd aqua-dvc
+          git checkout main
+          dvc pull -R data-tests/*
+          mkdir -p ../AQUA/AQUA_tests
+          mv data-tests/* ../AQUA/AQUA_tests
+      
+      # ========================================
+      # 6. SETUP FDB
+      # ========================================
+      - name: Set up FDB
+        run: |
+          # FDB for GSV
+          rm -rf /app/
+          cp -r ./AQUA/AQUA_tests/fdb/ /app/
+          cat /app/etc/fdb/config.yaml
+          mkdir -pv /app/localroot/
+          cd /app/
+          fdb-write sample_test_data.grib
+          fdb-write sample_test_data_d1.grib
+          ls -l /app/localroot
+          # The fdb-list command is a good smoke test.
+          fdb-list class=ea,expver=0001
+          # But the fdb-read using a request is more like what pyfdb does.
+          # When it fails, the test.grib file will have 0 (zero) messages.
+          fdb-read sample_test_data_fdb_request test.grib
+          grib_dump test.grib
+      
+      # ========================================
+      # 7. SETUP AQUA
+      # ========================================
+      - name: Set up AQUA
+        run: |
+          # Initialize the AQUA catalog in the $HOME/.aqua folder
+          aqua -vv install github
+          # Add the climatedt-phase1 catalog (for polytope testing)
+          aqua -vv add climatedt-phase1
+          # Add the ci/cd catalog
+          aqua -vv add ci
+          # Double check the catalogs
+          aqua -vv list
+          # add default paths to the config
+          cat >> $HOME/.aqua/config-aqua.yaml <<EOF
+          paths:
+              grids: ./AQUA_tests/grids
+              weights: ./AQUA_tests/weights
+              areas: ./AQUA_tests/weights
+          EOF
+          # Set up polytope secrets
+          cat >$HOME/.polytopeapirc << EOF
+          {
+            "user_key": "${{ secrets.POLYTOPE_KEY }}"
+          }
+          EOF
+      
+      # ========================================
+      # 8. SAVE ENVIRONMENT INFO
+      # ========================================
+      - name: Save environment information
+        run: |
+          cd AQUA
+          micromamba list > micromamba_list.txt
+          pip freeze > pip_freeze.txt
+      
+      # ========================================
+      # 9. RUN TESTS
+      # ========================================
+      - name: Run tests (parallel with coverage)
+        if: ${{ inputs.enable-parallel && inputs.enable-coverage }}
+        run: |
+          cd AQUA
+          echo "=========================================="
+          echo "Running tests with pytest-xdist (4 cores) and coverage"
+          echo "Tests with xdist_group markers will run on dedicated workers"
+          echo "=========================================="
+          
+          pytest -n 4 \
+            --max-worker-restart=3 \
+            --cov \
+            --junitxml=junit.xml \
+            -o junit_family=legacy \
+            -m "${{ inputs.pytest-markers }}" \
+            2>&1 | tee aqua_pytest.log
+          
+          TEST_EXIT=$?
+          
+          # Generate coverage reports
+          coverage xml
+          coverage report
+          
+          exit $TEST_EXIT
+      
+      - name: Run tests (parallel without coverage)
+        if: ${{ inputs.enable-parallel && !inputs.enable-coverage }}
+        run: |
+          cd AQUA
+          echo "=========================================="
+          echo "Running tests with pytest-xdist (4 cores)"
+          echo "=========================================="
+          
+          pytest -n 4 \
+            --max-worker-restart=3 \
+            --junitxml=junit.xml \
+            -o junit_family=legacy \
+            -m "${{ inputs.pytest-markers }}" \
+            2>&1 | tee aqua_pytest.log
+      
+      - name: Run tests (sequential with coverage)
+        if: ${{ !inputs.enable-parallel && inputs.enable-coverage }}
+        run: |
+          cd AQUA
+          echo "=========================================="
+          echo "Running tests sequentially with coverage"
+          echo "=========================================="
+          
+          pytest \
+            --cov \
+            --junitxml=junit.xml \
+            -o junit_family=legacy \
+            -m "${{ inputs.pytest-markers }}" \
+            2>&1 | tee aqua_pytest.log
+          
+          TEST_EXIT=$?
+          
+          # Generate coverage reports
+          coverage xml
+          coverage report
+          
+          exit $TEST_EXIT
+      
+      - name: Run tests (sequential without coverage)
+        if: ${{ !inputs.enable-parallel && !inputs.enable-coverage }}
+        run: |
+          cd AQUA
+          echo "=========================================="
+          echo "Running tests sequentially"
+          echo "=========================================="
+          
+          pytest \
+            --junitxml=junit.xml \
+            -o junit_family=legacy \
+            -m "${{ inputs.pytest-markers }}"
+      
+      # ========================================
+      # 10. UPLOAD COVERAGE (if enabled)
+      # ========================================
+      - name: Upload coverage reports to Codecov
+        if: ${{ inputs.enable-coverage && github.actor != 'dependabot[bot]' && !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          files: AQUA/coverage.xml
+          flags: unittests
+          name: codecov-aqua
+          token: ${{ secrets.CODECOV_TOKEN }}
+      
+      - name: Upload test results to Codecov
+        if: ${{ inputs.enable-coverage && github.actor != 'dependabot[bot]' && !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: AQUA/junit.xml
+      
+      # ========================================
+      # 11. UPLOAD ARTIFACTS
+      # ========================================
+      - name: Upload test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqua-test-artifacts-py${{ matrix.python-version }}
+          path: |
+            AQUA/coverage.xml
+            AQUA/junit.xml
+            AQUA/.pytest_cache
+            AQUA/aqua_pytest.log
+            AQUA/micromamba_list.txt
+            AQUA/pip_freeze.txt
+          if-no-files-found: ignore
