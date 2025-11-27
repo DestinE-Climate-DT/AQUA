@@ -253,7 +253,7 @@ class InstallMixin:
                     self.logger.error('Cannot install diagnostics without core. Install core first or use full installation.')
                     sys.exit(1)
                 if install_info['diagnostics']['installed']:
-                    self.logger.error('Diagnostics component is already installed. We cannot add it again, please use \'aqua install\'')
+                    self.logger.error('Diagnostics component is already installed. We cannot add it again, please use \'aqua uninstall\' before')
                     sys.exit(1)
                 self.logger.info('Core already installed (%s mode), adding diagnostics component',
                            install_info['core']['mode'])
