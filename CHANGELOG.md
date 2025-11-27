@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.19.5]
+
+ClimateDT workflow modifications:
+- Config files for Ensemble are now aligned to aqua-analysis structure
+
+AQUA core complete list:
 - Fix aqua graphical style for timeseries (#2522)
 
 AQUA diagnostics complete list:
@@ -1221,7 +1230,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.4
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.5
+[v0.19.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.1...v0.19.2
