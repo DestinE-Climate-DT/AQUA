@@ -85,25 +85,7 @@ class InstallMixin:
             
             self.logger.error('No AQUA installation found!')
             sys.exit(1)
-
-    def _get_install_mode(self, specific_arg):
-        """
-        Determine the installation mode for a component.
         
-        Args:
-            specific_arg: Value of --core or --diagnostics argument
-            
-        Returns:
-            dict: {'mode': 'editable'|'standard', 'path': str|None}
-        """
-        # If specific_arg is a string path (not 'standard'), use editable mode
-        if isinstance(specific_arg, str) and specific_arg != 'standard':
-            return {'mode': 'editable', 'path': specific_arg}
-
-        # If specific_arg is 'standard' (flag without value), use standard mode
-        return {'mode': 'standard', 'path': None}
-        
-
     def _check_component_installed(self, component):
         """
         Check if a specific component is already installed
@@ -121,22 +103,6 @@ class InstallMixin:
             if os.path.exists(os.path.join(self.configpath, directory)):
                 return True
         return False
-
-    def _get_config_dirs(self, component):
-        """
-        Get the config directories for a component
-        
-        Args:
-            component (str): 'core' or 'diagnostics'
-
-        Returns:
-            list: List of config directories
-        """
-        if component == 'core':
-            return CORE_CONFIG_DIRECTORIES
-        if component == 'diagnostics':
-            return DIAGNOSTIC_CONFIG_DIRECTORIES
-        raise ValueError(f"Unknown component: {component}")
 
     def _get_component_mode(self, component):
         """
@@ -190,22 +156,6 @@ class InstallMixin:
         """
         install_mode = mode['mode']
         custom_path = mode['path']
-
-        # Check if component is already installed
-        existing_mode = self._get_component_mode(component)
-        if existing_mode is not None:
-            self.logger.warning(
-                f'{component} is already installed in {existing_mode} mode. '
-                f'Proceeding will replace it with {install_mode} mode.'
-            )
-            check = query_yes_no(f"Do you want to overwrite AQUA installation in {self.configpath}. "
-                                    "You will lose all catalogs installed.", "no")
-            if not check:
-                sys.exit()
-            else:
-                self.logger.warning('Removing the content of %s', self.configpath)
-                shutil.rmtree(self.configpath)
-                os.makedirs(self.configpath, exist_ok=True)
 
         self.logger.info(f'Installing {component} in {install_mode} mode')
 
@@ -290,6 +240,24 @@ class InstallMixin:
         diag_mode = self._determine_component_mode(args.core, args.diagnostics, 'diagnostics')
         self.logger.debug('Installation modes - core: %s, diagnostics: %s', core_mode, diag_mode)
 
+        if install_info['installed']:
+            self.logger.warning('AQUA installation found in %s', self.configpath)
+            if core_mode:
+                self.logger.warning('Proceeding will remove the existing installation and all catalogs.')
+                self.logger.warning('It will remove the diagnostics component if already installed.')
+                if not self._remove_installation(confirm=True):
+                    sys.exit()
+            
+            if core_mode is False and diag_mode:
+                if not install_info['core']['installed']:
+                    self.logger.error('Cannot install diagnostics without core. Install core first or use full installation.')
+                    sys.exit(1)
+                if install_info['diagnostics']['installed']:
+                    self.logger.error('Diagnostics component is already installed. We cannot add it again, please use \'aqua install\'')
+                    sys.exit(1)
+                self.logger.info('Core already installed (%s mode), adding diagnostics component',
+                           install_info['core']['mode'])
+    
         # Validation: if installing only diagnostics, core must already be installed
         if core_mode is False and diag_mode:
             if not install_info['core']['installed']:
@@ -348,7 +316,7 @@ class InstallMixin:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
             else:
-                self.logger.warning('AQUA installation found in %s', path)
+                self.logger.debug('AQUA installation found in %s', path)
         else:
             self.logger.error('$HOME not found.'
                               'Please specify a path where to install AQUA and define AQUA_CONFIG as environment variable')
@@ -408,21 +376,40 @@ class InstallMixin:
                 cfg['machine'] = machine
                 dump_yaml(self.configfile, cfg)
 
+    def _remove_installation(self, confirm=True):
+        """
+        Remove AQUA installation directory
+        
+        Args:
+            confirm (bool): Whether to ask for confirmation
+            
+        Returns:
+            bool: True if removed, False if user cancelled
+        """
+        if confirm:
+            check = query_yes_no(
+                f"Do you want to remove AQUA installation in {self.configpath}. "
+                "You will lose all catalogs installed.", "no"
+            )
+            if not check:
+                return False
+
+        self.logger.warning('Removing the content of %s', self.configpath)
+
+        if os.path.islink(self.configpath):
+            self.logger.info('Removing the link %s', self.configpath)
+            os.unlink(self.configpath)
+        else:
+            self.logger.info('Removing directory %s', self.configpath)
+            shutil.rmtree(self.configpath)
+
+        return True
+
     def uninstall(self, args):
         """Remove AQUA"""
         print('Remove the AQUA installation')
         self._check()
-        check = query_yes_no(f"Do you want to uninstall AQUA from {self.configpath}", "no")
-        if check:
-            # Remove the AQUA installation both for folder and link case
-            if os.path.islink(self.configpath):
-                # Remove link and data in the linked folder
-                self.logger.info('Removing the link %s', self.configpath)
-                os.unlink(self.configpath)
-            else:
-                self.logger.info('Uninstalling AQUA from %s', self.configpath)
-                shutil.rmtree(self.configpath)
-        else:
+        if not self._remove_installation(confirm=True):
             sys.exit()
 
     def update(self, args):
@@ -539,7 +526,8 @@ class InstallMixin:
                 print(f'AQUA current installed {content} in {self.configpath}:')
                 self._list_folder(os.path.join(self.configpath, content))
 
-    def _list_folder(self, mydir, return_list=False, silent=False):
+    @staticmethod
+    def _list_folder(mydir, return_list=False, silent=False):
         """
         List all the files in a AQUA config folder and check if they are link or file/folder
         
@@ -567,3 +555,38 @@ class InstallMixin:
 
         if return_list:
             return list_files
+        
+    @staticmethod
+    def _get_config_dirs(component):
+        """
+        Get the config directories for a component
+        
+        Args:
+            component (str): 'core' or 'diagnostics'
+
+        Returns:
+            list: List of config directories
+        """
+        if component == 'core':
+            return CORE_CONFIG_DIRECTORIES
+        if component == 'diagnostics':
+            return DIAGNOSTIC_CONFIG_DIRECTORIES
+        raise ValueError(f"Unknown component: {component}")
+    
+    @staticmethod
+    def _get_install_mode(specific_arg):
+        """
+        Determine the installation mode for a component.
+        
+        Args:
+            specific_arg: Value of --core or --diagnostics argument
+            
+        Returns:
+            dict: {'mode': 'editable'|'standard', 'path': str|None}
+        """
+        # If specific_arg is a string path (not 'standard'), use editable mode
+        if isinstance(specific_arg, str) and specific_arg != 'standard':
+            return {'mode': 'editable', 'path': specific_arg}
+
+        # If specific_arg is 'standard' (flag without value), use standard mode
+        return {'mode': 'standard', 'path': None}
