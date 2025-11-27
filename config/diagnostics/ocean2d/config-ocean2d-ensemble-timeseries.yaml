@@ -1,0 +1,39 @@
+# The first model in this block can be overridden
+# in the command line by using:
+# --model, --exp, --source, --outputdir, --catalog
+
+# This yaml file will only have either annual or monthly
+datasets:
+  - catalog: null
+    model: 'IFS-NEMO'
+    exp: 'hist-1990-ensemble'
+    source: 'aqua-atmosphere2d-timeseries'
+    regrid: null
+
+setup:
+  loglevel: 'WARNING'
+
+output:
+  outputdir: "./"
+  #rebuild: true
+  save_netcdf: true
+  save_pdf: true
+  save_png: true
+  #dpi: 300
+
+diagnostics:
+  ensemble:
+    run: true
+    diagnostic_name: 'EnsembleTimeseries'
+    variable: ['tos']
+    region: ['global',]
+    params:
+      default:
+        # startdate_data: "1990-01-16"
+        # enddate_data: "2014-11-16"
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2020-12-31"
+    plot_params:
+      default:
+        title: 
+        plot_ensemble_members: True

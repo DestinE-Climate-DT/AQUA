@@ -62,11 +62,11 @@ class PlotGregory(PlotBaseMixin):
 
         has_monthly = (
             'monthly' in freq and
-            any(len(d) >= 2 for d in self.monthly_data['t2m'])
+            any(len(d) >= 2 for d in self.monthly_data['t2m'] if d is not None)
         )
         has_annual = (
             'annual' in freq and
-            any(len(d) >= 2 for d in self.annual_data['t2m'])
+            any(len(d) >= 2 for d in self.annual_data['t2m'] if d is not None)
         )
 
         self.logger.debug(f'Requested plot freq: {freq}, has_monthly: {has_monthly}, has_annual: {has_annual}')
@@ -131,14 +131,14 @@ class PlotGregory(PlotBaseMixin):
     def set_ref_label(self):
         """Set the reference label for the plot"""
         t2m_model, toa_model = self.ref_models.get("t2m"), self.ref_models.get("net_toa")
-        t2m_exp, toa_exp     = self.ref_exps.get("t2m"), self.ref_exps.get("net_toa")
+        t2m_exp, toa_exp = self.ref_exps.get("t2m"), self.ref_exps.get("net_toa")
 
         if None in (t2m_model, t2m_exp, toa_model, toa_exp):
             return None
 
         ref_label = f"{t2m_model} {t2m_exp} {toa_model} {toa_exp}"
         return ref_label
-        
+ 
     def set_description(self):
         """Set the description for the plot"""
         description = 'Gregory plot of'
@@ -222,13 +222,26 @@ class PlotGregory(PlotBaseMixin):
         """
         for var in self.data_dict.values():
             for data in var.values():
-                self.catalogs = [d.AQUA_catalog for d in data]
-                self.models = [d.AQUA_model for d in data]
-                self.exps = [d.AQUA_exp for d in data]
-                self.startdate = [time_to_string(d.time.values[0]) for d in data]
-                self.enddate = [time_to_string(d.time.values[-1]) for d in data]
-                self.realizations = get_realizations(data)
-                
+                # Filter out None values to avoid AttributeError
+                valid_data = [d for d in data if d is not None]
+                if valid_data:
+                    self.catalogs = [
+                        d.AQUA_catalog for d in valid_data
+                    ]
+                    self.models = [d.AQUA_model for d in valid_data]
+                    self.exps = [d.AQUA_exp for d in valid_data]
+                    self.startdate = [
+                        time_to_string(d.time.values[0])
+                        for d in valid_data
+                    ]
+                    self.enddate = [
+                        time_to_string(d.time.values[-1])
+                        for d in valid_data
+                    ]
+                    self.realizations = get_realizations(valid_data)
+
+        self.logger.debug(f'Catalogs: {self.catalogs}, Models: {self.models}, Exps: {self.exps}, Startdates: {self.startdate}, Enddates: {self.enddate}, Realizations: {self.realizations}')
+
         if self.ref_dict['monthly']['t2m'] is not None:
             t2m_catalog = self.ref_dict['monthly']['t2m'].AQUA_catalog
             t2m_model = self.ref_dict['monthly']['t2m'].AQUA_model
@@ -281,9 +294,14 @@ class PlotGregory(PlotBaseMixin):
         len_data = None
         for freq, data in self.data_dict.items():
             for var, d in data.items():
-                if len(d) > 0:
-                    if len_data is None:
-                        len_data = len(d)
-                    elif len_data != len(d):
-                        raise ValueError(f'Length of {var} {freq} data is not the same')
+                # Filter out None values to avoid AttributeError
+                valid_data = [item for item in d if item is not None]
+                if valid_data != []:
+                    if len(valid_data) > 0:
+                        if len_data is None:
+                            len_data = len(valid_data)
+                        elif len_data != len(valid_data):
+                            raise ValueError(f'Length of {var} {freq} data is not the same')
+                else:
+                    self.logger.info(f'No valid data found for {var} {freq}')
         return len_data

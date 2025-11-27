@@ -9,6 +9,19 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 
+## [v0.19.5]
+
+ClimateDT workflow modifications:
+- Config files for Ensemble are now aligned to aqua-analysis structure
+
+AQUA core complete list:
+- Fix aqua graphical style for timeseries (#2522)
+
+AQUA diagnostics complete list:
+- Ensemble: config file structure aligned to aqua-analysis (#2518)
+- Timeseries: Timeseries and Gregory correctly work with less that one year of data (#2514)
+- Ocean Trend: bugfix realization handling (#2516)
+
 ## [v0.19.4]
 
 AQUA core complete list:
@@ -18,6 +31,7 @@ AQUA core complete list:
 - Fix DROP CLI support for enddate, startdate and catalog (#2473)
 
 AQUA diagnostics complete list:
+- Biases: fix contour in vertical biases plots (#2513)
 - Biases: results are stored in memory before netcdf saving and plotting (#2482)
 
 ## [v0.19.3]
@@ -1216,7 +1230,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.4
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.5
+[v0.19.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.2...v0.19.3
 [v0.19.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.1...v0.19.2

@@ -216,6 +216,7 @@ class PlotEnsembleLatLon(BaseMixin):
             title=title_mean,
             vmin=vmin_mean,
             vmax=vmax_mean,
+            loglevel=self.loglevel,
         )
         ax1.set_xlabel("Longitude")
         ax1.set_ylabel("Latitude")
@@ -245,6 +246,7 @@ class PlotEnsembleLatLon(BaseMixin):
             title=title_std,
             vmin=vmin_std,
             vmax=vmax_std,
+            loglevel=self.loglevel,
         )
         ax2.set_xlabel("Longitude")
         ax2.set_ylabel("Latitude")

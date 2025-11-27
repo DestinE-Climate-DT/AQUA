@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from aqua.logger import log_configure
 from aqua.util import to_list
 from .util_timeseries import plot_timeseries_data, plot_timeseries_ref_data, plot_timeseries_ensemble
-from .styles import ConfigStyle
+from .styles import ConfigStyle, apply_aqua_spines
 
 
 def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
@@ -74,6 +74,9 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
     if fig is None and ax is None:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
+    # Explicitly apply AQUA spine style to ensure consistency
+    apply_aqua_spines(ax)
+
     if (monthly_data is not None and ens_monthly_data is not None) or (annual_data is not None and ens_annual_data is not None):
         logger.info("monthly_data and annual_data will be considered as realizations of an ensemble")
         realization = True
@@ -87,10 +90,10 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
             data_labels = {'monthly': [f"{label} monthly" for label in data_labels],
                            'annual': [f"{label} annual" for label in data_labels]}
         else:
-            if monthly_data is not None and annual_data is None:
-                data_labels = {'monthly': data_labels, 'annual': None}
-            else:
+            if annual_data is not None:
                 data_labels = {'monthly': None, 'annual': data_labels}
+            else:
+                data_labels = {'monthly': data_labels, 'annual': None}
     else:
         data_labels = empty_label
 
@@ -203,12 +206,15 @@ def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
 
     logger = log_configure(loglevel, 'PlotSeasonalCycle')
 
+    ConfigStyle(style=style, loglevel=loglevel)
+
     if fig is None:
         fig = plt.figure(figsize=figsize)
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
 
-    ConfigStyle(style=style, loglevel=loglevel)
+    # Explicitly apply AQUA spine style to ensure consistency
+    apply_aqua_spines(ax)
 
     monthsNumeric = range(0, 13 + 1)  # Numeric months
     monthsNames = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
