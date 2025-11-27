@@ -50,3 +50,23 @@ class ConfigStyle(ConfigPath):
         except OSError:
             plt.style.use(self.style)
             self.logger.debug("Setting matplotlib style %s", self.style)
+
+
+def apply_aqua_spines(ax):
+    """
+    Apply AQUA style spines to an existing axes.
+    
+    This function explicitly sets the spine visibility and style,
+    ensuring consistent appearance regardless of rcParams state.
+    Useful when axes are created before style is applied or when
+    other plotting libraries (like xarray) may modify spine settings.
+    
+    Args:
+        ax (plt.Axes): The matplotlib axes to style.
+    """
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['bottom'].set_color('silver')
+    ax.spines['bottom'].set_linewidth(0.8)
