@@ -9,10 +9,11 @@ Unreleased in the current development version (target v0.21.0):
 
 AQUA core complete list:
 - Console installation is more flexible with `--core` and `--diagnostics` options (#2512)
+- Re-usable workflow to be shared across multiple github actions (#2519)
 - Lumi install for core only (#2502)
-- AQUA-core and AQUA-diagnostic coupling (#2504)
-- Introducing preliminary support for aqua-diagnostics installation with console (#2503)
-- Unpacking of console class in multiple smaller mixin classes (#2503)
+- AQUA-core and AQUA-diagnostic coupling (#2504, #2511)
+- Introducing preliminary support for aqua-diagnostics installation with console (#2503, #2507)
+- Unpacking of console class in multiple smaller mixin classes (#2507)
 - Restructuring the folder structure of core removing the src (#2499) 
 - The big repository split (in aqua-core and aqua-diagnostics) (#2487)
 

@@ -11,6 +11,14 @@ The package provides a flexible and efficient framework to process and analyze l
 With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic 
 tools that can be run in parallel.
 
+The main repository for AQUA is the `AQUA-core <https://github.com/DestinE-Climate-DT/AQUA>`_ repository.
+The main repository for AQUA-diagnostics is the `AQUA-diagnostics <https://github.com/DestinE-Climate-DT/AQUA-diagnostics>`_ repository.
+
+The AQUA-diagnostics repository contains the full set of diagnostic tools developed for the Destination Earth Adaptation Climate Digital Twin (ClimateDT).
+It is designed to be used together with the AQUA core framework which provides data access and preprocessing functionalities.
+
+- For more information on AQUA-diagnostics, see the AQUA-diagnostics documentation here: https://aqua-diagnostics.readthedocs.io/en/latest/.
+
 Purpose
 -------
 
