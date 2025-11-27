@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      install-mode:
+        description: 'Installation mode: "local" (from checkout) or "pypi" (from PyPI)'
+        required: false
+        type: string
+        default: 'local'
     secrets:
       AQUA_GITHUB_PAT:
         required: true
@@ -131,7 +136,8 @@ jobs:
       # ========================================
       # 3. SETUP PYTHON ENVIRONMENT
       # ========================================
-      - name: Set up Micromamba
+      - name: Set up Micromamba (local mode)
+        if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
@@ -145,6 +151,29 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
       
+      - name: Set up Micromamba (PyPI mode)
+        if: ${{ inputs.install-mode == 'pypi' }}
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          micromamba-version: 'latest'
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          condarc: |
+            channels:
+              - conda-forge
+              - nodefaults
+          create-args: >-
+            python=${{ matrix.python-version }}
+            cdo>=2.5.0
+            eccodes==2.41.0
+            cartopy_offlinedata
+            pandas
+            pip
+            hdf5
+            intake-esm
+            imagemagick
+      
       # ========================================
       # 4. LINTING
       # ========================================
@@ -152,6 +181,7 @@ jobs:
         run: python -m pip install flake8
       
       - name: Lint with flake8
+        if: ${{ inputs.install-mode == 'local' }}
         run: |
           # compile code to check for syntax errors
           python -W error -m compileall -f -q AQUA/aqua
@@ -159,6 +189,18 @@ jobs:
           flake8 AQUA --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 AQUA --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
+      
+      # ========================================
+      # 4b. INSTALL AQUA (PyPI mode)
+      # ========================================
+      - name: Upgrade pip/setuptools/wheel
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: python -m pip install --upgrade pip setuptools wheel
+      
+      - name: Install aqua from PyPI
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: |
+          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple aqua-climate
       
       # ========================================
       # 5. SETUP DVC AND TEST DATA
