@@ -19,7 +19,7 @@ from .hovmoller import plot_hovmoller
 from .boxplot import boxplot
 from .index_plot import index_plot, indexes_plot
 from .single_map import plot_single_map, plot_single_map_diff
-from .styles import ConfigStyle
+from .styles import ConfigStyle, apply_aqua_spines
 from .timeseries import plot_timeseries, plot_seasonalcycle
 from .multiple_maps import plot_maps, plot_maps_diff
 from .vertical_profiles import plot_vertical_profile, plot_vertical_profile_diff
@@ -32,7 +32,7 @@ __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
            "plot_hovmoller", "boxplot",
            "index_plot", "indexes_plot",
            "plot_single_map", "plot_single_map_diff",
-           "ConfigStyle",
+           "ConfigStyle", "apply_aqua_spines",
            "plot_timeseries", "plot_seasonalcycle",
            "plot_maps", "plot_maps_diff",
            "plot_vertical_profile", "plot_vertical_profile_diff",
