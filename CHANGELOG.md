@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Fix aqua graphical style for timeseries (#2522)
 
 AQUA diagnostics complete list:
 - Ensemble: config file structure aligned to aqua-analysis (#2518)
@@ -15,7 +16,6 @@ AQUA diagnostics complete list:
 ## [v0.19.4]
 
 AQUA core complete list:
-- Fix aqua graphical style for timeseries (#2522)
 - Include the correct realization in output names for all diagnostics (#2480)
 - Centralise `save_figure` in OutputSaver class (#2480)
 - Autodefine DROP chunking in a more uniform way to speed up aqua-analysis computation (#2474)
