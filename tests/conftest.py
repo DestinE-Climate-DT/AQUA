@@ -11,12 +11,50 @@ plt.ioff()  # Turn off interactive mode explicitly
 
 import pytest
 from aqua import Reader
+from aqua.core.configurer import ConfigPath
+from tests.utils_tests import TestCleanupRegistry
 
 # Centralized setting for all tests
 DPI = 50
 APPROX_REL = 1e-4
 LOGLEVEL = "DEBUG"
 
+
+# ======================================================================
+# Cleanup fixture for test-generated files
+# ======================================================================
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_files():
+    """
+    Session-scoped fixture that automatically cleans up test-generated files.
+    
+    This fixture:
+    - Records which files exist before tests run
+    - After all tests complete, removes files created by tests
+    
+    This prevents race conditions in parallel test execution where:
+    - One test creates a file (e.g., nemo-curvilinear.yaml)
+    - Another test tries to read it while the first test is deleting it
+    
+    The fixture runs automatically (autouse=True) for all tests.
+    """
+    
+    config_path = ConfigPath()
+    configdir = config_path.configdir
+    
+    registry = TestCleanupRegistry(configdir)
+    
+    # Record initial state before any tests run
+    registry.snapshot_initial_state()
+    
+    # Run all tests
+    yield
+    
+    # Cleanup after all tests complete
+    registry.cleanup()
+
+
+# ===================== Reader and Retrieve fixtures ===================
 # ======================================================================
 # IFS fixtures
 # ======================================================================

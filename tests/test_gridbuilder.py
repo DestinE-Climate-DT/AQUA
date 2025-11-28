@@ -8,10 +8,7 @@ from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
 from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
 
-pytestmark = [
-    pytest.mark.aqua,
-    pytest.mark.xdist_group(name="grids")
-]
+pytestmark = pytest.mark.aqua
 
 
 class TestGridBuilder:
@@ -35,7 +32,6 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution='tco79')
         grid_builder.build(data, verify=True, rebuild=rebuild, create_yaml=True)
         assert os.path.exists(f'{self.grid_dir}/regular.yaml')
-        os.remove(f'{self.grid_dir}/regular.yaml')
     
     def test_grid_curvilinear(self, tmp_path):
         """Test the GridBuilder class with a regular grid."""
@@ -47,7 +43,6 @@ class TestGridBuilder:
         grid = load_yaml(f'{self.grid_dir}/nemo-curvilinear.yaml')
         assert set(grid['grids']['nemo-ORCA2-2d']['space_coord']) == set(['y', 'x'])
         assert grid['grids']['nemo-ORCA2-2d']['remap_method'] == 'bil'
-        os.remove(f'{self.grid_dir}/nemo-curvilinear.yaml')
 
     def test_grid_unstructured(self, tmp_path):
         """Test the GridBuilder class with an unstructured grid."""
@@ -56,8 +51,6 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, model_name='ifs', grid_name='tl63')
         grid_builder.build(data, verify=True, create_yaml=True) # this is not working yet
         assert os.path.exists(f'{self.grid_dir}/ifs-unstructured.yaml')
-        os.remove(f'{self.grid_dir}/ifs-unstructured.yaml')
-        
     
     def test_grid_healpix(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
