@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      install-mode:
+        description: 'Installation mode: "local" (from checkout) or "pypi" (from PyPI)'
+        required: false
+        type: string
+        default: 'local'
     secrets:
       AQUA_GITHUB_PAT:
         required: true
@@ -131,7 +136,8 @@ jobs:
       # ========================================
       # 3. SETUP PYTHON ENVIRONMENT
       # ========================================
-      - name: Set up Micromamba
+      - name: Set up Micromamba (local mode)
+        if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
@@ -145,6 +151,27 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
       
+      - name: Create environment file for PyPI mode
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: |
+          # Copy environment.yml and remove "- pip:" section
+          sed '/^  - pip:$/,/^    - -e/d' AQUA/environment.yml > /tmp/aqua-pypi-env.yml
+          
+          echo "Generated environment file:"
+          cat /tmp/aqua-pypi-env.yml
+      
+      - name: Set up Micromamba (PyPI mode)
+        if: ${{ inputs.install-mode == 'pypi' }}
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          micromamba-version: 'latest'
+          environment-file: /tmp/aqua-pypi-env.yml
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          create-args: >-
+            python=${{ matrix.python-version }}
+      
       # ========================================
       # 4. LINTING
       # ========================================
@@ -152,6 +179,7 @@ jobs:
         run: python -m pip install flake8
       
       - name: Lint with flake8
+        if: ${{ inputs.install-mode == 'local' }}
         run: |
           # compile code to check for syntax errors
           python -W error -m compileall -f -q AQUA/aqua
@@ -161,7 +189,19 @@ jobs:
           flake8 AQUA --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
       
       # ========================================
-      # 5. SETUP DVC AND TEST DATA
+      # 5. INSTALL AQUA (PyPI mode)
+      # ========================================
+      - name: Upgrade pip/setuptools/wheel
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: python -m pip install --upgrade pip setuptools wheel
+      
+      - name: Install aqua from PyPI
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: |
+          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple aqua-climate
+      
+      # ========================================
+      # 6. SETUP DVC AND TEST DATA
       # ========================================
       - name: Install DVC s3
         run: python -m pip install "dvc[s3]"
@@ -184,7 +224,7 @@ jobs:
           mv data-tests/* ../AQUA/AQUA_tests
       
       # ========================================
-      # 6. SETUP FDB
+      # 7. SETUP FDB
       # ========================================
       - name: Set up FDB
         run: |
@@ -205,7 +245,7 @@ jobs:
           grib_dump test.grib
       
       # ========================================
-      # 7. SETUP AQUA
+      # 8. SETUP AQUA
       # ========================================
       - name: Set up AQUA
         run: |
@@ -232,7 +272,7 @@ jobs:
           EOF
       
       # ========================================
-      # 8. SAVE ENVIRONMENT INFO
+      # 9. SAVE ENVIRONMENT INFO
       # ========================================
       - name: Save environment information
         run: |
@@ -241,7 +281,7 @@ jobs:
           pip freeze > pip_freeze.txt
       
       # ========================================
-      # 9. RUN TESTS
+      # 10. RUN TESTS
       # ========================================
       - name: Run tests (parallel with coverage)
         if: ${{ inputs.enable-parallel && inputs.enable-coverage }}
@@ -320,7 +360,7 @@ jobs:
             -m "${{ inputs.pytest-markers }}"
       
       # ========================================
-      # 10. UPLOAD COVERAGE (if enabled)
+      # 11. UPLOAD COVERAGE (if enabled)
       # ========================================
       - name: Upload coverage reports to Codecov
         if: ${{ inputs.enable-coverage && github.actor != 'dependabot[bot]' && !cancelled() }}
@@ -339,7 +379,7 @@ jobs:
           files: AQUA/junit.xml
       
       # ========================================
-      # 11. UPLOAD ARTIFACTS
+      # 12. UPLOAD ARTIFACTS
       # ========================================
       - name: Upload test artifacts
         if: ${{ !cancelled() }}

@@ -11,9 +11,11 @@ Unreleased in the current development version (target v0.22.0):
 
 Main changes:
 1. From this version on, AQUA-core and AQUA-diagnostics are two separated repositories
-2. Console installation is refactored to account for the unppacking
+2. Console installation is refactored to account for the unpacking of the two repositories
 
 AQUA core complete list:
+- Extend the actions to support pypi testing and publishing (#2500)
+- Console installation is more flexible with `--core` and `--diagnostics` options (#2512)
 - Re-usable workflow to be shared across multiple github actions (#2519)
 - Lumi install for core only (#2502)
 - AQUA-core and AQUA-diagnostic coupling (#2504, #2511)
