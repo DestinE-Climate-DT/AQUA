@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+- Complete workflow for pypi version to be run once per week (#2527)
+
 ## [Unreleased]
 
 Unreleased in the current development version (target v0.21.0):
