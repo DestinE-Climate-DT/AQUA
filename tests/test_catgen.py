@@ -4,6 +4,7 @@ import subprocess
 import os
 import pytest
 import logging
+from pathlib import Path
 from aqua.core.util import load_yaml, dump_yaml
 from aqua.core.console.catgen import AquaFDBGenerator
 from conftest import LOGLEVEL
@@ -12,67 +13,110 @@ loglevel = LOGLEVEL
 
 def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
     """
-    Function to load and execute the catgen via the command line
-    Starts from the config template, do some modification and verifies that
-    everything is set up as expected.
+    Load configuration, execute catgen, and return generated catalog sources.
+    
+    This function ensures test isolation by using tmp_path for the catalog directory,
+    preventing race conditions when tests run in parallel. All generated files are
+    automatically cleaned up by pytest's tmp_path fixture.
 
     Args:
-        tmp_path: temporary directory to store the data
-        model: model to be checked (IFS-NEMO, IFS-FESOM, ICON)
-        kind: data portfolio type (production, reduced)
-        reso: resolution of the data (producution, lowres, intermediate, etc.)
-        ensemble: number of realizations
-
+        tmp_path: Temporary directory provided by pytest (Path or str)
+        model: Model to be checked (IFS-NEMO, IFS-FESOM, ICON)
+        kind: Data portfolio type (minimal, reduced, full)
+        reso: Resolution of the data (lowres, intermediate, production, etc.)
+        num_of_realizations: Number of realizations for the ensemble
+        
+    Returns:
+        dict: Catalog sources dictionary loaded from the generated YAML file
+        
+    Raises:
+        subprocess.CalledProcessError: If catgen command fails
+        AssertionError: If generated catalog files are not found
     """
+    tmp_path = Path(tmp_path)
+    config_template = Path('tests/catgen/config-test-catgen.j2')
+    
+    # Prepare configuration
+    config = _prepare_config(config_template, model, kind, reso, num_of_realizations, tmp_path)
+    
+    # Setup isolated catalog directory structure
+    _setup_catalog_directory(config, tmp_path)
+    
+    # Execute catgen command
+    _run_catgen(config, kind, tmp_path)
+    
+    # Load and return generated sources
+    return _load_generated_sources(config)
 
-    config_file = 'tests/catgen/config-test-catgen.j2'
 
-    # to parametriza on models, load the file, do jinja replacement and save it
+def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_path):
+    """Prepare configuration from template with test-specific values."""
     definitions = {
-        'model': model, 
-        'kind': kind, 
+        'model': model,
+        'kind': kind,
         'resolution': reso,
         'num_of_realizations': num_of_realizations,
         'expid': 'test'
     }
-    config = load_yaml(config_file, definitions)
-    model_config = f'{tmp_path}/test.yaml'
+    config = load_yaml(str(template_path), definitions)
     
-    dump_yaml(model_config, config)
+    # Use tmp_path for catalog directory to ensure test isolation
+    catalog_base = tmp_path / 'Climate-DT-catalog'
+    config['repos']['Climate-DT-catalog_path'] = str(catalog_base)
+    
+    return config
 
-    # Command to run
-    command = ["aqua", "catgen", '-p', kind, '-c', model_config, '-l', loglevel]
 
-    # Run the command with some error trap for debug
+def _setup_catalog_directory(config, tmp_path):
+    """Create isolated catalog directory structure and required files."""
+    catalog_base = Path(config['repos']['Climate-DT-catalog_path'])
+    catalog_dir = config['catalog_dir']
+    catalog_yaml_path = catalog_base / 'catalogs' / catalog_dir / 'catalog.yaml'
+    
+    # Create directory structure
+    catalog_yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Create initial catalog.yaml if it doesn't exist (required by catgen)
+    if not catalog_yaml_path.exists():
+        dump_yaml(str(catalog_yaml_path), {'sources': {}})
+
+
+def _run_catgen(config, kind, tmp_path):
+    """Execute the catgen command via subprocess."""
+    config_path = tmp_path / 'test.yaml'
+    dump_yaml(str(config_path), config)
+    
+    command = ["aqua", "catgen", '-p', kind, '-c', str(config_path), '-l', loglevel]
+    
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         logging.info("Command succeeded with output: %s", result.stdout)
     except subprocess.CalledProcessError as e:
-        # Handle the error and log the details
         logging.error("Command failed with error: %s", e)
         logging.error("Return code: %s", e.returncode)
         logging.error("stderr: %s", e.stderr)
-        raise  # Re-raise the exception to allow for higher-level handling if necessary
+        raise
     except Exception as e:
-        # Catch other unforeseen exceptions
         logging.error("Unexpected error: %s", e)
         raise
 
+
+def _load_generated_sources(config):
+    """Load and validate the generated catalog sources."""
+    catalog_path = Path(config['repos']['Climate-DT-catalog_path'])
+    catalog_dir = config['catalog_dir']
     model = config['model']
     exp = config['exp']
-    catalog_dir = config['catalog_dir']
-    expected_path = os.path.join(config['repos']['Climate-DT-catalog_path'],
-                                 'catalogs', catalog_dir, 'catalog', model)
-
-    entry = os.path.join(expected_path, f'{exp}.yaml')
-    assert os.path.exists(os.path.join(expected_path, 'main.yaml'))
-    assert os.path.exists(entry)
-
-    sources =  load_yaml(entry)
-    #os.remove(os.path.join(expected_path, 'main.yaml'))
-    #os.remove(entry)
-
-    return sources
+    
+    catalog_entry_dir = catalog_path / 'catalogs' / catalog_dir / 'catalog' / model.upper()
+    entry_file = catalog_entry_dir / f'{exp}.yaml'
+    main_yaml_file = catalog_entry_dir / 'main.yaml'
+    
+    # Validate that required files were generated
+    assert main_yaml_file.exists(), f"main.yaml not found at {main_yaml_file}"
+    assert entry_file.exists(), f"Catalog entry not found at {entry_file}"
+    
+    return load_yaml(str(entry_file))
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
                         [('IFS-NEMO', 4, 75)])
