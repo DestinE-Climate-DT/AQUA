@@ -6,7 +6,7 @@ Getting Started
 Basic Concepts
 --------------
 
-AQUA is designed to simplify the diagnostics process on high-resolution climate models. 
+AQUA core is designed to simplify the access and process of high-resolution climate models outputs.
 This is done by creating a series of tools that simplifies data access and basic data operations so that the 
 users - diagnostics developers or climate researchers interested in accessing model data - can focus only on scientific analysis.
 For this reason, whatever object accessed by AQUA is delivered as a `xarray <https://docs.xarray.dev/en/stable/>`_ object.
@@ -25,35 +25,25 @@ The package is built around a few core concepts:
   speed up the execution of diagnostics.
 - **Lazy evaluation**: AQUA uses `xarray <https://docs.xarray.dev/en/stable/>`_ to represent data, 
   which allows for lazy evaluation of operations, meaning that the data are not loaded into memory until they are needed.
-- **Diagnostics**: most importantly, AQUA includes a set of built-in diagnostic tools,
-  and it allows users to create custom diagnostics as well.
 
 Python installation
 -------------------
 
-Installation can be done using `Miniforge <https://github.com/conda-forge/miniforge>`_.
+Installation can be done with different methods, since AQUA core is distributed as a Python package on `PyPI <https://pypi.org/project/aqua-core/>`_.
 Containers and tools specific to the machines used in the project are available.
 Please refer to the :ref:`installation` and :ref:`container` sections for more information.
 
 .. _initialization:
 
-Catalog installation
---------------------
+Auxiliary files installation
+----------------------------
 
-After the package has been installed, or the container has been loaded, the AQUA catalog needs to be set up.
-This means to set up the configuration file and the catalog, with a copy or a link to the necessary files.
-This needs to be done only once, unless catalogs or fix and grid files are added or need to be updated/removed.
+After installing the AQUA package, some auxiliary files need to be installed.
+These files include configuration files, catalogs, grid definitions and fix files.
 
-.. note::
-  A more complete description of the available commands can be found in the :ref:`aqua-console` section.
-
-The following paragraphs cover the fundamental steps.
-
-Set up the configuration folder
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The configuration folder contains configuration files and the catalogs added to the AQUA package.
-To set up the configuration folder, run the following shell command:
+The simplest way to install these files is through the ``aqua`` console command line tool.
+Please refer to the :ref:`aqua-console` section for more information on the available commands.
+Here we will install the necessary files with the simplest options.
 
 .. code-block:: bash
 
@@ -63,22 +53,30 @@ This command will create the configuration folder in the ``$HOME/.aqua`` directo
 You will need to specify the machine name on which you are installing (e.g. "lumi", "levante" or "MN5")
 Check the :ref:`aqua-install` section for more information.
 
+By default, the command will install also auxiliary files from the ``aqua-diagnostics`` package if it is installed in the same environment.
+
 .. note::
 
     If you are using a supported machine please be sure to specify the correct machine name.
     Supported machines are ``lumi``, ``levante`` and ``MN5``.
     You may need to check to have the correct permissions to access the HPC specific directories.
 
-.. warning::
+.. note::
 
-    If you are using a new machine or you want to specify some extra options in the configuration file, you can customize the configuration file.
-    Please refer to the :ref:`config-file` section for more information.
+  If you are using a new machine or you want to specify some extra options in the configuration file, you can customize the configuration file.
+  Please refer to the :ref:`config-file` section for more information.
 
-Add a catalog
-^^^^^^^^^^^^^^^
+.. _catalog-installation:
 
+Catalog installation
+--------------------
+
+After the :ref:`initialization`, AQUA core has the info on how to access and process data, but no info yet on where to find data.
 A catalog is a folder containing the YAML files that inform AQUA on the data available.
 The catalog are derived from `intake <https://intake.readthedocs.io/en/stable/>`_ .
+They can also be set up with the ``aqua`` console command line tool.
+Again here we describe the simplest way to add a catalog from the official Climate-DT catalogs.
+A more complete description of the available commands can be found in the :ref:`aqua-console` section.
 
 To add a catalog, run the following command:
 
@@ -102,8 +100,7 @@ This command will copy the catalog folder to the configuration folder. Please no
 Set up Jupyter kernel
 ---------------------
 
-You need to register the kernel for the aqua environment to work with the AQUA 
-package in Jupyter Hub on HPC systems.
+You need to register the kernel for the aqua environment to work with the AQUA package in Jupyter Hub on HPC systems.
 
 Activate the environment and register the kernel with the following command:
 
@@ -118,7 +115,7 @@ Activate the environment and register the kernel with the following command:
 
 .. warning::
 
-    On Lumi you cannot use Miniforge to install the environment, so that this step is not possible.
+    On Lumi and HPC2020 you cannot use Miniforge to install the environment, so that this step is not possible.
     Please refer to the :ref:`container` section if you are working from a container
     or the :ref:`installation-lumi` section for more information on how to install AQUA
     specifically on Lumi.

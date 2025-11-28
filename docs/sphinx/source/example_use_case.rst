@@ -5,16 +5,14 @@ Example use case
 
 If you have not followed the :ref:`getting_started` guide, please consider doing so before proceeding with this example.
 
-We suppose that AQUA is installed in our favourite machine and we have added a catalog.
+We suppose that AQUA core is installed in our favourite machine and we have added the ``climate-dt-phase1`` catalog, available on Lumi HPC.
 
-.. note::
+.. note ::
 
-    The following example use the ``climate-dt-phase1`` catalog, available on Lumi HPC.
+    Data from the ``climate-dt-phase1`` catalog can also be accessed with Polytope from your local machine.
+    Please refer to the :ref:`polytope` section for more information.
 
-We will explore here a little example using the AQUA framework.
-No diagnostic is involved here, this can be found in the :ref:`stateoftheart_diagnostics` section.
-
-We will walk you through an example using AQUA to interpolate atmospherically
+We will walk you through an example using AQUA core to interpolate atmospherically
 temperature data to 1°x1° grid, plot a timestep of it and
 then calculate the mean global temperature time series on the original grid.
 This can be done in a few lines of code and using a Jupyter notebook.
@@ -36,6 +34,9 @@ Notice that ``fix=True`` is the default option, so we could have omitted it.
 
     reader = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
                     regrid='r100', fix=True)
+    # add engine='polytope' if you want to use polytope for data access
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
+                    regrid='r100', fix=True, engine='polytope')
 
 This will create a ``Reader`` object that will allow us to access the data from the catalog.
 Data are not retrieved yet at this stage and eventually we can specify variables and time range while accessing the data.
@@ -53,6 +54,7 @@ We can then, in the development stage, explore the data and see what we have.
 In a production environment instead, AQUA can be used to retrieve only variables and time ranges of interest.
 
 .. note::
+
   Data are retrieved as an xarray object, specifically a ``xarray.Dataset``, even in the case we asked for a single variable.
 
 We can now interpolate the data to a 1°x1° grid and plot a timestep of it, all with AQUA tools.

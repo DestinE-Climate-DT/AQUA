@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.22.0):
 
+- Documentation aligned to the new repository structure (#2525)
+
 ## [v0.21.0]
 
 Main changes:

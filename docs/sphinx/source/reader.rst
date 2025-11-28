@@ -1,9 +1,7 @@
 The Reader class
 ================
 
-Here we describe the main component of the AQUA library, the ``Reader`` class.
-It is part of the core components of AQUA, which is the code contained in the folder ``src/aqua``.
-The core component consists of all the tools that are used to read, process and visualize data, not specific of a single diagnostic.
+Here we describe the main component of the AQUA core, the ``Reader`` class.
 The other main core components are described in the :ref:`regrid`, :ref:`fixer` and :ref:`other-components` sections.
 Some extra functionalities can be found in the :ref:`advanced-topics` section.
 
@@ -15,7 +13,7 @@ AQUA ``Reader`` can, in fact, access different file formats and data from the FD
 and delivers xarray objects.
 On top of data access, the ``Reader`` is also able to perform multiple operations on the data:
 interpolation and regridding (see :ref:`regrid`), spatial and temporal averaging and metadata correction (see :ref:`fixer`).
-These are described in the other sections of the documentation.
+These operations can be both embedded in the ``Reader`` class or used by initializating separate components.
 The ``Reader`` class is also able to perform parallel processing and to stream data,
 since high-resolution data can be too large to be loaded in memory all at once
 and it may be necessary to process data in chunks or even step by step.
@@ -29,6 +27,7 @@ AQUA supports a variety of climate data file input formats:
 - **GRIB** files
 - **Zarr**
 - **FDB** GRIB
+- **ARCO** files
 - **Parquet**
 
 After the data are retrieved, the ``Reader`` class returns an xarray object,
