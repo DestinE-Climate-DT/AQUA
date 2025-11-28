@@ -4,6 +4,8 @@ from aqua import Reader, Regridder
 from aqua.core.regridder.griddicthandler import GridDictHandler
 from conftest import APPROX_REL, LOGLEVEL
 
+pytestmark = pytest.mark.xdist_group(name="grids")
+
 approx_rel = APPROX_REL
 
 

@@ -10,7 +10,7 @@ from aqua.core.util import load_yaml
 
 pytestmark = [
     pytest.mark.aqua,
-    pytest.mark.xdist_group(name="gridbuilder")
+    pytest.mark.xdist_group(name="grids")
 ]
 
 
@@ -126,3 +126,4 @@ class TestGridEntryManager:
         assert block['cdo_options'] == '-f nc'
         assert block['remap_method'] == 'bil'
         assert block['path']['depth'] == 'orca2_oce_depth_v1.nc'
+
