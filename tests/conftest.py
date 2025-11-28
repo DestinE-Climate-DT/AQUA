@@ -27,6 +27,7 @@ LOGLEVEL = "DEBUG"
 def cleanup_test_files():
     """
     Session-scoped fixture that automatically cleans up test-generated files.
+    The fixture runs automatically (autouse=True) for all tests.
     
     This fixture:
     - Records which files exist before tests run
@@ -35,8 +36,6 @@ def cleanup_test_files():
     This prevents race conditions in parallel test execution where:
     - One test creates a file (e.g., nemo-curvilinear.yaml)
     - Another test tries to read it while the first test is deleting it
-    
-    The fixture runs automatically (autouse=True) for all tests.
     """
     
     config_path = ConfigPath()
