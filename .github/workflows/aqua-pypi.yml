@@ -18,7 +18,7 @@ jobs:
       python-versions: '["3.12"]'
       pytest-markers: 'aqua or slow or gsv or graphics or catgen'
       enable-parallel: true
-      enable-coverage: true
+      enable-coverage: false
       fail-fast: false
       install-mode: 'pypi'
     secrets:
