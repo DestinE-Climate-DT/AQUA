@@ -293,6 +293,7 @@ jobs:
           echo "=========================================="
           
           pytest -n 4 \
+            --dist loadgroup \
             --max-worker-restart=3 \
             --cov \
             --junitxml=junit.xml \
@@ -317,6 +318,7 @@ jobs:
           echo "=========================================="
           
           pytest -n 4 \
+            --dist loadgroup \
             --max-worker-restart=3 \
             --junitxml=junit.xml \
             -o junit_family=legacy \
