@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.22.0):
 
+AQUA core complete list:
+- Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2529)
+
 ## [v0.21.0]
 
 Main changes:
