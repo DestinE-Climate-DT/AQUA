@@ -200,6 +200,12 @@ jobs:
         run: |
           python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple aqua-core
       
+      - name: Install test dependencies (PyPI mode)
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: |
+          # Install test dependencies listed in pyproject.toml
+          python -m pip install pytest pytest-cov pytest-xdist coverage cdo
+      
       # ========================================
       # 6. SETUP DVC AND TEST DATA
       # ========================================
