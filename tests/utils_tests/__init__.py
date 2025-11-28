@@ -1,4 +1,4 @@
-""" Test cleanup module for test-generated files in AQUA """
+""" Test utilities for AQUA test suite """
 
 from .cleanup import TestCleanupRegistry
 

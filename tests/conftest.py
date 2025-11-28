@@ -27,30 +27,36 @@ LOGLEVEL = "DEBUG"
 def cleanup_test_files():
     """
     Session-scoped fixture that automatically cleans up test-generated files.
-    The fixture runs automatically (autouse=True) for all tests.
-    
-    This fixture:
-    - Records which files exist before tests run
-    - After all tests complete, removes files created by tests
-    
     This prevents race conditions in parallel test execution where:
     - One test creates a file (e.g., nemo-curvilinear.yaml)
     - Another test tries to read it while the first test is deleting it
     """
+    # Store configdir at session start (before any tests modify environment)
+    # This ensures cleanup can run even if HOME is deleted during tests
+    try:
+        config_path = ConfigPath()
+        stored_configdir = config_path.configdir
+    except (FileNotFoundError, KeyError):
+        stored_configdir = None
     
-    config_path = ConfigPath()
-    configdir = config_path.configdir
-    
-    registry = TestCleanupRegistry(configdir)
-    
-    # Record initial state before any tests run
-    registry.snapshot_initial_state()
-    
-    # Run all tests
+    # Run all tests first
     yield
     
     # Cleanup after all tests complete
-    registry.cleanup()
+    # Try to get configdir again, but fall back to stored value if ConfigPath fails
+    cleanup_configdir = stored_configdir
+    try:
+        config_path = ConfigPath()
+        cleanup_configdir = config_path.configdir
+    except (FileNotFoundError, KeyError):
+        # If ConfigPath fails (e.g., HOME deleted), use stored configdir
+        # This handles the test_console_without_home case
+        pass
+    
+    # Only attempt cleanup if we have a valid configdir
+    if cleanup_configdir:
+        registry = TestCleanupRegistry(cleanup_configdir)
+        registry.cleanup()
 
 
 # ===================== Reader and Retrieve fixtures ===================
