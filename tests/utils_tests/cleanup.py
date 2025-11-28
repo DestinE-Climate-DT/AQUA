@@ -8,24 +8,20 @@ import os
 import glob
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
-from conftest import LOGLEVEL
 
-loglevel = LOGLEVEL
 
 class TestCleanupRegistry:
     """
-    Registry for tracking and cleaning up files created by tests.
-    
-    This class provides an extensible way to track and clean up test artifacts
+    This class tracks and cleans up test files
     that are created in the AQUA configuration directory (~/.aqua).
     
-    also_remove_new_yaml_files (bool): If True, remove any new .yaml/.yml files 
-        created during tests in addition to known_test_files. 
-        This catches unexpected files that might be created by tests.
+    also_remove_new_yaml_files (bool): If True, remove any new .yaml/.yml files
+        created during tests in addition to known_test_files,
+        this catches unexpected files that might be created by tests.
     
     To add new cleanup categories:
-        1. Add a new entry to CLEANUP_FILES below.
-        2. Specify the subdirectory 'subdir' and which files to clean 'known_test_files'.
+        1. Add a new entry to CLEANUP_FILES below
+        2. Specify the subdirectory 'subdir'
     """
     
     # Cleanup configuration dictionary for files created by tests that need cleanup
@@ -57,7 +53,7 @@ class TestCleanupRegistry:
         # },
     }
     
-    def __init__(self, configdir: str):
+    def __init__(self, configdir: str, loglevel: str = 'WARNING'):
         """
         Initialize the cleanup registry.
         
@@ -77,7 +73,6 @@ class TestCleanupRegistry:
             if config.get('also_remove_new_yaml_files', False):
                 subdir_path = os.path.join(self.configdir, config['subdir'])
                 if os.path.exists(subdir_path):
-                    # Store list of files that existed before tests
                     self.initial_files[category] = set(os.listdir(subdir_path))
                 else:
                     self.initial_files[category] = set()
@@ -89,7 +84,6 @@ class TestCleanupRegistry:
         For each cleanup category:
         1. Removes known test files (from 'known_test_files' list)
         2. Optionally removes any new .yaml/.yml files created during tests
-           (if 'also_remove_new_yaml_files' is True)
         """
         for category, config in self.CLEANUP_FILES.items():
             subdir_path = os.path.join(self.configdir, config['subdir'])
@@ -103,10 +97,10 @@ class TestCleanupRegistry:
                 # Support both exact filenames and glob patterns
                 if '*' in pattern or '?' in pattern:
                     for filepath in glob.glob(os.path.join(subdir_path, pattern)):
-                        self._remove_file(filepath, category)
+                        self._remove_file(filepath)
                 else:
                     filepath = os.path.join(subdir_path, pattern)
-                    self._remove_file(filepath, category)
+                    self._remove_file(filepath)
             
             # Step 2: Remove new .yaml/.yml files created during tests (if enabled)
             if config.get('also_remove_new_yaml_files', False):
@@ -118,9 +112,9 @@ class TestCleanupRegistry:
                     # Only remove YAML files (not other file types)
                     if filename.endswith(('.yaml', '.yml')):
                         filepath = os.path.join(subdir_path, filename)
-                        self._remove_file(filepath, category)
+                        self._remove_file(filepath)
     
-    def _remove_file(self, filepath: str, category: str):
+    def _remove_file(self, filepath: str):
         """
         Safely remove a file or symlink.
         
@@ -128,7 +122,6 @@ class TestCleanupRegistry:
         
         Args:
             filepath: Full path to the file to remove
-            category: Category name (for logging purposes)
         """
         if not os.path.exists(filepath):
             return

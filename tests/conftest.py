@@ -12,7 +12,7 @@ plt.ioff()  # Turn off interactive mode explicitly
 import pytest
 from aqua import Reader
 from aqua.core.configurer import ConfigPath
-from tests.utils_tests import TestCleanupRegistry
+from utils_tests import TestCleanupRegistry
 
 # Centralized setting for all tests
 DPI = 50
