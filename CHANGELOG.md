@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v0.21.0):
 
+- Add a `cleanup` class with a fixture to clean files from tests (#2526)
 - Extend the actions to support pypi testing and publishing (#2500)
 - Console installation is more flexible with `--core` and `--diagnostics` options (#2512)
 - Re-usable workflow to be shared across multiple github actions (#2519)
