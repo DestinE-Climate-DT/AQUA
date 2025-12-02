@@ -50,3 +50,6 @@ grids:
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_PALEORCA2_T.nc'
     cellareas_var: area
     regrid_method: 'bil'
+
+  tl63-ece:
+    path: '{{ grids }}/EC-EARTH4/tl63.nc'

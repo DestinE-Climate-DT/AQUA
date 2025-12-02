@@ -262,13 +262,14 @@ class FldStat():
         self.logger.info("Area dimensions has been renamed with %s",  matching_dims)
         return self.area.rename(matching_dims)
 
-    def align_area_coordinates(self, data: xr.Dataset | xr.DataArray):
+    def align_area_coordinates(self, data: xr.Dataset | xr.DataArray, decimals: int = 5):
         """
         Check if the coordinates of the area and data are aligned.
         If they are not aligned, try to flip the coordinates.
 
         Args:
             data (xr.DataArray or xr.Dataset): The input data to align with the area.
+            decimals (int): Number of decimals to use for rounding when aligning coordinates.
 
         Returns:
             xr.DataArray or xr.Dataset: The area with aligned coordinates.
@@ -292,6 +293,15 @@ class FldStat():
                 if np.array_equal(area_coord[::-1], data_coord):
                     self.logger.warning("Reversing coordinate '%s' for alignment.", coord)
                     self.area = self.area.isel({coord: slice(None, None, -1)})
+                    continue
+
+                # Try alignment by rounding to specified decimals
+                area_rounded = np.round(area_coord, decimals=decimals)
+                data_rounded = np.round(data_coord, decimals=decimals)
+                if np.array_equal(area_rounded, data_rounded):
+                    self.logger.warning("Coordinate '%s' aligned by rounding to %d decimals.", coord, decimals)
+                    # assign the rounded coordinates to the area (matching data's rounded values)
+                    self.area = self.area.assign_coords({coord: data_rounded})
                     continue
 
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
