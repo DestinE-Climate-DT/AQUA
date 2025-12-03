@@ -926,6 +926,7 @@ class Reader():
         """
         # The coder introduces the possibility to specify a time decoder for the time axis
         if 'time_coder' in esmcat.metadata:
+            self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
             coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
             esmcat.xarray_kwargs.update({'decode_times': coder})
 
