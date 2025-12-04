@@ -5,12 +5,6 @@ DROP - Data Reduction OPerator
 
 DROP (Data Reduction OPerator) is a comprehensive tool within the AQUA framework designed 
 to extract, process, and organize data from any climate dataset.
-
-.. warning ::
-
-    Starting from AQUA v0.18, DROP is replacing Lor Resolution Archive (LRA) in most of the 
-    terminology, since DROP is a more generic tool that deals with many more options other
-    than just LRA. However, LRA is still a key use case for DROP (see below).
     
 What is DROP?
 -------------
@@ -61,7 +55,6 @@ The Low Resolution Archive (LRA) Context
 The Low Resolution Archive is a key use case for DROP. The LRA is an intermediate layer of data
 reduction that simplifies analysis of extreme high-resolution data by providing monthly data 1 
 degree resolution, permitting reduced storage and computational requirements.
-
 
 .. note ::
 
@@ -259,12 +252,12 @@ Usage
 .. option:: --startdate
 
     Start date for the DROP output (default: as the original data).
-    Accepted format: 'YYYY-MM-DD'
+    Accepted format: 'YYYY-MM-DDT00:00:00'
 
 .. option:: --enddate
 
     End date for the DROP output (default: as the original data).
-    Accepted format: 'YYYY-MM-DD'
+    Accepted format: 'YYYY-MM-DDT23:00:00'
 
 **Examples:**
 

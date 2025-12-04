@@ -5,11 +5,6 @@ AQUA analysis wrapper
 
 A wrapper containing calls to all the state-of-the-art diagnostic available in AQUA.
 
-.. note::
-
-    Since ``v0.18.0``, the AQUA analysis tool is available as part of the AQUA console (see :ref:`aqua-console`).
-    If you are using an older version of AQUA, you can find it in the ``cli/aqua-analysis`` folder.
-
 Basic usage
 -----------
 
@@ -26,7 +21,7 @@ Inside each diagnostic folder, the output will be saved in a subfolder named wit
 
 The exact list of diagnostics to run and technical details of the analysis
 (such as the number of workers/thread/memory to use for the dask cluster) are specified in the configuration file ``config.aqua-analysis.yaml`` in the same folder.
-This file is available in the ``$AQUA/config/analysis`` folder and it is installed with AQUA (see :ref:`aqua-install`).
+This file is available in the ``aqua/core/config/analysis`` folder and it is installed with AQUA (see :ref:`aqua-install`).
 
 Additional options
 ------------------

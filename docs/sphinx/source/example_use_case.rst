@@ -5,16 +5,14 @@ Example use case
 
 If you have not followed the :ref:`getting_started` guide, please consider doing so before proceeding with this example.
 
-We suppose that AQUA is installed in our favourite machine and we have added a catalog.
+We suppose that AQUA core is installed in our favourite machine and we have added the ``climate-dt-phase1`` catalog, available on Lumi HPC.
 
-.. note::
+.. note ::
 
-    The following example use the ``climate-dt-phase1`` catalog, available on Lumi HPC.
+    Data from the ``climate-dt-phase1`` catalog can also be accessed with Polytope from your local machine.
+    Please refer to the :ref:`polytope` section for more information.
 
-We will explore here a little example using the AQUA framework.
-No diagnostic is involved here, this can be found in the :ref:`stateoftheart_diagnostics` section.
-
-We will walk you through an example using AQUA to interpolate atmospherically
+We will walk you through an example using AQUA core to interpolate atmospherically
 temperature data to 1°x1° grid, plot a timestep of it and
 then calculate the mean global temperature time series on the original grid.
 This can be done in a few lines of code and using a Jupyter notebook.
@@ -34,8 +32,11 @@ Notice that ``fix=True`` is the default option, so we could have omitted it.
 
 .. code-block:: python
 
-    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
+    reader = Reader(catalog='climatedt-phase1', model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
                     regrid='r100', fix=True)
+    # add engine='polytope' if you want to use polytope for data access
+    reader = Reader(catalog='climatedt-phase1', model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
+                    regrid='r100', fix=True, engine='polytope')
 
 This will create a ``Reader`` object that will allow us to access the data from the catalog.
 Data are not retrieved yet at this stage and eventually we can specify variables and time range while accessing the data.
@@ -53,14 +54,14 @@ We can then, in the development stage, explore the data and see what we have.
 In a production environment instead, AQUA can be used to retrieve only variables and time ranges of interest.
 
 .. note::
+
   Data are retrieved as an xarray object, specifically a ``xarray.Dataset``, even in the case we asked for a single variable.
 
-We can now interpolate the data to a 1°x1° grid and plot a timestep of it, all with AQUA tools.
+We can plot the data to see what we have directly from the Healpix grid.
 
 .. code-block:: python
 
-    data_2t_r = reader.regrid(data['2t']) # This is an xarray.DataArray
-    data_2t_r.isel(time=0).aqua.plot_single_map()
+    data['2t'].isel(time=0).aqua.plot_single_map()
 
 We obtain as image:
 
@@ -68,20 +69,37 @@ We obtain as image:
     :width: 500
     :align: center
 
+We can also interpolate the data to a 1°x1° grid and plot a timestep of it, all with AQUA tools.
+
+.. code-block:: python
+
+    data_2t_r = reader.regrid(data['2t']) # This is an xarray.DataArray
+    data_2t_r.isel(time=0).aqua.plot_single_map()
+
 We used the regrid method to interpolate the data to a 1°x1° grid, with preprocessing of the weights already done
 while initializating the Reader.
 We then used the ``plot_single_map()`` function to plot the first timestep of the data.
 This function has been used as accessor but can also be called as a standalone function.
 See :ref:`accessors` for more information.
 
+.. note::
+
+    The regridding requires the download of auxiliary files containing the grids.
+    Please refer to :ref:`aqua-dvc` for more information on how to manage these files.
+
 We can now calculate the mean global temperature time series on the original grid.
-We will then go back to use the original data, without regridding them,
+We will use the original data, without regridding them,
 to show area evaluation capabilities of AQUA.
 
 .. code-block:: python
 
     global_mean = reader.fldmean(data['2t'].isel(time=slice(100,200)))
     global_mean.plot()
+
+.. note ::
+
+    Also for area evaluations, AQUA uses precomputed auxiliary files containing the area cells values.
+    Please refer to :ref:`aqua-dvc` for more information on how to manage these files.
 
 We obtain as image:
 
