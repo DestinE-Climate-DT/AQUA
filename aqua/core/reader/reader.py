@@ -1,9 +1,12 @@
 """The main AQUA Reader class"""
 
 from contextlib import contextmanager
+from glob import glob
+import os
 import intake_esm
 import intake_xarray
 import xarray as xr
+import pandas as pd
 from metpy.units import units
 
 from smmregrid import GridInspector
@@ -910,6 +913,40 @@ class Reader():
                               logging=True, loglevel=self.loglevel).read_chunked()
 
         return data
+    
+    def _filter_netcdf_files(self, esmcat, filter_key="year"):
+
+        """
+        Filter the esmcat to include only netcdf files based on specfici filter_key
+        Args:
+            esmcat (intake.catalog.Catalog): your catalog
+            filter_key (str): type of filter to apply (default is "year")
+
+        Returns:
+            intake.catalog.Catalog: filtered catalog
+        """
+
+        # list available files in folder
+        files = sorted([f for x in esmcat.urlpath for f in glob(x)])
+
+        # this will consider only files that have "year" in their filename 
+        # within the startdate and enddate range
+        if filter_key == "year" and self.startdate and self.enddate:
+            keys = list(range(pd.Timestamp(self.startdate).year,
+                               pd.Timestamp(self.enddate).year + 1))
+        else:
+            raise ValueError(f"Filter type {filter_key} not recognized.")
+
+        # replace the urlpath with the filtered one
+        esmcat.urlpath = [f for f in files if any(str(key) in os.path.basename(f) for key in keys)]
+
+        if len(esmcat.urlpath) == 0:
+            raise ValueError("No files found after filtering the catalog!")
+        
+        self.logger.debug("Selected: %s files from %s to %s",
+                          len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
+
+        return esmcat
 
     def reader_intake(self, esmcat, var, loadvar, keep="first"):
         """
@@ -928,6 +965,12 @@ class Reader():
         if 'time_coder' in esmcat.metadata:
             coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
             esmcat.xarray_kwargs.update({'decode_times': coder})
+
+        # use filter_key metadata to filter netcdf files if present
+        # speed up for catalogs with many small files
+        if esmcat.metadata.get('filter_key') and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
+            self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
+            esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata.get('filter_key'))
 
         data = esmcat.to_dask()
 
