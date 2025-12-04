@@ -928,6 +928,7 @@ class Reader():
 
         # list available files in folder
         files = sorted([f for x in esmcat.urlpath for f in glob(x)])
+        self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename 
         # within the startdate and enddate range
@@ -941,7 +942,7 @@ class Reader():
         esmcat.urlpath = [f for f in files if any(str(key) in os.path.basename(f) for key in keys)]
 
         if len(esmcat.urlpath) == 0:
-            raise ValueError("No files found after filtering the catalog!")
+            raise NoDataError("No files found after filtering the catalog!")
         
         self.logger.debug("Selected: %s files from %s to %s",
                           len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
@@ -961,16 +962,17 @@ class Reader():
         Returns:
             Dataset
         """
+
+        # use filter_key metadata to filter netcdf files if present
+        # speed up for catalogs with many small files
+        if 'filter_key' in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
+            self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
+            esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
+    
         # The coder introduces the possibility to specify a time decoder for the time axis
         if 'time_coder' in esmcat.metadata:
             coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
             esmcat.xarray_kwargs.update({'decode_times': coder})
-
-        # use filter_key metadata to filter netcdf files if present
-        # speed up for catalogs with many small files
-        if esmcat.metadata.get('filter_key') and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
-            esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata.get('filter_key'))
 
         data = esmcat.to_dask()
 
