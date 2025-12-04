@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
+- New EC-Earth4 TL63 grid (#2536)
+- Improved handling of strings in `time_to_string` function (#2536)
 - Add a `cleanup` class with a fixture to clean files from tests (#2526)
 
 ## [v0.21.0]
