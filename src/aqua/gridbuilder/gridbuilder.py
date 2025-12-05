@@ -139,7 +139,6 @@ class GridBuilder():
 
         # configure attributes for the grid file
         data3d = builder.clean_attributes(data3d)
-
         data3d.to_netcdf(filename_tmp)
 
         # select the 2D slice of the data and detect the mask type
@@ -150,9 +149,11 @@ class GridBuilder():
         self.logger.info("Masked type: %s", builder.masked)
 
         # get the basename and metadata for the grid file
-        metadata = builder.get_metadata(data3d)
+        # need to read grid property from 2d data
+        metadata = builder.get_metadata(data2d)
         aquagrid = metadata['aquagrid']
         cdogrid = metadata['cdogrid']
+        self.logger.debug("Grid metadata: %s", metadata)
 
         # Initialize GridEntryManager for this gridtype
         basename = self.gem.get_basename(aquagrid, cdogrid, masked, vert_coord)
@@ -162,8 +163,6 @@ class GridBuilder():
 
             # create the base path for the grid file
             basepath = self.gem.get_versioned_basepath(self.outdir, basename, version=version)
-
-            # verify the existence of files and handle versioning
 
             # check if the file already exists and clean it if needed
             filename = f"{basepath}.nc"
