@@ -17,12 +17,10 @@ Welcome to AQUA's documentation!
    aqua_console
    regrid
    fixer
+   polytope
    graphics
    other_components
    container
-   stateoftheart_diagnostics/index
-   frontier_diagnostics/index
-   new_diagnostics/index
    adding_data
    catalog_generator
    drop

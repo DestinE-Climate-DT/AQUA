@@ -3,6 +3,9 @@
 Catalog Generator
 =====================
 
+AQUA provides a subcommand to generate source catalog entries for experiments part of the Destination Earth ClimateDT initiative.
+This is specifically tailored for FDB data sources compliant with the ClimateDT data-portfolio structure.
+
 aqua catgen -c <config_file> -p <portfolio>
 -------------------------------------------
 
@@ -29,8 +32,8 @@ Basic usage
 To add a new experiment to the catalog, follow these steps:
 
 1. Clone the two repositories, `DestinE-ClimateDT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog/tree/main>`_ and `data-portfolio <https://gitlab.earth.bsc.es/digital-twins/de_340-2/data-portfolio>`_, to your preferred location.
-2. Create your own ``config.yaml`` file with the details of your simulation, including the paths of the cloned repositories. A template is provided in ``.aqua/templates/catgen``
-3. Run the command ``aqua catgen -p production -c config.yaml``, where the ``-p`` argument can be ``full``, ``reduced`` or ``minimal``.
+2. Create your own ``config.yaml`` file with the details of your simulation, including the paths of the cloned repositories. A template is provided in ``.aqua/templates/catgen``.
+3. Run the command ``aqua catgen -p full -c config.yaml``, where the ``-p`` argument can be ``full``, ``reduced`` or ``minimal``.
 4. The catalog entry will be created in the appropriate location in the ``DestinE-ClimateDT-catalog`` folder as defined by the configuration file.
 
 Configuration file
@@ -75,10 +78,3 @@ Info for the dashboard:
 Paths:
 - ``fdb_home``: the path to the FDB home
 - ``fdb_home_bridge``: the path to the FDB home bridge. Default is ``Null``.
-
-
-
-
-
-
-

@@ -9,10 +9,11 @@ AQUA provides a fixer tool to standardize the data and make them comparable.
 
 The general idea is to convert data from different models to a uniform file format
 with the same variable names and units.
-The default convention for metadata (for example variable names) is **GRIB**.
+The default convention for metadata (for example variable names and units) is **GRIB**.
 
 The fixing is done by default when we initialize the ``Reader`` class, 
-using the instructions in the ``config/fixes`` folder. The ``config/fixes`` folder contains fixes in YAML files.
+using the instructions in the ``aqua/core/config/fixes`` folder.
+The ``aqua/core/config/fixes`` folder contains fixes in YAML files.
 A new fix can be added to the folder and the filename can be freely chosen.
 By default, fixes files with the name of the model or the name of the DestinE project are provided.
 
@@ -35,25 +36,19 @@ The fixer performs a range of operations on data:
   In particular, if a density is missing, it will assume that it is the density of water and will take it into account.
   If there is an extra time unit, it will assume that division by the timestep is needed. 
 
-Since v0.13 the fixer is split in two dictionaries that can be merged together, the ``convention`` and the ``fixer_name``.
+The fixer is split in two dictionaries that can be merged together, the ``convention`` and the ``fixer_name``.
 We describe in the following sections the structure of the two dictionaries and in which files they should be placed.
-
-.. warning::
-
-    Other fixes at individual source level are still supported but will be deprecated in the future.
-    Also the usage of a ``model-default`` as fallback fixer_name is deprecated in favour of the new approach.
 
 .. _convention-structure:
 
 Convention file structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since v0.13, the fixes can be complementd by a convention file that is built to be shared for any source that uses the same convention.
+The fixes can be complementd by a convention file that is built to be shared for any source that uses the same convention.
 The convention file is a YAML file that is placed in the ``config/fixes`` folder and is named as ``convention-<convention_name>.yaml``.
 At the moment the only convention available is the ``eccodes`` convention, so that the file is named ``convention-eccodes.yaml``.
 
 A skeleton of the convention file is the following:
-
 
 .. code-block:: yaml
 
@@ -195,8 +190,8 @@ AQUA variables convention
 Based on the convention file described in :ref:`convention-structure`, we have defined a convention for the AQUA variables.
 This means that all the experiments maintained by the AQUA project will have the same target variable names if the fixer is activated.
 
-The convention file is named ``convention-eccodes.yaml`` and is placed in the ``config/fixes`` folder or available at `this link <https://github.com/DestinE-Climate-DT/AQUA/blob/main/config/fixes/convention-eccodes.yaml>`_.
-Since v0.13 all the diagnostics are supposed to work with the AQUA convention, so that any other experiment following the AQUA convention will be compatible with the diagnostics.
+The convention file is named ``convention-eccodes.yaml`` and is placed in the ``aqua/core/config/fixes`` folder or available at `this link <https://github.com/DestinE-Climate-DT/AQUA/blob/main/aqua/core/config/fixes/convention-eccodes.yaml>`_.
+All the diagnostics are supposed to work with the AQUA convention, so that any other experiment following the AQUA convention will be compatible with the diagnostics.
 
 .. _metadata-fix:
 
@@ -271,26 +266,25 @@ In order to create a fix for a specific variable, two approaches are possibile:
 - **derived**: it will create a new variable, which can also be obtained with basic operations between
   multiple variables (e.g. getting ``mtntrf2`` from ``ttr`` + ``tsr``). 
 
-.. warning ::
-    Please note that only basic operation (sum, division, subtraction and multiplication) are allowed in the ``derived`` block
+.. note ::
+    The ``derived`` block supports basic arithmetic operations (``+``, ``-``, ``*``, ``/``, ``^``) and parentheses.
 
 Then, extra keys can be then specified for **each** variable to allow for further fine tuning:
 
 - **grib**: if set to a number, the fixer will associate the variable with the GRIB ParamID.
-  This is possible since AQUA v0.13 and it is the preferred way to retrieve metadata.
+  It is the preferred way to retrieve metadata.
   If set ``True``, the fixer will look for GRIB ShortName associated with the new variable and 
   will retrieve the associated metadata.
 - **src_units**: override the source unit in case of specific issues (e.g. units which cannot be processed by MetPy).
 - **units**: override the target unit.
 - **decumulate**: if set to ``True``, activate the decumulation of the variable.
 - **attributes**: with this key, it is possible to define a dictionary of attributes to be modified. 
-  Please refer to the example in section :ref:`fix-structure`
-  to see the possible implementation. 
+  Please refer to the example in section :ref:`fix-structure` to see the possible implementation. 
 - **mindate**: used to set to NaN all data before a specified date. 
   This is useful when dealing with data that are not available for the whole period of interest or which are partially wrong.
 
 .. warning ::
-    Recursive fixes (i.e. fixes of fixes) cannot be implemented. For example, it is not possibile to derive a variable from a derived variable
+    Recursive fixes (i.e. fixes of fixes) cannot be implemented yet. For example, it is not possibile to derive a variable from a derived variable.
 
 .. _coord-fix:
 
@@ -298,7 +292,7 @@ Data Model and Coordinates/Dimensions Correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The fixer can adopt a common **coordinate data model**. The default is the **aqua** data model,
-which is a simplified version of the CF data model and is stored in the ``config/data_model/aqua.yaml`` folder.
+which is a simplified version of the CF data model and is stored in the ``aqua/core/config/data_model/aqua.yaml`` folder.
 If this data model is not appropriate for a specific source,
 it is possible to specify a different one in the catalog source, but it has to be defined accordingly in the config folder.
 
@@ -308,8 +302,8 @@ it is possible to specify a different one in the catalog source, but it has to b
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions,
 it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
-For example, if the longitude coordinate is called ``longitude`` instead of ``lon``,
-it is possible to specify a fix like:
+For example, if the longitude coordinate is called ``longitude`` instead of ``lon`` and the data model
+does not take care of it, it is possible to specify a fix like:
 
 .. code-block:: yaml
 
@@ -338,7 +332,7 @@ Of course, this feature is valid only for **coords**:
 Develop your own fix
 ^^^^^^^^^^^^^^^^^^^^
 
-If you need to develop your own, fixes can be added to the ``config/fixes`` folder.
+If you need to develop your own, fixes can be added to the ``aqua/core/config/fixes`` folder.
 This can be done using the ``fixer_name`` definitions, to be then provided as a metadata in the catalog source entry.
 This represents fixes that have a common nickname which can be used in multiple sources when defining the catalog.
 There is the possibility of specifing a **parent** fix so that a fix can be re-used with minor corrections,
@@ -346,16 +340,6 @@ merging small changes to a larger ``fixer_name``.
 
 If the ``fixer_name`` is following a convention, it is possible to merge the fixer with the convention file
 as described in :ref:`fix-structure`.
-
-.. warning::  
-    Please note that a source-based definition exists as the older AQUA implementation and will be deprecated
-    in favour of the new approach described above.
-    We strongly suggest to use the new approach for new fixes.
-
-.. note::
-    Since v0.13, the default fixer is deprecated. The fixer will first look for a convention file and then for a fixer file.
-    If no ``fixer_name`` is provided and ``fix`` is set to ``True``, the code will look for a
-    ``fixer_name`` called ``<MODEL_NAME>-default``. At the current stage of implementation, this is still merged with the convention file.
 
 Please note that the ``default.yaml`` is reserved to define a few of useful tools:
 

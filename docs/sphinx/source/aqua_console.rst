@@ -6,9 +6,9 @@ The AQUA console
 What is the AQUA console?
 -------------------------
 
-The AQUA console (introduced since v0.9.0) has two main purposes:
+The AQUA console is a command line interface that has two main purposes:
 
-- A central access to manage where the configuration and catalog files are stored has been added. This can also handle fixes and grids files.
+- A central access to install and to manage where the configuration (also fixes and grids) and catalog files are stored has been added.
 - A tool for more complex operations:
 
     - DROP (see :ref:`aqua-drop` and :ref:`drop`) 
@@ -72,13 +72,18 @@ aqua install
 ------------
 
 With this command the configuration file and the default data models, grids and fixes are copied to the destination folder.
-By default, this will be ``$HOME/.aqua``. It is possible to specify from where to copy and where to store.
+If the ``aqua-diagnostics`` package is found in the current environment, 
+also the configuration files for the diagnostics are copied (see aqua-diagnostics `documentation <https://aqua-diagnostics.readthedocs.io/en/latest/>`_).
+
+By default, the destination folder will be ``$HOME/.aqua``.
+It is possible to specify from where to copy and where to store.
 It is also possible to ask for an editable installation, so that only links are created, ideal for developers, 
-which can keep their catalog or fixes files under version control.
+which can keep their catalogs or fixes files under version control.
 
 .. note::
-    Since version ``v0.10`` the configuration file provided in the AQUA release is a template.
-    Even if the ``aqua install`` is done in editable mode, the configuration file will be copied to the destination folder.
+    A configuration file is necessary to run AQUA.
+    In the AQUA release a template is provided.
+    Even if the ``aqua install`` is done in editable mode, this configuration file will be copied and customized in the destination folder.
 
 Mandatory arguments are:
 
@@ -90,54 +95,39 @@ Mandatory arguments are:
 
 Optional arguments are:
 
+.. option:: --core, --core <path/to/aqua-core/repo>
+
+    If used without specifying a path, it will copy the configuration files from the AQUA core package installed in the current environment.
+    If a path is specified, the folders containing the configuration files will be linked from the specified path,
+    allowing developers to work on their local copy of AQUA core.
+
+.. warning::
+    In version ``v0.19`` and earlier, the path needed to point to the ``config`` folder inside the AQUA core repository.
+    This is not anymore necessary, as the command will determine the correct path automatically.
+
+.. option:: --diagnostics, --diagnostics <path/to/aqua-diagnostics/repo>
+
+    If used without specifying a path, it will copy the configuration files from the AQUA diagnostics package installed in the current environment.
+    If a path is specified, the folders containing the configuration files will be linked from the specified path,
+    allowing developers to work on their local copy of AQUA diagnostics.
+
+.. note::
+    The default behaviour, when no extra arguments are specified, is to implicitly try both ``--core`` and ``--diagnostics`` options,
+    depending on the presence of the corresponding packages in the current environment.
+
 .. option:: --path, -p <path>
 
     The folder where the configuration file is copied to. Default is ``$HOME/.aqua``.
     If this option is used, the tool will ask the user if they want a link in the default folder ``$HOME/.aqua``.
-    If this link is not created, the environment variable ``AQUA_CONFIG`` has to be set to the folder specified.
-
-.. option:: --editable, -e <path>
-
-    It installs the configuration file from the path given.
-    It will create a symbolic link to the configuration folder.
-    This is very recommended for developers. Please read the :ref:`dev-notes` section.
-
-.. warning::
-    The editable mode requires a path to the ``AQUA/config`` folder, not to the main AQUA folder.
-
-In addition to the general configuration file, ``aqua install`` supports copying and linking configuration files 
-for different diagnostics.
-Each diagnostic has its own set of configuration files that are copied or linked to specific folders.
-
-After running ``aqua install``, the configuration files for each diagnostic will be organized in the target directories 
-specified in the ``AQUA/src/aqua/cli/diagnostic_config.py``. For example, the structure might look like this:
-
-.. code-block:: text
-
-    $HOME/.aqua/
-        ├── diagnostics/
-        │   ├── atmglobalmean/
-        │   │   └── cli/
-        │   │       └── atm_mean_bias_config.yaml
-        │   ├── ecmean/
-        │   │   ├── config/
-        │   │   │   ├── ecmean_config_destine-v1-levante.yml
-        │   │   │   ├── ecmean_config_destine-v1.yml
-        │   │   │   ├── interface_AQUA_destine-v1.yml
-        │   │   └── cli/
-        │   │       └── config_ecmean_cli.yaml
-
-This structure ensures that all configuration files are neatly organized and easily accessible for each diagnostic type.
-
-.. note::
-    The configuration files for each diagnostic will be copied or linked with the same philosophy as the general configuration files.
+    If this link is not created, the environment variable ``AQUA_CONFIG`` has to be set to the folder specified
+    in order to expose it to AQUA.
 
 .. _aqua-avail:
 
 aqua avail
 ----------
 
-This simple command will print all the available catalogs on a repository.
+This simple command will print all the available catalogs to be installed from a repository.
 By default this will be the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
 
 .. option:: -r, --repository <user/repo>
@@ -157,13 +147,17 @@ As before, it is possible to specify if symbolic links have to be created
 and it is possible to install extra catalogs not present in the AQUA release.
 
 .. note::
-    Since version ``v0.10`` the catalog is detached from the AQUA repository and
+    The default catalog is detached from the AQUA repository and
     it is available `here <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
+    It is possible to use other catalogs as well. The folder structure has to be the same
+    as the default catalog.
 
 Multiple catalogs can be installed with multiple calls to ``aqua add``.
 By default the catalog will be downloaded from the external Climate-DT catalog repository,
 if a matching catalog is found. It is possible to specify a different repository.
 As shown below, it is also possible to specify a local path and install the catalog from there.
+Similarly to the installation command, this will create symbolic links to the local folder,
+ideal for developers.
 
 .. option:: catalog
 
@@ -219,17 +213,6 @@ catalogs, to use the first one found in the selected catalog.
     The name of the catalog to be set as default.
     **It is a mandatory argument.**
 
-.. _aqua-uninstall:
-
-aqua uninstall
---------------
-
-This command removes the configuration and catalog files from the installation folder.
-If the installation was done in editable mode, only the links will be removed.
-
-.. note::
-    If you need to reinstall aqua, the command ``aqua install`` will ask if you want to overwrite the existing files.
-
 .. _aqua-list:
 
 aqua list
@@ -242,13 +225,23 @@ It will show also if a catalog is installed in editable mode.
 
     This will show also all the fixes, grids and data models installed
 
+.. _aqua-uninstall:
+
+aqua uninstall
+--------------
+
+This command removes the configuration and catalog files from the installation folder.
+If the installation was done in editable mode, only the links will be removed.
+
+.. note::
+    If you need to reinstall aqua, the command ``aqua install`` will ask if you want to overwrite the existing files.
+
 .. _aqua-update:
 
 aqua update
 -----------
 
-This command will update all the fixes, grids and various configuration files from the local copy of the AQUA repository. 
-It is very useful if you pull a new version of AQUA and want to update your local confiugration and you are not in editable mode. 
+This command will update all the configuration files, both from AQUA core and AQUA diagnostics, if installed in the current environment.
 
 .. option:: -c, --catalog
 
@@ -306,9 +299,11 @@ This subcommand sets in the configuration file the path to the grids, areas and 
     The code will create the subfolders ``grids``, ``areas`` and ``weights`` in the specified path.
 
 .. note::
-    By default, if is not needed to set the path to the grids, areas and weights folders.
+    By default, it is not needed to set the path to the grids, areas and weights folders.
     AQUA will determine the path automatically based on the machine in the configuration file.
     This command is useful in new machines or if you don't have access to the default folders.
+    In a locall installation for example, catalogs will not be able to find the grids, areas and weights
+    unless this command is used to set the correct path.
 
 .. _aqua-grids-build:
 

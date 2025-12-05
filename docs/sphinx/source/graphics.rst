@@ -3,13 +3,13 @@
 Graphic tools
 -------------
 
-The ``aqua.graphics`` module provides a set of simple functions to easily plot the result of analysis done within AQUA.
+The ``aqua.core.graphics`` module provides a set of simple functions to easily plot the result of analysis done within AQUA.
 
 Plot styles
 ^^^^^^^^^^^
 
 AQUA supports in the available graphical functions the matplotlib styles.
-A default for the plot appearance is present in the ``aqua.mplstyle`` file (in ``config/styles``), 
+A default for the plot appearance is present in the ``aqua.mplstyle`` file (in ``aqua/core/config/styles``), 
 and this includes all the default settings for the plot functions.
 This file can be modified to change the default appearance of the plots. 
 
@@ -25,20 +25,21 @@ Single map
 
 A function called ``plot_single_map()`` is provided with many options to customize the plot.
 
-The function takes as input an xarray.DataArray, with a single timestep to be selected
+The function takes as input an ``xarray.DataArray``, with a single timestep to be selected
 before calling the function. The function will then plot the map of the variable and,
 if no other option is provided, will adapt colorbar, title and labels to the attributes
 of the input DataArray. Not only longitude-latitude grids are supported, but also HEALPix
 data, which are automatically resampled to a regular lon-lat grid before plotting.
 
 The function is built on top of the ``cartopy`` and ``matplotlib`` libraries,
-and it is possible to customize the plot with many options, including a different projections (see Single map with differences below).
+and it is possible to customize the plot with many options, including a different projections.
 
 In the following example we plot an sst map from the first timestep of ERA5 reanalysis:
 
 .. code-block:: python
     
-    from aqua import Reader, plot_single_map
+    from aqua import Reader
+    from aqua.core.graphics import plot_single_map
 
     reader = Reader(model='ERA5', exp='era5', source='monthly')
     tos = reader.retrieve(var=["tos"])
@@ -58,7 +59,7 @@ Single map with differences
 A function called ``plot_single_map_diff()`` is provided with many options to customize the plot.
 
 The function is built as an expansion of the ``plot_single_map()`` function, so that arguments and options are similar.
-The function takes as input two xarray.DataArray, with a single timestep.
+The function takes as input two ``xarray.DataArray``, with a single timestep.
 
 The function will plot as colormap or contour filled map the difference between the two input DataArray (the first one minus the second one).
 Additionally a contour line map is plotted with the first input DataArray, to show the original data.
@@ -69,7 +70,7 @@ which are automatically resampled to a regular lon-lat grid.
     :align: center
     :width: 100%
 
-    Example of a ``plot_single_map_diff()`` output done with the :ref:`teleconnections`.
+    Example of a ``plot_single_map_diff()`` output done with the teleconnections diagnostic from the ``aqua-diagnostics`` module.
     The map shows the correlation for the ENSO teleconnection between ICON historical run and ERA5 reanalysis.
 
 .. _graphics-projections:
@@ -77,9 +78,11 @@ which are automatically resampled to a regular lon-lat grid.
 Projections and custom maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-AQUA also supports a wide variety of map projections provided by the ``cartopy`` library. To simplify projection selection, 
+AQUA also supports a wide variety of map projections provided by the ``cartopy`` library.
+To simplify projection selection, 
 a utility function ``get_projection()`` is provided, which accepts a lowercase function names (e.g. ``"plate_carree"``) to select the 
-desired projection. A dictionary with the complete list of available projections can be found in the ``projections.py`` file.
+desired projection.
+A dictionary with the complete list of available projections can be found in the ``projections.py`` file in the ``aqua/core/util`` folder.
 The function ``get_projection()`` also accepts additional keyword arguments depending on the selected projection and and user-defined plotting requirements. 
 The returned ``cartopy.crs`` objects can be used directly with ``plot_single_map()``.
 A minimal example using subplots with different projections is shown below:
@@ -87,7 +90,8 @@ A minimal example using subplots with different projections is shown below:
 .. code-block:: python
 
     import matplotlib.pyplot as plt
-    from aqua import plot_single_map, get_projection
+    from aqua.core.graphics import plot_single_map
+    from aqua.core.util import get_projection
 
     # Define a dictionary with projection names and the wanted extra parameters from Cartopy
     projections = {"plate_carree": {},
@@ -116,10 +120,12 @@ This code will produce a single figure with four different map projections, all 
 
 Vertical profiles
 ^^^^^^^^^^^^^^^^^
+
 Two functions called ``plot_vertical_profile()`` and ``plot_vertical_profile_diff()`` are provided with many options to customize the plot.
 The first function is used to plot a single vertical profile, while the second one is used to compare two vertical profiles by plotting the difference between them.
-The functions take as input xarray.DataArrays with vertical profiles of a variable. If no other option is provided, will adapt colorbar, title and labels to the attributes
-of the input DataArray. The vertical profiles can be plotted with a logarithmic scale for the x-axis and with contour lines from the main dataset overlaid on the difference plot.
+The functions take as input ``xarray.DataArrays`` with vertical profiles of a variable.
+If no other option is provided, will adapt colorbar, title and labels to the attributes of the input DataArray.
+The vertical profiles can be plotted with a logarithmic scale for the x-axis and with contour lines from the main dataset overlaid on the difference plot.
 The vertical levels and the horizontal coordinate can be specified through the ``lev_name`` and ``x_coord`` arguments.
 
 In the following example we plot the vertical profile of specific humidity from the first timestep of IFS-NEMO historical-1990:
@@ -152,9 +158,11 @@ Vertical lines
 ^^^^^^^^^^^^^^
 
 A function called ``plot_vertical_lines()`` is provided with many options to customize the plot.
-The function takes as input a list of xarray.DataArray, each one representing a vertical profile, with the possility to plot multiple lines for different models and special lines for a reference dataset.
+The function takes as input a list of ``xarray.DataArray``, each one representing a vertical profile,
+with the possility to plot multiple lines for different models and special lines for a reference dataset.
 The vertical profiles can be plotted with a logarithmic scale for the x-axis and with the possibility to invert the y-axis.
-The vertical levels coordinate can be specified through the ``lev_name`` argument. See the API documentation for more details.
+The vertical levels coordinate can be specified through the ``lev_name`` argument.
+See the API documentation for more details.
 
 .. figure:: figures/vertical_lines.png
     :align: center
@@ -175,20 +183,20 @@ It is also possible to plot the ensemble mean of the models and its standard dev
 If the ensemble mean is provided, the monthly and annual time series of the models are plotted as grey lines, 
 considered as the ensemble spread, while the ensemble mean is plotted as a thick line.
 
-By default the function is built to be able to plot monthly and yearly time series, as required by the :ref:`timeseries` diagnostic.
+By default the function is built to be able to plot monthly and yearly time series.
 
 The function takes as data input:
 
-- **monthly_data**: a (list of) xarray.DataArray, each one representing the monthly time series of a model.
-- **annual_data**: a (list of) xarray.DataArray, each one representing the annual time series of a model.
-- **ref_monthly_data**: a (list of) xarray.DataArray representing the monthly time series of the reference dataset.
-- **ref_annual_data**: a (list of) xarray.DataArray representing the annual time series of the reference dataset.
-- **std_monthly_data**: a (list of) xarray.DataArray representing the monthly values of the standard deviation of the reference dataset.
-- **std_annual_data**: a (list of) xarray.DataArray representing the annual values of the standard deviation of the reference dataset.
-- **ens_monthly_data**: a xarray.DataArray representing the ensemble mean of the monthly time series of the models.
-- **ens_annual_data**: a xarray.DataArray representing the ensemble mean of the annual time series of the models.
-- **std_ens_monthly_data**: a xarray.DataArray representing the monthly values of the standard deviation of the ensemble mean of the models.
-- **std_ens_annual_data**: a xarray.DataArray representing the annual values of the standard deviation of the ensemble mean of the models.
+- **monthly_data**: a (list of) ``xarray.DataArray``, each one representing the monthly time series of a model.
+- **annual_data**: a (list of) ``xarray.DataArray``, each one representing the annual time series of a model.
+- **ref_monthly_data**: a (list of) ``xarray.DataArray`` representing the monthly time series of the reference dataset.
+- **ref_annual_data**: a (list of) ``xarray.DataArray`` representing the annual time series of the reference dataset.
+- **std_monthly_data**: a (list of) ``xarray.DataArray`` representing the monthly values of the standard deviation of the reference dataset.
+- **std_annual_data**: a (list of) ``xarray.DataArray`` representing the annual values of the standard deviation of the reference dataset.
+- **ens_monthly_data**: a ``xarray.DataArray`` representing the ensemble mean of the monthly time series of the models.
+- **ens_annual_data**: a ``xarray.DataArray`` representing the ensemble mean of the annual time series of the models.
+- **std_ens_monthly_data**: a ``xarray.DataArray`` representing the monthly values of the standard deviation of the ensemble mean of the models.
+- **std_ens_annual_data**: a ``xarray.DataArray`` representing the annual values of the standard deviation of the ensemble mean of the models.
 
 The function will automatically plot what is available, so it is possible to plot only monthly or only yearly time series, with or without a reference dataset.
 
@@ -196,7 +204,7 @@ The function will automatically plot what is available, so it is possible to plo
     :align: center
     :width: 100%
 
-    Example of a ``plot_timeseries()`` output done with the :ref:`timeseries`.
+    Example of a ``plot_timeseries()`` output done with the timeseries diagnostic.
     The plot shows the global mean 2 meters temperature time series for the IFS-NEMO scenario and the ERA5 reference dataset.
 
 Seasonal cycle
@@ -206,9 +214,9 @@ A function called ``plot_seasonalcycle()`` is provided with many options to cust
 
 The function takes as data input:
 
-- **data**: a xarray.DataArray representing the seasonal cycle of a variable.
-- **ref_data**: a xarray.DataArray representing the seasonal cycle of the reference dataset.
-- **std_data**: a xarray.DataArray representing the standard deviation of the seasonal cycle of the reference dataset.
+- **data**: a ``xarray.DataArray`` representing the seasonal cycle of a variable.
+- **ref_data**: a ``xarray.DataArray`` representing the seasonal cycle of the reference dataset.
+- **std_data**: a ``xarray.DataArray`` representing the standard deviation of the seasonal cycle of the reference dataset.
 
 The function will automatically plot what is available, so it is possible to plot only the seasonal cycle, with or without a reference dataset.
 
@@ -216,14 +224,14 @@ The function will automatically plot what is available, so it is possible to plo
     :align: center
     :width: 100%
 
-    Example of a ``plot_seasonalcycle()`` output done with the :ref:`timeseries`.
+    Example of a ``plot_seasonalcycle()`` output done with the timeseries diagnostic.
     The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.
 
 Multiple maps
 ^^^^^^^^^^^^^
 
 A function called ``plot_maps()`` is provided with many options to customize the plot.
-The function takes as input a list of xarray.DataArray, each one representing a map.
+The function takes as input a list of ``xarray.DataArray``, each one representing a map.
 It is built on top of ``plot_single_map()`` with which it shares many options.
 The maps are plotted with the possibility to set individual titles and with a shared colorbar.
 Figsize is automatically adapted and the number of plots and their position is automatically evaluated.

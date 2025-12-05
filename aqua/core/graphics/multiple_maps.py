@@ -121,8 +121,6 @@ def plot_maps(maps: list,
 
     if return_fig:
         return fig
-    else:
-        plt.close(fig)
 
 
 def plot_maps_diff(maps: list,
@@ -250,5 +248,3 @@ def plot_maps_diff(maps: list,
 
     if return_fig:
         return fig
-    else:
-        plt.close(fig)

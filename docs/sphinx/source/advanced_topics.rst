@@ -44,7 +44,7 @@ The configuration file is used to specify the following parameters:
 One or all the paths can be specified in the configuration file.
 If a path is not specified in the configuration file, the default path specified in the catalog will be used.
 
-The configuration folder has this structure:
+The configuration folder after the installation has this structure:
 
 .. code-block:: text
 
@@ -140,7 +140,6 @@ More informations about how to add them can be found in the :ref:`add-data` sect
 Adding the catalog to the AQUA package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since ``v0.9`` the AQUA package has an entry point script that will allow to add a new catalog to the AQUA package.
 This is done with the ``aqua add`` command.
 
 .. code-block:: bash
@@ -192,6 +191,7 @@ The request is transparent to the user (no apparent difference to other data sou
 
 .. code-block:: python
 
+    from aqua import Reader
     reader = Reader(model="IFS", exp="control-1950-devcon", source="hourly-1deg")
     data = reader.retrieve(var='2t')
 
@@ -220,48 +220,6 @@ In this case ``time`` will follow the notation discussed above, while ``vertica
 levels to use for each chunk.
 
 .. _lev-selection-regrid:
-
-Polytope access to Destination Earth data
------------------------------------------
-
-It is possible to access ClimateDT data available on the 'Databridge' for the DestinE ClimateDT also remotely, from other machines,
-using the 'polytope' access. to this end you will need to specify ``engine="polytope"`` when instantiating the `Reader` or permanently, adding
-the argument ``engine: polytope`` as an additional argument in the intake catalog source entry in the corresponding yaml file, under `args:`.
-
-.. code-block:: python
-
-    reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="polytope")
-    data = reader.retrieve(var='2t')
-
-This allows accessing ClimateDT data on the Databridge also remotely from other machines.
-
-To access Destination Earth ClimateDT data you will need to be registered on the `Destine Service Platform  <https://platform.destine.eu/>`_
-and have requested "upgraded access" to the data (follow the link "Access policy upgrade" under your username at the top left corner of the page).
-
-In order for his to work you will need to store an access token in the file ``~/.polytopeapirc`` in your home directory.
-You can create this file following two proceures:
-
-1. **Using DestinE Service Platform credentials**: 
-
-Follow the instructions in the `Polytope documentation <https://github.com/destination-earth-digital-twins/polytope-examples>`_
-and the username and password which you defined for the Destine Service Platform to download the credentials into this file. 
-
-2. **Using ECMWF credentials**:
-
-You can also use your ECMWF credentials to access the data. You will find the email and key which you need by logging in to your `ECMWF account <https://www.ecmwf.int/>`_.
-After logging in you will find your key at `https://api.ecmwf.int/v1/key/ <https://api.ecmwf.int/v1/key/>`_.
-
-A sample ``~/.polytopeapirc`` file will look like this:
-
-.. code-block:: text
-
-    {
-        "user_email" : "<your.email>",
-        "user_key" : "<your.token>"
-    }
-
-.. note::
-    Please notice that the two procedures use different tokens and that in the first case there will be no `"user_email"` in the polytope credentials file.
 
 Level selection and regridding
 ------------------------------
@@ -343,10 +301,10 @@ Where ``myhpc`` is the name of the machine used during the ``aqua install <myhpc
 Download the grids
 ^^^^^^^^^^^^^^^^^^
 
-The grids used in AQUA are stored and available on Swift storage, powered by DKRZ.
+Please refer to the :ref:`aqua-dvc` section for more information on how to access the data.
+DVC deployment will be the standard way to access the grids in the future.
+If this is not possible, a non versioned copy of the grids used in AQUA are stored and available on Swift storage, powered by DKRZ.
 See the :ref:`grids-downloader` section for more details.
-
-You can then check the completeness of the grids with the tool described in the :ref:`grids-checker` section.
 
 .. _dev-notes:
 
@@ -361,17 +319,15 @@ For this reason the following steps are suggested to set up the AQUA package in 
 Set up environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since ``v0.9`` the AQUA package has an entry point script that can be used to copy the configuration files
-and the catalog to an external directory (see :ref:`aqua-install` and :ref:`aqua-console`).
-
 By default the configuration files are stored in the ``$HOME/.aqua`` directory.
 Same for the catalog, which is stored in the ``$HOME/.aqua/catalogs`` directory.
 This has been done to make the package more user-friendly, expecially when installing the package
 from a conda environment or from a pip package.
 
 A developer may want to keep the configuration files and the catalogs in a different directory,
-for this reason the ``aqua init`` command can be used to copy the configuration files and the catalog
-to a different directory. For more information see the :ref:`aqua-install` section.
+for this reason the ``aqua install`` command can be used to copy the configuration files and the catalog
+to a different directory.
+For more information see the :ref:`aqua-install` section.
 
 If you're using a custom directory to store the configuration files and the catalog it is recommended
 to set up an environment variable to specify the path to the AQUA package.
@@ -383,50 +339,9 @@ This can be done by adding the following line to your `.bashrc` or `.bash_profil
 
 This will make clear for the code where to find the AQUA catalog and the configuration files.
 
-.. note::
-    It is temporalily possible to set the environment variable ``AQUA`` to specify the path of the source code,
-    so that the entire new aqua entry point can be superseeded by the old method.
-    This will be removed in the next release.
-
 Add new catalogs as developer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you're adding a new catalog or modifying an existing one it is recommended to use the old method to set up the AQUA package
 or to add the catalog with the editable option.
 Please refer to the :ref:`aqua-add` section for more information.
-
-.. _eccodes:
-
-ecCodes
--------
-
-ecCodes is a package developed by ECMWF to handle GRIB and BUFR files.
-AQUA uses ecCodes to interpret the GRIB files coming from the FDB sources.
-This is handled by the intake driver for FDB sources developed inside AQUA and making use of ecCodes definitions and the GSVRetriever class.
-
-Since v0.13 AQUA uses always the ecCodes definitions selected in the environment file. In particular we're currently using ecCodes 2.39.0.
-There is the possibility to switch ecCodes version while opening a source written with an older ecCodes but this is not recommended.
-As a consequence of this default behaviour, the shortnames deduced from a paramid will be always referred to the ecCodes definitions used by AQUA
-and not to the definitions used by the source. If the fixer is used, the shortnames will be anyway converted to the standard variable names used in AQUA.
-
-ecCodes fixer
-^^^^^^^^^^^^^
-
-.. warning::
-
-    Deprecated starting from AQUA v0.13
-
-In order to be able to read data written with recent versions of ecCodes,
-AQUA needs to use a very recent version of the binary and of the definition files.
-Data written with earlier versions of ecCodes should instead be read using previous definition files.
-AQUA solves this problem by switching on the fly the definition path for ecCodes, as specified in the source catalog entry. 
-Starting from version 2.34.0 of ecCodes older definitions are not compatible anymore.
-As a fix we create copies of the original older definion files with the addition/change of 5 files (``stepUnits.def`` and 4 files including it).
-A CLI script (``eccodes/fix_eccodes.sh``) is available to create such 'fixed' definition files.
-
-.. warning::
-
-    This change is necessary since AQUA v0.11.1 and it is going to be not necessary anymore starting from AQUA v0.13.
-    Please notice that this also means that earlier versions of the ecCodes binary will not work using these 'fixed' definition files.
-    If you are planning to use older versions of AQUA (with older versions of ecCodes) you should not use these 'fixed' definition files
-    and you may need to modify the ecCodes path in the catalog entries.
