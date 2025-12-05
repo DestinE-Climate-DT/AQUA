@@ -10,6 +10,8 @@ Unreleased in the current development version (target v0.22.0):
 AQUA core complete list:
 - New EC-Earth4 TL63 grid (#2536)
 - Improved handling of strings in `time_to_string` function (#2536)
+- Fix for 3d grid generation of `GridBuilder` (#2545)
+- Fix failing console test (#2549)
 - New `filter_key` option to filter NetCDF files before loading them based on year (#2543)
 - Removed plt.close() in plotting functions (#2538)
 - Documentation aligned to the new repository structure (#2525)
