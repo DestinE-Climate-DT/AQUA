@@ -450,7 +450,8 @@ class TestAquaConsole():
             assert excinfo.value.code == 1
 
         # install from path without home
-        shutil.rmtree(os.path.join(mydir, 'vicesindaco'))
+        if os.path.exists(os.path.join(mydir, 'vicesindaco')):
+            shutil.rmtree(os.path.join(mydir, 'vicesindaco'))
         run_aqua_console_with_input(['-v', 'install', MACHINE, '-p', os.path.join(mydir, 'vicesindaco')], 'yes')
         assert os.path.isdir(os.path.join(mydir, 'vicesindaco'))
         assert os.path.isfile(os.path.join(mydir, 'vicesindaco', 'config-aqua.yaml'))
