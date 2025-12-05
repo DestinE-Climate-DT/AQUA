@@ -15,13 +15,22 @@ class TestGridBuilder:
     """Test the GridBuilder class."""
     grid_dir = f'{ConfigPath().configdir}/grids'
 
-    def test_grid_healpix_polytope(self, tmp_path):
+    def test_grid_healpix_polytope_atm2d(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
         reader = Reader(
             model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
             engine="polytope", areas=False, chunks={'time': 'H'})
         data = reader.retrieve(var='2t')
         grid_builder = GridBuilder(outdir=tmp_path, model_name='IFS', original_resolution='tco1279')
+        grid_builder.build(data, verify=True, create_yaml=False)
+
+    def test_grid_healpix_polytope_ocean2d(self, tmp_path):
+        """Test the GridBuilder class with a HEALPix grid and rebuild option."""
+        reader = Reader(
+            model="IFS-FESOM", exp="story-2017-control", source="daily-hpz7-oce2d",
+            engine="polytope", areas=False, chunks={'time': 'D'})
+        data = reader.retrieve(var='tos')
+        grid_builder = GridBuilder(outdir=tmp_path, model_name='FESOM', original_resolution='ng5')
         grid_builder.build(data, verify=True, create_yaml=False)
 
     @pytest.mark.parametrize("rebuild", [False, True])

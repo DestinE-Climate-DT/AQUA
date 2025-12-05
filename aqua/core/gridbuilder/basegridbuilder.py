@@ -250,6 +250,8 @@ class BaseGridBuilder:
             None
         """
         if metadata.get('cdogrid'):
+            self.logger.info("Writing grid file to %s with CDO grid %s", output_file, metadata['cdogrid'])
             self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
         else:
+            self.logger.info("Writing grid file to %s", output_file)
             self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)

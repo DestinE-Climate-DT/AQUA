@@ -28,6 +28,8 @@ def builder_parser(parser=None):
                         help='Log level [default: WARNING]')
     parser.add_argument('--rebuild', action='store_true',
                         help='Rebuild the grid even if it already exists')
+    parser.add_argument('--vert_coord', type=str,
+                        help='Vertical coordinate name for 3D grids [default: None]')
     parser.add_argument('--version', type=int,
                         help='Version number for the grid file [default: None]')
     parser.add_argument('--outdir', type=str, default='.',
@@ -74,6 +76,7 @@ def builder_execute(args):
     version = get_arg(args, 'version', builder_config.get('version'))
     verify = get_arg(args, 'verify', builder_config.get('verify', False))
     create_yaml = get_arg(args, 'yaml', builder_config.get('yaml', False))
+    vert_coord = get_arg(args, 'vert_coord', builder_config.get('vert_coord'))
 
     # Ensure required arguments are present
     if model is None:
@@ -93,7 +96,8 @@ def builder_execute(args):
         outdir=outdir, 
         original_resolution=original_resolution,
         model_name=modelname,
-        grid_name=gridname
+        grid_name=gridname,
+        vert_coord=vert_coord
     )
 
     # Build the grid
