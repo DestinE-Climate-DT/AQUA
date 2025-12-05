@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 AQUA core complete list:
 - Fix for 3d grid generation of `GridBuilder` (#2550)
+- Support for FESOM grids for o26.1 cycle (#2547)
 
 AQUA diagnostics complete list:
 
