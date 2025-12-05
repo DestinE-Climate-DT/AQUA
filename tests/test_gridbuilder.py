@@ -68,15 +68,6 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution='N320')
         grid_builder.build(data, verify=True, create_yaml=False)
 
-    def test_cli_grid_healpix(self, tmp_path):
-        """Test the GridBuilder class making use of the CLI."""
-        command = [
-            'aqua', 'grids', 'build', 
-            '--model', 'ERA5', '--exp', 'era5-hpz3', '--source', 'monthly', 
-            '--verify', '--outdir', tmp_path
-        ]
-        subprocess.run(command, check=True)
-
 
 class TestGridEntryManager:
     """Test the GridEntryManager class."""

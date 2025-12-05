@@ -608,6 +608,18 @@ class TestAquaConsoleShared():
         assert '.aqua/catalogs/ci ..' in out
 
 
+class TestAquaConsoleGridBuilder():
+    """Tests for the aqua grids build CLI."""
+
+    @pytest.mark.parametrize(
+        "command_args", [
+            ['grids', 'build', '--model', 'ERA5', '--exp', 'era5-hpz3', '--source', 'monthly'],
+        ]
+    )
+    def test_aqua_console_gridbuilder(self, run_aqua, command_args, tmpdir):
+        """Test the aqua grids build CLI"""
+        run_aqua(command_args + ['--verify', '--outdir', str(tmpdir)])
+
 # checks for query function
 @pytest.fixture
 def run_query_with_input(tmpdir):
