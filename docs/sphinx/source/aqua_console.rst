@@ -369,6 +369,10 @@ The following options are available for ``aqua grids build``:
 
     Alternative name for the grid for grid naming. Required for Curvilinear and Unstructured grids, where the CDO grids cannot be guessed.
 
+.. option:: --vert_coord <name>
+
+    Name of the vertical coordinate in the dataset. Useful for 3D datasets where the vertical coordinate is not automatically detected by ``GridInspector``.
+
 .. option:: --fix
 
     Fix the original source before building the grid. Useful for models with very specific coordinates/dimensions
