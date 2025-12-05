@@ -108,7 +108,15 @@ Finally, the ``metadata`` entry contains optional additional information useful 
     - ``source_grid_name``: the grid name defined in ``aqua-grids.yaml`` to be used for areas and regridding
     - ``fixer_name``: the name of the fixer defined in the fixes folder
     - ``deltat`` (optional): the cumulation window of fluxes in the dataset. This is a fixer option. If not present, the default is 1 second.
-    - ``time_coder``: if specified modifies the target resolution when decoding dates. Defaults to “ns”. Used by the ``CFDatetimeCoder`` and working only for netcdf sources.
+    - ``time_coder`` (optional): xarray builds on pandas, and pandas support a limited time range becuase time precision is based on nanoseconds.
+                                 Despite recent updates to underlying ``np.datetime64`` class, support for time range before 1678 CE and after 2262 AD is very limited.
+                                 A partial solution build on passing a coarser time_coder, e.g. "s". If this is specified modifies the time resolution when decoding dates. 
+                                 Underneath it is used by the ``CFDatetimeCoder`` and it is working only for NetCDF sources.
+    - ``filter_key`` (optional): Sometimes NetCDF sources are based on many small files: loading long time series can be extremely slow due to the large number of files. 
+                                 This key is meant to filter files based information in the filename.
+                                 Currently only "year" key is supported, which will filter files based on years between ``startdate`` and ``enddate`` (of course, only if "year" is found in the filename).
+                                 Requires that both ``startdate`` and ``enddate`` are specified in the ``Reader()`` call (will not work at `.retrieve()`` level).
+                                 Working only with NetCDF sources.
 
 You can add fixes to your dataset by following examples in the ``aqua/core/config/fixes/`` directory (see :ref:`fixer`).
 

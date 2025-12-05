@@ -9,6 +9,7 @@ Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
 - Fix console test (#2549)
+- New `filter_key` option to filter NetCDF files before loading them based on year (#2543)
 - Removed plt.close() in plotting functions (#2538)
 - Documentation aligned to the new repository structure (#2525)
 - Complete workflow for pypi version to be run once per week (#2527)
