@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Support for FESOM grids for o26.1 cycle (#2547)
 
 AQUA diagnostics complete list:
 
