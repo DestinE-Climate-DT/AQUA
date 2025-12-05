@@ -6,10 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
-- Fix for 3d grid generation of `GridBuilder` (#2550)
-- Support for FESOM grids for o26.1 cycle (#2547)
 
 AQUA diagnostics complete list:
+
+## [v0.19.6]
+
+AQUA core complete list:
+- Fix for 3d grid generation of `GridBuilder` (#2550)
+- Support for FESOM grids for o26.1 cycle (#2547)
 
 ## [v0.19.5]
 
@@ -1232,7 +1236,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.5
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.6
+[v0.19.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.5...v0.19.6
 [v0.19.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.3...v0.19.4
 [v0.19.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.2...v0.19.3
