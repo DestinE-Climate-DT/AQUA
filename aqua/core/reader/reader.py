@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 from glob import glob
 import os
+import re
 import intake_esm
 import intake_xarray
 import xarray as xr
@@ -932,14 +933,19 @@ class Reader():
 
         # this will consider only files that have "year" in their filename 
         # within the startdate and enddate range
-        if filter_key == "year" and self.startdate and self.enddate:
+        if filter_key == "year": 
+            if not (self.startdate and self.enddate):
+                return esmcat
             keys = list(range(pd.Timestamp(self.startdate).year,
                                pd.Timestamp(self.enddate).year + 1))
+            # create regex pattern for each year: only yyyy will be detected
+            pattern = [re.compile(rf'(?<!\d){yr}(?!\d)') for yr in keys]
+
         else:
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
-        # replace the urlpath with the filtered one
-        esmcat.urlpath = [f for f in files if any(str(key) in os.path.basename(f) for key in keys)]
+        # replace the urlpath with the filtered one searching the regex
+        esmcat.urlpath = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
 
         if len(esmcat.urlpath) == 0:
             raise NoDataError("No files found after filtering the catalog!")
