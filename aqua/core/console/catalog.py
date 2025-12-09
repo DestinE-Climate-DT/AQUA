@@ -14,7 +14,7 @@ import fsspec
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import load_yaml, dump_yaml
 from aqua.core.util.util import to_list, HiddenPrints
-from aqua.core.reader.catalog import catalog as print_catalog
+from aqua.core.reader.catalog import show_catalog_content as print_catalog
 
 # folder used for reading/storing catalogs
 CATPATH = 'catalogs'
