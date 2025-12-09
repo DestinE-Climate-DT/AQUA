@@ -199,6 +199,14 @@ jobs:
         if: ${{ inputs.install-mode == 'pypi' }}
         run: |
           python -m pip install aqua-core[tests]
+
+      - name: Checkout the tag for PyPI mode
+        if: ${{ inputs.install-mode == 'pypi' }}
+        run: |
+          cd AQUA
+          PYPI_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('aqua-core'))")
+          echo "Installed PyPI version: $PYPI_VERSION"
+          git checkout "v${PYPI_VERSION}"
       
       # ========================================
       # 6. SETUP DVC AND TEST DATA
