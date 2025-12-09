@@ -75,12 +75,6 @@ You can also filter by specific catalog(s), model, experiment, or source:
         config = ConfigPath(loglevel='info')
         results = config.show_catalog_content()
 
-.. note::
-    Other two functions are available for catalog exploration:
-    ``catalog()``: to get the full catalog as a nested dictionary;
-    ``inspect_catalog()``: to get a list of the matching entries for a specific model/exp/source triplet.
-    Both will be soon deprecated in favour of the ``show_catalog_content()`` function.
-
 Reader basic usage
 ^^^^^^^^^^^^^^^^^^
 
