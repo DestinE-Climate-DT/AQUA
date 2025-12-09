@@ -205,6 +205,7 @@ jobs:
         run: |
           cd AQUA
           PYPI_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('aqua-core'))")
+          git fetch --tags --quiet
           echo "Installed PyPI version: $PYPI_VERSION"
           git checkout "v${PYPI_VERSION}"
       
