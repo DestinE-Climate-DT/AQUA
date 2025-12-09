@@ -237,8 +237,11 @@ def time_to_string(time=None, format='%Y-%m-%d'):
     if time is None:
         raise ValueError('time_to_string() requires a time argument')
 
+    # Timestap for safer string handling
+    if isinstance(time, str):
+        time = pd.Timestamp(time)
     # Convert supported types into pandas.Timestamp
-    if isinstance(time, (str, pd.Timestamp, np.datetime64)):
+    if isinstance(time, (pd.Timestamp, np.datetime64)):
         ts = pd.to_datetime(time)
     else:
         raise ValueError('time_to_string() requires a time argument of type str, pd.Timestamp or np.datetime64')

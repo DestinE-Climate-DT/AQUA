@@ -6,9 +6,10 @@ AQUA analysis module for running diagnostics and handling configurations.
 import os
 import sys
 import subprocess
+from importlib import resources as pypath
+
 from aqua.core.util import create_folder, to_list
 from aqua.core.configurer import ConfigPath
-from aqua import __path__ as pypath
 
 
 def run_command(cmd: str, log_file: str, logger=None) -> int:
@@ -192,8 +193,11 @@ def get_aqua_paths(*, args, logger):
     Returns:
         tuple: AQUA path and configuration path.
     """
-    aqua_path = os.path.abspath(os.path.join(pypath[0], "..", ".."))
-    logger.debug(f"AQUA path: {aqua_path}")
+    aqua_core_path = str(pypath.files('aqua.core'))
+    aqua_diagnostics_path = str(pypath.files('aqua.diagnostics'))
+
+    logger.debug(f"AQUA core path: {aqua_core_path}")
+    logger.debug(f"AQUA diagnostics path: {aqua_diagnostics_path}")
 
     aqua_configdir = ConfigPath().configdir
     logger.debug(f"AQUA config dir: {aqua_configdir}")
@@ -204,4 +208,4 @@ def get_aqua_paths(*, args, logger):
         sys.exit(1)
     logger.info(f"AQUA analysis config path: {aqua_analysis_config_path}")
 
-    return aqua_path, aqua_configdir, aqua_analysis_config_path
+    return aqua_core_path, aqua_diagnostics_path, aqua_configdir, aqua_analysis_config_path

@@ -57,7 +57,7 @@ def analysis_execute(args):
     loglevel = args.loglevel
     logger = log_configure(loglevel, 'AQUA Analysis')
 
-    aqua_path, aqua_configdir, aqua_config_path = get_aqua_paths(args=args, logger=logger)
+    aqua_core_path, aqua_diagnostics_path, aqua_configdir, aqua_config_path = get_aqua_paths(args=args, logger=logger)
 
     config = load_yaml(aqua_config_path)
     loglevel = args.loglevel or config.get('job', {}).get('loglevel', "info")
@@ -127,7 +127,8 @@ def analysis_execute(args):
             os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
 
     os.environ["OUTPUT"] = output_dir
-    os.environ["AQUA"] = aqua_path
+    os.environ["AQUA_CORE"] = aqua_core_path
+    os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if 'AQUA_CONFIG' not in os.environ else os.environ["AQUA_CONFIG"]
     create_folder(output_dir, loglevel=loglevel)
 

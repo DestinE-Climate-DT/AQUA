@@ -15,6 +15,15 @@ grids:
     cellareas_var: area
     regrid_method: 'bil'
 
+  ORCA2-ece-ice:
+    path:
+        2d: '{{ grids }}/EC-EARTH4/ORCA2_mesh_sfc_grid_T.nc'
+        depth: '{{ grids }}/EC-EARTH4/ORCA2_mesh_3d_grid_T.nc'
+    space_coord: ["x", "y"]
+    cellareas: '{{ grids }}/EC-EARTH4/cellarea_ORCA2_T.nc'
+    cellareas_var: area
+    regrid_method: 'bil'
+
   eORCA1-ece:
     path:
         2d: '{{ grids }}/EC-EARTH4/eORCA1_mesh_sfc_grid_T.nc'
@@ -50,3 +59,7 @@ grids:
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_PALEORCA2_T.nc'
     cellareas_var: area
     regrid_method: 'bil'
+
+  tl63-ece:
+    path: '{{ grids }}/EC-EARTH4/tl63.nc'
+    space_coord: ["cell"]

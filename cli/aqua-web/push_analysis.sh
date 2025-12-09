@@ -171,7 +171,7 @@ bucket="aqua-web"
 repository="DestinE-Climate-DT/aqua-web"
 update=1
 rsync=""
-config="$SCRIPT_DIR/../../config/analysis/config.grouping.yaml"
+config=""
 ensemble=1  # Default to new ensemble structure with 4 levels (catalog/model/experiment/realization)
 
 # Parse all options first
@@ -246,7 +246,6 @@ if [ -z "$1" ] || [ -z "$2" ]; then
     exit 0
 fi
 
-
 if [ ! -f "$SCRIPT_DIR/../util/logger.sh" ]; then
     echo "Warning: $SCRIPT_DIR/../util/logger.sh not found, using dummy logger"
     # Define a dummy log_message function
@@ -257,6 +256,21 @@ else
     source "$SCRIPT_DIR/../util/logger.sh"
     setup_log_level $loglevel # 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL
     log_message DEBUG "Sourcing logger.sh from: $SCRIPT_DIR/../util/logger.sh"
+fi
+
+if [ -z "$config" ]; then
+    if [ -n "$AQUA_CONFIG" ]; then
+        config="$AQUA_CONFIG/analysis/config.grouping.yaml"
+    elif [ -d "$HOME/.aqua" ]; then
+        config="$HOME/.aqua/analysis/config.grouping.yaml"
+    fi
+fi
+
+if [ -f "$config" ]; then
+    log_message DEBUG "Using configuration file: $config"
+else
+    log_message ERROR "Configuration file not found. Please specify with -c or set AQUA_CONFIG environment variable."
+    exit 1
 fi
 
 log_message INFO "Processing $indir"
@@ -351,3 +365,4 @@ if [ $localrepo -eq 0 ]; then
     rm -rf $repo
 fi
 
+log_message INFO "push_analysis job completed."
