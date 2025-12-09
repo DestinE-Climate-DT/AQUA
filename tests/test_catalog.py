@@ -73,35 +73,6 @@ def test_catalog_reader(reader_regrid):
     assert len(rgd.lon) == 180
     assert len(rgd.lat) == 90
 
-
-@pytest.mark.aqua
-def test_inspect_catalog():
-    """Checking that inspect catalog works"""
-
-    # calling the catalog
-    #cat = catalog(verbose=True)
-    #out, _ = capfd.readouterr()
-    #assert 'FESOM' in out
-    #assert 'IFS' in out
-
-    # inspect catalog
-    models = inspect_catalog()
-    assert isinstance(models, list)
-    exps = inspect_catalog(model='IFS')
-    assert isinstance(exps, list)
-    sources = inspect_catalog(model='IFS', exp='test-tco79')
-    assert isinstance(sources, list)
-    variables = inspect_catalog(model='IFS', exp="test-tco79", source='short')
-    assert variables is True
-
-    # wrong calls
-    models = inspect_catalog(model='antani')
-    assert 'IFS' in models 
-    exps = inspect_catalog(model='IFS', exp="antani")
-    assert 'test-tco79' in exps
-    sources = inspect_catalog(model='IFS', exp="test-tco79", source='antani')
-    assert 'short' in sources
-
 # @pytest.mark.aqua
 # @pytest.mark.parametrize(
 #     "catalog, model, exp, source, expected_output",

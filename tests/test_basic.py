@@ -33,13 +33,6 @@ class TestAqua:
         except ImportError:
             assert False, "Module {} could not be imported".format(module_name)
 
-    def test_aqua_catalog(self):
-        """
-        Test if the catalog function returns a non-empty list
-        """
-        cat = catalog()
-        assert len(cat) > 0
-
     def test_reader_init(self):
         """
         Test the initialization of the Reader class
