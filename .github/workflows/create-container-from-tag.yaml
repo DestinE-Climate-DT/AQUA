@@ -19,7 +19,7 @@ jobs:
         run: |
           TARGET_BRANCH="${{ github.event.release.target_commitish }}"
           echo "Release target branch: $TARGET_BRANCH"
-          if [[ "$TARGET_BRANCH" == v0.13.*" || "$TARGET_BRANCH" == v0.19.* ]]; then
+          if [[ "$TARGET_BRANCH" == v0.13-*" || "$TARGET_BRANCH" == v0.19-* ]]; then
             echo "IMAGE_NAME=aqua" >> $GITHUB_ENV
           else
             echo "IMAGE_NAME=aqua-core" >> $GITHUB_ENV
