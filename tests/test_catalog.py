@@ -3,16 +3,17 @@
 import pytest
 import types
 import xarray
-from aqua import Reader, catalog, inspect_catalog
+from aqua import Reader
+from aqua.core.reader import show_catalog_content as catalog
 from aqua.core.reader.reader_utils import check_catalog_source
 from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 
 @pytest.fixture(params=[(model, exp, source)
-                        for model in catalog(catalog_name="ci")  # there could also be other catalogues installed
-                        for exp in catalog(catalog_name="ci")[model]
-                        for source in catalog(catalog_name="ci")[model][exp]])
+                        for model in catalog(catalog_name="ci", verbose=False)['ci']
+                        for exp in catalog(catalog_name="ci", verbose=False)['ci'][model]
+                        for source in catalog(catalog_name="ci", verbose=False)['ci'][model][exp]])
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
@@ -37,9 +38,9 @@ def test_catalog_gsv():
         assert isinstance(data, xarray.Dataset)
 
 @pytest.fixture(params=[(model, exp, source)
-                        for model in catalog(catalog_name="ci")
-                        for exp in catalog(catalog_name="ci")[model]
-                        for source in catalog(catalog_name="ci")[model][exp]])
+                        for model in catalog(catalog_name="ci", verbose=False)['ci']
+                        for exp in catalog(catalog_name="ci")['ci'][model]
+                        for source in catalog(catalog_name="ci")['ci'][model][exp]])
 def reader_regrid(request):
     """Reader instance fixture"""
     model, exp, source = request.param
