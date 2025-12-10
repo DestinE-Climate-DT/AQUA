@@ -33,6 +33,11 @@ on:
         required: false
         type: string
         default: 'local'
+      pr-number:
+        description: 'Pull Request number (empty for non-PR runs)'
+        required: false
+        type: string
+        default: ''
     secrets:
       AQUA_GITHUB_PAT:
         required: true
@@ -70,7 +75,11 @@ jobs:
   aqua_test:
     runs-on: ubuntu-latest
     continue-on-error: false
-    
+
+    concurrency:
+      group: ${{ inputs.pr-number != '' && format('aqua-pr-{0}', inputs.pr-number) || format('aqua-{0}', github.run_id) }}
+      cancel-in-progress: ${{ inputs.pr-number != '' }}
+
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
       image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
