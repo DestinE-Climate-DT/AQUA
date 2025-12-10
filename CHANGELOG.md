@@ -9,6 +9,7 @@ Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
 - Deprecate `catalog` and `inspect_catalog` (#2556)
+- Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2529)
 - Update FESOM grids for o26.1 (#2541) 
 - Update config path for push_analysis (#2553)
 - Fix of aqua_path for analysis console (#2542)
