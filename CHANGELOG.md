@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
+- Deprecate `catalog` and `inspect_catalog` (#2556)
 - Update FESOM grids for o26.1 (#2541) 
 - Update config path for push_analysis (#2553)
 - Fix of aqua_path for analysis console (#2542)
