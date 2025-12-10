@@ -334,7 +334,7 @@ class ConfigPath():
         return status, level, avail
 
 
-    def show_catalog_content(self, catalog=None, model=None, exp=None, source=None):
+    def show_catalog_content(self, catalog=None, model=None, exp=None, source=None, verbose=True):
         """
         Scan catalog(s) by reading YAML files directly and display the model/exp/source structure.
         Uses intake to handle path resolution automatically.
@@ -344,6 +344,7 @@ class ConfigPath():
             model (str | None): Optional model filter.
             exp (str | None): Optional experiment filter.
             source (str | None): Optional source filter.
+            verbose (bool): If True, prints the formatted catalog structure. Defaults to True.
 
         Returns:
             dict: Dictionary with catalog names as keys and nested dict structure as values.
@@ -408,7 +409,8 @@ class ConfigPath():
             if catalog_structure:
                 results[cat_name] = catalog_structure
                 formatted_output = self.format_catalog_structure(catalog_structure, cat_name)
-                print(formatted_output)
+                if verbose:
+                    print(formatted_output)
 
         return results
 
