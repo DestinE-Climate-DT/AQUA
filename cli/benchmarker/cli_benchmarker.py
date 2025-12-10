@@ -11,7 +11,7 @@ import dask
 from dask.distributed import Client, LocalCluster
 from aqua import Reader
 from aqua import __version__ as version
-from aqua.logger import log_configure
+from aqua.core.logger import log_configure
 
 print('AQUA version is: ' + version)
 

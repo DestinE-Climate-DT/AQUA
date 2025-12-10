@@ -4,8 +4,8 @@ import pytest
 import xarray as xr
 import pandas as pd
 from aqua import Drop, Reader
-from aqua.drop.output_path_builder import OutputPathBuilder
-from aqua.drop.catalog_entry_builder import CatalogEntryBuilder   
+from aqua.core.drop.output_path_builder import OutputPathBuilder
+from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder   
 from conftest import LOGLEVEL
 
 DROP_PATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
@@ -14,6 +14,7 @@ DROP_PATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
 # pytestmark groups tests that run sequentially on the same worker to avoid conflicts
 pytestmark = [
     pytest.mark.aqua,
+    pytest.mark.console,
     pytest.mark.xdist_group(name="dask_operations")
 ]
 

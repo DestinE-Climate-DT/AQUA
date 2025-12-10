@@ -1,7 +1,7 @@
 """Test regridding from Reader"""
 import pytest
 from aqua import Reader, Regridder
-from aqua.regridder.griddicthandler import GridDictHandler
+from aqua.core.regridder.griddicthandler import GridDictHandler
 from conftest import APPROX_REL, LOGLEVEL
 
 approx_rel = APPROX_REL

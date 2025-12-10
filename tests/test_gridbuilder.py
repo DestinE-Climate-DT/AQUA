@@ -4,27 +4,33 @@ import os
 import pytest
 from aqua import GridBuilder
 from aqua import Reader
-from aqua.gridbuilder.gridentrymanager import GridEntryManager
-from aqua.configurer import ConfigPath
-from aqua.util import load_yaml
+from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
+from aqua.core.configurer import ConfigPath
+from aqua.core.util import load_yaml
 
-pytestmark = [
-    pytest.mark.aqua,
-    pytest.mark.xdist_group(name="gridbuilder")
-]
+pytestmark = pytest.mark.aqua
 
 
 class TestGridBuilder:
     """Test the GridBuilder class."""
     grid_dir = f'{ConfigPath().configdir}/grids'
 
-    def test_grid_healpix_polytope(self, tmp_path):
+    def test_grid_healpix_polytope_atm2d(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
         reader = Reader(
             model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
             engine="polytope", areas=False, chunks={'time': 'H'})
         data = reader.retrieve(var='2t')
         grid_builder = GridBuilder(outdir=tmp_path, model_name='IFS', original_resolution='tco1279')
+        grid_builder.build(data, verify=True, create_yaml=False)
+
+    def test_grid_healpix_polytope_ocean2d(self, tmp_path):
+        """Test the GridBuilder class with a HEALPix grid and rebuild option."""
+        reader = Reader(
+            model="IFS-FESOM", exp="story-2017-control", source="daily-hpz7-oce2d",
+            engine="polytope", areas=False, chunks={'time': 'D'})
+        data = reader.retrieve(var='tos')
+        grid_builder = GridBuilder(outdir=tmp_path, model_name='FESOM', original_resolution='ng5')
         grid_builder.build(data, verify=True, create_yaml=False)
 
     @pytest.mark.parametrize("rebuild", [False, True])
@@ -35,7 +41,6 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution='tco79')
         grid_builder.build(data, verify=True, rebuild=rebuild, create_yaml=True)
         assert os.path.exists(f'{self.grid_dir}/regular.yaml')
-        os.remove(f'{self.grid_dir}/regular.yaml')
     
     def test_grid_curvilinear(self, tmp_path):
         """Test the GridBuilder class with a regular grid."""
@@ -47,7 +52,6 @@ class TestGridBuilder:
         grid = load_yaml(f'{self.grid_dir}/nemo-curvilinear.yaml')
         assert set(grid['grids']['nemo-ORCA2-2d']['space_coord']) == set(['y', 'x'])
         assert grid['grids']['nemo-ORCA2-2d']['remap_method'] == 'bil'
-        os.remove(f'{self.grid_dir}/nemo-curvilinear.yaml')
 
     def test_grid_unstructured(self, tmp_path):
         """Test the GridBuilder class with an unstructured grid."""
@@ -56,8 +60,6 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, model_name='ifs', grid_name='tl63')
         grid_builder.build(data, verify=True, create_yaml=True) # this is not working yet
         assert os.path.exists(f'{self.grid_dir}/ifs-unstructured.yaml')
-        os.remove(f'{self.grid_dir}/ifs-unstructured.yaml')
-        
     
     def test_grid_healpix(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
@@ -65,15 +67,6 @@ class TestGridBuilder:
         data = reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution='N320')
         grid_builder.build(data, verify=True, create_yaml=False)
-
-    def test_cli_grid_healpix(self, tmp_path):
-        """Test the GridBuilder class making use of the CLI."""
-        command = [
-            'aqua', 'grids', 'build', 
-            '--model', 'ERA5', '--exp', 'era5-hpz3', '--source', 'monthly', 
-            '--verify', '--outdir', tmp_path
-        ]
-        subprocess.run(command, check=True)
 
 
 class TestGridEntryManager:
@@ -126,3 +119,4 @@ class TestGridEntryManager:
         assert block['cdo_options'] == '-f nc'
         assert block['remap_method'] == 'bil'
         assert block['path']['depth'] == 'orca2_oce_depth_v1.nc'
+

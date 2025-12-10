@@ -4,12 +4,7 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-  # push: # We remove this to create the container only when we create a release from browser (issue #490)
-  #   tags:
-  #     - v*
 
-env:
-  IMAGE_NAME: aqua
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,6 +14,17 @@ jobs:
     steps:
       - name: "Check out code"
         uses: actions/checkout@v4
+      - name: Detect target branch and select image name
+        id: select_image
+        run: |
+          TARGET_BRANCH="${{ github.event.release.target_commitish }}"
+          echo "Release target branch: $TARGET_BRANCH"
+          if [[ "$TARGET_BRANCH" == v0.13-*" || "$TARGET_BRANCH" == v0.19-* ]]; then
+            echo "IMAGE_NAME=aqua" >> $GITHUB_ENV
+          else
+            echo "IMAGE_NAME=aqua-core" >> $GITHUB_ENV
+          fi
+          echo "Using IMAGE_NAME=$IMAGE_NAME"
       - name: Set build arguments based on tag
         id: set_build_args
         run: |

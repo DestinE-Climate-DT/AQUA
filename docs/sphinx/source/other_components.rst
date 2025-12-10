@@ -13,6 +13,7 @@ to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, 
 
 .. code-block:: python
 
+    from aqua import Reader
     reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
     data = reader.retrieve()
     daily = reader.timmean(data, freq='daily')
@@ -48,6 +49,10 @@ When no time frequency information is provided, this method operates on the full
 providing results identical to the ``histogram()`` method.
 See the ``histogram()`` section below for more details on the available options.
 
+.. warning::
+    We are aware of issues when using data with non nanosecond time resolution (not datetime64[ns]) in combination with the extra options of the timstat methods.
+    We suggest to switch them off when using such data until further notice.
+
 Detrend
 -------
 
@@ -56,6 +61,7 @@ The ``detrend`` method can be used as a high-level wrapper of xarray polyfit fun
 
 .. code-block:: python
 
+    from aqua import Reader
     reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
     data = reader.retrieve()
     daily = reader.detrend(data['2t'], dim='time')
@@ -79,7 +85,7 @@ A ``dataarray`` with the coefficients will be returned, with the same dimensions
 Spatial Selection
 -----------------
 
-The ``AreaSelection()`` class, part of the ``aqua.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits.
+The ``AreaSelection()`` class, part of the ``aqua.core.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits.
 The ``select_area()`` method can be used to perform the selection on a DataArray or Dataset.
 It is possible to consider or drop the limits of the selection by setting the ``box_brd`` flag to ``True`` or ``False`` respectively.
 It is also possible to drop the NaN values after the selection by setting the ``drop`` flag to ``True``.
@@ -110,6 +116,7 @@ For example, if we run the following commands:
 
 .. code-block:: python
 
+    from aqua import Reader
     reader = Reader(model="PSC", exp="PIOMAS", source="monthly", regrid="r100", loglevel='info')
     data = reader.retrieve()
     regrid_sithick = reader.regrid(data['sithick'])
@@ -167,19 +174,6 @@ Some extra options are available:
                   It will fail if not appropriate bounds are used for the classes. Can be only used if the ``density`` flag is ``False``.
                   It will force a computation of the histogram and a numpy array will be returned.
 
-The ``histogram()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
-class, so that it is easy to compute histograms over the full dataset:
-    
-.. code-block:: python
-
-    hist = reader.histogram(data['t2m'], bins=100, range=(250, 350))
-
-or
-
-.. code-block:: python
-
-    hist = data['t2m'].aqua.histogram( bins=100, range=(250, 350))
-
 
 .. _time-selection:
 
@@ -209,8 +203,7 @@ required levels can speed up the retrieve process.
 When reading 3D data it is possible to specify already during ``retrieve()``
 which levels to select using the ``level`` keyword.
 The levels are specified in the same units as they are stored in the archive
-(for example in hPa for atmospheric IFS data,
-but an index for NEMO data in the FDB archive).
+(for example in hPa for atmospheric IFS data, but an index for NEMO data in the FDB archive).
 
 .. note::
     In the case of FDB data this presents the great advantage that a significantly reduced request will be read from the FDB 
@@ -243,6 +236,7 @@ If, for example, we want to stream the data every three days from ``'2020-05-01'
 
 .. code-block:: python
 
+    from aqua import Reader
     reader = Reader(model="IFS", exp= "tco2559-ng5", source="ICMGG_atm2d",
                     streaming=True, aggregation = '3D', startdate = '2020-05-01')    
     data = reader.retrieve()
@@ -254,7 +248,6 @@ The function will automatically determine the appropriate start and end points f
 the internal state of the streaming process.
 
 If we want to reset the state of the streaming process, we can call the ``reset_stream()`` method.
-
 
 .. _accessors:
 
@@ -346,5 +339,5 @@ The metadata includes information about the model, experiment, source and AQUA v
 Additionally the ``history`` attribute is updated with details of the operations performed on the data.
 This is done by the ``Reader`` and it is under implementation for diagnostics as well.
 
-A function ``log_history`` is available in the ``aqua.logger`` module to log in this attribute for a specific dataset.
+A function ``log_history`` is available in the ``aqua.core.logger`` module to log in this attribute for a specific dataset.
 This can be used as well to log the history of the operations performed on the data in custom scripts.

@@ -23,7 +23,7 @@ def reader_ifs_tco79_long(ifs_tco79_long_reader):
 class TestAqua:
     """Basic tests for AQUA"""
 
-    @pytest.mark.parametrize("module_name", ["aqua", "aqua.diagnostics"])
+    @pytest.mark.parametrize("module_name", ["aqua"])
     def test_aqua_import(self, module_name):
         """
         Test if the aqua module is imported correctly

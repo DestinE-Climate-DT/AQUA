@@ -3,21 +3,19 @@
 Adding new data
 ===============
 
-To add new data the 3-level hierarchy on which AQUA is based, i.e. **model** - **exp** - **source**, must be respected so that 
-specific files must be created within the catalog.
+To add new data the 3-level hierarchy on which AQUA is based must be respected (i.e. **model** - **exp** - **source**), so that specific files must be created within the catalog.
 How to create a new source and add new data is documented in the next sections.
+If you need to add data in a new catalog, please refer to :ref:`new-catalog` before proceeding.
 
 - To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data. 
   This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
   or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
-- Finally, to exploit the regridding functionalities, you will also need to verify the grid is available in the ``config/grids`` folder 
+- To exploit the regridding functionalities, you will also need to verify the grid is available in the ``aqua/core/config/grids`` folder 
   or to add it (see :ref:`grid_definition`).
-
-.. note::
-    A method to add new catalogs to the configuration folder has been developed.
-    You can find more information in the :ref:`aqua-add` section.
+- Finally, if the installation was not editable or you created a new catalog, you will need to copy or link the new catalog files
+  in the AQUA configuration folder (see :ref:`aqua-add`).
 
 .. _file-based-sources:
 
@@ -54,7 +52,7 @@ The additional entry, to be added in the `sources:` section, will look like this
 This will create the ``model`` entry within the catalog that can be used later by the ``Reader()``.
 
 .. note::
-    Catalog source files are processed by intake, which means that they can exploit of the built-in Jinja2 template replacamente as done in the example above with `{{CATALOG_DIR}}`
+    Catalog source files are processed by intake, which means that they can exploit of the built-in Jinja2 template replacement as done in the example above with ``{{CATALOG_DIR}}``.
 
 Then we will need to create an appropriate entry at the ``exp`` level, which will be included in the file ``config/catalogs/lumi//catalog/NEWSATDATA/main.yaml``.
 For our example we will call this "experiment" ``SST``.
@@ -95,7 +93,7 @@ The most straightforward intake catalog describing our dataset will look like th
             fixer_name: amazing_fixer
 
 Where we have specified the ``source`` name of the catalog entry.
-As for the ``exp`` case, we could have multiple sources for the same experiment.
+As for the ``exp`` case, we could have multiple sources for the same experiment (for example, monthly data, daily data, etc).
 
 Once this is defined, we can access our dataset from AQUA with the following command:
 
@@ -110,9 +108,17 @@ Finally, the ``metadata`` entry contains optional additional information useful 
     - ``source_grid_name``: the grid name defined in ``aqua-grids.yaml`` to be used for areas and regridding
     - ``fixer_name``: the name of the fixer defined in the fixes folder
     - ``deltat`` (optional): the cumulation window of fluxes in the dataset. This is a fixer option. If not present, the default is 1 second.
-    - ``time_coder``: if specified modifies the target resolution when decoding dates. Defaults to “ns”. Used by the ``CFDatetimeCoder`` and working only for netcdf sources.
+    - ``time_coder`` (optional): xarray builds on pandas, and pandas support a limited time range becuase time precision is based on nanoseconds.
+                                 Despite recent updates to underlying ``np.datetime64`` class, support for time range before 1678 CE and after 2262 AD is very limited.
+                                 A partial solution build on passing a coarser time_coder, e.g. "s". If this is specified modifies the time resolution when decoding dates. 
+                                 Underneath it is used by the ``CFDatetimeCoder`` and it is working only for NetCDF sources.
+    - ``filter_key`` (optional): Sometimes NetCDF sources are based on many small files: loading long time series can be extremely slow due to the large number of files. 
+                                 This key is meant to filter files based information in the filename.
+                                 Currently only "year" key is supported, which will filter files based on years between ``startdate`` and ``enddate`` (of course, only if "year" is found in the filename).
+                                 Requires that both ``startdate`` and ``enddate`` are specified in the ``Reader()`` call (will not work at `.retrieve()`` level).
+                                 Working only with NetCDF sources.
 
-You can add fixes to your dataset by following examples in the ``config/fixes/`` directory (see :ref:`fixer`).
+You can add fixes to your dataset by following examples in the ``aqua/core/config/fixes/`` directory (see :ref:`fixer`).
 
 .. note::
 
@@ -154,7 +160,6 @@ We report here an example and we later describe the different elements.
                     time: '0000'
                     param: 167
                     levtype: sfc
-                    step: 0
                 data_start_date: 20200101T0000
                 data_end_date: 20391231T2300
                 chunks: D  # Default time chunk size
@@ -166,7 +171,6 @@ We report here an example and we later describe the different elements.
             metadata: &metadata-default
                 fdb_home: '{{ FDB_PATH }}'
                 fdb_home_bridge: '{{ FDB_PATH }}/databridge'
-                eccodes_path: '{{ ECCODES_PATH }}/eccodes-2.32.5/definitions'
                 variables: [78, 79, 134, 137, 141, 148, 151, 159, 164, 165, 166, 167, 168, 186,
                     187, 188, 235, 260048, 8, 9, 144, 146, 147, 169, 175, 176, 177, 178, 179,
                     180, 181, 182, 212, 228]
@@ -184,9 +188,6 @@ Some of the parameters are here described:
     - The ``request`` entry in the intake catalog primarily serves as a template for making data requests,
       following the standard MARS-style syntax used by the GSV retriever. 
     - The ``date`` parameter will be automatically overwritten by the appropriate ``data_start_date``.
-      For the ``step`` parameter, when using ``timestyle: step``, setting it to a value other than 0
-      signals that the initial steps are missing. 
-      This is particularly useful for data sets with irregular step intervals, such as 6-hourly output.
     
     This documentation provides an overview of the key parameters used in the catalog, helping users better understand how to configure their data requests effectively.
 
@@ -196,7 +197,7 @@ Some of the parameters are here described:
     It is mandatory to be set up because there is no easy way to get this information directly from the FDB.
     In the case of the schema used in the operational experiments, which use the 'date' ``timestyle`` (see below), 
     it is possible to set this parameter to ``auto``.
-    In that case the date will be automatically determined from the FDB.
+    In that case the date will be automatically determined from the FDB (available only for local FDB access, not for databridge).
     Please notice that, due to how the date information is retrieved in the ``auto`` case,
     the time of the last date wll always be ``0000``. If there is more data available on the 
     last day, please consider setting the date manually.
@@ -283,18 +284,13 @@ Some of the parameters are here described:
 
 .. option:: timestyle
 
-    The timestyle parameter can be set to either ``step``, ``date`` or ``yearmonth`` according to the FDB schema.
+    The timestyle parameter can be set to either ``date`` or ``yearmonth`` according to the FDB schema.
     Indeed, it determines how the time axis data is written in the FDB. 
 
-    The above examples have used ``step``, which involves specifying a fixed ``date`` (e.g., 19500101) and ``time`` (e.g., 0000)
-    in the request. Time axis is then identified by the ``step`` in the request.
-
-    Alternatively, when timestyle is set to ``date``, you can directly specify both ``date`` and ``time`` in the request,
-    and ``step`` is always set to 0.
-
-    Finally, when using the ``yearmonth`` timestyle you do not have to set neither time, step, and date in the request.
-    On the contrary, the ``year`` and ``month`` keys need to be specified. The FDB module will then build the corresponding
-    request. 
+    The above examples have used ``date``, directly specifying both ``date`` and ``time`` in the request.
+    When using instead the ``yearmonth`` timestyle you do not have to set neither time or date in the request.
+    On the contrary, the ``year`` and ``month`` keys need to be specified.
+    The FDB module will then build the corresponding request. 
 
     Please note that it is very important to know which timestyle has been used in the FDB before creating the request
 
@@ -312,7 +308,6 @@ Some of the parameters are here described:
     - ``fdb_path``: the path of the FDB configuration file (deprecated, use only if config.yaml is in a not standard place)
     - ``fdb_home_bridge``: FDB_HOME for bridge access
     - ``fdb_path_bridge``: the path of the FDB configuration file for bridge access (deprecated, use only if needed)
-    - ``eccodes_path``: the path of the eccodes version used for the encoding/decoding of the FDB. Deprecated since v0.13
     - ``variables``: a list of variables available in the fdb.
     - ``source_grid_name``: the grid name defined in aqua-grids.yaml to be used for areas and regridding
     - ``fixer_name``: the name of the fixer defined in the fixes folder
@@ -345,20 +340,20 @@ This can be done with an additional ``metadata`` key in the ``main.yaml`` file, 
 .. code-block:: yaml
 
     sources:
-    historical-1990:
-        description: IFS-NEMO, historical 1990, tco1279/eORCA12 (a0h3)
-        metadata:
-        expid: a0h3
-        resolution_atm: tco1279
-        resolution_oce: eORCA12
-        forcing: historical
-        start: 1990
-        dashboard:
-            menu: historical 1990
-            resolution_id: SR
-        driver: yaml_file_cat
-        args:
-        path: '{{CATALOG_DIR}}/historical-1990.yaml'
+        historical-1990:
+            description: IFS-NEMO, historical 1990, tco1279/eORCA12 (a0h3)
+            metadata:
+            expid: a0h3
+            resolution_atm: tco1279
+            resolution_oce: eORCA12
+            forcing: historical
+            start: 1990
+            dashboard:
+                menu: historical 1990
+                resolution_id: SR
+            driver: yaml_file_cat
+            args:
+            path: '{{CATALOG_DIR}}/historical-1990.yaml'
     
 All keys are optional, others could be freely added, the following are recommended:
 
@@ -383,15 +378,12 @@ Regridding capabilities
 -----------------------
 
 In order to make use of the AQUA regridding capabilities we will need to define the way the grid are defined for each source. 
-AQUA is shipped with multiple grids definition, which are defined in the ``config/aqua-grids.yaml`` file.
+AQUA is shipped with multiple grids definition, which are defined in the ``aqua/core/config/aqua-grids.yaml`` file.
 In the following paragraphs we will describe how to define a new grid if needed.
 Once the grid is defined, you can come back to this section to understand how to use it for your source.
 
 Let's imagine that for our ``yearly_SST`` source we want to use the ``lon-lat`` grid,
-which is defined in the ``config/aqua-grids.yaml`` file
-and consists on a regular lon-lat grid.
-
-Since AQUA v0.5 the informations about which grid to use for each source are defined in the metadata of the source itself.
+which is defined in the ``aqua/core/config/aqua-grids.yaml`` file and consists on a regular lon-lat grid.
 In our case, we will need to add the following metadata to the ``yearly_SST.yaml`` file as ``source_grid_name``.
 
 .. code-block:: yaml
@@ -409,7 +401,7 @@ In our case, we will need to add the following metadata to the ``yearly_SST.yaml
 Grid definitions
 ----------------
 
-As mentioned above, AQUA has some predefined grids available in the ``config/grids`` folder.
+As mentioned above, AQUA has some predefined grids available in the ``aqua/core/config/grids`` folder.
 Here below we provide some information on the grid key so that it might me possibile define new grids.
 As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
@@ -434,9 +426,11 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 .. note::
 
-    Two kinds of template replacement are available in the files contained in the ``config/grids`` folder. The Jinja formatting ``{{ var }}`` is used to set
-    variables as path that comes from the ``catalog.yaml`` file. The default python formatting ``{}`` is used for file structure which comes
-    Reader arguments, as model, experiment or any other kwargs the user might set. Please pay attention to which one you are using in your files.
+    Two kinds of template replacement are available in the files contained in the ``aqua/core/config/grids`` folder.
+    The Jinja formatting ``{{ var }}`` is used to set variables as path that comes from the ``catalog.yaml`` file.
+    The default python formatting ``{}`` is used for file structure which comes
+    Reader arguments, as model, experiment or any other kwargs the user might set.
+    Please pay attention to which one you are using in your files.
     In the future we will try to uniform this towards the Jinja formatting.
 
 
@@ -445,7 +439,7 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   ``2d`` refers to the default grids, ``2dm`` to the grid for masked variables,
   any other key refers to specific 3d vertical masked structures, as ``depth_full``, ``depth_half``, ``level``, etc.
 - ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
-  Since AQUA v0.4 there is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
+  There is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 - ``masked``: (if applicable): Keys to define variables which are masked.
   When using this, the code will search for an attribute to make the distinction (``component: ocean`` in this case).
   In alternative, if you want to apply masking only on a group of variables, you can defined ``vars: [var1, var2]``.
@@ -568,19 +562,21 @@ This can be later accessed via the reader providing an extra argument, or kwargs
 
 .. code-block:: python
 
+    from aqua import Reader
     reader = Reader(model="IFS", exp="control-1950-devcon", source="hourly-native", realization=5)
     data = reader.retrieve(var='2t')
 
-This will load the realizaiton number 5 of my experiment above. Of course, if we do not specify the realization in the `Reader()`
-call a default will be provided, so in the case above the number 1 will be loaded. 
+This will load the realization number 5 of my experiment above. Of course, if we do not specify the realization in the `Reader()`
+call a default will be provided, so in the case above the number 1 will be loaded.
 
-This capacity can be tuned to multiple features according to source characteristics, and will be further expaned in the future.
+This capacity can be tuned to multiple features according to source characteristics, and will be further expanded in the future.
 
 .. warning::
 
     Some kwargs might have an impact on the resolution of the data, and consequently on the grid file name and format. An example is the `zoom` key used for some ICON data. 
-    In this case, AQUA will modify the file templates accordingly. If this modication is required or not can be controlled through the
-    variable ``default_weights_areas_parameters`` in the reader.py module. This is a test feature and will be expanded in the future. 
+    In this case, AQUA will modify the file templates accordingly. If this modification is required or not can be controlled through the
+    variable ``default_weights_areas_parameters`` in the ``reader.py`` module.
+    This is a test feature and will be expanded in the future. 
 
 
 
@@ -619,8 +615,3 @@ For the sources, we decide to uniform the different requirements of grids and te
 2. **Time resolution**: `monthly`, `daily`, `6hourly`, `hourly`, etc.
 3. **Space resolution**: `native`, `1deg`, `025deg`, `r100`, etc... For some oceanic model we could add the horizontal grid so `native-elem` or `native-gridT`` could be an option. Similarly, if multiple healpix are present, they can be `healpix-0` or `healpix-6` in the case we want to specify the zoom level. 
 4. **Extra info**: `2d` or `3d`. Not mandatory, but to be used when confusion might arise.
-
-
-
-
-

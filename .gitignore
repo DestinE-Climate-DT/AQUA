@@ -11,6 +11,11 @@ __pycache__/
 *.bal
 *.log
 
+#build
+build/
+dist/
+.eggs/
+
 # configuration
 config/config-aqua.yaml
 

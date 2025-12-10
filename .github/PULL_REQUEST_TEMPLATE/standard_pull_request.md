@@ -20,5 +20,4 @@ Please apply the "run tests" label if you want to trigger CI tests.
  - [ ] Docstrings are updated if needed.
  - [ ] Changelog is updated.
  - [ ] Notebooks which requires changes are updated. 
- - [ ] environment.yml and pyproject.toml are updated if needed, together with the lumi installation tool. 
- - [ ] Diagnostic config files path are updated in the console if needed
+ - [ ] environment.yml and pyproject.toml are updated if needed, together with the lumi installation tool. Installation instructions are updated if new conda dependencies are added.

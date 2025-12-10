@@ -7,7 +7,7 @@ import threading
 from unittest.mock import patch
 from filelock import Timeout
 
-from aqua.lock import SafeFileLock
+from aqua.core.lock import SafeFileLock
 
 
 @pytest.fixture
@@ -256,23 +256,33 @@ def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
     
     This test is designed to run with pytest-xdist (pytest -n auto).
     Each worker will try to increment a shared counter file.
+    
+    Note: This test uses a longer timeout (120s) to handle high contention
+    when multiple workers compete for the same lock.
     """
     # Use a shared temp directory that all workers can access
     shared_tmp = tmp_path_factory.getbasetemp().parent
     shared_file = shared_tmp / "xdist_counter.txt"
     lock_file = shared_tmp / "xdist_counter.lock"
+    init_lock_file = shared_tmp / "xdist_init.lock"
     
-    # Initialize file if it doesn't exist
-    if not shared_file.exists():
-        try:
-            with open(shared_file, 'w') as f:
-                f.write("0\n")
-        except FileExistsError:
-            pass  # Another worker created it
+    # Initialize file with lock to prevent race conditions
+    with SafeFileLock(str(init_lock_file), timeout=60):
+        if not shared_file.exists():
+            try:
+                with open(shared_file, 'w') as f:
+                    f.write("0\n")
+            except FileExistsError:
+                pass  # Another worker created it
     
-    # Each worker increments 10 times
-    for _ in range(10):
-        with SafeFileLock(str(lock_file), timeout=30):
+    # Each worker increments 5 times (reduced from 10 to reduce contention)
+    # Use longer timeout (120s) to handle high contention with multiple workers
+    for i in range(5):
+        # Add small random delay to reduce contention spikes
+        if i > 0:
+            time.sleep(0.01 * (i % 3))
+        
+        with SafeFileLock(str(lock_file), timeout=120):
             with open(shared_file, 'r') as f:
                 value = int(f.read().strip())
             

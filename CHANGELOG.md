@@ -5,12 +5,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-ClimateDT workflow modifications:
-
-Unreleased in the current development version (target v0.20.0):
-- Parallelise tests execution using `pytest-xdist` module, centralise common fixtures to speed up tests execution time (#2402)
+Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
+- Add concurrency suppression for Github actions (#2557)
+- Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2529)
+- Update FESOM grids for o26.1 (#2541) 
+- Update config path for push_analysis (#2553)
+- Fix of aqua_path for analysis console (#2542)
+- New EC-Earth4 TL63 grid (#2536)
+- Improved handling of strings in `time_to_string` function (#2536)
+- Fix for 3d grid generation of `GridBuilder` (#2545)
+- Fix failing console test (#2549)
+- New `filter_key` option to filter NetCDF files before loading them based on year (#2543)
+- Removed plt.close() in plotting functions (#2538)
+- Documentation aligned to the new repository structure (#2525)
+- Complete workflow for pypi version to be run once per week (#2527)
+- Add a `cleanup` class with a fixture to clean files from tests (#2526)
+
+## [v0.21.0]
+
+Main changes:
+1. From this version on, AQUA-core and AQUA-diagnostics are two separated repositories
+2. Console installation is refactored to account for the unpacking of the two repositories
+
+AQUA core complete list:
+- Extend the actions to support pypi testing and publishing (#2500)
+- Console installation is more flexible with `--core` and `--diagnostics` options (#2512)
+- Re-usable workflow to be shared across multiple github actions (#2519)
+- Lumi install for core only (#2502)
+- AQUA-core and AQUA-diagnostic coupling (#2504, #2511)
+- Introducing preliminary support for aqua-diagnostics installation with console (#2503, #2507)
+- Unpacking of console class in multiple smaller mixin classes (#2507)
+- Restructuring the folder structure of core removing the src (#2499) 
+- The big repository split (in aqua-core and aqua-diagnostics) (#2487)
+
+## [v0.20.0]
+
+AQUA core complete list:
+- Parallelise tests execution using `pytest-xdist` module, centralise common fixtures to speed up tests execution time (#2402)
 - Expose `ConfigPath`and separate the resolver `ConfigLocator`. Add catalog utility `show_catalog_content` (#2469)
 - Simplify grid files by removing `vert_coord` which is detected from the path dictionary (#2276)
 - Remove some warnings and adapt the code to the incoming standards (#2436)
@@ -22,6 +55,7 @@ AQUA core complete list:
 - Updated SSH diagnotic (#1842)
 
 AQUA diagnostics complete list:
+- Introduce a centralised `DiagnosticCLI` to control CLI for diagnostics in a common way, including dask cluster and config file access (#2360, #2470, #2466)
 - Biases: results are stored in memory before netcdf saving and plotting (#2481)
 - LatLonProfiles: Documentation (#2442)
 - Include the correct realization in output names for all diagnostics (#2457)
@@ -1272,7 +1306,9 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...HEAD
+[v0.21.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.20.0...v0.21.0
+[v0.20.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.20.0
 [v0.19.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.1...v0.19.0
 [v0.18.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.0...v0.18.1
 [v0.18.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.17.0...v0.18.0

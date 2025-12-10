@@ -11,12 +11,55 @@ plt.ioff()  # Turn off interactive mode explicitly
 
 import pytest
 from aqua import Reader
+from aqua.core.configurer import ConfigPath
+from utils_tests import TestCleanupRegistry
 
 # Centralized setting for all tests
 DPI = 50
 APPROX_REL = 1e-4
 LOGLEVEL = "DEBUG"
 
+
+# ======================================================================
+# Cleanup fixture for test-generated files
+# ======================================================================
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_files():
+    """
+    Session-scoped fixture that automatically cleans up test-generated files.
+    This prevents race conditions in parallel test execution where:
+    - One test creates a file (e.g., nemo-curvilinear.yaml)
+    - Another test tries to read it while the first test is deleting it
+    """
+    # Store configdir at session start (before any tests modify environment)
+    # This ensures cleanup can run even if HOME is deleted during tests
+    try:
+        config_path = ConfigPath()
+        stored_configdir = config_path.configdir
+    except (FileNotFoundError, KeyError):
+        stored_configdir = None
+    
+    # Run all tests first
+    yield
+    
+    # Cleanup after all tests complete
+    # Try to get configdir again, but fall back to stored value if ConfigPath fails
+    cleanup_configdir = stored_configdir
+    try:
+        config_path = ConfigPath()
+        cleanup_configdir = config_path.configdir
+    except (FileNotFoundError, KeyError):
+        # If ConfigPath fails (e.g., HOME deleted), use stored configdir
+        # This handles the test_console_without_home case
+        pass
+    
+    # Only attempt cleanup if we have a valid configdir
+    if cleanup_configdir:
+        registry = TestCleanupRegistry(cleanup_configdir)
+        registry.cleanup()
+
+
+# ===================== Reader and Retrieve fixtures ===================
 # ======================================================================
 # IFS fixtures
 # ======================================================================

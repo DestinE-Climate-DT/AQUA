@@ -33,7 +33,7 @@ The above command will create a file called aqua\_\ |version|\.sif in the curren
 
 .. note::
    If you want to use a different version of AQUA, you can change the tag in the above command.
-   For example, to use version 0.7, you can use ``aqua:0.7``.
+   For example, to use version 0.19.5, you can use ``aqua:0.19.5``.
 
 Load the container
 ------------------

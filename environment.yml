@@ -18,12 +18,8 @@ dependencies:
   - pandas      
   - pip
   - hdf5 #explicitly to avoid issues with pypi version
-  - tempest-extremes # for TCs
-  - xesmf # for ECmean
   - intake-esm
   - imagemagick
   - pip:
-    - -e ./diagnostics/tropical_cyclones/ # pip install -e of tropical cyclones
-    - -e ./diagnostics/tropical_rainfall/ # pip install -e of tropical_rainfall
     # pip install -e of AQUA itself
     - -e .[all]

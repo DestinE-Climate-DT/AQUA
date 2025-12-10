@@ -11,8 +11,8 @@ import re
 import os
 import sys
 import jinja2
-from aqua.util import load_yaml, get_arg, to_list
-from aqua.configurer import ConfigPath
+from aqua.core.util import load_yaml, get_arg, to_list
+from aqua.core.configurer import ConfigPath
 
 def is_job_running(job_name, username):
     """verify that a job name is not already submitted in the slurm queue"""

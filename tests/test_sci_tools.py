@@ -3,8 +3,11 @@ import pytest
 import xarray as xr
 import numpy as np
 from typeguard import TypeCheckError
-from aqua.fldstat import AreaSelection
-from aqua.util import select_season
+from aqua.core.fldstat import AreaSelection
+from aqua.core.util import select_season
+from aqua.core.util.sci_util import generate_quarter_months
+from aqua.core.util import check_seasonal_chunk_completeness
+
 from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
@@ -107,3 +110,36 @@ def test_select_season():
     data_no_time = xr.DataArray(np.random.rand(12), dims=["dim_0"])
     with pytest.raises(KeyError):
         select_season(data_no_time, "DJF")
+
+
+@pytest.mark.aqua
+def test_generate_quarter_months():
+    """Test the generate_quarter_months function with various anchor months."""
+    result = generate_quarter_months('DEC')
+    assert result == {'DEC': {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], 'Q3': [6, 7, 8], 'Q4': [9, 10, 11]}}
+
+    result = generate_quarter_months('MAR')
+    assert result == {'MAR': {'Q1': [3, 4, 5], 'Q2': [6, 7, 8], 'Q3': [9, 10, 11], 'Q4': [12, 1, 2]}}
+    with pytest.raises(ValueError):
+        generate_quarter_months('XXX')
+
+
+@pytest.mark.aqua
+def test_check_seasonal_chunk_completeness():
+    # Daily data:
+    t_dec = xr.date_range("2000-12-01", "2000-12-31", freq="D") # 2000-12 (present)
+    t_feb = xr.date_range("2001-02-01", "2001-02-28", freq="D") # 2001-01 (missing); DJF incomplete
+    t_mam = xr.date_range("2001-03-01", "2001-05-31", freq="D") # 2001-03..2001-05; MAM complete
+    time = t_dec.append(t_feb).append(t_mam)
+
+    da = xr.DataArray(np.ones(time.size), coords={"time": time}, dims=["time"])
+    mask = check_seasonal_chunk_completeness(da, resample_frequency="QS-DEC", loglevel="DEBUG")
+
+    # Expected seasonal chunk start times under QS-DEC in this range: 2000-12-01 and 2001-03-01
+    assert "2000-12-01" in mask.time.dt.strftime("%Y-%m-%d").values
+    assert "2001-03-01" in mask.time.dt.strftime("%Y-%m-%d").values
+
+    # DJF (starts 2000-12-01) is incomplete (missing January)
+    assert bool(mask.sel(time="2000-12-01").item()) is False
+    # MAM (starts 2001-03-01) is complete (Mar, Apr, May present)
+    assert bool(mask.sel(time="2001-03-01").item()) is True

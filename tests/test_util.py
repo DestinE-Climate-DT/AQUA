@@ -5,10 +5,10 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 from aqua import Reader
-from aqua.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
-from aqua.util import format_realization, extract_attrs, time_to_string
-from aqua.util.string import strlist_to_phrase, lat_to_phrase
-from aqua.util.units import multiply_units
+from aqua.core.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
+from aqua.core.util import format_realization, extract_attrs, time_to_string
+from aqua.core.util.string import strlist_to_phrase, lat_to_phrase
+from aqua.core.util.units import multiply_units
 from conftest import LOGLEVEL
 
 @pytest.fixture
