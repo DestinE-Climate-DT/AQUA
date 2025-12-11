@@ -348,6 +348,12 @@ else  # Otherwise, use the second argument as the experiment folder
 fi
 
 if [ $update -eq 1 ]; then
+    # Ulf Tigerstedt 11.12.2025
+    # Shrink the window of a race condition between this running process 
+    # and another started just before. If the github repo gets updated between
+    # clone and push the push will fail and the temporary working 
+    # directory will be left behind. 
+    git pull
     git add updated.txt
 
     # commit and push
