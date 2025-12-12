@@ -12,6 +12,7 @@ AQUA diagnostics complete list:
 ## [v0.19.6]
 
 AQUA core complete list:
+- Pin h5py and netCDF4 module to avoid issue with HDF (#2566)
 - Cleanup for temporary aqua-web clone on push_analysis.sh exit (#2562)
 - Fix for 3d grid generation of `GridBuilder` (#2550)
 - Support for FESOM grids for o26.1 cycle (#2547)
