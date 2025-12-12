@@ -1242,7 +1242,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.6
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.8
+[v0.19.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.6...v0.19.7
 [v0.19.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.5...v0.19.6
 [v0.19.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.4...v0.19.5
 [v0.19.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.3...v0.19.4
