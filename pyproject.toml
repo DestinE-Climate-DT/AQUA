@@ -61,7 +61,8 @@ dependencies = [
     "typeguard",
     "xarray>=2025.01.2,<2025.09.1", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
     "kerchunk",
-    "h5py>=3.12.1", #specific github pin to avoid installation of binaries
+    "h5py==3.15.0", #specific github pin to avoid installation of binaries and to be compatible with netcdf4
+    "netcdf4==1.7.2", # specific version to avoid hdf5 issues https://github.com/Unidata/netcdf4-python/issues/1438
     "fastparquet",
     "ECmean4==0.1.15",
     "pyfdb==0.1.2",
