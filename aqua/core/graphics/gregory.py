@@ -2,7 +2,7 @@ from matplotlib import rcParams
 import matplotlib.pyplot as plt
 import xarray as xr
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, to_list
+from aqua.core.util import evaluate_colorbar_limits, to_list, unit_to_latex
 from .styles import ConfigStyle
 
 
@@ -12,8 +12,8 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
                          fig: plt.Figure = None, ax: plt.Axes = None,
                          set_axis_limits: bool = True,
                          labels: list = None, ref_label: str = None,
-                         xlabel: str = '2 m Temperature [°C]',
-                         ylabel: str = "Net radiation TOA [W/m^2]",
+                         xlabel: str = None,
+                         ylabel: str = None,
                          title: str = 'Monthly Mean',
                          style: str = None, loglevel: str = 'WARNING'):
     """"
@@ -53,6 +53,11 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
     if fig is None and ax is None:
         logger.debug("Creating new figure and axis")
         fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+    if xlabel is None:
+        xlabel = '2 m Temperature [°C]'
+    if ylabel is None:
+        ylabel = r"Net radiation TOA [W m$^{-2}$]"
 
     ax.set_title(title)
     ax.set_xlabel(xlabel)
@@ -121,8 +126,8 @@ def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
                         fig: plt.Figure = None, ax: plt.Axes = None,
                         set_axis_limits: bool = True,
                         labels: list = None,
-                        xlabel: str = '2 m Temperature [°C]',
-                        ylabel: str = "Net radiation TOA [W/m^2]",
+                        xlabel: str = None,
+                        ylabel: str = None,
                         title: str = 'Annual Mean',
                         style: str = None, loglevel: str = 'WARNING'):
     """
@@ -167,6 +172,11 @@ def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
     if fig is None and ax is None:
         logger.debug("Creating new figure and axis")
         fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+
+    if xlabel is None:
+        xlabel = '2 m Temperature [°C]'
+    if ylabel is None:
+        ylabel = r"Net radiation TOA [W m$^{-2}$]"
 
     ax.set_title(title)
     ax.set_xlabel(xlabel)

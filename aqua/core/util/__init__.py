@@ -15,7 +15,7 @@ from .realizations import format_realization, get_realizations, DEFAULT_REALIZAT
 from .sci_util import lon_to_180, lon_to_360, check_coordinates
 from .sci_util import select_season, merge_attrs, find_vert_coord
 from .string import generate_random_string, strlist_to_phrase, lat_to_phrase
-from .string import clean_filename, extract_literal_and_numeric
+from .string import clean_filename, extract_literal_and_numeric, unit_to_latex
 from .units import multiply_units, normalize_units, convert_units, convert_data_units
 from .util import expand_env_vars, extract_attrs, get_arg, to_list, username
 from .yaml import load_yaml, dump_yaml, load_multi_yaml
@@ -38,7 +38,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'lon_to_180', 'lon_to_360', 'check_coordinates',
            'select_season', 'merge_attrs', 'find_vert_coord',
            'generate_random_string', 'strlist_to_phrase', 'lat_to_phrase', 
-           'clean_filename', 'extract_literal_and_numeric',
+           'clean_filename', 'extract_literal_and_numeric', 'unit_to_latex',
            'multiply_units', 'normalize_units', 'convert_units', 'convert_data_units',
            'expand_env_vars', 'extract_attrs', 'get_arg', 'to_list','username',
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
