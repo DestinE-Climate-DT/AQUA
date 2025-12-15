@@ -8,7 +8,7 @@ from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
 from .graphics import coord_names, ticks_round, set_ticks, generate_colorbar_ticks
 from .graphics import apply_circular_window
 from .graphics import get_nside, get_npix, healpix_resample
-from .io_util import files_exist, create_folder, file_is_complete, open_image
+from .io_util import files_exist, create_folder, file_is_complete
 from .io_util import add_pdf_metadata, add_png_metadata, update_metadata
 from .projections import get_projection
 from .realizations import format_realization, get_realizations, DEFAULT_REALIZATION
@@ -31,7 +31,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'coord_names', 'ticks_round', 'set_ticks', 'generate_colorbar_ticks',
            'apply_circular_window',
            'get_nside', 'get_npix', 'healpix_resample',
-           'files_exist', 'create_folder', 'file_is_complete', 'open_image', 
+           'files_exist', 'create_folder', 'file_is_complete',
            'add_pdf_metadata', 'add_png_metadata', 'update_metadata',
            'get_projection',
            'format_realization', 'get_realizations', 'DEFAULT_REALIZATION',
