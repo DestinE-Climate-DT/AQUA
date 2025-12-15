@@ -9,7 +9,6 @@ from glob import glob
 from .util import to_list
 from pypdf import PdfReader, PdfWriter
 from PIL import Image, PngImagePlugin
-from IPython.display import display, Image as IPImage, FileLink
 from aqua.core.logger import log_configure
 from aqua.core.version import __version__ as version
 
@@ -168,7 +167,7 @@ def normalize_value(value):
 
 def open_image(file_path: str, loglevel: str = 'WARNING') -> dict:
     """
-    Open an image file (PNG or PDF), log its metadata, and display a link to the file in the notebook.
+    Open an image file (PNG or PDF), log its metadata.
 
     Args:
         file_path (str): The path to the image file.
@@ -216,10 +215,6 @@ def open_image(file_path: str, loglevel: str = 'WARNING') -> dict:
     else:
         logger.error(f"Unsupported file type: {file_path}")
         raise ValueError(f"Unsupported file type: {file_path}")
-
-    # Provide a FileLink to the file
-    display(FileLink(file_path))
-    logger.info(f"Displayed file link for: {file_path}")
 
     return metadata
 
