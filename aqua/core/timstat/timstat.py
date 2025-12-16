@@ -147,18 +147,4 @@ class TimStat():
             log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
-    
-    def center_time_axis(self, avg_data: xr.Dataset, resample_freq: str) -> xr.Dataset:
-        """
-        Move the time axis of the averaged data toward the center of the averaging period.
-        
-        Delegates to the appropriate time handler (pandas or CFTime).
-
-        Args:
-            avg_data (xr.Dataset): The dataset with averaged data.
-            resample_freq (str): The resampling frequency (e.g., '1D', '1M', '1Y').
-
-        Returns:
-            xr.Dataset: The dataset with the time axis centered.
-        """
 

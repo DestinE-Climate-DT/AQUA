@@ -43,12 +43,23 @@ class TestCFtimeTimmean():
         assert len(unique) == nmonths
         assert all(counts == counts[0])
 
-    def test_timmean_cftime_exclude_incomplete(self, reader_cftime, data_cftime):
+    @pytest.mark.parametrize('freq,result',
+                             [('daily', 197),
+                              ('5D', 40),
+                              ('monthly', 8),
+                              ('yearly', 1)])
+    def test_timmean_daily_cftime(self, reader_cftime, data_cftime, freq, result):
+        """Timmean test for monthly aggregation on CFTime data"""
+        avg = reader_cftime.timmean(data_cftime['2t'], freq=freq)
+        assert avg.shape == (result, 9, 18)
+
+    @pytest.mark.parametrize('freq,result',
+                            [('monthly', 6)])
+    def test_timmean_cftime_exclude_incomplete(self, reader_cftime, data_cftime, freq, result):
         """Timmean test for monthly aggregation with excluded incomplete chunks on CFTime data"""
-        avg = reader_cftime.timstat(data_cftime['2t'], stat='mean', freq='monthly', exclude_incomplete=True)
+        avg = reader_cftime.timstat(data_cftime['2t'], stat='mean', freq=freq, exclude_incomplete=True)
         unique, counts = np.unique(avg.time.dt.month, return_counts=True)
-        assert avg.shape == (6, 9, 18)
-        assert len(unique) == 6
+        assert len(unique) == result
         assert all(counts == counts[0])
 
     def test_timmean_cftime_center_time(self, reader_cftime, data_cftime):
