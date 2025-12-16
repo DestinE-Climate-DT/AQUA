@@ -65,7 +65,7 @@ class CFTimeHandler:
             # Multi-day frequency
             return to_offset(f'{delta_days}D')
     
-    def average_datetimes(self, dt1, dt2):
+    def average_datetimes(self, dt1, dt2, reference="days since 1850-01-01"):
         """
         Average two cftime datetime objects or arrays.
         
@@ -79,22 +79,22 @@ class CFTimeHandler:
         # Handle scalar case
         if isinstance(dt1, cftime.datetime):
             # Convert to numpy datetime64 for averaging
-            num1 = cftime.date2num(dt1, units='days since 1850-01-01', calendar=dt1.calendar)
-            num2 = cftime.date2num(dt2, units='days since 1850-01-01', calendar=dt2.calendar)
+            num1 = cftime.date2num(dt1, units=reference, calendar=dt1.calendar)
+            num2 = cftime.date2num(dt2, units=reference, calendar=dt2.calendar)
             avg_num = (num1 + num2) / 2
-            return cftime.num2date(avg_num, units='days since 1850-01-01', calendar=dt1.calendar)
+            return cftime.num2date(avg_num, units=reference, calendar=dt1.calendar)
         
         # Handle array case
         if len(dt1) == 0:
             return dt1
         
         calendar = dt1[0].calendar
-        num1 = cftime.date2num(dt1, units='days since 1850-01-01', calendar=calendar)
-        num2 = cftime.date2num(dt2, units='days since 1850-01-01', calendar=calendar)
+        num1 = cftime.date2num(dt1, units=reference, calendar=calendar)
+        num2 = cftime.date2num(dt2, units=reference, calendar=calendar)
         avg_num = (num1 + num2) / 2
-        return cftime.num2date(avg_num, units='days since 1850-01-01', calendar=calendar)
+        return cftime.num2date(avg_num, units=reference, calendar=calendar)
     
-    def add_offset(self, dt, offset):
+    def add_offset(self, dt, offset, reference="days since 1850-01-01"):
         """
         Add pandas offset to cftime datetime(s).
         
@@ -110,7 +110,7 @@ class CFTimeHandler:
             calendar = dt.calendar
             
             # Convert to numeric, add offset, convert back
-            base_date = cftime.datetime(1850, 1, 1, calendar=calendar)
+            base_date = cftime.num2date(0, units=reference, calendar=calendar)
             days_since = (dt - base_date).days + (dt - base_date).seconds / 86400.0
             
             # Get offset in days
@@ -128,7 +128,7 @@ class CFTimeHandler:
                 offset_days = 0
             
             new_days = days_since + offset_days
-            return cftime.num2date(new_days, units='days since 1850-01-01', calendar=calendar)
+            return cftime.num2date(new_days, units=reference, calendar=calendar)
         
         # Handle array case
         if len(dt) == 0:

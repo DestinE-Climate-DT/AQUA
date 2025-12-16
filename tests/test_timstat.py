@@ -62,12 +62,14 @@ class TestCFtimeTimmean():
         assert len(unique) == result
         assert all(counts == counts[0])
 
-    def test_timmean_cftime_center_time(self, reader_cftime, data_cftime):
+    @pytest.mark.parametrize('freq,result,t2',
+                            [('daily', 197, cftime.DatetimeProlepticGregorian(2020, 1, 2, 12)),
+                            ('monthly', 8, cftime.DatetimeProlepticGregorian(2020, 2, 15, 12))])
+    def test_timmean_cftime_center_time(self, reader_cftime, data_cftime, freq, result, t2):
         """Timmean test for monthly aggregation with center_time=True on CFTime data"""
-        avg = reader_cftime.timmean(data_cftime['2t'], freq='monthly', center_time=True)
-        assert avg.shape == (8, 9, 18)
+        avg = reader_cftime.timmean(data_cftime['2t'], freq=freq, center_time=True)
+        assert avg.shape == (result, 9, 18)
         t1 = avg.time[1].values.item()
-        t2 = cftime.DatetimeProlepticGregorian(2020, 2, 15, 12)
         attrs = ("year", "month", "day", "hour", "minute", "second", "calendar")
         assert [getattr(t1, a) == getattr(t2, a) for a in attrs]
 
