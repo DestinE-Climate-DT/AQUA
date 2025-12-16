@@ -155,6 +155,16 @@ class Reader():
         # load the catalog
         aqua.core.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
+
+        # check machine compatibility
+        machine_from_catalog = self.expcat.metadata.get('machine')
+        if machine_from_catalog and machine_from_catalog != self.machine:
+            self.logger.warning(
+                "The machine configured (%s) is different from the machine in the catalog (%s). "
+                "Please check that the data you are looking for are on the machine you are working on.",
+                self.machine,
+                machine_from_catalog,
+            )
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
 
@@ -668,6 +678,7 @@ class Reader():
             if 'engine' not in filtered_kwargs:
                 filtered_kwargs.update({'engine': engine})
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
