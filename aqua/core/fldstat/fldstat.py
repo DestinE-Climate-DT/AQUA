@@ -5,7 +5,7 @@ import numpy as np
 from smmregrid import GridInspector
 
 from aqua.core.logger import log_configure, log_history
-from aqua.core.util import to_list, multiply_units
+from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
 
@@ -17,10 +17,10 @@ class FldStat():
     """AQUA class for field statitics"""
 
     def __init__(self,
-             area: xr.Dataset | xr.DataArray | None = None,
-             horizontal_dims: list[str] | None = None,
-             grid_name: str | None = None,
-             loglevel: str = 'WARNING'):
+                 area: xr.Dataset | xr.DataArray | None = None,
+                 horizontal_dims: list[str] | None = None,
+                 grid_name: str | None = None,
+                 loglevel: str = 'WARNING'):
         """
         Initialize the FldStat.
 
@@ -46,7 +46,7 @@ class FldStat():
             raise ValueError("Area must be an xarray DataArray or Dataset.")
 
         self.grid_name = grid_name
-        
+
         # Initialize area selection
         self.area_selection = AreaSelection(loglevel=loglevel)
 
@@ -107,7 +107,7 @@ class FldStat():
             for dim in dims:
                 if dim not in self.horizontal_dims:
                     raise ValueError(f"Dimension {dim} not found in horizontal dimensions: {self.horizontal_dims}")
-        
+
         #if area is not provided, return the raw mean
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
@@ -144,12 +144,12 @@ class FldStat():
         else:
             weighted_data = data.weighted(weights=self.area.fillna(0))
             out = getattr(weighted_data, stat)(dim=dims)
-        
+
         if self.grid_name is not None:
             log_history(out, f"From grid '{self.grid_name}'. Computed field stat '{stat}'")
 
         return out
-    
+
     def select_area(self, data: xr.Dataset | xr.DataArray,
                     lon: list | None = None, lat: list | None = None,
                     box_brd: bool = True, drop: bool = False,
@@ -165,9 +165,9 @@ class FldStat():
         # select_area method arguments. However it is possible to foresee
         # that we may want to automatically detect the names
         return self.area_selection.select_area(data, lon=lon, lat=lat,
-                                                box_brd=box_brd, drop=drop,
-                                                lat_name=lat_name, lon_name=lon_name,
-                                                default_coords=default_coords, to_180=to_180)
+                                               box_brd=box_brd, drop=drop,
+                                               lat_name=lat_name, lon_name=lon_name,
+                                               default_coords=default_coords, to_180=to_180)
 
     def integrate_over_area(self, data: xr.Dataset | xr.DataArray, 
                             areacell: xr.DataArray, 
@@ -179,12 +179,12 @@ class FldStat():
             data (xr.DataArray or xr.Dataset): The data, used also for masking.
             areacell (xr.DataArray): The area cells.
             dims (list): Dimensions to sum over.
-            
+
         Returns:
             xr.DataArray or xr.Dataset: The integral of the data over the area
         """
         area_weighted_data = data * areacell.where(data.notnull())
-    
+
         # preserve attrs (e.g. AQUA_region) from areacell due to multiplication above, which has priority if keys overlap
         merged_attrs = {**data.attrs, **areacell.attrs}
 
@@ -193,14 +193,14 @@ class FldStat():
         else:
             self.logger.warning(f"Data units: {data.attrs.get('units', 'None')}; "
                                 f"Area units: {areacell.attrs.get('units', 'None')}, cannot multiply units using Metpy.")
-        
+
         if 'long_name' in data.attrs:
             merged_attrs['long_name'] = f"Integrated {data.attrs['long_name']}"
-        
+
         area_weighted_data.attrs.update(merged_attrs)
 
         area_weighted_integral = area_weighted_data.sum(skipna=True, min_count=1, dim=dims)
-        
+
         return area_weighted_integral
 
     def sum_area(self, 
@@ -209,23 +209,23 @@ class FldStat():
                  dims: list):
         """
         Compute the sum of area cells where masked data is not null.
-        
+
         This is useful for computing field such as sea ice extent, by summing
         the area of cells that contain data not null.
 
         Note: if data is not masked might return incorrect results. If irrelevant regions (e.g., low level or land
         in sea-ice data) are not masked beforehand, their area will be incorrectly included in the sum.
-        
+
         Args:
             data (xr.DataArray or xr.Dataset): The data (check if pre-masking is needed in the considered variable)
             areacell (xr.DataArray): The area cells.
             dims (list): Dimensions to sum over.
-            
+
         Returns:
             xr.DataArray or xr.Dataset: The sum of area cells
         """
         summed_area = areacell.where(data).sum(skipna=True, min_count=1, dim=dims)
-        
+
         if self.grid_name is not None:
             log_history(summed_area, f"Area summed from {self.grid_name} grid")
         return summed_area
@@ -305,5 +305,5 @@ class FldStat():
                     continue
 
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
-    
+
         return self.area
