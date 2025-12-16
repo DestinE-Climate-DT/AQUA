@@ -180,6 +180,8 @@ class FldStat():
         return self.area_selection.select_area(data, lon=lon, lat=lat,
                                                box_brd=box_brd, drop=drop,
                                                lat_name=lat_name, lon_name=lon_name,
+                                               region=region, region_sel=region_sel,
+                                               mask_kwargs=mask_kwargs,
                                                default_coords=default_coords, to_180=to_180)
 
     def integrate_over_area(self, data: xr.Dataset | xr.DataArray, 
