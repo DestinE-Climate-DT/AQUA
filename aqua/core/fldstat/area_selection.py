@@ -2,7 +2,7 @@ import xarray as xr
 import regionmask
 from typeguard import typechecked
 from aqua.core.logger import log_configure, log_history
-from aqua.core.util import check_coordinates
+from aqua.core.util import check_coordinates, to_list
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
@@ -88,8 +88,7 @@ class AreaSelection:
             mask = region.mask(data[lon_name], data[lat_name], **mask_kwargs)
 
             # Normalize input to list
-            if isinstance(region_sel, (str, int)):
-                region_sel = [region_sel]
+            region_sel = to_list(region_sel)
 
             # Convert region names to numbers if necessary
             region_numbers = [
@@ -105,7 +104,14 @@ class AreaSelection:
             reg_mask = reg_mask.fillna(False)  # handle NaNs from regionmask
 
             selected = data.where(reg_mask, drop=drop)
-            selected = log_history(selected, f"Regionmask selection: {region_sel}")
+
+            region_sel = [
+                region.names[rs] if isinstance(rs, int) else rs
+                for rs in region_sel
+            ]
+            region_str = ", ".join([str(rs) for rs in region_sel])
+
+            selected = log_history(selected, f"Regionmask selection: {region_str}")
 
             return selected
 
