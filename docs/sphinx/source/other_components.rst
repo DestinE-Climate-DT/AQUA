@@ -88,7 +88,7 @@ Spatial Selection
 -----------------
 
 The ``AreaSelection()`` class, part of the ``aqua.core.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits
-or based on predefined regions from the ``regionmask`` package.
+or based on predefined regions from the `regionmask package <https://regionmask.readthedocs.io/en/stable/>`_.
 The ``select_area()`` method can be used to perform the selection on a DataArray or Dataset.
 
 It is possible to consider or drop the limits of the selection by setting the ``box_brd`` flag to ``True`` or ``False`` respectively.
