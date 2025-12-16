@@ -1,6 +1,7 @@
 """AQUA class for field statitics"""
 import xarray as xr
 import numpy as np
+import regionmask
 
 from smmregrid import GridInspector
 
@@ -58,6 +59,9 @@ class FldStat():
 
     def fldstat(self, data: xr.DataArray | xr.Dataset,
                 stat: str = "mean",
+                region: regionmask.Regions | None = None,
+                region_sel: str | int | list | None = None,
+                mask_kwargs: dict = {},
                 lon_limits: list | None = None, lat_limits: list | None = None,
                 dims: list | None = None,
                 **kwargs):
@@ -68,6 +72,9 @@ class FldStat():
         Args:
             data (xr.DataArray or xarray.DataDataset):  the input data
             stat (str):  the statistic to compute, only supported is "mean"
+            region (regionmask.Regions, optional): A regionmask Regions object defining a class regions.
+            region_sel (str, int or list, optional): The region(s) to select by name or number from the region object.
+            mask_kwargs (dict, optional): Additional keyword arguments passed to region.mask().
             lon_limits (list, optional):  the longitude limits of the subset
             lat_limits (list, optional):  the latitude limits of the subset
             dims (list, optional):  the dimensions to average over, if not provided, horizontal_dims are used
@@ -108,7 +115,7 @@ class FldStat():
                 if dim not in self.horizontal_dims:
                     raise ValueError(f"Dimension {dim} not found in horizontal dimensions: {self.horizontal_dims}")
 
-        #if area is not provided, return the raw mean
+        # If area is not provided, return the raw mean
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
             # compact call, equivalent of "out = data.mean()"
@@ -123,8 +130,11 @@ class FldStat():
         # align coordinates values of area to match data
         self.area = self.align_area_coordinates(data)
 
-        if lon_limits is not None or lat_limits is not None:
+        if lon_limits is not None or lat_limits is not None or region is not None:
+            self.logger.debug("Selecting area for field stat calculation.")
             data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
+                                                   region=region, region_sel=region_sel,
+                                                   mask_kwargs=mask_kwargs,
                                                    to_180=False, **kwargs)
 
         # cleaning coordinates which have "multiple" coordinates in their own definition
@@ -154,6 +164,9 @@ class FldStat():
                     lon: list | None = None, lat: list | None = None,
                     box_brd: bool = True, drop: bool = False,
                     lat_name: str = "lat", lon_name: str = "lon",
+                    region: regionmask.Regions | None = None,
+                    region_sel: str | int | list | None = None,
+                    mask_kwargs: dict = {},
                     default_coords: dict = {"lat_min": -90, "lat_max": 90,
                                             "lon_min": 0, "lon_max": 360},
                     to_180: bool = True) -> xr.Dataset | xr.DataArray:
