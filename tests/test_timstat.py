@@ -53,15 +53,19 @@ class TestCFtimeTimmean():
         avg = reader_cftime.timmean(data_cftime['2t'], freq=freq)
         assert avg.shape == (result, 9, 18)
 
+    # this has been checked manually against known values
     @pytest.mark.parametrize('freq,result',
-                            [('monthly', 6)])
+                            [('monthly', 4),
+                             ('daily', 145),
+                             ('6h', 582),
+                             ('yearly', 0)])
     def test_timmean_cftime_exclude_incomplete(self, reader_cftime, data_cftime, freq, result):
         """Timmean test for monthly aggregation with excluded incomplete chunks on CFTime data"""
-        avg = reader_cftime.timstat(data_cftime['2t'], stat='mean', freq=freq, exclude_incomplete=True)
-        unique, counts = np.unique(avg.time.dt.month, return_counts=True)
-        assert len(unique) == result
-        assert all(counts == counts[0])
-
+        mydata = data_cftime
+        mydata = mydata.sel(time=slice("2020-01-01", "2020-06-13T12:00:00"))
+        avg = reader_cftime.timstat(mydata['2t'], stat='mean', freq=freq, exclude_incomplete=True)
+        assert len(avg.time) == result
+    
     @pytest.mark.parametrize('freq,result,t2',
                             [('daily', 197, cftime.DatetimeProlepticGregorian(2020, 1, 2, 12)),
                             ('monthly', 8, cftime.DatetimeProlepticGregorian(2020, 2, 15, 12))])
