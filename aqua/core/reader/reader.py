@@ -1085,7 +1085,7 @@ class Reader():
         return data
 
     def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, 
-                region=None, region_sel=None, mask_kwargs=None, **kwargs):
+                region=None, region_sel=None, mask_kwargs={}, **kwargs):
         """
         Field statistic wrapper which is calling the fldstat module from FldStat class. 
         This method is exposing and providing field functions as Reader class 

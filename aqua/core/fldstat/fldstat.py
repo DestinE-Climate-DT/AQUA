@@ -184,8 +184,8 @@ class FldStat():
                                                mask_kwargs=mask_kwargs,
                                                default_coords=default_coords, to_180=to_180)
 
-    def integrate_over_area(self, data: xr.Dataset | xr.DataArray, 
-                            areacell: xr.DataArray, 
+    def integrate_over_area(self, data: xr.Dataset | xr.DataArray,
+                            areacell: xr.DataArray,
                             dims: list):
         """
         Compute the integral of the data over the area.
@@ -218,7 +218,7 @@ class FldStat():
 
         return area_weighted_integral
 
-    def sum_area(self, 
+    def sum_area(self,
                  data: xr.Dataset | xr.DataArray, 
                  areacell: xr.DataArray, 
                  dims: list):
