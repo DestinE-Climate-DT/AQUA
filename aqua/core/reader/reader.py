@@ -471,12 +471,11 @@ class Reader():
         data = data.sel(**{full_vert_coord[0]: level})
         data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
         return data
-    
 
     def select_area(self, data, lon=None, lat=None, **kwargs):
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
-        
+
         Args:
             lon (list, optional): Longitude limits for the area selection.
             lat (list, optional): Latitude limits for the area selection.
