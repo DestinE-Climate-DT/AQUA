@@ -53,6 +53,7 @@ dependencies = [
     "pydantic<2.13.0",
     "pypdf",
     "pyYAML",
+    "regionmask",
     "ruamel.yaml",
     "scipy",
     "seaborn",
