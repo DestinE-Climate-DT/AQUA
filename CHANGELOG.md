@@ -8,11 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 AQUA core complete list:
 
 AQUA diagnostics complete list:
+- Extra timestep in Timeseries analysis fix (#2578)
 
 ## [v0.19.7]
 
 AQUA core complete list:
-- Extra timestep in Timeseries analysis fix (#2578)
 - Pin h5py and netCDF4 module to avoid issue with HDF (#2566)
 
 ## [v0.19.6]
