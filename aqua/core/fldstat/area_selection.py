@@ -1,4 +1,5 @@
 import xarray as xr
+import regionmask
 from typeguard import typechecked
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates
@@ -34,6 +35,9 @@ class AreaSelection:
         drop: bool = False,
         lat_name: str = "lat",
         lon_name: str = "lon",
+        region: regionmask.Regions | None = None,
+        region_sel: str | int | list | None = None,
+        mask_kwargs: dict = {},
         default_coords: dict | None = None,
         to_180: bool = True,
     ) -> xr.Dataset | xr.DataArray:
@@ -53,6 +57,9 @@ class AreaSelection:
                 Default is "lat".
             lon_name (str, optional): Name of longitude coordinate.
                 Default is "lon".
+            region (regionmask.Regions, optional): A regionmask Regions object defining a class regions.
+            region_sel (str, int or list, optional): The region(s) to select by name or number from the region object.
+            mask_kwargs (dict, optional): Additional keyword arguments passed to region.mask().
             default_coords (dict, optional): Default coordinate ranges.
                 Defaults to {"lat_min": -90, "lat_max": 90,
                 "lon_min": 0, "lon_max": 360}.
@@ -70,6 +77,39 @@ class AreaSelection:
                 f"Latitude or Longitude coordinates not found. "
                 f"Expected '{lat_name}' and '{lon_name}'."
             )
+
+        # Case1: Regionmask selection
+        if region is not None:
+            self.logger.info("A region was provided for area selection, lon/lat selection will be ignored.")
+
+            if region_sel is None:
+                raise ValueError("`region_sel` must be specified when using region argument.")
+
+            mask = region.mask(data[lon_name], data[lat_name], **mask_kwargs)
+
+            # Normalize input to list
+            if isinstance(region_sel, (str, int)):
+                region_sel = [region_sel]
+
+            # Convert region names to numbers if necessary
+            region_numbers = [
+                region.map_keys(name) if isinstance(name, str) else name
+                for name in region_sel
+            ]
+
+            # Combine masks for selected regions
+            reg_mask = xr.zeros_like(mask, dtype=bool)
+            for rn in region_numbers:
+                reg_mask = reg_mask | (mask == rn)
+
+            reg_mask = reg_mask.fillna(False)  # handle NaNs from regionmask
+
+            selected = data.where(reg_mask, drop=drop)
+            selected = log_history(selected, f"Regionmask selection: {region_sel}")
+
+            return selected
+
+        # 2. Coordinate-based selection
 
         # If both lon and lat are None, no selection is needed
         if lon is None and lat is None:
