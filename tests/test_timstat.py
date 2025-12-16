@@ -1,6 +1,7 @@
 """Test for timmean method"""
 import pytest
 import numpy as np
+import cftime
 from aqua.core.histogram import histogram
 
 @pytest.fixture(scope='module')
@@ -10,6 +11,14 @@ def reader(ifs_tco79_long_fixFalse_reader):
 @pytest.fixture(scope='module')
 def data(ifs_tco79_long_fixFalse_data):
     return ifs_tco79_long_fixFalse_data
+
+@pytest.fixture(scope='module')
+def reader_cftime(ifs_tco79_long_cftime_fixFalse_reader):
+    return ifs_tco79_long_cftime_fixFalse_reader
+
+@pytest.fixture(scope='module')
+def data_cftime(ifs_tco79_long_cftime_fixFalse_data):
+    return ifs_tco79_long_cftime_fixFalse_data
 
 @pytest.fixture(scope="module")
 def data_2t(reader):
@@ -21,8 +30,38 @@ def data_ttr(reader):
     """Retrieve only ttr variable"""
     return reader.retrieve(var='ttr')
 
+
 @pytest.mark.aqua
-class TestTimmean():
+class TestCFtimeTimmean():
+
+    def test_timmean_monthly_cftime(self, reader_cftime, data_cftime):
+        """Timmean test for monthly aggregation on CFTime data"""
+        avg = reader_cftime.timmean(data_cftime['2t'], freq='monthly')
+        nmonths = len(np.unique(data_cftime.time.dt.month))
+        unique, counts = np.unique(avg.time.dt.month, return_counts=True)
+        assert avg.shape == (nmonths, 9, 18)
+        assert len(unique) == nmonths
+        assert all(counts == counts[0])
+
+    def test_timmean_cftime_exclude_incomplete(self, reader_cftime, data_cftime):
+        """Timmean test for monthly aggregation with excluded incomplete chunks on CFTime data"""
+        avg = reader_cftime.timstat(data_cftime['2t'], stat='mean', freq='monthly', exclude_incomplete=True)
+        unique, counts = np.unique(avg.time.dt.month, return_counts=True)
+        assert avg.shape == (6, 9, 18)
+        assert len(unique) == 6
+        assert all(counts == counts[0])
+
+    def test_timmean_cftime_center_time(self, reader_cftime, data_cftime):
+        """Timmean test for monthly aggregation with center_time=True on CFTime data"""
+        avg = reader_cftime.timmean(data_cftime['2t'], freq='monthly', center_time=True)
+        assert avg.shape == (8, 9, 18)
+        t1 = avg.time[1].values.item()
+        t2 = cftime.DatetimeProlepticGregorian(2020, 2, 15, 12)
+        attrs = ("year", "month", "day", "hour", "minute", "second", "calendar")
+        assert [getattr(t1, a) == getattr(t2, a) for a in attrs]
+
+@pytest.mark.aqua
+class TestPandasTimmean():
 
     def test_timsum(self, reader, data):
         """Timmean test for sum operation"""

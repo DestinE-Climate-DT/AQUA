@@ -51,10 +51,10 @@ class TimStat():
 
         if not isinstance(stat, str) and not callable(stat):
             raise TypeError('stat must be a string or a callable function')
-        
+
         if stat == 'histogram':  # convert to callable function
             stat = histogram
-        
+
         # convert frequency string to pandas frequency
         resample_freq = frequency_string_to_pandas(freq)
 
