@@ -11,22 +11,22 @@ import cftime
 class TimeHandlerFactory:
     """
     Factory class for creating appropriate time handlers.
-    
+
     Automatically detects the datetime type in xarray data and returns
     the corresponding handler (PandasTimeHandler or CFTimeHandler).
     """
-    
+
     @staticmethod
     def detect_time_type(data: xr.Dataset) -> str:
         """
         Detect whether the dataset uses pandas datetime or CFTime.
-        
+
         Args:
             data: xarray Dataset with time coordinate
-            
+
         Returns:
             'pandas' or 'cftime' string
-            
+
         Raises:
             ValueError: If no time coordinate found or type cannot be determined
         """
@@ -41,30 +41,31 @@ class TimeHandlerFactory:
 
         if np.issubdtype(time_var.dtype, np.object_):
             first_val = time_var.values[0]
-            if isinstance(first_val, cftime.datetime) and hasattr(first_val, 'calendar'):
+            if isinstance(first_val, cftime.datetime) and hasattr(
+                    first_val, 'calendar'):
                 return 'cftime'
 
         raise ValueError("Unable to determine time type from dataset")
-    
+
     @staticmethod
     def get_handler(data: xr.Dataset):
         """
         Get the appropriate time handler for the dataset.
-        
+
         Args:
             data: xarray Dataset with time coordinate
-            
+
         Returns:
             PandasTimeHandler or CFTimeHandler instance
-            
+
         Raises:
             ValueError: If time type cannot be determined
         """
         from .pandas_handler import PandasTimeHandler
         from .cftime_handler import CFTimeHandler
-        
+
         time_type = TimeHandlerFactory.detect_time_type(data)
-        
+
         if time_type == 'pandas':
             return PandasTimeHandler()
         if time_type == 'cftime':
