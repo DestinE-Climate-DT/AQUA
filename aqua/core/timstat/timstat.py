@@ -71,15 +71,7 @@ class TimStat():
         self.time_handler = TimeHandlerFactory.get_handler(data)
 
         # Get original frequency (for history)
-        if len(data.time) > 1:
-            self.orig_freq = self.time_handler.infer_freq(data.time)
-        else:
-            # this block is likely never run, as the check for time dimension is done before
-            self.logger.warning('A single timestep is available, is this correct?')
-            self.orig_freq = 'Unknown'
-            if exclude_incomplete:
-                self.logger.warning('Disabling exclude incomplete since it cannot work if we have a single tstep!')
-                exclude_incomplete = False
+        exclude_incomplete = self._infer_original_frequency(data, exclude_incomplete)
 
         # if we have a frequency
         if resample_freq is not None:
@@ -137,14 +129,61 @@ class TimStat():
 
         # Add a variable to create time_bounds
         if time_bounds:
-            resampled = data.time.resample(time=resample_freq)
-            time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds', coords='different').transpose()
-            time_bnds['time'] = out.time
-            time_bnds.name = 'time_bnds'
-            out = xr.merge([out, time_bnds])
-            if self.time_handler.has_nat(out.time_bnds):
-                raise ValueError('Resampling cannot produce output for all time_bnds step!')
-            log_history(out, f"time_bnds added by by AQUA tim{stat}")
+            out = self._add_time_bounds(data, out, resample_freq, stat)
 
+        return out
+    
+    def _infer_original_frequency(self, data, exclude_incomplete):
+        """
+        Infer and store the original frequency of the input data.
+        
+        Args:
+            data (xarray.Dataset): Input data with time dimension.
+            exclude_incomplete (bool): Whether to exclude incomplete chunks (may be disabled).
+            
+        Returns:
+            bool: Updated value of exclude_incomplete (disabled if single timestep).
+        """
+        if len(data.time) > 1:
+            self.orig_freq = self.time_handler.infer_freq(data.time)
+        else:
+            self.logger.warning('A single timestep is available, is this correct?')
+            self.orig_freq = 'Unknown'
+            if exclude_incomplete:
+                self.logger.warning('Disabling exclude incomplete since it cannot work if we have a single tstep!')
+                exclude_incomplete = False
+        
+        return exclude_incomplete
+
+    def _add_time_bounds(self, data, out, resample_freq, stat):
+        """
+        Add time_bnds variable to the output dataset.
+        
+        The time_bnds variable contains the start and end times of each 
+        resampling period.
+        
+        Args:
+            data (xarray.Dataset): Original input data (used to compute bounds).
+            out (xarray.Dataset): Output data to add time_bnds to.
+            resample_freq (str): Resampling frequency (e.g. 'MS', '1D').
+            stat (str): Statistic name (for history logging).
+            
+        Returns:
+            xarray.Dataset: Output data with time_bnds variable added.
+            
+        Raises:
+            ValueError: If time_bnds contain invalid timestamps (NaT).
+        """
+        resampled = data.time.resample(time=resample_freq)
+        time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds', coords='different').transpose()
+        time_bnds['time'] = out.time
+        time_bnds.name = 'time_bnds'
+        out = xr.merge([out, time_bnds])
+        
+        if self.time_handler.has_nat(out.time_bnds):
+            raise ValueError('Resampling cannot produce output for all time_bnds step!')
+        
+        out = log_history(out, f"time_bnds added by AQUA tim{stat}")
+        
         return out
 
