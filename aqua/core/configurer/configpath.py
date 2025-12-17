@@ -433,3 +433,20 @@ class ConfigPath():
 
         lines.append(f"{'='*80}\n")
         return "\n".join(lines)
+
+    def get_data_model(self, data_model: str = 'aqua'):
+        """
+        Extract the data model information from the data_model folder.
+
+        Args:
+            data_model (str): the data model to be used. Defaults to 'aqua'.
+
+        Returns:
+            dict: the data model dictionary from the configuration file
+        """
+        data_model_folder = os.path.join(self.configdir, 'data_model')
+        filename = f'{data_model}.yaml'
+
+        if os.path.exists(data_model_folder):
+            data_model = load_yaml(os.path.join(data_model_folder, filename))
+            
