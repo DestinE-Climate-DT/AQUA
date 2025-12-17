@@ -36,18 +36,26 @@ def loop_seasonalcycle(data: xr.DataArray, startdate: str, enddate: str,
 
     logger.debug(f'Start: {startdate}, End: {enddate}, Freq: {freq} Center Time: {center_time}')
 
-    if center_time:
-            startdate = center_timestamp(pd.Timestamp(startdate), freq)
-            enddate = center_timestamp(pd.Timestamp(enddate), freq)
+    # Convert to pd.Timestamp if needed
+    startdate = center_timestamp(pd.Timestamp(startdate), freq)
+    enddate = center_timestamp(pd.Timestamp(enddate), freq)
 
     if freq == 'monthly':
         time_range = pd.date_range(start=startdate, end=enddate, freq='MS')
-    
-        if len(time_range) == 0:
-            base_slice = cycle.isel(month=0)
-            empty = base_slice.expand_dims(time=1).isel(time=slice(0, 0))
-            return empty.assign_coords(time=time_range)
 
+    elif freq == 'annual':
+        time_range = pd.date_range(start=startdate, end=enddate, freq='YS')
+    
+    if len(time_range) == 0:
+        base_slice = cycle.isel(month=0) if freq == 'monthly' else cycle
+        empty = base_slice.expand_dims(time=1).isel(time=slice(0, 0))
+        return empty.assign_coords(time=time_range)
+
+    # Apply centering after creating the time range
+    if center_time:
+        time_range = pd.DatetimeIndex([center_timestamp(t, freq) for t in time_range])
+
+    if freq == 'monthly':
         months_data = [cycle.sel(month=i) for i in range(1, 13)]
         # Repeat slices over requested time range and concatenate lazily
         loop_slices = [months_data[timestamp.month - 1] for timestamp in time_range]
@@ -55,18 +63,10 @@ def loop_seasonalcycle(data: xr.DataArray, startdate: str, enddate: str,
         data = data.drop_vars('month', errors='ignore')
 
     elif freq == 'annual':
-        time_range = pd.date_range(start=startdate, end=enddate, freq='YS')
-
-        if len(time_range) == 0:
-            base_slice = cycle
-            empty = base_slice.expand_dims(time=1).isel(time=slice(0, 0))
-            return empty.assign_coords(time=time_range)
-    
-        # Repeat the single-year mean lazily for each year
         loop_slices = [cycle] * len(time_range)
         data = xr.concat(loop_slices, dim='time')
 
-    # Assign the requested time coordinate
+    # Assign the centered time coordinate
     data = data.assign_coords(time=time_range)
 
     return data
@@ -76,7 +76,7 @@ def center_timestamp(time: pd.Timestamp, freq: str):
     Center the time value at the center of the month or year
 
     Args:
-        time (str): The time value
+        time (pd.Timestamp): The time value
         freq (str): The frequency of the time period (only 'monthly' or 'annual')
 
     Returns:
@@ -86,10 +86,10 @@ def center_timestamp(time: pd.Timestamp, freq: str):
         ValueError: If the frequency is not supported
     """
     if freq == 'monthly':
-        center_time = time + pd.DateOffset(days=15)
+        # Center at day 15 of the month at noon
+        return pd.Timestamp(year=time.year, month=time.month, day=15, hour=12)
     elif freq == 'annual':
-        center_time = time + pd.DateOffset(months=6)
+        # Center at July 2 at noon
+        return pd.Timestamp(year=time.year, month=7, day=2, hour=12)
     else:
         raise ValueError(f'Frequency {freq} not supported')
-    
-    return center_time
