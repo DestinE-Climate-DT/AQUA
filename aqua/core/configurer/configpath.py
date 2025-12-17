@@ -9,7 +9,6 @@ from aqua.core.logger import log_configure
 from .locator import ConfigLocator
 
 
-
 class ConfigPath():
     """
     A class to manage the configuration path and directory robustly, including
@@ -221,11 +220,11 @@ class ConfigPath():
         if 'machine' in base:
             self.logger.debug('Machine found in configuration file, set to %s', machine)
             return base['machine']
-        
+
         # warning for unknown machine
         self.logger.warning('No machine entry found in configuration file, set to %s', machine)
         return machine
-    
+
         # if the entry is auto, or the machine unknown, try autodetection
         # if self.machine in ['auto', 'unknown']:
         #     self.logger.debug('Machine is %s, trying to self detect', self.machine)
@@ -303,7 +302,6 @@ class ConfigPath():
 
         return fixer_folder, grids_folder
 
-
     def scan_catalog(self, cat, model=None, exp=None, source=None):
         """
         Check if the model, experiment and source are in the catalog.
@@ -333,7 +331,6 @@ class ConfigPath():
 
         return status, level, avail
 
-
     def show_catalog_content(self, catalog=None, model=None, exp=None, source=None, verbose=True):
         """
         Scan catalog(s) by reading YAML files directly and display the model/exp/source structure.
@@ -358,7 +355,7 @@ class ConfigPath():
         if not catalogs_to_scan:
             self.logger.warning('No catalogs available to scan')
             return results
-        
+
         self.logger.debug("Catalogs to show: %s", catalogs_to_scan)
 
         for cat_name in catalogs_to_scan:
@@ -400,7 +397,7 @@ class ConfigPath():
                     # Apply source filter if provided
                     if source:
                         sources = [s for s in sources if s == source]
-                    
+
                     if sources:
                         if model_name not in catalog_structure:
                             catalog_structure[model_name] = {}
@@ -418,13 +415,13 @@ class ConfigPath():
     def format_catalog_structure(structure, catalog_name):
         """Format catalog structure as a nicely aligned tree."""
         lines = [f"\n{'='*80}", f"📁 Catalog: {catalog_name}", f"{'='*80}"]
-        
+
         for model_name, experiments in sorted(structure.items()):
             lines.append(f"\n   Model: {model_name}")
-            
+
             for exp_name, sources in sorted(experiments.items()):
                 lines.append(f"     └─ Experiment: {exp_name}")
-                
+
                 # Format sources in columns for better readability
                 if sources:
                     sorted_sources = sorted(sources)
@@ -433,6 +430,6 @@ class ConfigPath():
                         source_group = sorted_sources[i:i+3]
                         formatted_sources = "  ".join(f"{s:<25}" for s in source_group)
                         lines.append(f"        ├─ {formatted_sources}")
-        
+
         lines.append(f"{'='*80}\n")
         return "\n".join(lines)
