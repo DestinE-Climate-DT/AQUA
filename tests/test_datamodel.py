@@ -130,3 +130,16 @@ class TestDataModel():
         assert "time" in new.coords
         assert "depth" in new.coords
 
+    def test_ranking_case(self, data):
+        """Test for ranking functionality in CoordIdentifier."""
+
+        data = data.rename({"LATITUDE": "lat"})
+        data['longi'].attrs = {"axis": "Y"}
+        
+        identifier = CoordIdentifier(data.coords, loglevel='debug')
+        coord_dict = identifier.identify_coords()
+
+        # Check that only one coordinate is identified for each type
+        assert coord_dict['longitude'] is None
+        assert coord_dict['latitude']['name'] == 'lat'
+

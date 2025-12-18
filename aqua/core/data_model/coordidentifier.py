@@ -36,6 +36,16 @@ class CoordIdentifier():
         loglevel (str): The log level to use. Default is 'WARNING'.
     """
 
+    # Scoring weights for coordinate identification
+    SCORE_WEIGHTS = {
+        'name': 100,
+        'standard_name': 100,
+        'axis': 50,
+        'units': 50,
+        'long_name': 50,
+    }
+    SCORE_THRESHOLD = 100  # Threshold to stop searching for a coordinate type
+
     def __init__(self, coords: xr.Coordinates, loglevel='WARNING'):
         """
         Constructor of the CoordIdentifier class.
@@ -58,42 +68,83 @@ class CoordIdentifier():
 
     def identify_coords(self):
         """
-        Identify the coordinates of the Xarray object.
+        Identify the coordinates of the Xarray object using a point-based scoring system.
+        For each coordinate, scores are calculated against all coordinate types.
+        The coordinate is assigned to the type with the highest score.
+        Stops searching for a type once score >= 100 is reached.
+        Logs warnings when multiple types have scores > 0 (unless scores are identical).
         """
 
-        # define a dictionary with the methods to identify the coordinates
-        coord_methods = {
-            "latitude": self._identify_latitude,
-            "longitude": self._identify_longitude,
-            "isobaric": self._identify_isobaric,
-            "depth": self._identify_depth,
-            "time": self._identify_time,
+        # Score methods for each coordinate type
+        score_methods = {
+            "latitude": self._score_latitude,
+            "longitude": self._score_longitude,
+            "isobaric": self._score_isobaric,
+            "depth": self._score_depth,
+            "time": self._score_time,
         }
 
-        # loop on coordinates provided by the user
-        for name, coord in self.coords.items():
-            self.logger.debug("Identifying coordinate: %s", name)
+        # Evaluate scores for all coordinates
+        scores = self._evaluate_scores(score_methods)    
+        
+        # Fill the coordinate dictionary based on scores
+        self._fill_coord_dict(scores)
 
-            # use the methods to detect the coordinates and assign attributes accordingly
-            for coord_name, identify_func in coord_methods.items():
-                if identify_func(coord):
-                    self.logger.debug(coord_name)
-                    if coord_name == "time":
-                        self.coord_dict[coord_name].append(self._get_time_attributes(coord))
-                    else:
-                        self.coord_dict[coord_name].append(self._get_attributes(coord, coord_name=coord_name))
-                    continue # loop on the next coordinate
+        # Clean and rank the coordinate dictionary
+        self._rank_coord_dict()
 
-        # check if the coordinates are empty or double!
-        self.coord_dict = self._clean_coord_dict()
+        # Log the identified coordinates
+        self._log_coord_matches()
 
         return self.coord_dict
     
-    def _clean_coord_dict(self):
+    def _evaluate_scores(self, score_methods):
         """
-        Clean the coordinate dictionary.
+        Evaluate scores for all coordinates against all coordinate types.
+        Args:
+            score_methods (dict): A dictionary of scoring methods for each coordinate type.
+        Returns:
+            dict: A nested dictionary with scores for each coordinate and type.
+        """
+        scores = {}
+        for coord_name, coord in self.coords.items():
+            self.logger.debug("Identifying coordinate: %s", coord_name)
+
+            # Score this coordinate against all types
+            scores[coord_name] = {}
+            for coord_type, score_func in score_methods.items():
+                score, matched_attrs = score_func(coord)
+                scores[coord_name][coord_type] = (score, matched_attrs)
+                if score > 0:
+                    self.logger.debug("Score for %s as %s: %d (matched: %s)",
+                                      coord_name, coord_type, score, matched_attrs)
+                    
+        return scores
+    
+    def _fill_coord_dict(self, scores):
+        """
+        Fill the coordinate dictionary with identified coordinates.
+        Args:
+            scores (dict): The scores for each coordinate and type.
+        """
+        for coord_name, coord in self.coords.items():
+            for coord_type, (score, matched_attrs) in scores[coord_name].items():
+                if score > 0:  # Only consider coordinates with positive scores
+                    if coord_type == "time":
+                        coord_info = self._get_time_attributes(coord, score, matched_attrs)
+                    else:
+                        coord_info = self._get_attributes(coord, coord_name=coord_type, 
+                                                            confidence_score=score, 
+                                                            matched_attributes=matched_attrs)
+                    self.coord_dict[coord_type].append(coord_info)
+
+    def _rank_coord_dict(self):
+        """
+        Clean and rank the coordinate dictionary.
         Set to None the coordinates that are empty.
-        If multiple coordinates are found, keep only the first one and log an error
+        If multiple coordinates are found for the same type:
+        - If scores differ, keep the one with highest score
+        - If scores are identical, disable (set to None) and log warning
         """
         for key, value in self.coord_dict.items():
             if len(value) == 0:
@@ -101,34 +152,77 @@ class CoordIdentifier():
             elif len(value) == 1:
                 self.coord_dict[key] = value[0]
             else:
-                self.logger.warning("Multiple %s coordinates found: %s. Disabling data model check for this coordinate.",
-                                     key, [x['name'] for x in value])
-                self.coord_dict[key] = None
-        return self.coord_dict
-    
-    def _get_time_attributes(self, coord):
+                # Multiple matches found - compare scores
+                scores = [x.get('confidence_score', 0) for x in value]
+                print(scores)
+                max_score = max(scores)
+                max_score_indices = [i for i, s in enumerate(scores) if s == max_score]
+
+                
+                if len(max_score_indices) == 1:
+                    # One unique highest score - keep it
+                    best_idx = max_score_indices[0]
+                    self.logger.debug(
+                        f"Multiple {key} coordinates found: {[x['name'] for x in value]}. "
+                        f"Selecting '{value[best_idx]['name']}' with highest score {max_score}."
+                    )
+                    self.coord_dict[key] = value[best_idx]
+                else:
+                    # Multiple coordinates with same highest score - disable
+                    self.logger.warning(
+                        f"Multiple {key} coordinates found with identical scores: "
+                        f"{[(x['name'], x.get('confidence_score', 'N/A')) for x in value]}. "
+                        f"Disabling data model check for this coordinate."
+                    )
+                    self.coord_dict[key] = None
+        
+    def _log_coord_matches(self):
+        """
+        Print log messages for identified and unidentified coordinates.
+        """
+
+        identified = [key for key, value in self.coord_dict.items() if value is not None]
+        unidentified = [key for key, value in self.coord_dict.items() if value is None]
+        
+        if identified:
+            self.logger.debug(f"Successfully identified coordinates: {identified}")
+        if unidentified:
+            self.logger.debug(f"Coordinates not identified: {unidentified}")
+
+    def _get_time_attributes(self, coord, confidence_score=None, matched_attributes=None):
         """
         Get the attributes of the time coordinates.
 
         Args:
             coord (xarray.Coordinates): The coordinate to define the attributes.
+            confidence_score (int): The confidence score from identification.
+            matched_attributes (list): List of attributes that matched in scoring.
 
         Returns:
             dict: A dictionary containing the attributes of the coordinate.
         """
-        return {'name': coord.name,
-                'dims:': coord.dims,
-                'units': coord.attrs.get('units'),
-                'calendar': coord.attrs.get('calendar'),
-                'bounds': coord.attrs.get('bounds')}
+        attrs = {
+            'name': coord.name,
+            'dims': coord.dims,
+            'units': coord.attrs.get('units'),
+            'calendar': coord.attrs.get('calendar'),
+            'bounds': coord.attrs.get('bounds')
+        }
+        if confidence_score is not None:
+            attrs['confidence_score'] = confidence_score
+        if matched_attributes is not None:
+            attrs['matched_attributes'] = matched_attributes
+        return attrs
     
-    def _get_attributes(self, coord, coord_name="longitude"):
+    def _get_attributes(self, coord, coord_name="longitude", confidence_score=None, matched_attributes=None):
         """
         Get the attributes of the coordinates.
 
         Args:
             coord (xarray.Coordinates): The coordinate to define the attributes.
-            coord_type (str): The type of coordinate ("horizontal" or "vertical").
+            coord_name (str): The type of coordinate ("longitude", "latitude", "isobaric", "depth").
+            confidence_score (int): The confidence score from identification.
+            matched_attributes (list): List of attributes that matched in scoring.
 
         Returns:
             dict: A dictionary containing the attributes of the coordinate.
@@ -165,7 +259,11 @@ class CoordIdentifier():
         
         if coord_name == "longitude":
             attributes['convention'] = self._guess_longitude_range(coord)
-            
+        
+        if confidence_score is not None:
+            attributes['confidence_score'] = confidence_score
+        if matched_attributes is not None:
+            attributes['matched_attributes'] = matched_attributes
 
         return attributes
     
@@ -184,76 +282,126 @@ class CoordIdentifier():
         else:
             return "ambigous"
 
-    @staticmethod
-    def _identify_latitude(coord):
+    def _score_latitude(self, coord):
         """
-        Identify the latitude coordinate of the Xarray object.
+        Score a coordinate for latitude identification.
+        
+        Returns:
+            tuple: (score, matched_attributes)
         """
+        score = 0
+        matched = []
+        
         if coord.name in LATITUDE:
-            return True
+            score += self.SCORE_WEIGHTS['name']
+            matched.append('name')
         if coord.attrs.get("standard_name") == "latitude":
-            return True
+            score += self.SCORE_WEIGHTS['standard_name']
+            matched.append('standard_name')
         if coord.attrs.get("axis") == "Y":
-            return True
+            score += self.SCORE_WEIGHTS['axis']
+            matched.append('axis')
         if coord.attrs.get("units") == "degrees_north":
-            return True
-        return False
+            score += self.SCORE_WEIGHTS['units']
+            matched.append('units')
+        
+        return score, matched
     
-    @staticmethod
-    def _identify_longitude(coord):
+    def _score_longitude(self, coord):
         """
-        Identify the longitude coordinate of the Xarray object.
+        Score a coordinate for longitude identification.
+        
+        Returns:
+            tuple: (score, matched_attributes)
         """
+        score = 0
+        matched = []
+        
         if coord.name in LONGITUDE:
-            return True
+            score += self.SCORE_WEIGHTS['name']
+            matched.append('name')
         if coord.attrs.get("standard_name") == "longitude":
-            return True
+            score += self.SCORE_WEIGHTS['standard_name']
+            matched.append('standard_name')
         if coord.attrs.get("axis") == "X":
-            return True
+            score += self.SCORE_WEIGHTS['axis']
+            matched.append('axis')
         if coord.attrs.get("units") == "degrees_east":
-            return True
-        return False
+            score += self.SCORE_WEIGHTS['units']
+            matched.append('units')
+        
+        return score, matched
     
-    @staticmethod
-    def _identify_time(coord):
+    def _score_time(self, coord):
         """
-        Identify the time coordinate of the Xarray object.
+        Score a coordinate for time identification.
+        
+        Returns:
+            tuple: (score, matched_attributes)
         """
+        score = 0
+        matched = []
+        
         if coord.name in TIME:
-            return True
+            score += self.SCORE_WEIGHTS['name']
+            matched.append('name')
         if coord.attrs.get("axis") == "T":
-            return True
+            score += self.SCORE_WEIGHTS['axis']
+            matched.append('axis')
         if coord.attrs.get("standard_name") == "time":
-            return True
-        return False
+            score += self.SCORE_WEIGHTS['standard_name']
+            matched.append('standard_name')
+        
+        return score, matched
     
-    @staticmethod
-    def _identify_isobaric(coord):
+    def _score_isobaric(self, coord):
         """
-        Identify the isobaric coordinate of the Xarray object.
+        Score a coordinate for isobaric (pressure) identification.
+        Handles special case: checks hardcoded name, standard_name, and MetPy unit analysis.
+        
+        Returns:
+            tuple: (score, matched_attributes)
         """
+        score = 0
+        matched = []
+        
         if coord.name in ISOBARIC:
-            return True
+            score += self.SCORE_WEIGHTS['name']
+            matched.append('name')
         if coord.attrs.get("standard_name") == "air_pressure":
-            return True
+            score += self.SCORE_WEIGHTS['standard_name']
+            matched.append('standard_name')
         if is_isobaric(coord.attrs.get("units")):
-            return True
-        return False
+            score += self.SCORE_WEIGHTS['units']
+            matched.append('units')
+        
+        return score, matched
     
-    @staticmethod
-    def _identify_depth(coord):
+    def _score_depth(self, coord):
         """
-        Identify the depth coordinate of the Xarray object.
+        Score a coordinate for depth identification.
+        Handles special case: checks hardcoded name, standard_name, substring in name/long_name.
+        
+        Returns:
+            tuple: (score, matched_attributes)
         """
+        score = 0
+        matched = []
+        
         if coord.name in DEPTH:
-            return True
+            score += self.SCORE_WEIGHTS['name']
+            matched.append('name')
         if coord.attrs.get("standard_name") == "depth":
-            return True
-        if "depth" in coord.name:
-            return True
+            score += self.SCORE_WEIGHTS['standard_name']
+            matched.append('standard_name')
+        if coord.attrs.get("axis") == "Z":
+            score += self.SCORE_WEIGHTS['axis']  # Use axis weight for substring match
+            matched.append('name_contains_depth')
         if "depth" in coord.attrs.get("long_name", ""):
-            return True
-        return False
-    
+            score += self.SCORE_WEIGHTS['long_name']
+            matched.append('long_name_contains_depth')
+        
+        return score, matched
+
     
 
