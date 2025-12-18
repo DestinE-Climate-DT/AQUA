@@ -241,6 +241,11 @@ class CoordTransformer():
         if 'units' not in data[tgt_coord['name']].attrs:
             self.logger.warning("%s unit not found in data. Disabling unit conversion.", tgt_coord['name'])
             return data
+        if src_coord['units'].lower() in ['degree north', 'degree east']:
+            fixed_unit = src_coord['units'].replace("degree", "degrees")
+            self.logger.debug('Fixing units for coordinate %s from %s to %s',
+                              src_coord['name'], src_coord['units'], fixed_unit)
+            src_coord['units'] = fixed_unit
         if src_coord['units'] != tgt_coord['units']:
             self.logger.info("Converting units of coordinate %s from %s to %s",
                             src_coord['name'], src_coord['units'], tgt_coord['units'])
