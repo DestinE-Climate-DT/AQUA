@@ -178,9 +178,9 @@ class TestFldmean():
         reader = Reader(model='ERA5', exp='era5-hpz3', source='monthly',
                         regrid='F32', loglevel=LOGLEVEL)
         data = reader.retrieve(var='2t').isel(time=0)
-        #avg_org = reader.fldmean(data['2t'])
-        avg_reg = reader.fldmean(reader.regrid(data['2t']))
-        assert avg_reg.lat[0] > avg_reg.lat[1]  # verify lat decreasing
+        regrid = reader.regrid(data)
+        avg_reg = reader.fldmean(regrid['2t'])
+        assert regrid.lat[0] > regrid.lat[1]  # verify lat decreasing
         assert avg_reg[0] == pytest.approx(285.664) # verify fldmean value
 
 @pytest.mark.aqua
