@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
+- Improve fldstat handling of gaussian grids (#2584)
 - Shapefile support for spatial selection in `AreaSelection` (#2576)
 - Remove IPython dependency from io_util (#2569)
 - Add concurrency suppression for Github actions (#2557)
