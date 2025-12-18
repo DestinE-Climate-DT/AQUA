@@ -1,6 +1,7 @@
 """Helpers to resolve AQUA configuration directories and files."""
 import os
 
+
 class ConfigLocator:
     """
     Helper to resolve AQUA configuration directories/files.
@@ -42,4 +43,3 @@ class ConfigLocator:
                 return configdir
 
         raise FileNotFoundError(f"No config file {self.filename} found in {configdirs}")
-
