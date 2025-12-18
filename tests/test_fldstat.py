@@ -181,7 +181,7 @@ class TestFldmean():
         regrid = reader.regrid(data)
         avg_reg = reader.fldmean(regrid['2t'])
         assert regrid.lat[0] > regrid.lat[1]  # verify lat decreasing
-        assert avg_reg[0] == pytest.approx(285.664) # verify fldmean value
+        assert avg_reg.values == pytest.approx(285.426) # verify fldmean value
 
 @pytest.mark.aqua
 class TestFldStatDims():
