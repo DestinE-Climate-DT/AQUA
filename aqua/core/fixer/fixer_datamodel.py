@@ -1,146 +1,128 @@
-"""Class that uses the AQUA internal data model"""
+"""
+Class for supplementary coordinate and dimension fixes beyond base data model.
+Works AFTER base data model transformation (DataModel/CoordTransformer).
+"""
 import xarray as xr
-from aqua.core.data_model import CoordTransformer
 from aqua.core.logger import log_history, log_configure
 
-DEFAULT_DATAMODEL = "aqua"
 
 class FixerDataModel:
     """
-    Class that uses the AQUA internal data model to apply to the data
-    Further fixes to coordinates and dimensions can be applied.
-
+    Apply supplementary coordinate and dimension fixes beyond base data model.
+    
+    Works AFTER base data model transformation by DataModel/CoordTransformer.
+    Handles additional fixes specified in experiment-specific YAML files.
+    
+    This class handles:
+    - Coordinate renaming (source → target)
+    - Units override (without conversion)
+    - Dimension renaming
+    
     Args:
-        fixes (dict): Dictionary containing the fixes to be applied.
-        loglevel (int, optional): Log level for logging. Defaults to None.
+        fixes (dict): Dictionary containing the fixes from YAML file.
+        loglevel (str): Log level for logging. Defaults to 'WARNING'.
+        
+    Example:
+        >>> fixer = FixerDataModel(fixes=yaml_fixes, loglevel="DEBUG")
+        >>> data = fixer.apply(data)
     """ 
 
-    def __init__(self, fixes=None, loglevel=None):
-
+    def __init__(self, fixes=None, loglevel='WARNING'):
         self.fixes = fixes
         self.logger = log_configure(log_level=loglevel, log_name='FixerDataModel')
         self.loglevel = loglevel
 
-    def apply_datamodel(self, data: xr.Dataset):
+    def apply(self, data: xr.Dataset) -> xr.Dataset:
         """
-        Apply fixes to the data model
+        Apply supplementary coordinate and dimension fixes.
+        
+        This method should be called AFTER DataModel.apply() has been run.
+        It applies experiment-specific fixes that override or supplement
+        the base data model transformations.
 
-        Arguments:
-            data (xr.Dataset):  input dataset to process
+        Args:
+            data (xr.Dataset): Dataset already processed by DataModel
 
         Returns:
-            The processed input dataset
+            xr.Dataset: Dataset with supplementary fixes applied
         """
         if self.fixes is None:
+            self.logger.debug("No supplementary fixes to apply")
             return data
         
-        datamodel = self.fixes.get("data_model", DEFAULT_DATAMODEL)
-        if datamodel:
-            data = CoordTransformer(data, loglevel=self.loglevel).transform_coords(name=datamodel)
-
-        # Extra coordinate handling
+        # Apply supplementary fixes from YAML
         data = self._fix_dims(data)
         data = self._fix_coord(data)
 
         return data
 
-
-    def fix_area(self, area: xr.DataArray):
-        """
-        Apply fixes to the area file
-
-        Arguments:
-            area (xr.DataArray):  area file to be fixed
-
-        Returns:
-            The fixed area file (xr.DataArray)
-        """
-        if self.fixes is None:  # No fixes available
-            return area
-        else:
-            self.logger.debug("Applying fixes to area file")
-            # This operation is a duplicate, rationalization with fixer method is needed
-            #src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
-            #src_datamodel = self.fixes.get("data_model", src_datamodel)
-
-            #if src_datamodel:
-            #    area = self.change_coord_datamodel(area, src_datamodel, self.dst_datamodel)
-            area = CoordTransformer(area, loglevel=self.loglevel).transform_coords()
-
-            return area
-
     def _fix_coord(self, data: xr.Dataset):
         """
-        Other than the data_model we can apply other fixes to the coordinates
-        reading them from the fixes file, in the coords section.
-        Units override can also be specified.
+        Apply supplementary coordinate fixes from fixes file.
+        Handles coordinate renaming and units override.
 
-        Arguments:
-            data (xr.Dataset):  input dataset to process
+        Args:
+            data (xr.Dataset): Input dataset
 
         Returns:
-            The processed input dataset
+            xr.Dataset: Dataset with fixed coordinates
         """
-        if self.fixes is None:
+        coords_fix = self.fixes.get("coords", None)
+        if not coords_fix:
             return data
 
-        coords_fix = self.fixes.get("coords", None)
+        coords = list(coords_fix.keys())
+        self.logger.debug("Supplementary coordinate fixes: %s", coords)
 
-        if coords_fix:
-            coords = list(coords_fix.keys())
-            self.logger.debug("Coordinates to be checked: %s", coords)
+        for coord in coords:
+            src_coord = coords_fix[coord].get("source", None)
+            tgt_units = coords_fix[coord].get("tgt_units", None)
 
-            for coord in coords:
-                src_coord = coords_fix[coord].get("source", None)
-                tgt_units = coords_fix[coord].get("tgt_units", None)
+            if src_coord:
+                if src_coord in data.coords:
+                    data = data.rename({src_coord: coord})
+                    self.logger.debug("Coordinate %s renamed to %s", src_coord, coord)
+                    log_history(data[coord], f"Coordinate {src_coord} renamed to {coord} by FixerDataModel")
+                else:
+                    self.logger.warning("Coordinate %s not found", src_coord)
 
-                if src_coord:
-                    if src_coord in data.coords:
-                        data = data.rename({src_coord: coord})
-                        self.logger.debug("Coordinate %s renamed to %s", src_coord, coord)
-                        log_history(data[coord], f"Coordinate {src_coord} renamed to {coord} by fixer")
-                    else:
-                        self.logger.warning("Coordinate %s not found", src_coord)
-
-                if tgt_units:
-                    if coord in data.coords:
-                        self.logger.debug("Coordinate %s units set to %s", coord, tgt_units)
-                        self.logger.debug("Please notice that this is an override, no unit conversion has been applied")
-                        data[coord].attrs['units'] = tgt_units
-                        log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by fixer")
-                    else:
-                        self.logger.warning("Coordinate %s not found", coord)
+            if tgt_units:
+                if coord in data.coords:
+                    self.logger.debug("Coordinate %s units overridden to %s", coord, tgt_units)
+                    self.logger.warning("Units override applied - no conversion performed")
+                    data[coord].attrs['units'] = tgt_units
+                    log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by FixerDataModel")
+                else:
+                    self.logger.warning("Coordinate %s not found", coord)
 
         return data
     
     def _fix_dims(self, data: xr.Dataset):
         """
-        Other than the data_model we can apply other fixes to the dimensions
-        reading them from the fixes file, in the dims section.
+        Apply supplementary dimension fixes from fixes file.
 
-        Arguments:
-            data (xr.Dataset):  input dataset to process
+        Args:
+            data (xr.Dataset): Input dataset
 
         Returns:
-            The processed input dataset
+            xr.Dataset: Dataset with fixed dimensions
         """
-        if self.fixes is None:
+        dims_fix = self.fixes.get("dims", None)
+        if not dims_fix:
             return data
 
-        dims_fix = self.fixes.get("dims", None)
+        dims = list(dims_fix.keys())
+        self.logger.debug("Supplementary dimension fixes: %s", dims)
 
-        if dims_fix:
-            dims = list(dims_fix.keys())
-            self.logger.debug("Dimensions to be checked: %s", dims)
+        for dim in dims:
+            src_dim = dims_fix[dim].get("source", None)
 
-            for dim in dims:
-                src_dim = dims_fix[dim].get("source", None)
-
-                if src_dim and src_dim in data.dims:
-                    data = data.rename_dims({src_dim: dim})
-                    self.logger.debug("Dimension %s renamed to %s", src_dim, dim)
-                    log_history(data, f"Dimension {src_dim} renamed to {dim} by fixer")
-                else:
-                    self.logger.warning("Dimension %s not found", dim)
+            if src_dim and src_dim in data.dims:
+                data = data.rename_dims({src_dim: dim})
+                self.logger.debug("Dimension %s renamed to %s", src_dim, dim)
+                log_history(data, f"Dimension {src_dim} renamed to {dim} by FixerDataModel")
+            else:
+                if src_dim:
+                    self.logger.warning("Dimension %s not found", src_dim)
 
         return data

@@ -21,7 +21,8 @@ from aqua.core.regridder import Regridder
 from aqua.core.fldstat import FldStat
 from aqua.core.timstat import TimStat
 from aqua.core.fixer import Fixer
-from aqua.core.data_model import counter_reverse_coordinate
+from aqua.core.fixer.fixer_datamodel import FixerDataModel
+from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.histogram import histogram
 import aqua.core.gsv
 
@@ -40,6 +41,7 @@ class Reader():
 
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
+                 datamodel='aqua',
                  regrid=None, regrid_method=None,
                  areas=True,
                  streaming=False,
@@ -59,6 +61,7 @@ class Reader():
             source (str): Source ID. Mandatory
             catalog (str, optional): Catalog where to search for the triplet.  Default to None will allow for autosearch in
                                      the installed catalogs.
+            datamodel (str, optional): Data model to apply for coordinate transformations (e.g., 'aqua', 'cmip6'). Defaults to 'aqua'.
             regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
             regrid_method (str, optional): CDO Regridding regridding method. Read from grid configuration.
                                            If not specified anywhere, using "ycon".
@@ -185,6 +188,7 @@ class Reader():
             self.logger.warning('A False flag is specified in fixer_name metadata, disabling fix!')
             self.fix = False
 
+        # Initialize variable fixer (stage 2: variable fixes)
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
             self.fixer = Fixer(fixer_name=self.fixer_name,
@@ -192,8 +196,18 @@ class Reader():
                                fixes_dictionary=self.fixes_dictionary,
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
+        
+        # Initialize base data model transformer (stage 3: always applied)
+        self.datamodel_name = datamodel
+        self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
+        
+        # Initialize supplementary data model fixer (stage 4: optional, from YAML)
+        if self.fix:
+            self.datamodel_fixer = FixerDataModel(
+                fixes=self.fixes_dictionary.get(self.fixer_name, None),
+                loglevel=self.loglevel
+            )
             
-    
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
         self.tgt_grid_name = regrid
@@ -276,10 +290,11 @@ class Reader():
         if areas:
             # generate source areas and expose them in the reader
             self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
-            if self.fix:
-                # TODO: this should include the latitudes flipping fix.
-                # TODO: No check is done on the areas coords vs data coords
-                self.src_grid_area = self.fixer.datamodel.fix_area(self.src_grid_area)
+            # Apply data model transformation to areas
+            self.src_grid_area = self.datamodel.apply_to_area(self.src_grid_area)
+            if self.fix and hasattr(self, 'datamodel_fixer'):
+                # Apply supplementary fixes to areas
+                self.src_grid_area = self.datamodel_fixer.apply(self.src_grid_area)
 
         # configure regridder and generate weights
         if regrid:
@@ -293,9 +308,11 @@ class Reader():
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
-            if self.fix:
-                # TODO: this should include the latitudes flipping fix
-                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
+            # Apply data model transformation to target areas
+            self.tgt_grid_area = self.datamodel.apply_to_area(self.tgt_grid_area)
+            if self.fix and hasattr(self, 'datamodel_fixer'):
+                # Apply supplementary fixes to target areas
+                self.tgt_grid_area = self.datamodel_fixer.apply(self.tgt_grid_area)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
@@ -355,6 +372,9 @@ class Reader():
                 loadvar = None
 
         ffdb = False
+        # Stage 1: Load data from source
+        self.logger.debug("Stage 1: Loading data from source")
+        
         # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
             data = self.reader_esm(self.esmcat, loadvar)
@@ -379,8 +399,19 @@ class Reader():
             data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
 
+        # Stage 2: Apply variable fixes (units, names, attributes)
         if self.fix:
+            self.logger.debug("Stage 2: Applying variable fixes")
             data = self.fixer.fixer(data, var)
+
+        # Stage 3: Apply base data model transformation (always applied)
+        self.logger.debug(f"Stage 3: Applying base data model: {self.datamodel_name}")
+        data = self.datamodel.apply(data)
+        
+        # Stage 4: Apply supplementary coordinate/dimension fixes (if available)
+        if self.fix and hasattr(self, 'datamodel_fixer'):
+            self.logger.debug("Stage 4: Applying supplementary data model fixes")
+            data = self.datamodel_fixer.apply(data)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
