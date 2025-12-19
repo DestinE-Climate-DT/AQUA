@@ -681,10 +681,9 @@ class Reader():
 
         if engine == 'polytope' and databridge_source is not None:
             # If the engine is polytope, we need to add the databridge_source parameter
-            if 'source' not in filtered_kwargs:
+            if 'databridge_source' not in filtered_kwargs:
                 filtered_kwargs.update({'databridge_source': databridge_source})
                 self.logger.debug('Adding databridge_source=%s to the filtered kwargs', databridge_source)
-
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
