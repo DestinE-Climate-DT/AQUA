@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from aqua import Reader, catalog
+from aqua import Reader
 from conftest import APPROX_REL, LOGLEVEL
 
 approx_rel = APPROX_REL
@@ -32,13 +32,6 @@ class TestAqua:
             __import__(module_name)
         except ImportError:
             assert False, "Module {} could not be imported".format(module_name)
-
-    def test_aqua_catalog(self):
-        """
-        Test if the catalog function returns a non-empty list
-        """
-        cat = catalog()
-        assert len(cat) > 0
 
     def test_reader_init(self):
         """

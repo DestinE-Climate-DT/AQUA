@@ -9,7 +9,6 @@ from glob import glob
 from .util import to_list
 from pypdf import PdfReader, PdfWriter
 from PIL import Image, PngImagePlugin
-from IPython.display import display, Image as IPImage, FileLink
 from aqua.core.logger import log_configure
 from aqua.core.version import __version__ as version
 
@@ -164,64 +163,6 @@ def normalize_value(value):
     
     # Return the value as-is if it can't be processed further
     return value
-
-
-def open_image(file_path: str, loglevel: str = 'WARNING') -> dict:
-    """
-    Open an image file (PNG or PDF), log its metadata, and display a link to the file in the notebook.
-
-    Args:
-        file_path (str): The path to the image file.
-        loglevel (str): The log level. Default is 'WARNING'.
-
-    Returns:
-        dict: The metadata of the image file with normalized keys (lowercase and without prefixes).
-    """
-    logger = log_configure(loglevel, 'open_image')
-
-    # Ensure the file exists
-    if not os.path.isfile(file_path):
-        logger.error(f"The file {file_path} does not exist.")
-        raise FileNotFoundError(f"The file {file_path} does not exist.")
-
-    metadata = {}
-
-    # Determine the file extension using endswith()
-    if file_path.lower().endswith('.png'):
-        # Open the PNG file and read the metadata
-        image = Image.open(file_path)
-        metadata = image.info
-
-        # Normalize keys to lowercase and remove any prefixes
-        metadata = {normalize_key(key): normalize_value(value) for key, value in metadata.items()}
-
-        # Log the metadata
-        logger.info("PNG Metadata:")
-        for key, value in metadata.items():
-            logger.info(f"{key}: {value}")
-
-    elif file_path.lower().endswith('.pdf'):
-        # Open the PDF file and read the metadata
-        pdf_reader = PdfReader(file_path)
-        metadata = pdf_reader.metadata
-
-        # Convert PyPDF2 metadata object to dictionary and normalize keys
-        metadata = {normalize_key(key): normalize_value(value) for key, value in metadata.items() if value is not None}
-
-        # Log the metadata
-        logger.info("PDF Metadata:")
-        for key, value in metadata.items():
-            logger.info(f"{key}: {value}")
-
-    else:
-        logger.error(f"Unsupported file type: {file_path}")
-        raise ValueError(f"Unsupported file type: {file_path}")
-
-    # Provide a FileLink to the file
-    display(FileLink(file_path))
-    logger.info(f"Displayed file link for: {file_path}")
-
-    return metadata
 
 
 def add_pdf_metadata(filename: str,

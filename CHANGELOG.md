@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v0.22.0):
 
 AQUA core complete list:
+- Shapefile support for spatial selection in `AreaSelection` (#2576)
+- Remove IPython dependency from io_util (#2569)
+- Add concurrency suppression for Github actions (#2557)
+- Deprecate `catalog` and `inspect_catalog` (#2556)
+- Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2529)
+- Update FESOM grids for o26.1 (#2541) 
+- Update config path for push_analysis (#2553)
 - Fix of aqua_path for analysis console (#2542)
 - New EC-Earth4 TL63 grid (#2536)
 - Improved handling of strings in `time_to_string` function (#2536)

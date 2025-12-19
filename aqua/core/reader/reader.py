@@ -471,12 +471,11 @@ class Reader():
         data = data.sel(**{full_vert_coord[0]: level})
         data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
         return data
-    
 
     def select_area(self, data, lon=None, lat=None, **kwargs):
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
-        
+
         Args:
             lon (list, optional): Longitude limits for the area selection.
             lat (list, optional): Latitude limits for the area selection.
@@ -1085,7 +1084,8 @@ class Reader():
             data = data.isel({t: 0 for t in minimal_time})
         return data
 
-    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, **kwargs):
+    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, 
+                region=None, region_sel=None, mask_kwargs={}, **kwargs):
         """
         Field statistic wrapper which is calling the fldstat module from FldStat class. 
         This method is exposing and providing field functions as Reader class 
@@ -1097,6 +1097,9 @@ class Reader():
             lon_limits (list, optional):  the longitude limits of the subset
             lat_limits (list, optional):  the latitude limits of the subset
             dims (list, optional):  the dimensions to average over
+            region (regionmask.Regions, optional): A regionmask Regions object defining a class regions.
+            region_sel (str, int or list, optional): The region(s) to select by name or number from the region object.
+            mask_kwargs (dict, optional): Additional keyword arguments passed to region.mask().
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
@@ -1104,16 +1107,18 @@ class Reader():
             data = self.tgt_fldstat.fldstat(
                 data, stat=stat,
                 lon_limits=lon_limits, lat_limits=lat_limits,
+                region=region, region_sel=region_sel, mask_kwargs=mask_kwargs,
                 dims=dims, **kwargs)
         else:
             data = self.src_fldstat.fldstat(
                 data, stat=stat,
                 lon_limits=lon_limits, lat_limits=lat_limits,
+                region=region, region_sel=region_sel, mask_kwargs=mask_kwargs,
                 dims=dims, **kwargs)
-        
+
         data.aqua.set_default(self)
         return data
-    
+
     # Field stats wrapper. If regridded, uses the target grid areas.
     def fldmean(self, data, **kwargs):
         """
@@ -1126,19 +1131,19 @@ class Reader():
         Field max wrapper which is calling the fldstat module.
         """
         return self.fldstat(data, stat='max', **kwargs)
-    
+
     def fldmin(self, data, **kwargs):
         """
         Field min wrapper which is calling the fldstat module.
         """
         return self.fldstat(data, stat='min', **kwargs)
-    
+
     def fldstd(self, data, **kwargs):
         """
         Field standard deviation wrapper which is calling the fldstat module.
         """
         return self.fldstat(data, stat='std', **kwargs)
-    
+
     def fldsum(self, data, **kwargs):
         """
         Field sum wrapper which is calling the fldstat module.
@@ -1150,7 +1155,7 @@ class Reader():
         Field integral wrapper which is calling the fldstat module.
         """
         return self.fldstat(data, stat='integral', **kwargs)
-    
+
     def fldarea(self, data, **kwargs):
         """
         Field area wrapper which is calling the fldstat module.
@@ -1158,7 +1163,7 @@ class Reader():
         return self.fldstat(data, stat='areasum', **kwargs)
 
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
-             time_bounds=False, center_time=False, **kwargs):
+                time_bounds=False, center_time=False, **kwargs):
         """
         Time statistic wrapper which is calling the timstat module from TimStat class. 
         This method is exposing and providing time functions as Reader class 

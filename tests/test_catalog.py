@@ -3,16 +3,17 @@
 import pytest
 import types
 import xarray
-from aqua import Reader, catalog, inspect_catalog
+from aqua import Reader
+from aqua.core.reader import show_catalog_content as catalog
 from aqua.core.reader.reader_utils import check_catalog_source
 from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 
 @pytest.fixture(params=[(model, exp, source)
-                        for model in catalog(catalog_name="ci")  # there could also be other catalogues installed
-                        for exp in catalog(catalog_name="ci")[model]
-                        for source in catalog(catalog_name="ci")[model][exp]])
+                        for model in catalog(catalog_name="ci", verbose=False)['ci']
+                        for exp in catalog(catalog_name="ci", verbose=False)['ci'][model]
+                        for source in catalog(catalog_name="ci", verbose=False)['ci'][model][exp]])
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
@@ -37,9 +38,9 @@ def test_catalog_gsv():
         assert isinstance(data, xarray.Dataset)
 
 @pytest.fixture(params=[(model, exp, source)
-                        for model in catalog(catalog_name="ci")
-                        for exp in catalog(catalog_name="ci")[model]
-                        for source in catalog(catalog_name="ci")[model][exp]])
+                        for model in catalog(catalog_name="ci", verbose=False)['ci']
+                        for exp in catalog(catalog_name="ci")['ci'][model]
+                        for source in catalog(catalog_name="ci")['ci'][model][exp]])
 def reader_regrid(request):
     """Reader instance fixture"""
     model, exp, source = request.param
@@ -72,35 +73,6 @@ def test_catalog_reader(reader_regrid):
     rgd = read.regrid(select)
     assert len(rgd.lon) == 180
     assert len(rgd.lat) == 90
-
-
-@pytest.mark.aqua
-def test_inspect_catalog():
-    """Checking that inspect catalog works"""
-
-    # calling the catalog
-    #cat = catalog(verbose=True)
-    #out, _ = capfd.readouterr()
-    #assert 'FESOM' in out
-    #assert 'IFS' in out
-
-    # inspect catalog
-    models = inspect_catalog()
-    assert isinstance(models, list)
-    exps = inspect_catalog(model='IFS')
-    assert isinstance(exps, list)
-    sources = inspect_catalog(model='IFS', exp='test-tco79')
-    assert isinstance(sources, list)
-    variables = inspect_catalog(model='IFS', exp="test-tco79", source='short')
-    assert variables is True
-
-    # wrong calls
-    models = inspect_catalog(model='antani')
-    assert 'IFS' in models 
-    exps = inspect_catalog(model='IFS', exp="antani")
-    assert 'test-tco79' in exps
-    sources = inspect_catalog(model='IFS', exp="test-tco79", source='antani')
-    assert 'short' in sources
 
 # @pytest.mark.aqua
 # @pytest.mark.parametrize(

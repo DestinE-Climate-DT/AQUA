@@ -55,6 +55,7 @@ jobs:
       enable-parallel: true
       enable-coverage: true
       fail-fast: false
+      pr-number: ${{ github.event.pull_request.number || '' }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
