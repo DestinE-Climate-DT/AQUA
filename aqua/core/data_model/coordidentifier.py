@@ -7,6 +7,14 @@ from metpy.units import units
 
 from aqua.core.logger import log_configure
 
+# Define internal names for coordinates
+LATITUDE_NAME = "latitude"
+LONGITUDE_NAME = "longitude"
+TIME_NAME = "time"
+ISOBARIC_NAME = "isobaric"
+DEPTH_NAME = "depth"
+
+# Possible names for coordinates
 LATITUDE = ["latitude", "lat", "nav_lat"]
 LONGITUDE = ["longitude", "lon", "nav_lon"]
 TIME = ["time", "valid_time", "forecast_period", "time_counter"]
@@ -30,6 +38,8 @@ class CoordIdentifier():
     Class to identify the nature of coordinates of an Xarray object.
     It aims at detecting the longitude, latitude, time and any other vertical
     by inspecting the attributes of the coordinates provided by the user.
+    "internal names" are used to refer to the coordinates in the data model.
+    "coordinate names" refer to the actual names of the coordinates in the Xarray object.
 
     Args: 
         coords (xarray.Coordinates): The coordinates of Dataset to be analysed.
@@ -59,29 +69,27 @@ class CoordIdentifier():
 
         # internal name definition for the coordinates
         self.coord_dict = {
-            "latitude": [],
-            "longitude": [],
-            "time": [],
-            "isobaric": [],
-            "depth": []
+            LATITUDE_NAME: [],
+            LONGITUDE_NAME: [],
+            TIME_NAME: [],
+            ISOBARIC_NAME: [],
+            DEPTH_NAME: []
         }
 
     def identify_coords(self):
         """
         Identify the coordinates of the Xarray object using a point-based scoring system.
-        For each coordinate, scores are calculated against all coordinate types.
-        The coordinate is assigned to the type with the highest score.
-        Stops searching for a type once score >= 100 is reached.
-        Logs warnings when multiple types have scores > 0 (unless scores are identical).
+        For each coordinate, scores are calculated against all internal coordinate types.
+        The coordinate name is assigned to the internal name with the highest score.
         """
 
         # Score methods for each coordinate type
         score_methods = {
-            "latitude": self._score_latitude,
-            "longitude": self._score_longitude,
-            "isobaric": self._score_isobaric,
-            "depth": self._score_depth,
-            "time": self._score_time,
+            LATITUDE_NAME: self._score_latitude,
+            LONGITUDE_NAME: self._score_longitude,
+            ISOBARIC_NAME: self._score_isobaric,
+            DEPTH_NAME: self._score_depth,
+            TIME_NAME: self._score_time,
         }
 
         # Evaluate scores for all coordinates
@@ -93,6 +101,9 @@ class CoordIdentifier():
         # Clean and rank the coordinate dictionary
         self._rank_coord_dict()
 
+        # Deduplicate coordinates with multiple assignments
+        self._deduplicate_coords()
+
         # Log the identified coordinates
         self._log_coord_matches()
 
@@ -100,11 +111,11 @@ class CoordIdentifier():
     
     def _evaluate_scores(self, score_methods):
         """
-        Evaluate scores for all coordinates against all coordinate types.
+        Evaluate scores for all coordinates names against all internal coordinate types.
         Args:
-            score_methods (dict): A dictionary of scoring methods for each coordinate type.
+            score_methods (dict): A dictionary of scoring methods for each internal coordinate type.
         Returns:
-            dict: A nested dictionary with scores for each coordinate and type.
+            dict: A nested dictionary with scores for each internal coordinate.
         """
         scores = {}
         for coord_name, coord in self.coords.items():
@@ -123,7 +134,7 @@ class CoordIdentifier():
     
     def _fill_coord_dict(self, scores):
         """
-        Fill the coordinate dictionary with identified coordinates.
+        Fill the coordinate dictionary with identified coordinates and their attributes.
         Args:
             scores (dict): The scores for each coordinate and type.
         """
@@ -138,13 +149,49 @@ class CoordIdentifier():
                                                             matched_attributes=matched_attrs)
                     self.coord_dict[coord_type].append(coord_info)
 
+    def _deduplicate_coords(self):
+        """
+        Deduplicate coordinates: coordinate name can be assigned only once irrespective of the 
+        internal coordinate type. If multiple assignments exist, the one with the highest score is kept.
+
+        e.g. "lat" coordinate assigned to both "latitude" and "depth" - keep the one with highest score.
+        and set the other to None. Note that this is different from ranking within the same internal coordinate type.
+        """
+        name_groups = {}
+        for key, value in self.coord_dict.items():
+            if isinstance(value, dict) and value.get("name") is not None:
+                name = value["name"]
+                if name not in name_groups:
+                    name_groups[name] = []
+                element = value.get("confidence_score", 0.0)
+                name_groups[name].append((key, element))
+        name_groups
+
+        # Second pass: resolve conflicts by confidence_score
+        for name, entries in name_groups.items():
+            if len(entries) > 1:
+                # Sort by confidence_score (highest first)
+                entries.sort(key=lambda x: x[1], reverse=True)
+                self.logger.info(
+                    f"Coordinate '{name}' assigned to multiple types: "
+                    f"{[key for key, _ in entries]}. "
+                    f"Selecting '{entries[0][0]}' with highest score {entries[0][1]}."
+                )   
+                # Keep the best, remove the rest
+                for key, _ in entries[1:]:
+                    self.coord_dict[key] = None
+
+        return self.coord_dict
+
     def _rank_coord_dict(self):
         """
-        Clean and rank the coordinate dictionary.
+        Rank the coordinate dictionary if two coordinates names are found for the same internal coordinate.
         Set to None the coordinates that are empty.
-        If multiple coordinates are found for the same type:
+        If multiple coordinates are found for the same internal coordinate:
         - If scores differ, keep the one with highest score
         - If scores are identical, disable (set to None) and log warning
+
+        e.g. both "lat" and "latitude" identified as "latitude" - keep the one with highest score.
         """
         for key, value in self.coord_dict.items():
             if len(value) == 0:
@@ -180,7 +227,6 @@ class CoordIdentifier():
         """
         Print log messages for identified and unidentified coordinates.
         """
-
         identified = [key for key, value in self.coord_dict.items() if value is not None]
         unidentified = [key for key, value in self.coord_dict.items() if value is None]
         
