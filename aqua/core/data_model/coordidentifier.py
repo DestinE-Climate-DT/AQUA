@@ -3,44 +3,8 @@ Module to identify the nature of coordinates of an Xarray object.
 """
 import xarray as xr
 import numpy as np
-from metpy.units import units
-
 from aqua.core.logger import log_configure
-
-# Define internal names for coordinates
-LATITUDE_NAME = "latitude"
-LONGITUDE_NAME = "longitude"
-TIME_NAME = "time"
-ISOBARIC_NAME = "isobaric"
-DEPTH_NAME = "depth"
-HEIGHT_NAME = "height"
-
-# Possible names for coordinates
-LATITUDE = ["latitude", "lat", "nav_lat"]
-LONGITUDE = ["longitude", "lon", "nav_lon"]
-TIME = ["time", "valid_time", "forecast_period", "time_counter"]
-ISOBARIC = ["plev"]
-DEPTH = ["depth", "zlev"]
-HEIGHT = ["height", "z"]
-
-# Define the target dimensionality (pressure)
-pressure_dim = units.pascal.dimensionality
-meter_dim = units.meter.dimensionality
-
-# Function to check if a unit is a pressure unit
-def is_pressure(unit):
-    """Check if a unit is a pressure unit."""
-    try:
-        return units(unit).dimensionality == pressure_dim
-    except Exception as e:
-        return False
-    
-def is_meter(unit):
-    """Check if a unit is a length unit (depth)."""
-    try:
-        return units(unit).dimensionality == meter_dim
-    except Exception as e:
-        return False
+from .coord_utils import get_coord_defaults, is_pressure, is_meter
 
 class CoordIdentifier():
     """
@@ -63,7 +27,6 @@ class CoordIdentifier():
         'units': 50,
         'long_name': 50,
     }
-    SCORE_THRESHOLD = 100  # Threshold to stop searching for a coordinate type
 
     def __init__(self, coords: xr.Coordinates, loglevel='WARNING'):
         """
@@ -78,22 +41,32 @@ class CoordIdentifier():
 
         # internal name definition for the coordinates
         self.coord_dict = {
-            LATITUDE_NAME: [],
-            LONGITUDE_NAME: [],
-            TIME_NAME: [],
-            ISOBARIC_NAME: [],
-            DEPTH_NAME: [],
-            HEIGHT_NAME: []
+            "latitude": [],
+            "longitude": [],
+            "time": [],
+            "isobaric": [],
+            "depth": [],
+            "height": []
         }
 
         # Score methods for each internal coordinate 
         self.score_methods = {       
-            LATITUDE_NAME: self._score_latitude,
-            LONGITUDE_NAME: self._score_longitude,
-            ISOBARIC_NAME: self._score_isobaric,
-            DEPTH_NAME: self._score_depth,
-            TIME_NAME: self._score_time,
-            HEIGHT_NAME: self._score_height,
+            "latitude": self._score_latitude,
+            "longitude": self._score_longitude,
+            "isobaric": self._score_isobaric,
+            "depth": self._score_depth,
+            "time": self._score_time,
+            "height": self._score_height,
+        }
+
+        # default coordinate values from config
+        self.default_coords = {
+            "latitude": get_coord_defaults("latitude"),
+            "longitude": get_coord_defaults("longitude"),
+            "time": get_coord_defaults("time"),
+            "isobaric": get_coord_defaults("isobaric"),
+            "depth": get_coord_defaults("depth"),
+            "height": get_coord_defaults("height"),
         }
 
     def identify_coords(self):
@@ -285,8 +258,8 @@ class CoordIdentifier():
         coord_range = (coord.values.min(), coord.values.max())
         direction = None
         positive = None
-        horizontal = [LATITUDE_NAME, LONGITUDE_NAME]
-        vertical = [ISOBARIC_NAME, DEPTH_NAME, HEIGHT_NAME]
+        horizontal = ["latitude", "longitude"]
+        vertical = ["isobaric", "depth", "height"]
 
         if coord.ndim == 1 and coord_name in horizontal:
             direction = "increasing" if coord.values[-1] > coord.values[0] else "decreasing"
@@ -351,7 +324,7 @@ class CoordIdentifier():
         score = 0
         matched = []
         
-        if coord.name in LATITUDE:
+        if coord.name in self.default_coords["latitude"]:
             score += self.SCORE_WEIGHTS['name']
             matched.append('name')
         if coord.attrs.get("standard_name") == "latitude":
@@ -376,7 +349,7 @@ class CoordIdentifier():
         score = 0
         matched = []
         
-        if coord.name in LONGITUDE:
+        if coord.name in self.default_coords["longitude"]:
             score += self.SCORE_WEIGHTS['name']
             matched.append('name')
         if coord.attrs.get("standard_name") == "longitude":
@@ -401,7 +374,7 @@ class CoordIdentifier():
         score = 0
         matched = []
         
-        if coord.name in TIME:
+        if coord.name in self.default_coords["time"]:
             score += self.SCORE_WEIGHTS['name']
             matched.append('name')
         if coord.attrs.get("axis") == "T":
@@ -424,7 +397,7 @@ class CoordIdentifier():
         score = 0
         matched = []
         
-        if coord.name in ISOBARIC:
+        if coord.name in self.default_coords["isobaric"]:
             score += self.SCORE_WEIGHTS['name']
             matched.append('name')
         if coord.attrs.get("standard_name") == "air_pressure":
@@ -447,7 +420,7 @@ class CoordIdentifier():
         score = 0
         matched = []
         
-        if coord.name in DEPTH:
+        if coord.name in self.default_coords["depth"]:
             score += self.SCORE_WEIGHTS['name']
             matched.append('name')
         if coord.attrs.get("standard_name") == "depth":
@@ -475,7 +448,7 @@ class CoordIdentifier():
         score = 0
         matched = []
         
-        if coord.name in HEIGHT:
+        if coord.name in self.default_coords["height"]:
             score += self.SCORE_WEIGHTS['name']
             matched.append('name')
         if coord.attrs.get("standard_name") in ["height_above_ground", "height"]:

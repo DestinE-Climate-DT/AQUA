@@ -1,26 +1,8 @@
 """Module to transform coordinates of an Xarray object."""
-
-import os
 import xarray as xr
-from metpy.units import units
 from aqua.core.logger import log_configure, log_history
-from aqua.core.util import load_yaml
-from aqua.core.configurer import ConfigPath
+from .coord_utils import get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
-from pint.errors import DimensionalityError
-
-
-# Function to get the conversion factor
-def units_conversion_factor(from_unit_str, to_unit_str):
-    """
-    Get the conversion factor between two units.
-    """
-    from_unit = units(from_unit_str)
-    to_unit = units(to_unit_str)
-    try:
-        return from_unit.to(to_unit).magnitude
-    except DimensionalityError:
-        return None
 
 class CoordTransformer():
     """
@@ -48,26 +30,6 @@ class CoordTransformer():
         self.tgt_coords = None
         self.gridtype = self._info_grid(data.coords)
         self.logger.info("Grid type: %s", self.gridtype)
-
-    def load_data_model(self, name: str = "aqua"):
-        """
-        Load the default data model from the aqua.yaml file.
-
-        Args:
-            name (str): An installed data_model into aqua config, i.e. a YAML file
-
-        Returns:
-            dict: Target coordinates dictionary.
-            str: Name of the target data model.
-        """
-
-        data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
-        data_model_file = os.path.join(data_model_dir, f"{name}.yaml")
-        if not os.path.exists(data_model_file):
-            raise FileNotFoundError(f"Data model file {data_model_file} not found.")
-        self.logger.info("Loading data model from %s", data_model_file)
-        data_yaml = load_yaml(data_model_file)
-        return data_yaml
 
     def _info_grid(self, coords):
         """
@@ -109,7 +71,7 @@ class CoordTransformer():
 
         # multiple safety check
         self.logger.info("Target data model: %s", name)
-        data_yaml = self.load_data_model(name)
+        data_yaml = get_data_model(name)
         self.tgt_coords = data_yaml.get('data_model')
         outname = f"{data_yaml.get('name')} v{str(data_yaml.get('version'))}"
 
