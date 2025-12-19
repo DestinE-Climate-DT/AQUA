@@ -35,7 +35,7 @@ class Fixer():
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
         self.time_correction = False
         self.operator = FixerOperator(self.fixes, loglevel=loglevel)
-        self.datamodel = FixerDataModel(self.fixes, loglevel=loglevel)
+        self.fixerdatamodel = FixerDataModel(self.fixes, loglevel=loglevel)
 
 
     def find_fixes(self):
@@ -449,11 +449,7 @@ class Fixer():
 
         # remove variables following the fixes request
         data = self.operator.delete_variables(data)
-
-        # Fix coordinates according to a given data model
-        data = self.datamodel.apply_datamodel(data)
-
-
+        
         return data
 
     def _define_deltat(self, default):

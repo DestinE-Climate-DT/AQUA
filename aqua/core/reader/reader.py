@@ -188,7 +188,7 @@ class Reader():
             self.logger.warning('A False flag is specified in fixer_name metadata, disabling fix!')
             self.fix = False
 
-        # Initialize variable fixer (stage 2: variable fixes)
+        # Initialize variable fixer
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
             self.fixer = Fixer(fixer_name=self.fixer_name,
@@ -197,16 +197,11 @@ class Reader():
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
         
-        # Initialize base data model transformer (stage 3: always applied)
+        # Initialize base data model transformer
+        if datamodel is None:
+            raise ValueError("Data model name must be specified (e.g., 'aqua').")
         self.datamodel_name = datamodel
         self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
-        
-        # Initialize supplementary data model fixer (stage 4: optional, from YAML)
-        if self.fix:
-            self.datamodel_fixer = FixerDataModel(
-                fixes=self.fixes_dictionary.get(self.fixer_name, None),
-                loglevel=self.loglevel
-            )
             
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
@@ -257,7 +252,7 @@ class Reader():
             cfg_regrid = {**machine_paths, **cfg_regrid}
 
             if self.src_grid_name is None:
-                self.logger.warning('Grid metadata is not defined. Trying to access the real data')
+                self.logger.info('Grid metadata is not defined. Trying to access the real data')
                 data = self._retrieve_plain()
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
             elif self.src_grid_name is False:
@@ -285,17 +280,15 @@ class Reader():
                 areas = False
                 regrid = False
 
-
-        # generate source areas
         if areas:
             # generate source areas and expose them in the reader
             self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
             # Apply data model transformation to areas
-            self.src_grid_area = self.datamodel.apply_to_area(self.src_grid_area)
-            if self.fix and hasattr(self, 'datamodel_fixer'):
-                # Apply supplementary fixes to areas
-                self.src_grid_area = self.datamodel_fixer.apply(self.src_grid_area)
-
+            self.src_grid_area = self.datamodel.apply(self.src_grid_area)
+            # apply optional fixes to areas
+            if self.fix:
+                self.src_grid_area = self.fixer.fixerdatamodel.apply(self.src_grid_area)
+    
         # configure regridder and generate weights
         if regrid:
             # generate weights and init the SMMregridder
@@ -309,10 +302,10 @@ class Reader():
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
             # Apply data model transformation to target areas
-            self.tgt_grid_area = self.datamodel.apply_to_area(self.tgt_grid_area)
-            if self.fix and hasattr(self, 'datamodel_fixer'):
-                # Apply supplementary fixes to target areas
-                self.tgt_grid_area = self.datamodel_fixer.apply(self.tgt_grid_area)
+            self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area)
+            # apply optional fixes to areas
+            if self.fix:
+                self.tgt_grid_area = self.fixer.fixerdatamodel.apply(self.tgt_grid_area)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
@@ -399,19 +392,15 @@ class Reader():
             data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
 
-        # Stage 2: Apply variable fixes (units, names, attributes)
-        if self.fix:
-            self.logger.debug("Stage 2: Applying variable fixes")
-            data = self.fixer.fixer(data, var)
-
-        # Stage 3: Apply base data model transformation (always applied)
-        self.logger.debug(f"Stage 3: Applying base data model: {self.datamodel_name}")
+        # Apply base data model transformation (always applied)
+        self.logger.debug(f"Applying base data model: {self.datamodel_name}")
         data = self.datamodel.apply(data)
-        
-        # Stage 4: Apply supplementary coordinate/dimension fixes (if available)
-        if self.fix and hasattr(self, 'datamodel_fixer'):
-            self.logger.debug("Stage 4: Applying supplementary data model fixes")
-            data = self.datamodel_fixer.apply(data)
+
+        # Apply variable fixes (units, names, attributes) and data model fixes
+        if self.fix:
+            self.logger.debug("Applying variable fixes")
+            data = self.fixer.fixer(data, var)
+            data = self.fixer.fixerdatamodel.apply(data)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:

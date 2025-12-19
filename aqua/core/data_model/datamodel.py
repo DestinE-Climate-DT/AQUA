@@ -12,21 +12,6 @@ from aqua.core.util import load_yaml
 
 
 @cache
-def _get_cached_transformer(datamodel_name: str, loglevel: str):
-    """
-    Get cached CoordTransformer instance for a specific datamodel.
-    
-    Args:
-        datamodel_name (str): Name of the data model (e.g., "aqua", "cmip6")
-        loglevel (str): Log level
-        
-    Returns:
-        CoordTransformer: Cached transformer instance
-    """
-    return CoordTransformer(data=None, loglevel=loglevel)
-
-
-@cache
 def _load_data_model(name: str = "aqua"):
     """
     Load the data model configuration from YAML file (cached).
@@ -81,9 +66,6 @@ class DataModel:
         # Load data model config (cached)
         self.logger.debug(f"Initializing DataModel: {self.name}")
         self.config = _load_data_model(self.name)
-        
-        # Get cached transformer
-        self.transformer = _get_cached_transformer(self.name, self.loglevel)
     
     def apply(self, data: xr.Dataset) -> xr.Dataset:
         """
@@ -96,20 +78,7 @@ class DataModel:
             xr.Dataset: Transformed dataset with standardized coordinates
         """
         self.logger.info(f"Applying data model: {self.name}")
-        return self.transformer.transform_coords(data, name=self.name)
-    
-    def apply_to_area(self, area: xr.DataArray) -> xr.DataArray:
-        """
-        Apply base data model transformations to area/grid file.
-        
-        Args:
-            area (xr.DataArray): Input area data
-            
-        Returns:
-            xr.DataArray: Transformed area data
-        """
-        self.logger.debug(f"Applying data model to area: {self.name}")
-        return self.transformer.transform_coords(area, name=self.name)
+        return CoordTransformer(data, loglevel=self.loglevel).transform_coords(name=self.name)
     
     def get_config(self) -> dict:
         """
