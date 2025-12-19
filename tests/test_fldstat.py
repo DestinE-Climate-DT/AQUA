@@ -193,7 +193,7 @@ class TestFldStatDims():
         # Test averaging over only spatial dimension, keeping height
         result = fldmodule.fldstat(data_icon_r2b0['t'], stat='mean', dims=['cell'])
         # Should preserve height dimension but average over space
-        assert 'level_full' in result.dims
+        assert 'height' in result.dims
         assert 'cell' not in result.dims
         assert result.shape == (2, 90)
 

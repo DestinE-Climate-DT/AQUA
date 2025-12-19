@@ -291,13 +291,17 @@ class CoordIdentifier():
         if coord.ndim == 1 and coord_name in horizontal:
             direction = "increasing" if coord.values[-1] > coord.values[0] else "decreasing"
 
+        # this might require an update since it is only diagnostic
         if coord_name in vertical:
             positive = coord.attrs.get('positive')
             if not positive:
                 if is_pressure(coord.attrs.get('units')):
                     positive = "down"
+                elif is_meter(coord.attrs.get('units')):
+                    positive = "up"
                 else:
-                    positive = "down" if coord.values[0] > 0 else "up"
+                    if coord.values.size >= 2:
+                        positive = "down" if coord.values[0] > 0 else "up"
 
         attributes = {
             'name': coord.name,
