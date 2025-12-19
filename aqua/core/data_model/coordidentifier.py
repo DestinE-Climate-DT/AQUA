@@ -13,6 +13,7 @@ LONGITUDE_NAME = "longitude"
 TIME_NAME = "time"
 ISOBARIC_NAME = "isobaric"
 DEPTH_NAME = "depth"
+HEIGHT_NAME = "height"
 
 # Possible names for coordinates
 LATITUDE = ["latitude", "lat", "nav_lat"]
@@ -20,16 +21,24 @@ LONGITUDE = ["longitude", "lon", "nav_lon"]
 TIME = ["time", "valid_time", "forecast_period", "time_counter"]
 ISOBARIC = ["plev"]
 DEPTH = ["depth", "zlev"]
+HEIGHT = ["height", "z"]
 
 # Define the target dimensionality (pressure)
 pressure_dim = units.pascal.dimensionality
-#meter_dim = units.meter.dimensionality
+meter_dim = units.meter.dimensionality
 
 # Function to check if a unit is a pressure unit
-def is_isobaric(unit):
+def is_pressure(unit):
     """Check if a unit is a pressure unit."""
     try:
         return units(unit).dimensionality == pressure_dim
+    except Exception as e:
+        return False
+    
+def is_meter(unit):
+    """Check if a unit is a length unit (depth)."""
+    try:
+        return units(unit).dimensionality == meter_dim
     except Exception as e:
         return False
 
@@ -73,7 +82,18 @@ class CoordIdentifier():
             LONGITUDE_NAME: [],
             TIME_NAME: [],
             ISOBARIC_NAME: [],
-            DEPTH_NAME: []
+            DEPTH_NAME: [],
+            HEIGHT_NAME: []
+        }
+
+        # Score methods for each internal coordinate 
+        self.score_methods = {       
+            LATITUDE_NAME: self._score_latitude,
+            LONGITUDE_NAME: self._score_longitude,
+            ISOBARIC_NAME: self._score_isobaric,
+            DEPTH_NAME: self._score_depth,
+            TIME_NAME: self._score_time,
+            HEIGHT_NAME: self._score_height,
         }
 
     def identify_coords(self):
@@ -83,17 +103,8 @@ class CoordIdentifier():
         The coordinate name is assigned to the internal name with the highest score.
         """
 
-        # Score methods for each coordinate type
-        score_methods = {
-            LATITUDE_NAME: self._score_latitude,
-            LONGITUDE_NAME: self._score_longitude,
-            ISOBARIC_NAME: self._score_isobaric,
-            DEPTH_NAME: self._score_depth,
-            TIME_NAME: self._score_time,
-        }
-
         # Evaluate scores for all coordinates
-        scores = self._evaluate_scores(score_methods)    
+        scores = self._evaluate_scores()    
         
         # Fill the coordinate dictionary based on scores
         self._fill_coord_dict(scores)
@@ -109,11 +120,9 @@ class CoordIdentifier():
 
         return self.coord_dict
     
-    def _evaluate_scores(self, score_methods):
+    def _evaluate_scores(self):
         """
         Evaluate scores for all coordinates names against all internal coordinate types.
-        Args:
-            score_methods (dict): A dictionary of scoring methods for each internal coordinate type.
         Returns:
             dict: A nested dictionary with scores for each internal coordinate.
         """
@@ -123,7 +132,7 @@ class CoordIdentifier():
 
             # Score this coordinate against all types
             scores[coord_name] = {}
-            for coord_type, score_func in score_methods.items():
+            for coord_type, score_func in self.score_methods.items():
                 score, matched_attrs = score_func(coord)
                 scores[coord_name][coord_type] = (score, matched_attrs)
                 if score > 0:
@@ -276,8 +285,8 @@ class CoordIdentifier():
         coord_range = (coord.values.min(), coord.values.max())
         direction = None
         positive = None
-        horizontal = ["longitude", "latitude"]
-        vertical = ["depth", "isobaric"]
+        horizontal = [LATITUDE_NAME, LONGITUDE_NAME]
+        vertical = [ISOBARIC_NAME, DEPTH_NAME, HEIGHT_NAME]
 
         if coord.ndim == 1 and coord_name in horizontal:
             direction = "increasing" if coord.values[-1] > coord.values[0] else "decreasing"
@@ -285,7 +294,7 @@ class CoordIdentifier():
         if coord_name in vertical:
             positive = coord.attrs.get('positive')
             if not positive:
-                if is_isobaric(coord.attrs.get('units')):
+                if is_pressure(coord.attrs.get('units')):
                     positive = "down"
                 else:
                     positive = "down" if coord.values[0] > 0 else "up"
@@ -417,7 +426,7 @@ class CoordIdentifier():
         if coord.attrs.get("standard_name") == "air_pressure":
             score += self.SCORE_WEIGHTS['standard_name']
             matched.append('standard_name')
-        if is_isobaric(coord.attrs.get("units")):
+        if is_pressure(coord.attrs.get("units")):
             score += self.SCORE_WEIGHTS['units']
             matched.append('units')
         
@@ -442,10 +451,41 @@ class CoordIdentifier():
             matched.append('standard_name')
         if coord.attrs.get("axis") == "Z":
             score += self.SCORE_WEIGHTS['axis']  # Use axis weight for substring match
-            matched.append('name_contains_depth')
+            matched.append('axis')
+        if is_meter(coord.attrs.get("units")):
+            score += self.SCORE_WEIGHTS['units']
+            matched.append('units')
         if "depth" in coord.attrs.get("long_name", ""):
             score += self.SCORE_WEIGHTS['long_name']
             matched.append('long_name_contains_depth')
+        
+        return score, matched
+    
+    def _score_height(self, coord):
+        """
+        Score a coordinate for height identification.
+        Handles special case: checks hardcoded name, standard_name, substring in name/long_name.
+        Returns:
+            tuple: (score, matched_attributes)
+        """
+        score = 0
+        matched = []
+        
+        if coord.name in HEIGHT:
+            score += self.SCORE_WEIGHTS['name']
+            matched.append('name')
+        if coord.attrs.get("standard_name") in ["height_above_ground", "height"]:
+            score += self.SCORE_WEIGHTS['standard_name']
+            matched.append('standard_name')
+        if coord.attrs.get("axis") == "Z":
+            score += self.SCORE_WEIGHTS['axis']  # Use axis weight for substring match
+            matched.append('axis')
+        if is_meter(coord.attrs.get("units")):
+            score += self.SCORE_WEIGHTS['units']
+            matched.append('units')
+        if "height" in coord.attrs.get("long_name", ""):
+            score += self.SCORE_WEIGHTS['long_name']
+            matched.append('long_name_contains_height')
         
         return score, matched
 

@@ -22,8 +22,6 @@ def units_conversion_factor(from_unit_str, to_unit_str):
     except DimensionalityError:
         return None
 
-
-
 class CoordTransformer():
     """
     Class to transform coordinates of an Xarray object.
