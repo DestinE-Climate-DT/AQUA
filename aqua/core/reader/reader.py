@@ -33,6 +33,9 @@ from .reader_utils import set_attrs
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
+# set default data model
+DATA_MODEL_DEFAULT = "aqua"
+
 class Reader():
     """General reader for climate data."""
 
@@ -40,7 +43,7 @@ class Reader():
 
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
-                 datamodel='aqua',
+                 datamodel=None,
                  regrid=None, regrid_method=None,
                  areas=True,
                  streaming=False,
@@ -196,9 +199,14 @@ class Reader():
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
         
-        # if data model is none or false disable it
-        self.datamodel_name = datamodel
-        if not datamodel:
+        # if data model is not passed to Reader, try to get it from the catalog source metadata
+        if datamodel is None:
+            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT) 
+        else:
+            self.datamodel_name = datamodel
+
+        # if datamodel is False, disable data model application
+        if not self.datamodel_name:
             self.datamodel = None
             self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
         else:
