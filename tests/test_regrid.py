@@ -178,7 +178,7 @@ class TestRegridder():
         (i.e. any missing points)
         """
         reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
-                        regrid='r100', rebuild=True, fix=False, loglevel=LOGLEVEL)
+                        regrid='r100', rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL)
         data = reader.retrieve(var='temp')
         rgd = reader.regrid(data)
 
