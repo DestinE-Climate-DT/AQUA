@@ -295,6 +295,8 @@ The fixer can adopt a common **coordinate data model**. The default is the **aqu
 which is a simplified version of the CF data model and is stored in the ``aqua/core/config/data_model/aqua.yaml`` folder.
 If this data model is not appropriate for a specific source,
 it is possible to specify a different one in the catalog source, but it has to be defined accordingly in the config folder.
+It also possible to disable the data model treatment by setting ``data_model: false`` in the source metadata or calling
+the `Reader()`` with ``datamodel=False``.
 
 .. warning ::
   Data model is being refactored which means that behaviour may change in the future.
