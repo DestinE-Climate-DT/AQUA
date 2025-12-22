@@ -7,7 +7,7 @@ from aqua.core.logger import log_configure, log_history
 from aqua.core.util import load_yaml
 from aqua.core.configurer import ConfigPath
 from .coordidentifier import CoordIdentifier
-from pint.errors import DimensionalityError
+from pint.errors import DimensionalityError, UndefinedUnitError
 
 
 # Function to get the conversion factor
@@ -15,14 +15,15 @@ def units_conversion_factor(from_unit_str, to_unit_str):
     """
     Get the conversion factor between two units.
     """
-    from_unit = units(from_unit_str)
-    to_unit = units(to_unit_str)
+    try: 
+        from_unit = units(from_unit_str)
+        to_unit = units(to_unit_str)
+    except UndefinedUnitError:
+        return None
     try:
         return from_unit.to(to_unit).magnitude
     except DimensionalityError:
         return None
-
-
 
 class CoordTransformer():
     """

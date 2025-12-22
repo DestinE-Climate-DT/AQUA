@@ -21,7 +21,6 @@ from aqua.core.regridder import Regridder
 from aqua.core.fldstat import FldStat
 from aqua.core.timstat import TimStat
 from aqua.core.fixer import Fixer
-from aqua.core.fixer.fixer_datamodel import FixerDataModel
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.histogram import histogram
 import aqua.core.gsv
@@ -197,11 +196,14 @@ class Reader():
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
         
-        # Initialize base data model transformer
-        if datamodel is None:
-            raise ValueError("Data model name must be specified (e.g., 'aqua').")
+        # if data model is none or false disable it
         self.datamodel_name = datamodel
-        self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
+        if not datamodel:
+            self.datamodel = None
+            self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
+        else:
+            self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
+    
             
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
@@ -283,12 +285,13 @@ class Reader():
         if areas:
             # generate source areas and expose them in the reader
             self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
-            # Apply data model transformation to areas
-            self.src_grid_area = self.datamodel.apply(self.src_grid_area)
             # apply optional fixes to areas
             if self.fix:
                 self.src_grid_area = self.fixer.fixerdatamodel.apply(self.src_grid_area)
-    
+            # Apply data model transformation to areas
+            if self.datamodel:
+                self.src_grid_area = self.datamodel.apply(self.src_grid_area)
+
         # configure regridder and generate weights
         if regrid:
             # generate weights and init the SMMregridder
@@ -301,11 +304,13 @@ class Reader():
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
-            # Apply data model transformation to target areas
-            self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area)
             # apply optional fixes to areas
             if self.fix:
                 self.tgt_grid_area = self.fixer.fixerdatamodel.apply(self.tgt_grid_area)
+            # Apply data model transformation to target areas
+            if self.datamodel:
+                self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area)
+            # expose target horizontal dimensions
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
@@ -392,15 +397,16 @@ class Reader():
             data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
 
-        # Apply base data model transformation (always applied)
-        self.logger.debug(f"Applying base data model: {self.datamodel_name}")
-        data = self.datamodel.apply(data)
-
         # Apply variable fixes (units, names, attributes) and data model fixes
         if self.fix:
             self.logger.debug("Applying variable fixes")
             data = self.fixer.fixer(data, var)
             data = self.fixer.fixerdatamodel.apply(data)
+
+        # Apply base data model transformation (always applied)
+        if self.datamodel:
+            self.logger.debug(f"Applying base data model: {self.datamodel_name}")
+            data = self.datamodel.apply(data)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
