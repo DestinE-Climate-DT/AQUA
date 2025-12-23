@@ -3,30 +3,9 @@ DataModel class for applying base coordinate transformations.
 Provides a clean interface to CoordTransformer with caching.
 """
 import xarray as xr
-import os
-from functools import cache
 from aqua.core.logger import log_configure
 from aqua.core.data_model import CoordTransformer
-from aqua.core.configurer import ConfigPath
-from aqua.core.util import load_yaml
-
-
-@cache
-def _load_data_model(name: str = "aqua"):
-    """
-    Load the data model configuration from YAML file (cached).
-
-    Args:
-        name (str): Name of the data model file (e.g., "aqua", "cmip6")
-
-    Returns:
-        dict: Data model configuration dictionary
-    """
-    data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
-    data_model_file = os.path.join(data_model_dir, f"{name}.yaml")
-    if not os.path.exists(data_model_file):
-        raise FileNotFoundError(f"Data model file {data_model_file} not found.")
-    return load_yaml(data_model_file)
+from aqua.core.data_model.coord_utils import get_data_model
 
 
 class DataModel:
@@ -62,10 +41,10 @@ class DataModel:
         self.name = name
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name='DataModel')
-        
+
         # Load data model config (cached)
-        self.logger.debug(f"Initializing DataModel: {self.name}")
-        self.config = _load_data_model(self.name)
+        self.logger.debug("Initializing DataModel: %s", self.name)
+        self.config = get_data_model(self.name)
     
     def apply(self, data: xr.Dataset) -> xr.Dataset:
         """
@@ -77,7 +56,7 @@ class DataModel:
         Returns:
             xr.Dataset: Transformed dataset with standardized coordinates
         """
-        self.logger.info(f"Applying data model: {self.name}")
+        self.logger.info("Applying data model: %s", self.name)
         return CoordTransformer(data, loglevel=self.loglevel).transform_coords(name=self.name)
     
     def get_config(self) -> dict:

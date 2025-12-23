@@ -378,8 +378,6 @@ class Reader():
                 loadvar = None
 
         ffdb = False
-        # Stage 1: Load data from source
-        self.logger.debug("Stage 1: Loading data from source")
         
         # If this is an ESM-intake catalog use first dictionary value,
         if isinstance(self.esmcat, intake_esm.core.esm_datastore):
@@ -394,12 +392,8 @@ class Reader():
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
-            if ffdb:
-                fkind = "FDB"
-            else:
-                fkind = "file from disk"
+            fkind = "FDB" if ffdb else "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
-
 
         if not ffdb:  # FDB sources already have the index, already selected levels
             data = self._add_index(data)  # add helper index
@@ -413,7 +407,7 @@ class Reader():
 
         # Apply base data model transformation (always applied)
         if self.datamodel:
-            self.logger.debug(f"Applying base data model: {self.datamodel_name}")
+            self.logger.debug("Applying base data model: %s", self.datamodel_name)
             data = self.datamodel.apply(data)
 
         # log an error if some variables have no units
@@ -426,7 +420,7 @@ class Reader():
             data = self.streamer.stream(data)
         else:
             if data is None or len(data.data_vars) == 0:
-                self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
+                self.logger.error("Retrieved empty dataset for var=%s. First, check its existence in the data catalog.", var)
 
             if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
                 data = data.sel(time=slice(startdate, enddate))
