@@ -37,7 +37,7 @@ def _load_coord_config():
     Load coordinate configuration from YAML file (cached once).
     """
     data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
-    config_path = os.path.join(data_model_dir, "coord_defaults.yaml")
+    config_path = os.path.join(data_model_dir, "coords_default.yaml")
 
     try:
         return load_yaml(config_path)
