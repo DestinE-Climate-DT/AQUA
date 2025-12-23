@@ -59,6 +59,7 @@ class TestDataModel():
         assert "idx_depth" in new.coords
 
     def test_basic_transform_height(self):
+        """Test for height coordinate transformation."""
 
         reader = Reader(model="ICON", exp="test-r2b0", source="short", loglevel="warning", fix=False)
         data = reader.retrieve()

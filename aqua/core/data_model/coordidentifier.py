@@ -151,15 +151,13 @@ class CoordIdentifier:
         and set the other to None. Note that this is different from ranking within the same internal coordinate type.
         """
         name_groups = {}
-        for key, value_list in self.coord_dict.items():
-            if isinstance(value_list, list):
-                for value in value_list:
-                    if isinstance(value, dict) and value.get("name") is not None:
-                        name = value["name"]
-                        if name not in name_groups:
-                            name_groups[name] = []
-                        element = value.get("confidence_score", 0.0)
-                        name_groups[name].append((key, element))
+        for key, value in self.coord_dict.items():
+            if isinstance(value, dict) and value.get("name") is not None:                
+                name = value["name"]
+                if name not in name_groups:
+                    name_groups[name] = []
+                element = value.get("confidence_score", 0.0)
+                name_groups[name].append((key, element))
 
         # Second pass: resolve conflicts by confidence_score
         for name, entries in name_groups.items():
