@@ -1,24 +1,23 @@
 """Urility functions for coordinate handling and data model loading."""
 from functools import cache
+import os
 from metpy.units import units
-from pint.errors import DimensionalityError
+from pint.errors import DimensionalityError, UndefinedUnitError
 from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
-from aqua.core.logger import log_configure
-import os
 
 # Define the target dimensionality (pressure)
 pressure_dim = units.pascal.dimensionality
 meter_dim = units.meter.dimensionality
 
 # module logger
-logger = log_configure(log_level='INFO', log_name='coord_utils')
+#logger = log_configure(log_level='INFO', log_name='coord_utils')
 
-# Possible names for coordinates
+# Possible basic names for coordinates
 DEFAULT_COORD_NAMES = {
-    "latitude": ["latitude", "lat", "nav_lat"],
-    "longitude": ["longitude", "lon", "nav_lon"],
-    "time": ["time", "valid_time", "forecast_period", "time_counter"],
+    "latitude": ["latitude", "lat",],
+    "longitude": ["longitude", "lon"],
+    "time": ["time", "time_counter"],
     "isobaric": ["plev"],
     "depth": ["depth"],
     "height": ["height"]
@@ -31,11 +30,11 @@ def _load_coord_config():
     """
     data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
     config_path = os.path.join(data_model_dir, "coord_defaults.yaml")
-    
+
     try:
         return load_yaml(config_path)
-    except (FileNotFoundError, Exception) as e:
-        logger.warning(f"Failed to load config from {config_path}. Using defaults. Error: {e}")
+    except FileNotFoundError:
+        #logger.warning("Failed to load config from %s. Using defaults. Error: %s", config_path, e)
         return DEFAULT_COORD_NAMES
 
 def get_coord_defaults(internal_coord=None):
@@ -54,23 +53,23 @@ def get_coord_defaults(internal_coord=None):
 
 @cache
 def _load_data_model(name: str = "aqua"):
-        """
-        Load the default data model from the aqua.yaml file.
+    """
+    Load the default data model from the aqua.yaml file.
 
-        Args:
-            name (str): An installed data_model into aqua config, i.e. a YAML file
+    Args:
+        name (str): An installed data_model into aqua config, i.e. a YAML file
 
-        Returns:
-            dict: Target coordinates dictionary.
-            str: Name of the target data model.
-        """
-        data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
-        data_model_file = os.path.join(data_model_dir, f"{name}.yaml")
-        if not os.path.exists(data_model_file):
-            raise FileNotFoundError(f"Data model file {data_model_file} not found.")
-        logger.info("Loading data model from %s", data_model_file)
-        data_yaml = load_yaml(data_model_file)
-        return data_yaml
+    Returns:
+        dict: Target coordinates dictionary.
+        str: Name of the target data model.
+    """
+    data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
+    data_model_file = os.path.join(data_model_dir, f"{name}.yaml")
+    if not os.path.exists(data_model_file):
+        raise FileNotFoundError(f"Data model file {data_model_file} not found.")
+    #logger.info("Loading data model from %s", data_model_file)
+    data_yaml = load_yaml(data_model_file)
+    return data_yaml
 
 def get_data_model(name: str = "aqua"):
     """
@@ -93,17 +92,16 @@ def units_conversion_factor(from_unit_str, to_unit_str):
     except DimensionalityError:
         return None
     
-# Function to check if a unit is a pressure unit
 def is_pressure(unit):
     """Check if a unit is a pressure unit."""
     try:
         return units(unit).dimensionality == pressure_dim
-    except Exception as e:
+    except UndefinedUnitError:
         return False
-    
+
 def is_meter(unit):
     """Check if a unit is a length unit (depth)."""
     try:
         return units(unit).dimensionality == meter_dim
-    except Exception as e:
+    except UndefinedUnitError:
         return False

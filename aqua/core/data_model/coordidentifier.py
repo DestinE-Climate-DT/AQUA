@@ -49,8 +49,8 @@ class CoordIdentifier():
             "height": []
         }
 
-        # Score methods for each internal coordinate 
-        self.score_methods = {       
+        # Score methods for each internal coordinate
+        self.score_methods = {
             "latitude": self._score_latitude,
             "longitude": self._score_longitude,
             "isobaric": self._score_isobaric,
@@ -77,8 +77,8 @@ class CoordIdentifier():
         """
 
         # Evaluate scores for all coordinates
-        scores = self._evaluate_scores()    
-        
+        scores = self._evaluate_scores()
+
         # Fill the coordinate dictionary based on scores
         self._fill_coord_dict(scores)
 
@@ -92,7 +92,7 @@ class CoordIdentifier():
         self._log_coord_matches()
 
         return self.coord_dict
-    
+
     def _evaluate_scores(self):
         """
         Evaluate scores for all coordinates names against all internal coordinate types.
@@ -110,10 +110,9 @@ class CoordIdentifier():
                 scores[coord_name][coord_type] = (score, matched_attrs)
                 if score > 0:
                     self.logger.debug("Score for %s as %s: %d (matched: %s)",
-                                      coord_name, coord_type, score, matched_attrs)
-                    
+                                      coord_name, coord_type, score, matched_attrs)    
         return scores
-    
+
     def _fill_coord_dict(self, scores):
         """
         Fill the coordinate dictionary with identified coordinates and their attributes.
@@ -140,14 +139,15 @@ class CoordIdentifier():
         and set the other to None. Note that this is different from ranking within the same internal coordinate type.
         """
         name_groups = {}
-        for key, value in self.coord_dict.items():
-            if isinstance(value, dict) and value.get("name") is not None:
-                name = value["name"]
-                if name not in name_groups:
-                    name_groups[name] = []
-                element = value.get("confidence_score", 0.0)
-                name_groups[name].append((key, element))
-        name_groups
+        for key, value_list in self.coord_dict.items():
+            if isinstance(value_list, list):
+                for value in value_list:
+                    if isinstance(value, dict) and value.get("name") is not None:
+                        name = value["name"]
+                        if name not in name_groups:
+                            name_groups[name] = []
+                        element = value.get("confidence_score", 0.0)
+                        name_groups[name].append((key, element))
 
         # Second pass: resolve conflicts by confidence_score
         for name, entries in name_groups.items():
@@ -155,10 +155,12 @@ class CoordIdentifier():
                 # Sort by confidence_score (highest first)
                 entries.sort(key=lambda x: x[1], reverse=True)
                 self.logger.info(
-                    f"Coordinate '{name}' assigned to multiple types: "
-                    f"{[key for key, _ in entries]}. "
-                    f"Selecting '{entries[0][0]}' with highest score {entries[0][1]}."
-                )   
+                    "Coordinate '%s' assigned to multiple types: %s. Selecting '%s' with highest score %s.",
+                    name,
+                    [key for key, _ in entries],
+                    entries[0][0],
+                    entries[0][1]
+                )
                 # Keep the best, remove the rest
                 for key, _ in entries[1:]:
                     self.coord_dict[key] = None
@@ -176,32 +178,36 @@ class CoordIdentifier():
         e.g. both "lat" and "latitude" identified as "latitude" - keep the one with highest score.
         """
         for key, value in self.coord_dict.items():
+            # If no matches found, set to None
             if len(value) == 0:
                 self.coord_dict[key] = None
+            # if one match found, keep it
             elif len(value) == 1:
                 self.coord_dict[key] = value[0]
+            # if multiple matches found, compare scores
             else:
                 # Multiple matches found - compare scores
                 scores = [x.get('confidence_score', 0) for x in value]
-                print(scores)
                 max_score = max(scores)
                 max_score_indices = [i for i, s in enumerate(scores) if s == max_score]
 
-                
+                # If only one has the highest score, keep it
                 if len(max_score_indices) == 1:
-                    # One unique highest score - keep it
                     best_idx = max_score_indices[0]
                     self.logger.debug(
-                        f"Multiple {key} coordinates found: {[x['name'] for x in value]}. "
-                        f"Selecting '{value[best_idx]['name']}' with highest score {max_score}."
+                        "Multiple %s coordinates found: %s. Selecting '%s' with highest score %s.",
+                        key,
+                        [x['name'] for x in value],
+                        value[best_idx]['name'],
+                        max_score
                     )
                     self.coord_dict[key] = value[best_idx]
+                # Multiple coordinates with same highest score - disable
                 else:
-                    # Multiple coordinates with same highest score - disable
                     self.logger.warning(
-                        f"Multiple {key} coordinates found with identical scores: "
-                        f"{[(x['name'], x.get('confidence_score', 'N/A')) for x in value]}. "
-                        f"Disabling data model check for this coordinate."
+                        "Multiple %s coordinates found with identical scores: %s. Disabling data model check for this coordinate.",
+                        key,
+                        [(x['name'], x.get('confidence_score', 'N/A')) for x in value]
                     )
                     self.coord_dict[key] = None
         
@@ -211,11 +217,11 @@ class CoordIdentifier():
         """
         identified = [key for key, value in self.coord_dict.items() if value is not None]
         unidentified = [key for key, value in self.coord_dict.items() if value is None]
-        
+
         if identified:
-            self.logger.debug(f"Successfully identified coordinates: {identified}")
+            self.logger.debug("Successfully identified coordinates: %s", identified)
         if unidentified:
-            self.logger.debug(f"Coordinates not identified: {unidentified}")
+            self.logger.debug("Coordinates not identified: %s", unidentified)
 
     def _get_time_attributes(self, coord, confidence_score=None, matched_attributes=None):
         """
@@ -242,7 +248,8 @@ class CoordIdentifier():
             attrs['matched_attributes'] = matched_attributes
         return attrs
     
-    def _get_attributes(self, coord, coord_name="longitude", confidence_score=None, matched_attributes=None):
+    def _get_attributes(self, coord, coord_name="longitude", 
+                        confidence_score=None, matched_attributes=None):
         """
         Get the attributes of the coordinates.
 
