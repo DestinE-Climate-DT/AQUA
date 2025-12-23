@@ -45,29 +45,24 @@ class FixerDataModel:
         return data
 
 
-    def fix_area(self, area: xr.DataArray):
+    def fix_area(self, area: xr.DataArray, flip_coords=True):
         """
         Apply fixes to the area file
 
         Arguments:
             area (xr.DataArray):  area file to be fixed
+            flip_coords (bool): whether to flip coordinates if necessary. Defaults to True.
+                                not necessary for target area files.
 
         Returns:
             The fixed area file (xr.DataArray)
         """
         if self.fixes is None:  # No fixes available
             return area
-        else:
-            self.logger.debug("Applying fixes to area file")
-            # This operation is a duplicate, rationalization with fixer method is needed
-            #src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
-            #src_datamodel = self.fixes.get("data_model", src_datamodel)
 
-            #if src_datamodel:
-            #    area = self.change_coord_datamodel(area, src_datamodel, self.dst_datamodel)
-            area = CoordTransformer(area, loglevel=self.loglevel).transform_coords()
-
-            return area
+        self.logger.debug("Applying fixes to area file")
+        area = CoordTransformer(area, loglevel=self.loglevel).transform_coords(flip_coords=flip_coords)
+        return area
 
     def _fix_coord(self, data: xr.Dataset):
         """

@@ -294,8 +294,8 @@ class Reader():
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
             if self.fix:
-                # TODO: this should include the latitudes flipping fix
-                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
+                # flipping disabled for target areas for cases as gaussian grids
+                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area, flip_coords=False)
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics

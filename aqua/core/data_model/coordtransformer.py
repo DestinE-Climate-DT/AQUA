@@ -55,13 +55,14 @@ class CoordTransformer():
             return "Regular"
         return "Unstructured"
     
-    def transform_coords(self, name="aqua"):
+    def transform_coords(self, name="aqua", flip_coords=True):
         """
         Transform the coordinates of the Xarray object.
 
         Args:
             tgt_coords (dict, optional): Target coordinates dictionary. Defaults to None.
-
+            name (str, optional): Name of the target data model. Defaults to "aqua".
+            flip_coords (bool, optional): Whether to flip coordinates if necessary. Defaults to True.
         Returns:
             xr.Dataset or xr.DataArray: The transformed dataset or dataarray.
         """
@@ -86,7 +87,8 @@ class CoordTransformer():
                 self.logger.info("Analysing coordinate: %s", coord)
                 #self.logger.info("Transforming coordinate %s to %s", src_coord, tgt_coord)
                 data = self.rename_coordinate(data, src_coord, tgt_coord)
-                data = self.reverse_coordinate(data, src_coord, tgt_coord)
+                if flip_coords:
+                    data = self.flip_coordinate(data, src_coord, tgt_coord)
                 data = self.convert_units(data, src_coord, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
@@ -155,9 +157,9 @@ class CoordTransformer():
                 self.logger.info("Bounds %s not found in data.", src_coord['bounds'])
         return data
 
-    def reverse_coordinate(self, data, src_coord, tgt_coord):
+    def flip_coordinate(self, data, src_coord, tgt_coord):
         """
-        Reverse coordinate if necessary.
+        Flip coordinate if necessary.
 
         Args:
             data (xr.Dataset or xr.DataArray): The Xarray object.
@@ -165,7 +167,7 @@ class CoordTransformer():
             tgt_coord (dict): Target coordinate dictionary.
         
         Returns:
-            xr.Dataset or xr.DataArray: The Xarray object with possibly reversed coordinate.
+            xr.Dataset or xr.DataArray: The Xarray object with possibly flipped coordinate.
         """
         if 'stored_direction' not in tgt_coord:
             return data
@@ -176,14 +178,14 @@ class CoordTransformer():
             return data
         if src_coord['stored_direction'] != tgt_coord['stored_direction']:
             if self.gridtype == "Regular":
-                self.logger.info("Reversing coordinate %s from %s to %s",
+                self.logger.info("Flipping coordinate %s from %s to %s",
                                 tgt_coord['name'], src_coord['stored_direction'], tgt_coord['stored_direction'])
                 data = data.isel({tgt_coord['name']: slice(None, None, -1)})
                 # add an attribute for regridder evalution
                 data[tgt_coord['name']].attrs['flipped'] = 1
-                log_history(data, f"Reversed coordinate {tgt_coord['name']} from {src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel")
+                log_history(data, f"Flipped coordinate {tgt_coord['name']} from {src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel")
             else:
-                self.logger.info("Cannot reverse coordinate %s. Grid type is %s.",
+                self.logger.info("Cannot flip coordinate %s. Grid type is %s.",
                                     tgt_coord['name'], self.gridtype)
         return data
     

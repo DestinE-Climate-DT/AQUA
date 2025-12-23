@@ -334,7 +334,8 @@ class ConfigPath():
         return status, level, avail
 
 
-    def show_catalog_content(self, catalog=None, model=None, exp=None, source=None, verbose=True):
+    def show_catalog_content(self, catalog=None, model=None, exp=None, source=None, verbose=True,
+                             show_descriptions=False):
         """
         Scan catalog(s) by reading YAML files directly and display the model/exp/source structure.
         Uses intake to handle path resolution automatically.
@@ -345,11 +346,11 @@ class ConfigPath():
             exp (str | None): Optional experiment filter.
             source (str | None): Optional source filter.
             verbose (bool): If True, prints the formatted catalog structure. Defaults to True.
+            show_descriptions (bool): If True, also print per-source descriptions.
 
         Returns:
             dict: Dictionary with catalog names as keys and nested dict structure as values.
         """
-
         self.logger = log_configure(log_level='info', log_name='ShowCatalog')
 
         results = {}
@@ -362,27 +363,23 @@ class ConfigPath():
         self.logger.debug("Catalogs to show: %s", catalogs_to_scan)
 
         for cat_name in catalogs_to_scan:
-            # Open catalog (skip if fails)
+
             try:
                 catalog_file, _ = self.get_catalog_filenames(catalog=cat_name)
-            except (KeyError, FileNotFoundError) as e:
-                self.logger.warning('Cannot scan catalog: %s', e)
-                continue
-
-            # Use intake to open the catalog
-            try:
                 cat = intake.open_catalog(catalog_file)
-            except (KeyError, FileNotFoundError, Exception) as e:
-                self.logger.warning('Cannot open catalog %s: %s', cat_name, e)
+            except (KeyError, FileNotFoundError, Exception) as exc:
+                self.logger.warning('Cannot open/scan catalog %s: %s', cat_name, exc)
                 continue
 
-            catalog_structure = {}
+            structure = {}
+            descriptions = {}  # model -> exp -> {source: description}
+            
             models = [model] if model else list(cat.keys())
 
             for model_name in models:
                 if model_name not in cat:
-                    self.logger.warning('Model %s not found in catalog %s', model_name, cat_name)
-                    self.logger.warning('Available models are: %s', list(cat.keys()))
+                    self.logger.warning('Model %s not found in catalog %s. Available: %s', 
+                                        model_name, cat_name, list(cat.keys()))
                     continue
 
                 model_cat = cat[model_name]
@@ -390,49 +387,97 @@ class ConfigPath():
 
                 for exp_name in experiments:
                     if exp_name not in model_cat:
-                        self.logger.warning('Experiment %s not found in model %s', exp_name, model_name)
-                        self.logger.warning('Available experiments are: %s', list(model_cat.keys()))
+                        self.logger.warning('Experiment %s not found in model %s. Available: %s', 
+                                            exp_name, model_name, list(model_cat.keys()))
                         continue
 
                     exp_cat = model_cat[exp_name]
                     sources = list(exp_cat.keys())
 
-                    # Apply source filter if provided
                     if source:
                         sources = [s for s in sources if s == source]
-                    
-                    if sources:
-                        if model_name not in catalog_structure:
-                            catalog_structure[model_name] = {}
-                        catalog_structure[model_name][exp_name] = sources
 
-            if catalog_structure:
-                results[cat_name] = catalog_structure
-                formatted_output = self.format_catalog_structure(catalog_structure, cat_name)
-                if verbose:
-                    print(formatted_output)
+                    if not sources:
+                        continue
+
+                    if model_name not in structure:
+                        structure[model_name] = {}
+                    structure[model_name][exp_name] = sources
+
+                    # Pre-fetch descriptions if needed (once per experiment)
+                    if show_descriptions:
+                        if model_name not in descriptions:
+                            descriptions[model_name] = {}
+                        descriptions[model_name][exp_name] = self._extract_source_descriptions(exp_cat, sources)
+
+            if not structure:
+                continue
+
+            results[cat_name] = structure
+
+            if verbose:
+                print(self.format_catalog_structure(structure, cat_name, descriptions if show_descriptions else None))
 
         return results
 
+
     @staticmethod
-    def format_catalog_structure(structure, catalog_name):
-        """Format catalog structure as a nicely aligned tree."""
-        lines = [f"\n{'='*80}", f"📁 Catalog: {catalog_name}", f"{'='*80}"]
+    def _extract_source_descriptions(exp_cat, sources):
+        """Safely extract descriptions for a list of sources from an experiment catalog."""
+        try:
+            walk_dict = exp_cat.walk()
+        except Exception:  # noqa: BLE001
+            return {}
+            
+        descs = {}
+        for source in sources:
+            try:
+                # Access internal _description as in original implementation
+                desc = walk_dict[source]._description  # pylint: disable=W0212
+                if desc:
+                    descs[source] = desc
+            except Exception:  # noqa: BLE001
+                pass
+        return descs
+
+
+    @staticmethod
+    def format_catalog_structure(structure, catalog_name, descriptions=None):
+        """
+        Format catalog structure as a nicely aligned tree.
         
+        Args:
+            structure: Dictionary with model/exp/source structure
+            catalog_name: Name of the catalog
+            descriptions: Optional nested dict [model][exp][source] -> description.
+                          If provided, prints one source per line with description.
+                          If None, prints compact 3-column view.
+        """
+        lines = [f"\n{'='*80}", f"📁 Catalog: {catalog_name}", f"{'='*80}"]
+
         for model_name, experiments in sorted(structure.items()):
             lines.append(f"\n   Model: {model_name}")
-            
+
             for exp_name, sources in sorted(experiments.items()):
                 lines.append(f"     └─ Experiment: {exp_name}")
-                
-                # Format sources in columns for better readability
-                if sources:
-                    sorted_sources = sorted(sources)
-                    # Group sources in rows of 3 for compact display
+
+                if not sources:
+                    continue
+                    
+                sorted_sources = sorted(sources)
+
+                if descriptions:
+                    # Detailed view: One source per line with description
+                    exp_descs = descriptions.get(model_name, {}).get(exp_name, {})
+                    for source_key in sorted_sources:
+                        desc = exp_descs.get(source_key, "")
+                        lines.append(f"        - {source_key:<25} {desc}")
+                else:
+                    # Compact view: Group sources in rows of 3
                     for i in range(0, len(sorted_sources), 3):
                         source_group = sorted_sources[i:i+3]
                         formatted_sources = "  ".join(f"{s:<25}" for s in source_group)
                         lines.append(f"        ├─ {formatted_sources}")
-        
+
         lines.append(f"{'='*80}\n")
         return "\n".join(lines)

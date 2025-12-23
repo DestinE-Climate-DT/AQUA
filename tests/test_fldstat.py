@@ -173,6 +173,16 @@ class TestFldmean():
         assert avg.shape == (8,)
         assert avg[4] == pytest.approx(34.63406)
 
+    def test_fldmean_era5_toward_gaussian(self):
+        """Fldmean test for ERA5 toward gaussian grid and verification of fldmean"""
+        reader = Reader(model='ERA5', exp='era5-hpz3', source='monthly',
+                        regrid='F32', loglevel=LOGLEVEL)
+        data = reader.retrieve(var='2t').isel(time=0)
+        regrid = reader.regrid(data)
+        avg_reg = reader.fldmean(regrid['2t'])
+        assert regrid.lat[0] > regrid.lat[1]  # verify lat decreasing
+        assert avg_reg.values == pytest.approx(285.426661) # verify fldmean value
+
 @pytest.mark.aqua
 class TestFldStatDims():
     """Test class for dims parameter functionality"""
