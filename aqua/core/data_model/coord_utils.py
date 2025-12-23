@@ -1,4 +1,5 @@
-"""Urility functions for coordinate handling and data model loading."""
+"""Utility functions for coordinate handling and data model loading."""
+
 from functools import cache
 import os
 from metpy.units import units
@@ -11,17 +12,24 @@ pressure_dim = units.pascal.dimensionality
 meter_dim = units.meter.dimensionality
 
 # module logger
-#logger = log_configure(log_level='INFO', log_name='coord_utils')
+# logger = log_configure(log_level='INFO', log_name='coord_utils')
 
 # Possible basic names for coordinates
 DEFAULT_COORD_NAMES = {
-    "latitude": ["latitude", "lat",],
-    "longitude": ["longitude", "lon"],
+    "latitude": [
+        "latitude",
+        "lat",
+    ],
+    "longitude": [
+        "longitude", 
+        "lon"
+    ],
     "time": ["time", "time_counter"],
     "isobaric": ["plev"],
     "depth": ["depth"],
-    "height": ["height"]
+    "height": ["height"],
 }
+
 
 @cache
 def _load_coord_config():
@@ -34,22 +42,24 @@ def _load_coord_config():
     try:
         return load_yaml(config_path)
     except FileNotFoundError:
-        #logger.warning("Failed to load config from %s. Using defaults. Error: %s", config_path, e)
+        # logger.warning("Failed to load config from %s. Using defaults. Error: %s", config_path, e)
         return DEFAULT_COORD_NAMES
+
 
 def get_coord_defaults(internal_coord=None):
     """
     Get default coordinate names from cached config.
-    
+
     Args:
         internal_coord (str): Coordinate type ('latitude', 'longitude', etc.)
                              If None, returns entire config dict.
-    
+
     Returns:
         list or dict: List of names for the coordinate, or full config dict if internal_coord is None.
     """
     config = _load_coord_config()
     return config.get(internal_coord, DEFAULT_COORD_NAMES.get(internal_coord, []))
+
 
 @cache
 def _load_data_model(name: str = "aqua"):
@@ -67,9 +77,10 @@ def _load_data_model(name: str = "aqua"):
     data_model_file = os.path.join(data_model_dir, f"{name}.yaml")
     if not os.path.exists(data_model_file):
         raise FileNotFoundError(f"Data model file {data_model_file} not found.")
-    #logger.info("Loading data model from %s", data_model_file)
+    # logger.info("Loading data model from %s", data_model_file)
     data_yaml = load_yaml(data_model_file)
     return data_yaml
+
 
 def get_data_model(name: str = "aqua"):
     """
@@ -79,6 +90,7 @@ def get_data_model(name: str = "aqua"):
         name (str): An installed data_model into aqua config, i.e. a YAML file
     """
     return _load_data_model(name)
+
 
 # Function to get the conversion factor
 def units_conversion_factor(from_unit_str, to_unit_str):
@@ -91,13 +103,15 @@ def units_conversion_factor(from_unit_str, to_unit_str):
         return from_unit.to(to_unit).magnitude
     except DimensionalityError:
         return None
-    
+
+
 def is_pressure(unit):
     """Check if a unit is a pressure unit."""
     try:
         return units(unit).dimensionality == pressure_dim
     except UndefinedUnitError:
         return False
+
 
 def is_meter(unit):
     """Check if a unit is a length unit (depth)."""
