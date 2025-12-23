@@ -65,6 +65,15 @@ You can also filter by specific catalog(s), model, experiment, or source:
     # Filter by model
     results = show_catalog_content(model='IFS-NEMO')
 
+By default, ``show_catalog_content()`` displays sources in a compact 3-column format for quick overview.
+You can enable the ``show_descriptions=True`` parameter to display each source on its own line with its description
+from the catalog entry, providing additional information:
+
+.. code-block:: python
+
+    # Show catalog with detailed descriptions
+    catalog_content = show_catalog_content(model='IFS-NEMO', show_descriptions=True)
+
 .. note::
     The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigPath`` initialization internally.
     If you need more control over the configuration, you can still use the method directly from the ``ConfigPath`` class:

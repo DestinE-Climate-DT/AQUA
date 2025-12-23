@@ -19,11 +19,13 @@ jobs:
         run: |
           TARGET_BRANCH="${{ github.event.release.target_commitish }}"
           echo "Release target branch: $TARGET_BRANCH"
-          if [[ "$TARGET_BRANCH" == v0.13-*" || "$TARGET_BRANCH" == v0.19-* ]]; then
-            echo "IMAGE_NAME=aqua" >> $GITHUB_ENV
+          if [[ $TARGET_BRANCH == v0.13-* || $TARGET_BRANCH == v0.19-* ]]; then
+            IMAGE_NAME=aqua
           else
-            echo "IMAGE_NAME=aqua-core" >> $GITHUB_ENV
+            IMAGE_NAME=aqua-core
           fi
+
+          echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
           echo "Using IMAGE_NAME=$IMAGE_NAME"
       - name: Set build arguments based on tag
         id: set_build_args
