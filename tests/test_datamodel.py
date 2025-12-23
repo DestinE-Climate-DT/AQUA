@@ -13,6 +13,7 @@ class TestDataModel():
         return xr.Dataset(
             {
                 "temperature": (["level", "lat", "lon", "deeepth", "time"], np.random.rand(5, 3, 4, 3, 2)),
+                "wind": (["height", "lat", "lon", "time"], np.random.rand(4, 3, 4, 2)),
             },
             coords={
                 "level": [1000, 850, 700, 500, 300], 
@@ -20,6 +21,7 @@ class TestDataModel():
                 "longi": [100, 110, 120, 130],
                 "deeepth": [0, 10, 20],
                 "timing": ["2023-01-01", "2023-01-02"],
+                "height": [0, 5, 10, 15],
             },
         )
     
@@ -55,6 +57,14 @@ class TestDataModel():
         assert "depth" in new.coords
         assert "nz1" not in new.coords
         assert "idx_depth" in new.coords
+
+    def test_basic_transform_height(self):
+        """Test for height coordinate transformation."""
+
+        reader = Reader(model="ICON", exp="test-r2b0", source="short", loglevel="warning", fix=False)
+        data = reader.retrieve()
+        new = CoordTransformer(data, loglevel='debug').transform_coords()
+        assert "height" in new.coords
 
     def test_basic_transform(self):
         """Basic test for the CoordTransformer class."""
@@ -129,4 +139,17 @@ class TestDataModel():
         new = CoordTransformer(data, loglevel='debug').transform_coords()
         assert "time" in new.coords
         assert "depth" in new.coords
+
+    def test_ranking_case(self, data):
+        """Test for ranking functionality in CoordIdentifier."""
+
+        data = data.rename({"LATITUDE": "lat"})
+        data['longi'].attrs = {"axis": "Y"}
+        
+        identifier = CoordIdentifier(data.coords, loglevel='debug')
+        coord_dict = identifier.identify_coords()
+
+        # Check that only one coordinate is identified for each type
+        assert coord_dict['longitude'] is None
+        assert coord_dict['latitude']['name'] == 'lat'
 
