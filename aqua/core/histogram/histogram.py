@@ -80,13 +80,9 @@ def histogram(data: xr.DataArray, bins = 10, range = None, units = None,
     counts_per_bin.attrs['size_of_the_data'] = size_of_the_data
 
     if density:
-        if "long_name" in counts_per_bin.attrs:
-            counts_per_bin.attrs['long_name'] = 'Pdf of {}'.format(counts_per_bin.attrs['long_name'])
         counts_per_bin.name = 'pdf'
         counts_per_bin.attrs['units'] = 'probability density'
     else:
-        if "long_name" in counts_per_bin.attrs:
-            counts_per_bin.attrs['long_name'] = 'Histogram of {}'.format(counts_per_bin.attrs['long_name'])
         counts_per_bin.name = 'histogram'
         counts_per_bin.attrs['units'] = 'counts'
 
