@@ -168,7 +168,7 @@ class TestRegridder():
 
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
-        assert len(rgd.level_full) == 90
+        assert len(rgd.height) == 90
         assert len(rgd.time) == 2
 
     def test_recompute_weights_fesom3D(self):
@@ -199,7 +199,7 @@ class TestRegridder():
         (i.e. any missing points)
         """
         reader = Reader(model='NEMO', exp='test-eORCA1', source='short-3d',
-                        regrid='r200', rebuild=True, fix=False, loglevel=LOGLEVEL)
+                        regrid='r200', rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL)
         data = reader.retrieve(var='avg_so')
         rgd = reader.regrid(data)
 
