@@ -5,7 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v0.22.0):
+Unreleased in the current development version (target v1.0.0):
+
+## [v1.0.0a1]
+
+Main changes:
+1. New `show_catalog_content` function deprecating `catalog` and `inspect_catalog`
+2. Shapefile support for spatial selection in `AreaSelection`
+3. Documentation aligned to the new repository structure
 
 AQUA core complete list:
 - Allow to show descriptions in `show_catalog_content` (#2589)
@@ -1310,7 +1317,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...HEAD
+[v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1
 [v0.21.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.20.0...v0.21.0
 [v0.20.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.20.0
 [v0.19.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.1...v0.19.0
