@@ -1,12 +1,10 @@
 """Timmean mixin for the Reader class"""
-import pandas as pd
-import xarray as xr
-import numpy as np
 from functools import partial
-from aqua.core.util import check_chunk_completeness, check_seasonal_chunk_completeness, frequency_string_to_pandas
-from aqua.core.util import extract_literal_and_numeric
+import xarray as xr
+from aqua.core.util import frequency_string_to_pandas
 from aqua.core.logger import log_history, log_configure
 from aqua.core.histogram import histogram
+from aqua.core.timstat.handler_factory import TimeHandlerFactory
 
 
 class TimStat():
@@ -14,10 +12,10 @@ class TimStat():
     Time statistic AQUA module
     """
 
-
     def __init__(self, loglevel='WARNING'):
         self.loglevel = loglevel
         self.orig_freq = None
+        self.time_handler = None  # Will be set when data is provided
         self.logger = log_configure(loglevel, 'TimStat')
 
     @property
@@ -33,7 +31,7 @@ class TimStat():
         'mean', 'std', 'max', 'min' or 'histogram'. The output is a new xarray dataset with the time dimension resampled to the desired
         frequency and the statistic computed over the time window.
 
-        Args: 
+        Args:
             data (xarray.Dataset): Input data to compute the statistic on.
             stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'histogram'] or a custom function.
             freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object.
@@ -52,10 +50,11 @@ class TimStat():
 
         if not isinstance(stat, str) and not callable(stat):
             raise TypeError('stat must be a string or a callable function')
-        
+
         if stat == 'histogram':  # convert to callable function
             stat = histogram
-        
+
+        # convert frequency string to pandas frequency
         resample_freq = frequency_string_to_pandas(freq)
 
         # disabling all options if total averaging is selected
@@ -65,21 +64,16 @@ class TimStat():
             time_bnds = False
 
         if 'time' not in data.dims:
-            raise ValueError(f'Time dimension not found in the input data. Cannot compute tim{stat} statistic')
+            raise ValueError(
+                f'Time dimension not found in the input data. Cannot compute tim{stat} statistic')
+
+        # Initialize time handler based on data type: this will handle pandas
+        # or cftime time axes
+        self.time_handler = TimeHandlerFactory.get_handler(data)
 
         # Get original frequency (for history)
-        if len(data.time) > 1:
-            time_values = pd.to_datetime(data['time'].values[:2])
-            self.orig_freq = pd.tseries.frequencies.to_offset(time_values[1] - time_values[0])
-            #orig_freq = (time_values[1] - time_values[0]).total_seconds() / 3600
-            #self.orig_freq = round(orig_freq)
-        else:
-            # this block is likely never run, as the check for time dimension is done before
-            self.logger.warning('A single timestep is available, is this correct?')
-            self.orig_freq = 'Unknown'
-            if exclude_incomplete:
-                self.logger.warning('Disabling exclude incomplete since it cannot work if we have a single tstep!')
-                exclude_incomplete = False
+        exclude_incomplete = self._infer_original_frequency(
+            data, exclude_incomplete)
 
         # if we have a frequency
         if resample_freq is not None:
@@ -87,88 +81,126 @@ class TimStat():
                 # Resample to the desired frequency
                 resample_data = data.resample(time=resample_freq)
             except ValueError as exc:
-                raise ValueError(f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
-            
+                raise ValueError(
+                    f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
+
         # if frequency is undefined, meaning that we operate on the entire set
         else:
             resample_data = data
 
         # compact call, equivalent of "out = resample_data.mean()""
-        if isinstance(stat, str):  # we already checked if it is one of the allowable stats
-            self.logger.info(f'Resampling to %s frequency and computing {stat}...', str(resample_freq))
-            # use the kwargs to feed the time dimension to define the method and its options
+        if isinstance(
+                stat, str):  # we already checked if it is one of the allowable stats
+            self.logger.info(
+                f'Resampling to %s frequency and computing {stat}...',
+                str(resample_freq))
+            # use the kwargs to feed the time dimension to define the method
+            # and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
         else:  # we can safely assume that it is a callable function now
-            self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
+            self.logger.info(
+                'Resampling to %s frequency and computing custom function...',
+                str(resample_freq))
             if resample_freq is not None:
                 out = resample_data.map(partial(stat, **func_kwargs, **kwargs))
             else:
                 out = stat(resample_data, **func_kwargs, **kwargs)
 
         if exclude_incomplete and freq not in [None]:
-            self.logger.info('Checking if incomplete chunks has been produced...')
+            self.logger.info(
+                'Checking if incomplete chunks has been produced...')
             if 'Q' in resample_freq:
-                boolean_mask = check_seasonal_chunk_completeness(data,
-                                                                 resample_frequency=resample_freq,
-                                                                 loglevel=self.loglevel)
+                boolean_mask = self.time_handler.check_seasonal_chunk_completeness(
+                    data,
+                    resample_frequency=resample_freq,
+                    loglevel=self.loglevel
+                )
             else:
-                boolean_mask = check_chunk_completeness(data,
-                                                        resample_frequency=resample_freq,
-                                                        loglevel=self.loglevel)
+                boolean_mask = self.time_handler.check_chunk_completeness(
+                    data,
+                    resample_frequency=resample_freq,
+                    loglevel=self.loglevel
+                )
             out = out.where(boolean_mask, drop=True)
 
         # Set time:
         # if not center_time as the first timestamp of each month/day according to the sampling frequency
-        # if center_time as the middle timestamp of each month/day according to the sampling frequency
+        # if center_time as the middle timestamp of each month/day according to
+        # the sampling frequency
         if center_time:
-            out = self.center_time_axis(out, resample_freq)
+            out = self.time_handler.center_time_axis(out, resample_freq)
 
         # Check time is correct
         if resample_freq is not None:
-            if np.any(np.isnat(out.time)):
-                raise ValueError('Resampling cannot produce output for all frequency step, is your input data correct?')
+            if self.time_handler.has_nat(out.time):
+                raise ValueError(
+                    'Resampling cannot produce output for all frequency step, is your input data correct?')
 
-        out = log_history(out, f"resampled from frequency {self.orig_freq} to frequency {freq} by AQUA tim{stat}")
+        out = log_history(
+            out, f"resampled from frequency {
+                self.orig_freq} to frequency {freq} by AQUA tim{stat}")
 
         # Add a variable to create time_bounds
         if time_bounds:
-            resampled = data.time.resample(time=resample_freq)
-            time_bnds = xr.concat([resampled.min(), resampled.max()], dim='bnds', coords='different').transpose()
-            time_bnds['time'] = out.time
-            time_bnds.name = 'time_bnds'
-            out = xr.merge([out, time_bnds])
-            if np.any(np.isnat(out.time_bnds)):
-                raise ValueError('Resampling cannot produce output for all time_bnds step!')
-            log_history(out, f"time_bnds added by by AQUA tim{stat}")
+            out = self._add_time_bounds(data, out, resample_freq, stat)
 
         return out
-    
-    # this is not yet a great solution, but is more general than the previous one
-    def center_time_axis(self, avg_data: xr.Dataset, resample_freq: str) -> xr.Dataset:
+
+    def _infer_original_frequency(self, data, exclude_incomplete):
         """
-        Move the time axis of the averaged data toward the center of the averaging period.
+        Infer and store the original frequency of the input data.
 
         Args:
-            avg_data (xr.Dataset): The dataset with averaged data.
-            resample_freq (str): The resampling frequency (e.g., '1D', '1M', '1Y').
+            data (xarray.Dataset): Input data with time dimension.
+            exclude_incomplete (bool): Whether to exclude incomplete chunks (may be disabled).
 
         Returns:
-            xr.Dataset: The dataset with the time axis centered.
+            bool: Updated value of exclude_incomplete (disabled if single timestep).
         """
+        if len(data.time) > 1:
+            self.orig_freq = self.time_handler.infer_freq(data.time)
+        else:
+            self.logger.warning(
+                'A single timestep is available, is this correct?')
+            self.orig_freq = 'Unknown'
+            if exclude_incomplete:
+                self.logger.warning(
+                    'Disabling exclude incomplete since it cannot work if we have a single tstep!')
+                exclude_incomplete = False
 
-        literal, numeric = extract_literal_and_numeric(resample_freq)
-        self.logger.debug('Frequency is %s with numeric part %s', literal, numeric)
+        return exclude_incomplete
 
-        if literal in ["M", "Y", "ME", "YE"]:
-            raise ValueError(f"Centering not implemented for frequency '{resample_freq}'")
+    def _add_time_bounds(self, data, out, resample_freq, stat):
+        """
+        Add time_bnds variable to the output dataset.
 
-        def average_datetimeindex(idx1: pd.DatetimeIndex, idx2: pd.DatetimeIndex) -> pd.DatetimeIndex:
-            return pd.to_datetime((idx1.view("int64") + idx2.view("int64")) // 2)
-        
-        offset = pd.tseries.frequencies.to_offset(resample_freq)
+        The time_bnds variable contains the start and end times of each
+        resampling period.
 
-        avg_data['time'] = average_datetimeindex(pd.to_datetime(avg_data['time']),
-                              pd.to_datetime(avg_data['time']) + offset)
-        
-        return avg_data
+        Args:
+            data (xarray.Dataset): Original input data (used to compute bounds).
+            out (xarray.Dataset): Output data to add time_bnds to.
+            resample_freq (str): Resampling frequency (e.g. 'MS', '1D').
+            stat (str): Statistic name (for history logging).
+
+        Returns:
+            xarray.Dataset: Output data with time_bnds variable added.
+
+        Raises:
+            ValueError: If time_bnds contain invalid timestamps (NaT).
+        """
+        resampled = data.time.resample(time=resample_freq)
+        time_bnds = xr.concat(
+            [resampled.min(), resampled.max()], dim='bnds', coords='different').transpose()
+        time_bnds['time'] = out.time
+        time_bnds.name = 'time_bnds'
+        out = xr.merge([out, time_bnds])
+
+        if self.time_handler.has_nat(out.time_bnds):
+            raise ValueError(
+                'Resampling cannot produce output for all time_bnds step!')
+
+        out = log_history(out, f"time_bnds added by AQUA tim{stat}")
+
+        return out
