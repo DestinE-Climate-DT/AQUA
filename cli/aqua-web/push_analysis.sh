@@ -285,8 +285,7 @@ if [ $localrepo -eq 1 ]; then
 else
     log_message INFO "Clone aqua-web from $repository"
     repo=aqua-web$$
-    absoluterepo=$(realpath $repo)
-    trap "rm -rf $absoluterepo" EXIT
+    trap "rm -rf '$PWD/$repo'" EXIT
     if [ $update -eq 1 ]; then
         git clone git@github.com:$repository.git $repo
     else
