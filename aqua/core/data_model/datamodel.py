@@ -46,18 +46,21 @@ class DataModel:
         self.logger.debug("Initializing DataModel: %s", self.name)
         self.config = get_data_model(self.name)
     
-    def apply(self, data: xr.Dataset) -> xr.Dataset:
+    def apply(self, data: xr.Dataset, flip_coords=True) -> xr.Dataset:
         """
         Apply base data model transformations to dataset.
         
         Args:
             data (xr.Dataset): Input dataset
-            
+            flip_coords (bool): Whether to flip coordinate directions as per data model.
+        
         Returns:
             xr.Dataset: Transformed dataset with standardized coordinates
         """
         self.logger.info("Applying data model: %s", self.name)
-        return CoordTransformer(data, loglevel=self.loglevel).transform_coords(name=self.name)
+        return CoordTransformer(data, loglevel=self.loglevel).transform_coords(
+            name=self.name, flip_coords=flip_coords
+        )
     
     def get_config(self) -> dict:
         """

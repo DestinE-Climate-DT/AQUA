@@ -317,7 +317,7 @@ class Reader():
                 self.tgt_grid_area = self.fixer.fixerdatamodel.apply(self.tgt_grid_area)
             # Apply data model transformation to target areas
             if self.datamodel:
-                self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area)
+                self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area, flip_coords=False)
             # expose target horizontal dimensions
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 

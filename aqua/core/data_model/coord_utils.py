@@ -113,7 +113,7 @@ def is_pressure(unit):
     """Check if a unit is a pressure unit."""
     try:
         return units(unit).dimensionality == pressure_dim
-    except UndefinedUnitError:
+    except (UndefinedUnitError, AttributeError):
         return False
 
 
@@ -121,5 +121,5 @@ def is_meter(unit):
     """Check if a unit is a length unit (depth)."""
     try:
         return units(unit).dimensionality == meter_dim
-    except UndefinedUnitError:
+    except (UndefinedUnitError, AttributeError):
         return False
