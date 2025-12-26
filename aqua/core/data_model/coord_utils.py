@@ -100,9 +100,9 @@ def units_conversion_factor(from_unit_str, to_unit_str):
     try:
         from_unit = units(from_unit_str)
         to_unit = units(to_unit_str)
-    except UndefinedUnitError:
+    except (UndefinedUnitError, AttributeError):
         return None
-    
+
     try:
         return from_unit.to(to_unit).magnitude
     except DimensionalityError:
