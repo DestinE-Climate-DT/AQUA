@@ -105,7 +105,7 @@ def units_conversion_factor(from_unit_str, to_unit_str):
 
     try:
         return from_unit.to(to_unit).magnitude
-    except DimensionalityError:
+    except (DimensionalityError, AttributeError):
         return None
 
 
