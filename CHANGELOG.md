@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Data Model can now be disabled and it is independent from the Fixer (#2586)
 - Improve fldstat handling of gaussian grids (#2584)
 - Data model now uses a ranking system to identify coordinates (#2585) 
 

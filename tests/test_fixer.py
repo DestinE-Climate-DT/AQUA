@@ -133,7 +133,7 @@ def test_fixer_ifs_coords():
 def test_fixer_fesom_coords():
     """Check with fixer_name and coords block"""
 
-    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", loglevel=LOGLEVEL)
+    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", datamodel=False, loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert 'level' in data.coords
     assert 'a lot of water' in data.level.attrs['units']
