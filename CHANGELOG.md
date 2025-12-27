@@ -23,6 +23,7 @@ AQUA core complete list:
 - Improve test cleaning and avoid specific race conditions in tests (#2587)
 - Shapefile support for spatial selection in `AreaSelection` (#2576)
 - Remove IPython dependency from io_util (#2569)
+- Add LaTeX units formatting to labels (#2561)
 - Add concurrency suppression for Github actions (#2557)
 - Deprecate `catalog` and `inspect_catalog` (#2556)
 - Generate seasonal quarter months and allow incomplete time seasonal sequences in `timmean` (#2529)

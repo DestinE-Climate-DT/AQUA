@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from metpy.units import units
-from aqua.core.util import to_list
+from aqua.core.util import to_list, unit_to_latex
 from aqua.core.logger import log_configure
 from .styles import ConfigStyle
 from matplotlib import colors as mcolors
@@ -154,7 +154,9 @@ def boxplot(fldmeans: list[xr.Dataset],
     global_units_found = set().union(*unit_sets.values())
     if len(global_units_found) == 1:
         first_var = variables[0][1:] if variables[0].startswith('-') else variables[0]
-        ax.set_ylabel(fldmeans[0][first_var].attrs.get('units'), fontsize=fontsize, labelpad=12)    
+        units_str = fldmeans[0][first_var].attrs.get('units', '')
+        units_latex = unit_to_latex(units_str) if units_str else ''
+        ax.set_ylabel(units_latex, fontsize=fontsize, labelpad=12)    
     else:
         ax.set_ylabel('Values (various units)', fontsize=fontsize, labelpad=12)
 

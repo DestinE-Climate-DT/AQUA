@@ -1,8 +1,38 @@
 """Functions to plot monthly and annual data, as well as reference data."""
 import matplotlib.pyplot as plt
 import xarray as xr
-from aqua.core.util import to_list
+from aqua.core.util import to_list, unit_to_latex
 
+
+def _plot_lx(da: xr.DataArray, ax: plt.Axes, **plot_kwargs):
+    """
+    Wrapper around xarray's plot method that temporarily 
+    converts units to LaTeX format.
+    
+    Args:
+        da (xr.DataArray): DataArray to plot.
+        ax (plt.Axes): Axes to plot on.
+        **plot_kwargs: Additional arguments passed to xarray's plot method.
+    
+    Returns:
+        Same return type as xarray's plot method (Line2D or list of Line2D).
+    """
+    original_units = da.attrs.get('units', None)
+    
+    if original_units:
+        # Create a copy with independent attrs to ensure original data is not modified
+        da = da.copy(deep=False)
+        # Copy attrs dictionary
+        da.attrs = dict(da.attrs)
+        units_latex = unit_to_latex(original_units)
+        # Set LaTeX units only on the copy
+        da.attrs['units'] = units_latex
+    
+    # Call xarray plot - it will automatically use the LaTeX
+    result = da.plot(ax=ax, **plot_kwargs)
+    
+    return result
+    
 
 def plot_timeseries_data(ax: plt.Axes,
                          data: xr.DataArray | list[xr.DataArray],
@@ -55,7 +85,7 @@ def plot_timeseries_data(ax: plt.Axes,
                 'alpha': 0.5
             })
 
-        line = da.plot(**plot_kwargs)
+        line = _plot_lx(da, **plot_kwargs)
         # xarray returns a list for multiple lines, but just a Line2D for 1D plots
         if isinstance(line, list):
             lines.extend(line)
@@ -118,7 +148,7 @@ def plot_timeseries_ref_data(ax: plt.Axes,
                                 ref_da + 2.*std_da,
                                 facecolor='black', alpha=0.2)
 
-        ref_da.plot(**plot_kwargs)
+        _plot_lx(ref_da, **plot_kwargs)
 
 
 def plot_timeseries_ensemble(ax: plt.Axes,
@@ -163,4 +193,4 @@ def plot_timeseries_ensemble(ax: plt.Axes,
                             data + 2.*std_data,
                             alpha=0.2, facecolor="#f89e13")
             
-    data.plot(**plot_kwargs)
+    _plot_lx(data, **plot_kwargs)
