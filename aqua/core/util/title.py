@@ -1,5 +1,5 @@
 """
-Title generation utilities for AQUA plots.
+Title generation class and utilities for AQUA plots.
 """
 
 from typing import Optional, Union
@@ -30,7 +30,7 @@ class TitleBuilder:
     def __init__(self, 
                  title: Optional[str] = None,
                  diagnostic: Optional[str] = None,
-                 variable: Optional[str] = None,    # long name of the variable
+                 variable: Optional[str] = None,
                  regions: Optional[Union[str, list]] = None,
                  conjunction: Optional[str] = None,
                  catalog: Optional[str] = None,
@@ -58,7 +58,7 @@ class TitleBuilder:
         self.extra_info = extra_info
 
 
-    def _set_models(self):
+    def _set_models(self) -> str | None:
         """
         Generate the models
         """
@@ -71,7 +71,7 @@ class TitleBuilder:
             return parts
         return None
 
-    def _set_ref(self):
+    def _set_ref(self) -> str | None:
         """
         Generate the reference
         """
