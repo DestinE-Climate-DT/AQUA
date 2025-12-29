@@ -22,6 +22,7 @@ from .yaml import load_yaml, dump_yaml, load_multi_yaml
 from .time import check_chunk_completeness, frequency_string_to_pandas, pandas_freq_to_string
 from .time import time_to_string, int_month_name, xarray_to_pandas_freq, check_seasonal_chunk_completeness
 from .zarr import create_zarr_reference
+from .title import TitleBuilder
 
 __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard', 
            'template_parse_arguments',
@@ -45,4 +46,5 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'check_chunk_completeness', 'frequency_string_to_pandas', 'pandas_freq_to_string',
            'time_to_string', 'int_month_name',  'xarray_to_pandas_freq', 'check_seasonal_chunk_completeness',
            'create_zarr_reference',
+           'TitleBuilder',
            ]
