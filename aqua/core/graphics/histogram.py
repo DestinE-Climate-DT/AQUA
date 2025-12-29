@@ -26,6 +26,7 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
                    ymin: float | None = None,
                    smooth: bool = False,
                    smooth_window: int = 5,
+                   labelsize: int = 13,
                    loglevel: str = 'WARNING'):
     """
     Plot histogram or PDF data.
@@ -51,6 +52,7 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         ymin (float | None, optional): Minimum value for y-axis.
         smooth (bool, optional): Apply smoothing to the data.
         smooth_window (int, optional): Window size for smoothing.
+        labelsize (int, optional): Font size for labels.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -132,13 +134,13 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
             xlabel = f"{var_name} [{var_units}]"
         else:
             xlabel = var_name
-    ax.set_xlabel(xlabel)
+    ax.set_xlabel(xlabel, fontsize=labelsize)
 
     if ylabel is None:
         # Determine if this is a PDF or histogram based on data units attribute
         is_pdf = hasattr(first_data, 'units') and 'probability' in str(first_data.units).lower()
         ylabel = "Probability Density" if is_pdf else "Frequency"
-    ax.set_ylabel(ylabel)
+    ax.set_ylabel(ylabel, fontsize=labelsize)
 
     # Set title if provided
     if title:
