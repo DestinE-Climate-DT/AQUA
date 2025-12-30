@@ -36,6 +36,7 @@ class TitleBuilder:
                  catalog: Optional[str] = None,
                  models: Optional[Union[str, list]] = None, 
                  exps: Optional[Union[str, list]] = None,
+                 realizations: Optional[Union[str, list]] = None,
                  comparison: Optional[str] = None,
                  ref_model: Optional[str] = None, 
                  ref_exp: Optional[str] = None,
@@ -51,6 +52,7 @@ class TitleBuilder:
         self.catalog = catalog
         self.models = to_list(models) if models is not None else []
         self.exps = to_list(exps) if exps is not None else []
+        self.realizations = to_list(realizations) if realizations is not None else []
         self.comparison = comparison
         self.ref_model = ref_model
         self.ref_exp = ref_exp
@@ -109,6 +111,12 @@ class TitleBuilder:
             if self.variable:
                 title += f"{self.conjunction} " if self.conjunction else 'for '
             title += f"{models_part} "
+
+        if self.realizations:
+            if len(self.realizations) > 1:
+                title += f" Multi-realization "
+            else:
+                title += f" {self.realizations[0]} "
 
         ref_part = self._set_ref()
         if ref_part:
