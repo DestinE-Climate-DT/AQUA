@@ -19,6 +19,7 @@ Main changes:
 3. Documentation aligned to the new repository structure
 
 AQUA core complete list:
+- Refactor `_filter_kwargs` to improve readability and performance (#)
 - Allow to show descriptions in `show_catalog_content` (#2589)
 - Improve test cleaning and avoid specific race conditions in tests (#2587)
 - Shapefile support for spatial selection in `AreaSelection` (#2576)
