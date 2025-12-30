@@ -18,10 +18,12 @@ class TitleBuilder:
         regions (str or list, optional): Region name(s) (e.g., 'global', 'North Atlantic').
         models (str or list, optional): Model name(s).
         exps (str or list, optional): Experiment name(s).
+        realizations (str or list, optional): Realization name(s).
         comparison (str, optional): Formulation for the comparison. Default is 'relative to'.
         ref_model (str or list, optional): Reference model name.
         ref_exp (str or list, optional): Reference experiment name.
         timeseason (str, optional): Season or month (e.g., 'JJA', 'March').
+        extra_info (str or list, optional): Extra information to be added to the title.
 
     Returns:
         str: The generated title.
@@ -106,7 +108,7 @@ class TitleBuilder:
             if regions_str:
                 title += f"[{regions_str}] "
         
-        models_part = self._set_models()    
+        models_part = self._set_models()
         if models_part:
             if self.variable:
                 title += f"{self.conjunction} " if self.conjunction else 'for '
@@ -114,9 +116,9 @@ class TitleBuilder:
 
         if self.realizations:
             if len(self.realizations) > 1:
-                title += f" Multi-realization "
+                title += f"Multi-realization "
             else:
-                title += f" {self.realizations[0]} "
+                title += f"{self.realizations[0]} "
 
         ref_part = self._set_ref()
         if ref_part:
