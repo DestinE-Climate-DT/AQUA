@@ -360,8 +360,8 @@ def time_to_string(time=None, format='%Y-%m-%d'):
     """Convert a time object to a string in the format YYYY-MM-DD
 
     Args:
-        time: a time object, either a string, a datetime64 object or a pandas timestamp
-        format: the format of the output string (YYYY-MM-DD by default, YYYYMMDD tested)
+        time (str | pd.Timestamp | np.datetime64): a time object, either a string, a datetime64 object or a pandas timestamp
+        format (str): the format of the output string (YYYY-MM-DD by default, YYYYMMDD tested)
 
     Returns:
         A string in the format defined by the format argument

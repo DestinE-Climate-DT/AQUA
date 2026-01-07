@@ -43,6 +43,8 @@ class TitleBuilder:
                  ref_model: Optional[str] = None, 
                  ref_exp: Optional[str] = None,
                  timeseason: Optional[str] = None,
+                 startyear: Optional[int] = None,
+                 endyear: Optional[int] = None,
                  extra_info: Optional[Union[str, list]] = None,
                  ):
 
@@ -59,6 +61,8 @@ class TitleBuilder:
         self.ref_model = ref_model
         self.ref_exp = ref_exp
         self.timeseason = timeseason
+        self.startyear = str(startyear) if isinstance(startyear, int) else startyear
+        self.endyear = str(endyear) if isinstance(endyear, int) else endyear
         self.extra_info = extra_info
 
 
@@ -85,6 +89,18 @@ class TitleBuilder:
             parts += f"{self.ref_model} " if self.ref_model else ''
             parts += f"{self.ref_exp} " if self.ref_exp else ''
             return parts
+        return None
+    
+    def _set_years(self) -> str | None:
+        """
+        Generate the years
+        """
+        if self.startyear and self.endyear:
+            return f"{self.startyear}-{self.endyear}"
+        if self.startyear:
+            return self.startyear
+        if self.endyear:
+            return self.endyear
         return None
 
     def generate(self) -> str:
@@ -128,6 +144,10 @@ class TitleBuilder:
 
         if self.timeseason:
             title += f" {self.timeseason}"
+
+        years = self._set_years()
+        if years:
+            title += f" {years}"
 
         if self.extra_info:
             title += f" {' '.join(to_list(self.extra_info))}"
