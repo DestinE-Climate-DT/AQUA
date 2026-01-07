@@ -81,7 +81,7 @@ class GSVSource(base.DataSource):
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.engine = engine
-        self.databridge = databridge
+        self.databridge = 'lumi' if databridge is None else databridge
         self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
         self.logger.debug("Init of the GSV source class")
 
