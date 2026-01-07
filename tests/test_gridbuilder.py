@@ -8,7 +8,7 @@ from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
 from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
 
-pytestmark = pytest.mark.aqua
+pytestmark = [pytest.mark.aqua, pytest.mark.xdist_group(name="grid_builder")]
 
 
 class TestGridBuilder:

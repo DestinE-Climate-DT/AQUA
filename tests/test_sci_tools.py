@@ -1,5 +1,5 @@
 import pytest
-
+import regionmask
 import xarray as xr
 import numpy as np
 from typeguard import TypeCheckError
@@ -34,6 +34,25 @@ def test_valid_selection_no_brd(sample_data):
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
     assert np.isnan(result.sel(lat=60, lon=90).values)
+
+
+@pytest.mark.aqua
+def test_selection_regionmask(sample_data):
+    """Test selection using regionmask"""
+    # Define a simple regionmask region
+    region = regionmask.defined_regions.natural_earth_v5_0_0.countries_110
+    region_sel = ['United States of America', 'Russia']
+
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data,
+                                                          region=region,
+                                                          region_sel=region_sel,
+                                                          box_brd=True)
+
+    assert result is not None
+    # Check that values outside the selected regions are NaN
+    assert np.isnan(result.sel(lat=0, lon=150, method="nearest").values)
+    # Check that values inside the selected regions are not NaN
+    assert result.sel(lat=40, lon=-100, method="nearest").values is not np.nan
 
 
 @pytest.mark.aqua

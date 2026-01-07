@@ -370,7 +370,8 @@ The following options are available for ``aqua grids build``:
 
 .. option:: --fix
 
-    Fix the original source before building the grid. Useful for models with very specific coordinates/dimensions
+    Fix the original source before building the grid. Useful for models with very specific coordinates/dimensions.
+    Suggested as default setting, disabled if issues arise.
 
 .. option:: --verify
 
