@@ -157,14 +157,15 @@ class Reader():
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
 
         # check machine compatibility
-        self.machine_from_catalog = self.expcat.metadata.get('machine')
-        if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
-            self.logger.warning(
-                "The machine configured (%s) is different from the machine in the catalog (%s). "
-                "Please check that the data you are looking for are on the machine you are working on.",
-                self.machine.lower(),
-                self.machine_from_catalog.lower(),
-            )
+        if engine != 'polytope':
+            self.machine_from_catalog = self.expcat.metadata.get('machine')
+            if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
+                self.logger.warning(
+                    "The machine configured (%s) is different from the machine in the catalog (%s). "
+                    "Please check that the data you are looking for are on the machine you are working on.",
+                    self.machine.lower(),
+                    self.machine_from_catalog.lower(),
+                )
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
 
