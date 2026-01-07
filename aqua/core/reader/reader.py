@@ -171,7 +171,7 @@ class Reader():
         # intake parameters
         self.intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
 
-        self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine, databridge_source=self.machine_from_catalog)
+        self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
@@ -635,7 +635,7 @@ class Reader():
 
         raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
 
-    def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb', databridge_source: str = None) -> dict:
+    def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb', databridge: str = None) -> dict:
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
@@ -644,6 +644,7 @@ class Reader():
             intake_vars (dict): The intake variables from the catalog machine specific file.
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
+            databridge (str): The databridge used for the GSV retrieval, default is None. 
 
         Returns:
             A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
@@ -679,11 +680,11 @@ class Reader():
                 filtered_kwargs.update({'engine': engine})
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
 
-        if engine == 'polytope' and databridge_source is not None:
-            # If the engine is polytope, we need to add the databridge_source parameter
-            if 'databridge_source' not in filtered_kwargs:
-                filtered_kwargs.update({'databridge_source': databridge_source})
-                self.logger.debug('Adding databridge_source=%s to the filtered kwargs', databridge_source)
+        if engine == 'polytope' and databridge is not None:
+            # If the engine is polytope, we need to add the databridge parameter
+            if 'databridge' not in filtered_kwargs:
+                filtered_kwargs.update({'databridge': databridge})
+                self.logger.debug('Adding databridge=%s to the filtered kwargs', databridge)
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
