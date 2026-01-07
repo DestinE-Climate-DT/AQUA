@@ -23,6 +23,8 @@ class TitleBuilder:
         ref_model (str or list, optional): Reference model name.
         ref_exp (str or list, optional): Reference experiment name.
         timeseason (str, optional): Season or month (e.g., 'JJA', 'March').
+        startyear (int | str, optional): Start year.
+        endyear (int | str, optional): End year.
         extra_info (str or list, optional): Extra information to be added to the title.
 
     Returns:
@@ -43,8 +45,8 @@ class TitleBuilder:
                  ref_model: Optional[str] = None, 
                  ref_exp: Optional[str] = None,
                  timeseason: Optional[str] = None,
-                 startyear: Optional[int] = None,
-                 endyear: Optional[int] = None,
+                 startyear: Optional[int | str] = None,
+                 endyear: Optional[int | str] = None,
                  extra_info: Optional[Union[str, list]] = None,
                  ):
 
@@ -66,7 +68,7 @@ class TitleBuilder:
         self.extra_info = extra_info
 
 
-    def _set_models(self) -> str | None:
+    def _format_models(self) -> str | None:
         """
         Generate the models
         """
@@ -79,7 +81,7 @@ class TitleBuilder:
             return parts
         return None
 
-    def _set_ref(self) -> str | None:
+    def _format_ref(self) -> str | None:
         """
         Generate the reference
         """
@@ -91,7 +93,7 @@ class TitleBuilder:
             return parts
         return None
     
-    def _set_years(self) -> str | None:
+    def _format_years(self) -> str | None:
         """
         Generate the years
         """
@@ -124,7 +126,7 @@ class TitleBuilder:
             if regions_str:
                 title += f"[{regions_str}] "
         
-        models_part = self._set_models()
+        models_part = self._format_models()
         if models_part:
             if self.variable:
                 title += f"{self.conjunction} " if self.conjunction else 'for '
@@ -136,7 +138,7 @@ class TitleBuilder:
             else:
                 title += f"{self.realizations[0]} "
 
-        ref_part = self._set_ref()
+        ref_part = self._format_ref()
         if ref_part:
             if self.variable:
                 title += self.comparison if self.comparison else 'relative to '
@@ -145,7 +147,7 @@ class TitleBuilder:
         if self.timeseason:
             title += f" {self.timeseason}"
 
-        years = self._set_years()
+        years = self._format_years()
         if years:
             title += f" {years}"
 
