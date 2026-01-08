@@ -370,3 +370,4 @@ if [ $localrepo -eq 0 ]; then
 fi
 
 log_message INFO "push_analysis job completed."
+
