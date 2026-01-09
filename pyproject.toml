@@ -39,6 +39,7 @@ dependencies = [
     "cartopy==0.24.1",
     "cfgrib",
     "dask",
+    "tornado", # for dask distributed
     "eccodes==2.41.0",
     "filelock",
     "gcsfs", # Google Cloud Storage File System
