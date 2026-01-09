@@ -38,14 +38,12 @@ dependencies = [
     "boto3",
     "cartopy==0.24.1",
     "cfgrib",
-    "dask",
-    "tornado", # for dask distributed
+    "dask[distributed]",
     "eccodes==2.41.0",
     "filelock",
     "gcsfs", # Google Cloud Storage File System
     "pandas",
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-esm",
     "intake-xarray",
     "jinja2",
     "matplotlib",

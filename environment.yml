@@ -18,7 +18,6 @@ dependencies:
   - pandas      
   - pip
   - hdf5 #explicitly to avoid issues with pypi version
-  - intake-esm
   - imagemagick
   - pip:
     # pip install -e of AQUA itself
