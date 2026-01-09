@@ -6,6 +6,7 @@ grids:
   tl63:
     path: '{{ grids }}/IFS/tl63_grid.nc'
   
+  # EC-EARTH4 grids
   ORCA2-ece:
     path:
         2d: '{{ grids }}/EC-EARTH4/ORCA2_mesh_sfc_grid_T.nc'
@@ -63,3 +64,8 @@ grids:
   tl63-ece:
     path: '{{ grids }}/EC-EARTH4/tl63.nc'
     space_coord: ["cell"]
+
+  # EC-EARTH3 grids
+  ecearth3-ORCA25-2d:
+    path: '{{ grids }}/EC-EARTH3/ecearth3_ORCA25_2d.nc'
+    space_coord: ["j", "i"]
