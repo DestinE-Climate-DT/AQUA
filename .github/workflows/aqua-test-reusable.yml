@@ -237,7 +237,8 @@ jobs:
         run: |
           cd aqua-dvc
           git checkout main
-          dvc pull -j 1 -R data-tests/*
+          dvc pull -j 1 data-tests
+          dvc checkout data-tests
           mkdir -p ../AQUA/AQUA_tests
           mv data-tests/* ../AQUA/AQUA_tests
       
