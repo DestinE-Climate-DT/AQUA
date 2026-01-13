@@ -4,8 +4,8 @@ Provides a clean interface to CoordTransformer with caching.
 """
 import xarray as xr
 from aqua.core.logger import log_configure
-from aqua.core.data_model import CoordTransformer
-from aqua.core.data_model.coord_utils import get_data_model
+from .coordtransformer import CoordTransformer
+from .coord_utils import get_data_model
 
 
 class DataModel:
@@ -22,14 +22,14 @@ class DataModel:
     - Attribute standardization
     
     Args:
-        name (str): Data model name (e.g., "aqua", "cmip6"). Default is "aqua".
+        name (str): Data model name (e.g., "aqua"). Default is "aqua". Other can be added.
         loglevel (str): Log level for logging. Default is 'WARNING'.
         
     Example:
         >>> datamodel = DataModel(name="aqua", loglevel="DEBUG")
         >>> data = datamodel.apply(data)
     """
-    
+
     def __init__(self, name: str = "aqua", loglevel: str = 'WARNING'):
         """
         Initialize DataModel.

@@ -63,7 +63,7 @@ class Reader():
             source (str): Source ID. Mandatory
             catalog (str, optional): Catalog where to search for the triplet.  Default to None will allow for autosearch in
                                      the installed catalogs.
-            datamodel (str, optional): Data model to apply for coordinate transformations (e.g., 'aqua', 'cmip6'). Defaults to 'aqua'.
+            datamodel (str, optional): Data model to apply for coordinate transformations (e.g., 'aqua'). Defaults to 'aqua'.
             regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
             regrid_method (str, optional): CDO Regridding regridding method. Read from grid configuration.
                                            If not specified anywhere, using "ycon".

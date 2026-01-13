@@ -2,6 +2,14 @@
 from aqua.core.logger import log_configure
 
 class FixerConfigure:
+    """
+    Class to configure the fixer based on convention and fixer_name.
+    Args:
+        convention (str): The convention name (e.g., 'eccodes'). Default is None
+        fixes_dictionary (dict): The fixes dictionary loaded from the fixes file.
+        fixer_name (str): The fixer name to load specific fixes. Default is None
+        loglevel (str): Log level for logging. Default is 'WARNING'.
+    """
 
     def __init__(self, convention=None, fixes_dictionary=None, fixer_name=None, loglevel='WARNING'):
 
