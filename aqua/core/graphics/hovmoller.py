@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from aqua.core.util import create_folder, evaluate_colorbar_limits
+from aqua.core.util import create_folder, evaluate_colorbar_limits, unit_to_latex
 from aqua.core.logger import log_configure
 from .styles import ConfigStyle
 
@@ -174,7 +174,7 @@ def plot_hovmoller(data: xr.DataArray,
             except AttributeError:
                 units = None
             if var_name is not None and units is not None:
-                cbar_label = '{} [{}]'.format(var_name, units)
+                cbar_label = '{} [{}]'.format(var_name, unit_to_latex(units))
             elif var_name is not None:
                 cbar_label = var_name
             else:

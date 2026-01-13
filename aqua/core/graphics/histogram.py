@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list
+from aqua.core.util import to_list, unit_to_latex
 from .styles import ConfigStyle
 
 
@@ -117,16 +117,14 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
     
     # Set labels
     first_data = data_list[0]
+    xlabel = "Value"
     if hasattr(first_data, 'center_of_bin') and hasattr(first_data.center_of_bin, 'units'):
-        xlabel = f"Value [{first_data.center_of_bin.units}]"
-    else:
-        xlabel = "Value"
+        xlabel += f" [{unit_to_latex(first_data.center_of_bin.units)}]"
     ax.set_xlabel(xlabel)
     
+    ylabel = "Frequency"
     if hasattr(first_data, 'units'):
-        ylabel = f"Frequency [{first_data.units}]"
-    else:
-        ylabel = "Frequency"
+        ylabel += f" [{unit_to_latex(first_data.units)}]"
     ax.set_ylabel(ylabel)
 
     # Set title if provided
