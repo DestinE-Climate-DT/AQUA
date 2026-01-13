@@ -1,6 +1,6 @@
 """
 Class for supplementary coordinate and dimension fixes beyond base data model.
-Works AFTER base data model transformation (DataModel/CoordTransformer).
+Works BEFORE base data model transformation (DataModel/CoordTransformer).
 """
 import xarray as xr
 from aqua.core.logger import log_history, log_configure
@@ -10,7 +10,7 @@ class FixerDataModel:
     """
     Apply supplementary coordinate and dimension fixes beyond base data model.
     
-    Works AFTER base data model transformation by DataModel/CoordTransformer.
+    Works BEFORE base data model transformation by DataModel/CoordTransformer.
     Handles additional fixes specified in experiment-specific YAML files.
     
     This class handles:
@@ -22,10 +22,7 @@ class FixerDataModel:
         fixes (dict): Dictionary containing the fixes from YAML file.
         loglevel (str): Log level for logging. Defaults to 'WARNING'.
         
-    Example:
-        >>> fixer = FixerDataModel(fixes=yaml_fixes, loglevel="DEBUG")
-        >>> data = fixer.apply(data)
-    """ 
+    """
 
     def __init__(self, fixes=None, loglevel='WARNING'):
         self.fixes = fixes

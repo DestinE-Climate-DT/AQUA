@@ -32,15 +32,21 @@ class Fixer():
         self.metadata = metadata
         self.logger = log_configure(log_level=loglevel, log_name='Fixer')
         self.loglevel = loglevel
+
+        # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
             convention=self.convention, fixes_dictionary=self.fixes_dictionary, 
             fixer_name=self.fixer_name, loglevel=loglevel)
         self.fixes = self.fixerconfigure.find_fixes()
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
         self.time_correction = False
+
+        # this is the fixes operator, called internally by the fixer
         self.operator = FixerOperator(self.fixes, loglevel=loglevel)
+
+        # this is the datamodel fixer, which applies supplementary fixes, called by the Reader
         self.fixerdatamodel = FixerDataModel(self.fixes, loglevel=loglevel)
-        
+
     def fixer(self, data, destvar, apply_unit_fix=True):
         """
         Perform fixes (var name, units, coord name adjustments) of the input dataset.

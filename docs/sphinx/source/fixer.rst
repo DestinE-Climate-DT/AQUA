@@ -291,9 +291,9 @@ Then, extra keys can be then specified for **each** variable to allow for furthe
 Data Model and Coordinates/Dimensions Correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The fixer can adopt a common **coordinate data model**, meaning that will try to standardize coordinate and dimensions whenever `fix=True` is set in the ``Reader`` class.
+As a parallel feature, AQUA can adopt a common **coordinate data model**, meaning that will try to standardize coordinate in the ``Reader`` class.
 
-The principle of the data mode is to identify coordinates based on their attributes (name, units, dimensions, etc.), 
+The principle of the data model is to identify coordinates based on their attributes (name, units, dimensions, etc.), 
 and then converting them to a common name, units, and direction. The default is the **aqua** data model,
 which is a simplified version of the CF data model and is stored in the ``aqua/core/config/data_model/aqua.yaml`` folder.
 If this data model is not appropriate for a specific source, it is possible to specify a different one in the catalog source, but it has to be defined accordingly in the config folder.
@@ -315,6 +315,10 @@ This file contains a list of possible names for each coordinate, and the data mo
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions because of non-standard names or units,
 it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
+
+.. note::
+    Dimensions and coordinate fix will be applied **before** the data model treatment and will simplify the data model task.
+
 For example, if the longitude coordinate is called ``longitude`` instead of ``lon`` and the data model
 does not take care of it, it is possible to specify a fix like:
 
