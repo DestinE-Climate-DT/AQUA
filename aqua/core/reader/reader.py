@@ -172,7 +172,7 @@ class Reader():
         # intake parameters
         self.intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
 
-        self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine, databridge=self.machine_from_catalog)
+        self.kwargs = self._filter_kwargs(intake_vars=intake_vars, kwargs=kwargs, engine=engine, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
@@ -634,50 +634,51 @@ class Reader():
                 return kwargs  # already an int
 
         raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
+    
+    @property
+    def intake_user_parameters(self):
+        """Lazy loader for intake user parameters to avoid expensive describe() calls."""
+        if not hasattr(self, '_intake_user_parameters'):
+            self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
+        return self._intake_user_parameters
 
-    def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb', databridge: str = None) -> dict:
+    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict = {}, databridge: str = None) -> dict:
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
 
         Args:
-            intake_vars (dict): The intake variables from the catalog machine specific file.
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
             databridge (str): The databridge used for the GSV retrieval, default is None. 
+            intake_vars (dict): Machine-specific intake variables to exclude from checks.
 
         Returns:
             A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
         """
-        params = [elem.get('name') for elem in self.intake_user_parameters]
+        if intake_vars is None:
+            intake_vars = {}
 
-        # List comprehension to filter out kwargs that are not in the params
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k in params}
-        unfiltered_kwargs = {k: v for k, v in kwargs.items() if k not in params}
+        filtered_kwargs = {}
+        
+        # Create a dictionary lookup of parameter definitions
+        # This avoids repeated iteration and index lookups in the loop
+        param_defs = {p['name']: p for p in self.intake_user_parameters}
+        valid_params = set(param_defs.keys())
 
-        # Log warnings for unfiltered kwargs
-        for key, _ in unfiltered_kwargs.items():
-            self.logger.warning('kwarg %s is not in the intake parameteres of the source, removing it', key)
+        if kwargs:
+            # Filter kwargs that are valid parameters
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
+            
+            # Find and log dropped keys efficiently using set difference
+            dropped_keys = kwargs.keys() - valid_params
+            for key in dropped_keys:
+                self.logger.warning('kwarg %s is not in the intake parameters of the source, removing it', key)
 
-        # Check if all required parameters are present in the filtered kwargs and set defaults if not
-        filtered_list = list(filtered_kwargs.keys())
-        intake_vars_list = list(intake_vars.keys())
-        for param in params:
-            if param not in filtered_list and param not in intake_vars_list:
-                element = self.intake_user_parameters[params.index(param)]
-                self.logger.info('%s parameter is required but is missing, setting to default %s',
-                                    param, element['default'])
-                allowed = element.get('allowed', None)
-                # It is possible to have intake_vars which are not specified for the machine,
-                # so that we still need to check whether there is an allowed list
-                if allowed is not None:
-                    self.logger.info('Available values for %s are: %s', param, allowed)
-                filtered_kwargs.update({param: element['default']})
-
+        # Handle 'engine' for GSV/FDB sources
         if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-            # If the engine is fdb, we need to add the engine parameter
             if 'engine' not in filtered_kwargs:
-                filtered_kwargs.update({'engine': engine})
+                filtered_kwargs['engine'] = engine
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
 
         if engine == 'polytope' and databridge is not None:
@@ -689,7 +690,29 @@ class Reader():
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
             self.logger.warning('Keeping chunks=%s in the filtered kwargs', self.chunks)
-            filtered_kwargs.update({'chunks': self.chunks})
+            filtered_kwargs['chunks'] = self.chunks
+
+        # Check for missing required parameters and apply defaults, with logging
+        # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
+        
+        # params that are already covered by user kwargs or machine-specific intake_vars
+        covered_params = set(filtered_kwargs) | set(intake_vars)
+        
+        # Identify missing parameters using set difference
+        missing_params = valid_params - covered_params
+
+        for param in missing_params:
+            element = param_defs[param]
+            default_val = element.get('default')
+            
+            # Log the default application
+            self.logger.info('%s parameter is required but is missing, setting to default %s', param, default_val)
+            
+            allowed = element.get('allowed', None)
+            if allowed is not None:
+                self.logger.info('Available values for %s are: %s', param, allowed)
+            
+            filtered_kwargs[param] = default_val
 
         return filtered_kwargs
 

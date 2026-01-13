@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Add LaTeX units formatting to labels (#2561)
 - Explicit netcdf4 dependency in conda-forge and dask-distributed in pyproject to reduce incompatibilities (#2603)
 - Remove support for intake-esm due to deprecation of intake v1 version (#2603)
 - Aqua web push folder management improvements (#2574)
@@ -23,6 +24,7 @@ Main changes:
 
 AQUA core complete list:
 - Support access to MN5 DataBridge via Polytope (#2579)
+- Refactor `_filter_kwargs` to improve readability and performance (#2600)
 - Allow to show descriptions in `show_catalog_content` (#2589)
 - Improve test cleaning and avoid specific race conditions in tests (#2587)
 - Shapefile support for spatial selection in `AreaSelection` (#2576)

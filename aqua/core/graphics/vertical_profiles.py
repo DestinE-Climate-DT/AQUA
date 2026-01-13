@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits
+from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
 from .styles import ConfigStyle
 
 
@@ -88,7 +88,10 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
     ax.set_ylabel("Pressure Level (Pa)" if lev_name == "plev" else lev_name)
     ax.invert_yaxis()
     if cbar:
-        cbar_label = cbar_label or f"{var} [{data.attrs.get('units', '')}]"
+        if cbar_label is None:
+            units = data.attrs.get('units', '')
+            units_latex = unit_to_latex(units) if units else ''
+            cbar_label = f"{var} [{units_latex}]" if units_latex else f"{var}"
         fig.colorbar(cax, ax=ax, label=cbar_label)
     if grid:
         ax.grid(True)
