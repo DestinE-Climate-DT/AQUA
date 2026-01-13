@@ -76,20 +76,20 @@ class TestGsv():
                            chunks="S", var='167', bridge_end_date='complete',
                            metadata={'fdb_home_bridge': FDB_HOME})
         assert source is not None
-            
+
     def test_gsv_constructor_raise(self) -> None:
         """Test raise for missing fdbhome"""
         print(DEFAULT_GSV_PARAMS['request'])
         with pytest.raises(ValueError):
             GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167')
-    
+                      chunks="S", var='167')
+
     def test_gsv_constructor_raise_bridge(self) -> None:
         """Test raise for missing fdbhome"""
         print(DEFAULT_GSV_PARAMS['request'])
         with pytest.raises(ValueError):
             GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167', bridge_end_date='complete')
+                      chunks="S", var='167', bridge_end_date='complete')
 
     @pytest.mark.parametrize('gsv', [{'request': {
         'domain': 'g',
@@ -134,7 +134,7 @@ class TestGsv():
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
-        
+
     def test_reader_paramid(self) -> None:
         """
         Reading with the variable paramid, we use '130' instead of 't'
@@ -220,25 +220,24 @@ class TestGsv():
         assert data.isel(time=1)['2t'].mean().values == pytest.approx(285.8661045)
 
     def test_reader_stac_polytope(self) -> None:
-       """
-       Reading from a remote databridge using polytope
-       """
-    
-       reader = Reader(catalog='climatedt-phase1', model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
-                       loglevel="debug", engine="polytope", areas=False)
-       data = reader.retrieve(var='2t')
-       assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
+        """
+        Reading from a remote databridge using polytope
+        """
+        reader = Reader(catalog='climatedt-phase1', model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
+                        loglevel="debug", engine="polytope", areas=False)
+        data = reader.retrieve(var='2t')
+        assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
 
     def test_reader_polytope_mn5(self) -> None:
         """
         Reading from mn5 databridge using polytope
         """
-        reader = Reader(catalog= 'climatedt-o25.1', model='IFS-NEMO', exp='historical-1990', source='hourly-hpz10-atm2d',
-                        startdate="19900101T0000", enddate="19910101T0025", loglevel="debug", engine="polytope")
+        reader = Reader(catalog='climatedt-o25.1', model='IFS-NEMO', exp='historical-1990', source='hourly-hpz7-atm2d',
+                        startdate="19900101T0000", enddate="19910101T0025", loglevel="debug", engine="polytope", areas=False)
         data = reader.retrieve(var='2t')
         assert 'databridge' in reader.kwargs
         assert reader.kwargs['databridge'] == 'mn5'
-        assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.48876329)
+        assert data.isel(time=20)['2t'].values[0] == pytest.approx(301.0878448486328)
 
     def test_fdb_from_file(self) -> None:
         """
@@ -259,11 +258,11 @@ class TestGsv():
         source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
                            metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
                                      'fdb_info_file': 'tests/catgen/fdb_info_hpc-only.yaml'},
-                            loglevel=loglevel)
-        
+                           loglevel=loglevel)
+
         assert source.data_start_date == '19900101T0000'
         assert source.data_end_date == '19900103T2300'
-    
+
     def test_reader_dask(self) -> None:
         """
         Reading in parallel with a dask cluster
@@ -284,6 +283,7 @@ class TestGsv():
         client.shutdown()
         cluster.close()
 
+
 # Additional tests for the GSVSource class
 def test_fdb_home_bridge_logs(capsys):
     # Prepare test metadata ensuring we have fdbhome_bridge
@@ -293,7 +293,7 @@ def test_fdb_home_bridge_logs(capsys):
     }
 
     source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
-                        metadata=metadata, loglevel=loglevel)
+                       metadata=metadata, loglevel=loglevel)
 
     # No assert in the following because we cannot check the stderr logs. This is just for coverage.
 
@@ -308,8 +308,8 @@ def test_fdb_home_bridge_logs(capsys):
         'fdb_path': FDB_HOME+'/etc/fdb/config.yaml'
     }
     source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
-                        metadata=metadata, loglevel=loglevel)
-    
+                       metadata=metadata, loglevel=loglevel)
+
     source.chk_type = [1]
     source._get_partition(ii=0)
 
