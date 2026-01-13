@@ -284,12 +284,11 @@ if [ $localrepo -eq 1 ]; then
     repo=$repository
 else
     log_message INFO "Clone aqua-web from $repository"
-    repo=aqua-web$$
+    # Create a truly random temporary directory
+    repo=$(mktemp -d -p $PWD aqua-webXXXXXX)
     trap "rm -rf $repo" EXIT
     if [ $update -eq 1 ]; then
         git clone git@github.com:$repository.git $repo
-    else
-        mkdir -p $repo
     fi
 fi
 
@@ -349,6 +348,7 @@ else  # Otherwise, use the second argument as the experiment folder
 fi
 
 if [ $update -eq 1 ]; then
+    git pull
     git add updated.txt
 
     # commit and push
@@ -367,3 +367,4 @@ if [ $localrepo -eq 0 ]; then
 fi
 
 log_message INFO "push_analysis job completed."
+
