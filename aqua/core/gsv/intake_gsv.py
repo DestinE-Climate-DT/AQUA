@@ -81,7 +81,10 @@ class GSVSource(base.DataSource):
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.engine = engine
-        self.databridge = 'lumi' if databridge is None else databridge
+        if self.engine == 'polytope':
+            self.databridge = 'lumi' if databridge is None else databridge
+        else:
+            self.databridge = None
         self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
         self.logger.debug("Init of the GSV source class")
 
@@ -274,10 +277,10 @@ class GSVSource(base.DataSource):
         """
         # Getting info from the FDB info file
         fdb_info = self._read_fdb_info()
-        
+
         # Data dates
         self._setup_data_dates(data_start_date, data_end_date, fdb_info)
-        
+
         # Bridge dates
         self._setup_bridge_dates(bridge_start_date, bridge_end_date, fdb_info)
         self._adjust_bridge_bounds()
@@ -285,7 +288,7 @@ class GSVSource(base.DataSource):
     def _read_fdb_info(self):
         """
         Read FDB information from file if available
-        
+
         Returns:
             dict or None: FDB information if available, None otherwise
         """
@@ -297,7 +300,7 @@ class GSVSource(base.DataSource):
     def _setup_data_dates(self, data_start_date, data_end_date, fdb_info):
         """
         Setup data start and end dates
-        
+
         Args:
             data_start_date (str): Start date of the available data.
             data_end_date (str): End date of the available data.
@@ -858,13 +861,13 @@ class GSVSource(base.DataSource):
             self.logger.info('Automatic FDB date range: %s - %s', start_date, end_date)
 
         return start_date, end_date
-    
+
     @staticmethod
     def get_dates_from_stac_api(params, base_url=BRIDGE_API_URL):
         """
         Function to get from the STAC data bridge the available
         dates of a dataset on the bridge
-        
+ 
         Args:
             params (dict): Dictionary of parameters to interrogate the STAC API.
                         In principle, the same as the usual FDB request
@@ -905,7 +908,6 @@ class GSVSource(base.DataSource):
         except ValueError as exc:
             raise ValueError("Failed to parse STAC API response as JSON") from exc
 
-    
         dateblock = [el for el in stac_json['links'] if el.get('title') == 'date']
         if not dateblock:
             raise ValueError(f"The first link in the response is not a date link, but {dateblock}")
@@ -913,7 +915,7 @@ class GSVSource(base.DataSource):
         # specific extraction of the dates: new format following the qube STAC API
         dates = dateblock[0].get('variables').get('date').get('enum')
         sorted_dates = sorted(dates)
-        
+
         return sorted_dates[0], sorted_dates[-1]
 
 
