@@ -12,7 +12,7 @@ Complete list:
 - Remove support for intake-esm due to deprecation of intake v1 version (#2603)
 - Aqua web push folder management improvements (#2574)
 - Improve fldstat handling of gaussian grids (#2584)
-- Data model now uses a ranking system to identify coordinates (#2585) 
+- Data model now uses a ranking system to identify coordinates (#2585, #2602) 
 
 ## [v1.0.0a1]
 
