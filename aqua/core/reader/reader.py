@@ -671,7 +671,7 @@ class Reader():
             self.logger.warning('Keeping chunks=%s in the filtered kwargs', self.chunks)
             filtered_kwargs['chunks'] = self.chunks
 
-        # Check for missing required parameters and apply defaults with logging
+        # Check for missing required parameters and apply defaults, with logging
         # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
         
         # params that are already covered by user kwargs or machine-specific intake_vars
