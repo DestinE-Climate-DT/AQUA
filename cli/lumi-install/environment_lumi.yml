@@ -15,7 +15,7 @@ dependencies:
   - cartopy_offlinedata # this is needed for MN5 HPC
   - pandas
   - pip
+  - netcdf4
   - hdf5 #explicit to avoid issues with pypi
-  - intake-esm
   - imagemagick
   - healpy
