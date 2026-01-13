@@ -8,7 +8,8 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
-from .util_timeseries import plot_timeseries_data, plot_timeseries_ref_data, plot_timeseries_ensemble
+from .util_timeseries import plot_timeseries_data, plot_timeseries_ref_data
+from .util_timeseries import plot_timeseries_ensemble, _plot_lx
 from .styles import ConfigStyle
 
 
@@ -219,12 +220,12 @@ def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
         for i in range(len(data)):
             label = data_labels[i] if data_labels else None
             mon_data = _extend_cycle(data[i], loglevel)
-            mon_data.plot(ax=ax, label=label, lw=3)
+            _plot_lx(mon_data, ax, label=label, lw=3)
 
     if ref_data is not None:
         try:
             ref_data = _extend_cycle(ref_data, loglevel)
-            ref_data.plot(ax=ax, label=ref_label, color='black', lw=0.8)
+            _plot_lx(ref_data, ax, label=ref_label, color='black', lw=0.8)
             if std_data is not None:
                 std_data = _extend_cycle(std_data, loglevel)
                 std_data.compute()
