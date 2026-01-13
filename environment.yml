@@ -17,8 +17,8 @@ dependencies:
   - cartopy_offlinedata # this is needed for MN5 HPC
   - pandas      
   - pip
+  - netcdf4
   - hdf5 #explicitly to avoid issues with pypi version
-  - intake-esm
   - imagemagick
   - pip:
     # pip install -e of AQUA itself

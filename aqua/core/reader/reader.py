@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from glob import glob
 import os
 import re
-import intake_esm
+#import intake_esm
 import intake_xarray
 import xarray as xr
 import pandas as pd
@@ -367,10 +367,10 @@ class Reader():
 
         ffdb = False
         # If this is an ESM-intake catalog use first dictionary value,
-        if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-            data = self.reader_esm(self.esmcat, loadvar)
+        #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
+        #    data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
-        elif isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
+        if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=True, level=level)
             ffdb = True  # These data have been read from fdb
