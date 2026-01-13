@@ -17,10 +17,10 @@ dependencies:
   - cartopy_offlinedata # this is needed for MN5 HPC
   - pandas      
   - pip
+  - netcdf4
   - hdf5 #explicitly to avoid issues with pypi version
   - tempest-extremes # for TCs
   - xesmf # for ECmean
-  - intake-esm
   - imagemagick
   - pip:
     - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d

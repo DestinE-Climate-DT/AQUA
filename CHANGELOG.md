@@ -9,6 +9,7 @@ AQUA core complete list:
 - Aqua web push folder management improvements (#2609)
 
 AQUA diagnostics complete list:
+- Added 235288 (avg_tcc in %) from the tcc eccodes convention file (#2608)
 - Extra timestep in Timeseries analysis fix (#2578)
 
 ## [v0.19.7]
