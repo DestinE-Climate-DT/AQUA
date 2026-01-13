@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.19.8]
+
+AQUA core complete list:
 - Aqua web push folder management improvements (#2609)
 
 AQUA diagnostics complete list:
@@ -1245,7 +1251,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.7
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.8
+[v0.19.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.7...v0.19.8
 [v0.19.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.6...v0.19.7
 [v0.19.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.5...v0.19.6
 [v0.19.5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.4...v0.19.5
