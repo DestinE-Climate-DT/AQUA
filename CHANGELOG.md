@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Aqua web push folder management improvements (#2609)
 
 AQUA diagnostics complete list:
 - Extra timestep in Timeseries analysis fix (#2578)
