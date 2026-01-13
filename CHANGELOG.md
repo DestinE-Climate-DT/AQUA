@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Explicit netcdf4 dependency in conda-forge and dask-distributed in pyproject to reduce incompatibilities (#2603)
+- Remove support for intake-esm due to deprecation of intake v1 version (#2603)
+- Aqua web push folder management improvements (#2574)
 - Improve fldstat handling of gaussian grids (#2584)
 - Data model now uses a ranking system to identify coordinates (#2585) 
 
