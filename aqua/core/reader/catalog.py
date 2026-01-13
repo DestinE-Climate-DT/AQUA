@@ -2,9 +2,8 @@
 from aqua.core.configurer import ConfigPath
 
 
-def show_catalog_content(catalog=None, model=None, exp=None, source=None, 
-                         configdir=None, catalog_name=None, loglevel='WARNING',
-                         verbose=True):
+def show_catalog_content(catalog=None, model=None, exp=None, source=None, configdir=None, catalog_name=None,
+                         loglevel='WARNING', verbose=True, show_descriptions=False):
     """
     Display the catalog content structure (model/exp/source) without requiring
     manual ConfigPath instantiation.
@@ -21,10 +20,12 @@ def show_catalog_content(catalog=None, model=None, exp=None, source=None,
         catalog_name (str, optional): Override the catalog name. If not provided, uses the default catalog.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         verbose (bool): If True, prints the formatted catalog structure. Defaults to True.
+        show_descriptions (bool): If True, also print per-source descriptions.
 
     Returns:
-        dict: Dictionary with catalog names as keys and nested dict structure 
+        dict: Dictionary with catalog names as keys and nested dict structure
               as values.
     """
     config = ConfigPath(configdir=configdir, catalog=catalog_name, loglevel=loglevel)
-    return config.show_catalog_content(catalog=catalog, model=model, exp=exp, source=source, verbose=verbose)
+    return config.show_catalog_content(catalog=catalog, model=model, exp=exp, source=source, verbose=verbose,
+                                       show_descriptions=show_descriptions)

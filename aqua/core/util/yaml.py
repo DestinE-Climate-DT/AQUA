@@ -2,13 +2,12 @@
 
 import os
 from string import Template as DefaultTemplate
-from jinja2 import Template
 from collections import defaultdict
-from ruamel.yaml import YAML
 from tempfile import TemporaryDirectory
-from aqua.core.logger import log_configure
+from jinja2 import Template
+from ruamel.yaml import YAML
 import yaml  # This is needed to allow YAML override in intake
-
+from aqua.core.logger import log_configure
 
 def construct_yaml_merge(loader, node):
     """
@@ -17,15 +16,15 @@ def construct_yaml_merge(loader, node):
     if isinstance(node, yaml.ScalarNode):
         # Handle scalar nodes
         return loader.construct_scalar(node)
-    else:
-        # Handle sequence nodes
-        maps = []
-        for subnode in node.value:
-            maps.append(loader.construct_object(subnode))
-        result = {}
-        for dictionary in reversed(maps):
-            result.update(dictionary)
-        return result
+    
+    # Handle sequence nodes
+    maps = []
+    for subnode in node.value:
+        maps.append(loader.construct_object(subnode))
+    result = {}
+    for dictionary in reversed(maps):
+        result.update(dictionary)
+    return result
 
 
 # Run this to enable YAML override for the yaml package when using SafeLoader in intake 
@@ -84,7 +83,7 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     """
 
     if not os.path.exists(infile):
-        raise ValueError(f'ERROR: {infile} not found: you need to have this configuration file!')
+        raise FileNotFoundError(f'ERROR: {infile} not found: you need to have this configuration file!')
 
     yaml = YAML(typ='rt')  # default, if not specified, is 'rt' (round-trip)
 
@@ -198,14 +197,13 @@ def _load_merge(folder_path: str | None = None, filenames: list | None = None,
     if folder_path:  # Merging all the files in a folder
         logger.debug(f'Folder to be merged: {folder_path}')
         if not os.path.exists(folder_path):
-            raise ValueError(f'ERROR: {folder_path} not found: it is required to have this folder!')
-        else:  # folder exists
-            for filename in os.listdir(folder_path):
-                if filename.endswith(('.yml', '.yaml')):
-                    file_path = os.path.join(folder_path, filename)
-                    yaml_dict = load_yaml(file_path, definitions)
-                    for key, value in yaml_dict.items():
-                        merged_dict[key].update(value)
+            raise FileNotFoundError(f'ERROR: {folder_path} not found: it is required to have this folder!')
+        for filename in os.listdir(folder_path):
+            if filename.endswith(('.yml', '.yaml')):
+                file_path = os.path.join(folder_path, filename)
+                yaml_dict = load_yaml(file_path, definitions)
+                for key, value in yaml_dict.items():
+                    merged_dict[key].update(value)
 
     logger.debug('Dictionary updated')
     logger.debug(f'Keys: {merged_dict.keys()}')

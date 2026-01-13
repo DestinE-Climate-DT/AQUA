@@ -170,11 +170,11 @@ class TestAquaConsole():
             assert excinfo.value.code == 1
 
         # create a test for DROP
-        with pytest.raises(ValueError, match="ERROR: drop_config.yaml not found: you need to have this configuration file!"):
+        with pytest.raises(FileNotFoundError, match="ERROR: drop_config.yaml not found: you need to have this configuration file!"):
             run_aqua(['drop'])
 
         # create a test for catgen
-        with pytest.raises(ValueError, match="ERROR: config.yaml not found: you need to have this configuration file!"):
+        with pytest.raises(FileNotFoundError, match="ERROR: config.yaml not found: you need to have this configuration file!"):
             run_aqua(['catgen', '--config', 'config.yaml'])
 
         # uninstall and say no

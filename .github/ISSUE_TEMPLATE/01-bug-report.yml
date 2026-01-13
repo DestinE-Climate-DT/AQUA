@@ -16,11 +16,12 @@ body:
       options:
       - Levante
       - Lumi
-      - Lumi operational
+      - Lumi operational (specify cycle)
       - MN5
-      - MN5 operational
+      - MN5 operational (specify cycle)
       - CI
       - HPC2020
+      - Wilma
       - Others
     validations:
       required: true
@@ -32,9 +33,9 @@ body:
       options:
       - ci
       - climatedt-phase1
-      - leonardo
+      - climatedt-o25.1
+      - climatedt-o26.1
       - levante
-      - lumi-phase1
       - lumi-phase2
       - mn5-phase2
       - nextgems3
@@ -50,24 +51,15 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v1.0.0a1
       - v0.21.0
       - v0.20.1
       - v0.20.0
       - v0.19.7+op
       - v0.19.7
-      - v0.19.6+op
-      - v0.19.6
-      - v0.19.5+op
-      - v0.19.5
-      - v0.19.4+op
-      - v0.19.4
-      - v0.19.3+op
-      - v0.19.3
-      - v0.19.2+op (or older)
-      - v0.19.2 (or older)
-      - v0.18.1
-      - v0.18.0
-      - v0.14.* - v0.17.* (specify)
+      - v0.19.6+op (or older)
+      - v0.19.6 (or older)
+      - v0.14.* - v0.18.* (specify)
       - v0.13.* (specify)
       - older (specify)
     validations:

@@ -21,39 +21,38 @@ LOGLEVEL = "DEBUG"
 
 
 # ======================================================================
-# Cleanup fixture for test-generated files
+# Run global (not per-worker) cleanup hooks for test-generated files
 # ======================================================================
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_test_files():
+def pytest_configure(config):
     """
-    Session-scoped fixture that automatically cleans up test-generated files.
-    This prevents race conditions in parallel test execution where:
-    - One test creates a file (e.g., nemo-curvilinear.yaml)
-    - Another test tries to read it while the first test is deleting it
+    Runs once at session start on controller and workers with xdist.
+    Cache configdir before any test can modify HOME.
     """
-    # Store configdir at session start (before any tests modify environment)
-    # This ensures cleanup can run even if HOME is deleted during tests
     try:
         config_path = ConfigPath()
-        stored_configdir = config_path.configdir
+        config._stored_configdir = config_path.configdir
     except (FileNotFoundError, KeyError):
-        stored_configdir = None
-    
-    # Run all tests first
-    yield
-    
-    # Cleanup after all tests complete
-    # Try to get configdir again, but fall back to stored value if ConfigPath fails
+        config._stored_configdir = None
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """
+    Runs once at the end of the entire test session (controller only with xdist).
+    Uses current configdir if available, otherwise falls back to cached one.
+    This prevents race conditions in parallel test.
+    """
+    # Get stored configdir from session.config (same object as config in pytest_configure)
+    stored_configdir = getattr(session.config, '_stored_configdir', None)
+
+    # Prefer current configdir, but fall back to stored one if ConfigPath() fails (e.g. HOME was deleted)
     cleanup_configdir = stored_configdir
     try:
         config_path = ConfigPath()
         cleanup_configdir = config_path.configdir
     except (FileNotFoundError, KeyError):
-        # If ConfigPath fails (e.g., HOME deleted), use stored configdir
-        # This handles the test_console_without_home case
+        # If HOME was deleted, rely on the stored configdir from pytest_configure
         pass
-    
-    # Only attempt cleanup if we have a valid configdir
+
     if cleanup_configdir:
         registry = TestCleanupRegistry(cleanup_configdir)
         registry.cleanup()

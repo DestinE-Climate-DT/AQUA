@@ -174,27 +174,6 @@ If you do not agree, you will need to call ``load_aqua.sh`` manually every time 
 
     If you encounter any issues with the installation script, please refer to the :ref:`faq` section.
 
-.. _installation-levante:
-
-Installation on Levante HPC at DKRZ
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You can follow the installation process described in the previous section (see :ref:`installation-conda`).
-In order to use the FDB access, you need to load the FDB5 binary library (``libfdb5.so``).
-At the moment a specific module for levante seems not to be available, so you can either compile your own copy and then make it available
-(download the source code from `https://github.com/ecmwf/fdb <https://github.com/ecmwf/fdb>`_), or you can use our precompiled version by setting:
-
-.. code-block:: bash
-
-    export LD_LIBRARY_PATH=/work/bb1153/b382075/aqua/local/lib:$LD_LIBRARY_PATH 
-    
-in ``.bash_profile`` and in ``.bashrc`` in your home directory.
-
-.. warning ::
-
-    The currently suggested package is not aligned with the latest version of FDB5, so it may not work with the current version of AQUA.
-    Please open an issue on GitHub if you encounter any problems.
-
 .. _installation-mn5:
 
 Installation on MareNostrum 5 (MN5) HPC at BSC
@@ -256,16 +235,9 @@ You can now install AQUA with your preferred method (see :ref:`installation-cond
 
    The ``wget`` command does not work properly in this setup. Use ``curl`` as an alternative for downloading files.
 
-
-To use the FDB5 binary library on MN5, set the following environment variable:
-
-.. code-block:: bash
-
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/gpfs/projects/ehpc01/sbeyer/models/DE_CY48R1.0_climateDT_tco399_aerosol_runoff/build/lib"
-
 .. warning ::
 
-    The above path may change over time. If you encounter issues with FDB access, please open an issue on GitHub.
+    There is no officially supported FDB5 library on MN5. You will have to install it manually.
 
 .. _installation-hpc2020:
 

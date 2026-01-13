@@ -82,17 +82,37 @@ It is also possible to evaluate the coefficients of the fit by calling the ``tre
 This will call the ``coeffs()`` method of the ``Trender()`` class, which is used internally by the ``detrend()`` method.
 A ``dataarray`` with the coefficients will be returned, with the same dimensions as the original data.
 
+.. _spatial-selection:
+
 Spatial Selection
 -----------------
 
-The ``AreaSelection()`` class, part of the ``aqua.core.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits.
+The ``AreaSelection()`` class, part of the ``aqua.core.fldstat`` module, allows to select a specific region of the domain based on latitude and longitude limits
+or based on predefined regions from the `regionmask package <https://regionmask.readthedocs.io/en/stable/>`_.
 The ``select_area()`` method can be used to perform the selection on a DataArray or Dataset.
+
 It is possible to consider or drop the limits of the selection by setting the ``box_brd`` flag to ``True`` or ``False`` respectively.
 It is also possible to drop the NaN values after the selection by setting the ``drop`` flag to ``True``.
+
 The class is nested into the ``Reader()`` class, so it is possible to call the ``select_area()`` method directly from the reader instance or as aqua accessor.
 
+An example of usage with regionmask predefined regions is:
+
+.. code-block:: python
+
+    from aqua import Reader
+    import regionmask
+
+    reader = Reader(catalog='ci', model='ERA5', exp='era5-hpz3', source='monthly', regrid='r100', loglevel='INFO')
+    data = reader.retrieve()
+    data = reader.regrid(data)
+
+    region = regionmask.defined_regions.natural_earth_v5_0_0.countries_110
+    selected = reader.select_area(data['2t'], region=region, region_sel=['United States of America', 'Russia'])
+    selected.isel(time=0).plot()
+
 .. note::
-    When selecting a region that crosses the Greenwich meridian (e.g. lon_limits=[350, 10]),
+    When selecting a region that crosses the Greenwich meridian (e.g. ``lon_limits=[350, 10]``),
     the method will automatically convert longitudes to the -180 to 180 range for the selection,
     in order to allow flawless plotting. The option can be disabled by setting the ``to_180`` flag to ``False``.
 
@@ -106,11 +126,11 @@ Spatial Statistics
 ------------------
 
 The ``FldStat()`` class and its method ``fldstat()`` are used to do spatial operations and similary as for ``TimStat()`` does for time.
-Statistical operations can be area-weighted if the class is initialiased with an xarray dataset containing the areas of the corresponding grid.
+Statistical operations can be area-weighted if the class is initialized with an xarray dataset containing the areas of the corresponding grid.
+
 The class is nested into the ``Reader()``, which computes/load the areas of the corresponding source at the initialization.
 Thus when calling for example ``reader.fldmean()`` method area-weighted spatial averaging will be performed.
-The class ``FldStat()`` is nested into the reader, and its method are exposed so that is sufficient
-to use ``fldstat(data, stat=statname)`` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``; 
+The methods are exposed so that is sufficient to use ``fldstat(data, stat=statname)`` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``; 
 Otherwise the relative sibilings can be called ``fldmean()``, ``fldmin()``, ``fldmax()``, ``fldsum()``, ``fldstd()``, ``fldintg()``, ``fldarea()``. 
 For example, if we run the following commands:
 
@@ -126,7 +146,7 @@ For example, if we run the following commands:
 we get a time series of the global average ``sithick``.
 
 It is also possible to apply a regional section to the domain before performing the averaging.
-This will internally use the ``AreaSelection()`` class described above.
+This will internally use the ``AreaSelection()`` class described in the :ref:`spatial-selection` section.
 
 .. code-block:: python
 
@@ -139,7 +159,7 @@ This will internally use the ``AreaSelection()`` class described above.
     If the dataset does not include these coordinates, this can be achieved with the fixer
     described in the :ref:`fixer` section.
 
-    Also, if you do not specify the ``dims`` argument (e.g. `dims=['lon']`), the statistical operation will be operated on both 
+    Also, if you do not specify the ``dims`` argument (e.g. ``dims=['lon']``), the statistical operation will be operated on both 
     the (automatically found) horizontal dimensions of the dataset!
 
 Histogram
@@ -221,9 +241,6 @@ Streaming of data
 
 The Reader class includes the ability to simulate data streaming to retrieve chunks
 of data of a specific time length.
-
-Basic usage
-^^^^^^^^^^^
 
 To activate the streaming mode the user should specify the argument ``streaming=True``
 in the Reader initialization.
