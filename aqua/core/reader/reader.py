@@ -169,9 +169,6 @@ class Reader():
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
 
-        # intake parameters
-        self.intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
-
         self.kwargs = self._filter_kwargs(intake_vars=intake_vars, kwargs=kwargs, engine=engine, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
