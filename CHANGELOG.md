@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 AQUA core complete list:
 
 AQUA diagnostics complete list:
+- Added 235288 (avg_tcc in %) from the tcc eccodes convention file (#2608)
 - Extra timestep in Timeseries analysis fix (#2578)
 
 ## [v0.19.7]
