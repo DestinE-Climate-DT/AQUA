@@ -164,16 +164,30 @@ class CoordIdentifier:
             if len(entries) > 1:
                 # Sort by confidence_score (highest first)
                 entries.sort(key=lambda x: x[1], reverse=True)
-                self.logger.info(
-                    "Coordinate '%s' assigned to multiple types: %s. Selecting '%s' with highest score %s.",
-                    name,
-                    [key for key, _ in entries],
-                    entries[0][0],
-                    entries[0][1],
-                )
-                # Keep the best, remove the rest
-                for key, _ in entries[1:]:
-                    self.coord_dict[key] = None
+                
+                # Check if multiple entries have the same highest score
+                max_score_entries = [entry for entry in entries if entry[1] == entries[0][1]]
+                
+                if len(max_score_entries) > 1:
+                    # Multiple coordinates with same highest score - disable all
+                    self.logger.warning(
+                        "Coordinate '%s' assigned to multiple types with identical scores: %s. Disabling data model check for this coordinate.",
+                        name,
+                        [(key, score) for key, score in max_score_entries],
+                    )
+                    for key, _ in entries:
+                        self.coord_dict[key] = None
+                else:
+                    # Clear winner - keep the best, remove the rest
+                    self.logger.info(
+                        "Coordinate '%s' assigned to multiple types: %s. Selecting '%s' with highest score %s.",
+                        name,
+                        [key for key, _ in entries],
+                        entries[0][0],
+                        entries[0][1],
+                    )
+                    for key, _ in entries[1:]:
+                        self.coord_dict[key] = None
 
         return self.coord_dict
 

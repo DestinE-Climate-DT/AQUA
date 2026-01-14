@@ -310,7 +310,8 @@ If you want to force the detection of a specific coordinate, you can add it to t
 This file contains a list of possible names for each coordinate, and the data model will assign the coordinates that match these names.
 
 .. warning::
-    The data model ranking system is not perfect and may fail in some cases. It is recommended to check the output dataset to ensure that the coordinates have been correctly identified and fixed.
+    The data model ranking system is not perfect and may fail in some cases. For example, it might happen that two coordinates get the same score, so that for safety the conversion is disabled for that specific coordinate.
+    In general, it is recommended to check the output dataset to ensure that the coordinates have been correctly identified and fixed.
 
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions because of non-standard names or units,
 it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
