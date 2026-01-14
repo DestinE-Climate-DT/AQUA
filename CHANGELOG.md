@@ -8,12 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Data model can be disabled and it is independent from the Fixer (#2586)
+- Added 235288 (avg_tcc in %) from the tcc eccodes convention file (#2607)
 - Add LaTeX units formatting to labels (#2561)
 - Explicit netcdf4 dependency in conda-forge and dask-distributed in pyproject to reduce incompatibilities (#2603)
 - Remove support for intake-esm due to deprecation of intake v1 version (#2603)
 - Aqua web push folder management improvements (#2574)
 - Improve fldstat handling of gaussian grids (#2584)
-- Data model now uses a ranking system to identify coordinates (#2585) 
+- Data model uses a ranking system to identify coordinates (#2585, #2602) 
+
 
 ## [v1.0.0a1]
 

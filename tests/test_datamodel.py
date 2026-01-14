@@ -153,3 +153,16 @@ class TestDataModel():
         assert coord_dict['longitude'] is None
         assert coord_dict['latitude']['name'] == 'lat'
 
+    def same_score_ranking_case(self, data):
+        """Test for conflict ranking functionality in CoordIdentifier."""
+
+        data = data.rename({"LATITUDE": "lat"})
+        data = data.rename({"longi": "latitude"})
+        
+        identifier = CoordIdentifier(data.coords, loglevel='debug')
+        coord_dict = identifier.identify_coords()
+
+        # No coordinate should be identified due to same score
+        assert coord_dict['longitude'] is None
+        assert coord_dict['latitude'] is None
+

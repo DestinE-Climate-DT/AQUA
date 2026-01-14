@@ -21,7 +21,7 @@ from aqua.core.regridder import Regridder
 from aqua.core.fldstat import FldStat
 from aqua.core.timstat import TimStat
 from aqua.core.fixer import Fixer
-from aqua.core.data_model import counter_reverse_coordinate
+from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.histogram import histogram
 import aqua.core.gsv
 
@@ -33,6 +33,9 @@ from .reader_utils import set_attrs
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
+# set default data model
+DATA_MODEL_DEFAULT = "aqua"
+
 class Reader():
     """General reader for climate data."""
 
@@ -40,6 +43,7 @@ class Reader():
 
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
+                 datamodel=None,
                  regrid=None, regrid_method=None,
                  areas=True,
                  streaming=False,
@@ -59,6 +63,7 @@ class Reader():
             source (str): Source ID. Mandatory
             catalog (str, optional): Catalog where to search for the triplet.  Default to None will allow for autosearch in
                                      the installed catalogs.
+            datamodel (str, optional): Data model to apply for coordinate transformations (e.g., 'aqua'). Defaults to 'aqua'.
             regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
             regrid_method (str, optional): CDO Regridding regridding method. Read from grid configuration.
                                            If not specified anywhere, using "ycon".
@@ -193,6 +198,7 @@ class Reader():
             self.logger.warning('A False flag is specified in fixer_name metadata, disabling fix!')
             self.fix = False
 
+        # Initialize variable fixer
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
             self.fixer = Fixer(fixer_name=self.fixer_name,
@@ -200,8 +206,21 @@ class Reader():
                                fixes_dictionary=self.fixes_dictionary,
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
-            
+        
+        # if data model is not passed to Reader, try to get it from the catalog source metadata
+        if datamodel is None:
+            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT) 
+        else:
+            self.datamodel_name = datamodel
+
+        # if datamodel is False, disable data model application
+        if not self.datamodel_name:
+            self.datamodel = None
+            self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
+        else:
+            self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
     
+            
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
         self.tgt_grid_name = regrid
@@ -251,7 +270,7 @@ class Reader():
             cfg_regrid = {**machine_paths, **cfg_regrid}
 
             if self.src_grid_name is None:
-                self.logger.warning('Grid metadata is not defined. Trying to access the real data')
+                self.logger.info('Grid metadata is not defined. Trying to access the real data')
                 data = self._retrieve_plain()
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
             elif self.src_grid_name is False:
@@ -279,15 +298,15 @@ class Reader():
                 areas = False
                 regrid = False
 
-
-        # generate source areas
         if areas:
             # generate source areas and expose them in the reader
             self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
+            # apply optional fixes to areas
             if self.fix:
-                # TODO: this should include the latitudes flipping fix.
-                # TODO: No check is done on the areas coords vs data coords
-                self.src_grid_area = self.fixer.datamodel.fix_area(self.src_grid_area)
+                self.src_grid_area = self.fixer.fixerdatamodel.apply(self.src_grid_area)
+            # Apply data model transformation to areas
+            if self.datamodel:
+                self.src_grid_area = self.datamodel.apply(self.src_grid_area)
 
         # configure regridder and generate weights
         if regrid:
@@ -301,9 +320,13 @@ class Reader():
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
+            # apply optional fixes to areas
             if self.fix:
-                # flipping disabled for target areas for cases as gaussian grids
-                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area, flip_coords=False)
+                self.tgt_grid_area = self.fixer.fixerdatamodel.apply(self.tgt_grid_area)
+            # Apply data model transformation to target areas
+            if self.datamodel:
+                self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area, flip_coords=False)
+            # expose target horizontal dimensions
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
@@ -363,6 +386,7 @@ class Reader():
                 loadvar = None
 
         ffdb = False
+        
         # If this is an ESM-intake catalog use first dictionary value,
         #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
         #    data = self.reader_esm(self.esmcat, loadvar)
@@ -376,19 +400,23 @@ class Reader():
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
-            if ffdb:
-                fkind = "FDB"
-            else:
-                fkind = "file from disk"
+            fkind = "FDB" if ffdb else "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
-
 
         if not ffdb:  # FDB sources already have the index, already selected levels
             data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
 
+        # Apply variable fixes (units, names, attributes) and data model fixes
         if self.fix:
+            self.logger.debug("Applying variable fixes")
             data = self.fixer.fixer(data, var)
+            data = self.fixer.fixerdatamodel.apply(data)
+
+        # Apply base data model transformation (always applied)
+        if self.datamodel:
+            self.logger.debug("Applying base data model: %s", self.datamodel_name)
+            data = self.datamodel.apply(data)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -400,7 +428,7 @@ class Reader():
             data = self.streamer.stream(data)
         else:
             if data is None or len(data.data_vars) == 0:
-                self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
+                self.logger.error("Retrieved empty dataset for var=%s. First, check its existence in the data catalog.", var)
 
             if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
                 data = data.sel(time=slice(startdate, enddate))
