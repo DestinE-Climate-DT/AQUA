@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.0.0):
 
+## [v1.0.0a2]
+
+Main changes:
+1. DataModel module can be disabled and it is independent from the Fixer
+2. Intake-esm support removed due to deprecation of intake v1 version, will be reintroduced with intake v2
+
 Complete list:
 - Data model can be disabled and it is independent from the Fixer (#2586)
 - Added 235288 (avg_tcc in %) from the tcc eccodes convention file (#2607)
@@ -16,7 +22,6 @@ Complete list:
 - Aqua web push folder management improvements (#2574)
 - Improve fldstat handling of gaussian grids (#2584)
 - Data model uses a ranking system to identify coordinates (#2585, #2602) 
-
 
 ## [v1.0.0a1]
 
@@ -1330,7 +1335,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...HEAD
+[v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
 [v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1
 [v0.21.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.20.0...v0.21.0
 [v0.20.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.20.0
