@@ -323,7 +323,7 @@ class GSVSource(base.DataSource):
     def _setup_bridge_dates(self, bridge_start_date, bridge_end_date, fdb_info):
         """
         Setup bridge start and end dates
-        
+
         Args:
             bridge_start_date (str): Start date of the bridge data.
             bridge_end_date (str): End date of the bridge data.
@@ -357,12 +357,12 @@ class GSVSource(base.DataSource):
         self.bridge_end_date = self.bridge_end_date + 'T2300'
         self.bridge_start_date = self.bridge_start_date + 'T0000'
         self.logger.debug('STAC API bridge start data: %s, bridge end date: %s', 
-                        self.bridge_start_date, self.bridge_end_date)
+                          self.bridge_start_date, self.bridge_end_date)
 
     def _setup_bridge_dates_from_input(self, bridge_start_date, bridge_end_date):
         """
         Setup bridge dates from input parameters
-        
+
         Args:
             bridge_start_date (str): Start date of the bridge data.
             bridge_end_date (str): End date of the bridge data.
@@ -426,7 +426,8 @@ class GSVSource(base.DataSource):
             'timeshift': self.timeshift,
             'gsv_log_level': self.gsv_log_level,
             'logger': self.logger,
-            'engine': self.engine
+            'engine': self.engine,
+            'databridge': self.databridge,
         }
 
     def __setstate__(self, state):
