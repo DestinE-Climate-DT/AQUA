@@ -35,7 +35,7 @@ def common_setup(tmp_path):
         "output" : output
     }
 
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_check_variable_name(common_setup):
     """Test variable name checking and transformations."""
     setup = common_setup
@@ -62,7 +62,7 @@ def diagnostics_instances(common_setup):
     }
 
 # Hovmoller Function
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_hovmoller_data(diagnostics_instances):
     """Test data loading for hovmoller plot."""
     hovmoller_instance = diagnostics_instances["hovmoller"]
@@ -83,7 +83,7 @@ def test_hovmoller_data(diagnostics_instances):
     assert hovmoller_instance.plot_info[4]['data']['thetao'].isel(time=20, lev = 5).values == pytest.approx(-1.20182032,rel=approx_rel)
     assert hovmoller_instance.plot_info[4]['data']['so'].isel(time=20, lev = 5).values == pytest.approx(0.64174308,rel=approx_rel)
        
-# @pytest.mark.diagnostics
+# @pytest.mark.deprecated
 # def test_hovmoller_plot(hovmoller_instance):
 #     """Test hovmoller plot generation."""
 #     hovmoller_instance.plot()
@@ -91,7 +91,7 @@ def test_hovmoller_data(diagnostics_instances):
 #     assert output_file.exists(), "Plot not generated"
     
 # #Time_series Function
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_time_series(diagnostics_instances):
     """Test data loading for time series plot."""
     time_series_instance = diagnostics_instances["time_series"]
@@ -113,7 +113,7 @@ def test_time_series(diagnostics_instances):
     assert time_series_instance.plot_info[4]['data']['so'].isel(time=20, lev = 5).values == pytest.approx(0.64174308,rel=approx_rel)
 
     
-# @pytest.mark.diagnostics
+# @pytest.mark.deprecated
 # def test_time_series(time_series_instance):
 #     """Test time series plot generation."""
 #     time_series_instance.plot()
@@ -122,7 +122,7 @@ def test_time_series(diagnostics_instances):
 
 
 # Multilevel trend Function
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_multilevel_trend(diagnostics_instances):
     """Test data loading for time series plot."""
     multilevel_trend_instance = diagnostics_instances["multilevel_trend"]
@@ -131,7 +131,7 @@ def test_multilevel_trend(diagnostics_instances):
     assert trend_dic["trend_data"]["so"].isel(lev=1, lat=10, lon=10).values == pytest.approx(0.02337264,rel=approx_rel)
     
 # Zonal mean trend Function
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_zonal_mean_trend(diagnostics_instances):
     """Test data loading for time series plot."""
     zonal_mean_trend_instance = diagnostics_instances["zonal_mean_trend"]

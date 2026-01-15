@@ -36,7 +36,7 @@ def common_setup(tmp_path):
         "time": time
     }
 
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_check_variable_name(common_setup):
     """Test variable name checking and transformations."""
     setup = common_setup
@@ -59,7 +59,7 @@ def diagnostics_instances(common_setup):
     }
 
 # MLD Function
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_mld(diagnostics_instances):
     """Test data loading for hovmoller plot."""
     mld_instance = diagnostics_instances["mld"]
@@ -68,7 +68,7 @@ def test_mld(diagnostics_instances):
     assert mld_dic["mod_clim"]["mld"].isel(lon=10, lat=10).values == pytest.approx(4.52974677,rel=approx_rel)
     
 # Stratification Function
-@pytest.mark.diagnostics
+@pytest.mark.deprecated
 def test_stratification(diagnostics_instances):
     """Test data loading for hovmoller plot."""
     stratification_instance = diagnostics_instances["stratification"]
