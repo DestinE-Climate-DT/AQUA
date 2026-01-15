@@ -9,6 +9,7 @@ single or multiple experiments.
 """
 import argparse
 import sys
+import pandas as pd
 
 from aqua.logger import log_configure
 from aqua.util import get_arg
@@ -75,6 +76,8 @@ if __name__ == '__main__':
 
             diagnostic_name = config_dict['diagnostics']['timeseries'].get('diagnostic_name', 'timeseries')
             center_time = config_dict['diagnostics']['timeseries'].get('center_time', True)
+            exclude_incomplete = config_dict['diagnostics']['timeseries'].get('exclude_incomplete', True)
+            extend = config_dict['diagnostics']['timeseries'].get('extend', True)
 
             for var in config_dict['diagnostics']['timeseries'].get('variables', []):
                 var_config, regions = load_var_config(config_dict, var)
@@ -102,10 +105,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min([ts[i].startdate for i in range(len(ts))])
-                        enddate = max([ts[i].enddate for i in range(len(ts))])
-                        startdate = round_startdate(startdate)
-                        enddate = round_enddate(enddate)
+                        startdate = round_startdate(pd.Timestamp(min(t.plt_startdate for t in ts)))
+                        enddate = round_enddate(pd.Timestamp(max(t.plt_enddate for t in ts)))
                         logger.info(f"Start date: {startdate}, End date: {enddate}")
 
                         # Initialize a list of len from the number of references
@@ -157,6 +158,8 @@ if __name__ == '__main__':
 
                 diagnostic_name = config_dict['diagnostics']['timeseries'].get('diagnostic_name', 'timeseries')
                 center_time = config_dict['diagnostics']['timeseries'].get('center_time', True)
+                exclude_incomplete = config_dict['diagnostics']['timeseries'].get('exclude_incomplete', True)
+                extend = config_dict['diagnostics']['timeseries'].get('extend', True)
 
                 for region in regions:
                     try:
@@ -180,8 +183,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min([ts[i].plt_startdate for i in range(len(ts))])
-                        enddate = max([ts[i].plt_enddate for i in range(len(ts))])
+                        startdate = pd.Timestamp(min(t.plt_startdate for t in ts))
+                        enddate = pd.Timestamp(max(t.plt_enddate for t in ts))
 
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
@@ -259,8 +262,8 @@ if __name__ == '__main__':
                                       reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
                         # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = min([sc[i].startdate for i in range(len(sc))])
-                        enddate = max([sc[i].enddate for i in range(len(sc))])
+                        startdate = pd.Timestamp(min(t.plt_startdate for t in ts))
+                        enddate = pd.Timestamp(max(t.plt_enddate for t in ts))
 
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:

@@ -1,7 +1,8 @@
 """The main AQUA Reader class"""
 
 from contextlib import contextmanager
-import intake_esm
+# Disable intake_esm, not used in operational and creates issues with "aqua install"
+# import intake_esm
 import intake_xarray
 import xarray as xr
 from metpy.units import units
@@ -351,11 +352,13 @@ class Reader():
                 loadvar = None
 
         ffdb = False
-        # If this is an ESM-intake catalog use first dictionary value,
-        if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-            data = self.reader_esm(self.esmcat, loadvar)
+        # Disabled intake_esm for operational AQUA
+        # # If this is an ESM-intake catalog use first dictionary value,
+        # if isinstance(self.esmcat, intake_esm.core.esm_datastore):
+        #     data = self.reader_esm(self.esmcat, loadvar)
+
         # If this is an fdb entry
-        elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
+        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=True, level=level)
             ffdb = True  # These data have been read from fdb

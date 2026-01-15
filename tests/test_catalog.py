@@ -1,10 +1,8 @@
 """Test checking if all catalog entries can be read"""
 
 import pytest
-import types
 import xarray
 from aqua import Reader, catalog, inspect_catalog
-from aqua.reader.reader_utils import check_catalog_source
 
 loglevel = "DEBUG"
 
@@ -15,6 +13,10 @@ loglevel = "DEBUG"
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
+
+    if source == 'intake-esm-test': # temporary skip of intake esm sources
+        pytest.skip("Skipping intake-esm-test for now, not supported for now")
+
     myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=False,
                     fix=False, loglevel=loglevel)
     data = myread.retrieve()

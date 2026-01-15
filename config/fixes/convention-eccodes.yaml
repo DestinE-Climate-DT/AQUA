@@ -191,7 +191,8 @@ convention_name:
         source:
           - 164 # original GRIB2 code
           - 228006 # meantcc in 0-1 GRIB2 code
-          - 228164 # avg_tcc in %
+          - 228164 # tcc in %
+          - 235288 # avg_tcc in %
           - 131164 # ICON used this at some point
           - tcc
           - meantcc #legacy eccodes name
