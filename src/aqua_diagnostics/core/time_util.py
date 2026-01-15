@@ -27,43 +27,49 @@ def start_end_dates(startdate=None, enddate=None,
     start_std = pd.Timestamp(start_std) if start_std else None
     end_std = pd.Timestamp(end_std) if end_std else None
 
-    start_retrieve = min (filter(None, [startdate, start_std])) if startdate else None
-    end_retrieve = max (filter(None, [enddate, end_std])) if enddate else None
+    start_retrieve = min(filter(None, [startdate, start_std])) if startdate else None
+    end_retrieve = max(filter(None, [enddate, end_std])) if enddate else None
 
     return start_retrieve, end_retrieve
 
-def round_startdate(startdate):
+
+def round_startdate(startdate, freq='monthly'):
     """
-    Round the start date to the beginning of the month
+    Round the start date to the start of the month or year.
     
     Args:
-        startdate (str or pandas.Timestamp): start date for the data retrieve
-
+        startdate (pd.Timestamp): start date
+        freq (str): frequency ('monthly' or 'annual'). Default is 'monthly'.
+    
     Returns:
-        pandas.Timestamp: start date rounded to the beginning of the month
+        pd.Timestamp: rounded start date
     """
-    startdate = pd.Timestamp(startdate)
-    startdate = startdate.replace(day=1)
-    startdate = startdate.replace(hour=0, minute=0, second=0)
+    if freq == 'annual':
+        return pd.Timestamp(year=startdate.year, month=1, day=1, 
+                           hour=0, minute=0, second=0)
+    elif freq == 'monthly':
+        return pd.Timestamp(year=startdate.year, month=startdate.month, day=1,
+                           hour=0, minute=0, second=0)
+    else:
+        raise ValueError(f"Unsupported frequency '{freq}'. Only 'monthly' and 'annual' are supported.")
 
-    return startdate
 
-def round_enddate(enddate):
+def round_enddate(enddate, freq='monthly'):
     """
-    Round the end date to the end of the month
+    Round the end date to the end of the month or year.
     
     Args:
-        enddate (str or pandas.Timestamp): end date for the data retrieve
-
+        enddate (pd.Timestamp): end date
+        freq (str): frequency ('monthly' or 'annual'). Default is 'monthly'.
+    
     Returns:
-        pandas.Timestamp: end date rounded to the end of the month
+        pd.Timestamp: rounded end date
     """
-    enddate = pd.Timestamp(enddate)
-    endday_dict = {1: 31, 2: 29 if enddate.year % 4 == 0 else 28,
-                   3: 31, 4: 30, 5: 31, 6: 30,
-                   7: 31, 8: 31, 9: 30, 10: 31,
-                   11: 30, 12: 31}
-
-    enddate = enddate.replace(day=endday_dict[enddate.month])
-    enddate = enddate.replace(hour=23, minute=59, second=59)
-    return enddate
+    if freq == 'annual':
+        return pd.Timestamp(year=enddate.year, month=12, day=31,
+                           hour=23, minute=59, second=59)
+    elif freq == 'monthly':
+        return pd.Timestamp(year=enddate.year, month=enddate.month, day=1,
+                           hour=0, minute=0, second=0) + pd.DateOffset(months=1) - pd.Timedelta(seconds=1)
+    else:
+        raise ValueError(f"Unsupported frequency '{freq}'. Only 'monthly' and 'annual' are supported.")
