@@ -216,7 +216,7 @@ class BaseGridBuilder:
         for bounds_var, coord_name in bounds_map.items():
             if bounds_var in data.variables and coord_name in data.dims:
                 bounds_dims = list(data[bounds_var].dims)
-                self.logger.warning(f"Checking {bounds_var} with dims: {bounds_dims}")
+                self.logger.debug(f"Checking {bounds_var} with dims: {bounds_dims}")
                 
                 # Check if the first dimension doesn't match the coordinate
                 if bounds_dims[0] != coord_name:
