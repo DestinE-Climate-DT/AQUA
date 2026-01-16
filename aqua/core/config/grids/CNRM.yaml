@@ -1,0 +1,7 @@
+grids:
+  cnrm-atm:
+    path: '{{ grids }}/CNRM/cnrm_atm.nc'
+    cellareas_var: cell_area
+    space_coord:
+    - lon
+    - lat
