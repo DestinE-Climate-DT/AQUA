@@ -50,40 +50,199 @@ class BaseGridBuilder:
 
         Args:
             data (xarray.Dataset): The dataset to clean attributes for.
+
         Returns:
             xarray.Dataset: The dataset with cleaned attributes.
         """
-        # cleaning attributes for variables
+        # Remove scalar coordinates that aren't dimensions (e.g., height)
+        scalar_coords_to_drop = []
+        for coord in data.coords:
+            if coord not in data.dims and data[coord].ndim == 0:
+                self.logger.debug(f"Removing scalar coordinate: {coord}")
+                scalar_coords_to_drop.append(coord)
+        if scalar_coords_to_drop:
+            data = data.drop_vars(scalar_coords_to_drop)
+
+        # Clean all data variable attributes first
         for var in data.data_vars:
             data[var].attrs = {}
 
-        # setting attributes for mask
+        # Set attributes for mask
         data['mask'].attrs['_FillValue'] = -9999
         data['mask'].attrs['missing_value'] = -9999
         data['mask'].attrs['long_name'] = 'mask'
         data['mask'].attrs['units'] = '1'
         data['mask'].attrs['standard_name'] = 'mask'
 
-        # attribute checks for coordinates
+        # Set attributes for bounds variables (they are data_vars, not coords)
+        for bounds_var in ['lon_bnds', 'lat_bnds', 'lon_bounds', 'lat_bounds']:
+            if bounds_var in data.data_vars:
+                # Keep bounds variables clean - no extra attributes
+                data[bounds_var].attrs = {}
+
+        # Clean coordinate attributes
         for coord in data.coords:
+            # Clear all attributes first
+            data[coord].attrs = {}
+            
+            # Add appropriate axis attributes for spatial/vertical coordinates
+            if coord == 'lon':
+                data[coord].attrs['axis'] = 'X'
+                data[coord].attrs['standard_name'] = 'longitude'
+                data[coord].attrs['units'] = 'degrees_east'
+                # Link to bounds if they exist
+                if 'lon_bnds' in data.variables:
+                    data[coord].attrs['bounds'] = 'lon_bnds'
+                elif 'lon_bounds' in data.variables:
+                    data[coord].attrs['bounds'] = 'lon_bounds'
+            elif coord == 'lat':
+                data[coord].attrs['axis'] = 'Y'
+                data[coord].attrs['standard_name'] = 'latitude'
+                data[coord].attrs['units'] = 'degrees_north'
+                # Link to bounds if they exist
+                if 'lat_bnds' in data.variables:
+                    data[coord].attrs['bounds'] = 'lat_bnds'
+                elif 'lat_bounds' in data.variables:
+                    data[coord].attrs['bounds'] = 'lat_bounds'
+            elif self.vert_coord and coord == self.vert_coord:
+                data[coord].attrs['axis'] = 'Z'
+            elif coord in ['bnds', 'bounds']:
+                # No axis for bounds dimension
+                pass
 
-            # remove axis which can confuse CDO
-            if not self.vert_coord or coord != self.vert_coord:
-                self.logger.debug("Removing axis for %s", coord)
-                if 'axis' in data[coord].attrs:
-                    del data[coord].attrs['axis']
+        # Fix bounds dimensions to prevent lon_2, lat_2 issues
+        data = self._fix_bounds_dims(data)
+        
+        # # Add cell area for unstructured/curvilinear grids (needed for CDO fldmean)
+        # data = self._add_cell_area(data)
 
-            # remove bounds which can confuse CDO
-            if not self.has_bounds(data):
-                self.logger.debug("No bounds found for %s", coord)
-                if 'bounds' in data[coord].attrs:
-                    self.logger.debug("Removing bounds for %s", coord)
-                    del data[coord].attrs['bounds']
+        return data
+    
+    def _add_cell_area(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Add cell area variable for unstructured/curvilinear grids.
+        
+        CDO needs cell area information for area-weighted operations like fldmean.
+        This calculates the area from the bounds if available.
+        
+        Args:
+            data (xr.Dataset): Dataset to add cell area to.
+        Returns:
+            xr.Dataset: Dataset with cell area added.
+        """
+        # Only add cell area if we have bounds
+        if not self.has_bounds(data):
+            return data
+        
+        # Check if this is a 2D grid that needs cell area
+        if 'lat' in data.dims and 'lon' in data.dims:
+            try:
+                import numpy as np
+                
+                # Get bounds - check which variables exist
+                lat_bnds = None
+                lon_bnds = None
+                
+                if 'lat_bnds' in data.variables:
+                    lat_bnds = data['lat_bnds']
+                elif 'lat_bounds' in data.variables:
+                    lat_bnds = data['lat_bounds']
+                    
+                if 'lon_bnds' in data.variables:
+                    lon_bnds = data['lon_bnds']
+                elif 'lon_bounds' in data.variables:
+                    lon_bnds = data['lon_bounds']
+                
+                if lat_bnds is None or lon_bnds is None:
+                    self.logger.debug("Missing bounds variables for cell area calculation")
+                    return data
+                    
+                # Calculate cell area using spherical geometry
+                # Area = R^2 * |lon2-lon1| * |sin(lat2)-sin(lat1)|
+                R_earth = 6371000.0  # Earth radius in meters
+                
+                lat_bnds_rad = np.deg2rad(lat_bnds.values)
+                lon_bnds_rad = np.deg2rad(lon_bnds.values)
+                
+                # Calculate differences
+                dlat = np.abs(np.sin(lat_bnds_rad[:, 1]) - np.sin(lat_bnds_rad[:, 0]))
+                dlon = np.abs(lon_bnds_rad[:, 1] - lon_bnds_rad[:, 0])
+                
+                # Broadcast to 2D
+                dlat_2d = dlat[:, np.newaxis]
+                dlon_2d = dlon[np.newaxis, :]
+                
+                # Calculate area
+                cell_area = R_earth**2 * dlon_2d * dlat_2d
+                
+                # Add to dataset
+                data['cell_area'] = xr.DataArray(
+                    cell_area,
+                    dims=['lat', 'lon'],
+                    coords={'lat': data['lat'], 'lon': data['lon']},
+                    attrs={
+                        'standard_name': 'cell_area',
+                        'long_name': 'Grid cell area',
+                        'units': 'm2'
+                    }
+                )
+                self.logger.info("Added cell_area variable for CDO operations")
+                    
+            except Exception as e:
+                self.logger.warning(f"Could not calculate cell area: {e}")
+        
+        return data
 
-        # adding vertical properties
-        if self.vert_coord:
-            data[self.vert_coord].attrs['axis'] = 'Z'
-
+    def _fix_bounds_dims(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Fix bounds dimensions to ensure they match coordinate dimensions.
+        
+        When bounds have mismatched dimensions, xarray creates new dimensions 
+        (lon_2, lat_2) during to_netcdf(). This method rebuilds bounds with 
+        correct dimensions.
+        
+        Args:
+            data (xr.Dataset): Dataset with potential dimension mismatches.
+        Returns:
+            xr.Dataset: Dataset with fixed bounds dimensions.
+        """
+        bounds_map = {
+            'lon_bnds': 'lon',
+            'lat_bnds': 'lat', 
+            'lon_bounds': 'lon',
+            'lat_bounds': 'lat'
+        }
+        
+        for bounds_var, coord_name in bounds_map.items():
+            if bounds_var in data.variables and coord_name in data.dims:
+                bounds_dims = list(data[bounds_var].dims)
+                self.logger.warning(f"Checking {bounds_var} with dims: {bounds_dims}")
+                
+                # Check if the first dimension doesn't match the coordinate
+                if bounds_dims[0] != coord_name:
+                    self.logger.warning(
+                        f"{bounds_var} has wrong dimension {bounds_dims[0]}, "
+                        f"should be {coord_name}. Rebuilding bounds."
+                    )
+                    
+                    # Get the bounds data and rebuild with correct dimensions
+                    bounds_data = data[bounds_var].values
+                    bnds_dim = bounds_dims[-1]  # Usually 'bnds' or 'bounds'
+                    
+                    # Create new bounds DataArray with correct dimensions
+                    new_bounds = xr.DataArray(
+                        bounds_data,
+                        dims=[coord_name, bnds_dim],
+                        coords={coord_name: data[coord_name], bnds_dim: data[bnds_dim]},
+                        attrs=data[bounds_var].attrs
+                    )
+                    
+                    # Replace in dataset
+                    data = data.drop_vars(bounds_var)
+                    data[bounds_var] = new_bounds
+                    
+                    self.logger.info(f"Fixed {bounds_var} dimensions to [{coord_name}, {bnds_dim}]")
+        
         return data
 
     def has_bounds(self, data: xr.Dataset) -> bool:
@@ -253,5 +412,27 @@ class BaseGridBuilder:
             self.logger.info("Writing grid file to %s with CDO grid %s", output_file, metadata['cdogrid'])
             self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
         else:
-            self.logger.info("Writing grid file to %s", output_file)
-            self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)
+            self.logger.info("Writing grid file to %s without CDO processing", output_file)
+            # Read the input file with xarray
+            data = xr.open_dataset(input_file)
+            
+            # Build encoding to prevent _FillValue on coordinates and properly encode variables
+            encoding = {}
+            
+            # Encode data variables with compression
+            for var in data.data_vars:
+                encoding[var] = {'zlib': True, 'complevel': 1}
+                # Ensure proper FillValue for mask
+                if var == 'mask':
+                    encoding[var]['_FillValue'] = -9999.0
+                else:
+                    # For bounds and cell_area, no FillValue
+                    encoding[var]['_FillValue'] = None
+            
+            # Encode coordinates without _FillValue
+            for coord in data.coords:
+                encoding[coord] = {'_FillValue': None}
+            
+            # Write with explicit encoding
+            data.to_netcdf(output_file, encoding=encoding, format='NETCDF4')
+            data.close()
