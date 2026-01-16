@@ -31,7 +31,8 @@ class GridBuilder():
         grid_name: Optional[str] = None,
         original_resolution: Optional[str] = None,
         vert_coord: Optional[str] = None,
-        loglevel: str = 'warning'
+        loglevel: str = 'warning',
+        force_unstructured: bool = False
     ) -> None:
         """
         Initialize the GridBuilder with a reader instance.
@@ -43,6 +44,7 @@ class GridBuilder():
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
             vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one detected by the GridInspector.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
+            force_unstructured (bool, optional): Force the grid detection to use unstructured grid type. Defaults to False.
         """
         # store output directory
         self.outdir = outdir
@@ -60,6 +62,9 @@ class GridBuilder():
 
         # vertical coordinates to consider for the grid build for the 3d case.
         self.vert_coord = vert_coord
+
+        # store force_unstructured flag
+        self.force_unstructured = force_unstructured
 
         # Initialize GridEntryManager to generate the grid file name and entry
         self.gem = GridEntryManager(
@@ -80,11 +85,26 @@ class GridBuilder():
             verify (bool): Whether to verify the grid file after creation. Defaults to True.
             create_yaml (bool): Whether to create the grid entry in the grid file. Defaults to True.
         """
-        gridtypes = GridInspector(data).get_gridtype()
-        if not gridtypes:
-            self.logger.error("No grid type detected, skipping grid build")
-            self.logger.error("You can try to fix the source when calling the Reader() with the --fix flag")
-            return
+        if self.force_unstructured:
+            # Override grid detection to force unstructured
+            self.logger.warning("Forcing unstructured grid type (overriding automatic detection)")
+            inspector = GridInspector(data)
+            # Get first gridtype for dimensions, but override kind
+            gridtypes = inspector.get_gridtype()
+            if not gridtypes:
+                self.logger.error("No grid type detected, cannot force unstructured")
+                self.logger.error("You can try to fix the source when calling the Reader() with the --fix flag")
+                return
+            # Override the kind to 'Unstructured'
+            gridtype = gridtypes[0]
+            gridtype.kind = 'Unstructured'
+            gridtypes = [gridtype]
+        else:
+            gridtypes = GridInspector(data).get_gridtype()
+            if not gridtypes:
+                self.logger.error("No grid type detected, skipping grid build")
+                self.logger.error("You can try to fix the source when calling the Reader() with the --fix flag")
+                return
         self.logger.info("Build on %s gridtypes", len(gridtypes))
         for gridtype in gridtypes:
             self._build_gridtype(
