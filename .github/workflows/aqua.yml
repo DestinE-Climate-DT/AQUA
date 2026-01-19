@@ -52,7 +52,7 @@ jobs:
     with:
       python-versions: '["3.12"]'
       pytest-markers: 'aqua or slow or gsv or graphics or catgen'
-      enable-parallel: true
+      enable-parallel: false
       enable-coverage: true
       fail-fast: false
       pr-number: ${{ github.event.pull_request.number || '' }}
