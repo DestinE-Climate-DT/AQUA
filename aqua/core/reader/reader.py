@@ -667,7 +667,7 @@ class Reader():
             self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
         return self._intake_user_parameters
 
-    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict = {}, databridge: str = None) -> dict:
+    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict = None, databridge: str = None) -> dict:
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
