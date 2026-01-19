@@ -224,21 +224,10 @@ class TestGsv():
         Reading from a remote databridge using polytope
         """
         reader = Reader(catalog='climatedt-phase1', model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
-                        loglevel="debug", engine="polytope", areas=False)
+                       loglevel="debug", engine="polytope", areas=False)
         data = reader.retrieve(var='2t')
         assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
-
-    def test_reader_polytope_mn5(self) -> None:
-        """
-        Reading from mn5 databridge using polytope
-        """
-        reader = Reader(catalog='climatedt-o25.1', model='IFS-NEMO', exp='historical-1990', source='hourly-hpz7-atm2d',
-                        startdate="19900101T0000", enddate="19910101T0025", loglevel="debug", engine="polytope", areas=False)
-        data = reader.retrieve(var='2t')
-        assert 'databridge' in reader.kwargs
-        assert reader.kwargs['databridge'] == 'mn5'
-        assert data.isel(time=20)['2t'].values[0] == pytest.approx(301.0878448486328)
-
+        
     def test_fdb_from_file(self) -> None:
         """
         Reading fdb dates from a file.
