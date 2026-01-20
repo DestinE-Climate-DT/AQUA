@@ -41,11 +41,13 @@ def builder_parser(parser=None):
     parser.add_argument('--gridname', type=str,
                         help='alternative name for the grid for grid naming [default: None]. Required for Curvilinear and Unstructured grids.')
     parser.add_argument('--fix', action='store_true',
-                        help='Fix the original source [default: False]')
+                        help='Fix and apply data model to the original source [default: False]')
     parser.add_argument('--verify', action='store_true', default=False,
                         help='Verify the grid file after creation [default: False]')
     parser.add_argument('--yaml', action='store_true', default=False,
                         help='Create the grid entry in the grid file [default: False]')
+    parser.add_argument('--unstructured', action='store_true', default=False,
+                        help='Force grid detection to use unstructured grid type [default: False]')
 
     return parser
 
@@ -67,6 +69,7 @@ def builder_execute(args):
     exp = get_arg(args, 'exp', reader_config.get('exp'))
     source = get_arg(args, 'source', reader_config.get('source'))
     fix = get_arg(args, 'fix', reader_config.get('fix', False))
+    datamodel = get_arg(args, 'fix', reader_config.get('datamodel', False))
     loglevel = get_arg(args, 'loglevel', builder_config.get('loglevel', 'WARNING'))
     outdir = get_arg(args, 'outdir', builder_config.get('outdir', '.'))
     original_resolution = get_arg(args, 'original', builder_config.get('original'))
@@ -77,6 +80,7 @@ def builder_execute(args):
     verify = get_arg(args, 'verify', builder_config.get('verify', False))
     create_yaml = get_arg(args, 'yaml', builder_config.get('yaml', False))
     vert_coord = get_arg(args, 'vert_coord', builder_config.get('vert_coord'))
+    unstructured = get_arg(args, 'unstructured', builder_config.get('unstructured', False))
 
     # Ensure required arguments are present
     if model is None:
@@ -86,8 +90,9 @@ def builder_execute(args):
     if source is None:
         raise ValueError("Source must be specified via --source or in the config file")
 
-    # retrieve the data
-    reader = Reader(catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix)
+    # Retrieve the data
+    reader = Reader(catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel,
+                    areas=False, fix=fix, datamodel=datamodel)
     data = reader.retrieve()
 
     # Create GridBuilder instance
@@ -97,7 +102,8 @@ def builder_execute(args):
         original_resolution=original_resolution,
         model_name=modelname,
         grid_name=gridname,
-        vert_coord=vert_coord
+        vert_coord=vert_coord,
+        force_unstructured=unstructured
     )
 
     # Build the grid
