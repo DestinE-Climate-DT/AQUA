@@ -13,7 +13,7 @@ from .gridentrymanager import GridEntryManager
 class GridBuilder():
     """
     Class to build automatically grids from data sources.
-    Currently supports HEALPix grids and can be extended for other grid types.
+    Currently tested with HEALPix grids and can be extended for other grid types.
     """
     GRIDTYPE_REGISTRY = {
         'HEALPix': HealpixGridBuilder,
@@ -44,21 +44,21 @@ class GridBuilder():
             vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one detected by the GridInspector.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
-        # store output directory
+        # Store output directory
         self.outdir = outdir
 
-        # store original resolution if necessary
+        # Store original resolution if necessary
         self.original_resolution = original_resolution
 
-        # set model name
+        # Set model name
         self.model_name = model_name
         self.grid_name = grid_name
 
-        # loglevel
+        # Log level configuration
         self.logger = log_configure(log_level=loglevel, log_name='GridBuilder')
         self.loglevel = loglevel
 
-        # vertical coordinates to consider for the grid build for the 3d case.
+        # Vertical coordinates to consider for the grid build for the 3d case.
         self.vert_coord = vert_coord
 
         # Initialize GridEntryManager to generate the grid file name and entry
@@ -106,16 +106,15 @@ class GridBuilder():
         """
         self.logger.info("Detected grid type: %s", gridtype)
         kind = gridtype.kind
-        kind = 'Unstructured'
         self.logger.info("Grid type is: %s", kind)
 
-        # access the class registry to get the builder class appropriate for the gridtype
+        # Access the class registry to get the builder class appropriate for the gridtype
         BuilderClass = self.GRIDTYPE_REGISTRY.get(kind)
         if not BuilderClass:
             raise NotImplementedError(f"Grid type {kind} is not implemented yet")
         self.logger.debug("Builder class: %s", BuilderClass)
 
-        # vertical coordinate detection
+        # Vertical coordinate detection
         vert_coord = self.vert_coord if self.vert_coord else gridtype.vertical_dim
         self.logger.info("Detected vertical coordinate: %s", vert_coord)
 
@@ -125,39 +124,33 @@ class GridBuilder():
             original_resolution=self.original_resolution, loglevel=self.loglevel
         )
 
-        # self.logger.warning(f"Original data: {data}")
-        # data reduction. Load the data into memory for convenience.
+        # Data reduction. Load the data into memory for convenience.
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
-        # self.logger.warning(f"Reduced data3d: {data3d}")
-        self.logger.warning(f"Reduced data lon bounds attributes: {data3d.lon_bnds.attrs}")
-        self.logger.warning(f"Reduced data lat bounds attributes: {data3d.lat_bnds.attrs}")
 
-        # add history attribute, get metadata from the attributes
+        # Add history attribute, get metadata from the attributes
         exp = data3d['mask'].attrs.get('AQUA_exp', None)
         source = data3d['mask'].attrs.get('AQUA_source', None)
         model = data3d['mask'].attrs.get('AQUA_model', None)
         log_history(data3d, msg=f'Gridfile generated with GridBuilder from {model}_{exp}_{source}')
 
-        # store the data in a temporary netcdf file
+        # Store the data in a temporary netcdf file
         filename_tmp = f"{self.model_name}_{exp}_{source}.nc"
         self.logger.info("Saving tmp data in %s", filename_tmp)
 
-        # configure attributes for the grid file
+        # Configure attributes for the grid file
         data3d = builder.clean_attributes(data3d)
-        # self.logger.warning(f"Cleaned data3d: {data3d}")
         self.logger.warning(f"Cleaned data lon bounds attributes: {data3d.lon_bnds.attrs}")
         self.logger.warning(f"Cleaned data lat bounds attributes: {data3d.lat_bnds.attrs}")
-        #data3d = data3d.drop_vars('height') if 'height' in data3d else data3d
         data3d.to_netcdf(filename_tmp)
 
-        # select the 2D slice of the data and detect the mask type
+        # Select the 2D slice of the data and detect the mask type
         # TODO: this will likely not work for 3d unstructured grids.
         # An alternative might be to check if the NaN are changing along the vertical coordinate.
         data2d = builder.select_2d_slice(data3d, vert_coord)
         masked = builder.detect_mask_type(data2d)
         self.logger.info("Masked type: %s", builder.masked)
 
-        # get the basename and metadata for the grid file
+        # Get the basename and metadata for the grid file
         # need to read grid property from 2d data
         metadata = builder.get_metadata(data2d)
         aquagrid = metadata['aquagrid']
@@ -170,10 +163,10 @@ class GridBuilder():
         if not cdogrid or masked:
             self.logger.warning("No CDO grid detected, or mask, need physical file")
 
-            # create the base path for the grid file
+            # Create the base path for the grid file
             basepath = self.gem.get_versioned_basepath(self.outdir, basename, version=version)
 
-            # check if the file already exists and clean it if needed
+            # Check if the file already exists and clean it if needed
             filename = f"{basepath}.nc"
             if os.path.exists(filename):
                 if rebuild:
@@ -183,7 +176,7 @@ class GridBuilder():
                     self.logger.error("File %s already exists, skipping", filename)
                     return
 
-            # write the grid file with the class specific method
+            # Write the grid file with the class specific method
             builder.write_gridfile(
                 input_file=filename_tmp, output_file=filename, metadata=metadata
             )
@@ -191,15 +184,15 @@ class GridBuilder():
             self.logger.warning("CDO grid %s detected without mask, skipping physical file creation for %s", cdogrid, basename)
             filename = cdogrid
 
-        # cleanup
-        # self.logger.info('Removing temporary file %s', filename_tmp)
-        # os.remove(filename_tmp)
+        # Cleanup
+        self.logger.info('Removing temporary file %s', filename_tmp)
+        os.remove(filename_tmp)
 
-        # verify the creation of the weights
+        # Verify the creation of the weights
         if verify:
             builder.verify_weights(filename, metadata=metadata)
 
-        # create the grid entry in the grid file
+        # Create the grid entry in the grid file
         if create_yaml:
             gridfile = self.gem.get_gridfilename(cdogrid, kind)
             self.logger.info("Creating grid entry in %s", gridfile)
