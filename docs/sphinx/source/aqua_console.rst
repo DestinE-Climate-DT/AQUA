@@ -370,7 +370,7 @@ The following options are available for ``aqua grids build``:
 
 .. option:: --fix
 
-    Fix the original source before building the grid. Useful for models with very specific coordinates/dimensions.
+    Apply fixes and data model to the original source before building the grid. Useful for models with very specific coordinates/dimensions.
     Suggested as default setting, disabled if issues arise.
 
 .. option:: --verify
@@ -382,6 +382,9 @@ The following options are available for ``aqua grids build``:
     Create the grid entry in the grid file after building. This has to be added to catalog `source_grid_name` manually to be used by the Reader.
     Please keep in mind that this is not verified yet. 
 
+.. option:: --unstructured
+
+    Force the grid detection to use unstructured grid type. Useful for datasets with ambiguous grid types (e.g. gaussian regular with inverted lon/lat dimensions).
 
 .. _aqua-drop:
 
