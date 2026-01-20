@@ -140,8 +140,8 @@ class BaseGridBuilder:
         #       and a simple keep_attrs does not work, it works in notebooks
         # Store lon and lat attributes before any operation
         # This is lost in the 'where' operation below
-        lon_attrs = data['lon'].attrs.copy()
-        lat_attrs = data['lat'].attrs.copy()
+        lon_attrs = data['lon'].attrs.copy() if 'lon' in data else {}
+        lat_attrs = data['lat'].attrs.copy() if 'lat' in data else {}
 
         # Guess time dimension from the GridType
         timedim = gridtype.time_dims[0] if gridtype.time_dims else None
@@ -167,8 +167,10 @@ class BaseGridBuilder:
         data['mask'].attrs = attrs
 
         # Preserve lon and lat attributes after any operation
-        data['lon'].attrs = lon_attrs
-        data['lat'].attrs = lat_attrs
+        if 'lon' in data:
+            data['lon'].attrs = lon_attrs
+        if 'lat' in data:
+            data['lat'].attrs = lat_attrs
 
         return data
 
