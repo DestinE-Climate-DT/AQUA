@@ -122,32 +122,50 @@ class BaseGridBuilder:
         Returns:
             xarray.Dataset: The reduced data.
         """
-        # extract first var from GridType and get the attributes of the original variable
+        # Extract first var from GridType and get the attributes of the original variable
         var = next(iter(gridtype.variables))
         attrs = data[var].attrs.copy()
 
-        # guess time dimension from the GridType
+        self.logger.warning("Attributes of original lon and lat: %s, %s",
+                            data['lon'].attrs, data['lat'].attrs)
+
+        # Store lon and lat attributes before any operation
+        lon_attrs = data['lon'].attrs.copy()
+        lat_attrs = data['lat'].attrs.copy()
+
+        # Guess time dimension from the GridType
         timedim = gridtype.time_dims[0] if gridtype.time_dims else None
 
-        # temporal reduction
+        # Temporal reduction
         if timedim:
             data = data.isel({timedim: 0}, drop=True)
 
-        # load the variables and rename to mask for consistency
+        # Load the variables and rename to mask for consistency
         space_bounds = [bound for bound in gridtype.bounds if not 'time' in bound]
         load_vars = [var] + space_bounds  # (gridtype.bounds or [])
         data = data[load_vars]
         data = data.rename({var: 'mask'})
 
-        # drop the remnant vertical coordinate if present
+        # Drop the remnant vertical coordinate if present
         if vert_coord and f"idx_{vert_coord}" in data.coords:
             data = data.drop_vars(f"idx_{vert_coord}")
 
-        # set the mask variable to 1 where data is not null
+        # Set the mask variable to 1 where data is not null
         data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1)
 
-        # preserve the attributes of the original variable
+        # self.logger.warning("Attributes of isnull mask lon and lat: %s, %s",
+        #                     data['mask'].isnull(keep_attrs=True).lon.attrs,
+        #                     data['mask'].isnull(keep_attrs=True).lat.attrs)
+
+        # Preserve the attributes of the original variable
         data['mask'].attrs = attrs
+
+        # Preserve lon and lat attributes after any operation
+        data['lon'].attrs = lon_attrs
+        data['lat'].attrs = lat_attrs
+
+        self.logger.warning("Attributes of lon and lat after data reduction: %s, %s",
+                            data['lon'].attrs, data['lat'].attrs)
 
         return data
 

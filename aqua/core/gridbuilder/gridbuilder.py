@@ -106,6 +106,7 @@ class GridBuilder():
         """
         self.logger.info("Detected grid type: %s", gridtype)
         kind = gridtype.kind
+        kind = 'Unstructured'
         self.logger.info("Grid type is: %s", kind)
 
         # access the class registry to get the builder class appropriate for the gridtype
@@ -124,8 +125,12 @@ class GridBuilder():
             original_resolution=self.original_resolution, loglevel=self.loglevel
         )
 
+        # self.logger.warning(f"Original data: {data}")
         # data reduction. Load the data into memory for convenience.
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
+        # self.logger.warning(f"Reduced data3d: {data3d}")
+        self.logger.warning(f"Reduced data lon bounds attributes: {data3d.lon_bnds.attrs}")
+        self.logger.warning(f"Reduced data lat bounds attributes: {data3d.lat_bnds.attrs}")
 
         # add history attribute, get metadata from the attributes
         exp = data3d['mask'].attrs.get('AQUA_exp', None)
@@ -139,6 +144,10 @@ class GridBuilder():
 
         # configure attributes for the grid file
         data3d = builder.clean_attributes(data3d)
+        # self.logger.warning(f"Cleaned data3d: {data3d}")
+        self.logger.warning(f"Cleaned data lon bounds attributes: {data3d.lon_bnds.attrs}")
+        self.logger.warning(f"Cleaned data lat bounds attributes: {data3d.lat_bnds.attrs}")
+        #data3d = data3d.drop_vars('height') if 'height' in data3d else data3d
         data3d.to_netcdf(filename_tmp)
 
         # select the 2D slice of the data and detect the mask type
@@ -183,8 +192,8 @@ class GridBuilder():
             filename = cdogrid
 
         # cleanup
-        self.logger.info('Removing temporary file %s', filename_tmp)
-        os.remove(filename_tmp)
+        # self.logger.info('Removing temporary file %s', filename_tmp)
+        # os.remove(filename_tmp)
 
         # verify the creation of the weights
         if verify:
