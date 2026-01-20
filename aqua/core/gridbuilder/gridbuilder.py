@@ -139,8 +139,6 @@ class GridBuilder():
 
         # Configure attributes for the grid file
         data3d = builder.clean_attributes(data3d)
-        self.logger.warning(f"Cleaned data lon bounds attributes: {data3d.lon_bnds.attrs}")
-        self.logger.warning(f"Cleaned data lat bounds attributes: {data3d.lat_bnds.attrs}")
         data3d.to_netcdf(filename_tmp)
 
         # Select the 2D slice of the data and detect the mask type
