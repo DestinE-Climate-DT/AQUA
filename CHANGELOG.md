@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.0.0):
 
+- Add `force_unstructured` option to GridBuilder and `--unstructured` cli argument to `aqua grids build` command (#2622)
 - Handle support for Destine local parameters if paramId is not WMO table (for eccodes v2.41.0) (#2620)
 
 ## [v1.0.0a2]
