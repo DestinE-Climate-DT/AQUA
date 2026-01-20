@@ -136,8 +136,8 @@ class BaseGridBuilder:
         var = next(iter(gridtype.variables))
         attrs = data[var].attrs.copy()
 
-        # TODO: investigate why the following lines are needed
-        #       and a simple keep_attrs does not work
+        # HACK: investigate why the following lines are needed
+        #       and a simple keep_attrs does not work, it works in notebooks
         # Store lon and lat attributes before any operation
         # This is lost in the 'where' operation below
         lon_attrs = data['lon'].attrs.copy()
