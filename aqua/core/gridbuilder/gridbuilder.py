@@ -31,6 +31,7 @@ class GridBuilder():
         grid_name: Optional[str] = None,
         original_resolution: Optional[str] = None,
         vert_coord: Optional[str] = None,
+        force_unstructured: bool = False,
         loglevel: str = 'warning'
     ) -> None:
         """
@@ -42,6 +43,7 @@ class GridBuilder():
             grid_name (str, optional): The name of the grid, to specify extra information in the grid file
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
             vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one detected by the GridInspector.
+            force_unstructured (bool): Whether to force the grid detection to use unstructured grid type.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """
         # Store output directory
@@ -60,6 +62,9 @@ class GridBuilder():
 
         # Vertical coordinates to consider for the grid build for the 3d case.
         self.vert_coord = vert_coord
+
+        # Whether to force the grid detection to use unstructured grid type.
+        self.force_unstructured = force_unstructured
 
         # Initialize GridEntryManager to generate the grid file name and entry
         self.gem = GridEntryManager(
@@ -105,6 +110,9 @@ class GridBuilder():
         Build the grid data based on the detected grid type.
         """
         self.logger.info("Detected grid type: %s", gridtype)
+        if self.force_unstructured:
+            self.logger.info("Forcing unstructured grid type")
+            gridtype.kind = 'Unstructured'
         kind = gridtype.kind
         self.logger.info("Grid type is: %s", kind)
 
