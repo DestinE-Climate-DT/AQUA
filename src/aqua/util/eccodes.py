@@ -71,7 +71,15 @@ def _get_shortname_from_paramid(pid):
         string: The short name associated with the given paramId.
     """
     gid = codes_grib_new_from_samples("GRIB2")
-    codes_set(gid, "paramId", pid)
+    # HACK: if the pid is not defined in the WMO table, first set the GRIB2 template
+    # handler to use Destine local parameters definitions (12)
+    try:
+        codes_set(gid, "paramId", pid)
+    except CodesInternalError:
+        logger = log_configure(log_level='WARNING', log_name='eccodes')
+        logger.warning("paramId %s not found in default WMO definitions, switching to destine local parameters",pid)
+        codes_set(gid, 'productionStatusOfProcessedData', 12)
+        codes_set(gid, "paramId", pid)
     sn = codes_get(gid, "shortName")
     codes_release(gid)
     return sn

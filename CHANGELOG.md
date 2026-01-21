@@ -9,6 +9,11 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 
+## [v0.19.9]
+
+AQUA core complete list:
+- Handle support for Destine local parameters if paramId is not WMO table (for eccodes v2.41.0) (#2620)
+
 ## [v0.19.8]
 
 AQUA core complete list:
@@ -1251,7 +1256,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.8
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.9
+[v0.19.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.8...v0.19.9
 [v0.19.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.7...v0.19.8
 [v0.19.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.6...v0.19.7
 [v0.19.6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.5...v0.19.6
