@@ -418,8 +418,8 @@ class Reader():
             self.logger.debug("Applying base data model: %s", self.datamodel_name)
             data = self.datamodel.apply(data)
 
-        # Be sure that the time axis is Gregorian
-        cal = data.time.encoding.get("calendar", "standard")
+        # Be sure that the time axis is Gregorian, give standard also if time is not present
+        cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
 
         if cal.lower() not in ("gregorian", "standard"):
             self.logger.info(f'Converting calendar from {cal} to Gregorian for data retrieval...')
