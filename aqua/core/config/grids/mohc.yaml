@@ -1,3 +1,4 @@
+# Met Office Hadley Centre (MOHC)
 grids:
   hadgem3-gc31-hh-atm-2d:
     path: '{{ grids }}/HadGEM3/hadgem3-gc31-hh_atm_2d.nc'
