@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.0.0):
 
+- Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
 - Handle support for Destine local parameters if paramId is not WMO table (for eccodes v2.41.0) (#2620)
 
 ## [v1.0.0a2]
