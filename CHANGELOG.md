@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Handle support for Destine local parameters if paramId is not WMO table (for eccodes v2.41.0) (#2620)
 
 AQUA diagnostics complete list:
 
