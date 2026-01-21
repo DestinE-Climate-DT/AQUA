@@ -1,0 +1,6 @@
+grids:
+  bcc-csm2-hr-atm:
+    path: '{{ grids }}/BCC/bcc-csm2-hr_atm.nc'
+    space_coord:
+    - lat
+    - lon
