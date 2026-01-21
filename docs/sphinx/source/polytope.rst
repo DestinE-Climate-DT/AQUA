@@ -41,7 +41,13 @@ the argument ``engine: polytope`` as an additional argument in the intake catalo
 
 This allows accessing ClimateDT data on the Databridge also remotely from other machines.
 
-.. warning::
+Lumi Databridge and MN5 Databridge endpoints are supported.
+Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge endpoint by adding the argument
+``machine='mn5'`` in the catalog source entry in the corresponding `main.yaml` file, under `metadata:`.
 
-    At the moment only the Lumi Databridge endpoint is supported.
-    It will be soon possible to access the MN5 Databridge endpoint as well.
+.. code-block:: yaml
+    metadata:
+      expid: "0001"
+      forcing: historical
+      start: '1990'
+      machine: mn5
