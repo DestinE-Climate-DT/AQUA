@@ -52,6 +52,12 @@ class TimStat():
 
         if not isinstance(stat, str) and not callable(stat):
             raise TypeError('stat must be a string or a callable function')
+
+        cal = data.time.encoding.get("calendar", "standard")
+
+        if cal.lower() not in ("gregorian", "standard"):
+            self.logger.info(f'Converting calendar from {cal} to Gregorian for tim{stat} computation...')
+            data = data.convert_calendar("Gregorian")
         
         if stat == 'histogram':  # convert to callable function
             stat = histogram
