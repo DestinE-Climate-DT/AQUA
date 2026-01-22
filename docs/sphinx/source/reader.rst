@@ -111,6 +111,9 @@ If some information about the data is needed, it is possible to use the ``info()
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.
     If you're retrieving data from many sources, please instantiate a new ``Reader`` for each source.
 
+.. note::
+    The ``Reader`` class will try to convert the time coordinate to a Gregorian calendar if time is present.
+
 Dask and streaming capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
