@@ -413,3 +413,25 @@ def mon_to_quarter_season_name(month):
     for season_name, months in TRIPLET_MONTHS.items():
         if months[0] == month:
             return season_name
+
+
+def fix_calendar(data: xr.Dataset | xr.DataArray,
+                 loglevel: str = 'WARNING') -> xr.Dataset | xr.DataArray:
+    """
+    Fix calendar attribute in xarray Dataset or DataArray to ensure compatibility.
+
+    Args:
+        data (xr.Dataset | xr.DataArray): The input xarray object.
+        loglevel (str): Logging level for messages. Defaults to 'WARNING'.
+
+    Returns:
+        xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
+    """
+    cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
+
+    if cal.lower() not in ("gregorian", "standard"):
+        logger = log_configure(loglevel, 'fix_calendar')
+        logger.info(f'Converting calendar from {cal} to Gregorian for data retrieval...')
+        data = data.convert_calendar("Gregorian")
+
+    return data
