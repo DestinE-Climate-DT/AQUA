@@ -12,7 +12,8 @@ from metpy.units import units
 
 from smmregrid import GridInspector
 
-from aqua.core.util import load_multi_yaml, files_exist, to_list, find_vert_coord
+from aqua.core.util import load_multi_yaml, files_exist, to_list
+from aqua.core.util import find_vert_coord, fix_calendar
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure, log_history
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -35,6 +36,7 @@ xr.set_options(keep_attrs=True)
 
 # set default data model
 DATA_MODEL_DEFAULT = "aqua"
+
 
 class Reader():
     """General reader for climate data."""
@@ -244,7 +246,7 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
-            
+    
         self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
@@ -386,7 +388,7 @@ class Reader():
                 loadvar = None
 
         ffdb = False
-        
+
         # If this is an ESM-intake catalog use first dictionary value,
         #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
         #    data = self.reader_esm(self.esmcat, loadvar)
@@ -419,11 +421,8 @@ class Reader():
             data = self.datamodel.apply(data)
 
         # Be sure that the time axis is Gregorian, give standard also if time is not present
-        cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
-
-        if cal.lower() not in ("gregorian", "standard"):
-            self.logger.info(f'Converting calendar from {cal} to Gregorian for data retrieval...')
-            data = data.convert_calendar("Gregorian")
+        if 'time' in data.coords:
+            data = fix_calendar(data, loglevel=self.loglevel)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -540,7 +539,7 @@ class Reader():
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
-        
+
         data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
@@ -548,7 +547,7 @@ class Reader():
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"AQUA_regridded": 1})
         return out
-    
+
     # def trend(self, data, dim='time', degree=1, skipna=False):
     #     """
     #     Estimate the trend of an xarray object using polynomial fitting.
