@@ -66,6 +66,6 @@ grids:
     space_coord: ["cell"]
 
   # EC-EARTH3 grids
-  ecearth3-ORCA25-2d:
+  ecearth3-orca25-2d:
     path: '{{ grids }}/EC-EARTH3/ecearth3_ORCA25_2d.nc'
     space_coord: ["j", "i"]
