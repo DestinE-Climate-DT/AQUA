@@ -64,6 +64,8 @@ def drop_parser(parser = None):
                         help="Start date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--enddate', type=str,
                         help="End date to subset the data. Format YYYY-MM-DD")
+    parser.add_argument('--engine', type=str,
+                        help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
     parser.add_argument('--zarr', action="store_true",
                         help='Create zarr')
     parser.add_argument('--verify-zarr', action="store_true",
@@ -113,6 +115,7 @@ def drop_execute(args):
     resolution = get_arg(args, 'resolution', config['target'].get('resolution'))
     startdate = get_arg(args, 'startdate', config['target'].get('startdate'))
     enddate = get_arg(args, 'enddate', config['target'].get('enddate'))
+    engine = get_arg(args, 'engine', config['options'].get('engine', 'fdb'))
 
     loglevel = get_arg(args, 'loglevel', config['options'].get('loglevel', 'WARNING'))
     do_zarr = get_arg(args, 'zarr', config['options'].get('zarr', False))
@@ -135,14 +138,14 @@ def drop_execute(args):
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
             region=region, stat=stat,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
-            default_workers=default_workers,
+            default_workers=default_workers, engine=engine,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=None,
              startdate=None, enddate=None, outdir=None, tmpdir=None, loglevel=None,
              region=None, stat='mean',
              definitive=False, overwrite=False,
-             rebuild=False, monitoring=False,
+             rebuild=False, monitoring=False, engine='fdb',
              default_workers=1, do_zarr=False, verify_zarr=False,
              only_catalog=False):
     """
@@ -218,6 +221,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                                         rebuild=rebuild,
                                         performance_reporting=monitoring,
                                         exclude_incomplete=True,
+                                        engine=engine,
                                         **extra_args)
 
 

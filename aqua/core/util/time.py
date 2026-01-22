@@ -157,6 +157,21 @@ def _generate_expected_time_series(start_date, frequency, time_period):
     return time_series
 
 
+def _normalize_period_freq(freq: str) -> str:
+    """
+    Convert a pandas frequency string to a Period-compatible frequency.
+    Pandas 3.0+ is strict about using 'M' instead of 'MS', 'Y' instead of 'YS', etc.
+    """
+    if freq.startswith('MS'):
+        return 'M'
+    if freq.startswith('YS'):
+        return 'Y'
+    if freq.startswith('QS'):
+        return 'Q'
+    # Handle other cases if needed, but these are the ones causing failures
+    return freq
+
+
 def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     """
     Common setup for chunk completeness checking.
@@ -170,10 +185,9 @@ def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     data_frequency = xarray_to_pandas_freq(xdataset)
     logger.debug('Data frequency detected as: %s', data_frequency)
 
-    # convert offset
-    pandas_period = to_offset(resample_frequency)
-
-    normalized_dates = xdataset.time.to_index().to_period(pandas_period).to_timestamp()
+    # Normalize to Period-compatible frequency (e.g. MS -> M)
+    period_freq = _normalize_period_freq(resample_frequency)
+    normalized_dates = xdataset.time.to_index().to_period(period_freq).to_timestamp()
     chunks = pd.date_range(start=normalized_dates[0],
                            end=normalized_dates[-1],
                            freq=resample_frequency)
