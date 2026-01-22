@@ -8,6 +8,7 @@ import re
 import intake_xarray
 import xarray as xr
 import pandas as pd
+import numpy as np
 from metpy.units import units
 
 from smmregrid import GridInspector
@@ -397,6 +398,10 @@ class Reader():
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
+        
+        # Convert time to datetime64 microsecond resolution
+        if 'time' in data.coords and np.issubdtype(data.time.dtype, np.datetime64):
+            data['time'] = data.time.astype("datetime64[us]")
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -1040,11 +1045,15 @@ class Reader():
             self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
     
-        # The coder introduces the possibility to specify a time decoder for the time axis
+        # The coder introduces the possibility to specify a time decoder for the time axis.
+        # Default is set to microseconds ('us')
         if 'time_coder' in esmcat.metadata:
             self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
             coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
-            esmcat.xarray_kwargs.update({'decode_times': coder})
+        else:
+            coder = xr.coders.CFDatetimeCoder(time_unit='us')
+
+        esmcat.xarray_kwargs.update({'decode_times': coder})
 
         data = esmcat.to_dask()
 
