@@ -182,6 +182,7 @@ Key configuration options include:
 - ``frequency``: target temporal frequency (e.g., ``monthly``, ``daily``, ``3hourly``)
 - ``stat``: statistic to compute (``mean``, ``std``, ``max``, ``min``)
 - ``region``: spatial subsetting configuration
+- ``engine``: The engine used for the GSV retrieval, options are 'fdb' and 'polytope'.
 
 .. warning::
     Catalog detection is automatic, but specify the catalog name explicitly in the configuration 
@@ -258,6 +259,9 @@ Usage
 
     End date for the DROP output (default: as the original data).
     Accepted format: 'YYYY-MM-DDT23:00:00'
+
+.. option:: --engine
+    The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'. 
 
 **Examples:**
 
