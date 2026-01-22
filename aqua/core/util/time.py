@@ -5,7 +5,6 @@ import math
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typeguard import typechecked
 from pandas.tseries.frequencies import to_offset
 from aqua.core.util.sci_util import generate_quarter_months, TRIPLET_MONTHS
 from aqua.core.util.string import get_quarter_anchor_month
@@ -417,7 +416,6 @@ def mon_to_quarter_season_name(month):
             return season_name
 
 
-@typechecked
 def fix_calendar(data: xr.Dataset | xr.DataArray,
                  loglevel: str = 'WARNING') -> xr.Dataset | xr.DataArray:
     """
