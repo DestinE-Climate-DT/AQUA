@@ -5,10 +5,12 @@ import math
 import numpy as np
 import pandas as pd
 import xarray as xr
+from typeguard import typechecked
 from pandas.tseries.frequencies import to_offset
 from aqua.core.util.sci_util import generate_quarter_months, TRIPLET_MONTHS
 from aqua.core.util.string import get_quarter_anchor_month
 from aqua.core.logger import log_configure
+
 
 def frequency_string_to_pandas(freq):
     """
@@ -403,10 +405,10 @@ def mon_to_quarter_season_name(month):
     """
     Convert a month number (starting month of a quarter) to season abbreviation name.
     For QS-DEC, the quarter start months are 12, 3, 6, 9. Map them to their season based on TRIPLET_MONTHS
-    
+
     Args:
         month (int): Month number (1-12), expected to be a quarter start month
-    
+
     Returns:
         str: Season abbreviation (e.g., 'DJF', 'MAM', 'JJA', 'SON')
     """
@@ -415,6 +417,7 @@ def mon_to_quarter_season_name(month):
             return season_name
 
 
+@typechecked
 def fix_calendar(data: xr.Dataset | xr.DataArray,
                  loglevel: str = 'WARNING') -> xr.Dataset | xr.DataArray:
     """
