@@ -432,6 +432,6 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
     if cal.lower() not in ("gregorian", "standard"):
         logger = log_configure(loglevel, 'fix_calendar')
         logger.info(f'Converting calendar from {cal} to Gregorian for data retrieval...')
-        data = data.convert_calendar("Gregorian")
+        data = data.convert_calendar("Gregorian", align_on='year')
 
     return data
