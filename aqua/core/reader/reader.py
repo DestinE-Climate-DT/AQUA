@@ -317,11 +317,24 @@ class Reader():
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
             if self.fix:
+                self.logger.error("Applying fixes to regrid weights")
+                new_weights = {}
                 for item, value in weights.items():
-                    weights[item] = self.fixer.fixerdatamodel.apply(value)
+                    self.logger.debug("Applying fix to weights item %s", item)
+                    print(value.coords)
+                    fixed = self.fixer.fixerdatamodel.apply(value)
+                    print(fixed.coords)
+                    new_weights[list(fixed.coords)[0]] = fixed
+                weights = new_weights
             if self.datamodel:
+                new_weights = {}
                 for item, value in weights.items():
-                    weights[item] = self.datamodel.apply(value, flip_coords=False)
+                    self.logger.debug("Applying datamodel to weights item %s", item)
+                    print(value.coords)
+                    fixed = self.datamodel.apply(value, flip_coords=False)
+                    print(fixed.coords)
+                    new_weights[list(fixed.coords)[0]] = fixed
+                weights = new_weights
             self.regridder.initialize(weights)
 
         # generate destination areas, expose them and the associated space coordinates
