@@ -39,7 +39,7 @@ dependencies = [
     "cartopy==0.24.1",
     "cfgrib<=0.9.15.1",
     "dask[distributed]<=2026.1.1",
-    "eccodes==2.41.0",
+    "eccodes==2.45.0",
     "filelock<=3.20.3",
     "gcsfs<=2026.1.0", # Google Cloud Storage File System
     "intake==0.7.0", # Version 2 is a major refactor still in development
