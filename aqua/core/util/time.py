@@ -5,6 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 import xarray as xr
+import cftime
+from xarray.coding.times import cftime_to_nptime
 from pandas.tseries.frequencies import to_offset
 from aqua.core.util.sci_util import generate_quarter_months, TRIPLET_MONTHS
 from aqua.core.util.string import get_quarter_anchor_month
@@ -442,11 +444,34 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
+    DEFAULT_CALENDAR = 'Gregorian'
+    DEFAULT_UNIT = 'us'  # default to microseconds for datetime64 for a wider dates range
+    unit = DEFAULT_UNIT
 
-    if cal.lower() not in ("gregorian", "standard"):
-        logger = log_configure(loglevel, 'fix_calendar')
-        logger.info(f'Converting calendar from {cal} to Gregorian for data retrieval...')
-        data = data.convert_calendar("Gregorian", align_on='year')
+    logger = log_configure(loglevel, 'fix_calendar')
+    cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
+    logger.debug(f'Current calendar: {cal}')
+
+    if cal.lower() not in ("gregorian", "standard", "proleptic_gregorian"):
+        if 'datetime64' in str(data.time.values.dtype):
+            unit = np.datetime_data(data.time.values.dtype)[0]
+            logger.debug(f'Time units detected as {unit} from datetime64 dtype')
+
+        logger.info(f'Converting calendar from {cal} to {DEFAULT_CALENDAR} for data retrieval...')
+        data = data.convert_calendar(DEFAULT_CALENDAR, align_on='year')
+
+        # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
+        if (data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime)):
+            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_UNIT}] after calendar conversion")
+
+            # TODO: Is units="microseconds since 1970-01-01" always appropriate here?
+            np_time = cftime_to_nptime(data.time.values,
+                                       units="microseconds since 1970-01-01").astype(f"datetime64[{DEFAULT_UNIT}]")
+            data = data.assign_coords(time=np_time)
+        else:  # Still datetime64, ensure we keep original precision
+            new_unit = np.datetime_data(data.time.values.dtype)[0]
+            if unit != new_unit:
+                logger.info(f'Casting time precision from {new_unit} back to original {unit}...')
+                data = data.assign_coords(time=data.time.astype(f"datetime64[{unit}]"))
 
     return data
