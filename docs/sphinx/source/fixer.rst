@@ -291,11 +291,14 @@ Then, extra keys can be then specified for **each** variable to allow for furthe
 Data Model and Coordinates/Dimensions Correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The fixer can adopt a common **coordinate data model**, meaning that will try to standardize coordinate and dimensions whenever `fix=True` is set in the ``Reader`` class.
+As a parallel feature, AQUA can adopt a common **coordinate data model**, meaning that will try to standardize coordinate in the ``Reader`` class.
 
-The principle of the data mode is to identify coordinates based on their attributes (name, units, dimensions, etc.), 
+The principle of the data model is to identify coordinates based on their attributes (name, units, dimensions, etc.), 
 and then converting them to a common name, units, and direction. The default is the **aqua** data model,
 which is a simplified version of the CF data model and is stored in the ``aqua/core/config/data_model/aqua.yaml`` folder.
+If this data model is not appropriate for a specific source, it is possible to specify a different one in the catalog source, but it has to be defined accordingly in the config folder.
+It also possible to disable the data model treatment by setting ``data_model: false`` in the source metadata or calling
+the `Reader()`` with ``datamodel=False``.
 
 .. note::
     So far only latitude, longitude, time, pressure level, depth, and height coordinates are automatically treated by the data model. 
@@ -303,13 +306,20 @@ which is a simplified version of the CF data model and is stored in the ``aqua/c
 More in details, the data model scans the dataset and identify the coordinates based on a series of rules and try to guess which 
 coordinate is which based on a point-based ranking system. For example, if the dataset has a coordinate named "lat" with units "degrees_north"
 and another named "latitude" without units, the data model will assign more points to the first coordinate and will identify it as the latitude coordinate.
+If you want to force the detection of a specific coordinate, you can add it to the ``aqua/core/data_model/coord_defaults.yaml``. 
+This file contains a list of possible names for each coordinate, and the data model will assign the coordinates that match these names.
 
 .. warning::
-    The data model ranking system is not perfect and may fail in some cases. It is recommended to check the output dataset to ensure that the coordinates have been correctly identified and fixed.
+    The data model ranking system is not perfect and may fail in some cases. For example, it might happen that two coordinates get the same score, so that for safety the conversion is disabled for that specific coordinate.
+    In general, it is recommended to check the output dataset to ensure that the coordinates have been correctly identified and fixed.
 
 If the data model coordinate treatment is not enough to fix the coordinates or dimensions because of non-standard names or units,
 it is possible to specify a custom fix in the catalog in the **coords** or **dims** blocks
 as shown in section :ref:`fix-structure`.
+
+.. note::
+    Dimensions and coordinate fix will be applied **before** the data model treatment and will simplify the data model task.
+
 For example, if the longitude coordinate is called ``longitude`` instead of ``lon`` and the data model
 does not take care of it, it is possible to specify a fix like:
 

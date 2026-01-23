@@ -19,7 +19,7 @@ class TestGridBuilder:
         """Test the GridBuilder class with a HEALPix grid."""
         reader = Reader(
             model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
-            engine="polytope", areas=False, chunks={'time': 'H'})
+            engine="polytope", areas=False, chunks={'time': 'h'})
         data = reader.retrieve(var='2t')
         grid_builder = GridBuilder(outdir=tmp_path, model_name='IFS', original_resolution='tco1279')
         grid_builder.build(data, verify=True, create_yaml=False)

@@ -44,7 +44,7 @@ class GSVSource(base.DataSource):
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 switch_eccodes=False, loglevel='WARNING', engine='fdb', **kwargs):
+                 switch_eccodes=False, loglevel='WARNING', engine='fdb', databridge=None, **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -73,12 +73,18 @@ class GSVSource(base.DataSource):
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
             switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
             engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'. 
+            databridge (str, optional): Only for the Polytope engine. Sets wether the data must be retrieved from the
+            Lumi databridge or from the MN5 databridge. Defaults to None.
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.engine = engine
+        if self.engine == 'polytope':
+            self.databridge = 'lumi' if databridge is None else databridge
+        else:
+            self.databridge = None
         self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
         self.logger.debug("Init of the GSV source class")
 
@@ -420,7 +426,8 @@ class GSVSource(base.DataSource):
             'timeshift': self.timeshift,
             'gsv_log_level': self.gsv_log_level,
             'logger': self.logger,
-            'engine': self.engine
+            'engine': self.engine,
+            'databridge': self.databridge,
         }
 
     def __setstate__(self, state):
@@ -451,6 +458,7 @@ class GSVSource(base.DataSource):
         self.gsv_log_level = state['gsv_log_level']
         self.logger = state['logger']
         self.engine = state['engine']
+        self.databridge = state['databridge']
 
     def _get_schema(self):
         """
@@ -624,8 +632,8 @@ class GSVSource(base.DataSource):
         # See https://github.com/DestinE-Climate-DT/AQUA/issues/1715
         # Notice also that for some mysterious reason this works only if the result is stored in self (even if then it is not used)
         if self.chk_type[i]:
-            self.gsv = GSVRetriever(engine=self.engine, logging_level=self.gsv_log_level)
-        gsv = GSVRetriever(engine=self.engine, logging_level=self.gsv_log_level)
+            self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
+        gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
 
         self.logger.debug('Request %s', request)
         dataset = gsv.request_data(request, use_stream_iterator=fstream_iterator,

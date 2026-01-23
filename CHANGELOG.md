@@ -7,9 +7,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.0.0):
 
+- Fix pyproject dependency with `<=` so that we are failsafe to new release (#2635)
+- Hotfix: update DROP docs (#2634)
+- Add 'engine' option to DROP to enable polytope retrieval (#2626, #2643)
+- Switch to pandas 3.0.0 and recent xarray (#2633)
+- Support access to MN5 DataBridge via Polytope (#2623)
+- Handle support for Destine local parameters if paramId is not WMO table (for eccodes v2.41.0) (#2620)
+
+## [v1.0.0a2]
+
+Main changes:
+1. DataModel module can be disabled and it is independent from the Fixer 
+2. Intake-esm support removed due to deprecation of intake v1 version, will be reintroduced with intake v2
+
 Complete list:
+- Data model can be disabled and it is independent from the Fixer (#2586)
+- Added 235288 (avg_tcc in %) from the tcc eccodes convention file (#2607)
+- Add LaTeX units formatting to labels (#2561)
+- Explicit netcdf4 dependency in conda-forge and dask-distributed in pyproject to reduce incompatibilities (#2603)
+- Remove support for intake-esm due to deprecation of intake v1 version (#2603)
+- Aqua web push folder management improvements (#2574)
 - Improve fldstat handling of gaussian grids (#2584)
-- Data model now uses a ranking system to identify coordinates (#2585) 
+- Data model uses a ranking system to identify coordinates (#2585, #2602) 
 
 ## [v1.0.0a1]
 
@@ -19,6 +38,7 @@ Main changes:
 3. Documentation aligned to the new repository structure
 
 AQUA core complete list:
+- Refactor `_filter_kwargs` to improve readability and performance (#2600)
 - Allow to show descriptions in `show_catalog_content` (#2589)
 - Improve test cleaning and avoid specific race conditions in tests (#2587)
 - Shapefile support for spatial selection in `AreaSelection` (#2576)
@@ -1322,7 +1342,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...HEAD
+[v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
 [v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1
 [v0.21.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.20.0...v0.21.0
 [v0.20.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.20.0

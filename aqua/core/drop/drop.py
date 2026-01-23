@@ -77,6 +77,7 @@ class Drop():
                  stat="mean",
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
+                 engine = 'fdb',
                  **kwargs):
         """
         Initialize the DROP class
@@ -134,6 +135,7 @@ class Drop():
         self.var = self._require_param(var, "variable string or list.")
 
         # General settings
+        self.engine = engine
         self.logger = log_configure(loglevel, 'DROP')
         self.loglevel = loglevel
 
@@ -312,7 +314,8 @@ class Drop():
                              rebuild=self.rebuild,
                              startdate=self.startdate,
                              enddate=self.enddate,
-                             fix=self.fix, **self.kwargs)
+                             fix=self.fix,
+                             engine=self.engine, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list
+from aqua.core.util import to_list, unit_to_latex
 from .styles import ConfigStyle
 
 
@@ -126,22 +126,28 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
     if xlabel is None:
         # Get a descriptive name from center_of_bin attributes
         var_name = getattr(first_data.center_of_bin, 'long_name', None) or \
-                getattr(first_data.center_of_bin, 'standard_name', None) or \
-                "Value"
+                   getattr(first_data.center_of_bin, 'standard_name', None) or \
+                   "Value"
         var_units = getattr(first_data.center_of_bin, 'units', None)
         
         if var_units:
-            xlabel = f"{var_name} [{var_units}]"
+            xlabel = f"{var_name} [{unit_to_latex(var_units)}]"
         else:
             xlabel = var_name
+    
     ax.set_xlabel(xlabel, fontsize=labelsize)
 
     if ylabel is None:
         # Determine if this is a PDF or histogram based on data units attribute
         is_pdf = hasattr(first_data, 'units') and 'probability' in str(first_data.units).lower()
         ylabel = "Probability Density" if is_pdf else "Frequency"
+        
+        # Add units if available
+        if hasattr(first_data, 'units'):
+            ylabel += f" [{unit_to_latex(first_data.units)}]"
+    
     ax.set_ylabel(ylabel, fontsize=labelsize)
-
+    
     # Set title if provided
     if title:
         ax.set_title(title, fontsize=13, fontweight='bold')
