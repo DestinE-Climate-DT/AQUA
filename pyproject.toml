@@ -43,7 +43,7 @@ dependencies = [
     "filelock<=3.20.3",
     "gcsfs<=2026.1.0", # Google Cloud Storage File System
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray<=0.7.0",
+    "intake-xarray<=2.0.0",
     "jinja2<=3.1.6",
     "matplotlib<=3.10.8",
     "metpy<=1.7.1",
