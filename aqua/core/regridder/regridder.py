@@ -318,7 +318,7 @@ class Regridder():
     def weights(self, tgt_grid_name, regrid_method=None, nproc=1,
                 rebuild=False, reader_kwargs=None):
         """
-        Load or generate regridding weights calling smmregrid
+        Load or generate regridding weights by calling smmregrid
 
         Args:
             tgt_grid_name (str): The destination grid name.
@@ -327,6 +327,9 @@ class Regridder():
             rebuild (bool): If True, rebuild the weights.
             reader_kwargs (dict): The reader kwargs for filename definition,
                                   including info on model, exp, source, etc.
+
+        Returns:
+            dict: The weights dictionary for each vertical coordinate.
         """
 
         # define regrid method
@@ -385,12 +388,11 @@ class Regridder():
             else:
                 self.logger.info(
                     "Loading existing weights from %s.", weights_filename)
-                
+
             # load the weights
             weights[vertical_dim] = xr.open_dataset(weights_filename)
 
         return weights
-        
 
     def initialize_regridder(self, weights):
         """
