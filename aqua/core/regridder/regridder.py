@@ -260,7 +260,6 @@ class Regridder():
             target (bool): Whether this is for the target grid (default: False).
             rebuild (bool): If True, forces regeneration of the area.
 
-        Returns:
             xr.Dataset: The computed grid area.
         """
         area_filename = self._area_filename(grid_name if grid_name else None, reader_kwargs)
@@ -343,6 +342,7 @@ class Regridder():
         cdo_extra = self.src_grid_dict.get('cdo_extra', None)
         cdo_options = self.src_grid_dict.get('cdo_options', None)
 
+        weights = {}
         # loop over the vertical coordinates: DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, or any other
         for vertical_dim in self.src_grid_path:
 
@@ -377,21 +377,40 @@ class Regridder():
                                         loglevel=self.loglevel)
 
                 # generate and save the weights
-                weights = generator.weights(method=regrid_method,
+                weights_dim = generator.weights(method=regrid_method,
                                             vertical_dim=smm_vertical_dim,
                                             nproc=nproc)
-                self._safe_to_netcdf(weights, weights_filename)
+                self._safe_to_netcdf(weights_dim, weights_filename)
 
             else:
                 self.logger.info(
                     "Loading existing weights from %s.", weights_filename)
                 
             # load the weights
-            weights = xr.open_dataset(weights_filename)
+            weights[vertical_dim] = xr.open_dataset(weights_filename)
+
+        return weights
+        
+
+    def initialize_regridder(self, weights):
+        """
+        Initialize the SMMRegridder for each vertical coordinate.
+
+        Args:
+            weights (dict): The weights dictionary for each vertical coordinate.
+
+        Please notice that we cannot use src_grid_path because we might have applied fixer or data model
+        """
+
+        for vertical_dim in weights.keys():
+
+            # define the vertical coordinate in the smmregrid world
+            smm_vertical_dim = None if vertical_dim in [
+                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else vertical_dim
 
             # initialize the regridder
             self.smmregridder[vertical_dim] = SMMRegridder(
-                weights=weights,
+                weights=weights[vertical_dim],
                 horizontal_dims=self.src_horizontal_dims,
                 vertical_dim=smm_vertical_dim,
                 loglevel=self.loglevel

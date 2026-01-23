@@ -311,11 +311,18 @@ class Reader():
         # configure regridder and generate weights
         if regrid:
             # generate weights and init the SMMregridder
-            self.regridder.weights(
+            weights = self.regridder.weights(
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
+            if self.fix:
+                for item, value in weights.items():
+                    weights[item] = self.fixer.fixerdatamodel.apply(value)
+            if self.datamodel:
+                for item, value in weights.items():
+                    weights[item] = self.datamodel.apply(value, flip_coords=False)
+            self.regridder.initialize_regridder(weights)
 
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
