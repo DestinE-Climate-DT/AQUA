@@ -322,7 +322,7 @@ class Reader():
             if self.datamodel:
                 for item, value in weights.items():
                     weights[item] = self.datamodel.apply(value, flip_coords=False)
-            self.regridder.initialize_regridder(weights)
+            self.regridder.initialize(weights)
 
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:

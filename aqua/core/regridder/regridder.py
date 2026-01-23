@@ -394,7 +394,7 @@ class Regridder():
 
         return weights
 
-    def initialize_regridder(self, weights):
+    def initialize(self, weights):
         """
         Initialize the SMMRegridder for each vertical coordinate.
 
