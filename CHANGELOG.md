@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.0.0):
 
+- Read with microsecond time resolution by default (#2638)
 - Hotfix: update DROP docs (#2634)
 - Add 'engine' option to DROP to enable polytope retrieval (#2626)
 - Switch to pandas 3.0.0 and recent xarray (#2633)
