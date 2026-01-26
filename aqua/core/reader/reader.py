@@ -321,18 +321,19 @@ class Reader():
                 new_weights = {}
                 for item, value in weights.items():
                     self.logger.debug("Applying fix to weights item %s", item)
-                    print(value.coords)
+                    self.logger.error(value.coords)
                     fixed = self.fixer.fixerdatamodel.apply(value)
-                    print(fixed.coords)
+                    self.logger.error(fixed.coords)
                     new_weights[list(fixed.coords)[0]] = fixed
                 weights = new_weights
             if self.datamodel:
                 new_weights = {}
+                self.logger.error("Applying fixes to regrid weights")
                 for item, value in weights.items():
                     self.logger.debug("Applying datamodel to weights item %s", item)
-                    print(value.coords)
+                    self.logger.error(value.coords)
                     fixed = self.datamodel.apply(value, flip_coords=False)
-                    print(fixed.coords)
+                    self.logger.error(fixed.coords)
                     new_weights[list(fixed.coords)[0]] = fixed
                 weights = new_weights
             self.regridder.initialize(weights)
