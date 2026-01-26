@@ -49,7 +49,7 @@ dependencies = [
     "metpy<=1.7.1",
     "numpy<=2.4.1",
     "pandas==3.0.0", # pandas3 required for new time unit handling
-    "pypdf<=6.6.1",
+    "pypdf<=6.6.2",
     "pyYAML<=6.0.3",
     "regionmask<=0.13.0",
     "ruamel.yaml<=0.19.1",
