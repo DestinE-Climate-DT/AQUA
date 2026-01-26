@@ -35,37 +35,36 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3",
+    "boto3<=1.42.33",
     "cartopy==0.24.1",
-    "cfgrib",
-    "dask[distributed]",
+    "cfgrib<=0.9.15.1",
+    "dask[distributed]<=2026.1.1",
     "eccodes==2.41.0",
-    "filelock",
-    "gcsfs", # Google Cloud Storage File System
-    "pandas",
+    "filelock<=3.20.3",
+    "gcsfs<=2026.1.0", # Google Cloud Storage File System
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray",
-    "jinja2",
-    "matplotlib",
-    "metpy",
-    "numpy",
-    "pydantic<2.13.0",
-    "pypdf",
-    "pyYAML",
-    "regionmask",
-    "ruamel.yaml",
-    "scipy",
-    "seaborn",
+    "intake-xarray<=0.7.0",
+    "jinja2<=3.1.6",
+    "matplotlib<=3.10.8",
+    "metpy<=1.7.1",
+    "numpy<=2.4.1",
+    "pandas==3.0.0", # pandas3 required for new time unit handling
+    "pydantic<=2.12.5",
+    "pypdf<=6.6.0",
+    "pyYAML<=6.0.3",
+    "regionmask<=0.13.0",
+    "ruamel.yaml<=0.19.1",
+    "scipy<=1.17.0",
+    "seaborn<=0.13.2",
     "smmregrid==0.1.3",
-    #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
-    "typeguard",
-    "xarray>=2025.01.2,<2025.09.1", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
-    "kerchunk",
-    "h5py>=3.12.1", #specific github pin to avoid installation of binaries
-    "fastparquet",
+    "typeguard<=4.4.4",
+    "xarray==2025.12.0",
+    "kerchunk<=0.2.9",
+    "h5py>=3.12.1,<=3.15.1", #specific github pin to avoid installation of binaries
+    "fastparquet<=2025.12.0",
     "pyfdb==0.1.2",
     "gsv-interface==2.13.1",
-    "zarr"
+    "zarr<=3.1.5"
 ]
 
 [project.optional-dependencies]

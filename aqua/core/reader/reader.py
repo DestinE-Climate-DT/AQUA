@@ -160,10 +160,21 @@ class Reader():
         # load the catalog
         aqua.core.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
+
+        # check machine compatibility
+        self.machine_from_catalog = self.expcat.metadata.get('machine')
+        if engine != 'polytope':
+            if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
+                self.logger.warning(
+                    "The machine configured (%s) is different from the machine in the catalog (%s). "
+                    "Please check that the data you are looking for are on the machine you are working on.",
+                    self.machine.lower(),
+                    self.machine_from_catalog.lower(),
+                )
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
 
-        self.kwargs = self._filter_kwargs(kwargs, engine=engine, intake_vars=intake_vars)
+        self.kwargs = self._filter_kwargs(kwargs, engine=engine, intake_vars=intake_vars, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
@@ -656,7 +667,7 @@ class Reader():
             self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
         return self._intake_user_parameters
 
-    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict = None):
+    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict={}, databridge: str = None) -> dict:        
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
@@ -664,6 +675,7 @@ class Reader():
         Args:
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
+            databridge (str): The databridge used for the GSV retrieval, default is None. 
             intake_vars (dict): Machine-specific intake variables to exclude from checks.
 
         Returns:
@@ -693,6 +705,12 @@ class Reader():
             if 'engine' not in filtered_kwargs:
                 filtered_kwargs['engine'] = engine
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
+        if engine == 'polytope' and databridge is not None:
+            # If the engine is polytope, we need to add the databridge parameter
+            if 'databridge' not in filtered_kwargs:
+                filtered_kwargs.update({'databridge': databridge})
+                self.logger.debug('Adding databridge=%s to the filtered kwargs', databridge)
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:

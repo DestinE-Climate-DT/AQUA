@@ -269,8 +269,9 @@ jobs:
         run: |
           # Initialize the AQUA catalog in the $HOME/.aqua folder
           aqua -vv install github
-          # Add the climatedt-phase1 catalog (for polytope testing)
+          # Add the climatedt-phase1 catalog and the climatedt-o25.1 catalog (for polytope testing)
           aqua -vv add climatedt-phase1
+          aqua -vv add climatedt-o25.1
           # Add the ci/cd catalog
           aqua -vv add ci
           # Double check the catalogs
