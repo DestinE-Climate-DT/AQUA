@@ -50,7 +50,7 @@ dependencies = [
     "numpy<=2.4.1",
     "pandas==3.0.0", # pandas3 required for new time unit handling
     "pydantic<=2.12.5",
-    "pypdf<=6.6.0",
+    "pypdf<=6.6.1",
     "pyYAML<=6.0.3",
     "regionmask<=0.13.0",
     "ruamel.yaml<=0.19.1",
