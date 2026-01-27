@@ -1047,13 +1047,14 @@ class Reader():
     
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to microseconds ('us')
-        if 'time_coder' in esmcat.metadata:
-            self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
-            coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
-        else:
-            coder = xr.coders.CFDatetimeCoder(time_unit='us')
+        if not "use_cftime" in esmcat.xarray_kwargs:
+            if 'time_coder' in esmcat.metadata:
+                self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
+                coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
+            else:
+                coder = xr.coders.CFDatetimeCoder(time_unit='us')
 
-        esmcat.xarray_kwargs.update({'decode_times': coder})
+            esmcat.xarray_kwargs.update({'decode_times': coder})
 
         data = esmcat.to_dask()
 
