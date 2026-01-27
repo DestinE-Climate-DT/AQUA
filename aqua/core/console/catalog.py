@@ -48,18 +48,32 @@ class CatalogMixin:
         print('Adding the AQUA catalog', args.catalog)
         self._check(silent=True)
 
-        if args.editable is not None:
-            self._add_catalog_editable(args.catalog, args.editable)
-        else:
-            self._add_catalog_github(args.catalog, args.repository)
+        cdir = f'{self.configpath}/{CATPATH}/{args.catalog}'
+        is_new_catalog_dir = not os.path.exists(cdir)
 
-        # verify that the new catalog is compatible with AQUA, loading it with catalog()
         try:
+            if args.editable is not None:
+                self._add_catalog_editable(args.catalog, args.editable)
+            else:
+                self._add_catalog_github(args.catalog, args.repository)
+
             with HiddenPrints():
                 print_catalog()
-        except Exception as e:
-            self.remove(args)
-            self.logger.error('Current catalog is not compatible with AQUA, removing it for safety!')
+
+            self._set_catalog(args.catalog)
+
+        except (Exception, SystemExit) as e:
+
+            if is_new_catalog_dir and os.path.exists(cdir):
+                if os.path.islink(cdir):
+                    os.unlink(cdir)
+                else:
+                    shutil.rmtree(cdir)
+
+            if isinstance(e, SystemExit):
+                raise
+
+            self.logger.error('Current catalog %s is not compatible with AQUA, removing it for safety!', args.catalog)
             self.logger.error(e)
             sys.exit(1)
 
@@ -77,10 +91,10 @@ class CatalogMixin:
             else:
                 os.symlink(editable, cdir)
         else:
-            self.logger.error('Catalog %s cannot be found in %s', catalog, editable)
+            self.logger.error('Catalog in editable mode %s cannot be found at %s. '
+                              'Using the Climate-DT catalog repository, likely need a path like: '
+                              '/full/path/to/Climate-DT-catalog/catalogs/%s', catalog, editable, catalog)
             sys.exit(1)
-
-        self._set_catalog(catalog)
 
     def _github_explore(self, repository=None):
         """
@@ -168,7 +182,6 @@ class CatalogMixin:
             os.makedirs(cdir, exist_ok=True)
             self._fsspec_get_recursive(fs, source_dir, cdir)
             self.logger.info('Download complete!')
-            self._set_catalog(catalog)
         else:
             self.logger.error("Catalog %s already installed in %s, please consider `aqua update`.",
                               catalog, cdir)
@@ -188,6 +201,7 @@ class CatalogMixin:
             self.logger.info('Removing %s from %s', catalog, cdir)
             shutil.rmtree(cdir)
             self._add_catalog_github(catalog)
+            self._set_catalog(catalog)
         else:
             self.logger.error('%s does not appear to be installed, please consider `aqua add`', catalog)
             sys.exit(1)
