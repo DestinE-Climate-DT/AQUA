@@ -399,8 +399,8 @@ class Reader():
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
         
-        # Convert time to datetime64 microsecond resolution
-        if 'time' in data.coords and np.issubdtype(data.time.dtype, np.datetime64):
+        # Convert time to datetime64 microsecond resolution by default
+        if 'time' in data.coords and np.issubdtype(data.time.dtype, np.datetime64) and not 'time_coder' in self.esmcat.metadata:
             data['time'] = data.time.astype("datetime64[us]")
 
         # if retrieve history is required (disable for retrieve_plain)
