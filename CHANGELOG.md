@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.0.0):
 
+- Added contour line number argument as `line_levels` in `plot_single_map_diff` (#2650)
 - Fix pyproject dependency with `<=` so that we are failsafe to new release (#2635)
 - Hotfix: update DROP docs (#2634)
 - Add 'engine' option to DROP to enable polytope retrieval (#2626, #2643)
