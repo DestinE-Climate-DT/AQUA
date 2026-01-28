@@ -382,7 +382,7 @@ The following options are available for ``aqua grids build``:
     Create the grid entry in the grid file after building. This has to be added to catalog `source_grid_name` manually to be used by the Reader.
     Please keep in mind that this is not verified yet. 
 
-.. option:: --unstructured
+.. option:: --force_unstructured
 
     Force the grid detection to use unstructured grid type. Useful for datasets with ambiguous grid types (e.g. gaussian regular with inverted lon/lat dimensions).
 

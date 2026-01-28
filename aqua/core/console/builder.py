@@ -46,10 +46,11 @@ def builder_parser(parser=None):
                         help='Verify the grid file after creation [default: False]')
     parser.add_argument('--yaml', action='store_true', default=False,
                         help='Create the grid entry in the grid file [default: False]')
-    parser.add_argument('--unstructured', action='store_true', default=False,
+    parser.add_argument('--force_unstructured', action='store_true', default=False,
                         help='Force grid detection to use unstructured grid type [default: False]')
 
     return parser
+
 
 def builder_execute(args):
     """
@@ -80,7 +81,7 @@ def builder_execute(args):
     verify = get_arg(args, 'verify', builder_config.get('verify', False))
     create_yaml = get_arg(args, 'yaml', builder_config.get('yaml', False))
     vert_coord = get_arg(args, 'vert_coord', builder_config.get('vert_coord'))
-    unstructured = get_arg(args, 'unstructured', builder_config.get('unstructured', False))
+    force_unstructured = get_arg(args, 'force_unstructured', builder_config.get('force_unstructured', False))
 
     # Ensure required arguments are present
     if model is None:
@@ -103,7 +104,7 @@ def builder_execute(args):
         model_name=modelname,
         grid_name=gridname,
         vert_coord=vert_coord,
-        force_unstructured=unstructured
+        force_unstructured=force_unstructured
     )
 
     # Build the grid
@@ -111,4 +112,3 @@ def builder_execute(args):
         data, rebuild=rebuild,
         version=version, verify=verify,
         create_yaml=create_yaml)
-    
