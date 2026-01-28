@@ -5,8 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
-Main changes:
 
+Main changes:
+- Read with microsecond time resolution by default (#2638)
 
 ## [v1.0.0a3] 
 Main changes:
