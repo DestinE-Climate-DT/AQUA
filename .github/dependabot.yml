@@ -11,4 +11,6 @@ updates:
       interval: "weekly"
       day: "monday"           # You can pick any day
       time: "08:00"
+    commit-message:
+      prefix: "[Dependabot]"
 

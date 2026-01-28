@@ -11,6 +11,7 @@ from aqua.core.logger import log_configure
 class BaseGridBuilder:
     """
     Base class for grid type builders.
+    Contains common methods and attributes for all grid builders.
     """
     requires_bounds = False
     bounds_error_message = "Data has no bounds, cannot create grid"
@@ -47,9 +48,13 @@ class BaseGridBuilder:
     def clean_attributes(self, data: xr.Dataset) -> xr.Dataset:
         """
         Clean the attributes of the data.
+        Creates a 'mask' variable with proper attributes.
+        If needed, removes 'axis' and 'bounds' attributes from coordinates
+        which can confuse CDO.
 
         Args:
             data (xarray.Dataset): The dataset to clean attributes for.
+
         Returns:
             xarray.Dataset: The dataset with cleaned attributes.
         """
@@ -57,30 +62,30 @@ class BaseGridBuilder:
         for var in data.data_vars:
             data[var].attrs = {}
 
-        # setting attributes for mask
+        # Setting attributes for mask
         data['mask'].attrs['_FillValue'] = -9999
         data['mask'].attrs['missing_value'] = -9999
         data['mask'].attrs['long_name'] = 'mask'
         data['mask'].attrs['units'] = '1'
         data['mask'].attrs['standard_name'] = 'mask'
 
-        # attribute checks for coordinates
+        # Attribute checks for coordinates
         for coord in data.coords:
 
-            # remove axis which can confuse CDO
+            # Remove axis which can confuse CDO
             if not self.vert_coord or coord != self.vert_coord:
                 self.logger.debug("Removing axis for %s", coord)
                 if 'axis' in data[coord].attrs:
                     del data[coord].attrs['axis']
 
-            # remove bounds which can confuse CDO
+            # Remove bounds which can confuse CDO
             if not self.has_bounds(data):
                 self.logger.debug("No bounds found for %s", coord)
                 if 'bounds' in data[coord].attrs:
                     self.logger.debug("Removing bounds for %s", coord)
                     del data[coord].attrs['bounds']
 
-        # adding vertical properties
+        # Adding vertical properties
         if self.vert_coord:
             data[self.vert_coord].attrs['axis'] = 'Z'
 
@@ -92,6 +97,7 @@ class BaseGridBuilder:
 
         Args:
             data (xarray.Dataset): The dataset to check for bounds.
+
         Returns:
             bool: True if bounds are present, False otherwise.
         """
@@ -107,6 +113,7 @@ class BaseGridBuilder:
 
         Args:
             data (xarray.Dataset): The dataset to extract metadata from.
+
         Returns:
             dict: Metadata dictionary for the grid type.
         """
@@ -115,48 +122,66 @@ class BaseGridBuilder:
     def data_reduction(self, data: xr.Dataset, gridtype: GridType, vert_coord: Optional[str] = None) -> xr.Dataset:
         """
         Reduce the data to a single variable and time step.
+        Preserves necessary attributes for grid creation.
+
         Args:
             data (xarray.Dataset): The dataset containing grid data.
             gridtype (GridInspector): The grid object containing GridType info.
             vert_coord (str, optional): The vertical coordinate if applicable.
+
         Returns:
             xarray.Dataset: The reduced data.
         """
-        # extract first var from GridType and get the attributes of the original variable
+        # Extract first var from GridType and get the attributes of the original variable
         var = next(iter(gridtype.variables))
         attrs = data[var].attrs.copy()
 
-        # guess time dimension from the GridType
+        # HACK: investigate why the following lines are needed
+        #       and a simple keep_attrs does not work, it works in notebooks
+        # Store lon and lat attributes before any operation
+        # This is lost in the 'where' operation below
+        lon_attrs = data['lon'].attrs.copy() if 'lon' in data else {}
+        lat_attrs = data['lat'].attrs.copy() if 'lat' in data else {}
+
+        # Guess time dimension from the GridType
         timedim = gridtype.time_dims[0] if gridtype.time_dims else None
 
-        # temporal reduction
+        # Temporal reduction
         if timedim:
             data = data.isel({timedim: 0}, drop=True)
 
-        # load the variables and rename to mask for consistency
+        # Load the variables and rename to mask for consistency
         space_bounds = [bound for bound in gridtype.bounds if not 'time' in bound]
         load_vars = [var] + space_bounds  # (gridtype.bounds or [])
         data = data[load_vars]
         data = data.rename({var: 'mask'})
 
-        # drop the remnant vertical coordinate if present
+        # Drop the remnant vertical coordinate if present
         if vert_coord and f"idx_{vert_coord}" in data.coords:
             data = data.drop_vars(f"idx_{vert_coord}")
 
-        # set the mask variable to 1 where data is not null
+        # Set the mask variable to 1 where data is not null
         data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1)
 
-        # preserve the attributes of the original variable
+        # Preserve the attributes of the original variable
         data['mask'].attrs = attrs
+
+        # Preserve lon and lat attributes after any operation
+        if 'lon' in data:
+            data['lon'].attrs = lon_attrs
+        if 'lat' in data:
+            data['lat'].attrs = lat_attrs
 
         return data
 
     def select_2d_slice(self, data: xr.Dataset, vert_coord: Optional[str] = None) -> xr.Dataset:
         """
         Select a 2D slice from the data along the vertical coordinate, if present.
+
         Args:
             data (xarray.Dataset): The dataset containing grid data.
             vert_coord (str, optional): The vertical coordinate if applicable.
+
         Returns:
             xarray.Dataset: The 2D-sliced data.
         """
@@ -172,8 +197,10 @@ class BaseGridBuilder:
         """
         Detect the type of mask based on the data.
         Returns 'oce', 'land', or None.
+
         Args:
             data (xarray.Dataset): The dataset containing the 'mask' variable.
+
         Returns:
             Optional[str]: 'oce', 'land', or None if no mask is detected.
         """
@@ -199,8 +226,6 @@ class BaseGridBuilder:
             filename (str): Path to the grid file. Could be also a CDO grid name.
             metadata (dict): Metadata dictionary for weights generation.
             target_grid (str, optional): Target grid for weights generation. Defaults to "r180x90".
-        Returns:
-            None
         """
         remap_method = metadata.get('remap_method', "con")
         cdo_options = metadata.get('cdo_options', "")
@@ -242,12 +267,11 @@ class BaseGridBuilder:
         """
         Write the grid file using CDO or by copying, depending on grid type.
         Can be overridden by subclasses for custom behavior.
+
         Args:
             input_file (str): Path to the temporary input file.
             metadata (dict): Metadata dictionary from prepare().
             output_file (str): Path to the final output file.
-        Returns:
-            None
         """
         if metadata.get('cdogrid'):
             self.logger.info("Writing grid file to %s with CDO grid %s", output_file, metadata['cdogrid'])
