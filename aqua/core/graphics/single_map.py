@@ -256,7 +256,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         fig (plt.Figure, optional):     Figure to plot on. By default a new figure is created.
         ax (plt.Axes, optional):        Axes to plot on. By default a new axes is created.
         title (str, optional):          Title of the figure. Defaults to None.
-        title_size (int, optional):     Title size. Defaults to None.
+        title_size (int, optional):     Title size. Defaults to 12.
         loglevel (str, optional):       Log level. Defaults to 'WARNING'.
         **kwargs:                       Keyword arguments for plot_single_map.
                                         Check the docstring of plot_single_map.
@@ -302,7 +302,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         fig, ax = plot_single_map(diff_map, cyclic_lon=cyclic_lon,
                                   proj=proj, extent=extent,
                                   fig=fig, ax=ax,
-                                  sym=sym, vmin=vmin_fill, vmax=vmax_fill, norm=None,
+                                  sym=sym, vmin=vmin_fill, vmax=vmax_fill, norm=norm,
                                   add_land=add_land,
                                   loglevel=loglevel, return_fig=True, **kwargs)
 
@@ -336,7 +336,14 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                                levels=line_levels, colors='k',
                                linewidths=0.5)
 
-        fmt = {level: f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}" for level in ds.levels}
+        fmt = {
+            level: "0.0" if np.isclose(level, 0.0)
+            else (
+                f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000)
+                else f"{level:.1f}"
+            )
+            for level in ds.levels
+        }
         ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
 
     if title:
