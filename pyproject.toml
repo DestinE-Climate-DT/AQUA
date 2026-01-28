@@ -35,22 +35,21 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3<=1.42.32",
-    "cartopy==0.24.1",
-    "cfgrib<=0.9.15.1",
+    "boto3<=1.42.34",
+    "cartopy>=0.24.1,<=0.25.0",
+    "cfgrib<=0.9.15.1", #enable support for GRIB files
     "dask[distributed]<=2026.1.1",
     "eccodes==2.41.0",
     "filelock<=3.20.3",
-    "gcsfs<=2026.1.0", # Google Cloud Storage File System
+    "gcsfs<=2026.1.0", # Google Cloud Storage File System: required by ARCO
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray<=0.7.0",
+    "intake-xarray<=2.0.0",
     "jinja2<=3.1.6",
     "matplotlib<=3.10.8",
     "metpy<=1.7.1",
     "numpy<=2.4.1",
     "pandas==3.0.0", # pandas3 required for new time unit handling
-    "pydantic<=2.12.5",
-    "pypdf<=6.6.0",
+    "pypdf<=6.6.2",
     "pyYAML<=6.0.3",
     "regionmask<=0.13.0",
     "ruamel.yaml<=0.19.1",
@@ -60,9 +59,9 @@ dependencies = [
     "typeguard<=4.4.4",
     "xarray==2025.12.0",
     "kerchunk<=0.2.9",
-    "h5py>=3.12.1,<=3.15.1", #specific github pin to avoid installation of binaries
-    "fastparquet<=2025.12.0",
-    "pyfdb==0.1.2",
+    "h5py>=3.12.1,<=3.15.1", #avoid installation of binaries: required by kerchunk
+    "fastparquet<=2025.12.0", #enable support for parquet files
+    #"pyfdb==0.1.2", #to be pinned when doing operational release
     "gsv-interface==2.13.1",
     "zarr<=3.1.5"
 ]
