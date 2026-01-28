@@ -226,6 +226,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          vmin_contour: Optional[float] = None, vmax_contour: Optional[float] = None,
                          norm = None, sym_contour: bool = False, sym: bool = True,
                          add_contour: bool = True, add_land=False,
+                         line_levels: Optional[int] = 10,
                          cyclic_lon: bool = True, return_fig: bool = False,
                          fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                          title: Optional[str] = None, title_size: Optional[int] = 12,
@@ -243,14 +244,18 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         vmax_fill (float, optional):    Maximum value for the colorbar of the fill.
         vmin_contour (float, optional): Minimum value for the colorbar of the contour.
         vmax_contour (float, optional): Maximum value for the colorbar of the contour.
+        norm (matplotlib.colors.Normalize, optional): Normalization to use for the colormap.
         sym_contour (bool, optional)    If True, set the contour levels to be symmetrical.  Default to False
         sym (bool, optional):           If True, set the colorbar for the diff to be symmetrical. Default to True
-        title (str, optional):          Title of the figure. Defaults to None.
-        title_size (int, optional):     Title size. Defaults to None.
+        add_contour (bool, optional):   If True, add the contour plot. Defaults to True.
+        add_land (bool, optional):      If True, add land to the map. Defaults to False.
+        line_levels (int, optional):    Number of contour levels. Defaults to 10.
         cyclic_lon (bool, optional):    If True, add cyclic longitude. Defaults to True.
         return_fig (bool, optional):    If True, return the figure and axes. Defaults to False.
         fig (plt.Figure, optional):     Figure to plot on. By default a new figure is created.
         ax (plt.Axes, optional):        Axes to plot on. By default a new axes is created.
+        title (str, optional):          Title of the figure. Defaults to None.
+        title_size (int, optional):     Title size. Defaults to None.
         loglevel (str, optional):       Log level. Defaults to 'WARNING'.
         **kwargs:                       Keyword arguments for plot_single_map.
                                         Check the docstring of plot_single_map.
@@ -327,7 +332,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         ds = data.plot.contour(ax=ax,
                                transform=ccrs.PlateCarree(),
                                vmin=vmin_contour, vmax=vmax_contour,
-                               levels=10, colors='k',
+                               levels=line_levels, colors='k',
                                linewidths=0.5)
 
         fmt = {level: f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}" for level in ds.levels}
