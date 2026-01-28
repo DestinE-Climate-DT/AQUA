@@ -8,7 +8,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 
-## [v1.0.0a3]
+## [v1.0.0a3] 
 Main changes:
 - Switch to pandas 3.0.0 and recent xarray
 - Support access to MN5 DataBridge via Polytope
