@@ -4,9 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-
 Unreleased in the current development version (target v1.0.0):
+Main changes:
 
+
+## [v1.0.0a3] 
+Main changes:
+- Switch to pandas 3.0.0 and recent xarray
+- Support access to MN5 DataBridge via Polytope
+
+Complete list:
 - Add `force_unstructured` option to GridBuilder and `--force_unstructured` cli argument to `aqua grids build` command (#2622)
 - Added contour line number argument as `line_levels` in `plot_single_map_diff` (#2650)
 - Fix pyproject dependency with `<=` so that we are failsafe to new release (#2635)
@@ -1344,7 +1351,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...HEAD
+[v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
 [v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
 [v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1
 [v0.21.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.20.0...v0.21.0
