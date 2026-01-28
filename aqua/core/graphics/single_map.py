@@ -16,11 +16,12 @@ import xarray as xr
 import healpy as hp
 from aqua.core.logger import log_configure
 from aqua.core.util import add_cyclic_lon, evaluate_colorbar_limits
-from aqua.core.util import healpix_resample, coord_names, set_ticks, ticks_round
+from aqua.core.util import healpix_resample, coord_names, set_ticks
 from aqua.core.util import cbar_get_label, set_map_title, generate_colorbar_ticks
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
 import cartopy.feature as cfeature
+
 
 def plot_single_map(data: xr.DataArray,
                     contour: bool = True, sym: bool = False,
@@ -224,7 +225,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          proj: ccrs.Projection = ccrs.Robinson(), extent: Optional[list] = None,
                          vmin_fill: Optional[float] = None, vmax_fill: Optional[float] = None,
                          vmin_contour: Optional[float] = None, vmax_contour: Optional[float] = None,
-                         norm = None, sym_contour: bool = False, sym: bool = True,
+                         norm=None, sym_contour: bool = False, sym: bool = True,
                          add_contour: bool = True, add_land=False,
                          line_levels: Optional[int] = 10,
                          cyclic_lon: bool = True, return_fig: bool = False,
