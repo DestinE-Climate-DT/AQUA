@@ -464,9 +464,9 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
         if (data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime)):
             logger.info(f"Rolling back cftime to datetime64[{DEFAULT_UNIT}] after calendar conversion")
 
-            # TODO: Is units="microseconds since 1970-01-01" always appropriate here?
+            # TODO: Is units="microseconds since 1850-01-01" always appropriate here?
             np_time = cftime_to_nptime(data.time.values,
-                                       units="microseconds since 1970-01-01").astype(f"datetime64[{DEFAULT_UNIT}]")
+                                       units="microseconds since 1850-01-01").astype(f"datetime64[{DEFAULT_UNIT}]")
             data = data.assign_coords(time=np_time)
         else:  # Still datetime64, ensure we keep original precision
             new_unit = np.datetime_data(data.time.values.dtype)[0]
