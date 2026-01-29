@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 Main changes:
 
+Complete list:
+- Update data model coordinates transformer to work with latest xarray version (#2652)
+
 
 ## [v1.0.0a3] 
 Main changes:
