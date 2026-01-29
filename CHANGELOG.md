@@ -8,6 +8,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Datamodel identifies depth preferrably over height in ambigous cases (#2654)
 - Update data model coordinates transformer to work with latest xarray version (#2652)
 
 
