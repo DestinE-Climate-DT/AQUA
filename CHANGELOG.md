@@ -5,10 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
-Main changes:
 
 Complete list:
 - Datamodel identifies depth preferrably over height in ambigous cases (#2654, #2655)
+- Read with microsecond time resolution by default (#2638)
 - Update data model coordinates transformer to work with latest xarray version (#2652)
 
 
