@@ -44,7 +44,7 @@ class GSVSource(base.DataSource):
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 switch_eccodes=False, loglevel='WARNING', engine='fdb', databridge=None, **kwargs):
+                 switch_eccodes=False, loglevel='WARNING', engine=None, databridge=None, **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -80,7 +80,7 @@ class GSVSource(base.DataSource):
         """
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
-        self.engine = engine
+        self.engine = engine if engine else 'fdb'
         if self.engine == 'polytope':
             self.databridge = 'lumi' if databridge is None else databridge
         else:
@@ -235,12 +235,13 @@ class GSVSource(base.DataSource):
 
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
-        if np.any(self.chk_type == 0):
-            if not self.fdbpath and not self.fdbhome:
-                raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
-        if np.any(self.chk_type == 1):
-            if not self.fdbpath_bridge and not self.fdbhome_bridge:
-                raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
+        if self.engine == 'fdb':
+            if np.any(self.chk_type == 0):
+                if not self.fdbpath and not self.fdbhome:
+                    raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
+            if np.any(self.chk_type == 1):
+                if not self.fdbpath_bridge and not self.fdbhome_bridge:
+                    raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
 
         self.chk_vert = None
         self.ntimechunks = self._npartitions
@@ -276,7 +277,10 @@ class GSVSource(base.DataSource):
             bridge_end_date (str): End date of the bridge data.
         """
         # Getting info from the FDB info file
-        fdb_info = self._read_fdb_info()
+        if self.engine == 'fdb':
+            fdb_info = self._read_fdb_info()
+        else:
+            fdb_info = None
         
         # Data dates
         self._setup_data_dates(data_start_date, data_end_date, fdb_info)
