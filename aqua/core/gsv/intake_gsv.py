@@ -80,7 +80,7 @@ class GSVSource(base.DataSource):
         """
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
-        self.engine = engine
+        self.engine = engine if engine else 'fdb'
         if self.engine == 'polytope':
             self.databridge = 'lumi' if databridge is None else databridge
         else:
