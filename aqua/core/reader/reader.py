@@ -400,10 +400,6 @@ class Reader():
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
-        
-        # Convert time to datetime64 microsecond resolution by default
-        if 'time' in data.coords and np.issubdtype(data.time.dtype, np.datetime64) and not 'time_coder' in self.esmcat.metadata:
-            data['time'] = data.time.astype("datetime64[us]")
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -425,8 +421,14 @@ class Reader():
             self.logger.debug("Applying base data model: %s", self.datamodel_name)
             data = self.datamodel.apply(data)
 
-        # Be sure that the time axis is Gregorian, give standard also if time is not present
+        # Time threatment: we want to ensure that time is always in Gregorian calendar
+        # and to change the default numpy datetime64 resolution to microseconds
         if 'time' in data.coords:
+
+            # Convert time to datetime64 microsecond resolution by default
+            if np.issubdtype(data.time.dtype, np.datetime64) and not 'time_coder' in self.esmcat.metadata:
+                data['time'] = data.time.astype("datetime64[us]")
+            # Fix the calendar to Gregorian if needed
             data = fix_calendar(data, loglevel=self.loglevel)
 
         # log an error if some variables have no units
