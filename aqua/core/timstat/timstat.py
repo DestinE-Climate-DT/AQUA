@@ -160,15 +160,17 @@ class TimStat():
         literal, numeric = extract_literal_and_numeric(resample_freq)
         self.logger.debug('Frequency is %s with numeric part %s', literal, numeric)
 
-        if literal in ["M", "Y", "ME", "YE"]:
-            raise ValueError(f"Centering not implemented for frequency '{resample_freq}'")
+        start = pd.to_datetime(avg_data['time'])
+        if literal in ["M", "ME", "MS"]:
+            offset = pd.DateOffset(months=numeric)
+        elif literal in ["Y", "YE", "YS"]:
+            offset = pd.DateOffset(years=numeric)
+        else:
+            offset = pd.tseries.frequencies.to_offset(resample_freq)
 
-        def average_datetimeindex(idx1: pd.DatetimeIndex, idx2: pd.DatetimeIndex) -> pd.DatetimeIndex:
-            return pd.to_datetime((idx1.view("int64") + idx2.view("int64")) // 2)
-        
-        offset = pd.tseries.frequencies.to_offset(resample_freq)
+        end = start + offset
 
-        avg_data['time'] = average_datetimeindex(pd.to_datetime(avg_data['time']),
-                              pd.to_datetime(avg_data['time']) + offset)
-        
+        # Calculate midpoint for each period (works for variable durations like months)
+        avg_data['time'] = start + (end - start) / 2
+
         return avg_data

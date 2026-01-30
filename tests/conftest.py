@@ -95,8 +95,16 @@ def ifs_tco79_long_fixFalse_reader():
     return Reader(model="IFS", exp="test-tco79", source="long", fix=False, loglevel=LOGLEVEL)
 
 @pytest.fixture(scope="session")
+def ifs_tco79_long400_fixFalse_reader():
+    return Reader(model="IFS", exp="test-tco79", source="long400", fix=False, loglevel=LOGLEVEL)
+
+@pytest.fixture(scope="session")
 def ifs_tco79_long_fixFalse_data(ifs_tco79_long_fixFalse_reader):
     return ifs_tco79_long_fixFalse_reader.retrieve(var=['2t', 'ttr'])
+
+@pytest.fixture(scope="session")
+def ifs_tco79_long400_fixFalse_data(ifs_tco79_long400_fixFalse_reader):
+    return ifs_tco79_long400_fixFalse_reader.retrieve(var=['2t', 'ttr'])
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long_reader():

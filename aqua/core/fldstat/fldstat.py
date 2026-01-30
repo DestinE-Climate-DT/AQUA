@@ -307,7 +307,7 @@ class FldStat():
                 # Fast check for reversed coordinates: use slicing
                 if np.array_equal(area_coord[::-1], data_coord):
                     self.logger.warning("Reversing coordinate '%s' for alignment.", coord)
-                    self.area = self.area.isel({coord: slice(None, None, -1)})
+                    self.area = self.area.reindex({coord: area_coord[::-1]})
                     continue
 
                 # Try alignment by rounding to specified decimals
