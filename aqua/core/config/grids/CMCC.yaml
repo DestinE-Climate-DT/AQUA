@@ -1,0 +1,10 @@
+grids:
+  #CMCC-CM2
+  cmcc-cm2-orca25-2d:
+    path: '{{ grids }}/CMCC2/cmcc_cm2_ORCA25_2d.nc'
+    space_coord:  ["j", "i"]
+
+  cmcc-cm2-cam4-2d:
+    path: '{{ grids }}/CMCC2/cmcc_cm2_cam4.nc'
+    space_coord: ["i", "j"]
+    remap_method: bil
