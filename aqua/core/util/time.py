@@ -446,6 +446,7 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
     """
     DEFAULT_CALENDAR = 'Gregorian'
     DEFAULT_UNIT = 'us'  # default to microseconds for datetime64 for a wider dates range
+    DEFAULT_CALENDAR_START = 'microseconds since 1850-01-01'
     unit = DEFAULT_UNIT
 
     logger = log_configure(loglevel, 'fix_calendar')
@@ -462,11 +463,10 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
         if (data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime)):
-            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_UNIT}] after calendar conversion")
+            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_UNIT}]  after calendar conversion")
 
-            # TODO: Is units="microseconds since 1850-01-01" always appropriate here?
             np_time = cftime_to_nptime(data.time.values,
-                                       units="microseconds since 1850-01-01").astype(f"datetime64[{DEFAULT_UNIT}]")
+                                       units=DEFAULT_CALENDAR_START).astype(f"datetime64[{DEFAULT_UNIT}]")
             data = data.assign_coords(time=np_time)
         else:  # Still datetime64, ensure we keep original precision
             new_unit = np.datetime_data(data.time.values.dtype)[0]
