@@ -125,15 +125,18 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
 
     if xlabel is None:
         # Get a descriptive name from center_of_bin attributes
-        var_name = getattr(first_data.center_of_bin, 'long_name', None) or \
-                   getattr(first_data.center_of_bin, 'standard_name', None) or \
-                   "Value"
-        var_units = getattr(first_data.center_of_bin, 'units', None)
-        
-        if var_units:
-            xlabel = f"{var_name} [{unit_to_latex(var_units)}]"
+        if 'center_of_bin' in first_data.dims:
+            var_name = getattr(first_data.center_of_bin, 'long_name', None) or \
+                       getattr(first_data.center_of_bin, 'standard_name', None) or \
+                       "Value"
+            var_units = getattr(first_data.center_of_bin, 'units', None)
+            
+            if var_units:
+                xlabel = f"{var_name} [{unit_to_latex(var_units)}]"
+            else:
+                xlabel = var_name
         else:
-            xlabel = var_name
+            xlabel = "Value"
     
     ax.set_xlabel(xlabel, fontsize=labelsize)
 
