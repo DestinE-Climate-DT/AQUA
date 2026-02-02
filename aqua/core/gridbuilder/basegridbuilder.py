@@ -228,7 +228,7 @@ class BaseGridBuilder:
             target_grid (str, optional): Target grid for weights generation. Defaults to "r180x90".
         """
         remap_method = metadata.get('remap_method', "con")
-        cdo_options = metadata.get('cdo_options', "")
+        cdo_options = metadata.get('cdo_options')
         try:
             self.logger.info(
                 "Generating weights for %s with method %s and vert_coord %s",
@@ -253,7 +253,8 @@ class BaseGridBuilder:
             if os.path.exists(filename):
                 data = xr.open_dataset(filename)
             else:
-                data = self.cdo.const(f'1,{filename}', options=cdo_options, returnXDataset=True)
+                # HACK: temporary remove cdo_options since it conflicts with pyCDO calls
+                data = self.cdo.const(f'1,{filename}', returnXDataset=True)
             regridder.regrid(data)
             self.logger.info(
                 "Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!",
