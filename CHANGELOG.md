@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
+- Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
 - Datamodel identifies depth preferrably over height in ambigous cases (#2654, #2655)
 - Read with microsecond time resolution by default (#2638)
 - Update data model coordinates transformer to work with latest xarray version (#2652)

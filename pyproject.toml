@@ -35,10 +35,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3<=1.42.34",
+    "boto3<=1.42.39",
     "cartopy>=0.24.1,<=0.25.0",
     "cfgrib<=0.9.15.1", #enable support for GRIB files
-    "dask[distributed]<=2026.1.1",
+    "dask[distributed]<=2026.1.2",
     "eccodes==2.41.0",
     "filelock<=3.20.3",
     "gcsfs<=2026.1.0", # Google Cloud Storage File System: required by ARCO
