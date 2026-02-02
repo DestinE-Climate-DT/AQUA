@@ -354,7 +354,14 @@ class Reader():
                 fixed = self.fixer.fixerdatamodel.apply(value)
             else:
                 raise ValueError(f"Mode {mode} not recognized for weights fixing")
-            new_weights[list(fixed.coords)[0]] = fixed
+            
+            # Check if fixed object has coordinates before accessing
+            coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
+            if not coords:
+                self.logger.warning("No coordinates found in weights item %s after applying %s", item, mode)
+                new_weights[item] = fixed  # Use original item name as fallback
+            else:
+                new_weights[coords[0]] = fixed
         return new_weights
 
     def retrieve(self, var=None, level=None,
