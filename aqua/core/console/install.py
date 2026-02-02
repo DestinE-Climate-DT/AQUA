@@ -83,7 +83,7 @@ class InstallMixin:
                     'diagnostics': {'installed': False, 'mode': 'not_installed'}
                 }
 
-            locator = ConfigLocator(loglevel='ERROR')
+            locator = ConfigLocator(logger=self.logger)
             if os.path.exists(locator.config_file):
                 self.logger.error('AQUA configuration found at %s but failed to load. A configured catalog might be missing or corrupted.', locator.config_file)
                 sys.exit(1)
