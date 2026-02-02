@@ -356,7 +356,6 @@ class TestAquaConsole():
         run_aqua(['remove', 'ci'])
         assert not os.path.exists(os.path.join(mydir, '.aqua/catalogs/ci'))
 
-
     def test_console_with_links(self, tmpdir, set_home, run_aqua_console_with_input):
         """Advanced tests for installation from path with symlinks"""
 
@@ -433,7 +432,6 @@ class TestAquaConsole():
         del os.environ['AQUA_CONFIG']
 
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
-
 
     def test_console_without_home(self, delete_home, run_aqua, tmpdir, run_aqua_console_with_input):
         """Basic tests without HOME environment variable"""
@@ -607,6 +605,31 @@ class TestAquaConsoleShared():
 
         out, _ = capfd.readouterr()
         assert '.aqua/catalogs/ci ..' in out
+    
+    def test_add_catalog_cleanup_on_failure(self, shared_aqua_install, run_aqua):
+        """Test that failed catalog additions are properly cleaned up
+        Verifies:
+            - Partially created catalog directory is removed on failure
+            - Catalog is not added to config-aqua.yaml on failure
+        """
+        mydir = shared_aqua_install
+        
+        # Try to add a non-existing catalog (will fail)
+        catalog_name = 'nonexistent_catalog_test'
+        catalog_dir = os.path.join(mydir, '.aqua/catalogs', catalog_name)
+        assert not os.path.exists(catalog_dir)
+        
+        # Attempt to add non-existing catalog (should fail)
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['-v', 'add', catalog_name])
+            assert excinfo.value.code == 1
+        
+        # Verify cleanup: catalog directory should not exist after failure
+        assert not os.path.exists(catalog_dir), f"Catalog directory {catalog_dir} should be cleaned up after failed add"
+        
+        # Verify _set_catalog() not called: catalog should not be in config after failure
+        config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert catalog_name not in config_file.get('catalog', [])
 
 
 class TestAquaConsoleGridBuilder():
