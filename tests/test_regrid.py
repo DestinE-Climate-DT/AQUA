@@ -217,7 +217,7 @@ class TestRegridder():
         Test regridding selected levels.
         """
         reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
-                        regrid='r100', loglevel=LOGLEVEL)
+                        regrid='r100', loglevel=LOGLEVEL, rebuild=True)
         data = reader.retrieve()
 
         layers = [0, 2]
