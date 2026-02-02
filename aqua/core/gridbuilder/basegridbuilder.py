@@ -140,8 +140,8 @@ class BaseGridBuilder:
         data = data.rename({var: 'mask'})
 
         # drop the remnant vertical coordinate if present
-        if vert_coord and f"idx_{vert_coord}" in data.coords:
-            data = data.drop_vars(f"idx_{vert_coord}")
+        # if vert_coord and f"idx_{vert_coord}" in data.coords:
+        #     data = data.drop_vars(f"idx_{vert_coord}")
 
         # set the mask variable to 1 where data is not null
         data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1)
