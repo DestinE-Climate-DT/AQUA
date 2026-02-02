@@ -444,9 +444,9 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    DEFAULT_CALENDAR = 'Gregorian'
+    DEFAULT_CALENDAR = 'gregorian'
     DEFAULT_UNIT = 'us'  # default to microseconds for datetime64 for a wider dates range
-    DEFAULT_CALENDAR_START = 'microseconds since 1850-01-01'
+    # DEFAULT_CALENDAR_START = 'microseconds since 1850-01-01'
     unit = DEFAULT_UNIT
 
     logger = log_configure(loglevel, 'fix_calendar')
@@ -463,10 +463,10 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
         if (data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime)):
-            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_UNIT}]  after calendar conversion")
+            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_UNIT}] after calendar conversion")
 
-            np_time = cftime_to_nptime(data.time.values,
-                                       units=DEFAULT_CALENDAR_START).astype(f"datetime64[{DEFAULT_UNIT}]")
+            np_time = cftime_to_nptime(data.time.values, time_unit=DEFAULT_UNIT)
+            logger.debug(f"Time axis is now of type {np_time.dtype}, first step {np_time[0]}")
             data = data.assign_coords(time=np_time)
         else:  # Still datetime64, ensure we keep original precision
             new_unit = np.datetime_data(data.time.values.dtype)[0]
