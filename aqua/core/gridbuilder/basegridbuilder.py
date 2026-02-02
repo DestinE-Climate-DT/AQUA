@@ -240,7 +240,7 @@ class BaseGridBuilder:
                 target_grid=target_grid,
                 cdo_options=cdo_options,
                 loglevel=self.loglevel)
-            weights = generator.weights(method=remap_method, vert_coord=self.vert_coord)
+            weights = generator.weights(method=remap_method, mask_dim=self.vert_coord)
             self.logger.info(
                 "Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!",
                 remap_method,
