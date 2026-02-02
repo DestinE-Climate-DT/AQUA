@@ -84,13 +84,14 @@ class InstallMixin:
                 }
 
             locator = ConfigLocator(logger=self.logger)
-            if os.path.exists(locator.config_file):
-                self.logger.error('AQUA configuration found at %s but failed to load. A configured catalog might be missing or corrupted.', locator.config_file)
+            try:
+                if os.path.exists(locator.config_file):
+                    self.logger.error('AQUA configuration found at %s but failed to load. A configured catalog might be missing or corrupted.', locator.config_file)
+                    sys.exit(1)
+            except FileNotFoundError:
+                self.logger.error('No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
+                                'or manually set the AQUA_CONFIG environment variable to an existing AQUA installation directory.')
                 sys.exit(1)
-            
-            self.logger.error('No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
-                              'or manually set the AQUA_CONFIG environment variable to an existing AQUA installation directory.')
-            sys.exit(1)
         
     def _check_component_installed(self, component):
         """
