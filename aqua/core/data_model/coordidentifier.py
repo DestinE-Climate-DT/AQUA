@@ -500,7 +500,7 @@ class CoordIdentifier:
             score += self.SCORE_WEIGHTS["axis"]  # Use axis weight for substring match
             matched.append("axis")
         if is_meter(coord.attrs.get("units")):
-            score += self.SCORE_WEIGHTS["units"]
+            score += self.SCORE_WEIGHTS["units"]*0.9  # HACK - if units are m this could also be depth, which is more likely
             matched.append("units")
         if "height" in coord.attrs.get("long_name", ""):
             score += self.SCORE_WEIGHTS["long_name"]
