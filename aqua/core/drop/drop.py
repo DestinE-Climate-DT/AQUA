@@ -51,6 +51,7 @@ VAR_ENCODING = {
     '_FillValue': np.nan
 }
 
+AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum']
 
 class Drop():
     """
@@ -158,8 +159,8 @@ class Drop():
 
         # configure statistics
         self.stat = stat
-        if self.stat not in ['mean', 'std', 'max', 'min', 'sum']:
-            raise KeyError('Please specify a valid statistic: mean, std, max, min or sum.')
+        if self.stat not in AVAILABLE_STATS:
+            raise KeyError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
 
         # configure regional selection
         self._configure_region(region, drop)
@@ -631,7 +632,7 @@ class Drop():
             return
         
         # regrid
-        if self.resolution:
+        if self.resolution and self.resolution != 'native':
             temp_data = self.reader.regrid(temp_data)
             temp_data = self._remove_regridded(temp_data)
 
