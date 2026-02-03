@@ -308,7 +308,7 @@ class Drop():
         # Initialize the reader
         self.reader = Reader(model=self.model, exp=self.exp,
                              source=self.source,
-                             regrid=self.resolution,
+                             regrid=self.resolution if self.resolution != 'native' else None,
                              catalog=self.catalog,
                              loglevel=self.loglevel,
                              rebuild=self.rebuild,
