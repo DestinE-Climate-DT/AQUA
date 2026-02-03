@@ -4,7 +4,7 @@ import xarray as xr
 import numpy as np
 from functools import partial
 from aqua.core.util import check_chunk_completeness, check_seasonal_chunk_completeness, frequency_string_to_pandas
-from aqua.core.util import extract_literal_and_numeric
+from aqua.core.util import extract_literal_and_numeric, fix_calendar
 from aqua.core.logger import log_history, log_configure
 from aqua.core.histogram import histogram
 
@@ -13,7 +13,6 @@ class TimStat():
     """
     Time statistic AQUA module
     """
-
 
     def __init__(self, loglevel='WARNING'):
         self.loglevel = loglevel
@@ -52,10 +51,13 @@ class TimStat():
 
         if not isinstance(stat, str) and not callable(stat):
             raise TypeError('stat must be a string or a callable function')
-        
+
+        # Align calendar to Gregorian if needed
+        data = fix_calendar(data, loglevel=self.loglevel)
+
         if stat == 'histogram':  # convert to callable function
             stat = histogram
-        
+
         resample_freq = frequency_string_to_pandas(freq)
 
         # disabling all options if total averaging is selected

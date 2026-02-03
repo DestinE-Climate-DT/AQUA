@@ -238,3 +238,12 @@ def test_multiply_units_no_normalization():
     """Test multiply_units without normalization"""
     result = multiply_units("m", "m", normalise_units=False)
     assert result == "meter ** 2"
+
+@pytest.mark.aqua
+def test_cftime_365cal():
+    """Test cftime with 365-day calendar"""
+    reader = Reader(catalog='ci', model='CMCC', exp='cftime_365cal', source='monthly-atm', areas=False, loglevel=loglevel)
+    data = reader.retrieve()
+
+    # Assert that the calendar was correctly translated to datetime64[us]
+    assert np.issubdtype(data.time.dtype, np.datetime64)

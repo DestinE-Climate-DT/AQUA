@@ -13,7 +13,9 @@ from metpy.units import units
 
 from smmregrid import GridInspector
 
-from aqua.core.util import load_multi_yaml, files_exist, to_list, find_vert_coord
+from aqua.core.util import load_multi_yaml, files_exist, to_list
+from aqua.core.util import find_vert_coord
+from aqua.core.util import fix_calendar, DEFAULT_TIME_UNIT
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure, log_history
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -36,6 +38,7 @@ xr.set_options(keep_attrs=True)
 
 # set default data model
 DATA_MODEL_DEFAULT = "aqua"
+
 
 class Reader():
     """General reader for climate data."""
@@ -245,7 +248,7 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
-            
+    
         self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
@@ -387,7 +390,7 @@ class Reader():
                 loadvar = None
 
         ffdb = False
-        
+
         # If this is an ESM-intake catalog use first dictionary value,
         #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
         #    data = self.reader_esm(self.esmcat, loadvar)
@@ -398,10 +401,6 @@ class Reader():
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
-        
-        # Convert time to datetime64 microsecond resolution by default
-        if 'time' in data.coords and np.issubdtype(data.time.dtype, np.datetime64) and not 'time_coder' in self.esmcat.metadata:
-            data['time'] = data.time.astype("datetime64[us]")
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -422,6 +421,17 @@ class Reader():
         if self.datamodel:
             self.logger.debug("Applying base data model: %s", self.datamodel_name)
             data = self.datamodel.apply(data)
+
+        # Time threatment: we want to ensure that time is always in Gregorian calendar
+        # and to change the default numpy datetime64 resolution to microseconds
+        if 'time' in data.coords:
+
+            # TODO: Check, the commented code is probably not needed
+            # Convert time to datetime64 microsecond resolution by default
+            # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
+            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
+            # Fix the calendar to Gregorian if needed
+            data = fix_calendar(data, loglevel=self.loglevel)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -538,7 +548,7 @@ class Reader():
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
-        
+
         data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
@@ -546,7 +556,7 @@ class Reader():
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"AQUA_regridded": 1})
         return out
-    
+
     # def trend(self, data, dim='time', degree=1, skipna=False):
     #     """
     #     Estimate the trend of an xarray object using polynomial fitting.
@@ -1046,13 +1056,13 @@ class Reader():
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
     
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to microseconds ('us')
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if hasattr(esmcat, "xarray_kwargs") and not "use_cftime" in esmcat.xarray_kwargs:
             if 'time_coder' in esmcat.metadata:
                 self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
                 coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
             else:
-                coder = xr.coders.CFDatetimeCoder(time_unit='us')
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
             esmcat.xarray_kwargs.update({'decode_times': coder})
 
