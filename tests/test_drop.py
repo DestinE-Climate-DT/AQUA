@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import pytest
 import xarray as xr
@@ -262,7 +263,8 @@ class TestDROP:
 
     def test_unknown_statistic(self, drop_arguments, tmp_path):
         """Test DROP with an unknown statistic."""
-        with pytest.raises(KeyError, match=f'Please specify a valid statistic: {AVAILABLE_STATS}.'):
+        error = f'Please specify a valid statistic: {AVAILABLE_STATS}.'
+        with pytest.raises(ValueError, match=re.escape(error)):
             Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
-                 resolution='r100', frequency='monthly', statistic='unknown_stat',
+                 resolution='r100', frequency='monthly', stat='unknown_stat',
                  loglevel=LOGLEVEL)

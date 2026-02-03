@@ -53,6 +53,7 @@ VAR_ENCODING = {
 
 AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum']
 
+
 class Drop():
     """
     Class to generate DROP outputs at required frequency/resolution
@@ -78,7 +79,7 @@ class Drop():
                  stat="mean",
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
-                 engine = 'fdb',
+                 engine='fdb',
                  **kwargs):
         """
         Initialize the DROP class
@@ -160,7 +161,7 @@ class Drop():
         # configure statistics
         self.stat = stat
         if self.stat not in AVAILABLE_STATS:
-            raise KeyError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
+            raise ValueError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
 
         # configure regional selection
         self._configure_region(region, drop)
