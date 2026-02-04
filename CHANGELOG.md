@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- DROP: expose `compact` option in DROP CLI (#2659)
+- DROP: add `sum` statistic support in DROP (#2659)
 - DROP: fix for native DROP production (#2659)
 - Added support for non gregorian calendars (#2631)
 - Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
