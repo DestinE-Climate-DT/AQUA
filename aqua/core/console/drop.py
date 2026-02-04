@@ -137,7 +137,7 @@ def drop_execute(args):
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-            region=region, stat=stat,
+            region=region, stat=stat, compact=compact,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers, engine=engine,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
