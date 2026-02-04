@@ -8,6 +8,7 @@ Unreleased in the current development version (target v1.0.0):
 
 Complete list:
 - Add cleanup on failure for console `aqua add` catalog addition (#2649)
+- Improve gridlines in maps for different projections (#2660)
 - Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
 - Datamodel identifies depth preferrably over height in ambigous cases (#2654, #2655)
 - Read with microsecond time resolution by default (#2638)
