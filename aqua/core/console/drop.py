@@ -118,6 +118,7 @@ def drop_execute(args):
     engine = get_arg(args, 'engine', config['options'].get('engine', 'fdb'))
 
     loglevel = get_arg(args, 'loglevel', config['options'].get('loglevel', 'WARNING'))
+    compact = config['options'].get('compact', 'cdo')
     do_zarr = get_arg(args, 'zarr', config['options'].get('zarr', False))
     verify_zarr = get_arg(args, 'verify_zarr', config['options'].get('verify_zarr', False))
 
@@ -136,7 +137,7 @@ def drop_execute(args):
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
             frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-            region=region, stat=stat,
+            region=region, stat=stat, compact=compact,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
             default_workers=default_workers, engine=engine,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
@@ -147,6 +148,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
              definitive=False, overwrite=False,
              rebuild=False, monitoring=False, engine='fdb',
              default_workers=1, do_zarr=False, verify_zarr=False,
+             compact='cdo',
              only_catalog=False):
     """
     Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
@@ -172,6 +174,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
         monitoring: bool flag to enable the dask monitoring
         do_zarr: bool flag to create zarr
         verify_zarr: bool flag to verify zarr
+        compact: compaction method
         only_catalog: bool flag to only update the catalog
     """
 
@@ -219,6 +222,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                                         region=region, stat=stat,
                                         definitive=definitive, overwrite=overwrite,
                                         rebuild=rebuild,
+                                        compact=compact,
                                         performance_reporting=monitoring,
                                         exclude_incomplete=True,
                                         engine=engine,
