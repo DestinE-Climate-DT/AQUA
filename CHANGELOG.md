@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Add cleanup on failure for console `aqua add` catalog addition (#2649)
 - DROP: expose `compact` option in DROP CLI (#2659)
 - DROP: add `sum` statistic support in DROP (#2659)
 - DROP: fix for native DROP production (#2659)
