@@ -1,11 +1,8 @@
 """Test regridding from Reader"""
 import pytest
+from conftest import APPROX_REL, LOGLEVEL
 from aqua import Reader, Regridder
 from aqua.core.regridder.griddicthandler import GridDictHandler
-from conftest import APPROX_REL, LOGLEVEL
-
-approx_rel = APPROX_REL
-
 
 @pytest.fixture(
     params=[
@@ -99,7 +96,10 @@ class TestRegridder():
         regridder = Regridder(data=data.isel(time=0), loglevel='debug')
 
         # Regrid the data
-        regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+        weights = regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+
+        # initialize regridder with weights
+        regridder.initialize(weights)
         out = regridder.regrid(data)
 
         assert len(out.lon) == 144
@@ -127,9 +127,9 @@ class TestRegridder():
         rgd = reader.regrid(data[variable])
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
-        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=approx_rel)  # land fraction
+        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=APPROX_REL)  # land fraction
 
-    def test_recompute_weights_fesom2D(self):
+    def test_recompute_weights_fesom2d(self):
         """
         Test interpolation on FESOM, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
@@ -171,7 +171,7 @@ class TestRegridder():
         assert len(rgd.height) == 90
         assert len(rgd.time) == 2
 
-    def test_recompute_weights_fesom3D(self):
+    def test_recompute_weights_fesom3d(self):
         """
         Test interpolation on FESOM, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
@@ -192,7 +192,7 @@ class TestRegridder():
         assert 0.33 <= ratio1 <= 0.36
         assert 0.43 <= ratio2 <= 0.46
 
-    def test_recompute_weights_nemo3D(self):
+    def test_recompute_weights_nemo3d(self):
         """
         Test interpolation on NEMO, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
@@ -216,8 +216,8 @@ class TestRegridder():
         """
         Test regridding selected levels.
         """
-        reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
-                        regrid='r100', loglevel=LOGLEVEL)
+        reader = Reader(model='FESOM', exp='test-pi', source='original_3d', datamodel=False,
+                        regrid='r100', loglevel=LOGLEVEL, rebuild=True)
         data = reader.retrieve()
 
         layers = [0, 2]

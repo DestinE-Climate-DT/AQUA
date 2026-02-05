@@ -157,8 +157,8 @@ class BaseGridBuilder:
         data = data.rename({var: 'mask'})
 
         # Drop the remnant vertical coordinate if present
-        if vert_coord and f"idx_{vert_coord}" in data.coords:
-            data = data.drop_vars(f"idx_{vert_coord}")
+        #if vert_coord and f"idx_{vert_coord}" in data.coords:
+        #    data = data.drop_vars(f"idx_{vert_coord}")
 
         # Set the mask variable to 1 where data is not null
         data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1)
@@ -228,7 +228,7 @@ class BaseGridBuilder:
             target_grid (str, optional): Target grid for weights generation. Defaults to "r180x90".
         """
         remap_method = metadata.get('remap_method', "con")
-        cdo_options = metadata.get('cdo_options', "")
+        cdo_options = metadata.get('cdo_options')
         try:
             self.logger.info(
                 "Generating weights for %s with method %s and vert_coord %s",
@@ -240,7 +240,7 @@ class BaseGridBuilder:
                 target_grid=target_grid,
                 cdo_options=cdo_options,
                 loglevel=self.loglevel)
-            weights = generator.weights(method=remap_method, vert_coord=self.vert_coord)
+            weights = generator.weights(method=remap_method, mask_dim=self.vert_coord)
             self.logger.info(
                 "Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!",
                 remap_method,
@@ -253,7 +253,8 @@ class BaseGridBuilder:
             if os.path.exists(filename):
                 data = xr.open_dataset(filename)
             else:
-                data = self.cdo.const(f'1,{filename}', options=cdo_options, returnXDataset=True)
+                # HACK: temporary remove cdo_options since it conflicts with pyCDO calls
+                data = self.cdo.const(f'1,{filename}', returnXDataset=True)
             regridder.regrid(data)
             self.logger.info(
                 "Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!",

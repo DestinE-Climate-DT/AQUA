@@ -123,7 +123,7 @@ class GridBuilder():
         self.logger.debug("Builder class: %s", BuilderClass)
 
         # Vertical coordinate detection
-        vert_coord = self.vert_coord if self.vert_coord else gridtype.vertical_dim
+        vert_coord = self.vert_coord if self.vert_coord else gridtype.mask_dim
         self.logger.info("Detected vertical coordinate: %s", vert_coord)
 
         # Initialize the builder

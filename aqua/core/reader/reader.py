@@ -295,7 +295,7 @@ class Reader():
 
             # export src space coord and vertical coord
             self.src_space_coord = self.regridder.src_horizontal_dims
-            self.vert_coord = self.regridder.src_vertical_dim
+            self.vert_coord = self.regridder.src_mask_dim
 
             # TODO: it is likely there are other cases where we need to disable regrid.
             if not self.regridder.cdo:
@@ -315,11 +315,16 @@ class Reader():
         # configure regridder and generate weights
         if regrid:
             # generate weights and init the SMMregridder
-            self.regridder.weights(
+            weights = self.regridder.weights(
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
+            if self.fix:
+                weights = self._fix_datamodel_weights(weights, mode="fixer")
+            if self.datamodel:
+                weights = self._fix_datamodel_weights(weights, mode="datamodel")
+            self.regridder.initialize(weights)
 
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
@@ -335,6 +340,32 @@ class Reader():
 
         # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
+
+    def _fix_datamodel_weights(self, weights, mode="datamodel"):
+        """
+        Mask coordinate of the weights need to be adjusted according to the data model or fix applied.
+        Arguments:
+                weights (dict): The weights dictionary from smmregrid
+                mode (str): "datamodel" or "fixer" to apply the respective data model or fixer datamodel
+        """
+        new_weights = {}
+        for item, value in weights.items():
+            self.logger.debug("Applying %s to weights item %s", mode, item)
+            if mode=="datamodel":
+                fixed = self.datamodel.apply(value, flip_coords=False)
+            elif mode=="fixer":
+                fixed = self.fixer.fixerdatamodel.apply(value)
+            else:
+                raise ValueError(f"Mode {mode} not recognized for weights fixing")
+            
+            # Check if fixed object has coordinates before accessing
+            coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
+            if not coords:
+                self.logger.warning("No coordinates found in weights item %s after applying %s", item, mode)
+                new_weights[item] = fixed  # Use original item name as fallback
+            else:
+                new_weights[coords[0]] = fixed
+        return new_weights
 
     def retrieve(self, var=None, level=None,
                  startdate=None, enddate=None,
@@ -408,7 +439,7 @@ class Reader():
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
 
         if not ffdb:  # FDB sources already have the index, already selected levels
-            data = self._add_index(data)  # add helper index
+            #data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
 
         # Apply variable fixes (units, names, attributes) and data model fixes
@@ -466,24 +497,24 @@ class Reader():
 
         return data
 
-    def _add_index(self, data):
+    # def _add_index(self, data):
 
-        """
-        Add a helper idx_{dim3d} coordinate to the data to be used for level selection
+    #     """
+    #     Add a helper idx_{dim3d} coordinate to the data to be used for level selection
 
-        Arguments:
-            data (xr.Dataset):  the input xarray.Dataset
+    #     Arguments:
+    #         data (xr.Dataset):  the input xarray.Dataset
 
-        Returns:
-            A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
-        """
+    #     Returns:
+    #         A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
+    #     """
 
-        if self.vert_coord:
-            for dim in to_list(self.vert_coord):
-                if dim in data.coords:
-                    idx = list(range(0, len(data.coords[dim])))
-                    data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
-        return data
+    #     if self.vert_coord:
+    #         for dim in to_list(self.vert_coord):
+    #             if dim in data.coords:
+    #                 idx = list(range(0, len(data.coords[dim])))
+    #                 data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
+    #     return data
 
     def _select_level(self, data, level=None):
         """
