@@ -534,7 +534,7 @@ class Reader():
         """
         # We're keeping the fldstat call separate, however at the current stage there is
         # no difference in behavior between the src and tgt fldstat calls.
-        if self._check_if_regridded(data):
+        if self._check_if_regridded(data) and self.tgt_fldstat:
             return self.tgt_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
         return self.src_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
 
@@ -1189,7 +1189,7 @@ class Reader():
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        if self._check_if_regridded(data):
+        if self._check_if_regridded(data) and self.tgt_fldstat:
             data = self.tgt_fldstat.fldstat(
                 data, stat=stat,
                 lon_limits=lon_limits, lat_limits=lat_limits,
