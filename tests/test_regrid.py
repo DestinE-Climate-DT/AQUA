@@ -235,10 +235,10 @@ class TestRegridder():
         #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
 
         # test reading specific levels for first vertical coordinate (nz1)
