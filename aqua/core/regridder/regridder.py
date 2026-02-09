@@ -56,7 +56,7 @@ class Regridder():
             handler (GridDictHandler): The grid dictionary handler.
             src_grid_dict (dict): The normalized source grid dictionary.
             src_horizontal_dims (str): The source horizontal dimensions.
-            src_vertical_dim (str): The source vertical dimension.
+            src_mask_dim (str): The source vertical dimension.
             tgt_horizontal_dims (str): The target horizontal dimensions.
             error (str): The error message to be used by the Reader.
             cdo (str): The CDO path.
@@ -90,16 +90,16 @@ class Regridder():
 
         # this not used but can be shipped back to the reader
         self.src_horizontal_dims = self.src_grid_dict.get('space_coord', None)
-        self.src_vertical_dim = list(self.src_grid_path.keys())
+        self.src_mask_dim = list(self.src_grid_path.keys())
         self.tgt_horizontal_dims = None
         self.error = None
 
         self.logger.debug("Horizontal dimensions: %s", self.src_horizontal_dims)
-        self.logger.debug("Vertical dimensions: %s", self.src_vertical_dim)
+        self.logger.debug("Vertical dimensions: %s", self.src_mask_dim)
 
         # store dimension to be send to smmregrid if needed
         self.extra_dims = {
-            'vertical': to_list(self.src_vertical_dim),
+            'mask': to_list(self.src_mask_dim),
             'horizontal': to_list(self.src_horizontal_dims)
         }
 
@@ -176,14 +176,14 @@ class Regridder():
 
         # This should be not necessary since vertical coordinate is always provided
         # if we have not them from the dictionary, get it from the file
-        # if not self.src_vertical_dim:
+        # if not self.src_mask_dim:
         #    # get all vertical grid available
-        #    self.src_vertical_dim = [getattr(gridtype, "vertical_dim") for gridtype in gridtypes]
-        # self.logger.debug("Vertical dimensions guessed from data: %s", self.src_vertical_dim)
+        #    self.src_mask_dim = [getattr(gridtype, "mask_dim") for gridtype in gridtypes]
+        # self.logger.debug("Vertical dimensions guessed from data: %s", self.src_mask_dim)
 
         # if the path is missing, use the data to init smmregrid
         if not self.src_grid_path:
-            vdim = self.src_vertical_dim if self.src_vertical_dim else DEFAULT_DIMENSION
+            vdim = self.src_mask_dim if self.src_mask_dim else DEFAULT_DIMENSION
             self.logger.info("Using provided dataset as a grid path for %s", vdim)
             self.src_grid_dict = {"path": {vdim: data}}
             self.src_grid_path = self.src_grid_dict.get('path')
@@ -347,14 +347,14 @@ class Regridder():
 
         weights = {}
         # loop over the vertical coordinates: DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, or any other
-        for vertical_dim in self.src_grid_path:
+        for mask_dim in self.src_grid_path:
 
             # define the vertical coordinate in the smmregrid world
-            smm_vertical_dim = None if vertical_dim in [
-                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else vertical_dim
+            smm_mask_dim = None if mask_dim in [
+                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
 
             weights_filename = self._weights_filename(tgt_grid_name, regrid_method,
-                                                      vertical_dim, reader_kwargs)
+                                                      mask_dim, reader_kwargs)
 
             # check if weights already exist, if not, generate them
             if rebuild or not check_existing_file(weights_filename):
@@ -364,15 +364,15 @@ class Regridder():
                         "Weights file %s exists. Regenerating.", weights_filename)
                 else:
                     self.logger.info(
-                        "Generating weights for %s grid: %s", tgt_grid_name, vertical_dim)
+                        "Generating weights for %s grid: %s", tgt_grid_name, mask_dim)
 
-                if smm_vertical_dim:
+                if smm_mask_dim:
                     self.logger.warning("Mask-changing vertical dimension identified, weights generation might take a few!")
 
                 # smmregrid call
                 # TODO: here or better in smmregird, we could use GridInspect to get the grid info
                 # and reduce the dimensionality of the input data.
-                generator = CdoGenerate(source_grid=self.src_grid_path[vertical_dim],
+                generator = CdoGenerate(source_grid=self.src_grid_path[mask_dim],
                                         target_grid=self._get_grid_path(tgt_grid_dict.get('path')),
                                         cdo_extra=cdo_extra,
                                         cdo_options=cdo_options,
@@ -381,7 +381,7 @@ class Regridder():
 
                 # generate and save the weights
                 weights_dim = generator.weights(method=regrid_method,
-                                            vertical_dim=smm_vertical_dim,
+                                            mask_dim=smm_mask_dim,
                                             nproc=nproc)
                 self._safe_to_netcdf(weights_dim, weights_filename)
 
@@ -390,7 +390,7 @@ class Regridder():
                     "Loading existing weights from %s.", weights_filename)
 
             # load the weights
-            weights[vertical_dim] = xr.open_dataset(weights_filename)
+            weights[mask_dim] = xr.open_dataset(weights_filename)
 
         return weights
 
@@ -404,17 +404,17 @@ class Regridder():
         Please notice that we cannot use src_grid_path because we might have applied fixer or data model
         """
 
-        for vertical_dim in weights.keys():
+        for mask_dim in weights.keys():
 
             # define the vertical coordinate in the smmregrid world
-            smm_vertical_dim = None if vertical_dim in [
-                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else vertical_dim
+            smm_mask_dim = None if mask_dim in [
+                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
 
             # initialize the regridder
-            self.smmregridder[vertical_dim] = SMMRegridder(
-                weights=weights[vertical_dim],
+            self.smmregridder[mask_dim] = SMMRegridder(
+                weights=weights[mask_dim],
                 horizontal_dims=self.src_horizontal_dims,
-                vertical_dim=smm_vertical_dim,
+                mask_dim=smm_mask_dim,
                 loglevel=self.loglevel
             )
 
@@ -461,19 +461,19 @@ class Regridder():
         filename = self._filename_prepend_path(filename, kind="areas")
         return filename
 
-    def _weights_filename(self, tgt_grid_name, regrid_method, vertical_dim, reader_kwargs):
+    def _weights_filename(self, tgt_grid_name, regrid_method, mask_dim, reader_kwargs):
         """
         Generate the weights filename.
 
         Args:
             tgt_grid_name (str): The destination grid name.
             regrid_method (str): The regrid method.
-            vertical_dim (str): The vertical dimension.
+            mask_dim (str): The vertical dimension.
             reader_kwargs (dict): The reader kwargs, including info on model, exp, source, etc.
         """
 
-        levname = vertical_dim if vertical_dim in [
-            DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else f"3d-{vertical_dim}"
+        levname = mask_dim if mask_dim in [
+            DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else f"3d-{mask_dim}"
 
         weights_dict = self.cfg_grid_dict.get('weights')
 
@@ -483,7 +483,7 @@ class Regridder():
             return f"weights_{tgt_grid_name}_{regrid_method}_l{levname}.nc"
 
         # destination grid name is provided, use grid template
-        if check_gridfile(self.src_grid_path[vertical_dim]) != 'xarray':
+        if check_gridfile(self.src_grid_path[mask_dim]) != 'xarray':
             filename = weights_dict["template_grid"].format(
                 sourcegrid=self.src_grid_name,
                 method=regrid_method,
@@ -528,17 +528,17 @@ class Regridder():
                     self.cfg_grid_dict["paths"][kind], filename)
         return filename
 
-    def _expand_dims(self, data, vertical_dims):
+    def _expand_dims(self, data, mask_dims):
         """
         Expand the dimensions of the dataset or dataarray to include the vertical dimensions
         """
 
-        if not list(set(data.dims) & set(vertical_dims)):
-            for vertical_dim in vertical_dims:
-                if vertical_dim in data.coords:
+        if not list(set(data.dims) & set(mask_dims)):
+            for mask_dim in mask_dims:
+                if mask_dim in data.coords:
                     self.logger.debug(
-                        "Expanding dimensions to include %s", vertical_dim)
-                    data = data.expand_dims(dim=vertical_dim, axis=0)
+                        "Expanding dimensions to include %s", mask_dim)
+                    data = data.expand_dims(dim=mask_dim, axis=0)
         return data
 
     def _group_shared_dims(self, data):
@@ -570,10 +570,10 @@ class Regridder():
         for gridtype in gridtypes:
             variables = list(gridtype.variables.keys())
 
-            if gridtype.vertical_dim:
+            if gridtype.mask_dim:
                 self.logger.debug("Variables for dimension %s: %s",
-                                  gridtype.vertical_dim, variables)
-                shared_vars[gridtype.vertical_dim] = [var for var in variables if var not in masked_vars]
+                                  gridtype.mask_dim, variables)
+                shared_vars[gridtype.mask_dim] = [var for var in variables if var not in masked_vars]
             else:
                 shared_vars[DEFAULT_DIMENSION] = [var for var in variables if var not in masked_vars]
                 self.logger.debug("Variables for dimensions %s: %s",
@@ -594,9 +594,9 @@ class Regridder():
 
         # expand the dimensions of the dataset to include the vertical dimensions
         if isinstance(data, xr.Dataset):
-            data = data.map(self._expand_dims, vertical_dims=list(self.src_vertical_dim))
+            data = data.map(self._expand_dims, mask_dims=list(self.src_mask_dim))
         elif isinstance(data, xr.DataArray):
-            data = self._expand_dims(data, vertical_dims=list(self.src_vertical_dim))
+            data = self._expand_dims(data, mask_dims=list(self.src_mask_dim))
         else:
             raise ValueError("Data must be an xarray Dataset or DataArray.")
 

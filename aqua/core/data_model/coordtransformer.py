@@ -116,7 +116,6 @@ class CoordTransformer:
             xr.Dataset or xr.DataArray: The Xarray object with renamed coordinate.
         """
         if src_coord["name"] != tgt_coord["name"]:
-            original_coords = list(data.coords)
             self.logger.info(
                 "Renaming coordinate %s to %s", src_coord["name"], tgt_coord["name"]
             )
@@ -127,11 +126,11 @@ class CoordTransformer:
             )
 
             # Ensure the AQUA dependent index is preserved
-            if f"idx_{src_coord['name']}" in original_coords:
-                index_name = f"idx_{src_coord['name']}"
-                new_index_name = f"idx_{tgt_coord['name']}"
-                self.logger.info("Renaming index %s to %s", index_name, new_index_name)
-                data = data.rename({index_name: new_index_name})
+            # if f"idx_{src_coord['name']}" in original_coords:
+            #     index_name = f"idx_{src_coord['name']}"
+            #     new_index_name = f"idx_{tgt_coord['name']}"
+            #     self.logger.info("Renaming index %s to %s", index_name, new_index_name)
+            #     data = data.rename({index_name: new_index_name})
 
             # unclear if this is fundamental
             # if tgt_coord['name'] in data.dims:
@@ -193,13 +192,14 @@ class CoordTransformer:
             return data
         if src_coord["stored_direction"] != tgt_coord["stored_direction"]:
             if self.gridtype == "Regular":
+                coord_name = tgt_coord["name"]
                 self.logger.info(
                     "Flipping coordinate %s from %s to %s",
-                    tgt_coord["name"],
+                    coord_name,
                     src_coord["stored_direction"],
                     tgt_coord["stored_direction"],
                 )
-                data = data.isel({tgt_coord["name"]: slice(None, None, -1)})
+                data = data.reindex({coord_name: data[coord_name][::-1]})
                 # add an attribute for regridder evalution
                 data[tgt_coord["name"]].attrs["flipped"] = 1
                 log_history(
@@ -313,6 +313,6 @@ def counter_reverse_coordinate(data):
 
     for coord in data.coords:
         if "flipped" in data.coords[coord].attrs:
-            data = data.isel({coord: slice(None, None, -1)})
+            data = data.reindex({coord: data[coord][::-1]})
             del data.coords[coord].attrs["flipped"]
     return data

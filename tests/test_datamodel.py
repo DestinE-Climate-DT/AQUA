@@ -56,7 +56,6 @@ class TestDataModel():
 
         assert "depth" in new.coords
         assert "nz1" not in new.coords
-        assert "idx_depth" in new.coords
 
     def test_basic_transform_height(self):
         """Test for height coordinate transformation."""

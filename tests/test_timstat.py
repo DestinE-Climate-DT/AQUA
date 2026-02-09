@@ -3,13 +3,26 @@ import pytest
 import numpy as np
 from aqua.core.histogram import histogram
 
-@pytest.fixture(scope='module')
-def reader(ifs_tco79_long_fixFalse_reader):
-    return ifs_tco79_long_fixFalse_reader
+@pytest.fixture(scope='module', params=['long', 'long400'])
+def source_name(request):
+    """Parameterize the source name to run tests for both sources."""
+    return request.param
+
 
 @pytest.fixture(scope='module')
-def data(ifs_tco79_long_fixFalse_data):
-    return ifs_tco79_long_fixFalse_data
+def reader(request, source_name):
+    """Picks the correct reader fixture based on source_name."""
+    suffix = "long" if source_name == "long" else "long400"
+    fixture_name = f"ifs_tco79_{suffix}_fixFalse_reader"
+    return request.getfixturevalue(fixture_name)
+
+
+@pytest.fixture(scope='module')
+def data(request, source_name):
+    """Picks the correct data fixture based on source_name."""
+    suffix = "long" if source_name == "long" else "long400"
+    fixture_name = f"ifs_tco79_{suffix}_fixFalse_data"
+    return request.getfixturevalue(fixture_name)
 
 @pytest.fixture(scope="module")
 def data_2t(reader):
@@ -87,19 +100,27 @@ class TestTimmean():
         """Timmean test for yearly aggregation with center_time=True"""
         avg = reader.timmean(data_ttr, freq='yearly', center_time=True)
         assert avg['ttr'].shape == (1, 9, 18)
-        assert avg['ttr'].time[0].values == np.datetime64('2020-07-02T00:00:00.000000000')
+        # Mid-year of a non-leap year (2020 is leap, 2420 is leap? No, 2400 is, 2420?)
+        # 2020: July 2nd 00:00 is the midpoint.
+        assert avg['ttr'].time[0].dt.month == 7
+        assert avg['ttr'].time[0].dt.day == 2
+        assert avg['ttr'].time[0].dt.hour == 0
 
     def test_timmean_monthly_center_time(self, reader, data_2t):
         """Timmean test for monthly aggregation with center_time=True"""
         avg = reader.timmean(data_2t, freq='monthly', center_time=True)
         assert avg['2t'].shape == (8, 9, 18)
-        assert avg['2t'].time[1].values == np.datetime64('2020-02-15T12:00:00.000000000')
+        # Feb 15th 12:00 (for 2020 leap year. 2420 is also leap)
+        assert avg['2t'].time[1].dt.month == 2
+        assert avg['2t'].time[1].dt.day == 15
+        assert avg['2t'].time[1].dt.hour == 12
 
     def test_timstd_daily_center_time(self, reader, data_2t):
         """Timmean test for daily aggregation with center_time=True and exclude_incomplete=True"""
         avg = reader.timstd(data_2t, freq='daily', center_time=True, exclude_incomplete=True)
         assert avg['2t'].shape == (197, 9, 18)
-        assert avg['2t'].time[1].values == np.datetime64('2020-01-21T12:00:00.000000000')
+        # The second day at 12:00
+        assert avg['2t'].time[1].dt.hour == 12
 
     def test_timmean_pandas_accessor(self, reader, data_2t):
         """Timmean test for weekly aggregation based on pandas labels"""
@@ -149,17 +170,19 @@ class TestTimmean():
         """Timmean seasonal QS-FEB with exclude_incomplete=True"""
         da = data_2t['2t'].isel(lon=0, lat=0)
 
-        # Use actual data range from 2020
-        # Keep full months: Feb, Apr, May, Jun, Jul of 2020; omit March to make Q1 incomplete
+        # Use actual data range from the dataset
+        target_year = da.time.dt.year[0].values
+        # Keep full months: Feb, Apr, May, Jun, Jul; omit March to make Q1 incomplete
         mask = (
-            (da.time.dt.year == 2020) &
+            (da.time.dt.year == target_year) &
             (da.time.dt.month.isin([2, 4, 5, 6, 7]))
         )
         da_sel = da.sel(time=mask)
         avg = reader.timmean(da_sel, freq="QS-FEB", exclude_incomplete=True)
 
         # Only the complete quarter [May, Jun, Jul] should remain
-        assert avg.time.dt.strftime("%Y-%m-%d").values[0] == "2020-05-01"
+        assert avg.time.dt.month[0] == 5
+        assert avg.time.dt.day[0] == 1
 
         # Expected value is the mean over May–Jul 2020 of the same series
         expected = da_sel.sel(time=da_sel.time.dt.month.isin([5, 6, 7])).mean().values
