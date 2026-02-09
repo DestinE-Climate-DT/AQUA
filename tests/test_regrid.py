@@ -210,7 +210,8 @@ class TestRegridder():
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert 0.32 <= ratio1 <= 0.36
-        assert 0.44 <= ratio2 <= 0.47
+        assert 0.50 <= ratio2 <= 0.54
+        #assert 0.44 <= ratio2 <= 0.47
 
     def test_levels_and_regrid(self):
         """
@@ -222,17 +223,23 @@ class TestRegridder():
 
         layers = [0, 2]
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.fldmean().values
-        assert val == pytest.approx(8.6758228e-08)
+        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.fldmean().values
-        assert val == pytest.approx(8.6758228e-08)
+        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.fldmean().values
-        assert val == pytest.approx(8.6758228e-08)
+        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
 
         # test reading specific levels for first vertical coordinate (nz1)
         data = reader.retrieve(level=[2.5, 2275])
