@@ -358,7 +358,7 @@ class Reader():
             # Check if fixed object has coordinates before accessing
             coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
             if not coords:
-                self.logger.warning("No coordinates found in weights item %s after applying %s", item, mode)
+                self.logger.debug("No coordinates found in weights item %s after applying %s", item, mode)
                 new_weights[item] = fixed  # Use original item name as fallback
             else:
                 new_weights[coords[0]] = fixed
