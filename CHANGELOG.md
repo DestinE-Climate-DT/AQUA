@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Smmregrid weights are corrected by fixer/datamodel (#2639)
+- `idx_` index is removed since smmregrid selection is now based on coordinate values (#2639)
 - Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
 - Datamodel identifies depth preferrably over height in ambigous cases (#2654, #2655)
 - Read with microsecond time resolution by default (#2638)
