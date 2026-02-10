@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=77.0.3"]
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools.build_meta" 
 
 # For setuptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 [project]
@@ -41,7 +41,7 @@ dependencies = [
     "dask[distributed]<=2026.1.2",
     "eccodes==2.41.0",
     "filelock<=3.20.3",
-    "gcsfs<=2026.1.0", # Google Cloud Storage File System: required by ARCO
+    "gcsfs<=2026.2.0", # Google Cloud Storage File System: required by ARCO
     "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-xarray<=2.0.0",
     "jinja2<=3.1.6",
