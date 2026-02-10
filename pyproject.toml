@@ -35,7 +35,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3<=1.42.39",
+    "boto3<=1.42.44",
     "cartopy>=0.24.1,<=0.25.0",
     "cfgrib<=0.9.15.1", #enable support for GRIB files
     "dask[distributed]<=2026.1.2",
@@ -63,7 +63,7 @@ dependencies = [
     "fastparquet<=2025.12.0", #enable support for parquet files
     #"pyfdb==0.1.2", #to be pinned when doing operational release
     "gsv-interface==2.13.1",
-    "zarr<=3.1.5"
+    "zarr<=3.1.5" 
 ]
 
 [project.optional-dependencies]
