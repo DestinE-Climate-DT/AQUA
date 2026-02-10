@@ -75,6 +75,7 @@ class Drop():
                  rebuild=False,
                  exclude_incomplete=False,
                  stat="mean",
+                 save_frequency='monthly',
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
                  engine = 'fdb',
@@ -121,6 +122,7 @@ class Drop():
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
             stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min'.
+            save_frequency (string, opt): Frequency to save the data. Default is 'monthly'.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
@@ -174,7 +176,11 @@ class Drop():
             self.tmpdir = tmpdir
         self.tmpdir = os.path.join(self.tmpdir, f'DROP_{generate_random_string(10)}')
 
-        # set up compacting method for concatenation
+        # set up saving frequency and compacting method for concatenation
+        accepted_frequencies = ['daily', 'monthly']
+        if save_frequency not in accepted_frequencies:
+            raise KeyError(f'Please specify a valid save_frequency: {accepted_frequencies}.')
+        self.save_frequency = save_frequency
         self.compact = compact
         if self.compact not in ['xarray', 'cdo', None]:
             raise KeyError('Please specify a valid compact method: xarray, cdo or None.')
@@ -235,13 +241,13 @@ class Drop():
     @staticmethod
     def _validate_date(startdate, enddate):
         """Validate date format for startdate and enddate"""
-        
+
         if startdate is not None:
             try:
                 pd.to_datetime(startdate)
             except (ValueError, TypeError):
                 raise ValueError('startdate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
-        
+
         if enddate is not None:
             try:
                 pd.to_datetime(enddate)
@@ -562,10 +568,24 @@ class Drop():
                 self.logger.info('Cleaning %s...', tmp_file)
                 os.remove(tmp_file)
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
-        """Create output filenames"""
+    def get_filename(self, var, year=None, month=None, day=None, tmp=False):
+        """
+        Create output filenames
 
-        filename = self.outbuilder.build_filename(var=var, year=year, month=month)
+        Args:
+            var (str): Variable name to include in the filename. Can be a wildcard.
+            year (int, optional): Year to include in the filename. Defaults to None.
+                                  Can be a wildcard.
+            month (int, optional): Month to include in the filename. Defaults to None.
+                                   Can be a wildcard.
+            day (int, optional): Day to include in the filename. Defaults to None.
+                                 Can be a wildcard.
+            tmp (bool, optional): If True, return the path in the temporary directory.
+                                  Defaults to False.
+        Returns:
+            str: The full path to the output file.
+        """
+        filename = self.outbuilder.build_filename(var=var, year=year, month=month, day=day)
 
         if tmp:
             filename = os.path.join(self.tmpdir, filename)
