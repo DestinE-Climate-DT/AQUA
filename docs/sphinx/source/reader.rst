@@ -111,6 +111,28 @@ If some information about the data is needed, it is possible to use the ``info()
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.
     If you're retrieving data from many sources, please instantiate a new ``Reader`` for each source.
 
+.. note::
+    The ``Reader`` class will try to convert the time coordinate to a Gregorian calendar if time is present,
+    keeping the time units to microsecond precision in order to keep the axis as ``datetime64[us]``.
+
+Reader and Intake parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sources can have additional parameters defined in the intake catalog.
+For example the same experiment could have multiple ensemble members.
+A parameter ``realization`` could be then defined in the catalog to distinguish between different ensemble members.
+
+To pass these additional parameters to the ``Reader``, you can use the ``**kwargs`` functionality.
+For example, to select a specific ensemble member, you can do:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(catalog='ci', model='CMCC', exp='historical', source='monthly-atm', realization=1)
+    data = reader.retrieve()
+
+See `Intake documentation <https://intake.readthedocs.io/en/stable/catalog.html#source-parameters>`_ for more details about Intake source parameters.
+
 Dask and streaming capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

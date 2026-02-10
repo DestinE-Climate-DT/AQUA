@@ -7,7 +7,7 @@ It handles multiple file formats and uses Dask for parallel processing of large 
 
 Main features:
 - Regridding to arbitrary resolutions
-- Temporal resampling with various statistics (mean, std, max, min)
+- Temporal resampling with various statistics (mean, std, max, min, sum)
 - Regional data extraction
 - Automatic catalog entry generation
 - Parallel processing with Dask
@@ -51,6 +51,8 @@ VAR_ENCODING = {
     '_FillValue': np.nan
 }
 
+AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum']
+
 
 class Drop():
     """
@@ -77,7 +79,7 @@ class Drop():
                  stat="mean",
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
-                 engine = 'fdb',
+                 engine='fdb',
                  **kwargs):
         """
         Initialize the DROP class
@@ -120,10 +122,11 @@ class Drop():
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
-            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min'.
+            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min' or 'sum'.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
+            engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -157,8 +160,8 @@ class Drop():
 
         # configure statistics
         self.stat = stat
-        if self.stat not in ['mean', 'std', 'max', 'min']:
-            raise KeyError('Please specify a valid statistic: mean, std, max or min.')
+        if self.stat not in AVAILABLE_STATS:
+            raise ValueError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
 
         # configure regional selection
         self._configure_region(region, drop)
@@ -308,7 +311,7 @@ class Drop():
         # Initialize the reader
         self.reader = Reader(model=self.model, exp=self.exp,
                              source=self.source,
-                             regrid=self.resolution,
+                             regrid=self.resolution if self.resolution != 'native' else None,
                              catalog=self.catalog,
                              loglevel=self.loglevel,
                              rebuild=self.rebuild,
@@ -630,7 +633,7 @@ class Drop():
             return
         
         # regrid
-        if self.resolution:
+        if self.resolution and self.resolution != 'native':
             temp_data = self.reader.regrid(temp_data)
             temp_data = self._remove_regridded(temp_data)
 
