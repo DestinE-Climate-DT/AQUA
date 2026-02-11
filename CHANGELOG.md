@@ -8,6 +8,8 @@ Unreleased in the current development version (target v1.0.0):
 
 Complete list:
 - Reader: ignore regridded flag if not usable (#2664)
+- Smmregrid weights are corrected by fixer/datamodel (#2639)
+- `idx_` index is removed since smmregrid selection is now based on coordinate values (#2639)
 - DROP: expose `compact` option in DROP CLI (#2659)
 - DROP: add `sum` statistic support in DROP (#2659)
 - DROP: fix for native DROP production (#2659)
