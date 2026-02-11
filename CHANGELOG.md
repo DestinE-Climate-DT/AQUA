@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Reader: ignore regridded flag if not usable (#2664)
 - Smmregrid weights are corrected by fixer/datamodel (#2639)
 - `idx_` index is removed since smmregrid selection is now based on coordinate values (#2639)
 - DROP: expose `compact` option in DROP CLI (#2659)
