@@ -21,6 +21,11 @@ grids:
       nz: '{{ grids }}/FESOM/pi_fesom_mask_nz.nc'
     cdo_extra:
     - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
+  test-pi-3d-coord-fix:
+    path:
+      nz1: '{{ grids }}/FESOM/pi_fesom_mask_nz1.nc'
+    cdo_extra:
+    - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
   # ICON
   test-healpix: 
     path: '{{ grids }}/ICON/icon_healpix0.nc'
