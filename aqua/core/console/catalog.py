@@ -167,11 +167,7 @@ class CatalogMixin:
             self.logger.info('Fetching remote catalog %s from github to %s', catalog, cdir)
             os.makedirs(cdir, exist_ok=True)
             
-            # Choose download method (for testing/comparison):
-            # Original (many API calls): self._fsspec_get_recursive(fs, source_dir, cdir)
-            # Optimized (half API calls): self._fsspec_get_optimized(fs, source_dir, cdir)
             # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
-            
             self._fsspec_get_single_call(fs, source_dir, cdir)
             self.logger.info('Download complete!')
             self._set_catalog(catalog)
