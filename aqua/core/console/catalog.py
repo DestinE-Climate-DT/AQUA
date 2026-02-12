@@ -274,11 +274,9 @@ class CatalogMixin:
         """
         api_calls = 0
         
-        # Get all file paths recursively in ONE API call
-        self.logger.debug("Calling fs.find() to get all files from %s", src_dir)
+        # Get all file paths recursively in one GitHub API call
         all_files = fs.find(src_dir, withdirs=False, detail=False)
         api_calls += 1
-        self.logger.debug("fs.find() returned %d files in 1 API call", len(all_files))
         
         if not all_files:
             self.logger.debug("No files found, completed with %d API call", api_calls)
@@ -292,16 +290,8 @@ class CatalogMixin:
             dest_paths.append(dest_path)
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         
-        # Try batch download first (most efficient - only 2 API calls total)
-        try:
-            self.logger.debug("Attempting batch fs.get() for %d files", len(all_files))
-            fs.get(all_files, dest_paths)
-            api_calls += 1
-            self.logger.info("Download completed with %d API calls (1 find + 1 batch get)", api_calls)
-        except (TypeError, NotImplementedError, AttributeError) as e:
-            # Fallback to individual downloads if batch not supported
-            self.logger.debug("Batch download not supported (%s), downloading individually", type(e).__name__)
-            for src_path, dest_path in zip(all_files, dest_paths):
-                fs.get(src_path, dest_path)
-                api_calls += 1
-            self.logger.info("Download completed with %d API calls (1 find + %d individual gets)", api_calls, len(all_files))
+        # Batch Download
+        fs.get(all_files, dest_paths)
+        api_calls += 1
+        self.logger.info("Download completed with %d API calls (1 find + 1 batch get)", api_calls)
+       
