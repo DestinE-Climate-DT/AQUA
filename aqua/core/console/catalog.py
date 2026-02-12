@@ -73,8 +73,7 @@ class CatalogMixin:
             if isinstance(e, SystemExit):
                 raise
 
-            self.logger.error('Current catalog %s is not compatible with AQUA, removing it for safety!', args.catalog)
-            self.logger.error(e)
+            self.logger.error('Current catalog %s is not compatible with AQUA, removing it for safety! Error: %s', args.catalog, e)
             sys.exit(1)
 
     def _add_catalog_editable(self, catalog, editable):
