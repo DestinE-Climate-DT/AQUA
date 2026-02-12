@@ -5,8 +5,9 @@ import dask.array as da
 from aqua.core.util import convert_data_units
 from aqua.core.logger import log_configure
 
-def histogram(data: xr.DataArray, bins = 10, range = None, units = None,
-              weighted = True, loglevel='WARNING', dask=True, check=False, density=False):
+
+def histogram(data: xr.DataArray, bins: int = 10, range: tuple = None, units: str = None,
+              weighted: bool = True, loglevel: str = 'WARNING', dask: bool = True, check: bool = False, density: bool = False):
     """
     Function to calculate a histogram of a DataArray.
 
