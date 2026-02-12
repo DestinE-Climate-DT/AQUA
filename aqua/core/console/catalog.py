@@ -166,7 +166,13 @@ class CatalogMixin:
             source_dir = f"{CATPATH}/{catalog}"
             self.logger.info('Fetching remote catalog %s from github to %s', catalog, cdir)
             os.makedirs(cdir, exist_ok=True)
-            self._fsspec_get_recursive(fs, source_dir, cdir)
+            
+            # Choose download method (for testing/comparison):
+            # Original (many API calls): self._fsspec_get_recursive(fs, source_dir, cdir)
+            # Optimized (half API calls): self._fsspec_get_optimized(fs, source_dir, cdir)
+            # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
+            
+            self._fsspec_get_single_call(fs, source_dir, cdir)
             self.logger.info('Download complete!')
             self._set_catalog(catalog)
         else:
@@ -256,11 +262,11 @@ class CatalogMixin:
                 cfg['catalog'].remove(catalog)
             self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
             dump_yaml(self.configfile, cfg)
-
-    @staticmethod
-    def _fsspec_get_recursive(fs, src_dir, dest_dir):
+    
+    def _fsspec_get_single_call(self, fs, src_dir, dest_dir):
         """
-        Recursive function to download from a fsspec object
+        Optimized function to download entire directory with minimal API calls
+        Uses fs.find() to get all files in ONE call, then batch downloads them
 
         Args:
             fs: fsspec filesystem object, as github instance
@@ -270,18 +276,36 @@ class CatalogMixin:
         Returns:
             Remotely copy data from source to dest directory
         """
-        data = fs.ls(src_dir)
-        for item in data:
-            relative_path = os.path.relpath(item, src_dir)
+        api_calls = 0
+        
+        # Get all file paths recursively in ONE API call
+        self.logger.debug("Calling fs.find() to get all files from %s", src_dir)
+        all_files = fs.find(src_dir, withdirs=False, detail=False)
+        api_calls += 1
+        self.logger.debug("fs.find() returned %d files in 1 API call", len(all_files))
+        
+        if not all_files:
+            self.logger.debug("No files found, completed with %d API call", api_calls)
+            return
+        
+        # Prepare destination paths and create directory structure
+        dest_paths = []
+        for src_path in all_files:
+            relative_path = os.path.relpath(src_path, src_dir)
             dest_path = os.path.join(dest_dir, relative_path)
-
-            if fs.isdir(item):
-                # Create the directory in the destination
-                os.makedirs(dest_path, exist_ok=True)
-                # Recursively copy the contents of the directory
-                CatalogMixin._fsspec_get_recursive(fs, item, dest_path)
-            else:
-                # Ensure the directory exists before copying the file
-                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                # Copy the file
-                fs.get(item, dest_path)
+            dest_paths.append(dest_path)
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        
+        # Try batch download first (most efficient - only 2 API calls total)
+        try:
+            self.logger.debug("Attempting batch fs.get() for %d files", len(all_files))
+            fs.get(all_files, dest_paths)
+            api_calls += 1
+            self.logger.info("Download completed with %d API calls (1 find + 1 batch get)", api_calls)
+        except (TypeError, NotImplementedError, AttributeError) as e:
+            # Fallback to individual downloads if batch not supported
+            self.logger.debug("Batch download not supported (%s), downloading individually", type(e).__name__)
+            for src_path, dest_path in zip(all_files, dest_paths):
+                fs.get(src_path, dest_path)
+                api_calls += 1
+            self.logger.info("Download completed with %d API calls (1 find + %d individual gets)", api_calls, len(all_files))
