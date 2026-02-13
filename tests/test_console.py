@@ -653,7 +653,7 @@ class TestAquaConsoleShared():
     def test_update_nonexistent_catalog(self, shared_aqua_install, run_aqua):
         """Test updating a catalog that doesn't exist"""
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(['update', 'non_existent_catalog'])
+            run_aqua(['update', '-c', 'non_existent_catalog'])
         assert excinfo.value.code == 1
 
 
