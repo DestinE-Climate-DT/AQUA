@@ -86,9 +86,10 @@ def plot_single_map(data: xr.DataArray,
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
 
-    if nside is not None:
+    if nside is not None and nside > 0:
+        logger.debug(f"Data has {npix} cells, nside={nside}")
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
-        data = healpix_resample(data)
+        data = healpix_resample(data, loglevel=loglevel)
 
     # We load in memory the data, to speed up the plotting, Dask is slow with matplotlib
     logger.debug("Loading data in memory")
@@ -283,9 +284,10 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
 
-    if nside is not None:
+    if nside is not None and nside > 0:
+        logger.debug(f"Data has {npix} cells, nside={nside}")
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
-        data = healpix_resample(data)
+        data = healpix_resample(data, loglevel=loglevel)
         logger.debug("resampling HEALPix data")
 
     # Check if the data is in HEALPix format

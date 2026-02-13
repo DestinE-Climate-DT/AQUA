@@ -84,6 +84,20 @@ class TestMaps:
         fig.savefig(tmp_path / 'test_plot_single_map.png')
         assert os.path.exists(tmp_path / 'test_plot_single_map.png')
 
+    def test_plot_single_map_hpx(self, tmp_path, data_era5):
+        """
+        Test the plot_single_map function with HPX data
+        """
+        data = data_era5['2t'].isel(time=0)
+        fig, ax = plot_single_map(data=data,
+                                  return_fig=True,
+                                  loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_single_map_hpx.png')
+        assert os.path.exists(tmp_path / 'test_plot_single_map_hpx.png')
+
     def test_plot_single_map_diff(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """
         Test the plot_single_map_diff function
@@ -117,6 +131,22 @@ class TestMaps:
 
         fig.savefig(tmp_path / 'test_plot_single_map_diff.png')
         assert os.path.exists(tmp_path / 'test_plot_single_map_diff.png')
+
+    def test_plot_single_map_diff_hpx(self, tmp_path, data_era5):
+        """
+        Test the plot_single_map_diff function with HPX data
+        """
+        data = data_era5['2t'].isel(time=0)
+        data_ref = data_era5['2t'].isel(time=1)
+        fig, ax = plot_single_map_diff(data=data,
+                                       data_ref=data_ref,
+                                       return_fig=True,
+                                       loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_single_map_diff_hpx.png')
+        assert os.path.exists(tmp_path / 'test_plot_single_map_diff_hpx.png')
 
     def test_plot_single_map_no_diff(self, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """

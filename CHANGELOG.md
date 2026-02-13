@@ -8,6 +8,7 @@ Unreleased in the current development version (target v1.0.0):
 
 Complete list:
 - Add cleanup on failure for console `aqua add` catalog addition (#2649)
+- `plot_single_map()` better Healpix handling (#2671)
 - Reader: ignore regridded flag if not usable (#2664)
 - Smmregrid weights are corrected by fixer/datamodel (#2639)
 - `idx_` index is removed since smmregrid selection is now based on coordinate values (#2639)
