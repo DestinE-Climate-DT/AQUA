@@ -619,7 +619,7 @@ class Regridder():
             for vertical in shared_vars:
                 if not self.smmregridder.get(vertical):
                         self.logger.error("Regridder for vertical coordinate %s not found.", vertical)
-                        self.logger.error("Cannot regrid variable %s", data.name)
+                        self.logger.error("Cannot regrid variables %s", shared_vars[vertical])
                         continue
                 else:
                     existing_vars = [v for v in shared_vars[vertical] if v in data]
