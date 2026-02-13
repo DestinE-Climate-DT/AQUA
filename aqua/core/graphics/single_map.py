@@ -86,9 +86,10 @@ def plot_single_map(data: xr.DataArray,
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
 
-    if nside is not None:
+    if nside is not None and nside > 0:
+        logger.debug(f"Data has {npix} cells, nside={nside}")
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
-        data = healpix_resample(data)
+        data = healpix_resample(data, loglevel=loglevel)
 
     # We load in memory the data, to speed up the plotting, Dask is slow with matplotlib
     logger.debug("Loading data in memory")
@@ -177,10 +178,17 @@ def plot_single_map(data: xr.DataArray,
                             lat_name=lat_name, proj=proj, loglevel=loglevel)
     else:
         if gridlines:
-            gl = ax.gridlines(draw_labels=True, color='none')  # invisible lines
-            gl.xlabels_top = False
-            gl.ylabels_right = False
-            draw_manual_gridlines(ax=ax, lon_interval=30, lat_interval=30, zorder=50)
+            if isinstance(proj, ccrs.Robinson):
+                # Standard behavior for global projs (e.g. sshVariability)
+                gl = ax.gridlines(draw_labels=True, color='none')
+                gl.top_labels = False
+                gl.right_labels = False
+            else:
+                # Customized behavior for polar/other projs (e.g. SeaIce)
+                gl = ax.gridlines(draw_labels="x", color='none') # draw only lon (x) labels, no lat labels
+                gl.rotate_labels = False
+                gl.xlabel_style = {'size': 8}
+            draw_manual_gridlines(ax=ax, lon_interval=30, lat_interval=10, zorder=50)
 
     if cbar:
         # Adjust the location of the subplots on the page to make room for the colorbar
@@ -231,6 +239,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          cyclic_lon: bool = True, return_fig: bool = False,
                          fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                          title: Optional[str] = None, title_size: Optional[int] = 12,
+                         gridlines: bool = False,
                          loglevel: str = 'WARNING', **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
@@ -257,6 +266,7 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         ax (plt.Axes, optional):        Axes to plot on. By default a new axes is created.
         title (str, optional):          Title of the figure. Defaults to None.
         title_size (int, optional):     Title size. Defaults to 12.
+        gridlines (bool, optional):     If True, add gridlines. Defaults to False.
         loglevel (str, optional):       Log level. Defaults to 'WARNING'.
         **kwargs:                       Keyword arguments for plot_single_map.
                                         Check the docstring of plot_single_map.
@@ -274,9 +284,10 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
 
-    if nside is not None:
+    if nside is not None and nside > 0:
+        logger.debug(f"Data has {npix} cells, nside={nside}")
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
-        data = healpix_resample(data)
+        data = healpix_resample(data, loglevel=loglevel)
         logger.debug("resampling HEALPix data")
 
     # Check if the data is in HEALPix format
@@ -304,7 +315,8 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                                   fig=fig, ax=ax,
                                   sym=sym, vmin=vmin_fill, vmax=vmax_fill, norm=norm,
                                   add_land=add_land,
-                                  loglevel=loglevel, return_fig=True, **kwargs)
+                                  loglevel=loglevel, return_fig=True,
+                                  gridlines=gridlines, **kwargs)
 
     logger.debug("Plotting the map")
     data = data.load(keep_attrs=True)

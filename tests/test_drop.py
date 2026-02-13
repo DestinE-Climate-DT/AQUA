@@ -1,11 +1,13 @@
 import os
+import re
 import shutil
 import pytest
 import xarray as xr
 import pandas as pd
 from aqua import Drop, Reader
 from aqua.core.drop.output_path_builder import OutputPathBuilder
-from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder   
+from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
+from aqua.core.drop.drop import AVAILABLE_STATS
 from conftest import LOGLEVEL
 
 DROP_PATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
@@ -258,3 +260,11 @@ class TestDROP:
 
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_unknown_statistic(self, drop_arguments, tmp_path):
+        """Test DROP with an unknown statistic."""
+        error = f'Please specify a valid statistic: {AVAILABLE_STATS}.'
+        with pytest.raises(ValueError, match=re.escape(error)):
+            Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
+                 resolution='r100', frequency='monthly', stat='unknown_stat',
+                 loglevel=LOGLEVEL)

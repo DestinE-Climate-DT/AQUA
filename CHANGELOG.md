@@ -10,6 +10,16 @@ Main changes:
 
 Complete list:
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
+- Console: Single API call for `aqua add` (#2675)
+- `plot_single_map()` better Healpix handling (#2671)
+- Reader: ignore regridded flag if not usable (#2664)
+- Smmregrid weights are corrected by fixer/datamodel (#2639)
+- `idx_` index is removed since smmregrid selection is now based on coordinate values (#2639)
+- DROP: expose `compact` option in DROP CLI (#2659)
+- DROP: add `sum` statistic support in DROP (#2659)
+- DROP: fix for native DROP production (#2659)
+- Added support for non gregorian calendars (#2631)
+- Improve gridlines in maps for different projections (#2660)
 - Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
 - Datamodel identifies depth preferrably over height in ambigous cases (#2654, #2655)
 - Read with microsecond time resolution by default (#2638)

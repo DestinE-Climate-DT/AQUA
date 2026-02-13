@@ -13,7 +13,9 @@ from metpy.units import units
 
 from smmregrid import GridInspector
 
-from aqua.core.util import load_multi_yaml, files_exist, to_list, find_vert_coord
+from aqua.core.util import load_multi_yaml, files_exist, to_list
+from aqua.core.util import find_vert_coord
+from aqua.core.util import fix_calendar, DEFAULT_TIME_UNIT
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure, log_history
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -36,6 +38,7 @@ xr.set_options(keep_attrs=True)
 
 # set default data model
 DATA_MODEL_DEFAULT = "aqua"
+
 
 class Reader():
     """General reader for climate data."""
@@ -245,7 +248,7 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
-            
+    
         self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
@@ -292,7 +295,7 @@ class Reader():
 
             # export src space coord and vertical coord
             self.src_space_coord = self.regridder.src_horizontal_dims
-            self.vert_coord = self.regridder.src_vertical_dim
+            self.vert_coord = self.regridder.src_mask_dim
 
             # TODO: it is likely there are other cases where we need to disable regrid.
             if not self.regridder.cdo:
@@ -312,11 +315,16 @@ class Reader():
         # configure regridder and generate weights
         if regrid:
             # generate weights and init the SMMregridder
-            self.regridder.weights(
+            weights = self.regridder.weights(
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
+            if self.fix:
+                weights = self._fix_datamodel_weights(weights, mode="fixer")
+            if self.datamodel:
+                weights = self._fix_datamodel_weights(weights, mode="datamodel")
+            self.regridder.initialize(weights)
 
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
@@ -332,6 +340,32 @@ class Reader():
 
         # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
+
+    def _fix_datamodel_weights(self, weights, mode="datamodel"):
+        """
+        Mask coordinate of the weights need to be adjusted according to the data model or fix applied.
+        Arguments:
+                weights (dict): The weights dictionary from smmregrid
+                mode (str): "datamodel" or "fixer" to apply the respective data model or fixer datamodel
+        """
+        new_weights = {}
+        for item, value in weights.items():
+            self.logger.debug("Applying %s to weights item %s", mode, item)
+            if mode=="datamodel":
+                fixed = self.datamodel.apply(value, flip_coords=False)
+            elif mode=="fixer":
+                fixed = self.fixer.fixerdatamodel.apply(value)
+            else:
+                raise ValueError(f"Mode {mode} not recognized for weights fixing")
+            
+            # Check if fixed object has coordinates before accessing
+            coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
+            if not coords:
+                self.logger.debug("No coordinates found in weights item %s after applying %s", item, mode)
+                new_weights[item] = fixed  # Use original item name as fallback
+            else:
+                new_weights[coords[0]] = fixed
+        return new_weights
 
     def retrieve(self, var=None, level=None,
                  startdate=None, enddate=None,
@@ -387,7 +421,7 @@ class Reader():
                 loadvar = None
 
         ffdb = False
-        
+
         # If this is an ESM-intake catalog use first dictionary value,
         #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
         #    data = self.reader_esm(self.esmcat, loadvar)
@@ -398,10 +432,6 @@ class Reader():
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
-        
-        # Convert time to datetime64 microsecond resolution by default
-        if 'time' in data.coords and np.issubdtype(data.time.dtype, np.datetime64) and not 'time_coder' in self.esmcat.metadata:
-            data['time'] = data.time.astype("datetime64[us]")
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -409,7 +439,7 @@ class Reader():
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
 
         if not ffdb:  # FDB sources already have the index, already selected levels
-            data = self._add_index(data)  # add helper index
+            #data = self._add_index(data)  # add helper index
             data = self._select_level(data, level=level)  # select levels (optional)
 
         # Apply variable fixes (units, names, attributes) and data model fixes
@@ -422,6 +452,17 @@ class Reader():
         if self.datamodel:
             self.logger.debug("Applying base data model: %s", self.datamodel_name)
             data = self.datamodel.apply(data)
+
+        # Time threatment: we want to ensure that time is always in Gregorian calendar
+        # and to change the default numpy datetime64 resolution to microseconds
+        if 'time' in data.coords:
+
+            # TODO: Check, the commented code is probably not needed
+            # Convert time to datetime64 microsecond resolution by default
+            # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
+            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
+            # Fix the calendar to Gregorian if needed
+            data = fix_calendar(data, loglevel=self.loglevel)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -456,24 +497,24 @@ class Reader():
 
         return data
 
-    def _add_index(self, data):
+    # def _add_index(self, data):
 
-        """
-        Add a helper idx_{dim3d} coordinate to the data to be used for level selection
+    #     """
+    #     Add a helper idx_{dim3d} coordinate to the data to be used for level selection
 
-        Arguments:
-            data (xr.Dataset):  the input xarray.Dataset
+    #     Arguments:
+    #         data (xr.Dataset):  the input xarray.Dataset
 
-        Returns:
-            A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
-        """
+    #     Returns:
+    #         A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
+    #     """
 
-        if self.vert_coord:
-            for dim in to_list(self.vert_coord):
-                if dim in data.coords:
-                    idx = list(range(0, len(data.coords[dim])))
-                    data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
-        return data
+    #     if self.vert_coord:
+    #         for dim in to_list(self.vert_coord):
+    #             if dim in data.coords:
+    #                 idx = list(range(0, len(data.coords[dim])))
+    #                 data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
+    #     return data
 
     def _select_level(self, data, level=None):
         """
@@ -524,7 +565,7 @@ class Reader():
         """
         # We're keeping the fldstat call separate, however at the current stage there is
         # no difference in behavior between the src and tgt fldstat calls.
-        if self._check_if_regridded(data):
+        if self._check_if_regridded(data) and self.tgt_fldstat:
             return self.tgt_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
         return self.src_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
 
@@ -538,7 +579,7 @@ class Reader():
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
-        
+
         data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
@@ -546,7 +587,7 @@ class Reader():
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"AQUA_regridded": 1})
         return out
-    
+
     # def trend(self, data, dim='time', degree=1, skipna=False):
     #     """
     #     Estimate the trend of an xarray object using polynomial fitting.
@@ -1046,13 +1087,13 @@ class Reader():
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
     
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to microseconds ('us')
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if hasattr(esmcat, "xarray_kwargs") and not "use_cftime" in esmcat.xarray_kwargs:
             if 'time_coder' in esmcat.metadata:
                 self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
                 coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
             else:
-                coder = xr.coders.CFDatetimeCoder(time_unit='us')
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
             esmcat.xarray_kwargs.update({'decode_times': coder})
 
@@ -1179,7 +1220,7 @@ class Reader():
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        if self._check_if_regridded(data):
+        if self._check_if_regridded(data) and self.tgt_fldstat:
             data = self.tgt_fldstat.fldstat(
                 data, stat=stat,
                 lon_limits=lon_limits, lat_limits=lat_limits,

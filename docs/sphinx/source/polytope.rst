@@ -46,6 +46,7 @@ Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge 
 ``machine='mn5'`` in the catalog source entry in the corresponding `main.yaml` file, under `metadata:`.
 
 .. code-block:: yaml
+
     metadata:
       expid: "0001"
       forcing: historical
