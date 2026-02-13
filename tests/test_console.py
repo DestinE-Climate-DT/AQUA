@@ -5,9 +5,11 @@ import shutil
 import sys
 import subprocess
 import pytest
+import tempfile
 from aqua.core.console.main import AquaConsole
+from aqua.core.console import catalog
 from aqua.core.console.util import query_yes_no
-from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.util import dump_yaml, load_yaml, to_list
 from aqua import __version__ as version
 from aqua import __path__ as pypath
 
@@ -605,6 +607,54 @@ class TestAquaConsoleShared():
 
         out, _ = capfd.readouterr()
         assert '.aqua/catalogs/ci ..' in out
+    
+    @pytest.mark.parametrize("is_editable", [False, True])
+    def test_add_catalog_cleanup_on_failure(self, shared_aqua_install, run_aqua, monkeypatch, is_editable):
+        """Test that failed catalog additions are properly cleaned up"""
+        mydir = shared_aqua_install
+        catalog_name = f'cleanup_test_{"editable" if is_editable else "standard"}'
+        catalog_path = os.path.join(mydir, '.aqua/catalogs', catalog_name)
+        
+        if is_editable:
+            # For editable, mock a write failure
+            with tempfile.TemporaryDirectory() as src_dir:
+                # Create minimal valid catalog
+                with open(os.path.join(src_dir, 'catalog.yaml'), 'w') as f:
+                    f.write("sources: {}")
+                
+                # define a mock failing dump_yaml function to fail during _set_catalog
+                def failing_dump_yaml(filepath, data):
+                    if 'config-aqua.yaml' in filepath:
+                        raise PermissionError("Simulated write failure")
+                    return dump_yaml(filepath, data)
+                
+                # replace the dump_yaml function with the mock failing function
+                monkeypatch.setattr(catalog, 'dump_yaml', failing_dump_yaml)
+                
+                with pytest.raises(SystemExit) as excinfo:
+                    run_aqua(['-v', 'add', catalog_name, '-e', src_dir])
+        else:
+            # For standard, adding a non-existent catalog must fail
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(['-v', 'add', catalog_name])
+
+        # both must fail
+        assert excinfo.value.code == 1
+        
+        # Verify cleanup
+        assert not os.path.exists(catalog_path), "Catalog path should be cleaned up"
+        if is_editable:
+            assert not os.path.islink(catalog_path), "Symlink should be removed"
+
+        # Verify config
+        config = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert catalog_name not in to_list(config.get('catalog'))
+
+    def test_update_nonexistent_catalog(self, shared_aqua_install, run_aqua):
+        """Test updating a catalog that doesn't exist"""
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['update', '-c', 'non_existent_catalog'])
+        assert excinfo.value.code == 1
 
     # def test_console_without_github_api(self, shared_aqua_install, run_aqua, capfd):
     #     """Test catalog operations without GITHUB API credentials (token/user)"""
