@@ -603,11 +603,27 @@ class Regridder():
         # get which variables share the same dimensions
         shared_vars = self._group_shared_dims(data)
 
-        # compact regridding on all dataset with map
         if isinstance(data, xr.Dataset):
-            data = data.map(self._apply_regrid, shared_vars=shared_vars)
+            datar = []
+            for vertical in shared_vars:
+                if not self.smmregridder.get(vertical):
+                        self.logger.error("Regridder for vertical coordinate %s not found.", vertical)
+                        self.logger.error("Cannot regrid variable %s", data.name)
+                        continue
+                else:
+                    existing_vars = [v for v in shared_vars[vertical] if v in data]
+                    if existing_vars:
+                        if not self.smmregridder.get(vertical):
+                            self.logger.error("Regridder for vertical coordinate %s not found.", vertical)
+                            self.logger.error("Cannot regrid variable %s", data.name)
+                            # TODO: if smmregridder is not found, we can call the weights method to generate on the fly
+                        else:
+                            datar.append(self.smmregridder[vertical].regrid(data[existing_vars]))
+            data = xr.merge(datar)
         elif isinstance(data, xr.DataArray):
-            data = self._apply_regrid(data, shared_vars)
+            data = self._apply_regrid(data, shared_vars)    
+        else:
+            raise ValueError("Data must be an xarray Dataset or DataArray.")
 
         return data
 
