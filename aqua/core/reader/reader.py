@@ -580,7 +580,7 @@ class Reader():
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
 
-        data = counter_reverse_coordinate(data)
+        # data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
 
