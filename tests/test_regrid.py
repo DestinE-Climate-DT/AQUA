@@ -1,5 +1,8 @@
 """Test regridding from Reader"""
 import pytest
+import xarray as xr
+import numpy as np
+from unittest.mock import MagicMock
 from conftest import APPROX_REL, LOGLEVEL
 from aqua import Reader, Regridder
 from aqua.core.regridder.griddicthandler import GridDictHandler
@@ -246,6 +249,68 @@ class TestRegridder():
         val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
         #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
+
+    def test_regridder_missing_vertical_dataset(self):
+        """Test regridding a Dataset when the regridder for a vertical coordinate is missing (Lines 621-622)."""
+        # Create a simple dataset
+        ds = xr.Dataset(
+            {"temp": (("lat", "lon"), np.random.rand(10, 20))},
+            coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
+        )
+        
+        # Initialize Regridder for 'r36x18' (a CDO grid name)
+        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        # Ensure smmregridder exists even if init returned early
+        if not hasattr(regridder, 'smmregridder'):
+            regridder.smmregridder = {}
+        
+        # Mock the logger
+        regridder.logger = MagicMock()
+        
+        # Mock shared_vars to include a vertical coordinate that doesn't exist in smmregridder
+        shared_vars = {"missing_vertical": ["temp"]}
+        
+        # Call _apply_regrid directly to trigger lines 621-622
+        regridder._apply_regrid(ds, shared_vars)
+        
+        # Verify logger.error was called
+        regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
+        regridder.logger.error.assert_any_call("Cannot regrid variables %s", ["temp"])
+
+    def test_regridder_missing_vertical_dataarray(self):
+        """Test regridding a DataArray when the regridder for a vertical coordinate is missing (Lines 633-634)."""
+        # Create a simple dataarray
+        da = xr.DataArray(
+            np.random.rand(10, 20),
+            coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
+            dims=("lat", "lon"),
+            name="temp"
+        )
+        
+        # Initialize Regridder
+        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        # Ensure smmregridder exists even if init returned early
+        if not hasattr(regridder, 'smmregridder'):
+            regridder.smmregridder = {}
+        
+        # Mock the logger
+        regridder.logger = MagicMock()
+        
+        # Mock shared_vars
+        shared_vars = {"missing_vertical": ["temp"]}
+        
+        # Call _apply_regrid directly to trigger lines 633-634
+        regridder._apply_regrid(da, shared_vars)
+        
+        # Verify logger.error was called
+        regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
+
+    def test_regridder_invalid_data_type(self):
+        """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""
+        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        
+        with pytest.raises(ValueError, match="Data must be an xarray Dataset or DataArray."):
+            regridder._apply_regrid("not a dataset", {})
 
 @pytest.mark.aqua
 def test_non_latlon_interpolation():
