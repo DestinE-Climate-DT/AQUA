@@ -160,21 +160,12 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
       
-      - name: Create environment file for PyPI mode
-        if: ${{ inputs.install-mode == 'pypi' }}
-        run: |
-          # Copy environment.yml and remove "- pip:" section
-          sed '/^  - pip:$/,/^    - -e/d' AQUA/environment.yml > /tmp/aqua-pypi-env.yml
-          
-          echo "Generated environment file:"
-          cat /tmp/aqua-pypi-env.yml
-      
       - name: Set up Micromamba (PyPI mode)
         if: ${{ inputs.install-mode == 'pypi' }}
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
-          environment-file: /tmp/aqua-pypi-env.yml
+          environment-file: AQUA/pypi-environment.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
