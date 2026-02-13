@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- removed `counter_reverse_coordinate()` function, no need for data flipping anymore while regridding (#2679)
 - Add cleanup on failure for console `aqua add` catalog addition (#2649)
 - Console: Single API call for `aqua add` (#2675)
 - `plot_single_map()` better Healpix handling (#2671)
