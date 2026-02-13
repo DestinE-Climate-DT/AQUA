@@ -165,7 +165,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v2
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/pypi-environment.yml
+          environment-file: AQUA/environment-pypi.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
