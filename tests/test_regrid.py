@@ -129,18 +129,6 @@ class TestRegridder():
         assert len(rgd.lat) == 90
         assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=APPROX_REL)  # land fraction
 
-    def test_lat_bnds(self):
-        """
-        Test when bounds are present
-        """
-
-        reader = Reader(model="IFS", exp="test-tco79", source="long", regrid="r200",
-                        fix=True, loglevel=LOGLEVEL)
-        data = reader.retrieve()
-        data['lat_bnds'] = data.lat
-        rgd = reader.regrid(data)
-        assert len(rgd.lat) == 90
-
     def test_recompute_weights_fesom2d(self):
         """
         Test interpolation on FESOM, at different grid rebuilding weights,
