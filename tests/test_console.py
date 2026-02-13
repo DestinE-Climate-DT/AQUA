@@ -21,6 +21,7 @@ pytestmark = [
     pytest.mark.console
 ]
 
+
 def set_args(args):
     """Helper function to simulate command line arguments"""
     sys.argv = ['aqua'] + args
@@ -95,17 +96,17 @@ def run_aqua():
 @pytest.fixture(scope="class")
 def shared_aqua_install(tmpdir, set_home, run_aqua, run_aqua_console_with_input):
     """Shared AQUA installation for multiple tests in a class
-    
+
     This fixture installs AQUA once and provides cleanup after all tests in the class.
     """
     mydir = str(tmpdir)
     set_home(mydir)
-    
+
     # Install AQUA once for all tests in class
     run_aqua(['install', MACHINE])
-    
+
     yield mydir
-    
+
     # Cleanup after all tests in class
     if os.path.exists(os.path.join(mydir, '.aqua')):
         run_aqua_console_with_input(['uninstall'], 'yes')
@@ -310,7 +311,6 @@ class TestAquaConsole():
 
     #     # remove aqua
     #     run_aqua_console_with_input(['uninstall'], 'yes')
-
 
     def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,
@@ -654,6 +654,47 @@ class TestAquaConsoleShared():
         """Test updating a catalog that doesn't exist"""
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(['update', '-c', 'non_existent_catalog'])
+        assert excinfo.value.code == 1
+
+    # def test_console_without_github_api(self, shared_aqua_install, run_aqua, capfd):
+    #     """Test catalog operations without GITHUB API credentials (token/user)"""
+
+    #     # Save current GitHub credentials if they exist
+    #     saved_token = os.environ.get('GITHUB_TOKEN')
+    #     saved_user = os.environ.get('GITHUB_USER')
+    #     saved_actions = os.environ.get('GITHUB_ACTIONS')
+
+    #     try:
+    #         # Remove GitHub credentials
+    #         if 'GITHUB_TOKEN' in os.environ:
+    #             del os.environ['GITHUB_TOKEN']
+    #         if 'GITHUB_USER' in os.environ:
+    #             del os.environ['GITHUB_USER']
+    #         if 'GITHUB_ACTIONS' in os.environ:
+    #             del os.environ['GITHUB_ACTIONS']
+
+    #         # Try to list available catalogs without authentication
+    #         run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
+    #         out, _ = capfd.readouterr()
+
+    #         # Should work but with unauthenticated access warning
+    #         assert 'climatedt-phase1' in out or 'lumi-phase1' in out or 'ci' in out
+
+    #     finally:
+    #         # Restore GitHub credentials
+    #         if saved_token is not None:
+    #             os.environ['GITHUB_TOKEN'] = saved_token
+    #         if saved_user is not None:
+    #             os.environ['GITHUB_USER'] = saved_user
+    #         if saved_actions is not None:
+    #             os.environ['GITHUB_ACTIONS'] = saved_actions
+
+    def test_console_nonexistent_catalog_from_existing_repo(self, shared_aqua_install, run_aqua):
+        """Test adding a non-existing catalog from an existing GitHub repository"""
+
+        # Try to add a catalog that doesn't exist in the repository
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['add', 'nonexistent-catalog-test-xyz', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
         assert excinfo.value.code == 1
 
 
