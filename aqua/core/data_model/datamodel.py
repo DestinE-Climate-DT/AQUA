@@ -11,20 +11,20 @@ from .coord_utils import get_data_model
 class DataModel:
     """
     Manage base data model transformations.
-    
+
     Provides a clean interface to apply standard coordinate transformations
     based on AQUA data model specifications. Works independently from fixes files.
-    
+
     This class handles:
     - Coordinate identification (via CoordIdentifier)
     - Standard coordinate transformations (rename, units, direction)
     - Dimension alignment
     - Attribute standardization
-    
+
     Args:
         name (str): Data model name (e.g., "aqua"). Default is "aqua". Other can be added.
         loglevel (str): Log level for logging. Default is 'WARNING'.
-        
+
     Example:
         >>> datamodel = DataModel(name="aqua", loglevel="DEBUG")
         >>> data = datamodel.apply(data)
@@ -33,7 +33,7 @@ class DataModel:
     def __init__(self, name: str = "aqua", loglevel: str = 'WARNING'):
         """
         Initialize DataModel.
-        
+
         Args:
             name (str): Data model name
             loglevel (str): Log level
@@ -45,15 +45,15 @@ class DataModel:
         # Load data model config (cached)
         self.logger.debug("Initializing DataModel: %s", self.name)
         self.config = get_data_model(self.name)
-    
+
     def apply(self, data: xr.Dataset, flip_coords=True) -> xr.Dataset:
         """
         Apply base data model transformations to dataset.
-        
+
         Args:
             data (xr.Dataset): Input dataset
             flip_coords (bool): Whether to flip coordinate directions as per data model.
-        
+
         Returns:
             xr.Dataset: Transformed dataset with standardized coordinates
         """
@@ -61,15 +61,15 @@ class DataModel:
         return CoordTransformer(data, loglevel=self.loglevel).transform_coords(
             name=self.name, flip_coords=flip_coords
         )
-    
+
     def get_config(self) -> dict:
         """
         Get the data model configuration.
-        
+
         Returns:
             dict: Data model configuration dictionary
         """
         return self.config
-    
+
     def __repr__(self):
         return f"DataModel(name='{self.name}', loglevel='{self.loglevel}')"
