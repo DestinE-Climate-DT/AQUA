@@ -38,7 +38,6 @@ class CatalogMixin:
             self.logger.error('%s catalog is not installed!', args.catalog)
             sys.exit(1)
 
-
     def add(self, args):
         """Add a catalog and set it as a default in config-aqua.yaml
 
@@ -114,8 +113,8 @@ class CatalogMixin:
                 self.logger.info("Using authenticated access to GitHub API.")
             else:
                 auth_kwargs = {}
-                self.logger.warning("Running without authentication. Rate limits may apply.")
-                self.logger.warning("Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access.")
+                self.logger.info("Running without authentication. Rate limits may apply.")
+                self.logger.info("Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access.")
 
             fs = fsspec.filesystem(
                 "github",
@@ -258,7 +257,7 @@ class CatalogMixin:
                 cfg['catalog'].remove(catalog)
             self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
             dump_yaml(self.configfile, cfg)
-    
+
     def _fsspec_get_single_call(self, fs, src_dir, dest_dir):
         """
         Optimized function to download entire directory with minimal API calls
@@ -273,15 +272,15 @@ class CatalogMixin:
             Remotely copy data from source to dest directory
         """
         api_calls = 0
-        
+
         # Get all file paths recursively in one GitHub API call
         all_files = fs.find(src_dir, withdirs=False, detail=False)
         api_calls += 1
-        
+
         if not all_files:
             self.logger.debug("No files found, completed with %d API call", api_calls)
             return
-        
+
         # Prepare destination paths and create directory structure
         dest_paths = []
         for src_path in all_files:
@@ -289,9 +288,8 @@ class CatalogMixin:
             dest_path = os.path.join(dest_dir, relative_path)
             dest_paths.append(dest_path)
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-        
+
         # Batch Download
         fs.get(all_files, dest_paths)
         api_calls += 1
-        self.logger.info("Download completed with %d API calls (1 find + 1 batch get)", api_calls)
-       
+        self.logger.debug("Download completed with %d API calls (1 find + 1 batch get)", api_calls)
