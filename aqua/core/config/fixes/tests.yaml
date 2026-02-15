@@ -90,3 +90,9 @@ fixer_name:
     test-fesom-3d:
         convention: eccodes
         delete: [healpix]
+        vars:
+        # FESOM wrote avg_tos and avg_thetao with degC and having K as unit name
+            tos:
+                src_units: degC
+            thetao:
+                src_units: degC
