@@ -10,7 +10,9 @@ Main changes:
 
 Complete list:
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
-- removed `counter_reverse_coordinate()` function, no need for data flipping anymore while regridding (#2679)
+- Regridding of datasets to ignore bounds (#2678)
+- Fix units for FESOM thetao variable in fixer (#2686)
+- Removed `counter_reverse_coordinate()` function, no need for data flipping anymore while regridding (#2679)
 - Add cleanup on failure for console `aqua add` catalog addition (#2649)
 - Console: Single API call for `aqua add` (#2675)
 - `plot_single_map()` better Healpix handling (#2671)
