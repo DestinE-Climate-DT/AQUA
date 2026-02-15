@@ -304,15 +304,3 @@ class CoordTransformer:
                     )
                     data.coords[tgt_coord["name"]].attrs[key] = value
         return data
-
-
-def counter_reverse_coordinate(data):
-    """
-    Flip back latitude if necessary
-    """
-
-    for coord in data.coords:
-        if "flipped" in data.coords[coord].attrs:
-            data = data.reindex({coord: data[coord][::-1]})
-            del data.coords[coord].attrs["flipped"]
-    return data
