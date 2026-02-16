@@ -229,7 +229,7 @@ class GSVSource(base.DataSource):
 
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
-            
+
             #We run the checks only on the real init, to avoid issues with the probe call of intake
             if np.any(self.chk_type == 0):  # We have HPC chunks
                 if not self.fdbpath and not self.fdbhome:
@@ -266,7 +266,6 @@ class GSVSource(base.DataSource):
                     self.ntimechunks = self._npartitions
                     self.nlevelchunks = len(self.chk_vert)
                     self._npartitions = self._npartitions*len(self.chk_vert)
-            self.chunking_vertical = None  # no vertical chunking
 
         self._switch_eccodes()
         super(GSVSource, self).__init__(metadata=metadata)
