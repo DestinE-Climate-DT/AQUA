@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Regridder: remove `expand_dims` now delegated to `smmregrid` (#2690)
 - Regridding of datasets to ignore bounds (#2678)
 - Fix units for FESOM thetao variable in fixer (#2686)
 - Removed `counter_reverse_coordinate()` function, no need for data flipping anymore while regridding (#2679)
