@@ -44,7 +44,7 @@ class GSVSource(base.DataSource):
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 switch_eccodes=False, loglevel='WARNING', engine=None, databridge=None, **kwargs):
+                 switch_eccodes=False, loglevel='WARNING', engine='fdb', databridge=None, **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -80,7 +80,7 @@ class GSVSource(base.DataSource):
         """
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
-        self.engine = engine if engine else 'fdb'
+        self.engine = engine
         if self.engine == 'polytope':
             self.databridge = 'lumi' if databridge is None else databridge
         else:
@@ -127,8 +127,6 @@ class GSVSource(base.DataSource):
             self.fdb_info_file = None
             self.eccodes_path = None
             self.levels = None
-
-        GSVSource.first_run = False
 
         # set the timestyle
         self.timestyle = timestyle
@@ -233,9 +231,12 @@ class GSVSource(base.DataSource):
         self._npartitions = len(self.chk_start_date)
         self.chk_type = timeaxis["type"]
 
+        self.logger.warning('First run of the class: %s', GSVSource.first_run)
+        self.logger.warning('Engine is %s', self.engine)
+
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
-        if self.engine == 'fdb':
+        if self.engine == 'fdb' and GSVSource.first_run==False:  # we skip the check the first time, since it is likely that the first initialization is done with the wrong engine (see above)
             if np.any(self.chk_type == 0):
                 if not self.fdbpath and not self.fdbhome:
                     raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
@@ -259,11 +260,11 @@ class GSVSource(base.DataSource):
                     self.ntimechunks = self._npartitions
                     self.nlevelchunks = len(self.chk_vert)
                     self._npartitions = self._npartitions*len(self.chk_vert)
-        else:
             self.chunking_vertical = None  # no vertical chunking
 
         self._switch_eccodes()
-
+        
+        GSVSource.first_run = False
         super(GSVSource, self).__init__(metadata=metadata)
 
     def _define_start_end_dates(self, data_start_date, data_end_date, bridge_start_date, bridge_end_date):
