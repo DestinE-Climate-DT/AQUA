@@ -38,7 +38,6 @@ class GSVSource(base.DataSource):
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
     dask_access = False  # Flag if dask has been requested
-    first_run = True  # Flag to check if this is the first run of the class
 
     def __init__(self, request, data_start_date, data_end_date, bridge_start_date=None, bridge_end_date=None, 
                  hpc_expver=None, timestyle="date",
@@ -79,6 +78,12 @@ class GSVSource(base.DataSource):
             kwargs: other keyword arguments.
         """
 
+        # Intake calls __init__ twice on the same instance:
+        # first without custom args (probe), then with custom args (real init).
+        # We use an instance counter to distinguish the two calls.
+        self._init_count = getattr(self, '_init_count', 0) + 1
+        _is_real_init = self._init_count > 1
+
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.engine = engine
         if self.engine == 'polytope':
@@ -110,9 +115,10 @@ class GSVSource(base.DataSource):
             # safety check for paths
 
             # skip the first time:
-            # this is needed because intake calls initialization twice, first without custom arguments and then with
-            # If we pass engine='polytope' on a remote machine the path check would fail but intake initializes the class a first time actually with the wrong engine
-            if self.engine and self.engine == 'fdb' and not GSVSource.first_run:
+            # this is needed because intake calls initialization twice, first without custom arguments and then with.
+            # If we pass engine='polytope' on a remote machine the path check would fail but intake initializes the
+            # class a first time actually with the wrong engine.
+            if self.engine == 'fdb' and _is_real_init:
                 for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
                             'fdbpath_bridge', 'eccodes_path']:
                     attr_path = getattr(self, attr)
@@ -231,12 +237,11 @@ class GSVSource(base.DataSource):
         self._npartitions = len(self.chk_start_date)
         self.chk_type = timeaxis["type"]
 
-        self.logger.warning('First run of the class: %s', GSVSource.first_run)
-        self.logger.warning('Engine is %s', self.engine)
-
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
-        if self.engine == 'fdb' and GSVSource.first_run==False:  # we skip the check the first time, since it is likely that the first initialization is done with the wrong engine (see above)
+
+        # skip the first time for the same reason as above (engine may be wrong on first probe init)
+        if self.engine == 'fdb' and _is_real_init:
             if np.any(self.chk_type == 0):
                 if not self.fdbpath and not self.fdbhome:
                     raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
@@ -263,8 +268,6 @@ class GSVSource(base.DataSource):
             self.chunking_vertical = None  # no vertical chunking
 
         self._switch_eccodes()
-        
-        GSVSource.first_run = False
         super(GSVSource, self).__init__(metadata=metadata)
 
     def _define_start_end_dates(self, data_start_date, data_end_date, bridge_start_date, bridge_end_date):
