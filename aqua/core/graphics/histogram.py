@@ -131,10 +131,12 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
                        "Value"
             var_units = getattr(first_data.center_of_bin, 'units', None)
             
-            if var_units:
+            if var_units and var_name:
                 xlabel = f"{var_name} [{unit_to_latex(var_units)}]"
-            else:
+            elif var_name:
                 xlabel = var_name
+            else:
+                xlabel = "Value"
         else:
             xlabel = "Value"
     
