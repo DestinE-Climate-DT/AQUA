@@ -252,6 +252,7 @@ class GSVSource(base.DataSource):
         self.chk_vert = None
         self.ntimechunks = self._npartitions
         self.nlevelchunks = None
+        self.chunking_vertical = None  # default: no vertical chunking
 
         if "levelist" in self._request:
             self.chunking_vertical = chunking_vertical
