@@ -10,7 +10,7 @@ import sys
 
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import load_yaml, dump_yaml
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigPath, ConfigLocator
 
 from .util import query_yes_no
 
@@ -82,9 +82,16 @@ class InstallMixin:
                     'core': {'installed': False, 'mode': 'not_installed'},
                     'diagnostics': {'installed': False, 'mode': 'not_installed'}
                 }
-            
-            self.logger.error('No AQUA installation found!')
-            sys.exit(1)
+
+            locator = ConfigLocator(logger=self.logger)
+            try:
+                if os.path.exists(locator.config_file):
+                    self.logger.error('AQUA configuration found at %s but failed to load. A configured catalog might be missing or corrupted.', locator.config_file)
+                    sys.exit(1)
+            except FileNotFoundError:
+                self.logger.error('No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
+                                'or manually set the AQUA_CONFIG environment variable to an existing AQUA installation directory.')
+                sys.exit(1)
         
     def _check_component_installed(self, component):
         """
