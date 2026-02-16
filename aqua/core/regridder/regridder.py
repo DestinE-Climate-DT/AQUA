@@ -528,19 +528,6 @@ class Regridder():
                     self.cfg_grid_dict["paths"][kind], filename)
         return filename
 
-    def _expand_dims(self, data, mask_dims):
-        """
-        Expand the dimensions of the dataset or dataarray to include the vertical dimensions
-        """
-
-        if not list(set(data.dims) & set(mask_dims)):
-            for mask_dim in mask_dims:
-                if mask_dim in data.coords:
-                    self.logger.debug(
-                        "Expanding dimensions to include %s", mask_dim)
-                    data = data.expand_dims(dim=mask_dim, axis=0)
-        return data
-
     def _group_shared_dims(self, data):
         """
         Groups variables in a dataset that share the same AQUA vertical dimension.
@@ -591,15 +578,7 @@ class Regridder():
         Args:
             data (xarray.Dataset, xarray.DataArray): The dataset to be regridded.
         """
-
-        # expand the dimensions of the dataset to include the vertical dimensions
-        if isinstance(data, xr.Dataset):
-            data = data.map(self._expand_dims, mask_dims=list(self.src_mask_dim))
-        elif isinstance(data, xr.DataArray):
-            data = self._expand_dims(data, mask_dims=list(self.src_mask_dim))
-        else:
-            raise ValueError("Data must be an xarray Dataset or DataArray.")
-
+        
         # get which variables share the same dimensions
         shared_vars = self._group_shared_dims(data)
 
