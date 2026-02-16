@@ -229,10 +229,8 @@ class GSVSource(base.DataSource):
 
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
-
-        # Path checks: only for engine='fdb' and only for paths that are actually needed based on chk_type
-        # This runs on both intake calls and direct instantiation, but only checks what's necessary
-        if self.engine == 'fdb':
+            
+            #We run the checks only on the real init, to avoid issues with the probe call of intake
             if np.any(self.chk_type == 0):  # We have HPC chunks
                 if not self.fdbpath and not self.fdbhome:
                     raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
