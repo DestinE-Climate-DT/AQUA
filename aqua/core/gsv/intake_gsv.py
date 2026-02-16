@@ -81,8 +81,7 @@ class GSVSource(base.DataSource):
         # Intake calls __init__ twice on the same instance:
         # first without custom args (probe), then with custom args (real init).
         # We use an instance counter to distinguish the two calls.
-        self._init_count = getattr(self, '_init_count', 0) + 1
-        _is_real_init = self._init_count > 1
+        _is_real_init = hasattr(self, '_captured_init_kwargs')
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.engine = engine
