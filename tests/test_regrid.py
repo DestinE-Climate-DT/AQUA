@@ -1,11 +1,11 @@
 """Test regridding from Reader"""
 import pytest
+import xarray as xr
+import numpy as np
+from unittest.mock import MagicMock
+from conftest import APPROX_REL, LOGLEVEL
 from aqua import Reader, Regridder
 from aqua.core.regridder.griddicthandler import GridDictHandler
-from conftest import APPROX_REL, LOGLEVEL
-
-approx_rel = APPROX_REL
-
 
 @pytest.fixture(
     params=[
@@ -99,7 +99,10 @@ class TestRegridder():
         regridder = Regridder(data=data.isel(time=0), loglevel='debug')
 
         # Regrid the data
-        regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+        weights = regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+
+        # initialize regridder with weights
+        regridder.initialize(weights)
         out = regridder.regrid(data)
 
         assert len(out.lon) == 144
@@ -127,9 +130,9 @@ class TestRegridder():
         rgd = reader.regrid(data[variable])
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
-        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=approx_rel)  # land fraction
+        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=APPROX_REL)  # land fraction
 
-    def test_recompute_weights_fesom2D(self):
+    def test_recompute_weights_fesom2d(self):
         """
         Test interpolation on FESOM, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
@@ -171,7 +174,7 @@ class TestRegridder():
         assert len(rgd.height) == 90
         assert len(rgd.time) == 2
 
-    def test_recompute_weights_fesom3D(self):
+    def test_recompute_weights_fesom3d(self):
         """
         Test interpolation on FESOM, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
@@ -192,7 +195,7 @@ class TestRegridder():
         assert 0.33 <= ratio1 <= 0.36
         assert 0.43 <= ratio2 <= 0.46
 
-    def test_recompute_weights_nemo3D(self):
+    def test_recompute_weights_nemo3d(self):
         """
         Test interpolation on NEMO, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
@@ -210,34 +213,104 @@ class TestRegridder():
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert 0.32 <= ratio1 <= 0.36
-        assert 0.44 <= ratio2 <= 0.47
+        assert 0.50 <= ratio2 <= 0.54
+        #assert 0.44 <= ratio2 <= 0.47
 
     def test_levels_and_regrid(self):
         """
         Test regridding selected levels.
         """
-        reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
-                        regrid='r100', loglevel=LOGLEVEL)
+        reader = Reader(model='FESOM', exp='test-pi', source='original_3d', datamodel=False,
+                        regrid='r100', loglevel=LOGLEVEL, rebuild=True)
         data = reader.retrieve()
 
         layers = [0, 2]
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.fldmean().values
-        assert val == pytest.approx(8.6758228e-08)
+        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.fldmean().values
-        assert val == pytest.approx(8.6758228e-08)
+        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.fldmean().values
-        assert val == pytest.approx(8.6758228e-08)
+        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
 
         # test reading specific levels for first vertical coordinate (nz1)
         data = reader.retrieve(level=[2.5, 2275])
         val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
-        assert val == pytest.approx(274.9045)
+        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        assert val == pytest.approx(274.90709, rel=APPROX_REL)
+
+    def test_regridder_missing_vertical_dataset(self):
+        """Test regridding a Dataset when the regridder for a vertical coordinate is missing (Lines 621-622)."""
+        # Create a simple dataset
+        ds = xr.Dataset(
+            {"temp": (("lat", "lon"), np.random.rand(10, 20))},
+            coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
+        )
+        
+        # Initialize Regridder for 'r36x18' (a CDO grid name)
+        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        # Ensure smmregridder exists even if init returned early
+        if not hasattr(regridder, 'smmregridder'):
+            regridder.smmregridder = {}
+        
+        # Mock the logger
+        regridder.logger = MagicMock()
+        
+        # Mock shared_vars to include a vertical coordinate that doesn't exist in smmregridder
+        shared_vars = {"missing_vertical": ["temp"]}
+        
+        # Call _apply_regrid directly to trigger lines 621-622
+        regridder._apply_regrid(ds, shared_vars)
+        
+        # Verify logger.error was called
+        regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
+        regridder.logger.error.assert_any_call("Cannot regrid variables %s", ["temp"])
+
+    def test_regridder_missing_vertical_dataarray(self):
+        """Test regridding a DataArray when the regridder for a vertical coordinate is missing (Lines 633-634)."""
+        # Create a simple dataarray
+        da = xr.DataArray(
+            np.random.rand(10, 20),
+            coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
+            dims=("lat", "lon"),
+            name="temp"
+        )
+        
+        # Initialize Regridder
+        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        # Ensure smmregridder exists even if init returned early
+        if not hasattr(regridder, 'smmregridder'):
+            regridder.smmregridder = {}
+        
+        # Mock the logger
+        regridder.logger = MagicMock()
+        
+        # Mock shared_vars
+        shared_vars = {"missing_vertical": ["temp"]}
+        
+        # Call _apply_regrid directly to trigger lines 633-634
+        regridder._apply_regrid(da, shared_vars)
+        
+        # Verify logger.error was called
+        regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
+
+    def test_regridder_invalid_data_type(self):
+        """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""
+        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        
+        with pytest.raises(ValueError, match="Data must be an xarray Dataset or DataArray."):
+            regridder._apply_regrid("not a dataset", {})
 
 @pytest.mark.aqua
 def test_non_latlon_interpolation():

@@ -23,7 +23,7 @@ DROP's architecture enables various data processing tasks:
 **Temporal Processing:**
 
 - Custom frequency resampling (any frequency to any frequency)
-- Multiple statistics: mean, std, max, min
+- Multiple statistics: mean, std, max, min or sum
 - Handling of incomplete time chunks
 
 **Spatial Processing:**
@@ -261,6 +261,7 @@ Usage
     Accepted format: 'YYYY-MM-DDT23:00:00'
 
 .. option:: --engine
+
     The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'. 
 
 **Examples:**

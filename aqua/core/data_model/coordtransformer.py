@@ -116,7 +116,6 @@ class CoordTransformer:
             xr.Dataset or xr.DataArray: The Xarray object with renamed coordinate.
         """
         if src_coord["name"] != tgt_coord["name"]:
-            original_coords = list(data.coords)
             self.logger.info(
                 "Renaming coordinate %s to %s", src_coord["name"], tgt_coord["name"]
             )
@@ -127,11 +126,11 @@ class CoordTransformer:
             )
 
             # Ensure the AQUA dependent index is preserved
-            if f"idx_{src_coord['name']}" in original_coords:
-                index_name = f"idx_{src_coord['name']}"
-                new_index_name = f"idx_{tgt_coord['name']}"
-                self.logger.info("Renaming index %s to %s", index_name, new_index_name)
-                data = data.rename({index_name: new_index_name})
+            # if f"idx_{src_coord['name']}" in original_coords:
+            #     index_name = f"idx_{src_coord['name']}"
+            #     new_index_name = f"idx_{tgt_coord['name']}"
+            #     self.logger.info("Renaming index %s to %s", index_name, new_index_name)
+            #     data = data.rename({index_name: new_index_name})
 
             # unclear if this is fundamental
             # if tgt_coord['name'] in data.dims:
@@ -305,15 +304,3 @@ class CoordTransformer:
                     )
                     data.coords[tgt_coord["name"]].attrs[key] = value
         return data
-
-
-def counter_reverse_coordinate(data):
-    """
-    Flip back latitude if necessary
-    """
-
-    for coord in data.coords:
-        if "flipped" in data.coords[coord].attrs:
-            data = data.reindex({coord: data[coord][::-1]})
-            del data.coords[coord].attrs["flipped"]
-    return data
