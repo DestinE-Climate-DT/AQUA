@@ -80,8 +80,11 @@ class GSVSource(base.DataSource):
 
         # Intake calls __init__ twice on the same instance:
         # first without custom args (probe), then with custom args (real init).
-        # We use an instance counter to distinguish the two calls.
-        _is_real_init = hasattr(self, '_captured_init_kwargs')
+        # Direct instantiation (tests) calls __init__ only once.
+        # We use an instance counter to distinguish the cases.
+        _init_count = getattr(self, '_init_count', 0) + 1
+        _is_real_init = _init_count > 1
+        self._init_count = _init_count
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
         self.engine = engine
@@ -111,18 +114,6 @@ class GSVSource(base.DataSource):
             self.levels = metadata.get('levels', None)
             self.fdb_info_file = metadata.get('fdb_info_file', None)
 
-            # safety check for paths
-
-            # skip the first time:
-            # this is needed because intake calls initialization twice, first without custom arguments and then with.
-            # If we pass engine='polytope' on a remote machine the path check would fail but intake initializes the
-            # class a first time actually with the wrong engine.
-            if self.engine == 'fdb' and _is_real_init:
-                for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
-                            'fdbpath_bridge', 'eccodes_path']:
-                    attr_path = getattr(self, attr)
-                    if attr_path and not os.path.exists(attr_path):
-                        raise FileNotFoundError(f'{attr} path {attr_path} does not exist!')
 
         else:
             self.fdbpath = None
@@ -239,14 +230,26 @@ class GSVSource(base.DataSource):
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
 
-        # skip the first time for the same reason as above (engine may be wrong on first probe init)
-        if self.engine == 'fdb' and _is_real_init:
-            if np.any(self.chk_type == 0):
+        # Path checks: only for engine='fdb' and only for paths that are actually needed based on chk_type
+        # This runs on both intake calls and direct instantiation, but only checks what's necessary
+        if self.engine == 'fdb':
+            if np.any(self.chk_type == 0):  # We have HPC chunks
                 if not self.fdbpath and not self.fdbhome:
                     raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
-            if np.any(self.chk_type == 1):
+                # Check that the specified paths actually exist
+                if self.fdbhome and not os.path.exists(self.fdbhome):
+                    raise FileNotFoundError(f'fdbhome path {self.fdbhome} does not exist!')
+                if self.fdbpath and not os.path.exists(self.fdbpath):
+                    raise FileNotFoundError(f'fdbpath path {self.fdbpath} does not exist!')
+            
+            if np.any(self.chk_type == 1):  # We have bridge chunks
                 if not self.fdbpath_bridge and not self.fdbhome_bridge:
                     raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
+                # Check that the specified paths actually exist
+                if self.fdbhome_bridge and not os.path.exists(self.fdbhome_bridge):
+                    raise FileNotFoundError(f'fdbhome_bridge path {self.fdbhome_bridge} does not exist!')
+                if self.fdbpath_bridge and not os.path.exists(self.fdbpath_bridge):
+                    raise FileNotFoundError(f'fdbpath_bridge path {self.fdbpath_bridge} does not exist!')
 
         self.chk_vert = None
         self.ntimechunks = self._npartitions
