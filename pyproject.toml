@@ -56,7 +56,7 @@ dependencies = [
     "scipy<=1.17.0",
     "seaborn<=0.13.2",
     #"smmregrid==0.1.3",
-    "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git@regrid_missing_attributes",
+    "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
     "typeguard<=4.5.0",
     "xarray>=2025.12.0,<=2026.1.0",
     "kerchunk<=0.2.9",
