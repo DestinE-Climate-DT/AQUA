@@ -131,6 +131,11 @@ class TestRegridder():
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=APPROX_REL)  # land fraction
+        assert hasattr(rgd, 'AQUA_catalog')
+
+        # test on Dataset regridding
+        rgd = data.aqua.regrid()[variable]
+        assert hasattr(rgd, 'AQUA_exp')
 
     def test_recompute_weights_fesom2d(self):
         """
