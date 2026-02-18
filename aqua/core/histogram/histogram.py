@@ -37,9 +37,6 @@ def histogram(data: xr.DataArray, range: tuple, bins: int = 10,  units: str = No
     elif not isinstance(data, xr.DataArray):
         raise TypeError('Input data must be an xarray DataArray or Dataset')
 
-    if range is None:
-        raise ValueError('Range must be provided for histogram computation')
-
     logger = log_configure(log_level=loglevel, log_name='Histogram')
 
     if units is not None:
