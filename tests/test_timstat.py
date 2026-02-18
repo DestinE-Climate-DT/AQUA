@@ -35,6 +35,7 @@ def data_ttr(reader):
     return reader.retrieve(var='ttr')
 
 @pytest.mark.aqua
+@pytest.mark.xdist_group(name="dask_operations")
 class TestTimmean():
 
     def test_timsum(self, reader, data):
