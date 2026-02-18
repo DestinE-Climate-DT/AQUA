@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 AQUA core complete list:
 
 AQUA diagnostics complete list:
+- Seaice: validate potential missing months in input data to be plotted in bias maps (#2696)
 
 ## [v0.19.9]
 
