@@ -14,7 +14,7 @@ from aqua.core.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
 
 
-def drop_parser(parser = None):
+def drop_parser(parser=None):
     """
     Parse command line arguments for the DROP CLI
 
@@ -24,7 +24,7 @@ def drop_parser(parser = None):
 
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA DROP')
-    
+
     parser.add_argument('-c', '--config', type=str,
                         help='yaml configuration file')
     parser.add_argument('-f', '--fix', action="store_true",
@@ -70,15 +70,15 @@ def drop_parser(parser = None):
                         help='Create zarr')
     parser.add_argument('--verify-zarr', action="store_true",
                         help='Verify the created zarr')  
-    #return parser.parse_args(arguments)
+
     return parser
+
 
 def drop_execute(args):
     """
     Executing the DROP by parsing the arguments and configuring the machinery
     """
-
-        # to check if GSV is available and return the version
+    # to check if GSV is available and return the version
     try:
         import gsv
         print('GSV version is: ' + gsv.__version__)
@@ -95,7 +95,7 @@ def drop_execute(args):
     # basic from configuration
     config = load_yaml(file)
 
-    #safety check
+    # safety check
     for item in ['target', 'paths', 'data', 'options']:
         if not item in config:
             raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
@@ -135,12 +135,13 @@ def drop_execute(args):
     default_workers = get_arg(args, 'workers', 1)
 
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
-            frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
-            outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-            region=region, stat=stat, compact=compact,
-            definitive=definitive, overwrite=overwrite, rebuild=rebuild,
-            default_workers=default_workers, engine=engine,
-            monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
+             frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
+             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
+             region=region, stat=stat, compact=compact,
+             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
+             default_workers=default_workers, engine=engine,
+             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
+
 
 def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=None,
              startdate=None, enddate=None, outdir=None, tmpdir=None, loglevel=None,
@@ -214,22 +215,20 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                             rebuild = False
                         # init the DROP
                         drop = Drop(catalog=catalog, model=model, exp=exp, source=source,
-                                        var=varname, resolution=resolution,
-                                        startdate=startdate, enddate=enddate,
-                                        frequency=frequency, fix=fix,
-                                        outdir=outdir, tmpdir=tmpdir,
-                                        nproc=workers, loglevel=loglevel,
-                                        region=region, stat=stat,
-                                        definitive=definitive, overwrite=overwrite,
-                                        rebuild=rebuild,
-                                        compact=compact,
-                                        performance_reporting=monitoring,
-                                        exclude_incomplete=True,
-                                        engine=engine,
-                                        **extra_args)
+                                    var=varname, resolution=resolution,
+                                    startdate=startdate, enddate=enddate,
+                                    frequency=frequency, fix=fix,
+                                    outdir=outdir, tmpdir=tmpdir,
+                                    nproc=workers, loglevel=loglevel,
+                                    region=region, stat=stat,
+                                    definitive=definitive, overwrite=overwrite,
+                                    rebuild=rebuild,
+                                    compact=compact,
+                                    performance_reporting=monitoring,
+                                    exclude_incomplete=True,
+                                    engine=engine,
+                                    **extra_args)
 
-
-                        
                         if not only_catalog:
                             # check that your DROP output is not already there (it will not work in streaming mode)
                             drop.check_integrity(varname)
@@ -245,9 +244,9 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
 
     print('CLI DROP run completed. Have yourself a tasty pint of beer!')
 
+
 # if you want to execute the script from terminal without the aqua entry point
 if __name__ == '__main__':
 
     args = drop_parser().parse_args(sys.argv[1:])
     drop_execute(args)
-   
