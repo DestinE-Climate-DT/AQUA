@@ -164,6 +164,8 @@ class Drop():
         self.stat = stat
         if self.stat not in AVAILABLE_STATS:
             raise ValueError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
+        if not isinstance(stat_kwargs, dict):
+            raise TypeError('stat_kwargs must be a dictionary.')
         self.stat_kwargs = stat_kwargs
 
         # configure regional selection
