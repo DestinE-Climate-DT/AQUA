@@ -8,7 +8,6 @@ import re
 import intake_xarray
 import xarray as xr
 import pandas as pd
-import numpy as np
 from metpy.units import units
 
 from smmregrid import GridInspector
@@ -93,7 +92,7 @@ class Reader():
                                         (Only one supported so far)
             engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.
 
-        Keyword Args: 
+        Keyword Args:
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
             realization (int, optional): The ensemble realization number.
             **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
@@ -210,7 +209,7 @@ class Reader():
                                fixes_dictionary=self.fixes_dictionary,
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
-        
+
         # if data model is not passed to Reader, try to get it from the catalog source metadata
         if datamodel is None:
             self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT) 
@@ -223,7 +222,6 @@ class Reader():
             self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
         else:
             self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
-    
             
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
@@ -248,7 +246,7 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
-    
+
         self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
@@ -357,7 +355,7 @@ class Reader():
                 fixed = self.fixer.fixerdatamodel.apply(value)
             else:
                 raise ValueError(f"Mode {mode} not recognized for weights fixing")
-            
+
             # Check if fixed object has coordinates before accessing
             coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
             if not coords:
@@ -518,7 +516,7 @@ class Reader():
 
     def _select_level(self, data, level=None):
         """
-        Select levels if provided. It is based on self.vert_coord but it extends the feature 
+        Select levels if provided. It is based on self.vert_coord but it extends the feature
         to atmospheric levels, so it should not be considered as the same vertical coordinate
 
         Arguments:
@@ -533,7 +531,7 @@ class Reader():
         if not level:
             return data
 
-        # find the vertical coordinate, which can be the smmregrid one or 
+        # find the vertical coordinate, which can be the smmregrid one or
         # any other with a dimension compatible (Pa, cm, etc)
         full_vert_coord = find_vert_coord(data) if not self.vert_coord else self.vert_coord
 
@@ -603,7 +601,7 @@ class Reader():
     #     final.aqua.set_default(self)
     #     return final
 
-    def detrend(self, data, dim='time', degree=1, skipna=False):    
+    def detrend(self, data, dim='time', degree=1, skipna=False):
         """
         Remove the trend from an xarray object using polynomial fitting.
 
@@ -711,7 +709,7 @@ class Reader():
             self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
         return self._intake_user_parameters
 
-    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict={}, databridge: str = None) -> dict:        
+    def _filter_kwargs(self, kwargs: dict = {}, engine: str = 'fdb', intake_vars: dict = {}, databridge: str = None) -> dict:
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
@@ -719,7 +717,7 @@ class Reader():
         Args:
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
-            databridge (str): The databridge used for the GSV retrieval, default is None. 
+            databridge (str): The databridge used for the GSV retrieval, default is None.
             intake_vars (dict): Machine-specific intake variables to exclude from checks.
 
         Returns:
@@ -729,7 +727,7 @@ class Reader():
             intake_vars = {}
 
         filtered_kwargs = {}
-        
+
         # Create a dictionary lookup of parameter definitions
         # This avoids repeated iteration and index lookups in the loop
         param_defs = {p['name']: p for p in self.intake_user_parameters}
@@ -738,7 +736,7 @@ class Reader():
         if kwargs:
             # Filter kwargs that are valid parameters
             filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
-            
+
             # Find and log dropped keys efficiently using set difference
             dropped_keys = kwargs.keys() - valid_params
             for key in dropped_keys:
@@ -763,24 +761,24 @@ class Reader():
 
         # Check for missing required parameters and apply defaults, with logging
         # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
-        
+
         # params that are already covered by user kwargs or machine-specific intake_vars
         covered_params = set(filtered_kwargs) | set(intake_vars)
-        
+
         # Identify missing parameters using set difference
         missing_params = valid_params - covered_params
 
         for param in missing_params:
             element = param_defs[param]
             default_val = element.get('default')
-            
+
             # Log the default application
             self.logger.info('%s parameter is required but is missing, setting to default %s', param, default_val)
-            
+
             allowed = element.get('allowed', None)
             if allowed is not None:
                 self.logger.info('Available values for %s are: %s', param, allowed)
-            
+
             filtered_kwargs[param] = default_val
 
         return filtered_kwargs
@@ -840,7 +838,6 @@ class Reader():
         return final
 
     def _vertinterp(self, data, levels=None, units='Pa', vert_coord='plev', method='linear'):
-
         # verify units are good
         if data[vert_coord].units != units:
             self.logger.warning('Converting vert_coord units to interpolate from %s to %s',
@@ -1023,9 +1020,8 @@ class Reader():
                               logging=True, loglevel=self.loglevel).read_chunked()
 
         return data
-    
-    def _filter_netcdf_files(self, esmcat, filter_key="year"):
 
+    def _filter_netcdf_files(self, esmcat, filter_key="year"):
         """
         Filter the esmcat to include only netcdf files based on specfici filter_key
         Args:
@@ -1058,7 +1054,7 @@ class Reader():
 
         if len(esmcat.urlpath) == 0:
             raise NoDataError("No files found after filtering the catalog!")
-        
+
         self.logger.debug("Selected: %s files from %s to %s",
                           len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
 
@@ -1202,8 +1198,8 @@ class Reader():
     def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, 
                 region=None, region_sel=None, mask_kwargs={}, **kwargs):
         """
-        Field statistic wrapper which is calling the fldstat module from FldStat class. 
-        This method is exposing and providing field functions as Reader class 
+        Field statistic wrapper which is calling the fldstat module from FldStat class.
+        This method is exposing and providing field functions as Reader class
         methods through the wrapper accessors.
 
         Args:
@@ -1280,8 +1276,8 @@ class Reader():
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False, **kwargs):
         """
-        Time statistic wrapper which is calling the timstat module from TimStat class. 
-        This method is exposing and providing time functions as Reader class 
+        Time statistic wrapper which is calling the timstat module from TimStat class.
+        This method is exposing and providing time functions as Reader class
         methods through the wrapper accessors.
 
         Args:
@@ -1314,16 +1310,16 @@ class Reader():
         return self.timstat(data, stat='max', **kwargs)
     
     def timmin(self, data, **kwargs):
-       """
-       Time min wrapper which is calling the timstat module.
-       """
-       return self.timstat(data, stat='min', **kwargs)
+        """
+        Time min wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat='min', **kwargs)
     
     def timstd(self, data, **kwargs):
-       """
-       Time standard deviation wrapper which is calling the timstat module.
-       """
-       return self.timstat(data, stat='std', **kwargs)
+        """
+        Time standard deviation wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat='std', **kwargs)
     
     def timsum(self, data, **kwargs):
         """
@@ -1346,7 +1342,6 @@ class Reader():
 
 def units_extra_definition():
     """Add units to the pint registry"""
-
     # special units definition
     # needed to work with metpy 1.4.0 see
     # https://github.com/Unidata/MetPy/issues/2884

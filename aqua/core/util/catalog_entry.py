@@ -1,6 +1,7 @@
 from aqua.core.configurer import ConfigPath
 from .util import to_list
 
+
 def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     """
     Replace the intake jinja vars into a string for a predefined catalog
@@ -16,7 +17,7 @@ def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     # We exploit of configurerto get info on intake_vars so that we can replace them in the urlpath
     Configurer = ConfigPath(catalog=catalog)
     _, intake_vars = Configurer.get_machine_info()
-    
+
     # loop on available intake_vars, replace them in the urlpath
     for name in intake_vars.keys():
         replacepath = intake_vars[name]
@@ -39,14 +40,13 @@ def replace_urlpath_jinja(block: dict, value: str, name: str, default: str | Non
                     and to be used in the urlpath (e.g., 'realization', 'region', 'stat')
         default(optional, str): The default value for the parameter. If the value is equal to the default,
                  no parameter is created and the urlpath is not modified.
-        
 
     Returns:
         dict: The updated catalog entry block
     """
     if not value:
         return block
-    
+
     # TODO: verify this is needed 
     # return if the value is the default one, no need to create a parameter
     if default is not None and value == default:
@@ -89,10 +89,10 @@ def replace_urlpath_wildcard(block: dict, value: str) -> dict:
     """
     if not value:
         return block
-    
+
     # this loop is a bit tricky but is made to ensure that the right value is replaced
     for character in ['_', '/', '.']:
         block['args']['urlpath'] = block['args']['urlpath'].replace(
             character + value + character, character + "*" + character)
-        
+
     return block
