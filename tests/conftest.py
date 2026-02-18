@@ -3,6 +3,8 @@ Shared fixtures for AQUA test suite.
 These fixtures use scope="session" to retrieve data once and share across all tests.
 Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
+from pathlib import Path
+
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
 
@@ -56,6 +58,77 @@ def pytest_sessionfinish(session, exitstatus):
     if cleanup_configdir:
         registry = TestCleanupRegistry(cleanup_configdir)
         registry.cleanup()
+
+
+# ======================================================================
+# xdist: log worker -> test mapping (per test start/finish) for hang debugging
+# Log file: .pytest_cache/xdist_worker_tests.log
+# Format: worker_id<TAB>started|finished<TAB>nodeid[TAB]outcome?
+# If a run hangs, the last "started" line per worker (no following "finished")
+# is the test that was running when the worker stopped.
+# ======================================================================
+def _xdist_log_path(config):
+    """Path to the single log file used by all workers (append + flush per line)."""
+    root = getattr(config, "rootdir", None)
+    if root is None:
+        return None
+    if hasattr(root, "path"):
+        root = root.path
+    log_dir = Path(root) / ".pytest_cache"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir / "xdist_worker_tests.log"
+
+
+def pytest_sessionstart(session):
+    """Clear the xdist worker log on the controller so each run starts with a fresh file."""
+    if getattr(session.config, "workerinput", None) is not None:
+        return  # only the controller clears; workers will append
+    path = _xdist_log_path(session.config)
+    if path is not None and path.exists():
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
+def _xdist_append_line(config, worker_id, event, nodeid, outcome=None):
+    """Append one line to xdist worker log and flush (safe when a test hangs)."""
+    path = _xdist_log_path(config)
+    if path is None:
+        return
+    line = f"{worker_id}\t{event}\t{nodeid}"
+    if outcome is not None:
+        line += f"\t{outcome}"
+    line += "\n"
+    try:
+        with open(path, "a") as f:
+            f.write(line)
+            f.flush()
+    except OSError:
+        pass
+
+
+def pytest_runtest_setup(node):
+    """Log test start with worker id so we can see which test was running if the run hangs."""
+    config = node.config
+    worker_input = getattr(config, "workerinput", None)
+    if worker_input is None:
+        return
+    worker_id = worker_input.get("workerid", "unknown")
+    _xdist_append_line(config, worker_id, "started", node.nodeid)
+
+
+def pytest_runtest_makereport(item, call):
+    """Log test finish with worker id and outcome."""
+    if call.when != "call":
+        return
+    config = item.config
+    worker_input = getattr(config, "workerinput", None)
+    if worker_input is None:
+        return
+    worker_id = worker_input.get("workerid", "unknown")
+    outcome = "passed" if not call.excinfo else "failed"
+    _xdist_append_line(config, worker_id, "finished", item.nodeid, outcome=outcome)
 
 
 # ===================== Reader and Retrieve fixtures ===================
