@@ -22,7 +22,7 @@ def strlist_to_phrase(items: list[str], oxford_comma: bool = False) -> str:
        ['A','B'] will return "A and B"
        ['A','B','C'] will return "A, B and C" (oxford_comma=False)
        ['A','B','C'] will return "A, B, and C" (oxford_comma=True)
-       
+
     Args:
         items (list[str]): The list of strings to format.
     """
@@ -62,10 +62,10 @@ def get_quarter_anchor_month(freq_string: str) -> str:
 def clean_filename(filename: str) -> str:
     """
     Check a filename by replacing spaces with '_' and forcing lowercase.
-    
+
     Args:
         filename (str): The filename (or part of filename) to check.
-        
+
     Returns:
         str: Filename with spaces replaced by '_' and forced lowercase.
     """
@@ -98,10 +98,10 @@ def unit_to_latex(unit_str):
     - Division:  W/m^2 -> W m$^{-2}$; W/(m^2 s) -> W m$^{-2}$ s$^{-1}$
     - Exponents: m-2   -> m$^{-2}$; m^2, m**2, m2 -> m$^{2}$; kg m-1 s-1 -> kg m$^{-1}$ s$^{-1}$
     - Multi-word: million km^2 -> million km$^{2}$
-    
+
     Args:
         unit_str: Unit string in various formats
-        
+
     Returns:
         Unit string with only exponents in LaTeX math mode
     """
@@ -168,19 +168,19 @@ def _parse_unit_parts(text, invert):
         unit = match[1]
         if not unit:
             continue
-        
+
         # Get exponent from either capture group (^number or implicit number)
         exp_str = match[2] or match[3]
-        
+
         # Parse exponent, default to 1 (no exponent)
         exp = int(exp_str) if exp_str else 1
-        
+
         if invert:
             exp = -exp
-        
+
         # Escape % for LaTeX (must be \% to display properly)
         unit_escaped = unit.replace('%', r"$\%$")
-        
+
         # Format: only wrap exponents
         if exp == 1:
             # No exponent: just the unit with its leading space
@@ -188,5 +188,5 @@ def _parse_unit_parts(text, invert):
         else:
             # With exponent: unit + $^{exp}$ with leading space
             results.append(leading_space + unit_escaped + f"$^{{{exp}}}$")
-    
+
     return results
