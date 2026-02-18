@@ -111,6 +111,7 @@ def drop_execute(args):
     # Command line argumens override config file
     catalog = get_arg(args, 'catalog', config['target'].get('catalog'))
     stat = get_arg(args, 'stat', config['target'].get('stat', 'mean'))
+    stat_kwargs = config['target'].get('stat_kwargs', {})
     frequency = get_arg(args, 'frequency', config['target'].get('frequency'))
     resolution = get_arg(args, 'resolution', config['target'].get('resolution'))
     startdate = get_arg(args, 'startdate', config['target'].get('startdate'))
@@ -137,7 +138,8 @@ def drop_execute(args):
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
              frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
              outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-             region=region, stat=stat, compact=compact,
+             region=region, stat=stat, stat_kwargs=stat_kwargs,
+             compact=compact,
              definitive=definitive, overwrite=overwrite, rebuild=rebuild,
              default_workers=default_workers, engine=engine,
              monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
@@ -145,7 +147,7 @@ def drop_execute(args):
 
 def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=None,
              startdate=None, enddate=None, outdir=None, tmpdir=None, loglevel=None,
-             region=None, stat='mean',
+             region=None, stat='mean', stat_kwargs={},
              definitive=False, overwrite=False,
              rebuild=False, monitoring=False, engine='fdb',
              default_workers=1, do_zarr=False, verify_zarr=False,
@@ -168,6 +170,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
         loglevel: log level
         region: region to be processed
         stat: statistic to be computed
+        stat_kwargs: kwargs for the statistic function, used only if the function accepts kwargs (like histogram)
         definitive: bool flag to create definitive files
         overwrite: bool flag to overwrite existing files
         rebuild: bool flag to rebuild the areas and weights
@@ -209,7 +212,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                         zoom = config['data'][model][exp][source].get('zoom', None)
                         if zoom is not None:
                             extra_args = {**extra_args, **{'zoom': zoom}}
-                        
+
                         # disabling rebuild if we are not in the first realization and first varname
                         if varname != varnames[0] or realization != loop_realizations[0]:
                             rebuild = False
@@ -220,7 +223,8 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                                     frequency=frequency, fix=fix,
                                     outdir=outdir, tmpdir=tmpdir,
                                     nproc=workers, loglevel=loglevel,
-                                    region=region, stat=stat,
+                                    region=region, 
+                                    stat=stat, stat_kwargs=stat_kwargs,
                                     definitive=definitive, overwrite=overwrite,
                                     rebuild=rebuild,
                                     compact=compact,
