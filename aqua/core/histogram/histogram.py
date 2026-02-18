@@ -6,15 +6,15 @@ from aqua.core.util import convert_data_units
 from aqua.core.logger import log_configure
 
 
-def histogram(data: xr.DataArray, bins: int = 10, range: tuple = None, units: str = None,
+def histogram(data: xr.DataArray, range: tuple, bins: int = 10,  units: str = None,
               weighted: bool = True, loglevel: str = 'WARNING', dask: bool = True, check: bool = False, density: bool = False):
     """
     Function to calculate a histogram of a DataArray.
 
     Args:
         data (xarray.Dataset):     The input DataArray. If it is a Dataset, the first variable is used.
+        range (tuple):             The lower and upper range of the bins.
         bins (int, optional):      The number of bins for the histogram. Defaults to 10.
-        range (tuple, optional):   The lower and upper range of the bins. Defaults to None (in that case it is determined automatically).
         weighted (bool, optional): Use latitudinal weights for the histogram. Defaults to True.
         dask (bool, optional):     If True, uses Dask for parallel computation. Defaults to True.
         units (str, optional):     Convert data to these units. Defaults to None.
@@ -26,6 +26,7 @@ def histogram(data: xr.DataArray, bins: int = 10, range: tuple = None, units: st
 
     Raises:
         TypeError: If the input data is not an xarray DataArray.
+        ValueError: If no range is provided or if the DataArray does not have a 'lat' coordinate when weighted is True.
 
     Returns:
         xarray.DataArray: The histogram of the input data.
@@ -35,6 +36,9 @@ def histogram(data: xr.DataArray, bins: int = 10, range: tuple = None, units: st
         data = data[list(data.data_vars.keys())[0]]
     elif not isinstance(data, xr.DataArray):
         raise TypeError('Input data must be an xarray DataArray or Dataset')
+
+    if range is None:
+        raise ValueError('Range must be provided for histogram computation')
 
     logger = log_configure(log_level=loglevel, log_name='Histogram')
 
@@ -59,7 +63,7 @@ def histogram(data: xr.DataArray, bins: int = 10, range: tuple = None, units: st
     else:
         logger.debug('Using NumPy for histogram computation')
         hist, edges = np.histogram(data, weights=weights, bins=bins, range=range, density=density)
-    
+
     size_of_the_data = data.size
 
     if check and not density:
@@ -68,8 +72,8 @@ def histogram(data: xr.DataArray, bins: int = 10, range: tuple = None, units: st
         if int(sum(hist)) != size_of_the_data:
             logger.warning('Sum of counts in the histogram is not equal to the size of the data')
 
-    center_of_bin = [ 0.5 * (edges[i] + edges[i+1]) for i in builtins.range(len(edges)-1)]
-    width_table = [ edges[i+1] - edges[i] for i in builtins.range(len(edges)-1)]
+    center_of_bin = [0.5 * (edges[i] + edges[i+1]) for i in builtins.range(len(edges)-1)]
+    width_table = [edges[i+1] - edges[i] for i in builtins.range(len(edges)-1)]
 
     counts_per_bin = xr.DataArray(hist, coords=[center_of_bin], dims=["center_of_bin"])
     counts_per_bin = counts_per_bin.assign_coords(width=("center_of_bin", width_table))
