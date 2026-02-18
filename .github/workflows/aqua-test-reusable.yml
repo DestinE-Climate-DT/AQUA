@@ -295,6 +295,7 @@ jobs:
       # ========================================
       - name: Run tests (parallel with coverage)
         if: ${{ inputs.enable-parallel && inputs.enable-coverage }}
+        timeout-minutes: 40
         run: |
           cd AQUA
           echo "=========================================="
@@ -321,6 +322,7 @@ jobs:
       
       - name: Run tests (parallel without coverage)
         if: ${{ inputs.enable-parallel && !inputs.enable-coverage }}
+        timeout-minutes: 40
         run: |
           cd AQUA
           echo "=========================================="
@@ -370,6 +372,22 @@ jobs:
             --junitxml=junit.xml \
             -o junit_family=legacy \
             -m "${{ inputs.pytest-markers }}"
+      
+      # ========================================
+      # 10b. SHOW XDIST LOG ON FAILURE (parallel runs only)
+      # ========================================
+      - name: Show xdist worker log (on test failure or timeout)
+        if: failure() && inputs.enable-parallel
+        run: |
+          LOG=AQUA/.pytest_cache/xdist_worker_tests.log
+          if [ -f "$LOG" ]; then
+            echo "========== xdist worker test log (last 'started' per worker = likely hung test) =========="
+            cat "$LOG"
+            echo "========== Last 'started' line per worker =========="
+            awk -F'\t' '$2=="started" { last[$1]=$0 } END { for (w in last) print last[w] }' "$LOG" || true
+          else
+            echo "No xdist worker log found at $LOG"
+          fi
       
       # ========================================
       # 11. UPLOAD COVERAGE (if enabled)
