@@ -108,14 +108,14 @@ def _xdist_append_line(config, worker_id, event, nodeid, outcome=None):
         pass
 
 
-def pytest_runtest_setup(node):
+def pytest_runtest_setup(item):
     """Log test start with worker id so we can see which test was running if the run hangs."""
-    config = node.config
+    config = item.config
     worker_input = getattr(config, "workerinput", None)
     if worker_input is None:
         return
     worker_id = worker_input.get("workerid", "unknown")
-    _xdist_append_line(config, worker_id, "started", node.nodeid)
+    _xdist_append_line(config, worker_id, "started", item.nodeid)
 
 
 def pytest_runtest_makereport(item, call):
