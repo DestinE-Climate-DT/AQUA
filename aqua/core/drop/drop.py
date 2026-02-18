@@ -385,7 +385,7 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        
+
         with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
             cat_file = load_yaml(catalogfile)
 
@@ -533,11 +533,11 @@ class Drop():
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
             tmp_outfile = self.get_filename(var, year, tmp=True)
-            
+
             # Move monthly files to tmp for safety
             for monthly_file in monthly_files:
                 shutil.move(monthly_file, self.tmpdir)
-            
+
             # Clean any existing output files
             for f in [tmp_outfile, outfile]:
                 if os.path.exists(f):
@@ -709,15 +709,15 @@ class Drop():
     def append_history(self, data):
         """
         Append comprehensive processing history to the data attributes
-               
+   
         Args:
             data: xarray Dataset or DataArray to append history to
-            
+
         Returns:
             data: Input data with updated history attribute
         """
         history_list = ["DROP"]
-        
+
         # Add regridding information
         if self.resolution:
             history_list.append(f"regridded from {self.reader.src_grid_name} to {self.resolution}")
@@ -728,7 +728,7 @@ class Drop():
         if self.region and self.region_name:
             region_info = f"regional selection applied ({self.region_name})"
             history_list.append(region_info)
-        
+
         # Build the complete sentence
         if len(history_list) == 1:
             history = history_list[0]
