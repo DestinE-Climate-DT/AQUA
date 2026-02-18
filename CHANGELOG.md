@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
-- Add test for flipping lat coord by datamodel (#)
+- Add test for flipping lat coord by datamodel (#2699)
 - Add a test for attributes after regridding (#2693)
 - Regridding of datasets to ignore bounds (#2678)
 - Fix units for FESOM thetao variable in fixer (#2686)
