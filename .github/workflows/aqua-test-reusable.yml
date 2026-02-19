@@ -264,11 +264,11 @@ jobs:
           aqua -vv add climatedt-phase1
           aqua -vv add climatedt-o25.1
           # Add the ci/cd catalog
-          git clone https://github.com/DestinE-Climate-DT/Climate-DT-catalog.git
-          cd Climate-DT-catalog
+          git clone https://github.com/DestinE-Climate-DT/Climate-DT-catalog.git Climate-DT-catalog-ci
+          cd Climate-DT-catalog-ci
           git checkout chunk_ci_long
           cd ..
-          aqua -vv add -e Climate-DT-catalog/catalogs/ci ci
+          aqua -vv add -e Climate-DT-catalog-ci/catalogs/ci ci
           # Double check the catalogs
           aqua -vv list
           # add default paths to the config
