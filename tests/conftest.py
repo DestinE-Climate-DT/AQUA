@@ -105,14 +105,14 @@ def _log_xdist_event(config, event, nodeid, outcome=None):
 
 def pytest_sessionstart(session):
     """Clear the xdist worker log on the controller node."""
-    # Only the controller (no workerinput) should clear the log
-    if not hasattr(session.config, "workerinput"):
-        log_path = _get_xdist_log_path(session.config)
-        if log_path and log_path.exists():
-            try:
-                log_path.unlink()
-            except OSError:
-                pass
+    if getattr(session.config, "workerinput", None) is not None:
+        return  # only the controller clears; workers append
+    log_path = _get_xdist_log_path(session.config)
+    if log_path and log_path.exists():
+        try:
+            log_path.unlink()
+        except OSError:
+            pass
 
 
 def pytest_runtest_setup(item):
