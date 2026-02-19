@@ -79,6 +79,7 @@ notebooks = [
 tests = [
     "pytest",
     "pytest-cov",
+    "pytest-timeout",
     "pytest-xdist",
     "coverage",
     "cdo"
