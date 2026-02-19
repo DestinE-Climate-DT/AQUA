@@ -63,72 +63,68 @@ def pytest_sessionfinish(session, exitstatus):
 # ======================================================================
 # xdist: log worker -> test mapping (per test start/finish) for hang debugging
 # Log file: .pytest_cache/xdist_worker_tests.log
-# Format: worker_id<TAB>started|finished<TAB>nodeid[TAB]outcome?
-# If a run hangs, the last "started" line per worker (no following "finished")
-# is the test that was running when the worker stopped.
 # ======================================================================
-def _xdist_log_path(config):
-    """Path to the single log file used by all workers (append + flush per line)."""
+
+def _get_xdist_log_path(config):
+    """Resolve the path for the xdist worker log file."""
     root = getattr(config, "rootdir", None)
-    if root is None:
+    if not root:
         return None
-    if hasattr(root, "path"):
-        root = root.path
-    log_dir = Path(root) / ".pytest_cache"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    return log_dir / "xdist_worker_tests.log"
+    # Handle pytest's distinct path objects if necessary
+    root_path = root.path if hasattr(root, "path") else root
+    return Path(root_path) / ".pytest_cache" / "xdist_worker_tests.log"
+
+
+def _log_xdist_event(config, event, nodeid, outcome=None):
+    """Append a structured log entry for xdist workers."""
+    worker_input = getattr(config, "workerinput", None)
+    if not worker_input:
+        return
+
+    worker_id = worker_input.get("workerid", "unknown")
+    log_path = _get_xdist_log_path(config)
+    
+    if not log_path:
+        return
+
+    # Construct the log line
+    line = f"{worker_id}\t{event}\t{nodeid}"
+    if outcome:
+        line += f"\t{outcome}"
+    
+    try:
+        # Ensure directory exists
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        # Append line with flush to ensure it's written immediately
+        with open(log_path, "a") as f:
+            f.write(f"{line}\n")
+            f.flush()
+    except OSError:
+        pass  # Best effort logging
 
 
 def pytest_sessionstart(session):
-    """Clear the xdist worker log on the controller so each run starts with a fresh file."""
-    if getattr(session.config, "workerinput", None) is not None:
-        return  # only the controller clears; workers will append
-    path = _xdist_log_path(session.config)
-    if path is not None and path.exists():
-        try:
-            path.unlink()
-        except OSError:
-            pass
-
-
-def _xdist_append_line(config, worker_id, event, nodeid, outcome=None):
-    """Append one line to xdist worker log and flush (safe when a test hangs)."""
-    path = _xdist_log_path(config)
-    if path is None:
-        return
-    line = f"{worker_id}\t{event}\t{nodeid}"
-    if outcome is not None:
-        line += f"\t{outcome}"
-    line += "\n"
-    try:
-        with open(path, "a") as f:
-            f.write(line)
-            f.flush()
-    except OSError:
-        pass
+    """Clear the xdist worker log on the controller node."""
+    # Only the controller (no workerinput) should clear the log
+    if not hasattr(session.config, "workerinput"):
+        log_path = _get_xdist_log_path(session.config)
+        if log_path and log_path.exists():
+            try:
+                log_path.unlink()
+            except OSError:
+                pass
 
 
 def pytest_runtest_setup(item):
-    """Log test start with worker id so we can see which test was running if the run hangs."""
-    config = item.config
-    worker_input = getattr(config, "workerinput", None)
-    if worker_input is None:
-        return
-    worker_id = worker_input.get("workerid", "unknown")
-    _xdist_append_line(config, worker_id, "started", item.nodeid)
+    """Log test start event."""
+    _log_xdist_event(item.config, "started", item.nodeid)
 
 
 def pytest_runtest_makereport(item, call):
-    """Log test finish with worker id and outcome."""
-    if call.when != "call":
-        return
-    config = item.config
-    worker_input = getattr(config, "workerinput", None)
-    if worker_input is None:
-        return
-    worker_id = worker_input.get("workerid", "unknown")
-    outcome = "passed" if not call.excinfo else "failed"
-    _xdist_append_line(config, worker_id, "finished", item.nodeid, outcome=outcome)
+    """Log test finish event with outcome."""
+    if call.when == "call":
+        outcome = "failed" if call.excinfo else "passed"
+        _log_xdist_event(item.config, "finished", item.nodeid, outcome)
 
 
 # ===================== Reader and Retrieve fixtures ===================
