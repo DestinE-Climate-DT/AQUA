@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- CatGen: replacing DARS with DARS2 FESOM grids in catgen config files (#2706)
 
 AQUA diagnostics complete list:
 
