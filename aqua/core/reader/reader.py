@@ -8,7 +8,6 @@ import re
 import intake_xarray
 import xarray as xr
 import pandas as pd
-import numpy as np
 from metpy.units import units
 
 from smmregrid import GridInspector
@@ -24,7 +23,7 @@ from aqua.core.regridder import Regridder
 from aqua.core.fldstat import FldStat
 from aqua.core.timstat import TimStat
 from aqua.core.fixer import Fixer
-from aqua.core.data_model import DataModel
+from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.histogram import histogram
 import aqua.core.gsv
 
@@ -579,6 +578,8 @@ class Reader():
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
+        
+        data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
 
