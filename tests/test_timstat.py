@@ -35,6 +35,7 @@ def data_ttr(reader):
     return reader.retrieve(var='ttr')
 
 @pytest.mark.aqua
+@pytest.mark.xdist_group(name="dask_operations")
 class TestTimmean():
 
     def test_timsum(self, reader, data):
@@ -186,7 +187,7 @@ class TestTimmean():
 
         # Expected value is the mean over May–Jul 2020 of the same series
         expected = da_sel.sel(time=da_sel.time.dt.month.isin([5, 6, 7])).mean().values
-        assert float(avg.values) == float(expected)
+        assert float(avg.isel(time=0).values) == float(expected)
 
     def test_timmean_exclude_incomplete_tcoords(self, reader, data_2t):
         """Test that exclude_incomplete mask coordinates align with resampled time axis"""

@@ -266,23 +266,18 @@ class TestGsv():
     def test_reader_dask(self) -> None:
         """
         Reading in parallel with a dask cluster
+        LocalCluster is created with dashboard_address=None to avoid dashboard port conflicts under pytest-xdist
         """
-
-        cluster = LocalCluster(threads_per_worker=1, n_workers=2)
-        client = Client(cluster)
-
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
-        data = reader.retrieve()
-        # Test if the correct dates have been found
-        assert "1990-01-01T00:00" in str(data.time[0].values)
-        assert "1990-01-01T23:00" in str(data.time[-1].values)
-        # Test if the data can actually be read and contain the expected values
-        assert data.tcc.isel(time=0).mean().compute().item() == pytest.approx(65.30221138649116)
-        assert data.tcc.isel(time=-1).mean().compute().item() == pytest.approx(66.79689864974151)
-        # assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
-        # assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
-        client.shutdown()
-        cluster.close()
+        with LocalCluster(threads_per_worker=1, n_workers=2, dashboard_address=None) as cluster:
+            with Client(cluster) as client:
+                reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+                data = reader.retrieve()
+                # Test if the correct dates have been found
+                assert "1990-01-01T00:00" in str(data.time[0].values)
+                assert "1990-01-01T23:00" in str(data.time[-1].values)
+                # Test if the data can actually be read and contain the expected values
+                assert data.tcc.isel(time=0).mean().compute().item() == pytest.approx(65.30221138649116)
+                assert data.tcc.isel(time=-1).mean().compute().item() == pytest.approx(66.79689864974151)
 
 
 # Additional tests for the GSVSource class
