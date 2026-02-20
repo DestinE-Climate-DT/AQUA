@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Use 3 workers for tests, add 5min timeout for each test and global 40min timeout; add workers log file (#2701)
 - Add a test for attributes after regridding (#2693)
 - Regridding of datasets to ignore bounds (#2678)
 - Fix units for FESOM thetao variable in fixer (#2686)
