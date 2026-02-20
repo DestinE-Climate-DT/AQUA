@@ -228,25 +228,25 @@ class GSVSource(base.DataSource):
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
 
-            if self.engine == 'fdb' and not self.dummy_run:
-                #We run the checks only on the real init, to avoid issues with the probe call of intake
-                if np.any(self.chk_type == 0):  # We have HPC chunks
-                    if not self.fdbpath and not self.fdbhome:
-                        raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
-                    # Check that the specified paths actually exist
-                    if self.fdbhome and not os.path.exists(self.fdbhome):
-                        raise FileNotFoundError(f'fdbhome path {self.fdbhome} does not exist!')
-                    if self.fdbpath and not os.path.exists(self.fdbpath):
-                        raise FileNotFoundError(f'fdbpath path {self.fdbpath} does not exist!')
-                
-                if np.any(self.chk_type == 1):  # We have bridge chunks
-                    if not self.fdbpath_bridge and not self.fdbhome_bridge:
-                        raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
-                    # Check that the specified paths actually exist
-                    if self.fdbhome_bridge and not os.path.exists(self.fdbhome_bridge):
-                        raise FileNotFoundError(f'fdbhome_bridge path {self.fdbhome_bridge} does not exist!')
-                    if self.fdbpath_bridge and not os.path.exists(self.fdbpath_bridge):
-                        raise FileNotFoundError(f'fdbpath_bridge path {self.fdbpath_bridge} does not exist!')
+        if self.engine == 'fdb' and not self.dummy_run:
+            #We run the checks only on the real init, to avoid issues with the probe call of intake
+            if np.any(self.chk_type == 0):  # We have HPC chunks
+                if not self.fdbpath and not self.fdbhome:
+                    raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
+                # Check that the specified paths actually exist
+                if self.fdbhome and not os.path.exists(self.fdbhome):
+                    raise FileNotFoundError(f'fdbhome path {self.fdbhome} does not exist!')
+                if self.fdbpath and not os.path.exists(self.fdbpath):
+                    raise FileNotFoundError(f'fdbpath path {self.fdbpath} does not exist!')
+            
+            if np.any(self.chk_type == 1):  # We have bridge chunks
+                if not self.fdbpath_bridge and not self.fdbhome_bridge:
+                    raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
+                # Check that the specified paths actually exist
+                if self.fdbhome_bridge and not os.path.exists(self.fdbhome_bridge):
+                    raise FileNotFoundError(f'fdbhome_bridge path {self.fdbhome_bridge} does not exist!')
+                if self.fdbpath_bridge and not os.path.exists(self.fdbpath_bridge):
+                    raise FileNotFoundError(f'fdbpath_bridge path {self.fdbpath_bridge} does not exist!')
 
         self.chk_vert = None
         self.ntimechunks = self._npartitions
@@ -791,7 +791,7 @@ class GSVSource(base.DataSource):
         else:
             self.logger.error("FDB info file %s does not contain 'data' section, which is mandatory", fdb_info_file)
             return None
-        if 'bridge' in fdb_info and (self.fdbhome_bridge or self.fdbpath_bridge):
+        if 'bridge' in fdb_info:
             try:
                 fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
                 fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
