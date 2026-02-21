@@ -80,6 +80,7 @@ class Drop():
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
                  engine='fdb',
+                 chunks=None,
                  **kwargs):
         """
         Initialize the DROP class
@@ -139,6 +140,7 @@ class Drop():
 
         # General settings
         self.engine = engine
+        self.chunks = chunks
         self.logger = log_configure(loglevel, 'DROP')
         self.loglevel = loglevel
 
@@ -318,7 +320,8 @@ class Drop():
                              startdate=self.startdate,
                              enddate=self.enddate,
                              fix=self.fix,
-                             engine=self.engine, **self.kwargs)
+                             engine=self.engine,
+                             chunks=self.chunks, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)

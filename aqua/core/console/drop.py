@@ -66,6 +66,8 @@ def drop_parser(parser = None):
                         help="End date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--engine', type=str,
                         help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
+    parser.add_argument('--chunks', type=str, default=None,
+                        help='Chunking to be used for data access.')
     parser.add_argument('--zarr', action="store_true",
                         help='Create zarr')
     parser.add_argument('--verify-zarr', action="store_true",
@@ -116,6 +118,7 @@ def drop_execute(args):
     startdate = get_arg(args, 'startdate', config['target'].get('startdate'))
     enddate = get_arg(args, 'enddate', config['target'].get('enddate'))
     engine = get_arg(args, 'engine', config['options'].get('engine', 'fdb'))
+    chunks = get_arg(args, 'chunks', config['options'].get('chunks', None))
 
     loglevel = get_arg(args, 'loglevel', config['options'].get('loglevel', 'WARNING'))
     compact = config['options'].get('compact', 'cdo')
@@ -139,7 +142,7 @@ def drop_execute(args):
             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
             region=region, stat=stat, compact=compact,
             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
-            default_workers=default_workers, engine=engine,
+            default_workers=default_workers, engine=engine, chunks=chunks,
             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=None,
@@ -147,6 +150,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
              region=None, stat='mean',
              definitive=False, overwrite=False,
              rebuild=False, monitoring=False, engine='fdb',
+             chunks=None,
              default_workers=1, do_zarr=False, verify_zarr=False,
              compact='cdo',
              only_catalog=False):
@@ -226,6 +230,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                                         performance_reporting=monitoring,
                                         exclude_incomplete=True,
                                         engine=engine,
+                                        chunks=chunks,
                                         **extra_args)
 
 
