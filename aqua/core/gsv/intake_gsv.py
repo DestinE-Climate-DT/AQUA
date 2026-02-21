@@ -77,7 +77,6 @@ class GSVSource(base.DataSource):
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
-
         # If engine is not specified, we set it to 'fdb' and we activate the dummy_run flag.
         # This means that we are running a dummy run, where the GSVRetriever is not actually used. 
         # This is useful for testing and for the probe call of intake, which is used to get the schema without actually reading the data.
@@ -85,7 +84,7 @@ class GSVSource(base.DataSource):
         self.dummy_run = (engine is None)
         
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
-        self.engine = engine
+
         if self.engine == 'polytope':
             self.databridge = 'lumi' if databridge is None else databridge
         else:
