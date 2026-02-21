@@ -10,6 +10,9 @@ Main changes:
 
 Complete list:
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
+- Add test for flipping lat coord by datamodel (#2699)
+- CatGen: replacing DARS with DARS2 FESOM grids in catgen config files (#2706)
+- Use 3 workers for tests, add 5min timeout for each test and global 40min timeout; add workers log file (#2701)
 - Add a test for attributes after regridding (#2693)
 - Regridding of datasets to ignore bounds (#2678)
 - Fix units for FESOM thetao variable in fixer (#2686)
