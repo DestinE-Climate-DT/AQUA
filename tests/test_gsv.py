@@ -91,6 +91,22 @@ class TestGsv():
             GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
                       chunks="S", var='167', bridge_end_date='complete', engine='fdb')
 
+    def test_gsv_constructor_raise_path_not_exists(self) -> None:
+    """Test raise when fdbhome path is specified but does not exist"""
+    print(DEFAULT_GSV_PARAMS['request'])
+    with pytest.raises(FileNotFoundError, match="fdbhome path .* does not exist"):
+        GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
+                  chunks="S", var='167', engine='fdb',
+                  metadata={'fdb_home': '/path/that/does/not/exist'})
+
+    def test_gsv_constructor_raise_bridge_path_not_exists(self) -> None:
+    """Test raise when bridge path is specified but does not exist"""
+    print(DEFAULT_GSV_PARAMS['request'])
+    with pytest.raises(FileNotFoundError, match="fdbhome_bridge path .* does not exist"):
+        GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
+                  chunks="S", var='167', bridge_end_date='complete', engine='fdb',
+                  metadata={'fdb_home_bridge': '/path/that/does/not/exist'})
+
     @pytest.mark.parametrize('gsv', [{'request': {
         'domain': 'g',
         'stream': 'oper',
