@@ -745,3 +745,20 @@ class TestHistogram:
         assert ax.get_xlabel() == 'Custom X'
         assert ax.get_ylabel() == 'Custom Y'
         plt.close(fig)
+
+    def test_plot_histogram_labels_edge_cases(self):
+        """Test edge cases for automatic label generation"""
+        # var_name without units -> xlabel without units bracket
+        data_no_units = self.hist_data.copy()
+        data_no_units.center_of_bin.attrs = {'long_name': 'Speed'}
+        fig, ax = plot_histogram(data=data_no_units, loglevel=loglevel)
+        assert ax.get_xlabel() == 'Speed'
+        plt.close(fig)
+        
+        # PDF without center_of_bin units -> ylabel without inverse units
+        pdf_no_units = self.hist_data.copy()
+        pdf_no_units.attrs['units'] = 'probability density'
+        pdf_no_units.center_of_bin.attrs = {}
+        fig, ax = plot_histogram(data=pdf_no_units, loglevel=loglevel)
+        assert ax.get_ylabel() == 'Probability Density'
+        plt.close(fig)
