@@ -703,7 +703,7 @@ class TestHistogram:
         plt.close(fig)
         assert os.path.exists(tmp_path / 'test_histogram_multi_ref.png')
 
-    def test_plot_histogram_no_center_of_bin(self):
+    def test_plot_histogram_no_center_of_bin(self, tmp_path):
         """Test histogram with data missing center_of_bin dimension"""
         bad_data = xr.DataArray(np.random.rand(10), dims=['time'])
         
@@ -735,7 +735,7 @@ class TestHistogram:
         assert 'Wind Speed' in ax.get_xlabel()
         plt.close(fig)
 
-    def test_plot_histogram_custom_labels(self, tmp_path):
+    def test_plot_histogram_custom_labels(self):
         """Test that custom labels override automatic ones"""
         fig, ax = plot_histogram(data=self.hist_data,
                                 xlabel='Custom X',
