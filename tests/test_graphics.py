@@ -703,7 +703,7 @@ class TestHistogram:
         plt.close(fig)
         assert os.path.exists(tmp_path / 'test_histogram_multi_ref.png')
 
-    def test_plot_histogram_no_center_of_bin(self, tmp_path):
+    def test_plot_histogram_no_center_of_bin(self):
         """Test histogram with data missing center_of_bin dimension"""
         bad_data = xr.DataArray(np.random.rand(10), dims=['time'])
         
@@ -716,3 +716,32 @@ class TestHistogram:
         fig.savefig(tmp_path / 'test_histogram_no_bins.png', dpi=DPI)
         plt.close(fig)
         assert os.path.exists(tmp_path / 'test_histogram_no_bins.png')
+
+    def test_plot_histogram_auto_labels(self):
+        """Test automatic label generation for histogram and PDF"""
+        # Test histogram (counts) - already has center_of_bin.units from setup
+        fig, ax = plot_histogram(data=self.hist_data, loglevel=loglevel)
+        assert 'Counts' in ax.get_ylabel()
+        assert 'm' in ax.get_xlabel() or 's' in ax.get_xlabel()
+        plt.close(fig)
+        
+        # Test PDF with inverse units
+        pdf_data = self.hist_data.copy()
+        pdf_data.attrs['units'] = 'probability density'
+        pdf_data.center_of_bin.attrs['long_name'] = 'Wind Speed'
+        
+        fig, ax = plot_histogram(data=pdf_data, loglevel=loglevel)
+        assert 'Probability Density' in ax.get_ylabel()
+        assert 'Wind Speed' in ax.get_xlabel()
+        plt.close(fig)
+
+    def test_plot_histogram_custom_labels(self, tmp_path):
+        """Test that custom labels override automatic ones"""
+        fig, ax = plot_histogram(data=self.hist_data,
+                                xlabel='Custom X',
+                                ylabel='Custom Y',
+                                loglevel=loglevel)
+        
+        assert ax.get_xlabel() == 'Custom X'
+        assert ax.get_ylabel() == 'Custom Y'
+        plt.close(fig)
