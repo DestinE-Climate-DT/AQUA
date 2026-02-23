@@ -22,19 +22,20 @@ class TimStat():
     @property
     def AVAILABLE_STATS(self):
         """Return the list of available statistics."""
-        return ['mean', 'std', 'max', 'min', 'sum', 'histogram']
+        return ['mean', 'std', 'max', 'min', 'sum', 'histogram', 'squaredmean']
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False, func_kwargs={}, **kwargs):
         """
         Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
         parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object. The statistic can be
-        'mean', 'std', 'max', 'min' or 'histogram'. The output is a new xarray dataset with the time dimension resampled to the desired
+        'mean', 'squaredmean', 'std', 'max', 'min' or 'histogram'. The output is a new xarray dataset with the time dimension resampled to the desired
         frequency and the statistic computed over the time window.
-
+        NOTE: 'squaredmean' is an element-wise/pointwise squared values and weighted by the number of timestamps.
+        
         Args: 
             data (xarray.Dataset): Input data to compute the statistic on.
-            stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'histogram'] or a custom function.
+            stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'histogram', 'squaredmean'] or a custom function.
             freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object.
             exclude_incomplete (bool): If True, exclude incomplete chunks from the output.
             time_bounds (bool): If True, add time bounds to the output data.
@@ -57,6 +58,8 @@ class TimStat():
 
         if stat == 'histogram':  # convert to callable function
             stat = histogram
+        if stat == 'squaredmean': # convert the method for 'squaredmean' to callable function
+            stat = self._squared_mean 
 
         resample_freq = frequency_string_to_pandas(freq)
 
@@ -145,6 +148,12 @@ class TimStat():
             log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
+
+    def _squared_mean(self, data, **kwargs):
+        """Compute the mean of squared data."""
+        # Ensure we only reduce the time dimension
+        dim = kwargs.get('dim', 'time')
+        return (data * data).mean(dim=dim, **kwargs)
     
     # this is not yet a great solution, but is more general than the previous one
     def center_time_axis(self, avg_data: xr.Dataset, resample_freq: str) -> xr.Dataset:

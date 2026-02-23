@@ -51,7 +51,7 @@ VAR_ENCODING = {
     '_FillValue': np.nan
 }
 
-AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum']
+AVAILABLE_STATS = ['mean', 'squaredmean',  'std', 'max', 'min', 'sum']
 
 
 class Drop():
@@ -122,7 +122,7 @@ class Drop():
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
-            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min' or 'sum'.
+            stat (string, opt):      Statistic to compute. Can be 'mean', 'squaredmean', 'std', 'max', 'min' or 'sum'.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
