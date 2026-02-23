@@ -279,7 +279,7 @@ class GSVSource(base.DataSource):
             bridge_end_date (str): End date of the bridge data.
         """
         # Getting info from the FDB info file
-        if self.engine == 'fdb':
+        if self.engine == 'fdb' and not self.dummy_run:
             fdb_info = self._read_fdb_info()
         else:
             fdb_info = None
