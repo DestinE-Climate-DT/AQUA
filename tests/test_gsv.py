@@ -263,8 +263,8 @@ class TestGsv():
         """
         source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
                            metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
-                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'},
-                           loglevel=loglevel)
+                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'}, 
+                                     engine='fdb', loglevel=loglevel)
 
         assert source.data_start_date == '19900101T0000'
         assert source.data_end_date == '19900103T2300'
@@ -274,7 +274,7 @@ class TestGsv():
         source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
                            metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
                                      'fdb_info_file': 'tests/catgen/fdb_info_hpc-only.yaml'},
-                           loglevel=loglevel)
+                           engine='fdb', loglevel=loglevel)
 
         assert source.data_start_date == '19900101T0000'
         assert source.data_end_date == '19900103T2300'
