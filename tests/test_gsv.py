@@ -66,7 +66,7 @@ class TestGsv():
         """Simplest test, to check that we can create it correctly."""
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167', metadata={'fdb_home': FDB_HOME})
+                           chunks="S", var='167', metadata={'fdb_home': FDB_HOME}, engine='fdb')
         assert source is not None
 
     def test_gsv_constructor_bridge(self) -> None:
@@ -74,7 +74,7 @@ class TestGsv():
         print(DEFAULT_GSV_PARAMS['request'])
         source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
                            chunks="S", var='167', bridge_end_date='complete',
-                           metadata={'fdb_home_bridge': FDB_HOME})
+                           metadata={'fdb_home_bridge': FDB_HOME}, engine='fdb')
         assert source is not None
 
     def test_gsv_constructor_raise(self) -> None:
