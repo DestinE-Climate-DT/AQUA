@@ -175,6 +175,7 @@ The syntax is similar to the ``numpy.histogram()`` function, but it returns a Da
 If the input DataArray is Dask-based then the computation will be lazy.
 If a Dataset is passed, the first variable will be used.
 Latitudinal weighting is activated by default, so the 'counts' of the histogram will not be integers.
+This can be overridden by setting the ``weighted=False`` argument or by passing a weights DataArray to the ``weights`` argument.
 It is possible to compute a complete PDF (Probability Density Function) by setting the ``density=True`` argument.
 
 .. code-block:: python
@@ -192,6 +193,7 @@ The ``bins`` and ``range`` arguments are recommended, all others totally optiona
 
 Some extra options are available:
 
+- ``weights=xr.DataArray``: this will pass a weights DataArray to the histogram computation.
 - ``weighted=False``: this will switch off computing a weighted histogram, where the weights are the cosines of the latitudes (true by default).
 - ``density=True``: this will compute a PDF (Probability Density Function) instead of a histogram (false by default).
 - ``dask=False``: this will force the computation of the histogram using numpy (true by default).
