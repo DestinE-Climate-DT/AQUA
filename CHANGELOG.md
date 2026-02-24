@@ -9,6 +9,14 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+
+## [v1.0.0a4]
+
+Main changes:
+- Several updates in DROP functionalities and CLI, including support for sum statistic and native DROP production
+- Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
+
+Complete list:
 - Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#2720)
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
 - Add test for flipping lat coord by datamodel (#2699)
@@ -34,7 +42,7 @@ Complete list:
 - Read with microsecond time resolution by default (#2638)
 - Update data model coordinates transformer to work with latest xarray version (#2652)
 
-## [v1.0.0a3] 
+## [v1.0.0a3]
 Main changes:
 - Switch to pandas 3.0.0 and recent xarray
 - Support access to MN5 DataBridge via Polytope
@@ -1377,7 +1385,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...HEAD
+[v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
 [v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
 [v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
 [v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1
