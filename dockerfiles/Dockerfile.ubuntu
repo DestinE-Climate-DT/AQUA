@@ -1,9 +1,9 @@
-# Custom Ubuntu 22.04 Docker image with recent FDB5, ECCODES
-FROM ubuntu:22.04
+# Custom Ubuntu 24.04 Docker image with recent FDB5, ECCODES
+FROM ubuntu:24.04
 
 LABEL maintainer="jost.hardenberg@polito.it"
-LABEL version="0.2"
-LABEL description="Custom docker image based ion Ubuntu 22.04 with FDB5 and ECCODES for CA DestinE"
+LABEL version="0.2.1"
+LABEL description="Custom docker image based on Ubuntu 24.04 with FDB5 and ECCODES for CA DestinE"
 
 #ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update
