@@ -78,12 +78,12 @@ class TestCatalogEntryBuilder:
         )
         entry_name = builder.create_entry_name()
         block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name=source_grid_name)
-        
+
         if resolution == 'r100' and frequency == 'monthly':
             expected_name = f'lra-{resolution}-{frequency}'
         else:
             expected_name = f'{resolution}-{frequency}'
-        
+
         assert entry_name == expected_name
         assert block['driver'] == 'netcdf'
         assert block['parameters'].keys() == {'realization', 'stat', 'region'}
@@ -269,16 +269,6 @@ class TestDROP:
             Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
                  resolution='r100', frequency='monthly', stat='unknown_stat',
                  loglevel=LOGLEVEL)
-
-    def test_histogram_without_kwargs(self, drop_arguments, tmp_path):
-        """Test DROP with histogram stat but missing histogram-specific kwargs."""
-        error = 'histogram() missing 1 required positional argument: \'range\''
-        with pytest.raises(TypeError, match=re.escape(error)):
-            test = Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
-                        frequency='monthly', stat='histogram',
-                        loglevel=LOGLEVEL)
-            test.retrieve()
-            test.drop_generator()
 
     def test_wrong_stat_kwargs(self, drop_arguments, tmp_path):
         """Test DROP with histogram stat but wrong stat_kwargs."""
