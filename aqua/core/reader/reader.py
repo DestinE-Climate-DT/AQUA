@@ -1307,6 +1307,13 @@ class Reader():
         """
         return self.timstat(data, stat='mean', **kwargs)
 
+    def timsqmean(self, data, **kwargs):
+        """
+        Time square mean wrapper which is calling the timstat module.
+        TODO: How to handle the units 
+        """
+        return self.timstat(data, stat='squaredmean', **kwargs)
+
     def timmax(self, data, **kwargs):
         """
         Time max wrapper which is calling the timstat module.
