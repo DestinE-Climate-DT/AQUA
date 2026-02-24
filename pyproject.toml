@@ -46,7 +46,6 @@ dependencies = [
     "gribscan",
     "pandas==2.2.2",
     "intake==0.7.0", # Version 2 is not yet compatible with intake-xarray
-    "intake-esm",
     "intake-xarray",
     "jinja2",
     "matplotlib==3.10.1",

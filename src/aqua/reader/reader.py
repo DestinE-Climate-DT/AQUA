@@ -5,7 +5,7 @@ import os
 import re
 import types
 import shutil
-import intake_esm
+# import intake_esm # Disabled
 import intake_xarray
 import xarray as xr
 from smmregrid import Regridder
@@ -546,10 +546,10 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         fiter = False
         ffdb = False
         # If this is an ESM-intake catalog use first dictionary value,
-        if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-            data = self.reader_esm(self.esmcat, loadvar)
+        # if isinstance(self.esmcat, intake_esm.core.esm_datastore):
+        #     data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
-        elif isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
+        if isinstance(self.esmcat, aqua.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=(not self.stream_generator), level=level)
             fiter = self.stream_generator  # this returs an iterator unless dask is set
@@ -1024,22 +1024,22 @@ class Reader(FixerMixin, RegridMixin, TimStatMixin):
         # remove the trend
         return data - fit
 
-    def reader_esm(self, esmcat, var):
-        """Reads intake-esm entry. Returns a dataset."""
-        cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
-        query = esmcat.metadata['query']
-        if var:
-            query_var = esmcat.metadata.get('query_var', 'short_name')
-            # Convert to list if not already
-            query[query_var] = var.split() if isinstance(var, str) else var
-        subcat = esmcat.search(**query)
-        data = subcat.to_dataset_dict(cdf_kwargs=cdf_kwargs,
-                                      # zarr_kwargs=dict(consolidated=True),
-                                      # decode_times=True,
-                                      # use_cftime=True)
-                                      progressbar=False
-                                      )
-        return list(data.values())[0]
+    # def reader_esm(self, esmcat, var):
+    #     """Reads intake-esm entry. Returns a dataset."""
+    #     cdf_kwargs = esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}})
+    #     query = esmcat.metadata['query']
+    #     if var:
+    #         query_var = esmcat.metadata.get('query_var', 'short_name')
+    #         # Convert to list if not already
+    #         query[query_var] = var.split() if isinstance(var, str) else var
+    #     subcat = esmcat.search(**query)
+    #     data = subcat.to_dataset_dict(cdf_kwargs=cdf_kwargs,
+    #                                   # zarr_kwargs=dict(consolidated=True),
+    #                                   # decode_times=True,
+    #                                   # use_cftime=True)
+    #                                   progressbar=False
+    #                                   )
+    #     return list(data.values())[0]
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
