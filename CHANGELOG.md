@@ -9,7 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
-- Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#)
+- Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#2720)
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
 - Add test for flipping lat coord by datamodel (#2699)
 - CatGen: replacing DARS with DARS2 FESOM grids in catgen config files (#2706)
