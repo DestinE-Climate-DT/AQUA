@@ -6,14 +6,14 @@ from aqua.core.util import convert_data_units
 from aqua.core.logger import log_configure
 
 
-def histogram(data: xr.DataArray, range: tuple, bins: int = 10,  units: str = None,
+def histogram(data: xr.DataArray, range: tuple = None, bins: int = 10,  units: str = None,
               weighted: bool = True, loglevel: str = 'WARNING', dask: bool = True, check: bool = False, density: bool = False):
     """
     Function to calculate a histogram of a DataArray.
 
     Args:
         data (xarray.Dataset):     The input DataArray. If it is a Dataset, the first variable is used.
-        range (tuple):             The lower and upper range of the bins.
+        range (tuple, optional):   The lower and upper range of the bins. Defaults to None.
         bins (int, optional):      The number of bins for the histogram. Defaults to 10.
         weighted (bool, optional): Use latitudinal weights for the histogram. Defaults to True.
         dask (bool, optional):     If True, uses Dask for parallel computation. Defaults to True.
