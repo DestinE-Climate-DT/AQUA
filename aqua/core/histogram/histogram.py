@@ -7,7 +7,8 @@ from aqua.core.logger import log_configure
 
 
 def histogram(data: xr.DataArray, range: tuple = None, bins: int = 10,  units: str = None,
-              weighted: bool = True, loglevel: str = 'WARNING', dask: bool = True, check: bool = False, density: bool = False):
+              weighted: bool = True, weights: xr.DataArray | None = None, loglevel: str = 'WARNING',
+              dask: bool = True, check: bool = False, density: bool = False):
     """
     Function to calculate a histogram of a DataArray.
 
@@ -16,6 +17,7 @@ def histogram(data: xr.DataArray, range: tuple = None, bins: int = 10,  units: s
         range (tuple, optional):   The lower and upper range of the bins. Defaults to None.
         bins (int, optional):      The number of bins for the histogram. Defaults to 10.
         weighted (bool, optional): Use latitudinal weights for the histogram. Defaults to True.
+        weights (xr.DataArray, optional): Weights for the histogram. Defaults to None.
         dask (bool, optional):     If True, uses Dask for parallel computation. Defaults to True.
         units (str, optional):     Convert data to these units. Defaults to None.
         check (bool, optional):    Checks if the sum of counts in the histogram is equal to the size of the data. 
@@ -44,15 +46,16 @@ def histogram(data: xr.DataArray, range: tuple = None, bins: int = 10,  units: s
 
     logger.info('Computing histogram with the following parameters: bins={}, range={}'.format(bins, range))
 
-    if weighted:
+    if weights is not None:
+        if weights.size != data.size:
+            raise ValueError("Weights must have the same size as the data.")
+    elif weighted:
         logger.debug('Using latitudinal weights')
         if 'lat' not in data.coords:
             raise ValueError("DataArray must have a 'lat' coordinate for weighted histogram.")
         weights = xr.ones_like(data)
         weights = weights * weights.lat
         weights = np.cos(np.radians(weights))
-    else:
-        weights = None
 
     if dask and isinstance(data.data, da.Array):
         logger.debug('Using Dask for histogram computation')
