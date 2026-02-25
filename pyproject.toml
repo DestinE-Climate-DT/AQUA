@@ -79,7 +79,7 @@ tests = [
     "pytest==8.4.2",
     "pytest-cov==7.0.0",
     "coverage[toml]==7.10.7",
-    "pandoc==2.4",
+    "pandoc" # was in container ==2.4",
     "pycobertura==4.1.0"
 ]
 all = [

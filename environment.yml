@@ -16,7 +16,7 @@ dependencies:
   # PR #36 catalog repo
   - cartopy_offlinedata # this is needed for MN5 HPC
   - pandas==2.2.2
-  - pandoc==2.4
+  - pandoc
   - pip
   - hdf5 #explicitly to avoid issues with pypi version
   - h5py==3.12.1 # moved from the pyproject 
