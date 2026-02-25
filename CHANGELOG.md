@@ -9,6 +9,11 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 
+## [v0.19.10]
+
+AQUA core complete list:
+- CatGen: replacing DARS with DARS2 FESOM grids in catgen config files (#2706)
+
 ## [v0.19.9]
 
 AQUA core complete list:
@@ -1256,7 +1261,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.9
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.10
+[v0.19.10]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.9...v0.19.10
 [v0.19.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.8...v0.19.9
 [v0.19.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.7...v0.19.8
 [v0.19.7]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.6...v0.19.7
