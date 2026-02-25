@@ -268,6 +268,8 @@ class CatalogMixin:
                 cfg['catalog'] = None
             else:
                 cfg['catalog'].remove(catalog)
+                if not cfg['catalog']:
+                    cfg['catalog'] = None
             self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
             dump_yaml(self.configfile, cfg)
 
