@@ -17,6 +17,10 @@ Main changes:
 - Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
 
 Complete list:
+- Fix null catalog entry (#2725)
+- Histogram function now accepts weights dataarray argument (#2734)
+- DROP module and CLI can take a `stat_kwargs` dictionary to specify additional arguments for the statistical callable operator (#2691)
+- `histogram` is integrated in the DROP framework (#2691)
 - Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#2720)
 - Histogram graphics function adjustments for xlabel and ylabel (#2598)
 - Add test for flipping lat coord by datamodel (#2699)
