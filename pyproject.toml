@@ -57,7 +57,6 @@ dependencies = [
     "pyYAML",
     "ruamel.yaml",
     "smmregrid==0.1.0",
-    "setuptools>=65", # Added to v0.13.10 to fix build issues with pyproject.toml, see #2721
     "sparse==0.15.5",
     "xarray==2025.1.2",
     "kerchunk==0.2.9",
