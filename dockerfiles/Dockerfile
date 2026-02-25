@@ -28,15 +28,10 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # We switch to mamba user later, root for now just to create the user.
 USER root
 
-# --- x snip x ---
-# --- This is from the official docs from the micromamba image.
-# --- https://micromamba-docker.readthedocs.io/en/latest/advanced_usage.html#adding-micromamba-to-an-existing-docker-image
-# if your image defaults to a non-root user, then you may want to make the
-# next 3 ARG commands match the values in your image. You can get the values
-# by running: docker run --rm -it my/image id -a
+# --- Micromamba integration
+# Base image (Ubuntu 24.04 FDB) already contains a default user with GID 1000.
+# We reuse that user instead of creating a new one to avoid GID conflicts.
 ARG MAMBA_USER=mamba
-ARG MAMBA_USER_ID=1000
-ARG MAMBA_USER_GID=1000
 ENV MAMBA_USER=$MAMBA_USER
 ENV MAMBA_ROOT_PREFIX="/opt/conda"
 ENV MAMBA_EXE="/bin/micromamba"
