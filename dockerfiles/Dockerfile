@@ -9,7 +9,7 @@ FROM mambaorg/micromamba:1.5.6 as micromamba
 # supposed to be used in the operational framework.
 # Switch to the first one for testing purposes.
 # FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb-aqua:latest as fdb
-FROM ghcr.io/destine-climate-dt/base:ubuntu-24.04 as fdb
+FROM ghcr.io/destine-climate-dt/ubuntu24.04-fdb-aqua:v0.13-ubuntu-container-24.04 as fdb
 
 
 # Install dependencies
