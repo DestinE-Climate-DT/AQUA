@@ -17,6 +17,7 @@ Main changes:
 - Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
 
 Complete list:
+- Remove necessity of FDB paths if engine is polytope (#2656)
 - Fix null catalog entry (#2725)
 - Histogram function now accepts weights dataarray argument (#2734)
 - DROP module and CLI can take a `stat_kwargs` dictionary to specify additional arguments for the statistical callable operator (#2691)
