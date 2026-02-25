@@ -3,6 +3,8 @@ Shared fixtures for AQUA test suite.
 These fixtures use scope="session" to retrieve data once and share across all tests.
 Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
+import os
+import tempfile
 from pathlib import Path
 
 import matplotlib
@@ -29,12 +31,18 @@ def pytest_configure(config):
     """
     Runs once at session start on controller and workers with xdist.
     Cache configdir before any test can modify HOME.
+    Set per-worker TMPDIR to avoid CDO/temp contention in parallel runs.
     """
     try:
         config_path = ConfigPath()
         config._stored_configdir = config_path.configdir
     except (FileNotFoundError, KeyError):
         config._stored_configdir = None
+
+    workerinput = getattr(config, "workerinput", None)
+    if workerinput is not None:
+        worker_id = workerinput.get("workerid", "master")
+        os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_")
 
 
 def pytest_sessionfinish(session, exitstatus):

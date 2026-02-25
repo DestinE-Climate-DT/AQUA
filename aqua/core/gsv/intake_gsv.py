@@ -38,13 +38,12 @@ class GSVSource(base.DataSource):
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
     dask_access = False  # Flag if dask has been requested
-    first_run = True  # Flag to check if this is the first run of the class
 
     def __init__(self, request, data_start_date, data_end_date, bridge_start_date=None, bridge_end_date=None, 
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
-                 switch_eccodes=False, loglevel='WARNING', engine='fdb', databridge=None, **kwargs):
+                 switch_eccodes=False, loglevel='WARNING', engine=None , databridge=None, **kwargs):
         """
         Initializes the GSVSource class. These are typically specified in the catalog entry,
         but can also be specified upon accessing the catalog.
@@ -72,15 +71,20 @@ class GSVSource(base.DataSource):
             metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
             switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'. 
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb' if not specified.
             databridge (str, optional): Only for the Polytope engine. Sets wether the data must be retrieved from the
             Lumi databridge or from the MN5 databridge. Defaults to None.
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
-
+        # If engine is not specified, we set it to 'fdb' and we activate the dummy_run flag.
+        # This means that we are running a dummy run, where the GSVRetriever is not actually used. 
+        # This is useful for testing and for the probe call of intake, which is used to get the schema without actually reading the data.
+        self.engine = engine or 'fdb'
+        self.dummy_run = (engine is None)
+        
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
-        self.engine = engine
+
         if self.engine == 'polytope':
             self.databridge = 'lumi' if databridge is None else databridge
         else:
@@ -107,17 +111,6 @@ class GSVSource(base.DataSource):
             self.levels = metadata.get('levels', None)
             self.fdb_info_file = metadata.get('fdb_info_file', None)
 
-            # safety check for paths
-
-            # skip the first time:
-            # this is needed because intake calls initialization twice, first without custom arguments and then with
-            # If we pass engine='polytope' on a remote machine the path check would fail but intake initializes the class a first time actually with the wrong engine
-            if self.engine and self.engine == 'fdb' and not GSVSource.first_run:
-                for attr in ['fdbhome', 'fdbpath', 'fdbhome_bridge', 
-                            'fdbpath_bridge', 'eccodes_path']:
-                    attr_path = getattr(self, attr)
-                    if attr_path and not os.path.exists(attr_path):
-                        raise FileNotFoundError(f'{attr} path {attr_path} does not exist!')
 
         else:
             self.fdbpath = None
@@ -127,8 +120,6 @@ class GSVSource(base.DataSource):
             self.fdb_info_file = None
             self.eccodes_path = None
             self.levels = None
-
-        GSVSource.first_run = False
 
         # set the timestyle
         self.timestyle = timestyle
@@ -235,16 +226,31 @@ class GSVSource(base.DataSource):
 
         if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
             raise ValueError('Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!')
-        if np.any(self.chk_type == 0):
-            if not self.fdbpath and not self.fdbhome:
-                raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
-        if np.any(self.chk_type == 1):
-            if not self.fdbpath_bridge and not self.fdbhome_bridge:
-                raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
+
+        if self.engine == 'fdb' and not self.dummy_run:
+            #We run the checks only on the real init, to avoid issues with the probe call of intake
+            if np.any(self.chk_type == 0):  # We have HPC chunks
+                if not self.fdbpath and not self.fdbhome:
+                    raise ValueError('Some data is on HPC but no local FDB path or FDB home is specified in catalog.')
+                # Check that the specified paths actually exist
+                if self.fdbhome and not os.path.exists(self.fdbhome):
+                    raise FileNotFoundError(f'fdbhome path {self.fdbhome} does not exist!')
+                if self.fdbpath and not os.path.exists(self.fdbpath):
+                    raise FileNotFoundError(f'fdbpath path {self.fdbpath} does not exist!')
+            
+            if np.any(self.chk_type == 1):  # We have bridge chunks
+                if not self.fdbpath_bridge and not self.fdbhome_bridge:
+                    raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
+                # Check that the specified paths actually exist
+                if self.fdbhome_bridge and not os.path.exists(self.fdbhome_bridge):
+                    raise FileNotFoundError(f'fdbhome_bridge path {self.fdbhome_bridge} does not exist!')
+                if self.fdbpath_bridge and not os.path.exists(self.fdbpath_bridge):
+                    raise FileNotFoundError(f'fdbpath_bridge path {self.fdbpath_bridge} does not exist!')
 
         self.chk_vert = None
         self.ntimechunks = self._npartitions
         self.nlevelchunks = None
+        self.chunking_vertical = None  # default: no vertical chunking
 
         if "levelist" in self._request:
             self.chunking_vertical = chunking_vertical
@@ -258,11 +264,8 @@ class GSVSource(base.DataSource):
                     self.ntimechunks = self._npartitions
                     self.nlevelchunks = len(self.chk_vert)
                     self._npartitions = self._npartitions*len(self.chk_vert)
-        else:
-            self.chunking_vertical = None  # no vertical chunking
 
         self._switch_eccodes()
-
         super(GSVSource, self).__init__(metadata=metadata)
 
     def _define_start_end_dates(self, data_start_date, data_end_date, bridge_start_date, bridge_end_date):
@@ -276,7 +279,10 @@ class GSVSource(base.DataSource):
             bridge_end_date (str): End date of the bridge data.
         """
         # Getting info from the FDB info file
-        fdb_info = self._read_fdb_info()
+        if self.engine == 'fdb' and not self.dummy_run:
+            fdb_info = self._read_fdb_info()
+        else:
+            fdb_info = None
         
         # Data dates
         self._setup_data_dates(data_start_date, data_end_date, fdb_info)
@@ -784,7 +790,7 @@ class GSVSource(base.DataSource):
         else:
             self.logger.error("FDB info file %s does not contain 'data' section, which is mandatory", fdb_info_file)
             return None
-        if 'bridge' in fdb_info and (self.fdbhome_bridge or self.fdbpath_bridge):
+        if 'bridge' in fdb_info:
             try:
                 fdb_info['bridge']['bridge_start_date'] = self._validate_info_date(fdb_info, 'bridge', 'start')
                 fdb_info['bridge']['bridge_end_date'] = self._validate_info_date(fdb_info, 'bridge', 'end')
