@@ -28,10 +28,11 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # We switch to mamba user later, root for now just to create the user.
 USER root
 
-# --- Micromamba integration
-# Base image (Ubuntu 24.04 FDB) already contains a default user with GID 1000.
-# We reuse that user instead of creating a new one to avoid GID conflicts.
+# --- Micromamba integration (correct for plain Ubuntu base)
+
 ARG MAMBA_USER=mamba
+ARG MAMBA_USER_ID=57439
+ARG MAMBA_USER_GID=57439
 ENV MAMBA_USER=$MAMBA_USER
 ENV MAMBA_ROOT_PREFIX="/opt/conda"
 ENV MAMBA_EXE="/bin/micromamba"
@@ -40,10 +41,14 @@ COPY --from=micromamba "$MAMBA_EXE" "$MAMBA_EXE"
 COPY --from=micromamba /usr/local/bin/_activate_current_env.sh /usr/local/bin/_activate_current_env.sh
 COPY --from=micromamba /usr/local/bin/_dockerfile_shell.sh /usr/local/bin/_dockerfile_shell.sh
 COPY --from=micromamba /usr/local/bin/_entrypoint.sh /usr/local/bin/_entrypoint.sh
+COPY --from=micromamba /usr/local/bin/_dockerfile_initialize_user_accounts.sh /usr/local/bin/_dockerfile_initialize_user_accounts.sh
+COPY --from=micromamba /usr/local/bin/_dockerfile_setup_root_prefix.sh /usr/local/bin/_dockerfile_setup_root_prefix.sh
+
+RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && \
+    /usr/local/bin/_dockerfile_setup_root_prefix.sh
 
 USER $MAMBA_USER
 ENV ENV_NAME=base
-
 SHELL ["/usr/local/bin/_dockerfile_shell.sh"]
 
 # ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]
