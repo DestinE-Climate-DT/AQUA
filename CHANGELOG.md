@@ -9,6 +9,8 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+
+- Fix null catalog entry (#2725)
 - DROP module and CLI can take a `stat_kwargs` dictionary to specify additional arguments for the statistical callable operator (#2691)
 - `histogram` is integrated in the DROP framework (#2691)
 - Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#2720)
