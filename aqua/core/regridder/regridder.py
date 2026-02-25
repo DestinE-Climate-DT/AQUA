@@ -606,11 +606,6 @@ class Regridder():
         # apply regridding to each variable using the correct regridder
         data = self._apply_regrid(data, shared_vars)    
 
-        # Remove the flipped attribute from any coordinate if exists
-        for coord in data.coords:
-            if 'flipped' in data[coord].attrs:
-                del data[coord].attrs['flipped']
-
         return data
 
     def _apply_regrid(self, data, shared_vars):
