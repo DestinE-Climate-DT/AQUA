@@ -32,6 +32,8 @@ def reader(request):
         pytest.skip()
     if model == 'ECE4-FAST':
         pytest.skip()
+    if model == 'IFS' and exp == 'test-tco79' and source == 'intake-esm-test':
+        pytest.skip()
     myread = Reader(model=model, exp=exp, source=source, areas=False,
                     fix=False, loglevel=loglevel)
     data = myread.retrieve()

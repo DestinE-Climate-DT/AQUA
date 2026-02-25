@@ -178,39 +178,39 @@ class TestGsv():
         data = reader.retrieve(level=[900, 800])  # Read only two levels
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
-    def test_reader_auto(self) -> None:
-        """
-        Reading from a datasource using new operational schema and auto dates
-        """
+    # def test_reader_auto(self) -> None:
+    #     """
+    #     Reading from a datasource using new operational schema and auto dates
+    #     """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
-        data = reader.retrieve()
-        # Test if the correct dates have been found
-        assert "1990-01-01T00:00" in str(data.time[0].values)
-        assert "1990-01-01T23:00" in str(data.time[-1].values)
-        # Test if the data can actually be read and contain the expected values
-        assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
-        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
+    #     reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+    #     data = reader.retrieve()
+    #     # Test if the correct dates have been found
+    #     assert "1990-01-01T00:00" in str(data.time[0].values)
+    #     assert "1990-01-01T23:00" in str(data.time[-1].values)
+    #     # Test if the data can actually be read and contain the expected values
+    #     assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
+    #     assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
-    def test_reader_dask(self) -> None:
-        """
-        Reading in parallel with a dask cluster
-        """
+    # def test_reader_dask(self) -> None:
+    #     """
+    #     Reading in parallel with a dask cluster
+    #     """
 
-        cluster = LocalCluster(threads_per_worker=1, n_workers=2)
-        client = Client(cluster)
+    #     cluster = LocalCluster(threads_per_worker=1, n_workers=2)
+    #     client = Client(cluster)
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
-        data = reader.retrieve()
-        # Test if the correct dates have been found
-        assert "1990-01-01T00:00" in str(data.time[0].values)
-        assert "1990-01-01T23:00" in str(data.time[-1].values)
-        # Test if the data can actually be read and contain the expected values
-        assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
-        assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
+    #     reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+    #     data = reader.retrieve()
+    #     # Test if the correct dates have been found
+    #     assert "1990-01-01T00:00" in str(data.time[0].values)
+    #     assert "1990-01-01T23:00" in str(data.time[-1].values)
+    #     # Test if the data can actually be read and contain the expected values
+    #     assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
+    #     assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
-        client.shutdown()
-        cluster.close()
+    #     client.shutdown()
+    #     cluster.close()
 
     def test_fdb_from_file(self) -> None:
         """

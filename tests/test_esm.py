@@ -13,7 +13,8 @@ def reader_instance():
 
 
 # aqua class for tests
-@pytest.mark.aqua
+# v0.13.10 remove intake-esm temporarily, removing tests as well
+# @pytest.mark.aqua
 class TestAqua:
     """ESM tests for AQUA reader"""
 
