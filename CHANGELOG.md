@@ -10,6 +10,8 @@ Unreleased in the current development version:
 ## [v0.13.10]
 
 Hotfixes:
+- Explicit pin of main dependencies to avoid breaking changes (#2721)
+- Intake-esm and FDB auto date tests disabled (#2721)
 - Ubuntu container updated to 24.04 (#2721)
 
 ## [v0.13.9]
