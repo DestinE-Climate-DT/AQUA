@@ -51,7 +51,7 @@ VAR_ENCODING = {
     '_FillValue': np.nan
 }
 
-AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum']
+AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum', 'histogram']
 
 
 class Drop():
@@ -77,6 +77,7 @@ class Drop():
                  rebuild=False,
                  exclude_incomplete=False,
                  stat="mean",
+                 stat_kwargs={},
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
                  engine='fdb',
@@ -122,7 +123,8 @@ class Drop():
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
-            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min' or 'sum'.
+            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min', 'sum' or 'histogram'. Default is 'mean'.
+            stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram, default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
@@ -162,6 +164,9 @@ class Drop():
         self.stat = stat
         if self.stat not in AVAILABLE_STATS:
             raise ValueError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
+        if not isinstance(stat_kwargs, dict):
+            raise TypeError('stat_kwargs must be a dictionary.')
+        self.stat_kwargs = stat_kwargs
 
         # configure regional selection
         self._configure_region(region, drop)
@@ -238,13 +243,13 @@ class Drop():
     @staticmethod
     def _validate_date(startdate, enddate):
         """Validate date format for startdate and enddate"""
-        
+
         if startdate is not None:
             try:
                 pd.to_datetime(startdate)
             except (ValueError, TypeError):
                 raise ValueError('startdate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
-        
+
         if enddate is not None:
             try:
                 pd.to_datetime(enddate)
@@ -284,6 +289,8 @@ class Drop():
         self.logger.info('Fixing data: %s', self.fix)
         self.logger.info('Resolution: %s', self.resolution)
         self.logger.info('Statistic to be computed: %s', self.stat)
+        if self.stat_kwargs is not None and self.stat_kwargs != {}:
+            self.logger.info('Additional kwargs for the statistic: %s', self.stat_kwargs)
         self.logger.info('Domain selection: %s', self.region_name)
 
     def _configure_region(self, region, drop):
@@ -380,7 +387,7 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        
+
         with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
             cat_file = load_yaml(catalogfile)
 
@@ -444,7 +451,7 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        
+
         with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
             cat_file = load_yaml(catalogfile)
 
@@ -528,11 +535,11 @@ class Drop():
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
             tmp_outfile = self.get_filename(var, year, tmp=True)
-            
+
             # Move monthly files to tmp for safety
             for monthly_file in monthly_files:
                 shutil.move(monthly_file, self.tmpdir)
-            
+
             # Clean any existing output files
             for f in [tmp_outfile, outfile]:
                 if os.path.exists(f):
@@ -624,14 +631,17 @@ class Drop():
         temp_data = self.data[var]
 
         if self.frequency:
+            # The stat_kwargs are used only if the statistic function is a callable that accepts kwargs,
+            # like histogram. For other statistics, they will be ignored.
             temp_data = self.reader.timstat(temp_data, self.stat, freq=self.frequency,
-                                            exclude_incomplete=self.exclude_incomplete)
+                                            exclude_incomplete=self.exclude_incomplete,
+                                            func_kwargs=self.stat_kwargs)
 
         # temp_data could be empty after time statistics if everything was excluded
         if 'time' in temp_data.coords and len(temp_data.time) == 0:
             self.logger.warning('No data available for variable %s after time statistics, skipping...', var)
             return
-        
+
         # regrid
         if self.resolution and self.resolution != 'native':
             temp_data = self.reader.regrid(temp_data)
@@ -701,15 +711,15 @@ class Drop():
     def append_history(self, data):
         """
         Append comprehensive processing history to the data attributes
-               
+   
         Args:
             data: xarray Dataset or DataArray to append history to
-            
+
         Returns:
             data: Input data with updated history attribute
         """
         history_list = ["DROP"]
-        
+
         # Add regridding information
         if self.resolution:
             history_list.append(f"regridded from {self.reader.src_grid_name} to {self.resolution}")
@@ -720,7 +730,7 @@ class Drop():
         if self.region and self.region_name:
             region_info = f"regional selection applied ({self.region_name})"
             history_list.append(region_info)
-        
+
         # Build the complete sentence
         if len(history_list) == 1:
             history = history_list[0]

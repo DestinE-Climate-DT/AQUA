@@ -20,6 +20,7 @@ pytestmark = [
     pytest.mark.xdist_group(name="dask_operations")
 ]
 
+
 @pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "drop_test"}])
 def drop_arguments(request):
     """Provides DROP arguments as a dictionary."""
@@ -53,11 +54,12 @@ class TestOutputPathBuilder:
         if not expected:
             DROP_PATH = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
             expected = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH,
-                                         f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
+                                    f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
         else:
             expected = os.path.join(os.getcwd(), drop_arguments["outdir"], expected)
 
         assert path == expected
+
 
 class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
@@ -76,12 +78,12 @@ class TestCatalogEntryBuilder:
         )
         entry_name = builder.create_entry_name()
         block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name=source_grid_name)
-        
+
         if resolution == 'r100' and frequency == 'monthly':
             expected_name = f'lra-{resolution}-{frequency}'
         else:
             expected_name = f'{resolution}-{frequency}'
-        
+
         assert entry_name == expected_name
         assert block['driver'] == 'netcdf'
         assert block['parameters'].keys() == {'realization', 'stat', 'region'}
@@ -95,7 +97,6 @@ class TestCatalogEntryBuilder:
         assert newblock['args']['urlpath'] == block['args']['urlpath']
         assert newblock['parameters']['realization']['allowed'] == [realization,'r2']
         assert newblock['args']['chunks'] == chunks
-
 
 
 class TestDROP:
@@ -268,3 +269,13 @@ class TestDROP:
             Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
                  resolution='r100', frequency='monthly', stat='unknown_stat',
                  loglevel=LOGLEVEL)
+
+    def test_wrong_stat_kwargs(self, drop_arguments, tmp_path):
+        """Test DROP with histogram stat but wrong stat_kwargs."""
+        error = 'stat_kwargs must be a dictionary.'
+        with pytest.raises(TypeError, match=re.escape(error)):
+            test = Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
+                        frequency='monthly', stat='histogram', stat_kwargs=512,  # This should be a dict, not an int
+                        loglevel=LOGLEVEL)
+            test.retrieve()
+            test.drop_generator()
