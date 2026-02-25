@@ -25,7 +25,6 @@ dependencies:
   - xesmf # for ECmean
   - imagemagick
   - zarr<3.0.0 # Kerchunk is not compatible with zarr 3.0.0 (https://github.com/fsspec/kerchunk/pull/516)
-  - setuptools>=65 # Added to v0.13.10 to fix build issues with pyproject.toml, see #2721
   - pip:
     - -e ./diagnostics/ocean3d/ # pip install -e of ocean3d
     - -e ./diagnostics/seaice/ # pip install -e of seaice
