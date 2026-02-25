@@ -16,14 +16,13 @@ dependencies:
   # PR #36 catalog repo
   - cartopy_offlinedata # this is needed for MN5 HPC
   - pandas==2.2.2
-  - pandoc
+  - pandoc==2.4
   - pip
   - hdf5 #explicitly to avoid issues with pypi version
   - h5py==3.12.1 # moved from the pyproject 
   - python-cdo # for teleconnections
   - tempest-extremes # for TCs
   - xesmf # for ECmean
-  - intake-esm
   - imagemagick
   - zarr<3.0.0 # Kerchunk is not compatible with zarr 3.0.0 (https://github.com/fsspec/kerchunk/pull/516)
   - pip:
