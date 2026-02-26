@@ -273,6 +273,8 @@ def test_cftime_365cal():
     ("3h", "3h"),
     ("6D", "6D"),
     ("MS", "MS"),
+    # None as input (should return None)
+    (None, None),
 ])
 def test_frequency_string_to_pandas(input_freq, expected_output):
     """Test the frequency_string_to_pandas function with and without numerical prefixes"""
