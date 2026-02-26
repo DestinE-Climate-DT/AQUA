@@ -30,6 +30,10 @@ def frequency_string_to_pandas(freq):
     """
     logger = log_configure('WARNING', 'frequency_string_to_pandas')
 
+    if freq is None:
+        logger.debug('No frequency provided, returning None')
+        return None
+
     trans = {
         'hourly': 'h',
         'daily': 'D',
