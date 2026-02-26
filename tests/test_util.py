@@ -9,6 +9,7 @@ from aqua.core.util import extract_literal_and_numeric, file_is_complete, to_lis
 from aqua.core.util import format_realization, extract_attrs, time_to_string
 from aqua.core.util.string import strlist_to_phrase, lat_to_phrase
 from aqua.core.util.units import multiply_units
+from aqua.core.util.time import frequency_string_to_pandas
 from conftest import LOGLEVEL
 
 @pytest.fixture
@@ -247,3 +248,33 @@ def test_cftime_365cal():
 
     # Assert that the calendar was correctly translated to datetime64[us]
     assert np.issubdtype(data.time.dtype, np.datetime64)
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("input_freq, expected_output", [
+    # No numerical prefix (regular frequencies)
+    ("hourly", "h"),
+    ("daily", "D"),
+    ("weekly", "W"),
+    ("monthly", "MS"),
+    ("annual", "YS"),
+    ("yearly", "YS"),
+    ("hour", "h"),
+    ("day", "D"),
+    ("week", "W"),
+    ("month", "MS"),
+    ("pentads", "5D"),
+    ("seasonal", "QS-DEC"),
+    # With numerical prefix (generalized frequencies)
+    ("3hourly", "3h"),
+    ("5daily", "5D"),
+    ("2weekly", "2W"),
+    ("6months", "6MS"),
+    # Already pandas format (should pass through)
+    ("3h", "3h"),
+    ("6D", "6D"),
+    ("MS", "MS"),
+])
+def test_frequency_string_to_pandas(input_freq, expected_output):
+    """Test the frequency_string_to_pandas function with and without numerical prefixes"""
+    result = frequency_string_to_pandas(input_freq)
+    assert result == expected_output
