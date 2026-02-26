@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- `frequency_string_to_pandas` function can now handle frequencies with a numerical prefix, such as "3hourly" (#2730)
 
 ## [v1.0.0a4]
 
