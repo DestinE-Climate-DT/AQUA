@@ -2,6 +2,7 @@
 Module including time utilities for AQUA
 """
 import math
+import re
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -22,6 +23,7 @@ def frequency_string_to_pandas(freq):
 
     Args:
         freq (str): The frequency string to convert.
+                   Can include a numerical prefix (e.g., '3hourly', '6daily').
 
     Returns:
         str: The converted frequency string, pandas compliant.
@@ -50,7 +52,14 @@ def frequency_string_to_pandas(freq):
         'years': 'YS',
     }
 
-    new_freq = trans.get(freq, freq)
+    # Extract numerical prefix if present (e.g., "3hourly" -> "3" and "hourly")
+    match = re.match(r'^(\d+)(.+)$', freq)
+    if match:
+        number, base_freq = match.groups()
+        translated = trans.get(base_freq, base_freq)
+        new_freq = f"{number}{translated}"
+    else:
+        new_freq = trans.get(freq, freq)
 
     if freq in ['M', 'ME', 'Y', 'YE']:
         logger.warning('You are using a pandas frequency pointing at the end of a period, this can behave unexpectedly if you have subdaily data')
