@@ -6,11 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+Main changes:
+
 Complete list:
+
+## [v1.0.0a4]
+
+Main changes:
+- Several updates in DROP functionalities and CLI, including support for sum statistic and native DROP production
+- Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
+
+Complete list:
+- Remove necessity of FDB paths if engine is polytope (#2656)
+- Fix null catalog entry (#2725)
+- Histogram function now accepts weights dataarray argument (#2734)
+- DROP module and CLI can take a `stat_kwargs` dictionary to specify additional arguments for the statistical callable operator (#2691)
+- `histogram` is integrated in the DROP framework (#2691)
+- Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#2720)
+- Histogram graphics function adjustments for xlabel and ylabel (#2598)
+- Add test for flipping lat coord by datamodel (#2699)
+- CatGen: replacing DARS with DARS2 FESOM grids in catgen config files (#2706)
+- Use 3 workers for tests, add 5min timeout for each test and global 40min timeout; add workers log file (#2701)
 - Add a test for attributes after regridding (#2693)
 - Regridding of datasets to ignore bounds (#2678)
 - Fix units for FESOM thetao variable in fixer (#2686)
-- Removed `counter_reverse_coordinate()` function, no need for data flipping anymore while regridding (#2679)
+- Management of `counter_reverse_coordinate()` function (#2679, 2704)
 - Add cleanup on failure for console `aqua add` catalog addition (#2649)
 - Console: Single API call for `aqua add` (#2675)
 - `plot_single_map()` better Healpix handling (#2671)
@@ -27,7 +47,7 @@ Complete list:
 - Read with microsecond time resolution by default (#2638)
 - Update data model coordinates transformer to work with latest xarray version (#2652)
 
-## [v1.0.0a3] 
+## [v1.0.0a3]
 Main changes:
 - Switch to pandas 3.0.0 and recent xarray
 - Support access to MN5 DataBridge via Polytope
@@ -1370,7 +1390,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...HEAD
+[v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
 [v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
 [v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
 [v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1

@@ -1,9 +1,10 @@
 from .coordidentifier import CoordIdentifier
-from .coordtransformer import CoordTransformer
+from .coordtransformer import CoordTransformer, counter_reverse_coordinate
 from .datamodel import DataModel
 
 __all__ = [
     "CoordIdentifier",
     "CoordTransformer",
-    "DataModel"
+    "DataModel",
+    "counter_reverse_coordinate",
 ]

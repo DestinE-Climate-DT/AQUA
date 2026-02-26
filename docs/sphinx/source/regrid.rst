@@ -99,6 +99,8 @@ Such an approach has two main advantages:
     In the long term, it will be possible to support also pre-computed weights from other interpolation software,
     such as `ESMF <https://earthsystemmodeling.org/>`_ or `MIR <https://github.com/ecmwf/mir>`_.
 
+.. _available-target-grids:
+
 Available target grids
 ^^^^^^^^^^^^^^^^^^^^^^
 
