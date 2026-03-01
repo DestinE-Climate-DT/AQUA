@@ -374,7 +374,7 @@ class Reader():
 
         Arguments:
             var (str, list): the variable(s) to retrieve. Defaults to None. If None, all variables are retrieved.
-            level (list, float, int): Levels to be read, overriding default in catalog source (only for FDB) .
+            level (list, float, int): Levels to be read, overriding default in catalog source.
             startdate (str): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             history (bool): If you want to add to the metadata history information about retrieve. Defaults to True.
@@ -437,8 +437,7 @@ class Reader():
             fkind = "FDB" if ffdb else "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
 
-        if not ffdb:  # FDB sources already have the index, already selected levels
-            #data = self._add_index(data)  # add helper index
+        if not ffdb and level:  # FDB sources already have the index, already selected levels
             data = self._select_level(data, level=level)  # select levels (optional)
 
         # Apply variable fixes (units, names, attributes) and data model fixes
@@ -534,7 +533,7 @@ class Reader():
 
         # find the vertical coordinate, which can be the smmregrid one or 
         # any other with a dimension compatible (Pa, cm, etc)
-        full_vert_coord = find_vert_coord(data) if not self.vert_coord else self.vert_coord
+        full_vert_coord = find_vert_coord(data) # if not self.vert_coord else self.vert_coord
 
         # return if no vertical coordinate is found
         if not full_vert_coord:
@@ -549,8 +548,15 @@ class Reader():
             self.logger.warning(
                 "Found more than one vertical coordinate, using the first one: %s", 
                 full_vert_coord[0])
-        data = data.sel(**{full_vert_coord[0]: level})
-        data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
+
+        # check if levels are among the values in the coordinate
+        if not all(l in data[full_vert_coord[0]].values for l in level):
+            self.logger.error("Levels %s not found in vertical coordinate %s!", level, full_vert_coord[0])
+        else:
+            self.logger.debug("Selecting vertical coordinate %s = %s", full_vert_coord[0], level)
+            data = data.sel(**{full_vert_coord[0]: level})
+            data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
+
         return data
 
     def select_area(self, data, lon=None, lat=None, **kwargs):
