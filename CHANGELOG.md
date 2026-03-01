@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Allow level selection for non-fdb sources (#2731)
 
 ## [v1.0.0a4]
 
