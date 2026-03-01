@@ -516,8 +516,7 @@ class Reader():
 
     def _select_level(self, data, level=None):
         """
-        Select levels if provided. It is based on self.vert_coord but it extends the feature 
-        to atmospheric levels, so it should not be considered as the same vertical coordinate
+        Select levels if provided. The vertical coordinate is determined automatically, based on units.
 
         Arguments:
             data (xr.Dataset):  the input xarray.Dataset
