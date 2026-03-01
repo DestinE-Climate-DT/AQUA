@@ -6,9 +6,9 @@ from aqua import Reader
 from unittest.mock import MagicMock
 
 @pytest.fixture(scope="module")
-def reader_era5():
-    """Fixture to provide the ERA5 reader instance."""
-    return Reader(model="ERA5", exp="era5-hpz3", source="monthly-nn", loglevel="DEBUG")
+def reader_era5(era5_hpz3_monthly_reader):
+    """Fixture to provide the ERA5 reader instance, using the shared session fixture."""
+    return era5_hpz3_monthly_reader
 
 @pytest.mark.aqua
 class TestLevels:
