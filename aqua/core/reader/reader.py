@@ -532,7 +532,7 @@ class Reader():
 
         # find the vertical coordinate, which can be the smmregrid one or 
         # any other with a dimension compatible (Pa, cm, etc)
-        full_vert_coord = find_vert_coord(data) # if not self.vert_coord else self.vert_coord
+        full_vert_coord = find_vert_coord(data)
 
         # return if no vertical coordinate is found
         if not full_vert_coord:
