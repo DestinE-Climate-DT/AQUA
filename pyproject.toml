@@ -35,12 +35,12 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3<=1.42.54",
+    "boto3<=1.42.59",
     "cartopy>=0.24.1,<=0.25.0",
     "cfgrib<=0.9.15.1", #enable support for GRIB files
     "dask[distributed]<=2026.1.2",
     "eccodes==2.41.0",
-    "filelock<=3.24.3",
+    "filelock<=3.25.0",
     "gcsfs<=2026.2.0", # Google Cloud Storage File System: required by ARCO
     "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-xarray<=2.0.0",
@@ -49,7 +49,7 @@ dependencies = [
     "metpy<=1.7.1",
     "numpy<=2.4.1",
     "pandas>=3.0.0,<=3.0.0", # pandas3 required for new time unit handling
-    "pypdf<=6.7.2",
+    "pypdf<=6.7.4",
     "pyYAML<=6.0.3",
     "regionmask<=0.13.0",
     "ruamel.yaml<=0.19.1",
