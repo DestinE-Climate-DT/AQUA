@@ -18,6 +18,7 @@ dependencies:
   - pandas==2.2.2
   - pandoc
   - pip
+  - netcdf4
   - hdf5 #explicitly to avoid issues with pypi version
   - h5py==3.12.1 # moved from the pyproject 
   - python-cdo # for teleconnections
