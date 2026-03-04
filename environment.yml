@@ -14,6 +14,7 @@ dependencies:
   - eccodes==2.41.0
   #- cartopy_offlinedata==0.25.0 # this is needed for MN5 HPC
   - pip==25.2
+  - netcdf4==1.7.2
   - hdf5==1.14.3
   - xesmf==0.8.10
   - imagemagick==7.1.2_3
