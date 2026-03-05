@@ -601,7 +601,7 @@ class TestAquaConsoleShared():
         out, _ = capfd.readouterr()
 
         assert 'climatedt-phase1' in out
-        assert 'lumi-phase1' in out
+        assert 'nextgems4' in out
 
         run_aqua(['-v', 'update', '-c', 'all'])
 
