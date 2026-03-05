@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 Unreleased in the current development version:
 
+## [v0.13.11]
+
+Hotfixes:
+- Hard-pin netcdf4, hdf5 and h5py (#2745)
+
 ## [v0.13.10]
 
 Hotfixes:
@@ -876,7 +881,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.10...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.11...HEAD
+[v0.13.11]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.10...v0.13.11
 [v0.13.10]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.9...v0.13.10
 [v0.13.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.8...v0.13.9
 [v0.13.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.13.7...v0.13.8
