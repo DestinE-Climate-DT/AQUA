@@ -14,9 +14,10 @@ dependencies:
   - pandas      
   - pandoc
   - pip
-  - hdf5 #explicit to avoid issues with pypi
+  - netcdf4==1.7.2
+  - hdf5==1.14.3 #explicitly to avoid issues with pypi version
+  - h5py==3.13.0 # moved from the pyproject 
   - python-cdo # for teleconnections
   - tempest-extremes # for TCs
   - xesmf # for ECmean
-  - intake-esm
   - imagemagick
