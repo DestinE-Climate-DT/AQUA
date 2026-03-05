@@ -43,7 +43,7 @@ dependencies = [
     "docker",
     "filelock",
     "gcsfs", # Google Cloud Storage File System
-    "pandas",
+    "pandas<3.0",
     "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-xarray",
     "jinja2",
