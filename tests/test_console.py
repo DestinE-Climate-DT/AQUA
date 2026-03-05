@@ -466,7 +466,7 @@ class TestAquaConsole():
         out, _ = capfd.readouterr()
 
         assert 'climatedt-phase1' in out
-        assert 'lumi-phase1' in out
+        assert 'nextgems4' in out
 
         # uninstall everything again
         run_aqua_console_with_input(['uninstall'], 'yes')
