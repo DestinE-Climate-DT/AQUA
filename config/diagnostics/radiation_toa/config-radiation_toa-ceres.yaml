@@ -43,6 +43,7 @@ diagnostics:
     variables: ['tnlwrf', 'tnswrf']
     formulae: ['tnlwrf+tnswrf']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False

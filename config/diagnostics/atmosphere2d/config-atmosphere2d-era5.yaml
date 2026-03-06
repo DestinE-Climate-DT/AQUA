@@ -77,6 +77,7 @@ diagnostics:
     diagnostic_name: 'atmosphere2d'
     variables: ['ie', 'msl', 'tcc']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False

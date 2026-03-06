@@ -65,6 +65,7 @@ diagnostics:
     diagnostic_name: 'atmosphere2d'
     variables: ['2t']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False

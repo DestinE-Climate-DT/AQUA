@@ -42,6 +42,7 @@ diagnostics:
     diagnostic_name: 'radiation_surface'
     variables: ['snlwrf', 'snswrf']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False
