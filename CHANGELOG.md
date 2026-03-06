@@ -9,6 +9,7 @@ AQUA core complete list:
 - Pin pandas<3.0 (#2741)
 
 AQUA diagnostics complete list:
+- Seaice: validate potential missing months in input data to be plotted in bias maps (#2696)
 
 ## [v0.19.10]
 
