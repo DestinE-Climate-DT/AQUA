@@ -82,7 +82,9 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo"
+    "cdo",
+    "black",
+    "pre-commit"
 ]
 all = [
     "aqua-core[docs]",
@@ -137,4 +139,10 @@ omit = [
     "tests/*", 
     "**/__init__.py",
     ]
+
+[tool.black]
+line-length = 127
+target-version = ['py310']
+force-exclude = '__init__\.py'
+
 

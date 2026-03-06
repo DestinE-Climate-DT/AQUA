@@ -175,18 +175,14 @@ jobs:
       # ========================================
       # 4. LINTING
       # ========================================
-      - name: Install Flake8
-        run: python -m pip install flake8
-      
-      - name: Lint with flake8
+      - name: Install pre-commit
+        run: python -m pip install pre-commit
+
+      - name: Check code formatting with pre-commit
         if: ${{ inputs.install-mode == 'local' }}
         run: |
-          # compile code to check for syntax errors
-          python -W error -m compileall -f -q AQUA/aqua
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 AQUA --count --select=E9,F63,F7,F82,B,B9 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 AQUA --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=__init__.py
+          cd AQUA
+          pre-commit run --all-files
       
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
