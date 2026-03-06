@@ -184,7 +184,7 @@ class PlotGlobalBiases:
         ax.set_ylabel("Latitude")
 
         description = (
-            f"Spatial map of global bias of {data[var].attrs.get('long_name', var)}"
+            f"Global difference map of {data[var].attrs.get('long_name', var)}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
             f" from {data.startdate} to {data.enddate}"
             f" for the {data.AQUA_model} model, experiment {data.AQUA_exp}, with {data_ref.AQUA_model}"
@@ -251,11 +251,11 @@ class PlotGlobalBiases:
         fig = plot_maps(**plot_kwargs)
 
         description = (
-            f"Seasonal bias map of {data[var].attrs.get('long_name', var)}"
+            f"Seasonal difference map of {data[var].attrs.get('long_name', var)}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
             f" for the {data.AQUA_model} model, experiment {data.AQUA_exp},"
             f" using {data_ref.AQUA_model} as reference data."
-            f" The bias is computed for each season over the period from {data.startdate} to {data.enddate} for the model" 
+            f" The difference is computed for each season over the period from {data.startdate} to {data.enddate} for the model" 
             f" and from {data_ref.startdate} to {data_ref.enddate} for the reference data."
         )
 
@@ -290,7 +290,7 @@ class PlotGlobalBiases:
         )
 
         description = (
-            f"Vertical bias plot of {data[var].attrs.get('long_name', var)} across pressure levels from {data.startdate} to {data.enddate}"
+            f"Vertical difference plot of {data[var].attrs.get('long_name', var)} across pressure levels from {data.startdate} to {data.enddate}"
             f" for the {data.AQUA_model} model, experiment {data.AQUA_exp}, with {data_ref.AQUA_model} from {data_ref.startdate} to {data_ref.enddate}"
             f" used as reference data."
         )
