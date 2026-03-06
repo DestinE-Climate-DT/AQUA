@@ -382,7 +382,6 @@ class PlotBaseMixin():
 
         description += f'of {self.long_name} '
         if self.units is not None:
-          units = self.units.replace("**", r"\*\*")
           description += f'[{units}] '
         if self.short_name is not None:
           description += f'({self.short_name}) '
