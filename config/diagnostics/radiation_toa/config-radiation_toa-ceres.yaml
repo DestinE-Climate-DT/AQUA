@@ -68,8 +68,8 @@ diagnostics:
         vertical: false     # Vertical profile if variable 3d
         startdate_data: null
         enddate_data: null
-        startdate_obs: "2001-01-01"
-        enddate_obs: "2024-12-31"
+        startdate_ref: "2001-01-01"
+        enddate_ref: "2024-12-31"
       tnlwrf+tnswrf:
         short_name: "tnr"
         long_name: "Top net radiation"
