@@ -40,6 +40,7 @@ diagnostics:
     diagnostic_name: 'radiation_surface'
     variables: ['slhtf', 'ishf']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False

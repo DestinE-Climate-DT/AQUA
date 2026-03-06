@@ -65,6 +65,7 @@ diagnostics:
     diagnostic_name: 'ocean2d'
     variables: ['tos']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False

@@ -67,6 +67,7 @@ diagnostics:
     diagnostic_name: 'water_cycle'
     variables: ['tprate']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False
