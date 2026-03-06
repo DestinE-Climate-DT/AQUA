@@ -161,7 +161,7 @@ class PlotGlobalBiases:
 
         proj = get_projection(proj, **proj_params)
 
-        title = (f"Global bias of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
+        title = (f"Global difference of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
                  f"relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
@@ -223,7 +223,7 @@ class PlotGlobalBiases:
         season_list = ['DJF', 'MAM', 'JJA', 'SON']
         sym = vmin is None or vmax is None
 
-        title = (f"Seasonal bias of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
+        title = (f"Seasonal difference of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
                  f"relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
@@ -285,7 +285,7 @@ class PlotGlobalBiases:
         realization = get_realizations(data)
 
         title = (
-            f"Vertical bias of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
+            f"Vertical difference of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
             f"relative to {data_ref.AQUA_model} climatology\n"
         )
 
