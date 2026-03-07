@@ -11,7 +11,8 @@ It is possible to perform time statistics, including
 time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``Timstat()`` class and its method ``timstat()```
 which allow for several statistical operations.
 The class is nested into the ``Reader``, and its method are exposed so that is sufficient
-to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()`` and ``timstd()``, as in the case below. 
+to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()``,  
+``timfirst()``, ``timlast()`` and ``timstd()``, as in the case below. 
 
 .. code-block:: python
 
@@ -22,6 +23,7 @@ to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``
     # alternatively: daily = reader.timstat(data, stat='mean', freq='daily')
 
 Data have now been averaged at the desired daily timescale. Similarly operations can be performed with others methods.
+``timfirst()`` and ``timlast()`` can be used to select the first and last record in each group after resampling the data at a given frequency.
 
 .. note::
     The ``TimStat()`` class supposes that the input data has a time coordinate and converts it to a Gregorian calendar if needed.
