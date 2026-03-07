@@ -83,7 +83,16 @@ class TestTimmean():
         assert all(counts == np.array([7, 7, 7, 6, 6, 6, 6, 6, 6, 6,
                                        6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7,
                                        7, 7, 7, 7, 7, 7, 7, 6, 4]))
+
+    def test_timstat_first_last(self, reader, data_2t):
+        """Selecting first or last value in each group"""
+        firstval = reader.timfirst(data_2t['2t'], freq='daily')
+        lastval = reader.timlast(data_2t['2t'], freq='daily')
         
+        assert firstval.shape == (197, 9, 18)
+        assert lastval.shape == (197, 9, 18)
+        assert firstval.time[0] < lastval.time[0]
+    
     def test_timstat_compare(self, reader, data_2t):
         """Time operations provide robust values"""
         minval = reader.timmin(data_2t['2t'], freq='daily')
