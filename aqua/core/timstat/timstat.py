@@ -58,6 +58,9 @@ class TimStat():
         if stat == 'histogram':  # convert to callable function
             stat = histogram
 
+        if stat in ['first', 'last'] and not freq:
+            raise ValueError('Frequency must be specified when using first or last statistic')
+
         resample_freq = frequency_string_to_pandas(freq)
 
         # disabling all options if total averaging is selected
@@ -101,6 +104,12 @@ class TimStat():
             # use the kwargs to feed the time dimension to define the method and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
+
+            # This is needed because first and last resample the data but label them with the group label
+            if stat in ['first', 'last']:
+                resampled_times = getattr(data.time.resample(time=resample_freq), stat)(**extra_kwargs)
+                out = out.assign_coords(time=resampled_times)
+                
         else:  # we can safely assume that it is a callable function now
             self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
             if resample_freq is not None:
