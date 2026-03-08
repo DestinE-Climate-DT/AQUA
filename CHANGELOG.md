@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 AQUA core complete list:
 - Netcdf4 and h5py in env instead of pip (#2739)
+- Add specifc v019 weights name to avoid conflicts with more recent smmregrid version
 
 AQUA diagnostics complete list:
 
