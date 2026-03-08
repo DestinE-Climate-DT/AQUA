@@ -182,10 +182,10 @@ def set_description(diagnostic, model, exp, year1, year2, config):
     region_text = strlist_to_phrase([f"{r} ({lat_to_phrase(int(lat1))}-{lat_to_phrase(int(lat2))})"
                                        for r in config[diagnostic]["regions"] for (lat1, lat2) in [region_bounds.get(r, (0, 0))]])
 
-    regions_phrase = f"Processed regions are {region_text}."
+    regions_phrase = f"Processed regions are {region_text}"
 
     if diagnostic == 'performance_indices':
-        description = (f"Performance Indices normalized to the CMIP6 average "
+        description = (f"Reichler and Kim (2008) Performance Indices (normalized against an ensemble of CMIP6 models) "
                        f"for different regions and seasons {model_time}"
                        f"{regions_phrase}. Numbers < 1 imply better results than CMIP6 mean.")
     elif diagnostic == 'global_mean':
