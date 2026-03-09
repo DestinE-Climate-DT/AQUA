@@ -118,7 +118,6 @@ def get_eccodes_attr(sn, loglevel='WARNING'):
     # Try to get attributes from 4 tables: WMO+GRIB2, ECMF+GRIB2, WMO+GRIB1, ECMF+GRIB1
     strategies = [
         {"grib_version": "GRIB2", "table": 0},
-        {"grib_version": "GRIB2", "table": "destine"},
         {"grib_version": "GRIB2", "table": "ecmf"},
         {"grib_version": "GRIB1", "table": 0},
         {"grib_version": "GRIB1", "table": "ecmf"},
