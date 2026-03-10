@@ -1,0 +1,6 @@
+grids:
+  inm-cm5-h-atm:
+    path: '{{ grids }}/INM/inm-cm5-h_atm.nc'
+    space_coord:
+    - lon
+    - lat

@@ -11,6 +11,7 @@ from typing import Optional, Any, Dict
 from aqua.core.util import load_yaml, dump_yaml
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
+from aqua.core.lock.safelock import SafeFileLock
 
 
 class GridEntryManager:
@@ -185,6 +186,8 @@ class GridEntryManager:
                           grid_block: Dict[str, Any], rebuild: bool = False) -> None:
         """
         Create or update a grid entry in the grid YAML file.
+        Use file locking to prevent race conditions when parallel
+        processes try to write to the same grid file simultaneously.
 
         Args:
             gridfile (str): Path to the grid YAML file.
@@ -202,12 +205,15 @@ class GridEntryManager:
             if self.logger:
                 self.logger.info("Grid file %s does not exist, creating it", gridfile)
             final_block = {'grids': {grid_entry_name: grid_block}}
+            dump_yaml(gridfile, final_block)
         else:
-            if self.logger:
-                self.logger.info("Grid file %s exists, adding the grid entry %s", gridfile, grid_entry_name)
-            final_block = load_yaml(gridfile)
-            if grid_entry_name in final_block.get('grids', {}) and not rebuild:
-                self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
-                return
-            final_block['grids'][grid_entry_name] = grid_block
-        dump_yaml(gridfile, final_block)
+            lock_path = gridfile + '.lock'
+            with SafeFileLock(lock_path, loglevel=self.loglevel):
+                if self.logger:
+                    self.logger.info("Grid file %s exists, adding the grid entry %s", gridfile, grid_entry_name)
+                final_block = load_yaml(gridfile)
+                if grid_entry_name in final_block.get('grids', {}) and not rebuild:
+                    self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
+                    return
+                final_block['grids'][grid_entry_name] = grid_block
+                dump_yaml(gridfile, final_block)

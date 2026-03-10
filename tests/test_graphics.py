@@ -84,6 +84,20 @@ class TestMaps:
         fig.savefig(tmp_path / 'test_plot_single_map.png')
         assert os.path.exists(tmp_path / 'test_plot_single_map.png')
 
+    def test_plot_single_map_hpx(self, tmp_path, data_era5):
+        """
+        Test the plot_single_map function with HPX data
+        """
+        data = data_era5['2t'].isel(time=0)
+        fig, ax = plot_single_map(data=data,
+                                  return_fig=True,
+                                  loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_single_map_hpx.png')
+        assert os.path.exists(tmp_path / 'test_plot_single_map_hpx.png')
+
     def test_plot_single_map_diff(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """
         Test the plot_single_map_diff function
@@ -117,6 +131,22 @@ class TestMaps:
 
         fig.savefig(tmp_path / 'test_plot_single_map_diff.png')
         assert os.path.exists(tmp_path / 'test_plot_single_map_diff.png')
+
+    def test_plot_single_map_diff_hpx(self, tmp_path, data_era5):
+        """
+        Test the plot_single_map_diff function with HPX data
+        """
+        data = data_era5['2t'].isel(time=0)
+        data_ref = data_era5['2t'].isel(time=1)
+        fig, ax = plot_single_map_diff(data=data,
+                                       data_ref=data_ref,
+                                       return_fig=True,
+                                       loglevel=loglevel)
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / 'test_plot_single_map_diff_hpx.png')
+        assert os.path.exists(tmp_path / 'test_plot_single_map_diff_hpx.png')
 
     def test_plot_single_map_no_diff(self, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
         """
@@ -686,3 +716,49 @@ class TestHistogram:
         fig.savefig(tmp_path / 'test_histogram_no_bins.png', dpi=DPI)
         plt.close(fig)
         assert os.path.exists(tmp_path / 'test_histogram_no_bins.png')
+
+    def test_plot_histogram_auto_labels(self):
+        """Test automatic label generation for histogram and PDF"""
+        # Test histogram (counts) - already has center_of_bin.units from setup
+        fig, ax = plot_histogram(data=self.hist_data, loglevel=loglevel)
+        assert 'Counts' in ax.get_ylabel()
+        assert 'm' in ax.get_xlabel() or 's' in ax.get_xlabel()
+        plt.close(fig)
+        
+        # Test PDF with inverse units
+        pdf_data = self.hist_data.copy()
+        pdf_data.attrs['units'] = 'probability density'
+        pdf_data.center_of_bin.attrs['long_name'] = 'Wind Speed'
+        
+        fig, ax = plot_histogram(data=pdf_data, loglevel=loglevel)
+        assert 'Probability Density' in ax.get_ylabel()
+        assert 'Wind Speed' in ax.get_xlabel()
+        plt.close(fig)
+
+    def test_plot_histogram_custom_labels(self):
+        """Test that custom labels override automatic ones"""
+        fig, ax = plot_histogram(data=self.hist_data,
+                                xlabel='Custom X',
+                                ylabel='Custom Y',
+                                loglevel=loglevel)
+        
+        assert ax.get_xlabel() == 'Custom X'
+        assert ax.get_ylabel() == 'Custom Y'
+        plt.close(fig)
+
+    def test_plot_histogram_labels_edge_cases(self):
+        """Test edge cases for automatic label generation"""
+        # var_name without units -> xlabel without units bracket
+        data_no_units = self.hist_data.copy()
+        data_no_units.center_of_bin.attrs = {'long_name': 'Speed'}
+        fig, ax = plot_histogram(data=data_no_units, loglevel=loglevel)
+        assert ax.get_xlabel() == 'Speed'
+        plt.close(fig)
+        
+        # PDF without center_of_bin units -> ylabel without inverse units
+        pdf_no_units = self.hist_data.copy()
+        pdf_no_units.attrs['units'] = 'probability density'
+        pdf_no_units.center_of_bin.attrs = {}
+        fig, ax = plot_histogram(data=pdf_no_units, loglevel=loglevel)
+        assert ax.get_ylabel() == 'Probability Density'
+        plt.close(fig)

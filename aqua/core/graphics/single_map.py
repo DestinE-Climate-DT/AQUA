@@ -16,11 +16,12 @@ import xarray as xr
 import healpy as hp
 from aqua.core.logger import log_configure
 from aqua.core.util import add_cyclic_lon, evaluate_colorbar_limits
-from aqua.core.util import healpix_resample, coord_names, set_ticks, ticks_round
+from aqua.core.util import healpix_resample, coord_names, set_ticks
 from aqua.core.util import cbar_get_label, set_map_title, generate_colorbar_ticks
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
 import cartopy.feature as cfeature
+
 
 def plot_single_map(data: xr.DataArray,
                     contour: bool = True, sym: bool = False,
@@ -85,9 +86,10 @@ def plot_single_map(data: xr.DataArray,
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
 
-    if nside is not None:
+    if nside is not None and nside > 0:
+        logger.debug(f"Data has {npix} cells, nside={nside}")
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
-        data = healpix_resample(data)
+        data = healpix_resample(data, loglevel=loglevel)
 
     # We load in memory the data, to speed up the plotting, Dask is slow with matplotlib
     logger.debug("Loading data in memory")
@@ -176,10 +178,17 @@ def plot_single_map(data: xr.DataArray,
                             lat_name=lat_name, proj=proj, loglevel=loglevel)
     else:
         if gridlines:
-            gl = ax.gridlines(draw_labels=True, color='none')  # invisible lines
-            gl.xlabels_top = False
-            gl.ylabels_right = False
-            draw_manual_gridlines(ax=ax, lon_interval=30, lat_interval=30, zorder=50)
+            if isinstance(proj, ccrs.Robinson):
+                # Standard behavior for global projs (e.g. sshVariability)
+                gl = ax.gridlines(draw_labels=True, color='none')
+                gl.top_labels = False
+                gl.right_labels = False
+            else:
+                # Customized behavior for polar/other projs (e.g. SeaIce)
+                gl = ax.gridlines(draw_labels="x", color='none') # draw only lon (x) labels, no lat labels
+                gl.rotate_labels = False
+                gl.xlabel_style = {'size': 8}
+            draw_manual_gridlines(ax=ax, lon_interval=30, lat_interval=10, zorder=50)
 
     if cbar:
         # Adjust the location of the subplots on the page to make room for the colorbar
@@ -224,11 +233,13 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
                          proj: ccrs.Projection = ccrs.Robinson(), extent: Optional[list] = None,
                          vmin_fill: Optional[float] = None, vmax_fill: Optional[float] = None,
                          vmin_contour: Optional[float] = None, vmax_contour: Optional[float] = None,
-                         norm = None, sym_contour: bool = False, sym: bool = True,
+                         norm=None, sym_contour: bool = False, sym: bool = True,
                          add_contour: bool = True, add_land=False,
+                         line_levels: Optional[int] = 10,
                          cyclic_lon: bool = True, return_fig: bool = False,
                          fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                          title: Optional[str] = None, title_size: Optional[int] = 12,
+                         gridlines: bool = False,
                          loglevel: str = 'WARNING', **kwargs):
     """
     Plot the difference of data-data_ref as map and add the data
@@ -243,14 +254,19 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         vmax_fill (float, optional):    Maximum value for the colorbar of the fill.
         vmin_contour (float, optional): Minimum value for the colorbar of the contour.
         vmax_contour (float, optional): Maximum value for the colorbar of the contour.
+        norm (matplotlib.colors.Normalize, optional): Normalization to use for the colormap.
         sym_contour (bool, optional)    If True, set the contour levels to be symmetrical.  Default to False
         sym (bool, optional):           If True, set the colorbar for the diff to be symmetrical. Default to True
-        title (str, optional):          Title of the figure. Defaults to None.
-        title_size (int, optional):     Title size. Defaults to None.
+        add_contour (bool, optional):   If True, add the contour plot. Defaults to True.
+        add_land (bool, optional):      If True, add land to the map. Defaults to False.
+        line_levels (int, optional):    Number of contour levels. Defaults to 10.
         cyclic_lon (bool, optional):    If True, add cyclic longitude. Defaults to True.
         return_fig (bool, optional):    If True, return the figure and axes. Defaults to False.
         fig (plt.Figure, optional):     Figure to plot on. By default a new figure is created.
         ax (plt.Axes, optional):        Axes to plot on. By default a new axes is created.
+        title (str, optional):          Title of the figure. Defaults to None.
+        title_size (int, optional):     Title size. Defaults to 12.
+        gridlines (bool, optional):     If True, add gridlines. Defaults to False.
         loglevel (str, optional):       Log level. Defaults to 'WARNING'.
         **kwargs:                       Keyword arguments for plot_single_map.
                                         Check the docstring of plot_single_map.
@@ -268,9 +284,10 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
     npix = data.size  # Number of cells in the data
     nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
 
-    if nside is not None:
+    if nside is not None and nside > 0:
+        logger.debug(f"Data has {npix} cells, nside={nside}")
         logger.info(f"Input data is in HEALPix format with nside={nside}.")
-        data = healpix_resample(data)
+        data = healpix_resample(data, loglevel=loglevel)
         logger.debug("resampling HEALPix data")
 
     # Check if the data is in HEALPix format
@@ -296,9 +313,10 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         fig, ax = plot_single_map(diff_map, cyclic_lon=cyclic_lon,
                                   proj=proj, extent=extent,
                                   fig=fig, ax=ax,
-                                  sym=sym, vmin=vmin_fill, vmax=vmax_fill, norm=None,
+                                  sym=sym, vmin=vmin_fill, vmax=vmax_fill, norm=norm,
                                   add_land=add_land,
-                                  loglevel=loglevel, return_fig=True, **kwargs)
+                                  loglevel=loglevel, return_fig=True,
+                                  gridlines=gridlines, **kwargs)
 
     logger.debug("Plotting the map")
     data = data.load(keep_attrs=True)
@@ -327,10 +345,17 @@ def plot_single_map_diff(data: xr.DataArray, data_ref: xr.DataArray,
         ds = data.plot.contour(ax=ax,
                                transform=ccrs.PlateCarree(),
                                vmin=vmin_contour, vmax=vmax_contour,
-                               levels=10, colors='k',
+                               levels=line_levels, colors='k',
                                linewidths=0.5)
 
-        fmt = {level: f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}" for level in ds.levels}
+        fmt = {
+            level: "0.0" if np.isclose(level, 0.0)
+            else (
+                f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000)
+                else f"{level:.1f}"
+            )
+            for level in ds.levels
+        }
         ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
 
     if title:

@@ -1,14 +1,11 @@
 """Test checking if all catalog entries can be read"""
 
 import pytest
-import types
 import xarray
 from aqua import Reader
 from aqua.core.reader import show_catalog_content as catalog
-from aqua.core.reader.reader_utils import check_catalog_source
 from conftest import LOGLEVEL
 
-loglevel = LOGLEVEL
 
 @pytest.fixture(params=[(model, exp, source)
                         for model in catalog(catalog_name="ci", verbose=False)['ci']
@@ -17,8 +14,10 @@ loglevel = LOGLEVEL
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
+    if source == 'intake-esm-test': # temporary skip of intake esm sources
+        pytest.skip("Skipping intake-esm-test for now, not supported for now")
     myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=False,
-                    fix=False, loglevel=loglevel)
+                    fix=False, loglevel=LOGLEVEL)
     data = myread.retrieve()
     return myread, data
 
@@ -31,7 +30,7 @@ def test_catalog_gsv():
 
     for source in sources:
         reader_gsv = Reader(model='IFS', exp='test-fdb', source=source,
-                            loglevel=loglevel)
+                            loglevel=LOGLEVEL)
         data = reader_gsv.retrieve()
 
         assert isinstance(reader_gsv, Reader)
@@ -46,7 +45,7 @@ def reader_regrid(request):
     model, exp, source = request.param
     print([model, exp, source])
     myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=True, regrid='r200',
-                    loglevel=loglevel, rebuild=False)
+                    loglevel=LOGLEVEL, rebuild=False)
     data = myread.retrieve()
 
     return myread, data

@@ -39,12 +39,14 @@ class TestCleanupRegistry:
         """
         Remove test-generated files after all tests complete.
         """
-        for filename in FILES_TO_CLEAN:
+        FILELOCK_TO_CLEAN = [s+'.lock' for s in FILES_TO_CLEAN]
+
+        for filename in FILES_TO_CLEAN + FILELOCK_TO_CLEAN:
             file_path = os.path.join(self.configdir, filename)
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)
                 except OSError as e:
-                    # Log but don't fail - cleanup is best-effort
                     self.logger.warning('Could not remove %s: %s', file_path, e)
-
+            else:
+                self.logger.debug('File %s does not exist', file_path)

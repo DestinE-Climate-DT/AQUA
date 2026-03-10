@@ -129,7 +129,7 @@ class FldStat():
 
         # align coordinates values of area to match data
         self.area = self.align_area_coordinates(data)
-
+    
         if lon_limits is not None or lat_limits is not None or region is not None:
             self.logger.debug("Selecting area for field stat calculation.")
             data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
@@ -307,7 +307,7 @@ class FldStat():
                 # Fast check for reversed coordinates: use slicing
                 if np.array_equal(area_coord[::-1], data_coord):
                     self.logger.warning("Reversing coordinate '%s' for alignment.", coord)
-                    self.area = self.area.isel({coord: slice(None, None, -1)})
+                    self.area = self.area.reindex({coord: area_coord[::-1]})
                     continue
 
                 # Try alignment by rounding to specified decimals
@@ -316,7 +316,7 @@ class FldStat():
                 if np.array_equal(area_rounded, data_rounded):
                     self.logger.warning("Coordinate '%s' aligned by rounding to %d decimals.", coord, decimals)
                     # assign the rounded coordinates to the area (matching data's rounded values)
-                    self.area = self.area.assign_coords({coord: data_rounded})
+                    self.area = self.area.assign_coords({coord: data_coord})
                     continue
 
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")

@@ -1,13 +1,96 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented in this file. 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
+Unreleased in the current development version (target v1.0.0):
 
-Unreleased in the current development version (target v0.22.0):
+Main changes:
+
+Complete list:
+- Allow level selection for non-fdb sources (#2731)
+- `frequency_string_to_pandas` function can now handle frequencies with a numerical prefix, such as "3hourly" (#2730)
+
+## [v1.0.0a4]
+
+Main changes:
+- Several updates in DROP functionalities and CLI, including support for sum statistic and native DROP production
+- Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
+
+Complete list:
+- Remove necessity of FDB paths if engine is polytope (#2656)
+- Fix null catalog entry (#2725)
+- Histogram function now accepts weights dataarray argument (#2734)
+- DROP module and CLI can take a `stat_kwargs` dictionary to specify additional arguments for the statistical callable operator (#2691)
+- `histogram` is integrated in the DROP framework (#2691)
+- Set per-worker TMPDIR to avoid CDO/smmregrid contention in parallel runs (#2720)
+- Histogram graphics function adjustments for xlabel and ylabel (#2598)
+- Add test for flipping lat coord by datamodel (#2699)
+- CatGen: replacing DARS with DARS2 FESOM grids in catgen config files (#2706)
+- Use 3 workers for tests, add 5min timeout for each test and global 40min timeout; add workers log file (#2701)
+- Add a test for attributes after regridding (#2693)
+- Regridding of datasets to ignore bounds (#2678)
+- Fix units for FESOM thetao variable in fixer (#2686)
+- Management of `counter_reverse_coordinate()` function (#2679, 2704)
+- Add cleanup on failure for console `aqua add` catalog addition (#2649)
+- Console: Single API call for `aqua add` (#2675)
+- `plot_single_map()` better Healpix handling (#2671)
+- Reader: ignore regridded flag if not usable (#2664)
+- Smmregrid weights are corrected by fixer/datamodel (#2639)
+- `idx_` index is removed since smmregrid selection is now based on coordinate values (#2639)
+- DROP: expose `compact` option in DROP CLI (#2659)
+- DROP: add `sum` statistic support in DROP (#2659)
+- DROP: fix for native DROP production (#2659)
+- Added support for non gregorian calendars (#2631)
+- Improve gridlines in maps for different projections (#2660)
+- Added atmospheric grids definitions for a selection of HighResMIP models (#2627)
+- Datamodel identifies depth preferrably over height in ambigous cases (#2654, #2655)
+- Read with microsecond time resolution by default (#2638)
+- Update data model coordinates transformer to work with latest xarray version (#2652)
+
+## [v1.0.0a3]
+Main changes:
+- Switch to pandas 3.0.0 and recent xarray
+- Support access to MN5 DataBridge via Polytope
+
+Complete list:
+- Add `force_unstructured` option to GridBuilder and `--force_unstructured` cli argument to `aqua grids build` command (#2622)
+- Added contour line number argument as `line_levels` in `plot_single_map_diff` (#2650)
+- Fix pyproject dependency with `<=` so that we are failsafe to new release (#2635)
+- Hotfix: update DROP docs (#2634)
+- Add 'engine' option to DROP to enable polytope retrieval (#2626, #2643)
+- Switch to pandas 3.0.0 and recent xarray (#2633)
+- Support access to MN5 DataBridge via Polytope (#2623)
+- Handle support for Destine local parameters if paramId is not WMO table (for eccodes v2.41.0) (#2620)
+
+## [v1.0.0a2]
+
+Main changes:
+1. DataModel module can be disabled and it is independent from the Fixer 
+2. Intake-esm support removed due to deprecation of intake v1 version, will be reintroduced with intake v2
+
+Complete list:
+- Data model can be disabled and it is independent from the Fixer (#2586)
+- Added 235288 (avg_tcc in %) from the tcc eccodes convention file (#2607)
+- Add LaTeX units formatting to labels (#2561)
+- Explicit netcdf4 dependency in conda-forge and dask-distributed in pyproject to reduce incompatibilities (#2603)
+- Remove support for intake-esm due to deprecation of intake v1 version (#2603)
+- Aqua web push folder management improvements (#2574)
+- Improve fldstat handling of gaussian grids (#2584)
+- Data model uses a ranking system to identify coordinates (#2585, #2602) 
+
+## [v1.0.0a1]
+
+Main changes:
+1. New `show_catalog_content` function deprecating `catalog` and `inspect_catalog`
+2. Shapefile support for spatial selection in `AreaSelection`
+3. Documentation aligned to the new repository structure
 
 AQUA core complete list:
+- Refactor `_filter_kwargs` to improve readability and performance (#2600)
+- Allow to show descriptions in `show_catalog_content` (#2589)
+- Improve test cleaning and avoid specific race conditions in tests (#2587)
 - Shapefile support for spatial selection in `AreaSelection` (#2576)
 - Remove IPython dependency from io_util (#2569)
 - Add concurrency suppression for Github actions (#2557)
@@ -1309,7 +1392,11 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...HEAD
+[v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
+[v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
+[v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
+[v1.0.0a1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.21.0...v1.0.0a1
 [v0.21.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.20.0...v0.21.0
 [v0.20.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.0...v0.20.0
 [v0.19.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.18.1...v0.19.0

@@ -66,6 +66,16 @@ def test_histogram_weighted(sample_data):
     assert not np.allclose(hist_unweighted.values, hist_weighted.values)
 
 @pytest.mark.aqua
+def test_histogram_weights(sample_data):
+    """
+    Test the histogram function with weights.
+    """
+    weights = xr.DataArray(np.random.rand(10, 10), coords=sample_data.coords)
+    hist_unweighted = histogram(sample_data, bins=5, weighted=False, check=True, range=(0, 1))
+    hist_weighted = histogram(sample_data, bins=5, weights=weights, check=True, range=(0, 1))
+    assert not np.allclose(hist_unweighted.values, hist_weighted.values)
+
+@pytest.mark.aqua
 def test_histogram_units(sample_data):
     """
     Test the histogram function with units conversion.

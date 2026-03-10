@@ -8,7 +8,7 @@ from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
 from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
 
-pytestmark = pytest.mark.aqua
+pytestmark = [pytest.mark.aqua, pytest.mark.xdist_group(name="grid_builder")]
 
 
 class TestGridBuilder:
@@ -19,7 +19,7 @@ class TestGridBuilder:
         """Test the GridBuilder class with a HEALPix grid."""
         reader = Reader(
             model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
-            engine="polytope", areas=False, chunks={'time': 'H'})
+            engine="polytope", areas=False, chunks={'time': 'h'})
         data = reader.retrieve(var='2t')
         grid_builder = GridBuilder(outdir=tmp_path, model_name='IFS', original_resolution='tco1279')
         grid_builder.build(data, verify=True, create_yaml=False)

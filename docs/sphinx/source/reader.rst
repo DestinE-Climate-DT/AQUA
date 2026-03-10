@@ -65,6 +65,15 @@ You can also filter by specific catalog(s), model, experiment, or source:
     # Filter by model
     results = show_catalog_content(model='IFS-NEMO')
 
+By default, ``show_catalog_content()`` displays sources in a compact 3-column format for quick overview.
+You can enable the ``show_descriptions=True`` parameter to display each source on its own line with its description
+from the catalog entry, providing additional information:
+
+.. code-block:: python
+
+    # Show catalog with detailed descriptions
+    catalog_content = show_catalog_content(model='IFS-NEMO', show_descriptions=True)
+
 .. note::
     The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigPath`` initialization internally.
     If you need more control over the configuration, you can still use the method directly from the ``ConfigPath`` class:
@@ -89,6 +98,7 @@ The basic call to the ``Reader`` is:
 
 This will return a ``Reader`` object that can be used to access the data.
 The ``retrieve()`` method will return an ``xarray.Dataset`` to be used for further processing.
+
 The ``catalog``, differently from the ``model``, ``exp`` and ``source`` arguments, is optional.
 However, if the triplet is not unique across catalogs, the ``Reader`` will guess the correct catalog,
 so it is suggested to always specify it when possible.
@@ -98,9 +108,39 @@ To have a complete overview of the available options, please check the :doc:`api
 
 If some information about the data is needed, it is possible to use the ``info()`` method of the ``Reader`` class.
 
+The ``retrieve()`` method accepts further arguments to select only specific variables or vertical levels as in this example:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly")
+    data = reader.retrieve(var=["t", "2t"], level=[50000, 70000])
+
 .. warning::
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.
     If you're retrieving data from many sources, please instantiate a new ``Reader`` for each source.
+
+.. note::
+    The ``Reader`` class will try to convert the time coordinate to a Gregorian calendar if time is present,
+    keeping the time units to microsecond precision in order to keep the axis as ``datetime64[us]``.
+
+Reader and Intake parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sources can have additional parameters defined in the intake catalog.
+For example the same experiment could have multiple ensemble members.
+A parameter ``realization`` could be then defined in the catalog to distinguish between different ensemble members.
+
+To pass these additional parameters to the ``Reader``, you can use the ``**kwargs`` functionality.
+For example, to select a specific ensemble member, you can do:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(catalog='ci', model='CMCC', exp='historical', source='monthly-atm', realization=1)
+    data = reader.retrieve()
+
+See `Intake documentation <https://intake.readthedocs.io/en/stable/catalog.html#source-parameters>`_ for more details about Intake source parameters.
 
 Dask and streaming capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

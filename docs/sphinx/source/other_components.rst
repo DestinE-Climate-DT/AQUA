@@ -6,10 +6,12 @@ Other core functionalities
 Time Statistics
 ---------------
 
-Input data may not be available at the desired time frequency. It is possible to perform time statistics, including
+Input data may not be available at the desired time frequency.
+It is possible to perform time statistics, including
 time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``Timstat()`` class and its method ``timstat()```
-which allow for several statistical operations. The class is nested into the reader, and its method are exposed so that is sufficient
-to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()`` and ``timstd()``, as in the case below. 
+which allow for several statistical operations.
+The class is nested into the ``Reader``, and its method are exposed so that is sufficient
+to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()`` and ``timstd()``, as in the case below. 
 
 .. code-block:: python
 
@@ -21,6 +23,9 @@ to use `timstat()` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, 
 
 Data have now been averaged at the desired daily timescale. Similarly operations can be performed with others methods.
 
+.. note::
+    The ``TimStat()`` class supposes that the input data has a time coordinate and converts it to a Gregorian calendar if needed.
+
 .. warning::
     If you do not specify the ``freq`` argument, the statistical operation will be operated on the entire dataset!
 
@@ -29,7 +34,7 @@ Some extra options are available:
 - ``exclude_incomplete=True``: this flag will remove averaged chunks which are not complete
   (for example, verify  that all the record from each month are available before doing the time mean).
 - ``center_time=True``: this flag will center the time coordinate on the mean time window. 
-    Otherwise, the time coordinate will be the first timestamp of the time window.
+  Otherwise, the time coordinate will be the first timestamp of the time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
 
 The ``timhist()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
@@ -170,6 +175,7 @@ The syntax is similar to the ``numpy.histogram()`` function, but it returns a Da
 If the input DataArray is Dask-based then the computation will be lazy.
 If a Dataset is passed, the first variable will be used.
 Latitudinal weighting is activated by default, so the 'counts' of the histogram will not be integers.
+This can be overridden by setting the ``weighted=False`` argument or by passing a weights DataArray to the ``weights`` argument.
 It is possible to compute a complete PDF (Probability Density Function) by setting the ``density=True`` argument.
 
 .. code-block:: python
@@ -187,6 +193,7 @@ The ``bins`` and ``range`` arguments are recommended, all others totally optiona
 
 Some extra options are available:
 
+- ``weights=xr.DataArray``: this will pass a weights DataArray to the histogram computation.
 - ``weighted=False``: this will switch off computing a weighted histogram, where the weights are the cosines of the latitudes (true by default).
 - ``density=True``: this will compute a PDF (Probability Density Function) instead of a histogram (false by default).
 - ``dask=False``: this will force the computation of the histogram using numpy (true by default).

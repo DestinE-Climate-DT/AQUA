@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from glob import glob
 import os
 import re
-import intake_esm
+#import intake_esm
 import intake_xarray
 import xarray as xr
 import pandas as pd
@@ -12,7 +12,9 @@ from metpy.units import units
 
 from smmregrid import GridInspector
 
-from aqua.core.util import load_multi_yaml, files_exist, to_list, find_vert_coord
+from aqua.core.util import load_multi_yaml, files_exist, to_list
+from aqua.core.util import find_vert_coord
+from aqua.core.util import fix_calendar, DEFAULT_TIME_UNIT
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure, log_history
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -21,7 +23,7 @@ from aqua.core.regridder import Regridder
 from aqua.core.fldstat import FldStat
 from aqua.core.timstat import TimStat
 from aqua.core.fixer import Fixer
-from aqua.core.data_model import counter_reverse_coordinate
+from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.histogram import histogram
 import aqua.core.gsv
 
@@ -33,6 +35,10 @@ from .reader_utils import set_attrs
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
+# set default data model
+DATA_MODEL_DEFAULT = "aqua"
+
+
 class Reader():
     """General reader for climate data."""
 
@@ -40,6 +46,7 @@ class Reader():
 
     def __init__(self, model=None, exp=None, source=None, catalog=None,
                  fix=True,
+                 datamodel=None,
                  regrid=None, regrid_method=None,
                  areas=True,
                  streaming=False,
@@ -59,6 +66,7 @@ class Reader():
             source (str): Source ID. Mandatory
             catalog (str, optional): Catalog where to search for the triplet.  Default to None will allow for autosearch in
                                      the installed catalogs.
+            datamodel (str, optional): Data model to apply for coordinate transformations (e.g., 'aqua'). Defaults to 'aqua'.
             regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
             regrid_method (str, optional): CDO Regridding regridding method. Read from grid configuration.
                                            If not specified anywhere, using "ycon".
@@ -155,13 +163,21 @@ class Reader():
         # load the catalog
         aqua.core.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
+
+        # check machine compatibility
+        self.machine_from_catalog = self.expcat.metadata.get('machine')
+        if engine != 'polytope':
+            if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
+                self.logger.warning(
+                    "The machine configured (%s) is different from the machine in the catalog (%s). "
+                    "Please check that the data you are looking for are on the machine you are working on.",
+                    self.machine.lower(),
+                    self.machine_from_catalog.lower(),
+                )
         # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
         self.esmcat = self.expcat[self.source]()
 
-        # intake parameters
-        self.intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
-
-        self.kwargs = self._filter_kwargs(intake_vars, kwargs, engine=engine)
+        self.kwargs = self._filter_kwargs(kwargs, engine=engine, intake_vars=intake_vars, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
@@ -185,6 +201,7 @@ class Reader():
             self.logger.warning('A False flag is specified in fixer_name metadata, disabling fix!')
             self.fix = False
 
+        # Initialize variable fixer
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
             self.fixer = Fixer(fixer_name=self.fixer_name,
@@ -192,8 +209,21 @@ class Reader():
                                fixes_dictionary=self.fixes_dictionary,
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
-            
+        
+        # if data model is not passed to Reader, try to get it from the catalog source metadata
+        if datamodel is None:
+            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT) 
+        else:
+            self.datamodel_name = datamodel
+
+        # if datamodel is False, disable data model application
+        if not self.datamodel_name:
+            self.datamodel = None
+            self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
+        else:
+            self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
     
+            
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
         self.tgt_grid_name = regrid
@@ -217,7 +247,7 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
-            
+    
         self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
@@ -243,7 +273,7 @@ class Reader():
             cfg_regrid = {**machine_paths, **cfg_regrid}
 
             if self.src_grid_name is None:
-                self.logger.warning('Grid metadata is not defined. Trying to access the real data')
+                self.logger.info('Grid metadata is not defined. Trying to access the real data')
                 data = self._retrieve_plain()
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
             elif self.src_grid_name is False:
@@ -264,42 +294,77 @@ class Reader():
 
             # export src space coord and vertical coord
             self.src_space_coord = self.regridder.src_horizontal_dims
-            self.vert_coord = self.regridder.src_vertical_dim
+            self.vert_coord = self.regridder.src_mask_dim
 
             # TODO: it is likely there are other cases where we need to disable regrid.
             if not self.regridder.cdo:
                 areas = False
                 regrid = False
 
-
-        # generate source areas
         if areas:
             # generate source areas and expose them in the reader
             self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
+            # apply optional fixes to areas
             if self.fix:
-                # TODO: this should include the latitudes flipping fix.
-                # TODO: No check is done on the areas coords vs data coords
-                self.src_grid_area = self.fixer.datamodel.fix_area(self.src_grid_area)
+                self.src_grid_area = self.fixer.fixerdatamodel.apply(self.src_grid_area)
+            # Apply data model transformation to areas
+            if self.datamodel:
+                self.src_grid_area = self.datamodel.apply(self.src_grid_area)
 
         # configure regridder and generate weights
         if regrid:
             # generate weights and init the SMMregridder
-            self.regridder.weights(
+            weights = self.regridder.weights(
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs)
+            if self.fix:
+                weights = self._fix_datamodel_weights(weights, mode="fixer")
+            if self.datamodel:
+                weights = self._fix_datamodel_weights(weights, mode="datamodel")
+            self.regridder.initialize(weights)
 
         # generate destination areas, expose them and the associated space coordinates
         if areas and regrid:
             self.tgt_grid_area = self.regridder.areas(tgt_grid_name=self.tgt_grid_name, rebuild=rebuild)
+            # apply optional fixes to areas
             if self.fix:
-                # TODO: this should include the latitudes flipping fix
-                self.tgt_grid_area = self.fixer.datamodel.fix_area(self.tgt_grid_area)
+                self.tgt_grid_area = self.fixer.fixerdatamodel.apply(self.tgt_grid_area)
+            # Apply data model transformation to target areas
+            if self.datamodel:
+                self.tgt_grid_area = self.datamodel.apply(self.tgt_grid_area, flip_coords=False)
+            # expose target horizontal dimensions
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
+
+    def _fix_datamodel_weights(self, weights, mode="datamodel"):
+        """
+        Mask coordinate of the weights need to be adjusted according to the data model or fix applied.
+        Arguments:
+                weights (dict): The weights dictionary from smmregrid
+                mode (str): "datamodel" or "fixer" to apply the respective data model or fixer datamodel
+        """
+        new_weights = {}
+        for item, value in weights.items():
+            self.logger.debug("Applying %s to weights item %s", mode, item)
+            if mode=="datamodel":
+                fixed = self.datamodel.apply(value, flip_coords=False)
+            elif mode=="fixer":
+                fixed = self.fixer.fixerdatamodel.apply(value)
+            else:
+                raise ValueError(f"Mode {mode} not recognized for weights fixing")
+            
+            # Check if fixed object has coordinates before accessing
+            coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
+            if not coords:
+                self.logger.debug("No coordinates found in weights item %s after applying %s", item, mode)
+                new_weights[item] = fixed  # Use original item name as fallback
+            else:
+                new_weights[coords[0]] = fixed
+        return new_weights
 
     def retrieve(self, var=None, level=None,
                  startdate=None, enddate=None,
@@ -309,7 +374,7 @@ class Reader():
 
         Arguments:
             var (str, list): the variable(s) to retrieve. Defaults to None. If None, all variables are retrieved.
-            level (list, float, int): Levels to be read, overriding default in catalog source (only for FDB) .
+            level (list, float, int): Levels to be read, overriding default in catalog source.
             startdate (str): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             history (bool): If you want to add to the metadata history information about retrieve. Defaults to True.
@@ -355,11 +420,12 @@ class Reader():
                 loadvar = None
 
         ffdb = False
+
         # If this is an ESM-intake catalog use first dictionary value,
-        if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-            data = self.reader_esm(self.esmcat, loadvar)
+        #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
+        #    data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
-        elif isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
+        if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
                                    dask=True, level=level)
             ffdb = True  # These data have been read from fdb
@@ -368,19 +434,33 @@ class Reader():
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
-            if ffdb:
-                fkind = "FDB"
-            else:
-                fkind = "file from disk"
+            fkind = "FDB" if ffdb else "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
 
-
-        if not ffdb:  # FDB sources already have the index, already selected levels
-            data = self._add_index(data)  # add helper index
+        if not ffdb and level:  # FDB sources already have the index, already selected levels
             data = self._select_level(data, level=level)  # select levels (optional)
 
+        # Apply variable fixes (units, names, attributes) and data model fixes
         if self.fix:
+            self.logger.debug("Applying variable fixes")
             data = self.fixer.fixer(data, var)
+            data = self.fixer.fixerdatamodel.apply(data)
+
+        # Apply base data model transformation (always applied)
+        if self.datamodel:
+            self.logger.debug("Applying base data model: %s", self.datamodel_name)
+            data = self.datamodel.apply(data)
+
+        # Time threatment: we want to ensure that time is always in Gregorian calendar
+        # and to change the default numpy datetime64 resolution to microseconds
+        if 'time' in data.coords:
+
+            # TODO: Check, the commented code is probably not needed
+            # Convert time to datetime64 microsecond resolution by default
+            # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
+            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
+            # Fix the calendar to Gregorian if needed
+            data = fix_calendar(data, loglevel=self.loglevel)
 
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
@@ -392,7 +472,7 @@ class Reader():
             data = self.streamer.stream(data)
         else:
             if data is None or len(data.data_vars) == 0:
-                self.logger.error(f"Retrieved empty dataset for {var=}. First, check its existence in the data catalog.")
+                self.logger.error("Retrieved empty dataset for var=%s. First, check its existence in the data catalog.", var)
 
             if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
                 data = data.sel(time=slice(startdate, enddate))
@@ -415,29 +495,28 @@ class Reader():
 
         return data
 
-    def _add_index(self, data):
+    # def _add_index(self, data):
 
-        """
-        Add a helper idx_{dim3d} coordinate to the data to be used for level selection
+    #     """
+    #     Add a helper idx_{dim3d} coordinate to the data to be used for level selection
 
-        Arguments:
-            data (xr.Dataset):  the input xarray.Dataset
+    #     Arguments:
+    #         data (xr.Dataset):  the input xarray.Dataset
 
-        Returns:
-            A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
-        """
+    #     Returns:
+    #         A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
+    #     """
 
-        if self.vert_coord:
-            for dim in to_list(self.vert_coord):
-                if dim in data.coords:
-                    idx = list(range(0, len(data.coords[dim])))
-                    data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
-        return data
+    #     if self.vert_coord:
+    #         for dim in to_list(self.vert_coord):
+    #             if dim in data.coords:
+    #                 idx = list(range(0, len(data.coords[dim])))
+    #                 data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
+    #     return data
 
     def _select_level(self, data, level=None):
         """
-        Select levels if provided. It is based on self.vert_coord but it extends the feature 
-        to atmospheric levels, so it should not be considered as the same vertical coordinate
+        Select levels if provided. The vertical coordinate is determined automatically, based on units.
 
         Arguments:
             data (xr.Dataset):  the input xarray.Dataset
@@ -453,7 +532,7 @@ class Reader():
 
         # find the vertical coordinate, which can be the smmregrid one or 
         # any other with a dimension compatible (Pa, cm, etc)
-        full_vert_coord = find_vert_coord(data) if not self.vert_coord else self.vert_coord
+        full_vert_coord = find_vert_coord(data)
 
         # return if no vertical coordinate is found
         if not full_vert_coord:
@@ -468,8 +547,15 @@ class Reader():
             self.logger.warning(
                 "Found more than one vertical coordinate, using the first one: %s", 
                 full_vert_coord[0])
-        data = data.sel(**{full_vert_coord[0]: level})
-        data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
+
+        # check if levels are among the values in the coordinate
+        if not all(l in data[full_vert_coord[0]].values for l in level):
+            self.logger.error("Levels %s not found in vertical coordinate %s!", level, full_vert_coord[0])
+        else:
+            self.logger.debug("Selecting vertical coordinate %s = %s", full_vert_coord[0], level)
+            data = data.sel(**{full_vert_coord[0]: level})
+            data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
+
         return data
 
     def select_area(self, data, lon=None, lat=None, **kwargs):
@@ -483,7 +569,7 @@ class Reader():
         """
         # We're keeping the fldstat call separate, however at the current stage there is
         # no difference in behavior between the src and tgt fldstat calls.
-        if self._check_if_regridded(data):
+        if self._check_if_regridded(data) and self.tgt_fldstat:
             return self.tgt_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
         return self.src_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
 
@@ -505,7 +591,7 @@ class Reader():
         # set regridded attribute to 1 for all vars
         out = set_attrs(out, {"AQUA_regridded": 1})
         return out
-    
+
     # def trend(self, data, dim='time', degree=1, skipna=False):
     #     """
     #     Estimate the trend of an xarray object using polynomial fitting.
@@ -624,54 +710,84 @@ class Reader():
 
         raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
 
-    def _filter_kwargs(self, intake_vars: dict={}, kwargs: dict={}, engine: str = 'fdb'):
+    @property
+    def intake_user_parameters(self):
+        """Lazy loader for intake user parameters to avoid expensive describe() calls."""
+        if not hasattr(self, '_intake_user_parameters'):
+            self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
+        return self._intake_user_parameters
+
+    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict={}, databridge: str = None) -> dict:        
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
 
         Args:
-            intake_vars (dict): The intake variables from the catalog machine specific file.
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
+            databridge (str): The databridge used for the GSV retrieval, default is None. 
+            intake_vars (dict): Machine-specific intake variables to exclude from checks.
 
         Returns:
             A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
         """
-        params = [elem.get('name') for elem in self.intake_user_parameters]
+        if intake_vars is None:
+            intake_vars = {}
 
-        # List comprehension to filter out kwargs that are not in the params
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k in params}
-        unfiltered_kwargs = {k: v for k, v in kwargs.items() if k not in params}
+        filtered_kwargs = {}
+        
+        # Create a dictionary lookup of parameter definitions
+        # This avoids repeated iteration and index lookups in the loop
+        param_defs = {p['name']: p for p in self.intake_user_parameters}
+        valid_params = set(param_defs.keys())
 
-        # Log warnings for unfiltered kwargs
-        for key, _ in unfiltered_kwargs.items():
-            self.logger.warning('kwarg %s is not in the intake parameteres of the source, removing it', key)
+        if kwargs:
+            # Filter kwargs that are valid parameters
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
+            
+            # Find and log dropped keys efficiently using set difference
+            dropped_keys = kwargs.keys() - valid_params
+            for key in dropped_keys:
+                self.logger.warning('kwarg %s is not in the intake parameters of the source, removing it', key)
 
-        # Check if all required parameters are present in the filtered kwargs and set defaults if not
-        filtered_list = list(filtered_kwargs.keys())
-        intake_vars_list = list(intake_vars.keys())
-        for param in params:
-            if param not in filtered_list and param not in intake_vars_list:
-                element = self.intake_user_parameters[params.index(param)]
-                self.logger.info('%s parameter is required but is missing, setting to default %s',
-                                    param, element['default'])
-                allowed = element.get('allowed', None)
-                # It is possible to have intake_vars which are not specified for the machine,
-                # so that we still need to check whether there is an allowed list
-                if allowed is not None:
-                    self.logger.info('Available values for %s are: %s', param, allowed)
-                filtered_kwargs.update({param: element['default']})
-
+        # Handle 'engine' for GSV/FDB sources
         if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-            # If the engine is fdb, we need to add the engine parameter
             if 'engine' not in filtered_kwargs:
-                filtered_kwargs.update({'engine': engine})
+                filtered_kwargs['engine'] = engine
                 self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+
+        if engine == 'polytope' and databridge is not None:
+            # If the engine is polytope, we need to add the databridge parameter
+            if 'databridge' not in filtered_kwargs:
+                filtered_kwargs.update({'databridge': databridge})
+                self.logger.debug('Adding databridge=%s to the filtered kwargs', databridge)
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
             self.logger.warning('Keeping chunks=%s in the filtered kwargs', self.chunks)
-            filtered_kwargs.update({'chunks': self.chunks})
+            filtered_kwargs['chunks'] = self.chunks
+
+        # Check for missing required parameters and apply defaults, with logging
+        # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
+        
+        # params that are already covered by user kwargs or machine-specific intake_vars
+        covered_params = set(filtered_kwargs) | set(intake_vars)
+        
+        # Identify missing parameters using set difference
+        missing_params = valid_params - covered_params
+
+        for param in missing_params:
+            element = param_defs[param]
+            default_val = element.get('default')
+            
+            # Log the default application
+            self.logger.info('%s parameter is required but is missing, setting to default %s', param, default_val)
+            
+            allowed = element.get('allowed', None)
+            if allowed is not None:
+                self.logger.info('Available values for %s are: %s', param, allowed)
+            
+            filtered_kwargs[param] = default_val
 
         return filtered_kwargs
 
@@ -974,10 +1090,15 @@ class Reader():
             self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
     
-        # The coder introduces the possibility to specify a time decoder for the time axis
-        if 'time_coder' in esmcat.metadata:
-            self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
-            coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
+        # The coder introduces the possibility to specify a time decoder for the time axis.
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
+        if hasattr(esmcat, "xarray_kwargs") and not "use_cftime" in esmcat.xarray_kwargs:
+            if 'time_coder' in esmcat.metadata:
+                self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
+                coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
+            else:
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
+
             esmcat.xarray_kwargs.update({'decode_times': coder})
 
         data = esmcat.to_dask()
@@ -1050,6 +1171,7 @@ class Reader():
         # Temporarily disable unwanted settings
         with self._temporary_attrs(aggregation=None, chunks=None, 
                                    fix=False, streaming=False,
+                                   datamodel = False,
                                    preproc=None):
             self.logger.debug('Getting sample data through _retrieve_plain()...')
             data = self.retrieve(history=False, *args, **kwargs)
@@ -1103,7 +1225,7 @@ class Reader():
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        if self._check_if_regridded(data):
+        if self._check_if_regridded(data) and self.tgt_fldstat:
             data = self.tgt_fldstat.fldstat(
                 data, stat=stat,
                 lon_limits=lon_limits, lat_limits=lat_limits,

@@ -1,0 +1,7 @@
+# default coordinates for autoguessing
+latitude: ["latitude", "lat", "nav_lat"]
+longitude: ["longitude", "lon", "nav_lon"]
+isobaric: ["plev", "pressure", "air_pressure"]
+depth: ["depth", "depth_below_sea_level", "zlev"]
+time: ["time", "times", "datetime"]
+height: ["height", "altitude", "z"]

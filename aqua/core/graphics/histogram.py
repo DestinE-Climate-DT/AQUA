@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list
+from aqua.core.util import to_list, unit_to_latex
 from .styles import ConfigStyle
 
 
@@ -16,6 +16,8 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
                    ax: plt.Axes | None = None,
                    figsize: tuple = (10, 6),
                    title: str | None = None,
+                   xlabel: str | None = None,
+                   ylabel: str | None = None,
                    xlogscale: bool = False,
                    ylogscale: bool = True,
                    xmax: float | None = None,
@@ -24,6 +26,7 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
                    ymin: float | None = None,
                    smooth: bool = False,
                    smooth_window: int = 5,
+                   labelsize: int = 13,
                    loglevel: str = 'WARNING'):
     """
     Plot histogram or PDF data.
@@ -31,7 +34,6 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
     Args:
         data (xr.DataArray | list[xr.DataArray]): Histogram data to plot. 
             Must be xarray DataArrays with 'center_of_bin' dimension.
-            Can be a single DataArray or a list of DataArrays.
         ref_data (xr.DataArray, optional): Reference histogram data to plot.
         data_labels (list | None, optional): Labels for the data.
         ref_label (str | None, optional): Label for the reference data.
@@ -40,6 +42,8 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         ax (plt.Axes | None, optional): Matplotlib axes object.
         figsize (tuple, optional): Figure size if a new figure is created.
         title (str | None, optional): Title for the plot.
+        xlabel (str | None, optional): Label for x-axis.
+        ylabel (str | None, optional): Label for y-axis.
         xlogscale (bool, optional): Use logarithmic scale for x-axis.
         ylogscale (bool, optional): Use logarithmic scale for y-axis.
         xmax (float | None, optional): Maximum value for x-axis.
@@ -48,6 +52,7 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         ymin (float | None, optional): Minimum value for y-axis.
         smooth (bool, optional): Apply smoothing to the data.
         smooth_window (int, optional): Window size for smoothing.
+        labelsize (int, optional): Font size for labels.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -117,18 +122,42 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
     
     # Set labels
     first_data = data_list[0]
-    if hasattr(first_data, 'center_of_bin') and hasattr(first_data.center_of_bin, 'units'):
-        xlabel = f"Value [{first_data.center_of_bin.units}]"
-    else:
-        xlabel = "Value"
-    ax.set_xlabel(xlabel)
-    
-    if hasattr(first_data, 'units'):
-        ylabel = f"Frequency [{first_data.units}]"
-    else:
-        ylabel = "Frequency"
-    ax.set_ylabel(ylabel)
 
+    if xlabel is None:
+        # Get a descriptive name from center_of_bin attributes
+        if 'center_of_bin' in first_data.dims:
+            var_name = getattr(first_data.center_of_bin, 'long_name', None) or \
+                       getattr(first_data.center_of_bin, 'standard_name', None) or \
+                       "Value"
+            var_units = getattr(first_data.center_of_bin, 'units', None)
+            
+            if var_units and var_name:
+                xlabel = f"{var_name} [{unit_to_latex(var_units)}]"
+            elif var_name:
+                xlabel = var_name
+            else:
+                xlabel = "Value"
+        else:
+            xlabel = "Value"
+    
+    ax.set_xlabel(xlabel, fontsize=labelsize)
+
+    if ylabel is None:
+        # Determine if this is a PDF or histogram based on data units attribute
+        is_pdf = hasattr(first_data, 'units') and 'probability' in str(first_data.units).lower()
+        
+        if is_pdf:
+            # For PDF, try to get the inverse units from center_of_bin
+            if hasattr(first_data, 'center_of_bin') and hasattr(first_data.center_of_bin, 'units'):
+                bin_units = first_data.center_of_bin.units
+                ylabel = f"Probability Density [1/{unit_to_latex(bin_units)}]"
+            else:
+                ylabel = "Probability Density"
+        else:
+            ylabel = "Counts"
+    
+    ax.set_ylabel(ylabel, fontsize=labelsize)
+    
     # Set title if provided
     if title:
         ax.set_title(title, fontsize=13, fontweight='bold')
