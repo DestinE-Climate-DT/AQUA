@@ -21,7 +21,7 @@ diagnostics:
     Atmosphere 3D, Seasonal differences: [atmosphere3d.seasonal_bias, "globalbiases.seasonal_bias*0.png"]
 
     Water cycle, Time series: water_cycle.timeseries
-    Water cycle, Seasonal cycle: water_cycle.seasonalcycles
+    Water cycle, Seasonal cycles: water_cycle.seasonalcycles
     Water cycle, Annual differences: water_cycle.bias
     Water cycle, Seasonal differences: water_cycle.seasonal_bias
     Water cycle, Profiles: [water_cycle.zonal_profile,  water_cycle.seasonal_zonal_profile]
@@ -35,10 +35,10 @@ diagnostics:
     Ocean 2D, Seasonal differences: ocean2d.seasonal_bias
 
     Ocean 3D, Time series: [ocean3d.timeseries, monthly_time_series_, Ocean_time_series, ea_time_series, _time_series_arctic_ocean, _time_series_atlantic_ocean, _time_series_global_ocean, _time_series_indian_ocean, _time_series_pacific_ocean, _time_series_southern_ocean]
-    Ocean 3D, Hovmöller: [ocean3d.hovmoller, _hovmoller_plot]
+    Ocean 3D, Hovmöller plots: [ocean3d.hovmoller, _hovmoller_plot]
     Ocean 3D, Trends: [ocean3d.multilevel_trend, ocean3d.trend, zonal_mean_trend, multilevel_t_s_trend]
-    Ocean 3D, Stratification: [ocean3d.stratification,  _stratification_]
-    Ocean 3D, Zonal mean: [ocean3d.zonal_mean]
+    Ocean 3D, Stratification plots: [ocean3d.stratification,  _stratification_]
+    Ocean 3D, Zonal means: [ocean3d.zonal_mean]
     Ocean 3D, Mixed layer depth: [ocean3d.mld, MLD., MLD_]
 
     SSH variability: ssh.
