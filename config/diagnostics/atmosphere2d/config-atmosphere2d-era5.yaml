@@ -45,7 +45,7 @@ diagnostics:
         startdate_data: null
         enddate_data: null
         startdate_ref: "1990-01-01"
-        enddate_ref: "2020-12-31"
+        enddate_ref: "2014-12-31"
       (10u^2+10v^2)^0.5:
         short_name: "10si"
         long_name: "Wind speed at 10m"
@@ -70,7 +70,7 @@ diagnostics:
     params:
       default:
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
   
   timeseries:
     run: true
@@ -85,4 +85,4 @@ diagnostics:
         monthly: True
         annual: True
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'

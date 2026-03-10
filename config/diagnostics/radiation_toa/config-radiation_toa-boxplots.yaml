@@ -25,7 +25,7 @@ references:
     regrid: 'r100'
     source: 'monthly'
     startdate: '1990-01-01'
-    enddate: '2020-12-31'
+    enddate: '2014-12-31'
   - catalog: 'obs'
     model: 'CERES'
     exp: 'ebaf-toa421'
