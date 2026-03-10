@@ -181,12 +181,13 @@ class PlotGlobalBiases:
         )
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
+        
 
         description = (
-            f"Spatial map and differences against the reference dataset for {data[var].attrs.get('long_name', var)}"
-            f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
-            f" from {data.startdate} to {data.enddate} for the {data.AQUA_model} model, experiment {data.AQUA_exp}. "
-            f"Reference dataset is {data_ref.AQUA_model} from {data_ref.startdate} to {data_ref.enddate}."
+            f"{data[var].attrs.get('long_name', var)}"
+            f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
+            f"climatology of {data.AQUA_model} {data.AQUA_exp} (from {data.startdate} to {data.enddate}, contours) "
+            f"and differences against {data_ref.AQUA_model} (from {data_ref.startdate} to {data_ref.enddate}, shading)."
         )
 
         self._save_figure(fig=fig, diagnostic_product='bias', data=data, data_ref=data_ref,
@@ -248,11 +249,12 @@ class PlotGlobalBiases:
 
         fig = plot_maps(**plot_kwargs)
 
+
         description = (
-            f"Seasonal difference against the reference dataset for {data[var].attrs.get('long_name', var)}"
-            f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
-            f"from {data.startdate} to {data.enddate} for the {data.AQUA_model} model, experiment {data.AQUA_exp}. "
-            f"Reference dataset is {data_ref.AQUA_model} from {data_ref.startdate} to {data_ref.enddate}."
+            f"{data[var].attrs.get('long_name', var)}"
+            f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
+            f"seasonal climatology of {data.AQUA_model} {data.AQUA_exp} (from {data.startdate} to {data.enddate}, contours) "
+            f"and differences against {data_ref.AQUA_model} (from {data_ref.startdate} to {data_ref.enddate}, shading)."
         )
 
         self._save_figure(fig=fig, diagnostic_product='seasonal_bias', data=data, data_ref=data_ref,
@@ -286,9 +288,9 @@ class PlotGlobalBiases:
         )
 
         description = (
-            f"Vertical difference plot against the reference dataset for {data[var].attrs.get('long_name', var)} "
-            f"across pressure levels from {data.startdate} to {data.enddate} for the {data.AQUA_model} model, experiment {data.AQUA_exp}. "
-            f"Reference dataset is {data_ref.AQUA_model} from {data_ref.startdate} to {data_ref.enddate}."
+            f"{data[var].attrs.get('long_name', var)}"
+            f"vertical cross-section of {data.AQUA_model} {data.AQUA_exp} (from {data.startdate} to {data.enddate}, contours) "
+            f"and differences against {data_ref.AQUA_model} (from {data_ref.startdate} to {data_ref.enddate}, shading)."
         )
 
         fig, ax = plot_vertical_profile_diff(
