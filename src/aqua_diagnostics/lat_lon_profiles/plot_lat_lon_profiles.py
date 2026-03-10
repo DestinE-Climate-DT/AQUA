@@ -346,17 +346,14 @@ class PlotLatLonProfiles():
             if ref_item is not None and hasattr(ref_item, 'AQUA_model'):
                 ref_model = ref_item.AQUA_model
                 ref_exp = ref_item.AQUA_exp
-                ref_catalog = getattr(ref_item, 'AQUA_catalog', None)
                 
                 # Build reference string
-                if ref_catalog:
-                    description += f' compared to {ref_model} {ref_exp}'
-                else:
-                    description += f' compared to {ref_model} {ref_exp}'
-        
+            if ref_model and ref_exp:
+                description += f' compared to {ref_model} {ref_exp}'
+
         # Standard deviation info
         if self.ref_std_data is not None:
-            description += ', with ±2σ uncertainty bands'
+            description += ' with ±2σ uncertainty bands,'
             if self.std_startdate is not None and self.std_enddate is not None:
                 description += f' computed from {time_to_string(self.std_startdate, format='%Y-%m')} to {time_to_string(self.std_enddate, format='%Y-%m')}'
             
