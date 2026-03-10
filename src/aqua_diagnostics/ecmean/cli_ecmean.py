@@ -192,7 +192,7 @@ def set_description(diagnostic, model, exp, year1, year2, config):
         description = (f"Global mean differences with respect to observational references "
                        f"(normalized to obsevational interannual variability) "
                        f" for different regions and seasons {model_time} "
-                       f"{regions_phrase}. Darker colors implies larger differences.")
+                       f"{regions_phrase}. Darker colors imply larger differences.")
     else:
         # produce a generic description
         description = f"Diagnostic {diagnostic} {model_time.strip()}"
