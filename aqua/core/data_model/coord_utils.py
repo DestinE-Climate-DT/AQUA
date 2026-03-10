@@ -61,6 +61,21 @@ def get_coord_defaults(internal_coord=None):
     return config.get(internal_coord, DEFAULT_COORD_NAMES.get(internal_coord, []))
 
 
+def get_coord_name(internal_coord):
+    """
+    Get the data model coordinate name for a given internal coordinate type.
+
+    Args:
+        internal_coord (str): Coordinate type ('latitude', 'longitude', etc.)
+
+    Returns:
+        str: The matching coordinate name from the data model, or None if not found.
+    """
+    datamodel = get_data_model()
+    coord_dict = datamodel['data_model'].get(internal_coord, None)
+    return coord_dict["name"] if coord_dict else None
+
+
 @cache
 def _load_data_model(name: str = "aqua"):
     """
