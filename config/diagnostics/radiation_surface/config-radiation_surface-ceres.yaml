@@ -49,7 +49,7 @@ diagnostics:
         daily: False
         monthly: True
         annual: True
-        std_startdate: '20000101'
+        std_startdate: '20010101'
         std_enddate: '20241231'
 
   globalbiases:
@@ -64,7 +64,7 @@ diagnostics:
         vertical: false     # Vertical profile if variable 3d
         startdate_data: null
         enddate_data: null
-        startdate_ref: "2000-01-01"
+        startdate_ref: "2001-01-01"
         enddate_ref: "2024-12-31"
     plot_params: 
       default: 

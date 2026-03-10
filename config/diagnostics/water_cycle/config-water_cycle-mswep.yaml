@@ -50,7 +50,7 @@ diagnostics:
         startdate_data: null
         enddate_data: null
         startdate_ref: "1990-01-01"
-        enddate_ref: "2020-12-31"
+        enddate_ref: "2014-12-31"
       tprate:
         units: 'mm/day'
     plot_params:
@@ -75,7 +75,7 @@ diagnostics:
         monthly: True
         annual: True
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
       tprate:
         regions: ['nh', 'sh', 'europe']
 
@@ -87,7 +87,7 @@ diagnostics:
     params:
       default:
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
       tprate:
         regions: ['nh', 'sh', 'europe']
 
@@ -103,7 +103,7 @@ diagnostics:
     params:
       default:
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
     variables:
       - name: 'tprate'
         regions: [null, 'tropics']  # global and tropics

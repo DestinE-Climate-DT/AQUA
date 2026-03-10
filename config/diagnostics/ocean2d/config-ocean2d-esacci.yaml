@@ -50,7 +50,7 @@ diagnostics:
         startdate_data: null
         enddate_data: null
         startdate_ref: "1990-01-01"
-        enddate_ref: "2020-12-31"
+        enddate_ref: "2014-12-31"
     plot_params:
       default: 
         projection: 'robinson'
@@ -73,7 +73,7 @@ diagnostics:
         monthly: True
         annual: True
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
       tos:
         regions: ['nh', 'sh']
 
@@ -85,7 +85,7 @@ diagnostics:
     params:
       default:
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
       tos:
         regions: ['nh', 'sh']
 

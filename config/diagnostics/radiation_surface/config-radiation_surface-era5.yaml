@@ -24,7 +24,7 @@ references:
     exp: 'era5'
     source: 'monthly'
     startdate: '1990-01-01'
-    enddate: '2020-12-31'
+    enddate: '2014-12-31'
 
 output:
   outputdir: "./"
@@ -48,7 +48,7 @@ diagnostics:
         monthly: True
         annual: True
         std_startdate: '19900101'
-        std_enddate: '20201231'
+        std_enddate: '20141231'
 
   globalbiases:
     run: true
@@ -63,7 +63,7 @@ diagnostics:
         startdate_data: null
         enddate_data: null
         startdate_ref: "1990-01-01"
-        enddate_ref: "2020-12-31"
+        enddate_ref: "2014-12-31"
     plot_params: 
       default: 
         projection: 'robinson'
