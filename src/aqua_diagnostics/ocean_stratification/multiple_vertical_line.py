@@ -56,7 +56,7 @@ def plot_multi_vertical_lines(
     if all(isinstance(data_map, xr.Dataset) for data_map in data_list):
         nrows = 1  # len(data_list)
         ncols = len(variables)
-        figsize = figsize if figsize is not None else (ncols * 5, nrows * 3 + 1)
+        figsize = figsize if figsize is not None else (ncols * 3, nrows * 2 + 1)
         logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
 
     fig = plt.figure(figsize=figsize)

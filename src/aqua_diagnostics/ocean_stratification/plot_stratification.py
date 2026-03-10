@@ -73,7 +73,8 @@ class PlotStratification:
             data_label=self.data_label,
             obs_label=self.obs_label if self.obs else None,
             title=self.suptitle,
-            figsize=(4 * self.ncols, 10 * self.nrows),
+            #HACK: the figsize is set to be smaller than the default one to avoid very large figures when there are many subplots.
+            figsize=(4 * self.ncols, 10 * self.nrows)/1.5,
             return_fig=True,
             loglevel=self.loglevel,
         )
@@ -179,9 +180,9 @@ class PlotStratification:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self, ):
-        self.description = f"Stratification plot of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.catalog} {self.model} {self.exp} experiment"
+        self.description = f"Vertical profiles of temperature, salinity and densitiy of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.model} {self.exp} experiment (solid"
         if self.obs:
-            self.description = self.description + (f" with the reference data from {self.obs.attrs['catalog']} {self.obs.attrs['model']} {self.obs.attrs['exp']}")
+            self.description = self.description + (f" with the reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed).")
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,
