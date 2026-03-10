@@ -316,7 +316,7 @@ if __name__ == '__main__':
                                             interface=interface, loglevel=loglevel,
                                             outputdir=outputdir, xdataset=data, title=title)
             elif diagnostic == 'global_mean':
-                title = f"Global mean {model} {exp} {year1}-{year2}"
+                title = f"Global mean differences {model} {exp} {year1}-{year2}"
                 logger.info('Launching ECmean global mean...')
                 ecmean = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
                                     interface=interface, loglevel=loglevel,
