@@ -518,6 +518,11 @@ class SeaIce(Diagnostic):
         if enddate is not None: da_seaice_computed.attrs["AQUA_enddate"] = f"{enddate}"
         da_seaice_computed.name = f"{'std_' if std_flag else ''}sea_ice_{self.method}_{region}"
 
+        time_coord = da_seaice_computed.coords.get("time", None)
+        if time_coord is not None:
+            time_coord.attrs["long_name"] = "Time"
+            time_coord.attrs.setdefault("standard_name", "time")
+        
         return da_seaice_computed
 
     def save_netcdf(self, seaice_data, diagnostic: str, diagnostic_product: str = None,
