@@ -89,7 +89,7 @@ class PlotNAO(PlotBaseMixin):
 
             # Case 1a: single map
             if isinstance(maps, xr.DataArray):
-                title = f"NAO {maps.AQUA_model} {maps.AQUA_exp} {statistic} map ({var})"
+                title = f"NAO - {maps.AQUA_model} {maps.AQUA_exp} {statistic} map ({var})"
                 if hasattr(maps, 'AQUA_season'):
                     title += f" ({maps.AQUA_season})"
                 fig, ax = plot_single_map(data=maps, fig=fig, ax=ax,

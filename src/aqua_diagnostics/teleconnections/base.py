@@ -60,7 +60,7 @@ class BaseMixin(Diagnostic):
         """
         data, index = self._prepare_statistic(var=var, season=season)
         reg = xr.cov(index, data, dim=dim)/index.var(dim=dim, skipna=True).values
-        reg.attrs['long_name'] = f'Linear regression of {data.long_name} with {index.long_name}'
+        reg.attrs['long_name'] = f'Linear regression of {data.long_name.lower()} with {index.long_name}'
         reg.attrs['shortName'] = f'linear_regression'
         return reg
 
@@ -81,7 +81,7 @@ class BaseMixin(Diagnostic):
         corr = xr.corr(index, data, dim=dim)
 
         # Modify the attributes to match the correlation
-        corr.attrs['long_name'] = f'Correlation of {data.long_name} with {index.long_name}'
+        corr.attrs['long_name'] = f'Correlation of {data.long_name.lower()} with {index.long_name}'
         corr.attrs['shortName'] = f'Pearson_correlation'
         corr.attrs['units'] = '1'
 
@@ -263,7 +263,7 @@ class PlotBaseMixin():
             description += f" {', '.join(refs)}"
         description += "."
         if 'ENSO' in index_name:
-            description += f"El Niño and La Niña events are defined when exceeding a 0.5 °C threshold."
+            description += f" El Niño and La Niña events are defined when exceeding a 0.5 °C threshold."
 
         self.logger.debug(f'Index description: {description}')
         return description
@@ -311,8 +311,8 @@ class PlotBaseMixin():
 
         if isinstance(maps, xr.DataArray):
             var = maps.long_name if hasattr(maps, 'long_name') else maps.shortName
-            description += f"({var}) "
-            description += f"{maps.AQUA_model} {maps.AQUA_exp}"
+            description += f"{var} "
+            description += f"for {maps.AQUA_model} {maps.AQUA_exp}"
             if hasattr(maps, 'AQUA_season'):
                 description += f" ({maps.AQUA_season})"
         elif isinstance(maps, list):
@@ -334,7 +334,7 @@ class PlotBaseMixin():
             description = description[:-2]
         description += "."
         if ref_maps is not None:
-            description += f"Contour is the model {statistic} while shadings is the difference between the model and the reference."
+            description += f" Contour is the model {statistic}, while shading is the difference between the model and the reference."
         self.logger.debug(f'Map description: {description}')
 
         return description
