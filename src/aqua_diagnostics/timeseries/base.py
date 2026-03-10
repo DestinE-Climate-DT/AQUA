@@ -389,7 +389,7 @@ class PlotBaseMixin():
         #  description += f'({self.short_name}) '
 
         if self.region is not None:
-            description += f'for region {self.region} '
+            description += f'for {self.region} '
 
         description += 'for '
         description += strlist_to_phrase(items=[f'{self.models[i]} {self.exps[i]} (from {self.startdate[i]} to {self.enddate[i]})' for i in range(self.len_data)])
