@@ -100,6 +100,8 @@ class PlotLatLonProfiles():
         self.long_name = None
         self.units = None
         self.mean_type = None
+        self.startdate = None
+        self.enddate = None
         
         # Get all data items to extract metadata from
         data_items = []
@@ -138,6 +140,11 @@ class PlotLatLonProfiles():
                     self.long_name = data_item.long_name
                 if self.units is None and hasattr(data_item, 'units'):
                     self.units = data_item.units
+
+                if self.startdate is None and hasattr(data_item, 'AQUA_startdate'):
+                    self.startdate = data_item.AQUA_startdate
+                if self.enddate is None and hasattr(data_item, 'AQUA_enddate'):
+                    self.enddate = data_item.AQUA_enddate
 
         # Set mean_type from first data item if not already set
         first_data = data_items[0] if data_items else None
@@ -323,6 +330,8 @@ class PlotLatLonProfiles():
         dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
+        description += f', from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')}'
+        
         # Reference data description
         if self.len_ref > 0 and self.ref_data is not None:
             # Extract reference info properly
@@ -340,17 +349,15 @@ class PlotLatLonProfiles():
                 
                 # Build reference string
                 if ref_catalog:
-                    description += f' compared to {ref_catalog} {ref_model} {ref_exp}'
+                    description += f' compared to {ref_model} {ref_exp}'
                 else:
                     description += f' compared to {ref_model} {ref_exp}'
-            else:
-                description += ' with reference data'
         
         # Standard deviation info
         if self.ref_std_data is not None:
-            description += ' with ±2σ uncertainty bands'
+            description += ', with ±2σ uncertainty bands'
             if self.std_startdate is not None and self.std_enddate is not None:
-                description += f' computed over {time_to_string(self.std_startdate, format='%Y-%m')} to {time_to_string(self.std_enddate, format='%Y-%m')}'
+                description += f' computed from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')}'
             
         self.logger.warning('Description: %s', description)
         return description

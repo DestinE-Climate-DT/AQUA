@@ -309,6 +309,8 @@ class LatLonProfiles(Diagnostic):
 				self.logger.debug("Loading data in memory")
 				season_data.load()
 				self.logger.debug("Loaded data in memory")
+				season_data.attrs['AQUA_startdate'] = time_to_string(self.plt_startdate)
+				season_data.attrs['AQUA_enddate'] = time_to_string(self.plt_enddate)
 
 			self.seasonal = seasonal_data
 
@@ -322,6 +324,8 @@ class LatLonProfiles(Diagnostic):
 			if self.region is not None:
 				longterm_data.attrs['AQUA_region'] = self.region
 			longterm_data.attrs['AQUA_mean_type'] = self.mean_type
+			longterm_data.attrs['AQUA_startdate'] = time_to_string(self.plt_startdate)
+			longterm_data.attrs['AQUA_enddate'] = time_to_string(self.plt_enddate)
 			self.longterm = longterm_data
 
 			self.logger.debug("Loading data in memory")
