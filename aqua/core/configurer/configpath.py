@@ -9,7 +9,6 @@ from aqua.core.logger import log_configure
 from .locator import ConfigLocator
 
 
-
 class ConfigPath():
     """
     A class to manage the configuration path and directory robustly, including
@@ -64,6 +63,9 @@ class ConfigPath():
 
         # get also info on machine on init
         self.machine = self.get_machine()
+
+        # Initialize data model attribute
+        self.data_model = None
 
     def get_config_dir(self):
         """
@@ -146,7 +148,7 @@ class ConfigPath():
         if catalog is not None:
             self.catalog = catalog
         else:
-            if len(matched)>1:
+            if len(matched) > 1:
                 self.logger.warning('Multiple triplets found in %s, setting %s as the default', matched, matched[0])
             self.catalog = matched[0]
 
@@ -221,11 +223,11 @@ class ConfigPath():
         if 'machine' in base:
             self.logger.debug('Machine found in configuration file, set to %s', machine)
             return base['machine']
-        
+
         # warning for unknown machine
         self.logger.warning('No machine entry found in configuration file, set to %s', machine)
         return machine
-    
+
         # if the entry is auto, or the machine unknown, try autodetection
         # if self.machine in ['auto', 'unknown']:
         #     self.logger.debug('Machine is %s, trying to self detect', self.machine)
@@ -303,7 +305,6 @@ class ConfigPath():
 
         return fixer_folder, grids_folder
 
-
     def scan_catalog(self, cat, model=None, exp=None, source=None):
         """
         Check if the model, experiment and source are in the catalog.
@@ -333,7 +334,6 @@ class ConfigPath():
 
         return status, level, avail
 
-
     def show_catalog_content(self, catalog=None, model=None, exp=None, source=None, verbose=True,
                              show_descriptions=False):
         """
@@ -359,7 +359,7 @@ class ConfigPath():
         if not catalogs_to_scan:
             self.logger.warning('No catalogs available to scan')
             return results
-        
+
         self.logger.debug("Catalogs to show: %s", catalogs_to_scan)
 
         for cat_name in catalogs_to_scan:
@@ -420,7 +420,6 @@ class ConfigPath():
 
         return results
 
-
     @staticmethod
     def _extract_source_descriptions(exp_cat, sources):
         """Safely extract descriptions for a list of sources from an experiment catalog."""
@@ -428,7 +427,7 @@ class ConfigPath():
             walk_dict = exp_cat.walk()
         except Exception:  # noqa: BLE001
             return {}
-            
+
         descs = {}
         for source in sources:
             try:
@@ -440,12 +439,11 @@ class ConfigPath():
                 pass
         return descs
 
-
     @staticmethod
     def format_catalog_structure(structure, catalog_name, descriptions=None):
         """
         Format catalog structure as a nicely aligned tree.
-        
+
         Args:
             structure: Dictionary with model/exp/source structure
             catalog_name: Name of the catalog
@@ -463,7 +461,7 @@ class ConfigPath():
 
                 if not sources:
                     continue
-                    
+ 
                 sorted_sources = sorted(sources)
 
                 if descriptions:
@@ -481,3 +479,40 @@ class ConfigPath():
 
         lines.append(f"{'='*80}\n")
         return "\n".join(lines)
+
+    def get_data_model(self, data_model: str = 'aqua'):
+        """
+        Extract the data model information from the data_model folder.
+        Populate the `self.data_model` attribute with the loaded data model dictionary.
+
+        Args:
+            data_model (str): the data model to be used. Defaults to 'aqua'.
+        """
+        data_model_folder = os.path.join(self.configdir, 'data_model')
+        filename = f'{data_model}.yaml'
+
+        if os.path.exists(data_model_folder):
+            data_model_dict = load_yaml(os.path.join(data_model_folder, filename))
+            self.logger.debug(f'Found data model {data_model} version {data_model_dict.get("version", "unknown")} in {data_model_folder}')
+            self.data_model = data_model_dict
+        else:
+            raise FileNotFoundError(f'Cannot find the data model {data_model} in {data_model_folder}!')
+
+    def get_coordinate_name(self, coordinate: str, data_model: str = 'aqua'):
+        """
+        Given a coordinate name, return its definition from the data model.
+
+        Args:
+            coordinate (str): the coordinate name to be retrieved.
+            data_model (str): the data model to be used. Defaults to 'aqua'.
+
+        Returns:
+            str: the coordinate definition from the data model.
+        """
+        if self.data_model is None:
+            self.get_data_model(data_model=data_model)
+
+        if coordinate not in self.data_model['data_model']:
+            raise KeyError(f'No coordinate {coordinate} found in the data model! Available coordinates are {list(self.data_model["data_model"].keys())}')
+        else:
+            return self.data_model['data_model'][coordinate]['name']
