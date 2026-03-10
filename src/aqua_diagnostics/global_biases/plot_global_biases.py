@@ -180,9 +180,9 @@ class PlotGlobalBiases:
         
 
         description = (
-            f"{data[var].attrs.get('long_name', var)}"
+            f"Climatology of {data[var].attrs.get('long_name', var)}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
-            f"climatology of {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
+            f"{data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
             f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format='%Y-%m')} to {time_to_string(data_ref.enddate, format='%Y-%m')}, shading)."
         )
 
@@ -247,9 +247,9 @@ class PlotGlobalBiases:
 
 
         description = (
-            f"{data[var].attrs.get('long_name', var)}"
+            f"Seasonal climatology of {data[var].attrs.get('long_name', var)}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
-            f"seasonal climatology of {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format="%Y-%m")} to {time_to_string(data.enddate, format="%Y-%m")}, contours) "
+            f"{data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format="%Y-%m")} to {time_to_string(data.enddate, format="%Y-%m")}, contours) "
             f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format="%Y-%m")} to {time_to_string(data_ref.enddate, format="%Y-%m")}, shading)."
         )
 
@@ -284,8 +284,8 @@ class PlotGlobalBiases:
         )
 
         description = (
-            f"{data[var].attrs.get('long_name', var)}"
-            f"vertical cross-section of {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
+            f"Vertical cross-section of {data[var].attrs.get('long_name', var)}"
+            f"{data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
             f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format='%Y-%m')} to {time_to_string(data_ref.enddate, format='%Y-%m')}, shading)."
         )
 
