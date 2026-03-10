@@ -91,8 +91,8 @@ def process_dataset(dataset, var_name, var_units, var_long_name, var_standard_na
     
     # Handle reference vs regular dataset startdate/enddate
     if is_reference:
-        startdate = dataset.get('std_startdate')
-        enddate = dataset.get('std_enddate')
+        startdate = dataset.get('std_startdate') or dataset.get('startdate')
+        enddate = dataset.get('std_enddate')   or dataset.get('enddate')
     else:
         startdate = dataset.get('startdate')
         enddate = dataset.get('enddate')
