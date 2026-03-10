@@ -5,7 +5,7 @@ diagnostics:
     Climate metrics, Performance indices: [climate_metrics.performance_indices, ecmean.performance_indices., PI4]
     Climate metrics, Global means: [climate_metrics.global_mean, ecmean.global_mean., global_mean_]
 
-    Radiation, Boxplot: [radiation_toa.boxplot, radiation_surface.boxplot, radiation.boxplot, boxplot_]
+    Radiation, Boxplots: [radiation_toa.boxplot, radiation_surface.boxplot, radiation.boxplot, boxplot_]
     Radiation, Time series: [radiation_toa.timeseries, radiation_surface.timeseries, radiation.timeseries., timeseries_ifs, timeseries_icon]
     Radiation, Annual difference: [radiation_toa.bias, radiation_surface.bias, radiation.bias., toa_mean_biases_]
     Radiation, Seasonal difference: [radiation_toa.seasonal_bias, radiation_surface.seasonal_bias, radiation.seasonal_bias]
