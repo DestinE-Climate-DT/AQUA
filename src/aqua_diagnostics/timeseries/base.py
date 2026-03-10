@@ -381,16 +381,16 @@ class PlotBaseMixin():
         description = f'{diagnostic} '
 
         description += f'of {self.long_name} '
-        if self.units is not None:
-          description += f'[{self.units}] '
-        if self.short_name is not None:
-          description += f'({self.short_name}) '
+        #if self.units is not None:
+        #  description += f'[{self.units}] '
+        #if self.short_name is not None:
+        #  description += f'({self.short_name}) '
 
         if self.region is not None:
             description += f'for region {self.region} '
 
         description += 'for '
-        description += strlist_to_phrase(items=[f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(self.len_data)])
+        description += strlist_to_phrase(items=[f'{self.models[i]} {self.exps[i]}' for i in range(self.len_data)])
 
         if self.len_ref > 0:
             description += f' with reference'
@@ -404,9 +404,10 @@ class PlotBaseMixin():
         elif self.len_ref == 0:
             description += '.'
 
+        # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
+        description += 'Dashed line represent yearly data, solid line represent monthly data. '
         if self.std_startdate is not None and self.std_enddate is not None:
-            description += f'with standard deviation from {time_to_string(self.std_startdate)} to {time_to_string(self.std_enddate)}.'
-            description += ' The shaded area represents 2 standard deviations.'
+            description += f'The shaded area represents ±2σ uncertainty bands computed from {time_to_string(self.std_startdate, format="%Y-%m")} to {time_to_string(self.std_enddate, format="%Y-%m")}.'
 
         self.logger.debug('Description: %s', description)
         return description
