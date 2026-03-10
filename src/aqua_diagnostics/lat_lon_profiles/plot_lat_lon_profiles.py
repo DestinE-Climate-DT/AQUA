@@ -313,7 +313,7 @@ class PlotLatLonProfiles():
         # Variable name
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                description += f'of {name} '
+                description += f'of {name.lower()} '
                 break
         
         # Short name in parentheses
