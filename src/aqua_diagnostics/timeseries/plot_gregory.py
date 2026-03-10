@@ -145,22 +145,21 @@ class PlotGregory(PlotBaseMixin):
         for i, model in enumerate(self.models):
             description += f' {model}'
             description += f' {self.exps[i]}'
+            description += f' (from {self.startdate[i]} to {self.enddate[i]})'
         if self.ref_catalogs['t2m'] is None and self.ref_catalogs['net_toa'] is None:
             description += '.'
         if self.ref_models['t2m'] is not None or self.ref_models['net_toa'] is not None:
             description += ' using as a reference'
         if self.ref_models['t2m'] is not None:
             description += f' {self.ref_models["t2m"]} {self.ref_exps["t2m"]} (2m temperature)'
+        if self.ref_std_startdate['t2m'] is not None and self.ref_std_enddate['t2m'] is not None:
+            description += f' (from {self.ref_std_startdate["t2m"]} to {self.ref_std_enddate["t2m"]})'
         if self.ref_models['t2m'] is not None and self.ref_models['net_toa'] is not None:
             description += ' and'
         if self.ref_models['net_toa'] is not None:
             description += f' {self.ref_models["net_toa"]} {self.ref_exps["net_toa"]} (net TOA).'
-        for i, model in enumerate(self.models):
-            description += f' The model data are from {self.startdate[i]} to {self.enddate[i]}.'
-        if self.ref_std_startdate['t2m'] is not None and self.ref_std_enddate['t2m'] is not None:
-            description += f' The reference 2m temperature data are from {self.ref_std_startdate["t2m"]} to {self.ref_std_enddate["t2m"]}.'
         if self.ref_std_startdate['net_toa'] is not None and self.ref_std_enddate['net_toa'] is not None:
-            description += f' The reference net TOA data are from {self.ref_std_startdate["net_toa"]} to {self.ref_std_enddate["net_toa"]}.'
+            description += f' (from {self.ref_std_startdate["net_toa"]} to {self.ref_std_enddate["net_toa"]})'
         description += ' On the left, monthly model data and climatological seasonal cycle for the reference data.'
         description += ' On the right, annual model data and 1 standard deviation range of variation around the climatological mean (shading).'
         return description
