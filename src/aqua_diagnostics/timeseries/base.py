@@ -292,6 +292,8 @@ class PlotBaseMixin():
         self.ref_catalogs = None
         self.ref_models = None
         self.ref_exps = None
+        self.startdate  = None
+        self.enddate = None
         self.std_startdate = None
         self.std_enddate = None
         self.region = None
@@ -390,7 +392,7 @@ class PlotBaseMixin():
             description += f'for region {self.region} '
 
         description += 'for '
-        description += strlist_to_phrase(items=[f'{self.models[i]} {self.exps[i]}' for i in range(self.len_data)])
+        description += strlist_to_phrase(items=[f'{self.models[i]} {self.exps[i]} (from {self.startdate[i]} to {self.enddate[i]})' for i in range(self.len_data)])
 
         if self.len_ref > 0:
             description += f' with reference'
@@ -404,7 +406,7 @@ class PlotBaseMixin():
         description += '.'
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
-        description += 'Dashed line represent yearly data, solid line represent monthly data. '
+        # description += 'Dashed line represent yearly data, solid line represent monthly data. '
         if self.std_startdate is not None and self.std_enddate is not None:
             description += f'The shaded area represents ±2σ uncertainty bands computed from {time_to_string(self.std_startdate, format="%Y-%m")} to {time_to_string(self.std_enddate, format="%Y-%m")}.'
 

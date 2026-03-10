@@ -120,6 +120,8 @@ class PlotTimeseries(PlotBaseMixin):
                 self.short_name = data[0].short_name if hasattr(data[0], 'short_name') else None
                 self.long_name = data[0].long_name if hasattr(data[0], 'long_name') else None
                 self.units = data[0].units if hasattr(data[0], 'units') else None
+                self.startdate = [d.time[0].values for d in data]
+                self.enddate = [d.time[-1].values for d in data]
                 break
         self.realizations = get_realizations(self.monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
@@ -162,7 +164,10 @@ class PlotTimeseries(PlotBaseMixin):
         Returns:
             description (str): Caption for the plot.
         """
-        return super().set_description(diagnostic='Time series')
+        description = super().set_description(diagnostic='Time series')
+        #TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
+        description += ' Dashed line represent yearly data, solid line represent monthly data.'
+        return description
 
     def plot_timeseries(self, data_labels=None, ref_label=None, title=None):
         """
