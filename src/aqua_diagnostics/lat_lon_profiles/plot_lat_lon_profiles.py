@@ -331,7 +331,7 @@ class PlotLatLonProfiles():
         dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
-        description += f', from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')}'
+        description += f', from {self.startdate} to {self.enddate}'
         
         # Reference data description
         if self.len_ref > 0 and self.ref_data is not None:
