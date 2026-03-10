@@ -36,9 +36,9 @@ diagnostics:
 
     Ocean 3D, Time series: [ocean3d.timeseries, monthly_time_series_, Ocean_time_series, ea_time_series, _time_series_arctic_ocean, _time_series_atlantic_ocean, _time_series_global_ocean, _time_series_indian_ocean, _time_series_pacific_ocean, _time_series_southern_ocean]
     Ocean 3D, Hovmöller plots: [ocean3d.hovmoller, _hovmoller_plot]
-    Ocean 3D, Trends: [ocean3d.multilevel_trend, ocean3d.trend, zonal_mean_trend, multilevel_t_s_trend]
+    Ocean 3D, Multilevel trends: [ocean3d.multilevel_trend, ocean3d.trend, zonal_mean_trend, multilevel_t_s_trend]
     Ocean 3D, Stratification plots: [ocean3d.stratification,  _stratification_]
-    Ocean 3D, Zonal means: [ocean3d.zonal_mean]
+    Ocean 3D, Zonal mean trends: [ocean3d.zonal_mean]
     Ocean 3D, Mixed layer depth: [ocean3d.mld, MLD., MLD_]
 
     SSH variability: ssh.

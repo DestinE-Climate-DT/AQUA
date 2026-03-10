@@ -1,7 +1,7 @@
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
-from aqua.util import get_realizations
+from aqua.util import get_realizations, time_to_string
 import cartopy.crs as ccrs
 
 from .multiple_maps import plot_maps
@@ -111,9 +111,9 @@ class PlotTrends:
         """
         self.diagnostic_product = 'zonal_mean'
         self.set_data_list()
-        self.set_suptitle(plot_type='Zonal mean Trends')
+        self.set_suptitle(plot_type='Trends of zonal mean')
         self.set_title()
-        self.set_description(content="Zonal mean Trends")
+        self.set_description(content="Trends of zonal mean of temperature (left) and salinity (right)")
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -225,7 +225,8 @@ class PlotTrends:
         Set the description metadata for the plot.
         """
 
-        self.description = f"{content} in the {self.region} region of {self.catalog} {self.model} {self.exp}."
+        self.description = f"{content} over {self.region} for experiment {self.model} {self.exp}"
+        self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})"
 
     def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},
                   rebuild: bool = True,
