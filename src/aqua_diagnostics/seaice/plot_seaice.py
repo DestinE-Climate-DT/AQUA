@@ -334,7 +334,7 @@ class PlotSeaIce:
         if hasattr(self, "std_label") and self.std_label:
             sdtdata = self._getdata_fromdict(data_dict,'monthly_std_ref')
             std_sdate, std_edate = extract_dates(sdtdata[0]) 
-            self.std_label_str = f" Shaded areas represented ±2σ uncertainty bands from {std_sdate} to {std_edate}."
+            self.std_label_str = f" Shaded areas represented ±2σ uncertainty bands (from {std_sdate} to {std_edate})."
         else:
             self.std_label_str = ''
 
