@@ -392,18 +392,20 @@ class PlotBaseMixin():
             description += f'for {self.region} '
 
         description += 'for '
-        description += strlist_to_phrase(items=[f'{self.models[i]} {self.exps[i]} (from {self.startdate[i]} to {self.enddate[i]})' for i in range(self.len_data)])
-
+        description += strlist_to_phrase(items=[
+            f'{self.models[i]} {self.exps[i]} (from {time_to_string(self.startdate[i], format="%Y-%m")} to {time_to_string(self.enddate[i], format="%Y-%m")})' for i in range(self.len_data)
+        ])
+    
         if self.len_ref > 0:
             description += f' with reference'
             for i in range(self.len_ref):
                 if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
-                    description += f' ERA5 '
+                    description += f' ERA5'
                 elif isinstance(self.ref_models, list):
                     description += f' {self.ref_models[i]} {self.ref_exps[i]} '
                 else:
                     description += f' {self.ref_models} {self.ref_exps} '
-        description += '.'
+        description += '. '
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
         # description += 'Dashed line represent yearly data, solid line represent monthly data. '

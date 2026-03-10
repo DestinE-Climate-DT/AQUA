@@ -166,7 +166,7 @@ class PlotTimeseries(PlotBaseMixin):
         """
         description = super().set_description(diagnostic='Time series')
         #TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
-        description += ' Dashed line represent yearly data, solid line represent monthly data.'
+        description += 'Dashed lines represent yearly data, solid lines represent monthly data.'
         return description
 
     def plot_timeseries(self, data_labels=None, ref_label=None, title=None):
