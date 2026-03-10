@@ -42,6 +42,7 @@ class BaseMixin(Diagnostic):
                                                telecname=telecname)
         # Initialize the possible results
         self.index = None
+        self.telecname = telecname
 
     def compute_regression(self, var: str = None,
                            dim: str = 'time', season: str = None):
