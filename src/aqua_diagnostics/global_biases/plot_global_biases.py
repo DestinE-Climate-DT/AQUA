@@ -157,7 +157,7 @@ class PlotGlobalBiases:
         proj = get_projection(proj, **proj_params)
 
         title = (f"Global difference of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp}"
-                 f"relative to {data_ref.AQUA_model} climatology"
+                 f" relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
         fig, ax = plot_single_map_diff(
