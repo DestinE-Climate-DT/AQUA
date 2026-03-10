@@ -3,7 +3,7 @@
 diagnostics:
     Climate metrics, Gregory plot: [climate_metrics.gregory, radiation.gregory., global_time_series_gregory, timeseries.gregory, gregory_plot_ifs, gregory_plot_icon]
     Climate metrics, Performance indices: [climate_metrics.performance_indices, ecmean.performance_indices., PI4]
-    Climate metrics, Global biases: [climate_metrics.global_mean, ecmean.global_mean., global_mean_]
+    Climate metrics, Global means: [climate_metrics.global_mean, ecmean.global_mean., global_mean_]
 
     Radiation, Boxplot: [radiation_toa.boxplot, radiation_surface.boxplot, radiation.boxplot, boxplot_]
     Radiation, Time series: [radiation_toa.timeseries, radiation_surface.timeseries, radiation.timeseries., timeseries_ifs, timeseries_icon]
