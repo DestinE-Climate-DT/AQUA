@@ -420,7 +420,6 @@ class ConfigPath():
 
         return results
 
-
     @staticmethod
     def _extract_source_descriptions(exp_cat, sources):
         """Safely extract descriptions for a list of sources from an experiment catalog."""
@@ -428,7 +427,7 @@ class ConfigPath():
             walk_dict = exp_cat.walk()
         except Exception:  # noqa: BLE001
             return {}
-            
+
         descs = {}
         for source in sources:
             try:
@@ -440,12 +439,11 @@ class ConfigPath():
                 pass
         return descs
 
-
     @staticmethod
     def format_catalog_structure(structure, catalog_name, descriptions=None):
         """
         Format catalog structure as a nicely aligned tree.
-        
+
         Args:
             structure: Dictionary with model/exp/source structure
             catalog_name: Name of the catalog
@@ -455,17 +453,15 @@ class ConfigPath():
         """
         lines = [f"\n{'='*80}", f"📁 Catalog: {catalog_name}", f"{'='*80}"]
 
-
         for model_name, experiments in sorted(structure.items()):
             lines.append(f"\n   Model: {model_name}")
-
 
             for exp_name, sources in sorted(experiments.items()):
                 lines.append(f"     └─ Experiment: {exp_name}")
 
                 if not sources:
                     continue
-                    
+ 
                 sorted_sources = sorted(sources)
 
                 if descriptions:
@@ -502,21 +498,21 @@ class ConfigPath():
         else:
             raise FileNotFoundError(f'Cannot find the data model {data_model} in {data_model_folder}!')
 
-    def get_coordinate_name(self, coordinate: str):
+    def get_coordinate_name(self, coordinate: str, data_model: str = 'aqua'):
         """
         Given a coordinate name, return its definition from the data model.
 
         Args:
             coordinate (str): the coordinate name to be retrieved.
+            data_model (str): the data model to be used. Defaults to 'aqua'.
 
         Returns:
             str: the coordinate definition from the data model.
         """
         if self.data_model is None:
-            self.get_data_model()
+            self.get_data_model(data_model=data_model)
 
-        print(self.data_model['data_model'])
         if coordinate not in self.data_model['data_model']:
-            raise KeyError(f'No coordinate {coordinate} found in the data model!')
+            raise KeyError(f'No coordinate {coordinate} found in the data model! Available coordinates are {list(self.data_model["data_model"].keys())}')
         else:
             return self.data_model['data_model'][coordinate]['name']
