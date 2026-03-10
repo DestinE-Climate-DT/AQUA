@@ -166,7 +166,7 @@ def set_description(diagnostic, model, exp, year1, year2, config):
     Returns:
         description (str)
     """
-    model_time = f"for {model} {exp} from {year1}-01 to {year2}-12."
+    model_time = f"for {model} {exp} (from {year1}-01 to {year2}-12)."
 
     region_bounds = {
         'Global':       (-90.0,  90.0),

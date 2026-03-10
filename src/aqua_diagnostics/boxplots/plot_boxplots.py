@@ -78,11 +78,11 @@ class PlotBoxplots:
         all_startdates = startdates + (startdates_ref or [] )  
         all_enddates = enddates + (enddates_ref or [] )     
         dataset_info = ', '.join(
-            f"{m} {e} from {time_to_string(s, format='%Y-%m')} to {time_to_string(en, format='%Y-%m')}"
+            f"{m} {e} (from {time_to_string(s, format='%Y-%m')} to {time_to_string(en, format='%Y-%m')})"
             for m, e, s, en in zip(all_models, all_exps, all_startdates, all_enddates)
         )
         if not description:
-            description = f"Boxplot of {dataset_info}."
+            description = f"Boxplots of {dataset_info}."
 
         if self.anomalies:
             ref_name = extract_attrs(data_ref[self.ref_number], 'AQUA_model')

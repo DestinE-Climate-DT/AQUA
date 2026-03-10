@@ -141,7 +141,7 @@ class PlotGregory(PlotBaseMixin):
  
     def set_description(self):
         """Set the description for the plot"""
-        description = 'Gregory plot (showing net top-of-atmosphere radiation vs. 2m temperature) of'
+        description = 'Gregory plot, showing net top-of-atmosphere radiation vs. 2m temperature, of'
         for i, model in enumerate(self.models):
             description += f' {model}'
             description += f' {self.exps[i]}'
@@ -157,11 +157,12 @@ class PlotGregory(PlotBaseMixin):
         if self.ref_models['t2m'] is not None and self.ref_models['net_toa'] is not None:
             description += ' and'
         if self.ref_models['net_toa'] is not None:
-            description += f' {self.ref_models["net_toa"]} {self.ref_exps["net_toa"]} (net TOA).'
+            description += f' {self.ref_models["net_toa"]} {self.ref_exps["net_toa"]} (net TOA)'
         if self.ref_std_startdate['net_toa'] is not None and self.ref_std_enddate['net_toa'] is not None:
             description += f' (from {self.ref_std_startdate["net_toa"]} to {self.ref_std_enddate["net_toa"]})'
-        description += ' On the left, monthly model data and climatological seasonal cycle for the reference data.'
-        description += ' On the right, annual model data and 1 standard deviation range of variation around the climatological mean (shading).'
+        description += '. '
+        description += 'On the left, monthly model data and climatological seasonal cycle for the reference data. '
+        description += 'On the right, annual model data and the reference ±1σ uncertainty bands around the climatological mean (shading).'
         return description
 
     def plot_monthly(self, fig: plt.Figure, ax: plt.Axes,
