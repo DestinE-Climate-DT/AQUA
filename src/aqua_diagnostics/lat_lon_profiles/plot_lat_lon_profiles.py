@@ -331,7 +331,7 @@ class PlotLatLonProfiles():
         dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
-        description += f', from {self.startdate} to {self.enddate}'
+        description += f'(from {self.startdate} to {self.enddate}) '
         
         # Reference data description
         if self.len_ref > 0 and self.ref_data is not None:
@@ -393,7 +393,9 @@ class PlotLatLonProfiles():
         title = self.set_title()
         
         if self.ref_std_data is not None:
-            description += " with standard deviation bands"
+            description += ", with standard deviation bands."
+        else:
+            description += "."
 
         fig, _ = self.plot(data_labels=data_label, ref_label=ref_label, title=title,
                            style=style)
