@@ -401,8 +401,7 @@ class PlotBaseMixin():
                     description += f' {self.ref_models[i]} {self.ref_exps[i]} '
                 else:
                     description += f' {self.ref_models} {self.ref_exps} '
-        elif self.len_ref == 0:
-            description += '.'
+        description += '.'
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
         description += 'Dashed line represent yearly data, solid line represent monthly data. '
