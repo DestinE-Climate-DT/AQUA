@@ -102,7 +102,7 @@ class PlotGlobalBiases:
         realization = get_realizations(data)
         proj = get_projection(proj, **proj_params)
         
-        title = (f"Climatology of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp}" 
+        title = (f"Climatology of {data[var].attrs.get('long_name', var).lower()} \n for {data.AQUA_model} {data.AQUA_exp}" 
                 + (f" at {int(plev / 100)} hPa" if plev else ""))
 
         fig, ax = plot_single_map(
@@ -121,7 +121,7 @@ class PlotGlobalBiases:
         ax.set_ylabel("Latitude")
 
         description = (
-            f"Spatial map of the climatology for {data[var].attrs.get('long_name', var)}"
+            f"Spatial map of the climatology for {data[var].attrs.get('long_name', var).lower()}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''}"
             f" from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')} for the {data.AQUA_model} model, experiment {data.AQUA_exp}."
         )
@@ -284,7 +284,7 @@ class PlotGlobalBiases:
         )
 
         description = (
-            f"Vertical cross-section of {data[var].attrs.get('long_name', var)}"
+            f"Vertical cross-section of {data[var].attrs.get('long_name', var).lower()} for "
             f"{data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
             f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format='%Y-%m')} to {time_to_string(data_ref.enddate, format='%Y-%m')}, shading)."
         )
