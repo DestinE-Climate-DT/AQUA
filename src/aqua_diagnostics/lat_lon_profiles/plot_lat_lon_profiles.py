@@ -1,6 +1,6 @@
 from aqua.graphics import plot_seasonal_lat_lon_profiles
 from aqua.logger import log_configure
-from aqua.util import to_list, strlist_to_phrase, DEFAULT_REALIZATION
+from aqua.util import to_list, strlist_to_phrase, time_to_string, DEFAULT_REALIZATION
 from aqua.graphics import plot_lat_lon_profiles
 from aqua.diagnostics.core import OutputSaver
 
@@ -300,18 +300,13 @@ class PlotLatLonProfiles():
         if self.data_type == 'seasonal':
             description = f'Seasonal {self.mean_type.lower()} profile '
         else:
-            description = f'{self.mean_type.capitalize()} profile '
+            description = f'Climatological {self.mean_type.lower()} profile '
         
         # Variable name
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
                 description += f'of {name} '
                 break
-
-        # Units
-        if self.units is not None:
-            units = self.units.replace("**", r"\*\*")
-            description += f'[{units}] '
         
         # Short name in parentheses
         if self.short_name is not None:
@@ -325,7 +320,7 @@ class PlotLatLonProfiles():
         num_items = min(len(self.catalogs), len(self.models), len(self.exps)) if hasattr(self, 'catalogs') else 0
         
         description += 'for '
-        dataset_names = [f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
+        dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
         # Reference data description
@@ -355,11 +350,9 @@ class PlotLatLonProfiles():
         if self.ref_std_data is not None:
             description += ' with ±2σ uncertainty bands'
             if self.std_startdate is not None and self.std_enddate is not None:
-                description += f' computed over {self.std_startdate} to {self.std_enddate}'
-        
-        description += '.'
+                description += f' computed over {time_to_string(self.std_startdate, format='%Y-%m')} to {time_to_string(self.std_enddate, format='%Y-%m')}'
             
-        self.logger.debug('Description: %s', description)
+        self.logger.warning('Description: %s', description)
         return description
 
     def run(self,
