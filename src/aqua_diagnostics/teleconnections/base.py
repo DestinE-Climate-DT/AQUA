@@ -1,5 +1,6 @@
 import os
 import xarray as xr
+import pandas as pd
 from aqua.logger import log_configure
 from aqua.util import ConfigPath, load_yaml, select_season
 from aqua.util import to_list, convert_data_units, get_realizations, time_to_string
@@ -190,8 +191,8 @@ class PlotBaseMixin():
             self.catalogs = [d.AQUA_catalog for d in self.indexes]
             self.models = [d.AQUA_model for d in self.indexes]
             self.exps = [d.AQUA_exp for d in self.indexes]
-            self.startdate = [d.time[0] for d in self.indexes]
-            self.enddate = [d.time[-1] for d in self.indexes]
+            self.startdate = [pd.to_datetime(d.time[0].values) for d in self.indexes]
+            self.enddate = [pd.to_datetime(d.time[-1].values) for d in self.indexes]
             self.realizations = get_realizations(self.indexes)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
@@ -201,8 +202,8 @@ class PlotBaseMixin():
             self.ref_catalogs = [d.AQUA_catalog for d in self.ref_indexes]
             self.ref_models = [d.AQUA_model for d in self.ref_indexes]
             self.ref_exps = [d.AQUA_exp for d in self.ref_indexes]
-            self.ref_startdate = [d.time[0] for d in self.ref_indexes]
-            self.ref_enddate = [d.time[-1] for d in self.ref_indexes]
+            self.ref_startdate = [pd.to_datetime(d.time[0].values) for d in self.ref_indexes]
+            self.ref_enddate = [pd.to_datetime(d.time[-1].values) for d in self.ref_indexes]
             self.logger.debug(f'Ref Catalogs: {self.ref_catalogs}')
             self.logger.debug(f'Ref Models: {self.ref_models}')
             self.logger.debug(f'Ref Exps: {self.ref_exps}')
@@ -348,7 +349,7 @@ def _homogeneize_maps(maps, ref_maps=None, var=None):
     Args:
         maps (list or xarray.DataArray): The list of maps or a single map.
         ref_maps (list or xarray.DataArray): The list of reference maps or a single map.
-        var (str, optional): The variable name to pass to the unit conversion. 
+        var (str, optional): The variable name to pass to the unit conversion.
                              If None, inferred from each DataArray.
 
     Returns:
