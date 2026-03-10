@@ -108,9 +108,9 @@ if __name__ == '__main__':
 
                 title=None
                 if variables == ['-snlwrf', 'snswrf', 'slhtf', 'ishf']:
-                    title = "Boxplot of Surface Radiation Fluxes for: " + ", ".join(model_exp_list_unique)
+                    title = "Boxplots of Surface Radiation Fluxes for: " + ", ".join(model_exp_list_unique)
                 elif variables == ['-tnlwrf', 'tnswrf']:
-                    title = "Boxplot of TOA Radiation Fluxes for: " + ", " .join(model_exp_list_unique)
+                    title = "Boxplots of TOA Radiation Fluxes for: " + ", " .join(model_exp_list_unique)
 
                 plot = PlotBoxplots(diagnostic=diagnostic_name, save_pdf=save_pdf, save_png=save_png, dpi=dpi, outputdir=outputdir, loglevel=loglevel)
                 plot.plot_boxplots(data=fldmeans, data_ref=fldmeans_ref, var=variables, title=title, **plot_kwargs)

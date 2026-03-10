@@ -120,7 +120,7 @@ class PlotGregory(PlotBaseMixin):
 
     def set_title(self):
         """Set the title for the plot"""
-        title = 'Gregory Plot '
+        title = 'Gregory Plot of '
 
         for i, model in enumerate(self.models):
             title += f'{model}'
