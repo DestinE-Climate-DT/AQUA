@@ -36,6 +36,10 @@ def boxplot(fldmeans: list[xr.Dataset],
         tuple: Matplotlib figure and axis.
     """
 
+    # maximum line before going to newline
+    LINE_LENGTH_TITLE = 50    
+    LINE_LENGTH_LABELS = 14
+
     logger = log_configure(loglevel, 'boxplot')
     ConfigStyle(style=style, loglevel=loglevel)
     sns.set_palette("pastel")
@@ -93,7 +97,7 @@ def boxplot(fldmeans: list[xr.Dataset],
         order=order, hue_order=hue_order, width=0.8, ax=ax
     )
 
-    wrapped_labels = [textwrap.fill(lbl, 14) for lbl in order]
+    wrapped_labels = [textwrap.fill(lbl, LINE_LENGTH_LABELS) for lbl in order]
     ax.set_xticklabels(wrapped_labels, fontsize=fontsize)
 
     # --- Add dashed mean lines for each box ---
@@ -144,7 +148,7 @@ def boxplot(fldmeans: list[xr.Dataset],
     else:
         vars_str = ', '.join(labels[v] for v in variables)
         models_str = ', '.join(model_names)
-        wrapped_title = textwrap.fill(f'Boxplot of {vars_str}', 70)
+        wrapped_title = textwrap.fill(f'Boxplot of {vars_str}', LINE_LENGTH_TITLE)
         ax.set_title(wrapped_title, fontsize=fontsize+2)
  
     ax.set_xlabel('Variables', fontsize=fontsize)
