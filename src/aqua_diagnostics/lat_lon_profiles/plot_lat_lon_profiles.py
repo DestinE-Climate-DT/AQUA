@@ -157,8 +157,9 @@ class PlotLatLonProfiles():
         
         # Handle std dates
         if self.ref_std_data is not None:
-            self.std_startdate = getattr(self.ref_std_data, 'std_startdate', None)
-            self.std_enddate = getattr(self.ref_std_data, 'std_enddate', None)
+            ref_std_item = self.ref_std_data[0] if isinstance(self.ref_std_data, list) else self.ref_std_data
+            self.std_startdate = getattr(ref_std_item, 'std_startdate', None) if ref_std_item is not None else None
+            self.std_enddate   = getattr(ref_std_item, 'std_enddate',   None) if ref_std_item is not None else None
         else:
             self.std_startdate = None
             self.std_enddate = None
@@ -357,7 +358,7 @@ class PlotLatLonProfiles():
         if self.ref_std_data is not None:
             description += ', with ±2σ uncertainty bands'
             if self.std_startdate is not None and self.std_enddate is not None:
-                description += f' computed from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')}'
+                description += f' computed from {time_to_string(self.std_startdate, format='%Y-%m')} to {time_to_string(self.std_enddate, format='%Y-%m')}'
             
         self.logger.warning('Description: %s', description)
         return description
