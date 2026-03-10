@@ -1,7 +1,3 @@
-import xarray as xr
-import numpy as np
-import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps, plot_vertical_profile_diff
@@ -106,14 +102,14 @@ class PlotGlobalBiases:
         realization = get_realizations(data)
         proj = get_projection(proj, **proj_params)
         
-        title = (f"Climatology of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}" 
+        title = (f"Climatology of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp}" 
                 + (f" at {int(plev / 100)} hPa" if plev else ""))
 
         fig, ax = plot_single_map(
             data[var],
             return_fig=True,
             title=title,
-            title_size=18,
+            title_size=16,
             vmin=vmin,
             vmax=vmax,
             proj=proj,
@@ -160,7 +156,7 @@ class PlotGlobalBiases:
 
         proj = get_projection(proj, **proj_params)
 
-        title = (f"Global difference of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
+        title = (f"Global difference of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp}"
                  f"relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
@@ -170,7 +166,7 @@ class PlotGlobalBiases:
             return_fig=True,
             contour=True, 
             title=title,
-            title_size=18,
+            title_size=16,
             sym=sym,
             proj=proj,
             vmin_fill=vmin, 
@@ -222,7 +218,7 @@ class PlotGlobalBiases:
         season_list = ['DJF', 'MAM', 'JJA', 'SON']
         sym = vmin is None or vmax is None
 
-        title = (f"Seasonal difference of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
+        title = (f"Seasonal difference of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp} "
                  f"relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
@@ -231,9 +227,9 @@ class PlotGlobalBiases:
             'proj': get_projection(proj, **proj_params),
             'return_fig': True,
             'title': title,
-            'title_size': 18,
+            'title_size': 16,
             'titles': season_list,
-            'titles_size': 16,
+            'titles_size': 14,
             'figsize':(10, 8),
             'contour': True,
             'sym': sym,
@@ -283,7 +279,7 @@ class PlotGlobalBiases:
         realization = get_realizations(data)
 
         title = (
-            f"Vertical difference of {data[var].attrs.get('long_name', var)} for {data.AQUA_model} {data.AQUA_exp}\n"
+            f"Vertical difference of {data[var].attrs.get('long_name', var)} for \n {data.AQUA_model} {data.AQUA_exp}"
             f"relative to {data_ref.AQUA_model} climatology\n"
         )
 
@@ -308,7 +304,7 @@ class PlotGlobalBiases:
             cmap=self.cmap,
             nlevels=nlevels,
             title=title,
-            title_size=18,
+            title_size=16,
             return_fig=True,
             loglevel=self.loglevel
         )
