@@ -198,7 +198,7 @@ class PlotTrends:
         """Set the title for the plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"{plot_type} in {self.region} - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"{plot_type} in {self.region} - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):

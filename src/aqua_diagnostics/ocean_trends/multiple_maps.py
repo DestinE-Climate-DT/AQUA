@@ -112,7 +112,15 @@ def plot_maps(maps: list[xr.DataArray],
             ticks = np.linspace(vmin, vmax, 3)
         logger.debug(f"Colorbar limits for map {i}: vmin={vmin}, vmax={vmax}")
 
+        row = i // ncols
+        col = i % ncols
+        
         logger.debug("Plotting map %d", i)
+        
+        if col == 0:
+            cmap = "RdBu_r"
+        else:
+            cmap = "coolwarm" 
         fig, ax = plot_single_map(
             data=maps[i],
             contour=True,
@@ -146,9 +154,6 @@ def plot_maps(maps: list[xr.DataArray],
         gl.top_labels = False
         gl.right_labels = False
         
-
-        row = i // ncols
-        col = i % ncols
             
         if row == nrows - 1:
             gl.bottom_labels = True
@@ -183,7 +188,7 @@ def plot_maps(maps: list[xr.DataArray],
             cbar = fig.colorbar(mappable, cax=cax, orientation="horizontal")
             cbar.set_label(cbar_labels[i])
             
-            cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", None)
+            cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", 3)
             cbar_ticks = generate_colorbar_ticks(
                 vmin=vmin,
                 vmax=vmax,
