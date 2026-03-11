@@ -331,7 +331,7 @@ class PlotLatLonProfiles():
         dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
-        description += f'(from {self.startdate} to {self.enddate}) '
+        description += f' (from {time_to_string(self.startdate, format="%Y-%m")} to {time_to_string(self.enddate, format="%Y-%m")}) '
         
         # Reference data description
         if self.len_ref > 0 and self.ref_data is not None:
@@ -353,9 +353,9 @@ class PlotLatLonProfiles():
 
         # Standard deviation info
         if self.ref_std_data is not None:
-            description += ' with ±2σ uncertainty bands,'
+            description += ' with ±2σ uncertainty bands'
             if self.std_startdate is not None and self.std_enddate is not None:
-                description += f' computed from {time_to_string(self.std_startdate, format='%Y-%m')} to {time_to_string(self.std_enddate, format='%Y-%m')}'
+                description += f' (from {time_to_string(self.std_startdate, format='%Y-%m')} to {time_to_string(self.std_enddate, format='%Y-%m')}).'
             
         self.logger.warning('Description: %s', description)
         return description
