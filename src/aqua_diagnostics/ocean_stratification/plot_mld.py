@@ -106,7 +106,7 @@ class PlotMLD:
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
     def set_figsize(self):
-        self.figsize = (9 * self.ncols, 8 * self.nrows)
+        self.figsize = (3.5 * self.ncols, 3.5 * self.nrows)
 
         # lon_span = abs(self.data.lon.max() - self.data.lon.min())
         # lat_span = abs(self.data.lat.max() - self.data.lat.min())
@@ -207,18 +207,20 @@ class PlotMLD:
 
     def set_cbar_limits(self):
         self.vmin = 0.0
-        if self.obs:
-            self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
-        else:
-            self.vmax = self.data["mld"].max()
-        self.vmax = self._round_up(self.vmax)
-        if self.vmax < 200:
-            nlevels = 10
-        elif self.vmax > 1500:
-            nlevels = 100
-        else:
-            nlevels = 50
-        self.nlevels = nlevels
+        self.vmax = 2000
+        self.nlevels = 20
+        # if self.obs:
+        #     self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
+        # else:
+        #     self.vmax = self.data["mld"].max()
+        # self.vmax = self._round_up(self.vmax)
+        # if self.vmax < 200:
+        #     nlevels = 10
+        # elif self.vmax > 1500:
+        #     nlevels = 100
+        # else:
+        #     nlevels = 50
+        # self.nlevels = nlevels
         self.logger.debug(
             f"Colorbar limits set to vmin: {self.vmin}, vmax: {self.vmax}, nlevels: {self.nlevels}"
         )
