@@ -144,7 +144,8 @@ def boxplot(fldmeans: list[xr.Dataset],
 
     # Title and labels
     if title:
-        ax.set_title(title, fontsize=fontsize + 3)
+        wrapped_title = textwrap.fill(title, LINE_LENGTH_TITLE)
+        ax.set_title(wrapped_title, fontsize=fontsize + 2)
     else:
         vars_str = ', '.join(labels[v] for v in variables)
         models_str = ', '.join(model_names)
