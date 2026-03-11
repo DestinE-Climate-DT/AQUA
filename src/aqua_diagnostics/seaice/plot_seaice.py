@@ -285,9 +285,9 @@ class PlotSeaIce:
                 self.region_str = region  # start with first region
             else:
                 if region_idx == self.num_regions - 1:
-                    self.region_str += f" and {region} regions"
+                    self.region_str += f" and {region} regions "
                 else:
-                    self.region_str += f", {region}"
+                    self.region_str += f", {region} "
         
         # generate dynamic string for model data
         if hasattr(self, "data_labels") and self.data_labels:
