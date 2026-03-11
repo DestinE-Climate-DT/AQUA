@@ -253,8 +253,8 @@ class PlotBaseMixin():
         """
         description = f"{index_name} index time series for"
 
-        dataset = [f"{self.models[i]} {self.exps[i]} (from {time_to_string(self.startdate[i], format='%Y-%m-%d')} to {time_to_string(self.enddate[i], format='%Y-%m-%d')})" for i in range(self.len_data)]
-        refs = [f"{self.ref_models[i]} {self.ref_exps[i]} (from {time_to_string(self.ref_startdate[i], format='%Y-%m-%d')} to {time_to_string(self.ref_enddate[i], format='%Y-%m-%d')})" for i in range(self.len_ref)]
+        dataset = [f"{self.models[i]} {self.exps[i]} (from {time_to_string(self.startdate[i], format='%Y-%m')} to {time_to_string(self.enddate[i], format='%Y-%m')})" for i in range(self.len_data)]
+        refs = [f"{self.ref_models[i]} {self.ref_exps[i]} (from {time_to_string(self.ref_startdate[i], format='%Y-%m')} to {time_to_string(self.ref_enddate[i], format='%Y-%m')})" for i in range(self.len_ref)]
 
         if self.len_data > 0:
             description += f" {', '.join(dataset)}"
