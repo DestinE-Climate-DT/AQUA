@@ -24,7 +24,7 @@ diagnostics:
     Water cycle, Seasonal cycles: water_cycle.seasonalcycles
     Water cycle, Annual differences: water_cycle.bias
     Water cycle, Seasonal differences: water_cycle.seasonal_bias
-    Water cycle, Profiles: [water_cycle.zonal_profile,  water_cycle.seasonal_zonal_profile]
+    Water cycle, Zonal profiles: [water_cycle.zonal_profile,  water_cycle.seasonal_zonal_profile]
     Water cycle, Tropical rainfall: trop_rainfall
 
     Teleconnections, NAO: [teleconnections.nao, teleconnections.NAO, nao.]
