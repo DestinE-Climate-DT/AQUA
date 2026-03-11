@@ -14,7 +14,7 @@ diagnostics:
     Atmosphere 2D, Seasonal cycles: [atmosphere2d.seasonalcycles, atmosphere.seasonalcycles, global_time_series_seasonalcycle, timeseries.seasonalcycle]
     Atmosphere 2D, Annual differences: [atmosphere2d.bias, "globalbiases.bias*[!0].png", global_biases.total_bias_map, global_biases.seasonal_bias_map]
     Atmosphere 2D, Seasonal differences: [atmosphere2d.seasonal_bias, "globalbiases.seasonal_bias*[!0].png", Seasonal_Bias_Plot, atmglobalmean.seasonal_bias]
-    Atmosphere 2D, Profiles: [atmosphere2d.zonal_profile, atmosphere2d.seasonal_zonal_profile]
+    Atmosphere 2D, Zonal profiles: [atmosphere2d.zonal_profile, atmosphere2d.seasonal_zonal_profile]
 
     Atmosphere 3D, Vertical differences: [atmosphere3d.vertical_bias, global_biases.vertical_bias, globalbiases.vertical_bias, atmglobalmean.vertical_bias, Vertical_biases]
     Atmosphere 3D, Annual differences: [atmosphere3d.bias, "globalbiases.bias*0.png"]
