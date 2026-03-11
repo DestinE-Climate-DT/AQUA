@@ -80,7 +80,7 @@ def test_ENSO(tmp_path):
     fig_cor = plot_single.plot_maps(maps=cor, statistic='correlation')
     assert isinstance(fig_cor, matplotlib.figure.Figure)
     description = plot_single.set_map_description(maps=cor, statistic='correlation')
-    assert 'correlation' in description
+    assert 'Correlation' in description
     plot_single.save_plot(fig_cor, diagnostic_product='correlation', metadata={'description': description}, format='pdf')
     assert (os.path.exists(os.path.join(tmp_path, 'pdf', 'enso.correlation.ci.ERA5.era5-hpz3.r1.pdf'))) is True
 
