@@ -145,6 +145,10 @@ def plot_maps(
             **kwargs,
         )
         gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+        
+        gl.xlabel_style = {'color': 'gray'}
+        gl.ylabel_style = {'color': 'gray'}
+
         gl.top_labels = False
         gl.right_labels = False
         if i != 0:
@@ -237,7 +241,7 @@ def plot_maps(
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 15, y=1.05)
+        fig.suptitle(title, fontsize=ncols * 8, y=1.1)
 
     if return_fig:
         return fig
