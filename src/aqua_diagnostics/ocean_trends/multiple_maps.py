@@ -86,7 +86,7 @@ def plot_maps(maps: list[xr.DataArray],
     logger.debug("Loading maps")
     maps = [data_map.load(keep_attrs=True) for data_map in maps]
 
-    figsize = (ncols * 6.5, nrows * 3.5)
+    figsize = (ncols * 4.5, nrows * 2.5)
     fig, axs = plt.subplots(
         nrows=nrows, ncols=ncols,
         figsize=figsize,
@@ -123,6 +123,7 @@ def plot_maps(maps: list[xr.DataArray],
             return_fig=True,
             cyclic_lon=cyclic_lon,
             fig=fig,
+            gridlines=False,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
             ticks_rounding=0,
@@ -130,6 +131,25 @@ def plot_maps(maps: list[xr.DataArray],
         )
         ax.set_aspect("auto")  # NEW: stretch plot to fill subplot
         ax.coastlines()
+
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+        gl.top_labels = False
+        gl.right_labels = False
+        
+
+        # Hardcoded gridlines
+        row = i // ncols
+        col = i % ncols
+            
+        if row == nrows - 1:
+            gl.bottom_labels = True
+        else:
+            gl.bottom_labels = False
+
+        if col == ncols - 1:
+            gl.left_labels = False
+        else:
+            gl.left_labels = True
 
         if ytext:
             ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray',

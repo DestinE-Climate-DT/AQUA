@@ -75,6 +75,7 @@ class PlotTrends:
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
+        self.set_extent()
         fig = plot_maps(
             maps=self.data_list,
             nrows=self.nrows,
@@ -124,6 +125,7 @@ class PlotTrends:
             title=self.suptitle,
             titles=self.title_list,
             cbar_labels=self.cbar_labels,
+            extent=self.extent,
             ytext=self.ytext,
             return_fig=True,
             sym=True,
@@ -145,6 +147,12 @@ class PlotTrends:
         else:
             self.nrows = 1
         self.ncols = len(self.vars)
+
+    def set_extent(self):
+        """Set the extent for the plot."""
+        self.extent = [self.data_list[0].lon.min().values, self.data_list[0].lon.max().values,
+                       self.data_list[0].lat.min().values, self.data_list[0].lat.max().values]
+        self.logger.debug(f"Extent set to: {self.extent}")
 
     def set_ytext(self):
         """Set the y-axis text for the multi-level plots."""
