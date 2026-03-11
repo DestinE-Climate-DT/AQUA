@@ -9,7 +9,7 @@ from .graphics import coord_names, ticks_round, set_ticks, generate_colorbar_tic
 from .graphics import apply_circular_window
 from .graphics import get_nside, get_npix, healpix_resample
 from .io_util import files_exist, create_folder, file_is_complete
-from .io_util import add_pdf_metadata, add_png_metadata, update_metadata
+from .io_util import update_metadata
 from .projections import get_projection
 from .realizations import format_realization, get_realizations, DEFAULT_REALIZATION
 from .sci_util import lon_to_180, lon_to_360, check_coordinates
@@ -33,7 +33,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'apply_circular_window',
            'get_nside', 'get_npix', 'healpix_resample',
            'files_exist', 'create_folder', 'file_is_complete',
-           'add_pdf_metadata', 'add_png_metadata', 'update_metadata',
+           'update_metadata',
            'get_projection',
            'format_realization', 'get_realizations', 'DEFAULT_REALIZATION',
            'lon_to_180', 'lon_to_360', 'check_coordinates',
