@@ -73,8 +73,9 @@ class PlotStratification:
             data_label=self.data_label,
             obs_label=self.obs_label if self.obs else None,
             title=self.suptitle,
-            #HACK: the figsize is set to be smaller than the default one to avoid very large figures when there are many subplots.
-            figsize=(4 * self.ncols, 10 * self.nrows)/1.5,
+            # HACK fix size of figure. nrows and ncols are set to 1 and 3 inside the function!
+            figsize=(14, 6),
+            # figsize=(4 * self.ncols, 10 * self.nrows),
             return_fig=True,
             loglevel=self.loglevel,
         )
