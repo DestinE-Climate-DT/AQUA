@@ -159,7 +159,7 @@ class PlotStratification:
         if plot_type is None:
             plot_type = ""
         # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
-        self.suptitle = f"Stratification in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"Stratification in {self.region} - {self.clim_time} climatology - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
