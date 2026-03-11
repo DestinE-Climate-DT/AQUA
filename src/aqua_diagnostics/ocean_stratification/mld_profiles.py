@@ -115,6 +115,12 @@ def plot_maps(
     for i in range(len(maps)):
         if cbar_number == "separate":
             vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
+        if not extent:
+            lon_min = float(maps[i].lon.min())
+            lon_max = float(maps[i].lon.max())
+            lat_min = float(maps[i].lat.min())
+            lat_max = float(maps[i].lat.max())
+            extent = [lon_min, lon_max, lat_min, lat_max]
 
         logger.debug("Plotting map %d", i)
         fig, ax = plot_single_map(
@@ -135,7 +141,7 @@ def plot_maps(
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
-            ticks_rounding=0,
+            gridlines=True,
             **kwargs,
         )
         ax.set_facecolor("lightgray")
