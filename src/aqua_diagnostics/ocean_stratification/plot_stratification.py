@@ -181,7 +181,7 @@ class PlotStratification:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self, ):
-        self.description = f"Vertical profiles of temperature, salinity and densitiy of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.model} {self.exp} experiment (solid"
+        self.description = f"Vertical profiles of temperature, salinity and density of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.model} {self.exp} experiment (solid)"
         if self.obs:
             self.description = self.description + (f" with the reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed).")
 
