@@ -355,8 +355,9 @@ class PlotLatLonProfiles():
         if self.ref_std_data is not None:
             description += ' with ±2σ uncertainty bands'
             if self.std_startdate is not None and self.std_enddate is not None:
-                description += f' (from {self.std_startdate} to {self.std_enddate}).'
+                description += f' (from {self.std_startdate} to {self.std_enddate})'
             
+        description += "."
         self.logger.warning('Description: %s', description)
         return description
 
@@ -391,11 +392,6 @@ class PlotLatLonProfiles():
         ref_label = self.set_ref_label()
         description = self.set_description()
         title = self.set_title()
-        
-        if self.ref_std_data is not None:
-            description += ", with standard deviation bands."
-        else:
-            description += "."
 
         fig, _ = self.plot(data_labels=data_label, ref_label=ref_label, title=title,
                            style=style)
