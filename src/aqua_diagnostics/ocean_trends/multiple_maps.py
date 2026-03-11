@@ -6,7 +6,11 @@ import cartopy.crs as ccrs
 import numpy as np
 from aqua.graphics import ConfigStyle
 from aqua.logger import log_configure
-from aqua.util import evaluate_colorbar_limits, add_cyclic_lon
+from aqua.util import (
+    evaluate_colorbar_limits,
+    generate_colorbar_ticks,
+)
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def plot_maps(maps: list[xr.DataArray],
@@ -15,6 +19,8 @@ def plot_maps(maps: list[xr.DataArray],
               titles: list = None,
               proj: ccrs.Projection = ccrs.PlateCarree(),
               extent: list = None,
+              vmin: list = None,
+              vmax: list = None,
               cmap: str = "RdBu_r",
               cbar_labels: list = None,
               ytext: list = None,
@@ -112,8 +118,8 @@ def plot_maps(maps: list[xr.DataArray],
             contour=True,
             proj=proj,
             extent=extent,
-            vmin=vmin,
-            vmax=vmax,
+            # vmin=vmin,
+            # vmax=vmax,
             nlevels=nlevels,
             title=titles[i] if titles is not None else None,
             cmap=cmap,
@@ -133,11 +139,14 @@ def plot_maps(maps: list[xr.DataArray],
         ax.coastlines()
 
         gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+
+        gl.xlabel_style = {'color': 'gray'}
+        gl.ylabel_style = {'color': 'gray'}
+
         gl.top_labels = False
         gl.right_labels = False
         
 
-        # Hardcoded gridlines
         row = i // ncols
         col = i % ncols
             
@@ -154,6 +163,38 @@ def plot_maps(maps: list[xr.DataArray],
         if ytext:
             ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray',
                     rotation=90, transform=ax.transAxes, ha='center')
+
+
+        if row == nrows - 1:
+            if ax.collections:
+                mappable = ax.collections[-1]
+            elif ax.images:
+                mappable = ax.images[-1]
+            else:
+                logger.warning("No mappable object found for subplot %d", i)
+                continue
+
+            # Update mappable normalization and cmap
+            mappable.set_norm(plt.Normalize(vmin=vmin, vmax=vmax))
+            mappable.set_cmap(cmap)
+
+            pos = ax.get_position()
+            cax = fig.add_axes([pos.x0, pos.y0 - 0.05, pos.width, 0.02])
+            cbar = fig.colorbar(mappable, cax=cax, orientation="horizontal")
+            cbar.set_label(cbar_labels[i])
+            
+            cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", None)
+            cbar_ticks = generate_colorbar_ticks(
+                vmin=vmin,
+                vmax=vmax,
+                sym=True,
+                nlevels=5,
+                ticks_rounding=cbar_ticks_rounding,
+                loglevel=loglevel,
+            )
+            cbar.set_ticks(cbar_ticks)
+            
+        
         
         if titles and i < len(titles):
             ax.set_title(titles[i], fontsize=12)
