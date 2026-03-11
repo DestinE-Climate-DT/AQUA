@@ -223,7 +223,7 @@ class PlotHovmoller:
         """Set the description for the Hovmoller plot."""
 
         self.description = f"{content} over {self.region} for experiment {self.model} {self.exp}"
-        self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})"
+        self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})."
         self.description += f" The first row of the plot shows the full values, the second row shows the anomalies from the initial time, the third row shows the standardized anomalies from the initial time."
 
     def set_vmax_vmin(self):
