@@ -285,7 +285,7 @@ class PlotLatLonProfiles():
 
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                title += f'for {name} '
+                title += f'for {name.lower()} '
                 break
         if self.units is not None:
             title += f'[{self.units}] '

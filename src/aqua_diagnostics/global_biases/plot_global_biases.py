@@ -156,7 +156,7 @@ class PlotGlobalBiases:
 
         proj = get_projection(proj, **proj_params)
 
-        title = (f"Global difference of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp} "
+        title = (f"Global difference of {data[var].attrs.get('long_name', var).lower()} \n for {data.AQUA_model} {data.AQUA_exp} "
                  f"relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
@@ -180,7 +180,7 @@ class PlotGlobalBiases:
         
 
         description = (
-            f"Climatology of {data[var].attrs.get('long_name', var)}"
+            f"Climatology of {data[var].attrs.get('long_name', var).lower()}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
             f"for {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
             f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format='%Y-%m')} to {time_to_string(data_ref.enddate, format='%Y-%m')}, shading)."
@@ -218,7 +218,7 @@ class PlotGlobalBiases:
         season_list = ['DJF', 'MAM', 'JJA', 'SON']
         sym = vmin is None or vmax is None
 
-        title = (f"Seasonal difference of {data[var].attrs.get('long_name', var)} \n for {data.AQUA_model} {data.AQUA_exp} "
+        title = (f"Seasonal difference of {data[var].attrs.get('long_name', var).lower()} \n for {data.AQUA_model} {data.AQUA_exp} "
                  f"relative to {data_ref.AQUA_model} climatology"
                  + (f" at {int(plev / 100)} hPa" if plev else ""))
 
@@ -247,7 +247,7 @@ class PlotGlobalBiases:
 
 
         description = (
-            f"Seasonal climatology of {data[var].attrs.get('long_name', var)}"
+            f"Seasonal climatology of {data[var].attrs.get('long_name', var).lower()}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
             f"for {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format="%Y-%m")} to {time_to_string(data.enddate, format="%Y-%m")}, contours) "
             f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format="%Y-%m")} to {time_to_string(data_ref.enddate, format="%Y-%m")}, shading)."
@@ -279,7 +279,7 @@ class PlotGlobalBiases:
         realization = get_realizations(data)
 
         title = (
-            f"Vertical difference of {data[var].attrs.get('long_name', var)} for \n {data.AQUA_model} {data.AQUA_exp} "
+            f"Vertical difference of {data[var].attrs.get('long_name', var).lower()} for \n {data.AQUA_model} {data.AQUA_exp} "
             f"relative to {data_ref.AQUA_model} climatology\n"
         )
 

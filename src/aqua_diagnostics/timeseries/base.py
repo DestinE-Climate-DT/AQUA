@@ -352,7 +352,7 @@ class PlotBaseMixin():
         """
         title = f'{diagnostic} '
         if self.long_name is not None:
-            title += f'of {self.long_name} '
+            title += f'of {self.long_name.lower()} '
 
         if self.units is not None:
             title += f'[{self.units}] '
@@ -382,7 +382,7 @@ class PlotBaseMixin():
 
         description = f'{diagnostic} '
 
-        description += f'of {self.long_name} '
+        description += f'of {self.long_name.lower()} '
         #if self.units is not None:
         #  description += f'[{self.units}] '
         #if self.short_name is not None:
