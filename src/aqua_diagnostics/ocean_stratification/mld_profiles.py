@@ -141,11 +141,19 @@ def plot_maps(
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
-            gridlines=True,
+            gridlines=False,
             **kwargs,
         )
-        ax.set_facecolor("lightgray")
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+        gl.top_labels = False
+        gl.right_labels = False
+        if i != 0:
+            gl.left_labels = False
+        else:
+            gl.left_labels = True
+        gl.bottom_labels = True
 
+        ax.set_facecolor("lightgray")
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
             ax.text(
