@@ -279,7 +279,7 @@ class PlotGlobalBiases:
         realization = get_realizations(data)
 
         title = (
-            f"Vertical difference of {data[var].attrs.get('long_name', var)} for \n {data.AQUA_model} {data.AQUA_exp}"
+            f"Vertical difference of {data[var].attrs.get('long_name', var)} for \n {data.AQUA_model} {data.AQUA_exp} "
             f"relative to {data_ref.AQUA_model} climatology\n"
         )
 
