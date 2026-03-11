@@ -55,6 +55,14 @@ class AquaAccessor:
         """Perform time standard deviation."""
         return self.instance.timstd(self._obj, **kwargs)
     
+    def timfirst(self, **kwargs):
+        """Perform time first element."""
+        return self.instance.timfirst(self._obj, **kwargs)
+    
+    def timlast(self, **kwargs):
+        """Perform time last element."""
+        return self.instance.timlast(self._obj, **kwargs)
+    
     def timstat(self, **kwargs):
         """Perform time statistics."""
         return self.instance.timstat(self._obj, **kwargs)

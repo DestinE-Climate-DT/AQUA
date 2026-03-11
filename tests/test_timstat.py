@@ -83,7 +83,22 @@ class TestTimmean():
         assert all(counts == np.array([7, 7, 7, 6, 6, 6, 6, 6, 6, 6,
                                        6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7,
                                        7, 7, 7, 7, 7, 7, 7, 6, 4]))
+
+    def test_timstat_first_last(self, reader, data_2t):
+        """Selecting first or last value in each group"""
+        firstval = data_2t['2t'].aqua.timfirst(freq='daily')
+        lastval = data_2t['2t'].aqua.timlast(freq='daily')
         
+        assert firstval.shape == (197, 9, 18)
+        assert lastval.shape == (197, 9, 18)
+        assert firstval.time[0] < lastval.time[0]
+
+    @pytest.mark.parametrize('stat', ['first', 'last'])
+    def test_timstat_first_last_no_freq(self, reader, data_2t, stat):
+        """first and last statistics require a frequency to be specified"""
+        with pytest.raises(ValueError, match=r'Frequency must be specified when using first or last statistic'):
+            reader.timstat(data_2t['2t'], stat=stat)
+    
     def test_timstat_compare(self, reader, data_2t):
         """Time operations provide robust values"""
         minval = reader.timmin(data_2t['2t'], freq='daily')

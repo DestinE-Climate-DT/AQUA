@@ -1338,6 +1338,18 @@ class Reader():
         """
         return self.timstat(data, stat='sum', **kwargs)
 
+    def timfirst(self, data, **kwargs):
+        """
+        Time first wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat='first', **kwargs)
+
+    def timlast(self, data, **kwargs):
+        """
+        Time last wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat='last', **kwargs)
+
     def timhist(self, data, **kwargs):
         """
         Wrapper for the histogram function, with added timstat functionality.
