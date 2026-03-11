@@ -403,9 +403,9 @@ class PlotBaseMixin():
                 if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
                     description += f' ERA5'
                 elif isinstance(self.ref_models, list):
-                    description += f' {self.ref_models[i]} {self.ref_exps[i]} '
+                    description += f' {self.ref_models[i]} {self.ref_exps[i]}'
                 else:
-                    description += f' {self.ref_models} {self.ref_exps} '
+                    description += f' {self.ref_models} {self.ref_exps}'
         description += '. '
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
