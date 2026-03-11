@@ -103,7 +103,7 @@ def plot_multi_vertical_lines(
 
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 10, fontweight="bold", y=1.05)
+        fig.suptitle(title, fontsize=ncols * 5, fontweight="bold", y=1.05)
 
     if return_fig:
         return fig
