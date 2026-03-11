@@ -50,7 +50,7 @@ class Timeseries(BaseMixin):
 
     def run(self, var: str, formula: bool = False, long_name: str = None,
             units: str = None, short_name: str = None, std: bool = False,
-            freq: list = ['monthly', 'annual'], extend: bool = True,
+            freq: list = ['monthly', 'annual'], extend: bool = False,
             exclude_incomplete: bool = True, center_time: bool = True,
             box_brd: bool = True, outputdir: str = './', rebuild: bool = True,
             reader_kwargs: dict = {}, create_catalog_entry: bool = False):
