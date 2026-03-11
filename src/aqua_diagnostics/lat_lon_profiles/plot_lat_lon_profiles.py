@@ -285,7 +285,7 @@ class PlotLatLonProfiles():
 
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                title += f'for {name.lower()} '
+                title += f'of {name.lower()} '
                 break
         if self.units is not None:
             title += f'[{self.units}] '
@@ -294,7 +294,7 @@ class PlotLatLonProfiles():
             title += f'[{self.region}] '
 
         if self.len_data == 1:
-            title += f'for {self.catalogs[0]} {self.models[0]} {self.exps[0]} '
+            title += f'for {self.models[0]} {self.exps[0]} '
 
         self.logger.debug('Title: %s', title)
         return title

@@ -361,7 +361,7 @@ class PlotBaseMixin():
             title += f'[{self.region}] '
 
         if self.len_data == 1:
-            title += f'for {self.catalogs[0]} {self.models[0]} {self.exps[0]} '
+            title += f'for {self.models[0]} {self.exps[0]} '
 
         self.logger.debug('Title: %s', title)
         return title
