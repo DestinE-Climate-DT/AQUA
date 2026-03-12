@@ -107,6 +107,7 @@ class TestTimmean():
         
         assert (minval <= avg).all()
         assert (avg <= maxval).all()
+        
     def test_timmin_yearly_exclude_incomplete(self, reader, data_ttr):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
         avg = reader.timmin(data_ttr, freq='yearly', exclude_incomplete=True)
