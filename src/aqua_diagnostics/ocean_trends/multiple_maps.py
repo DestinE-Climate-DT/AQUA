@@ -118,10 +118,6 @@ def plot_maps(maps: list[xr.DataArray],
         
         logger.debug("Plotting map %d", i)
         
-        if col == 0:
-            cmap = "RdBu_r"
-        else:
-            cmap = "coolwarm" 
         fig, ax = plot_single_map(
             data=maps[i],
             contour=True,
