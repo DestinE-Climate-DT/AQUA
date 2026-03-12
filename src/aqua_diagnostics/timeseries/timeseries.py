@@ -130,12 +130,24 @@ class Timeseries(BaseMixin):
                 extended_data = self._extend_data(data=data, freq=str_freq, center_time=center_time)
                 extended_data.attrs = data.attrs.copy()
                 data = extended_data
+            else:
+                self.logger.warning('Extension of data is disabled.')
 
             if self.region is not None:
                 data.attrs['AQUA_region'] = self.region
 
             # Due to the possible usage of the standard period, the time may need to be reselected correctly
-            data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
+            self.logger.warning(f"Data pre-slice are from {data.time.min().values} to {data.time.max().values}. Reselecting data for the plot period {self.plt_startdate} - {self.plt_enddate}")
+            #HACK: I want to slice selecting only year and month, to avoid issues with the time selection when the data is extended and the time is not centered.
+            if str_freq == 'monthly':
+                data = data.sel(time=data['time.year'].isin(pd.to_datetime([self.plt_startdate, self.plt_enddate]).year) &
+                                data['time.month'].isin(pd.to_datetime([self.plt_startdate, self.plt_enddate]).month))
+            elif str_freq == 'annual':
+                data = data.sel(time=data['time.year'].isin(pd.to_datetime([self.plt_startdate, self.plt_enddate]).year))
+            else: # No HACK.
+                data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
+            #data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
+            self.logger.warning(f"Data post-slice are from {data.time.min().values} to {data.time.max().values}")
 
             # Load data in memory for faster plot
             self.logger.debug(f"Loading data for frequency {str_freq} in memory")
