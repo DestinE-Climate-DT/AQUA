@@ -167,8 +167,7 @@ class FldStat():
                     region: regionmask.Regions | None = None,
                     region_sel: str | int | list | None = None,
                     mask_kwargs: dict = {},
-                    default_coords: dict = {"lat_min": -90, "lat_max": 90,
-                                            "lon_min": 0, "lon_max": 360},
+                    default_coords: dict | None = None,
                     to_180: bool = True) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
