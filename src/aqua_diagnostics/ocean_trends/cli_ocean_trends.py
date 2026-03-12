@@ -101,15 +101,15 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         reader_kwargs=reader_kwargs
                     )
-                    # HACK: Disabled since output are not presentable
-                    # trends_plot = PlotTrends(
-                    #     data=data_trends.trend_coef,
-                    #     diagnostic_name=diagnostic_name,
-                    #     outputdir=outputdir,
-                    #     rebuild=rebuild,
-                    #     loglevel=loglevel
-                    # )
-                    # trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    
+                    trends_plot = PlotTrends(
+                        data=data_trends.trend_coef,
+                        diagnostic_name=diagnostic_name,
+                        outputdir=outputdir,
+                        rebuild=rebuild,
+                        loglevel=loglevel
+                    )
+                    trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
 
                     zonal_trend_plot = PlotTrends(
                         data=data_trends.trend_coef.mean('lon'),
