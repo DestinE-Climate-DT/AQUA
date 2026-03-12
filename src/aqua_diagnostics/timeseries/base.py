@@ -395,7 +395,7 @@ class PlotBaseMixin():
         for i in range(self.len_data):
             description += f'{self.models[i]} {self.exps[i]}'
             if self.startdate[i] is not None and self.enddate[i] is not None:
-                description += f" (from {time_to_string(self.startdate[i], format="%Y-%m")} to {time_to_string(self.enddate[i], format="%Y-%m")})"
+                description += f" (from {time_to_string(self.startdate[i], format='%Y-%m')} to {time_to_string(self.enddate[i], format='%Y-%m')})"
 
         if self.len_ref > 0:
             description += f' with reference'
