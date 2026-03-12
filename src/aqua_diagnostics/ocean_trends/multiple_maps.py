@@ -1,3 +1,4 @@
+from matplotlib import ticker
 from pyproj import transform
 from aqua.graphics.single_map import plot_single_map
 import xarray as xr
@@ -188,16 +189,19 @@ def plot_maps(maps: list[xr.DataArray],
             cbar = fig.colorbar(mappable, cax=cax, orientation="horizontal")
             cbar.set_label(cbar_labels[i])
             
-            cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", 3)
             cbar_ticks = generate_colorbar_ticks(
                 vmin=vmin,
                 vmax=vmax,
                 sym=True,
-                nlevels=5,
-                ticks_rounding=cbar_ticks_rounding,
+                nlevels=4,
+                ticks_rounding=4,
                 loglevel=loglevel,
             )
             cbar.set_ticks(cbar_ticks)
+            formatter = ticker.ScalarFormatter(useMathText=True)
+            formatter.set_powerlimits((0, 0))  # always scientific notation
+            cbar.ax.xaxis.set_major_formatter(formatter)
+            cbar.ax.xaxis.offsetText.set_fontsize(8)
             
         
         

@@ -221,10 +221,21 @@ class PlotTrends:
         Set the colorbar labels for the plot.
         This method can be extended to set specific colorbar labels based on the data.
         """
+        # Map known units to prettier versions
+        units_map = {
+            'DegC/year': '°C yr$^{-1}$',
+            'degC/year': '°C yr$^{-1}$',
+            'g kg**-1/year': 'g kg$^{-1}$ yr$^{-1}$',
+            'g/kg/year': 'g kg$^{-1}$ yr$^{-1}$',
+            'psu/year': 'psu yr$^{-1}$',
+            'm/year': 'm yr$^{-1}$',
+        }
         self.cbar_labels = []
         for _ in range(len(self.data_list)):
             for var in self.vars:
-                cbar_label = f"{self.data[var].attrs.get('short_name', var)} trend ({self.data[var].attrs.get('units')})"
+                var_name = self.data[var].attrs.get('short_name', var)
+                units = units_map.get(self.data[var].attrs.get('units'), self.data[var].attrs.get('units'))
+                cbar_label = f"{var_name.upper()} trend ({units})"
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
