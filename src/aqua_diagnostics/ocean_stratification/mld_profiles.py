@@ -236,7 +236,7 @@ def plot_maps(
         # else:
         #     cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
-        cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
+        # cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
 
     # Add a super title
     if title:
