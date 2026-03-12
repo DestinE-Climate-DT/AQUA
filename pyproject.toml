@@ -38,7 +38,7 @@ dependencies = [
     #binaries
     "eccodes==2.41.0",
     "netcdf4",
-    "h5py",
+    "h5py>=3.12.1",
     # shared with conda
     "boto3",
     "cartopy>=0.24.1",
