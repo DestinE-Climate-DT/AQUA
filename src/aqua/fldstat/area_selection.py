@@ -54,10 +54,10 @@ class AreaSelection:
             lon_name (str, optional): Name of longitude coordinate.
                 Default is "lon".
             default_coords (dict, optional): Default coordinate ranges.
-                Defaults to {"lat_min": -90, "lat_max": 90,
-                "lon_min": 0, "lon_max": 360}.
+                If omitted, the longitude convention is inferred from the
+                dataset coordinates and latitude defaults to [-90, 90].
             to_180 (bool, optional): Whether to convert longitude to
-                [-180, 180] range. Default is False.
+                [-180, 180] range. Default is True.
 
         Returns:
             xr.Dataset or None: The selected area dataset or None if no
@@ -75,7 +75,9 @@ class AreaSelection:
         if lon is None and lat is None:
             return data
 
-        default_coords = default_coords or DEFAULT_COORDS
+        default_coords = self._resolve_default_coords(
+            data, lon_name=lon_name, default_coords=default_coords
+        )
 
         lon, lat = check_coordinates(lon, lat, default_coords)
 
@@ -124,6 +126,32 @@ class AreaSelection:
         )
 
         return selected
+
+    def _resolve_default_coords(
+        self,
+        data: xr.Dataset | xr.DataArray,
+        lon_name: str,
+        default_coords: dict | None,
+    ) -> dict:
+        """Resolve coordinate defaults, inferring lon convention when needed."""
+        if default_coords is not None:
+            return default_coords
+
+        inferred_coords = DEFAULT_COORDS.copy()
+        lon_coord = data[lon_name]
+        lon_min = float(lon_coord.min(skipna=True).values)
+        lon_max = float(lon_coord.max(skipna=True).values)
+
+        if lon_min < 0:
+            inferred_coords["lon_min"] = -180
+            inferred_coords["lon_max"] = 180
+
+        self.logger.debug(
+            "Resolved default coordinates %s from longitude range [%s, %s]",
+            inferred_coords, lon_min, lon_max,
+        )
+
+        return inferred_coords
 
     def _lon_condition(
         self,
