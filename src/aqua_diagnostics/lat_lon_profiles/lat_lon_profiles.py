@@ -167,8 +167,8 @@ class LatLonProfiles(Diagnostic):
 		if freq == 'seasonal':
 			# Group by season and compute std
 			seasonal_std = monthly_data.groupby('time.season').std('time')
-			seasonal_std.attrs['std_startdate'] = time_to_string(self.std_startdate)
-			seasonal_std.attrs['std_enddate'] = time_to_string(self.std_enddate)
+			seasonal_std.attrs['std_startdate'] = time_to_string(self.std_startdate, format='%Y-%m')
+			seasonal_std.attrs['std_enddate'] = time_to_string(self.std_enddate, format='%Y-%m')
 			self.std_seasonal = seasonal_std
 
 			self.logger.debug("Loading data in memory")
@@ -179,8 +179,8 @@ class LatLonProfiles(Diagnostic):
 			# Group by year and compute std across years
 			annual_data = monthly_data.groupby('time.year').mean('time')
 			annual_std = annual_data.std('year')
-			annual_std.attrs['std_startdate'] = time_to_string(self.std_startdate)
-			annual_std.attrs['std_enddate'] = time_to_string(self.std_enddate)
+			annual_std.attrs['std_startdate'] = time_to_string(self.std_startdate, format='%Y-%m')
+			annual_std.attrs['std_enddate'] = time_to_string(self.std_enddate, format='%Y-%m')
 			self.std_annual = annual_std
 
 			self.logger.debug("Loading data in memory")
@@ -309,6 +309,8 @@ class LatLonProfiles(Diagnostic):
 				self.logger.debug("Loading data in memory")
 				season_data.load()
 				self.logger.debug("Loaded data in memory")
+				season_data.attrs['AQUA_startdate'] = time_to_string(self.plt_startdate, format='%Y-%m')
+				season_data.attrs['AQUA_enddate'] = time_to_string(self.plt_enddate, format='%Y-%m')
 
 			self.seasonal = seasonal_data
 
@@ -322,6 +324,8 @@ class LatLonProfiles(Diagnostic):
 			if self.region is not None:
 				longterm_data.attrs['AQUA_region'] = self.region
 			longterm_data.attrs['AQUA_mean_type'] = self.mean_type
+			longterm_data.attrs['AQUA_startdate'] = time_to_string(self.plt_startdate, format='%Y-%m')
+			longterm_data.attrs['AQUA_enddate'] = time_to_string(self.plt_enddate, format='%Y-%m')
 			self.longterm = longterm_data
 
 			self.logger.debug("Loading data in memory")

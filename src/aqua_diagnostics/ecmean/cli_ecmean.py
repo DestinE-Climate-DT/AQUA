@@ -50,6 +50,7 @@ def parse_arguments(arguments):
 def reader_data(model, exp, source,
                 catalog=None, regrid='r100',
                 keep_vars=None, loglevel='WARNING',
+                startdate=None, enddate=None,
                 reader_kwargs: dict = {}):
     """
     Simple function to retrieve and do some operation on reader data
@@ -60,6 +61,8 @@ def reader_data(model, exp, source,
         source (str): source of the data
         catalog (str, optional): catalog to be used, defaults to None
         regrid (str, optional): regrid method, defaults to 'r100'
+        startdate (str, optional): start date in the format YYYY-MM-DD, defaults to None
+        enddate (str, optional): end date in the format YYYY-MM-DD, defaults to None
         keep_vars (list, optional): list of variables to keep, defaults to None
         loglevel (str, optional): logging level, defaults to 'WARNING'
         reader_kwargs (dict, optional): list of reader_kwargs. Defaults to {}.
@@ -77,21 +80,22 @@ def reader_data(model, exp, source,
     # Try to read the data, if dataset is not available return None
     try:
         reader = Reader(
-            model=model, exp=exp, source=source, catalog=catalog, 
+            model=model, exp=exp, source=source, catalog=catalog,
             regrid=regrid, **reader_kwargs
         )
-        xfield = reader.retrieve()
-        if regrid is not None:
-            xfield = reader.regrid(xfield)
-
+        xfield = reader.retrieve(startdate=startdate, enddate=enddate, var=keep_vars)
     except Exception as err:
         reader_logger.error('Error while reading model %s: %s', model, err)
         return None
+    
+    # regrid after variable selection
+    if regrid is not None:
+        try: 
+            return reader.regrid(xfield)
+        except Exception as err:
+            reader_logger.error('Error while regridding model %s: %s', model, err)
+            return None
 
-    # return only vars that are available: slower but avoid reader failures
-    if keep_vars is None:
-        return xfield
-    return xfield[[value for value in keep_vars if value in xfield.data_vars]]
 
 def data_check(data_atm, data_oce, logger=None):
     """
@@ -192,7 +196,7 @@ def set_description(diagnostic, model, exp, year1, year2, config):
         description = (f"Global mean differences with respect to observational references "
                        f"(normalized to obsevational interannual variability) "
                        f" for different regions and seasons {model_time} "
-                       f"{regions_phrase}. Darker colors implies larger differences.")
+                       f"{regions_phrase}. Darker colors imply larger differences.")
     else:
         # produce a generic description
         description = f"Diagnostic {diagnostic} {model_time.strip()}"
@@ -290,11 +294,13 @@ if __name__ == '__main__':
             logger.info('Loading atmospheric data %s', model)
             data_atm = reader_data(model=model, exp=exp, source=source_atm,
                                    catalog=catalog, keep_vars=atm_vars, regrid=regrid,
+                                   startdate=startdate, enddate=enddate,
                                    reader_kwargs=reader_kwargs)
 
             logger.info('Loading oceanic data from %s', model)
             data_oce = reader_data(model=model, exp=exp, source=source_oce,
                                    catalog=catalog, keep_vars=oce_vars, regrid=regrid,
+                                   startdate=startdate, enddate=enddate,
                                    reader_kwargs=reader_kwargs)
 
             # check the data
@@ -310,15 +316,17 @@ if __name__ == '__main__':
 
             # performance indices
             if diagnostic == 'performance_indices':
+                title = f"Performance indices {model} {exp} {year1}-{year2}"
                 logger.info('Launching ECmean performance indices...')
                 ecmean = PerformanceIndices(exp, year1, year2, numproc=numproc, config=config,
                                             interface=interface, loglevel=loglevel,
-                                            outputdir=outputdir, xdataset=data)
+                                            outputdir=outputdir, xdataset=data, title=title)
             elif diagnostic == 'global_mean':
+                title = f"Global mean differences {model} {exp} {year1}-{year2}"
                 logger.info('Launching ECmean global mean...')
                 ecmean = GlobalMean(exp, year1, year2, numproc=numproc, config=config,
                                     interface=interface, loglevel=loglevel,
-                                    outputdir=outputdir, xdataset=data)
+                                    outputdir=outputdir, xdataset=data, title=title)
             else:
                 logger.error('Unknown diagnostic %s, exiting...', diagnostic)
                 sys.exit()
@@ -330,6 +338,7 @@ if __name__ == '__main__':
             elif diagnostic == 'global_mean':
                 ecmean.store(yamlfile=filename_dict['yml'], tablefile=filename_dict['txt'])
             ecmean_fig = ecmean.plot(diagname=diagnostic, returnfig=True, storefig=False)
+
             if save_pdf:
                 logger.info('Saving PDF %s plot...', diagnostic)
                 outputsaver.save_pdf(fig=ecmean_fig, diagnostic_product=diagnostic,

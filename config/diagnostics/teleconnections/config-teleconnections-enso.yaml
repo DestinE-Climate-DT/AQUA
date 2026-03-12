@@ -21,8 +21,6 @@ references:
     exp: 'era5'
     source: 'monthly'
     regrid: null
-    startdate: "1990-01-01"
-    enddate: "2014-12-31"
 
 output:
   outputdir: "./"

@@ -352,7 +352,7 @@ class PlotBaseMixin():
         """
         title = f'{diagnostic} '
         if self.long_name is not None:
-            title += f'of {self.long_name} '
+            title += f'of {self.long_name.lower()} '
 
         if self.units is not None:
             title += f'[{self.units}] '
@@ -361,7 +361,7 @@ class PlotBaseMixin():
             title += f'[{self.region}] '
 
         if self.len_data == 1:
-            title += f'for {self.catalogs[0]} {self.models[0]} {self.exps[0]} '
+            title += f'for {self.models[0]} {self.exps[0]} '
 
         self.logger.debug('Title: %s', title)
         return title
@@ -382,7 +382,7 @@ class PlotBaseMixin():
 
         description = f'{diagnostic} '
 
-        description += f'of {self.long_name} '
+        description += f'of {self.long_name.lower()} '
         #if self.units is not None:
         #  description += f'[{self.units}] '
         #if self.short_name is not None:
@@ -395,7 +395,7 @@ class PlotBaseMixin():
         for i in range(self.len_data):
             description += f'{self.models[i]} {self.exps[i]}'
             if self.startdate[i] is not None and self.enddate[i] is not None:
-                description += f"(from {time_to_string(self.startdate[i], format="%Y-%m")} to {time_to_string(self.enddate[i], format="%Y-%m")})"
+                description += f" (from {time_to_string(self.startdate[i], format="%Y-%m")} to {time_to_string(self.enddate[i], format="%Y-%m")})"
 
         if self.len_ref > 0:
             description += f' with reference'
@@ -403,9 +403,9 @@ class PlotBaseMixin():
                 if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
                     description += f' ERA5'
                 elif isinstance(self.ref_models, list):
-                    description += f' {self.ref_models[i]} {self.ref_exps[i]} '
+                    description += f' {self.ref_models[i]} {self.ref_exps[i]}'
                 else:
-                    description += f' {self.ref_models} {self.ref_exps} '
+                    description += f' {self.ref_models} {self.ref_exps}'
         description += '. '
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted

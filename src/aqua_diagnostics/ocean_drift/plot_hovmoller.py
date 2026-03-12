@@ -129,7 +129,7 @@ class PlotHovmoller:
         self.levels = levels
         self.set_levels()
         self.set_data_for_levels()
-        self.set_suptitle(content="Timeseries")
+        self.set_suptitle(content="Time series")
         self.set_title()
         self.set_description(content="Time series of temperature (left column) and salinity (right column) at multiple depths spatially averaged")
         self.set_data_type()
@@ -201,7 +201,7 @@ class PlotHovmoller:
 
     def set_suptitle(self, content: str = None):
         """Set the suptitle for the Hovmoller plot."""
-        self.suptitle = f"{content} plot in the {self.region} - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"{content} plot in the {self.region} - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -213,7 +213,7 @@ class PlotHovmoller:
         for j in range(len(self.data)):
             for _, var in enumerate(self.vars):
                 if j == 0:
-                    title = f"{var} ({self.data[j][var].attrs.get('units')})"
+                    title = f"{self.data[j][var].attrs.get('long_name', var)} ({self.data[j][var].attrs.get('units')})"
                 else:
                     title = None
                 self.title_list.append(title)
@@ -223,7 +223,7 @@ class PlotHovmoller:
         """Set the description for the Hovmoller plot."""
 
         self.description = f"{content} over {self.region} for experiment {self.model} {self.exp}"
-        self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})"
+        self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})."
         self.description += f" The first row of the plot shows the full values, the second row shows the anomalies from the initial time, the third row shows the standardized anomalies from the initial time."
 
     def set_vmax_vmin(self):

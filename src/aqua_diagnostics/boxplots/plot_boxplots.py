@@ -87,7 +87,7 @@ class PlotBoxplots:
         if self.anomalies:
             ref_name = extract_attrs(data_ref[self.ref_number], 'AQUA_model')
             description += (
-                f" Anomalies with respect to {ref_name} mean value are shown. "
+                f" Anomalies with respect to {ref_name} mean values are shown. "
                 "The dashed line represents the mean value, the solid line the median value, "
                 "and the number indicates the absolute mean value."
             )

@@ -16,9 +16,9 @@ references:
   - catalog: null
     model: EN4
     exp: v4.2.2
-    source: monthly
+    source: monthly-netcdf
     regrid: r100  # EN4 is on 1x1 grid different from r100
-    reader_kwargs: null  # it can be a dictionary with reader kwargs
+    reader_kwargs: {chunks: {"time": 1, "depth": 42}}  # it can be a dictionary with reader kwargs
     # startdate: 1990-01
     # enddate: 1990-12
 

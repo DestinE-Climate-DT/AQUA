@@ -244,7 +244,7 @@ class PlotTrends:
         Set the description metadata for the plot.
         """
 
-        self.description = f"{content} over {self.region} for experiment {self.model} {self.exp}"
+        self.description = f"{content} over {self.region} for experiment {self.model} {self.exp}."
         #self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})"
 
     def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},

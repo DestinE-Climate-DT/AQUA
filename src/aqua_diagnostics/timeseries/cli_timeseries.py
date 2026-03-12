@@ -90,7 +90,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time}
+                                    'center_time': center_time, 'exclude_incomplete': exclude_incomplete, 'extend': extend}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -169,7 +169,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time}
+                                    'center_time': center_time, 'exclude_incomplete': exclude_incomplete, 'extend': extend}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
