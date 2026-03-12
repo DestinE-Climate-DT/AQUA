@@ -235,7 +235,7 @@ class PlotTrends:
             for var in self.vars:
                 # var_name = self.data[var].attrs.get('short_name', var)
                 units = units_map.get(self.data[var].attrs.get('units'), self.data[var].attrs.get('units'))
-                cbar_label = f"({units})"
+                cbar_label = f"{units}"
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
