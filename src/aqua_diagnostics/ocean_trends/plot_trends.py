@@ -210,7 +210,7 @@ class PlotTrends:
         for j in range(len(self.data_list)):
             for var in self.vars:
                 if j == 0:
-                    title = f"{self.data[var].attrs.get('long_name', var)} ({self.data[var].attrs.get('units')})"
+                    title = f"{self.data[var].attrs.get('long_name', var)}"# ({self.data[var].attrs.get('units')})"
                     self.title_list.append(title)
                 else:
                     self.title_list.append(" ")
@@ -224,7 +224,7 @@ class PlotTrends:
         self.cbar_labels = []
         for _ in range(len(self.data_list)):
             for var in self.vars:
-                cbar_label = f"{self.data[var].attrs.get('short_name', var)} ({self.data[var].attrs.get('units')})"
+                cbar_label = f"{self.data[var].attrs.get('short_name', var)} trend ({self.data[var].attrs.get('units')})"
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
