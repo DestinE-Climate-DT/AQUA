@@ -136,17 +136,31 @@ class Timeseries(BaseMixin):
             if self.region is not None:
                 data.attrs['AQUA_region'] = self.region
 
-            # Due to the possible usage of the standard period, the time may need to be reselected correctly
-            self.logger.warning(f"Data pre-slice are from {data.time.min().values} to {data.time.max().values}. Reselecting data for the plot period {self.plt_startdate} - {self.plt_enddate}")
-            #HACK: I want to slice selecting only year and month, to avoid issues with the time selection when the data is extended and the time is not centered.
+            # Due to the possible usage of the standard period, the time may need to be reselected correctly.
+            self.logger.warning(
+                f"Data pre-slice are from {data.time.min().values} to {data.time.max().values}. "
+                f"Reselecting data for the plot period {self.plt_startdate} - {self.plt_enddate}"
+            )
+
+            plot_start = pd.Timestamp(self.plt_startdate)
+            plot_end = pd.Timestamp(self.plt_enddate)
+
+            # Select a full contiguous range of periods, ignoring day-level offsets.
             if str_freq == 'monthly':
-                data = data.sel(time=data['time.year'].isin(pd.to_datetime([self.plt_startdate, self.plt_enddate]).year) &
-                                data['time.month'].isin(pd.to_datetime([self.plt_startdate, self.plt_enddate]).month))
+                time_periods = data.time.to_index().to_period('M')
+                start_period = plot_start.to_period('M')
+                end_period = plot_end.to_period('M')
+                period_mask = (time_periods >= start_period) & (time_periods <= end_period)
+                data = data.isel(time=period_mask)
             elif str_freq == 'annual':
-                data = data.sel(time=data['time.year'].isin(pd.to_datetime([self.plt_startdate, self.plt_enddate]).year))
-            else: # No HACK.
+                time_periods = data.time.to_index().to_period('Y')
+                start_period = plot_start.to_period('Y')
+                end_period = plot_end.to_period('Y')
+                period_mask = (time_periods >= start_period) & (time_periods <= end_period)
+                data = data.isel(time=period_mask)
+            else:  # No period-based slicing for higher frequencies.
                 data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
-            #data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
+
             self.logger.warning(f"Data post-slice are from {data.time.min().values} to {data.time.max().values}")
 
             # Load data in memory for faster plot
