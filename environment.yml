@@ -13,6 +13,7 @@ dependencies:
   - python>=3.10,<3.13
   - cdo>=2.5.0 #for smmregrid compatibility
   - eccodes==2.41.0
+  - cartopy>=0.24.1,<=0.25.0
   - cartopy_offlinedata # this is needed for MN5 HPC
   - netcdf4<=1.7.2 
   - hdf5
@@ -20,14 +21,15 @@ dependencies:
   - imagemagick
   # python
   - boto3<=1.42.63
-  - cartopy>=0.24.1,<=0.25.0
   - cfgrib<=0.9.15.1
   - dask<=2026.1.2
+  - fastparquet<=2025.12.0
   - filelock<=3.25.0
   - gcsfs<=2026.2.0
   - intake==0.7.0
   - intake-xarray<=2.0.0
   - jinja2<=3.1.6
+  - kerchunk<=0.2.9
   - matplotlib<=3.10.8
   - metpy<=1.7.1
   - numpy<=2.4.1
@@ -41,7 +43,6 @@ dependencies:
   - smmregrid==0.1.4
   - typeguard<=4.5.1
   - xarray>=2025.12.0,<=2026.1.0
-  - kerchunk<=0.2.9
   - pip
   - pip:
     # pip install -e of AQUA itself
