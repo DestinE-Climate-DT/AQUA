@@ -12,7 +12,7 @@ from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sample_data():
     """Create a sample DataArray for testing"""
     data = xr.DataArray(
@@ -21,6 +21,29 @@ def sample_data():
         dims=['lat', 'lon']
     )
     return data
+
+
+@pytest.fixture(scope="module")
+def sample_data_180():
+    """Create a sample DataArray with lon in [-180, 180] convention."""
+    return xr.DataArray(
+        np.random.rand(4, 8),
+        coords={'lat': [-45, -15, 15, 45],
+                'lon': [-135, -45, -30, 0, 30, 45, 90, 135]},
+        dims=['lat', 'lon']
+    )
+
+
+@pytest.fixture(scope="module")
+def sample_data_360():
+    """Create a sample DataArray with lon in [0, 360] convention."""
+    return xr.DataArray(
+        np.random.rand(4, 8),
+        coords={'lat': [-45, -15, 15, 45],
+                'lon': [0, 30, 45, 90, 135, 180, 225, 270]},
+        dims=['lat', 'lon']
+    )
+
 
 @pytest.mark.aqua
 def test_valid_selection_no_brd(sample_data):
@@ -88,24 +111,20 @@ def test_missing_lat_lon_coords():
                                     dims=['lat', 'lon'])
 
     with pytest.raises(KeyError):
-        AreaSelection(loglevel=loglevel).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55],
-                                                      box_brd=True)
+        AreaSelection(loglevel=loglevel).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55], box_brd=True)
 
     with pytest.raises(KeyError):
-        AreaSelection(loglevel=loglevel).select_area(data_missing_lon, lat=[15, 25], lon=[45, 55],
-                                                      box_brd=True)
+        AreaSelection(loglevel=loglevel).select_area(data_missing_lon, lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
 def test_missing_data():
     """Test with missing data or wrong type"""
     with pytest.raises(TypeError):
-        AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55],
-                                                      box_brd=True)
+        AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
         
     with pytest.raises(TypeCheckError):
-        AreaSelection(loglevel=loglevel).select_area('invalid_data', lat=[15, 25], lon=[45, 55],
-                                                      box_brd=True)
+        AreaSelection(loglevel=loglevel).select_area('invalid_data', lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
@@ -162,3 +181,46 @@ def test_check_seasonal_chunk_completeness():
     assert bool(mask.sel(time="2000-12-01").item()) is False
     # MAM (starts 2001-03-01) is complete (Mar, Apr, May present)
     assert bool(mask.sel(time="2001-03-01").item()) is True
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("data_fixture, lon_limits",
+[
+    ("sample_data_180", [-180, 180]),
+    ("sample_data_180", [0, 360]),
+    ("sample_data_360", [-180, 180]),
+    ("sample_data_360", [0, 360])
+])
+def test_full_globe_selection(data_fixture, lon_limits, request):
+    """Full-globe lon requests must select all data regardless of the grid convention."""
+    data = request.getfixturevalue(data_fixture)
+    result = AreaSelection(loglevel=loglevel).select_area(data, lon=lon_limits)
+    non_nan = result.values[~np.isnan(result.values)]
+    assert len(non_nan) == data.size
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("data_fixture, lon_limits, expected_in, expected_out", 
+[
+    ("sample_data_180", [-100, 100], [-45, 0, 45, 90], [-135, 135]),
+    ("sample_data_180", [-40, -20], [-30], [-45, 0, 90, 135]),
+    ("sample_data_180", [-20, 45], [0, 30, 45], [-30, 90, 135]),
+    ("sample_data_360", [30, 150], [30, 45, 90, 135], [0, 180, 225]),
+])
+def test_partial_lon_selection(data_fixture, lon_limits, expected_in, expected_out, request):
+    """Partial lon selection must include and exclude the correct grid points.
+
+    Args:
+        data_fixture (str): Name of the pytest fixture providing the input dataset.
+        lon_limits (list): The longitude limit bounds to use for the selection.
+        expected_in (list): Longitude values expected to be included in the selection.
+        expected_out (list): Longitude values expected to be excluded from the selection.
+        request (pytest.FixtureRequest): The pytest request object.
+    """
+    data = request.getfixturevalue(data_fixture)
+    result = AreaSelection(loglevel=loglevel).select_area(data, lon=lon_limits)
+    lat_val = int(data.lat.values[0])
+    for lon_val in expected_in:
+        assert not np.isnan(result.sel(lat=lat_val, lon=lon_val).values), f"lon={lon_val} should be selected but is NaN"
+    for lon_val in expected_out:
+        assert np.isnan(result.sel(lat=lat_val, lon=lon_val).values), f"lon={lon_val} should be NaN but is selected"
