@@ -12,5 +12,17 @@ updates:
       day: "monday"           # You can pick any day
       time: "08:00"
     commit-message:
-      prefix: "[Dependabot]"
+      prefix: "[Dependabot-pip]"
+    ignore:
+      - dependency-name: "eccodes"
+      - dependency-name: "intake"
+
+  - package-ecosystem: "conda"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      #day: "monday"
+      time: "14:00"
+    commit-message:
+      prefix: "[Dependabot-conda]"
 
