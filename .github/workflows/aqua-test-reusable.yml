@@ -106,19 +106,19 @@ jobs:
       # 1. CHECKOUT REPOSITORIES
       # ========================================
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: AQUA
       
       - name: Checkout Climate-DT-catalog repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
           token: ${{ secrets.AQUA_GITHUB_PAT }}
       
       - name: Checkout DVC repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: DestinE-Climate-DT/aqua-dvc
           path: aqua-dvc
