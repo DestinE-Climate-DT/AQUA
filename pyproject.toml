@@ -35,7 +35,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    #binaries
+    # binaries
     "eccodes==2.41.0",
     "netcdf4",
     "h5py>=3.12.1",
@@ -61,7 +61,7 @@ dependencies = [
     "ruamel.yaml",
     "scipy",
     "seaborn",
-    "smmregrid==0.1.4",
+    "smmregrid>=0.1.4",
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
     "xarray>=2025.12.0",
