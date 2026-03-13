@@ -229,7 +229,7 @@ class PlotMLD:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -243,16 +243,18 @@ class PlotMLD:
             for i, var in enumerate(self.vars):
                 # if j == 0:
                 # title = f"{var} ({self.data[var].attrs.get('units')})"
-                title = f"{attrs.get('AQUA_catalog')} {attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
+                title = f"{attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
                 self.title_list.append(title)
                 # else:
                 #     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
-        self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for the {self.catalog} {self.model} {self.exp} experiment"
+        self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for the {self.model} {self.exp} experiment"
         if self.obs:
-            self.description = self.description + (f" and reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']}.")
+            self.description += f" and reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']}."
+        else:
+            self.description += "."
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,
