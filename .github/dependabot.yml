@@ -12,5 +12,23 @@ updates:
       day: "monday"           # You can pick any day
       time: "08:00"
     commit-message:
-      prefix: "[Dependabot]"
+      prefix: "[Dependabot-pip]"
+    ignore:
+      - dependency-name: "eccodes"
+      - dependency-name: "intake"
+
+  - package-ecosystem: "conda"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    commit-message:
+      prefix: "[Dependabot-conda]"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every week
+      interval: "weekly"
 
