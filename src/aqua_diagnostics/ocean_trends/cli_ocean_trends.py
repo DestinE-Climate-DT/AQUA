@@ -102,14 +102,15 @@ if __name__ == '__main__':
                         reader_kwargs=reader_kwargs
                     )
                     
-                    trends_plot = PlotTrends(
-                        data=data_trends.trend_coef,
-                        diagnostic_name=diagnostic_name,
-                        outputdir=outputdir,
-                        rebuild=rebuild,
-                        loglevel=loglevel
-                    )
-                    trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    # HACK: Multilevel trend plots are not presentable (wrong masks at depth)
+                    # trends_plot = PlotTrends(
+                    #     data=data_trends.trend_coef,
+                    #     diagnostic_name=diagnostic_name,
+                    #     outputdir=outputdir,
+                    #     rebuild=rebuild,
+                    #     loglevel=loglevel
+                    # )
+                    # trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
 
                     zonal_trend_plot = PlotTrends(
                         data=data_trends.trend_coef.mean('lon'),
