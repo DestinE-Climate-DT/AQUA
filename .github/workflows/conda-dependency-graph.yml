@@ -1,0 +1,18 @@
+name: Conda Dependency Submission
+
+on:
+  workflow_dispatch: # Allows you to run it manually
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  submission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Submit Conda Dependencies
+        uses: advanced-security/python-dependency-submission-action@v1
+        with:
+          path-to-files: environment.yml
