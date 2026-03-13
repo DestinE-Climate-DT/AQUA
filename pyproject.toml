@@ -157,5 +157,4 @@ known-first-party = ["aqua"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-indent-width = 4
 docstring-code-format = true
