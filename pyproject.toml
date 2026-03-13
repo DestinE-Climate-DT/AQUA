@@ -146,6 +146,7 @@ omit = [
 # --- Global Settings ---
 line-length = 127
 target-version = "py310"
+exclude = ["**/__init__.py"]
 
 [tool.ruff.lint]
 # Imports sorted (I), standard PEP8 (E, F, W, N) only. No "Q".
