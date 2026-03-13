@@ -1,3 +1,4 @@
+from matplotlib import ticker
 from pyproj import transform
 from aqua.graphics.single_map import plot_single_map
 import xarray as xr
@@ -6,7 +7,11 @@ import cartopy.crs as ccrs
 import numpy as np
 from aqua.graphics import ConfigStyle
 from aqua.logger import log_configure
-from aqua.util import evaluate_colorbar_limits, add_cyclic_lon
+from aqua.util import (
+    evaluate_colorbar_limits,
+    generate_colorbar_ticks,
+)
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def plot_maps(maps: list[xr.DataArray],
@@ -15,6 +20,8 @@ def plot_maps(maps: list[xr.DataArray],
               titles: list = None,
               proj: ccrs.Projection = ccrs.PlateCarree(),
               extent: list = None,
+              vmin: list = None,
+              vmax: list = None,
               cmap: str = "RdBu_r",
               cbar_labels: list = None,
               ytext: list = None,
@@ -86,7 +93,7 @@ def plot_maps(maps: list[xr.DataArray],
     logger.debug("Loading maps")
     maps = [data_map.load(keep_attrs=True) for data_map in maps]
 
-    figsize = (ncols * 6.5, nrows * 3.5)
+    figsize = (ncols * 4.5, nrows * 2.5)
     fig, axs = plt.subplots(
         nrows=nrows, ncols=ncols,
         figsize=figsize,
@@ -106,14 +113,18 @@ def plot_maps(maps: list[xr.DataArray],
             ticks = np.linspace(vmin, vmax, 3)
         logger.debug(f"Colorbar limits for map {i}: vmin={vmin}, vmax={vmax}")
 
+        row = i // ncols
+        col = i % ncols
+        
         logger.debug("Plotting map %d", i)
+        
         fig, ax = plot_single_map(
             data=maps[i],
             contour=True,
             proj=proj,
             extent=extent,
-            vmin=vmin,
-            vmax=vmax,
+            # vmin=vmin,
+            # vmax=vmax,
             nlevels=nlevels,
             title=titles[i] if titles is not None else None,
             cmap=cmap,
@@ -123,6 +134,7 @@ def plot_maps(maps: list[xr.DataArray],
             return_fig=True,
             cyclic_lon=cyclic_lon,
             fig=fig,
+            gridlines=False,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
             ticks_rounding=0,
@@ -131,15 +143,69 @@ def plot_maps(maps: list[xr.DataArray],
         ax.set_aspect("auto")  # NEW: stretch plot to fill subplot
         ax.coastlines()
 
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+
+        gl.xlabel_style = {'color': 'gray'}
+        gl.ylabel_style = {'color': 'gray'}
+
+        gl.top_labels = False
+        gl.right_labels = False
+        
+            
+        if row == nrows - 1:
+            gl.bottom_labels = True
+        else:
+            gl.bottom_labels = False
+
+        if col == ncols - 1:
+            gl.left_labels = False
+        else:
+            gl.left_labels = True
+
         if ytext:
             ax.text(-0.3, 0.33, ytext[i], fontsize=15, color='dimgray',
                     rotation=90, transform=ax.transAxes, ha='center')
+
+
+        if row == nrows - 1:
+            if ax.collections:
+                mappable = ax.collections[-1]
+            elif ax.images:
+                mappable = ax.images[-1]
+            else:
+                logger.warning("No mappable object found for subplot %d", i)
+                continue
+
+            # Update mappable normalization and cmap
+            mappable.set_norm(plt.Normalize(vmin=vmin, vmax=vmax))
+            mappable.set_cmap(cmap)
+
+            pos = ax.get_position()
+            cax = fig.add_axes([pos.x0, pos.y0 - 0.05, pos.width, 0.02])
+            cbar = fig.colorbar(mappable, cax=cax, orientation="horizontal")
+            cbar.set_label(cbar_labels[i])
+            
+            cbar_ticks = generate_colorbar_ticks(
+                vmin=vmin,
+                vmax=vmax,
+                sym=True,
+                nlevels=4,
+                ticks_rounding=4,
+                loglevel=loglevel,
+            )
+            cbar.set_ticks(cbar_ticks)
+            formatter = ticker.ScalarFormatter(useMathText=True)
+            formatter.set_powerlimits((0, 0))  # always scientific notation
+            cbar.ax.xaxis.set_major_formatter(formatter)
+            cbar.ax.xaxis.offsetText.set_fontsize(8)
+            
+        
         
         if titles and i < len(titles):
             ax.set_title(titles[i], fontsize=12)
 
     if title:
-        plt.suptitle(title, fontsize=ncols*12, y=0.95)
+        plt.suptitle(title, fontsize=ncols*9, y=0.95)
 
     if return_fig:
         return fig
