@@ -173,69 +173,68 @@ if __name__ == "__main__":
                         save_pdf=save_pdf, save_png=save_png, dpi=dpi
                     )
 
-                    # HACK: MLD plots are not presentable (wrong masks at depth)
-                    # # Mixed Layer Depth instance
-                    # # Model data
-                    # model_stratification = Stratification(
-                    #     diagnostic_name=diagnostic_name,
-                    #     catalog=catalog,
-                    #     model=model,
-                    #     exp=exp,
-                    #     source=source,
-                    #     regrid=regrid,
-                    #     startdate=startdate,
-                    #     enddate=enddate,
-                    #     loglevel=loglevel,
-                    # )
-                    # model_stratification.run(
-                    #     region=region,
-                    #     var=var,
-                    #     # dim_mean=dim_mean,
-                    #     mld=True,
-                    #     climatology=climatology,
-                    #     outputdir=outputdir,
-                    #     reader_kwargs=reader_kwargs,
-                    #     rebuild=rebuild,
-                    # )
-                    # # Reference data
-                    # if references:
-                    #     if model_ref and exp_ref and source_ref:
-                    #         logger.info(
-                    #             f"Processing reference data for model: {model_ref}, exp: {exp_ref}, source: {source_ref}"
-                    #         )
-                    #         obs_stratification = Stratification(
-                    #             diagnostic_name=diagnostic_name,
-                    #             catalog=catalog_ref,
-                    #             model=model_ref,
-                    #             exp=exp_ref,
-                    #             source=source_ref,
-                    #             regrid=regrid_ref,
-                    #             loglevel=loglevel,
-                    #         )
-                    #         obs_stratification.run(
-                    #             region=region,
-                    #             var=var,
-                    #             # dim_mean=dim_mean,
-                    #             mld=True,
-                    #             climatology=climatology,
-                    #             outputdir=outputdir,
-                    #             rebuild=rebuild,
-                    #         )
-                    #     else:
-                    #         obs_stratification = None
-                    # # Plotting MLD
-                    # mld_plot = PlotMLD(
-                    #     data=model_stratification.data[["mld"]],
-                    #     obs=(
-                    #         obs_stratification.data[["mld"]]
-                    #         if obs_stratification is not None
-                    #         else None
-                    #     ),
-                    #     diagnostic_name=diagnostic_name,
-                    #     outputdir=outputdir,
-                    #     loglevel=loglevel,
-                    # )
-                    # mld_plot.plot_mld(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    # Mixed Layer Depth instance
+                    # Model data
+                    model_stratification = Stratification(
+                        diagnostic_name=diagnostic_name,
+                        catalog=catalog,
+                        model=model,
+                        exp=exp,
+                        source=source,
+                        regrid=regrid,
+                        startdate=startdate,
+                        enddate=enddate,
+                        loglevel=loglevel,
+                    )
+                    model_stratification.run(
+                        region=region,
+                        var=var,
+                        # dim_mean=dim_mean,
+                        mld=True,
+                        climatology=climatology,
+                        outputdir=outputdir,
+                        reader_kwargs=reader_kwargs,
+                        rebuild=rebuild,
+                    )
+                    # Reference data
+                    if references:
+                        if model_ref and exp_ref and source_ref:
+                            logger.info(
+                                f"Processing reference data for model: {model_ref}, exp: {exp_ref}, source: {source_ref}"
+                            )
+                            obs_stratification = Stratification(
+                                diagnostic_name=diagnostic_name,
+                                catalog=catalog_ref,
+                                model=model_ref,
+                                exp=exp_ref,
+                                source=source_ref,
+                                regrid=regrid_ref,
+                                loglevel=loglevel,
+                            )
+                            obs_stratification.run(
+                                region=region,
+                                var=var,
+                                # dim_mean=dim_mean,
+                                mld=True,
+                                climatology=climatology,
+                                outputdir=outputdir,
+                                rebuild=rebuild,
+                            )
+                        else:
+                            obs_stratification = None
+                    # Plotting MLD
+                    mld_plot = PlotMLD(
+                        data=model_stratification.data[["mld"]],
+                        obs=(
+                            obs_stratification.data[["mld"]]
+                            if obs_stratification is not None
+                            else None
+                        ),
+                        diagnostic_name=diagnostic_name,
+                        outputdir=outputdir,
+                        loglevel=loglevel,
+                    )
+                    mld_plot.plot_mld(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
 
         close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
