@@ -3,11 +3,11 @@
 
 # Templates
 weights:
-  template_default: weights_{model}_{exp}_{source}_{method}_{targetgrid}_l{level}.nc
-  template_grid: weights_{sourcegrid}_{method}_{targetgrid}_l{level}.nc
+  template_default: weights_v019_{model}_{exp}_{source}_{method}_{targetgrid}_l{level}.nc
+  template_grid: weights_v019_{sourcegrid}_{method}_{targetgrid}_l{level}.nc
 areas:
-  template_default: cell_area_{model}_{exp}_{source}.nc
-  template_grid: cell_area_{grid}.nc
+  template_default: cell_area_v019_{model}_{exp}_{source}.nc
+  template_grid: cell_area_v019_{grid}.nc
 cdo-paths: # to be checked
   download: '{{ weights }}'
   icon: /pool/data/ICON
