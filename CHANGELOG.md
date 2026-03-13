@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Fix area selection, `default_coords` are deduced from the dataset (#2768)
 - Attributes guessing for eccodes works also with local destine table (#2759)
 - Expose fldstat methods through `AquaAccessor` (#2770)
 - Allow level selection for non-fdb sources (#2731)
