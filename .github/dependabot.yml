@@ -18,7 +18,7 @@ updates:
       - dependency-name: "intake"
 
   - package-ecosystem: "conda"
-    directory: "/"
+    directory: "/."
     schedule:
       interval: "weekly"
       day: "monday"
