@@ -83,7 +83,9 @@ tests = [
     "pytest-xdist",
     "coverage",
     "cdo",
-    "black",
+    "ruff"
+]
+precommit = [
     "pre-commit"
 ]
 all = [
@@ -140,9 +142,20 @@ omit = [
     "**/__init__.py",
     ]
 
-[tool.black]
+[tool.ruff]
+# --- Global Settings ---
 line-length = 127
-target-version = ['py310']
-force-exclude = '__init__\.py'
+target-version = "py310"
 
+[tool.ruff.lint]
+# Imports sorted (I), standard PEP8 (E, F, W, N) only. No "Q".
+select = ["E", "F", "I", "W", "N"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["aqua"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+indent-width = 4
+docstring-code-format = true
