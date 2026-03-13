@@ -420,7 +420,7 @@ jobs:
       # ========================================
       - name: Upload xdist worker log (parallel runs)
         if: ${{ !cancelled() && inputs.enable-parallel }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: xdist-worker-tests-log-py${{ matrix.python-version }}
           path: AQUA/.pytest_cache/xdist_worker_tests.log
@@ -428,7 +428,7 @@ jobs:
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aqua-test-artifacts-py${{ matrix.python-version }}
           path: |
