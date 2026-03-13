@@ -40,7 +40,7 @@ dependencies:
   - ruamel.yaml<=0.19.1
   - scipy<=1.17.0
   - seaborn<=0.13.2
-  - smmregrid>=0.1.4,<=0.1.4
+  - smmregrid=0.1.4
   - typeguard<=4.5.1
   - xarray>=2025.12.0,<=2026.1.0
   - pip
