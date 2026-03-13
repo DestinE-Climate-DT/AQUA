@@ -20,9 +20,9 @@ updates:
   - package-ecosystem: "conda"
     directory: "/"
     schedule:
-      interval: "daily"
-      #day: "monday"
-      time: "14:00"
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
     commit-message:
       prefix: "[Dependabot-conda]"
 
