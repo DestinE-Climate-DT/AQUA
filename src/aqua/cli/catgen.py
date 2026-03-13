@@ -244,6 +244,8 @@ class AquaFDBGenerator:
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
 
         levtype_str = (
+            'o3d' if profile["levtype"] == 'o3d' and 'full' in profile['vertical'] else
+            'o3d-half' if profile["levtype"] == 'o2d' and 'half' in profile['vertical'] else
             'sol4' if profile["levtype"] == 'sol' and profile['vertical'] in {'IFS-sol4', 'ICON-sol4'} else
             'sol5' if profile["levtype"] == 'sol' and profile['vertical'] in {'IFS-sol5', 'ICON-sol5'} else
             profile["levtype"]
