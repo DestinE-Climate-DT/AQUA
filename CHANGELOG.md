@@ -11,6 +11,7 @@ Main changes:
 Complete list:
 - Allow level selection for non-fdb sources (#2731)
 - `frequency_string_to_pandas` function can now handle frequencies with a numerical prefix, such as "3hourly" (#2730)
+- Pinning everything in the conda environment file and leave pyproject free (#2772)
 
 ## [v1.0.0a4]
 
