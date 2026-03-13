@@ -7,10 +7,8 @@ import cartopy.crs as ccrs
 import numpy as np
 from aqua.graphics import ConfigStyle
 from aqua.logger import log_configure
-from aqua.util import (
-    evaluate_colorbar_limits,
-    generate_colorbar_ticks,
-)
+from aqua.util import evaluate_colorbar_limits, generate_colorbar_ticks, add_cyclic_lon
+
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
