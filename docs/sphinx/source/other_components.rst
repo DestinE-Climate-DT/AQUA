@@ -169,6 +169,15 @@ This will internally use the ``AreaSelection()`` class described in the :ref:`sp
     Also, if you do not specify the ``dims`` argument (e.g. ``dims=['lon']``), the statistical operation will be operated on both 
     the (automatically found) horizontal dimensions of the dataset!
 
+The same field statistics methods are also available through the ``aqua`` accessor on
+``xarray`` objects, mirroring the behaviour of the ``Reader`` methods. For example:
+
+.. code-block:: python
+
+    global_thick_mean = regrid_sithick.aqua.fldmean()
+    # or with an explicit choice of statistic and regional selection:
+    regional_sum = regrid_sithick.aqua.fldstat(stat='sum', lon_limits=[-50, 50], lat_limits=[-10, 20])
+
 Histogram
 ---------
 
