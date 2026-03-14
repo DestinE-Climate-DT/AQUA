@@ -115,8 +115,6 @@ def plot_maps(maps: list[xr.DataArray],
         col = i % ncols
         
         logger.debug("Plotting map %d", i)
-        
-        cmap.set_bad('grey')  # HACK to set NaN values to grey
 
         fig, ax = plot_single_map(
             data=maps[i],
@@ -138,10 +136,11 @@ def plot_maps(maps: list[xr.DataArray],
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
             ticks_rounding=0,
+            coastlines=False,
             **kwargs,
         )
         ax.set_aspect("auto")  # NEW: stretch plot to fill subplot
-        ax.coastlines()
+        ax.set_facecolor(color='grey')  # adding land
 
         gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
 
