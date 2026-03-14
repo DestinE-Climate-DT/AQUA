@@ -86,7 +86,11 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo"
+    "cdo",
+    "ruff"
+]
+precommit = [
+    "pre-commit"
 ]
 all = [
     "aqua-core[docs]",
@@ -142,3 +146,20 @@ omit = [
     "**/__init__.py",
     ]
 
+[tool.ruff]
+# --- Global Settings ---
+line-length = 127
+target-version = "py310"
+exclude = ["**/__init__.py"]
+
+[tool.ruff.lint]
+# Imports sorted (I), standard PEP8 (E, F, W, N) only. No "Q".
+select = ["E", "F", "I", "W", "N"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aqua"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

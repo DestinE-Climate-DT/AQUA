@@ -23,6 +23,7 @@ Main changes:
 - Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
 
 Complete list:
+- Add Ruff linter and formatter to CI (#2748)
 - Remove necessity of FDB paths if engine is polytope (#2656)
 - Fix null catalog entry (#2725)
 - Histogram function now accepts weights dataarray argument (#2734)
