@@ -116,6 +116,8 @@ def plot_maps(maps: list[xr.DataArray],
         
         logger.debug("Plotting map %d", i)
         
+        cmap.set_bad('grey')  # HACK to set NaN values to grey
+
         fig, ax = plot_single_map(
             data=maps[i],
             contour=True,
@@ -128,7 +130,7 @@ def plot_maps(maps: list[xr.DataArray],
             cmap=cmap,
             cbar=False,
             transform_first=transform_first,
-            add_land=True,
+            add_land=False,
             return_fig=True,
             cyclic_lon=cyclic_lon,
             fig=fig,
