@@ -101,6 +101,7 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         reader_kwargs=reader_kwargs
                     )
+
                     trends_plot = PlotTrends(
                         data=data_trends.trend_coef,
                         diagnostic_name=diagnostic_name,

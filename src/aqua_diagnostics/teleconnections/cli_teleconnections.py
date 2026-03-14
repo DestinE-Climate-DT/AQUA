@@ -211,6 +211,7 @@ if __name__ == '__main__':
                 for i, dataset in enumerate(config_dict['datasets']):
                     dataset_args = {'catalog': dataset['catalog'], 'model': dataset['model'],
                                     'exp': dataset['exp'], 'source': dataset['source'],
+                                    'startdate': dataset.get('startdate', None), 'enddate': dataset.get('enddate', None),
                                     'regrid': regrid if regrid is not None else dataset.get('regrid', None)}
                     logger.info(f'Running dataset: {dataset_args}')
 
@@ -241,6 +242,7 @@ if __name__ == '__main__':
                 for i, reference in enumerate(config_dict['references']):
                     reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                       'exp': reference['exp'], 'source': reference['source'],
+                                      'startdate': reference.get('startdate', None), 'enddate': reference.get('enddate', None),
                                       'regrid': regrid if regrid is not None else reference.get('regrid', None)}
                     logger.info(f'Running reference: {reference_args}')
 

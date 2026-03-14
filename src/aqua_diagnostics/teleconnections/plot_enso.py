@@ -177,7 +177,7 @@ class PlotENSO(PlotBaseMixin):
                 for map in ref_maps:
                     title = f"Compared to {map.AQUA_model} {map.AQUA_exp}"
                     titles.append(title)
-                title = f"ENSO {statistic} map ({var}) of {maps.AQUA_model} {maps.AQUA_exp}"
+                title = f"ENSO - {statistic} map ({var}) of {maps.AQUA_model} {maps.AQUA_exp}"
                 if hasattr(maps, 'AQUA_season'):
                     title += f" ({maps.AQUA_season})"
 

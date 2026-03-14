@@ -172,6 +172,7 @@ if __name__ == "__main__":
                     strat_plot.plot_stratification(
                         save_pdf=save_pdf, save_png=save_png, dpi=dpi
                     )
+
                     # Mixed Layer Depth instance
                     # Model data
                     model_stratification = Stratification(

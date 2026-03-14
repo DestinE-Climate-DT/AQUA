@@ -80,7 +80,7 @@ diagnostics:
     # List of regions to plot. The default regions are defined in config/diagnostics/seaice
     regions: ['arctic','antarctic']
     startdate: '1991-01-01'
-    enddate: '2024-01-01'
+    enddate: '2024-12-31'
     calc_ref_std: true
     ref_std_freq: 'monthly' # set to 'monthly' 'annual'
     varname:
@@ -121,7 +121,7 @@ diagnostics:
     methods: ["extent", "volume"]
     regions: ['arctic','antarctic']
     startdate: '1991-01-01'
-    enddate: '2024-01-01'
+    enddate: '2024-12-31'
     calc_ref_std: true
     ref_std_freq: 'monthly' # set to 'monthly' 'annual'
     varname:

@@ -24,7 +24,7 @@ references:
     exp: 'era5'
     source: 'monthly'
     startdate: '1990-01-01'
-    enddate: '2020-12-31'
+    enddate: '2014-12-31'
 
 output:
   outputdir: "./"
@@ -40,14 +40,15 @@ diagnostics:
     diagnostic_name: 'radiation_surface'
     variables: ['slhtf', 'ishf']
     center_time: true
+    extend: false
     params:
       default:
         hourly: False
         daily: False
         monthly: True
         annual: True
-        std_startdate: '20000101'
-        std_enddate: '20241231'
+        std_startdate: '19900101'
+        std_enddate: '20141231'
 
   globalbiases:
     run: true
@@ -61,8 +62,8 @@ diagnostics:
         vertical: false     # Vertical profile if variable 3d
         startdate_data: null
         enddate_data: null
-        startdate_obs: "2000-01-01"
-        enddate_obs: "2020-12-31"
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2014-12-31"
     plot_params: 
       default: 
         projection: 'robinson'

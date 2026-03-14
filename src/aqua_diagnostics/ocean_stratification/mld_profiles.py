@@ -115,6 +115,12 @@ def plot_maps(
     for i in range(len(maps)):
         if cbar_number == "separate":
             vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
+        if not extent:
+            lon_min = float(maps[i].lon.min())
+            lon_max = float(maps[i].lon.max())
+            lat_min = float(maps[i].lat.min())
+            lat_max = float(maps[i].lat.max())
+            extent = [lon_min, lon_max, lat_min, lat_max]
 
         logger.debug("Plotting map %d", i)
         fig, ax = plot_single_map(
@@ -135,11 +141,23 @@ def plot_maps(
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
-            ticks_rounding=0,
+            gridlines=False,
             **kwargs,
         )
-        ax.set_facecolor("lightgray")
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+        
+        gl.xlabel_style = {'color': 'gray'}
+        gl.ylabel_style = {'color': 'gray'}
 
+        gl.top_labels = False
+        gl.right_labels = False
+        if i != 0:
+            gl.left_labels = False
+        else:
+            gl.left_labels = True
+        gl.bottom_labels = True
+
+        ax.set_facecolor("lightgray")
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
             ax.text(
@@ -218,12 +236,12 @@ def plot_maps(
         # else:
         #     cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
-        cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
+        # cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
 
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 15, y=1.05)
+        fig.suptitle(title, fontsize=ncols * 8, y=1.1)
 
     if return_fig:
         return fig

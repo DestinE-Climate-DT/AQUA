@@ -78,6 +78,11 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.short_name = self.monthly_data[0].short_name if hasattr(self.monthly_data[0], 'short_name') else None
             self.long_name = self.monthly_data[0].long_name if hasattr(self.monthly_data[0], 'long_name') else None
             self.units = self.monthly_data[0].units if hasattr(self.monthly_data[0], 'units') else None
+            # this does not work since monthly_data has not information about time period
+            #self.startdate = [d.time[0].values for d in self.monthly_data]
+            #self.enddate = [d.time[-1].values for d in self.monthly_data]
+            self.startdate = [None for d in self.monthly_data]
+            self.enddate = [None for d in self.monthly_data]
             self.realizations = get_realizations(self.monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')

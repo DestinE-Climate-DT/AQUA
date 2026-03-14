@@ -100,6 +100,8 @@ class PlotLatLonProfiles():
         self.long_name = None
         self.units = None
         self.mean_type = None
+        self.startdate = None
+        self.enddate = None
         
         # Get all data items to extract metadata from
         data_items = []
@@ -139,6 +141,11 @@ class PlotLatLonProfiles():
                 if self.units is None and hasattr(data_item, 'units'):
                     self.units = data_item.units
 
+                if self.startdate is None and hasattr(data_item, 'AQUA_startdate'):
+                    self.startdate = data_item.AQUA_startdate
+                if self.enddate is None and hasattr(data_item, 'AQUA_enddate'):
+                    self.enddate = data_item.AQUA_enddate
+
         # Set mean_type from first data item if not already set
         first_data = data_items[0] if data_items else None
         if first_data is not None and hasattr(first_data, 'AQUA_mean_type'):
@@ -150,8 +157,9 @@ class PlotLatLonProfiles():
         
         # Handle std dates
         if self.ref_std_data is not None:
-            self.std_startdate = getattr(self.ref_std_data, 'std_startdate', None)
-            self.std_enddate = getattr(self.ref_std_data, 'std_enddate', None)
+            ref_std_item = self.ref_std_data[0] if isinstance(self.ref_std_data, list) else self.ref_std_data
+            self.std_startdate = getattr(ref_std_item, 'std_startdate', None) if ref_std_item is not None else None
+            self.std_enddate   = getattr(ref_std_item, 'std_enddate',   None) if ref_std_item is not None else None
         else:
             self.std_startdate = None
             self.std_enddate = None
@@ -277,7 +285,7 @@ class PlotLatLonProfiles():
 
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                title += f'for {name} '
+                title += f'of {name.lower()} '
                 break
         if self.units is not None:
             title += f'[{self.units}] '
@@ -286,7 +294,7 @@ class PlotLatLonProfiles():
             title += f'[{self.region}] '
 
         if self.len_data == 1:
-            title += f'for {self.catalogs[0]} {self.models[0]} {self.exps[0]} '
+            title += f'for {self.models[0]} {self.exps[0]} '
 
         self.logger.debug('Title: %s', title)
         return title
@@ -300,18 +308,13 @@ class PlotLatLonProfiles():
         if self.data_type == 'seasonal':
             description = f'Seasonal {self.mean_type.lower()} profile '
         else:
-            description = f'{self.mean_type.capitalize()} profile '
+            description = f'Climatological {self.mean_type.lower()} profile '
         
         # Variable name
         for name in [self.long_name, self.standard_name, self.short_name]:
             if name is not None:
-                description += f'of {name} '
+                description += f'of {name.lower()} '
                 break
-
-        # Units
-        if self.units is not None:
-            units = self.units.replace("**", r"\*\*")
-            description += f'[{units}] '
         
         # Short name in parentheses
         if self.short_name is not None:
@@ -325,9 +328,11 @@ class PlotLatLonProfiles():
         num_items = min(len(self.catalogs), len(self.models), len(self.exps)) if hasattr(self, 'catalogs') else 0
         
         description += 'for '
-        dataset_names = [f'{self.catalogs[i]} {self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
+        dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
+        description += f' (from {self.startdate} to {self.enddate} '
+        
         # Reference data description
         if self.len_ref > 0 and self.ref_data is not None:
             # Extract reference info properly
@@ -341,25 +346,19 @@ class PlotLatLonProfiles():
             if ref_item is not None and hasattr(ref_item, 'AQUA_model'):
                 ref_model = ref_item.AQUA_model
                 ref_exp = ref_item.AQUA_exp
-                ref_catalog = getattr(ref_item, 'AQUA_catalog', None)
                 
                 # Build reference string
-                if ref_catalog:
-                    description += f' compared to {ref_catalog} {ref_model} {ref_exp}'
-                else:
-                    description += f' compared to {ref_model} {ref_exp}'
-            else:
-                description += ' with reference data'
-        
+            if ref_model and ref_exp:
+                description += f' compared to {ref_model} {ref_exp}'
+
         # Standard deviation info
         if self.ref_std_data is not None:
             description += ' with ±2σ uncertainty bands'
             if self.std_startdate is not None and self.std_enddate is not None:
-                description += f' computed over {self.std_startdate} to {self.std_enddate}'
-        
-        description += '.'
+                description += f' (from {self.std_startdate} to {self.std_enddate})'
             
-        self.logger.debug('Description: %s', description)
+        description += "."
+        self.logger.warning('Description: %s', description)
         return description
 
     def run(self,
@@ -393,9 +392,6 @@ class PlotLatLonProfiles():
         ref_label = self.set_ref_label()
         description = self.set_description()
         title = self.set_title()
-        
-        if self.ref_std_data is not None:
-            description += " with standard deviation bands"
 
         fig, _ = self.plot(data_labels=data_label, ref_label=ref_label, title=title,
                            style=style)

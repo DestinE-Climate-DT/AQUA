@@ -73,7 +73,9 @@ class PlotStratification:
             data_label=self.data_label,
             obs_label=self.obs_label if self.obs else None,
             title=self.suptitle,
-            figsize=(4 * self.ncols, 10 * self.nrows),
+            # HACK fix size of figure. nrows and ncols are set to 1 and 3 inside the function!
+            figsize=(14, 6),
+            # figsize=(4 * self.ncols, 10 * self.nrows),
             return_fig=True,
             loglevel=self.loglevel,
         )
@@ -158,7 +160,7 @@ class PlotStratification:
         if plot_type is None:
             plot_type = ""
         # self.suptitle = f"{clim_time} climatology {self.catalog} {self.model} {self.exp} {self.region}"
-        self.suptitle = f"Stratification in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"Stratification in {self.region} - {self.clim_time} climatology - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -179,9 +181,9 @@ class PlotStratification:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self, ):
-        self.description = f"Stratification plot of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.catalog} {self.model} {self.exp} experiment"
+        self.description = f"Vertical profiles of temperature, salinity and density of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.model} {self.exp} experiment (solid)"
         if self.obs:
-            self.description = self.description + (f" with the reference data from {self.obs.attrs['catalog']} {self.obs.attrs['model']} {self.obs.attrs['exp']}")
+            self.description = self.description + (f" with the reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed).")
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

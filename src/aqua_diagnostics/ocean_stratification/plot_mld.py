@@ -106,7 +106,7 @@ class PlotMLD:
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
     def set_figsize(self):
-        self.figsize = (9 * self.ncols, 8 * self.nrows)
+        self.figsize = (3.5 * self.ncols, 3.5 * self.nrows)
 
         # lon_span = abs(self.data.lon.max() - self.data.lon.min())
         # lat_span = abs(self.data.lat.max() - self.data.lat.min())
@@ -207,18 +207,20 @@ class PlotMLD:
 
     def set_cbar_limits(self):
         self.vmin = 0.0
-        if self.obs:
-            self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
-        else:
-            self.vmax = self.data["mld"].max()
-        self.vmax = self._round_up(self.vmax)
-        if self.vmax < 200:
-            nlevels = 10
-        elif self.vmax > 1500:
-            nlevels = 100
-        else:
-            nlevels = 50
-        self.nlevels = nlevels
+        self.vmax = 2000
+        self.nlevels = 20
+        # if self.obs:
+        #     self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
+        # else:
+        #     self.vmax = self.data["mld"].max()
+        # self.vmax = self._round_up(self.vmax)
+        # if self.vmax < 200:
+        #     nlevels = 10
+        # elif self.vmax > 1500:
+        #     nlevels = 100
+        # else:
+        #     nlevels = 50
+        # self.nlevels = nlevels
         self.logger.debug(
             f"Colorbar limits set to vmin: {self.vmin}, vmax: {self.vmax}, nlevels: {self.nlevels}"
         )
@@ -227,7 +229,7 @@ class PlotMLD:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -241,16 +243,18 @@ class PlotMLD:
             for i, var in enumerate(self.vars):
                 # if j == 0:
                 # title = f"{var} ({self.data[var].attrs.get('units')})"
-                title = f"{attrs.get('AQUA_catalog')} {attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
+                title = f"{attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
                 self.title_list.append(title)
                 # else:
                 #     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
-        self.description = f"Mixed layer depth plot of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.catalog} {self.model} {self.exp} experiment"
+        self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for the {self.model} {self.exp} experiment"
         if self.obs:
-            self.description = self.description + (f" with the reference data from {self.obs.attrs['catalog']} {self.obs.attrs['model']} {self.obs.attrs['exp']}")
+            self.description += f" and reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']}."
+        else:
+            self.description += "."
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

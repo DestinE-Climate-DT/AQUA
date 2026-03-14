@@ -9,7 +9,7 @@ from aqua.logger import log_configure, log_history
 from aqua.graphics import plot_timeseries, plot_seasonalcycle, ConfigStyle
 from aqua.util import ConfigPath, get_realizations
 from collections import defaultdict
-from .util import defaultdict_to_dict, extract_dates, _check_list_regions_type
+from .util import defaultdict_to_dict, _check_list_regions_type, extract_dates
 
 xr.set_options(keep_attrs=True)
 
@@ -201,7 +201,7 @@ class PlotSeaIce:
         if datain is None:
             return None
         
-        required_attrs = ["AQUA_model", "AQUA_exp", "AQUA_source"]
+        required_attrs = ["AQUA_model", "AQUA_exp"]
         missing_attrs = [attr for attr in required_attrs if attr not in datain.attrs]
 
         if missing_attrs:
@@ -285,9 +285,9 @@ class PlotSeaIce:
                 self.region_str = region  # start with first region
             else:
                 if region_idx == self.num_regions - 1:
-                    self.region_str += f" and {region} regions"
+                    self.region_str += f" and {region} regions "
                 else:
-                    self.region_str += f", {region}"
+                    self.region_str += f", {region} "
         
         # generate dynamic string for model data
         if hasattr(self, "data_labels") and self.data_labels:
@@ -301,18 +301,14 @@ class PlotSeaIce:
             model_startdate_list = []
             if isinstance(model_data_dict, xr.DataArray):
                 stdate, endate = extract_dates(model_data_dict)
-                model_startdate_list = [f"{label} from {stdate} to {endate}" for label in unique_labels]
-                self._description += f" {method} data from {stdate} to {endate} for {region}."
+                model_startdate_list = [f"{label} (from {stdate} to {endate})" for label in unique_labels]
             elif isinstance(model_data_dict, list):
                 for model_data in model_data_dict:
                     stdate, endate = extract_dates(model_data)
-                    model_startdate_list.extend([f"{label} from {stdate} to {endate}" for label in unique_labels])
-                    self._description += f" {method} data from {stdate} to {endate} for {region}."
+                    model_startdate_list.extend([f"{label} (from {stdate} to {endate})" for label in unique_labels])
 
             # build the model data string
-            self.model_labels_str = (f"{', '.join(model_startdate_list)} "
-                                     f"{'are' if len(model_startdate_list) > 1 else 'is'} "
-                                     f"used as {'models' if len(model_startdate_list) > 1 else 'model'} data.")
+            self.model_labels_str = f"{', '.join(model_startdate_list)} "
         else:
             self.model_labels_str = ''
 
@@ -338,7 +334,7 @@ class PlotSeaIce:
         if hasattr(self, "std_label") and self.std_label:
             sdtdata = self._getdata_fromdict(data_dict,'monthly_std_ref')
             std_sdate, std_edate = extract_dates(sdtdata[0]) 
-            self.std_label_str = f" Reference data std ranges from {std_sdate} to {std_edate}."
+            self.std_label_str = f" Shaded areas represent ±2σ uncertainty bands (from {std_sdate} to {std_edate})."
         else:
             self.std_label_str = ''
 
@@ -347,12 +343,12 @@ class PlotSeaIce:
             if self.plot_type == 'seasonalcycle':
                 pl_type = 'Seasonal cycle of the '
             elif self.plot_type == 'timeseries':
-                pl_type = 'Time series of the '
+                pl_type = 'Time series of '
             else:
                 pl_type = ''
                 
         # finally build the string caption (dynamically)
-        self._description = ('{}Sea ice {} integrated over {}. {}{}{}').format(pl_type, method, 
+        self._description = ('{}sea ice {} integrated over {}for {}{}{}').format(pl_type, method, 
                                                                                self.region_str, self.model_labels_str,
                                                                                self.ref_label_str, self.std_label_str)
 

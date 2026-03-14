@@ -1,7 +1,7 @@
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
-from aqua.util import get_realizations
+from aqua.util import get_realizations, time_to_string
 import cartopy.crs as ccrs
 
 from .multiple_maps import plot_maps
@@ -75,6 +75,7 @@ class PlotTrends:
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
+        self.set_extent()
         fig = plot_maps(
             maps=self.data_list,
             nrows=self.nrows,
@@ -82,6 +83,7 @@ class PlotTrends:
             proj=ccrs.PlateCarree(central_longitude=self.central_longitude),
             title=self.suptitle,
             titles=self.title_list,
+            extent=self.extent,
             cbar_labels=self.cbar_labels,
             ytext=self.ytext,
             return_fig=True,
@@ -111,9 +113,9 @@ class PlotTrends:
         """
         self.diagnostic_product = 'zonal_mean'
         self.set_data_list()
-        self.set_suptitle(plot_type='Zonal mean Trends')
+        self.set_suptitle(plot_type='Trends of zonal mean')
         self.set_title()
-        self.set_description(content="Zonal mean Trends")
+        self.set_description(content="Trends of zonal mean of temperature (left) and salinity (right)")
         self.set_ytext()
         self.set_cbar_labels()
         self.set_nrowcol()
@@ -145,6 +147,12 @@ class PlotTrends:
         else:
             self.nrows = 1
         self.ncols = len(self.vars)
+
+    def set_extent(self):
+        """Set the extent for the plot."""
+        self.extent = [self.data_list[0].lon.min().values, self.data_list[0].lon.max().values,
+                       self.data_list[0].lat.min().values, self.data_list[0].lat.max().values]
+        self.logger.debug(f"Extent set to: {self.extent}")
 
     def set_ytext(self):
         """Set the y-axis text for the multi-level plots."""
@@ -190,7 +198,7 @@ class PlotTrends:
         """Set the title for the plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"{plot_type} in {self.region} - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"{plot_type} in {self.region} - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -202,7 +210,7 @@ class PlotTrends:
         for j in range(len(self.data_list)):
             for var in self.vars:
                 if j == 0:
-                    title = f"{self.data[var].attrs.get('long_name', var)} ({self.data[var].attrs.get('units')})"
+                    title = f"{self.data[var].attrs.get('long_name', var)}"# ({self.data[var].attrs.get('units')})"
                     self.title_list.append(title)
                 else:
                     self.title_list.append(" ")
@@ -213,10 +221,21 @@ class PlotTrends:
         Set the colorbar labels for the plot.
         This method can be extended to set specific colorbar labels based on the data.
         """
+        # Map known units to prettier versions
+        units_map = {
+            'DegC/year': '°C yr$^{-1}$',
+            'degC/year': '°C yr$^{-1}$',
+            'g kg**-1/year': 'g kg$^{-1}$ yr$^{-1}$',
+            'g/kg/year': 'g kg$^{-1}$ yr$^{-1}$',
+            'psu/year': 'psu yr$^{-1}$',
+            'm/year': 'm yr$^{-1}$',
+        }
         self.cbar_labels = []
         for _ in range(len(self.data_list)):
             for var in self.vars:
-                cbar_label = f"{self.data[var].attrs.get('short_name', var)} ({self.data[var].attrs.get('units')})"
+                # var_name = self.data[var].attrs.get('short_name', var)
+                units = units_map.get(self.data[var].attrs.get('units'), self.data[var].attrs.get('units'))
+                cbar_label = f"{units}"
                 self.cbar_labels.append(cbar_label)
         self.logger.debug("Colorbar labels set to: %s", self.cbar_labels)
 
@@ -225,7 +244,8 @@ class PlotTrends:
         Set the description metadata for the plot.
         """
 
-        self.description = f"{content} in the {self.region} region of {self.catalog} {self.model} {self.exp}."
+        self.description = f"{content} over {self.region} for experiment {self.model} {self.exp}."
+        #self.description += f" (from {time_to_string(self.startdate, format='%Y-%m')} to {time_to_string(self.enddate, format='%Y-%m')})"
 
     def save_plot(self, fig, diagnostic_product: str, extra_keys: dict = {},
                   rebuild: bool = True,
