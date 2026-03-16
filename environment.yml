@@ -22,5 +22,5 @@ dependencies:
   - pip:
     # pip install -e of AQUA itself
     - -e .[all]
-    # For devs who want pre-commit, uncomment the line below
-    # - -e .[precommit]
+    # For devs who want pre-commit, comment line above and uncomment the line below
+    # - -e .[precommit,all]
