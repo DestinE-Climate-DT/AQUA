@@ -99,21 +99,42 @@ def plot_maps(maps: list[xr.DataArray],
     )
     axs = axs.flatten()
 
+    #Evaluation Vmax Vmin for each Colum
+    vmin_all, vmax_all = {}, {}
+    for i in range(len(maps)):
+        col = i % ncols
+        row = i // ncols
+        vmin, vmax = evaluate_colorbar_limits(maps=[maps[i]], sym=True)
+        vmin_all[row, col] = vmin
+        vmax_all[row, col] = vmax
+        
+
+    # Calculate overall absolute max for each column
+    col_vmax = {}
+    for col in range(ncols):
+        abs_max = max(
+            max(abs(vmin_all[row, col]), abs(vmax_all[row, col]))
+            for row in range(nrows)
+        )
+        col_vmax[col] = abs_max
+            
     for i in range(len(maps)):
         try:
             maps[i] = add_cyclic_lon(maps[i])
         except Exception as e:
             logger.warning(f"Could not add cyclic longitude to map {i}: {e}")
-
-        vmin, vmax = evaluate_colorbar_limits(maps=[maps[i]], sym=True)
+        
+        row = i // ncols
+        col = i % ncols
+        
+        #assigning vmin vmax
+        vmin, vmax = -col_vmax[col], col_vmax[col]
         ticks = np.linspace(vmin, vmax, int(nlevels/2) + 1)
         if len(ticks) < 3:  # ensure at least 3 ticks for colorbar
             ticks = np.linspace(vmin, vmax, 3)
         logger.debug(f"Colorbar limits for map {i}: vmin={vmin}, vmax={vmax}")
 
-        row = i // ncols
-        col = i % ncols
-        
+
         logger.debug("Plotting map %d", i)
 
         fig, ax = plot_single_map(
@@ -121,8 +142,8 @@ def plot_maps(maps: list[xr.DataArray],
             contour=True,
             proj=proj,
             extent=extent,
-            # vmin=vmin,
-            # vmax=vmax,
+            vmin=vmin,
+            vmax=vmax,
             nlevels=nlevels,
             title=titles[i] if titles is not None else None,
             cmap=cmap,
