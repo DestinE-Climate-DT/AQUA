@@ -8,7 +8,7 @@ updates:
   - package-ecosystem: "conda"
     directory: "conda"
     schedule:
-      interval: "weekly"
+      interval: "daily"
       day: "monday"
       time: "06:00"
     commit-message:
