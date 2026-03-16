@@ -132,11 +132,11 @@ class PlotTimeseries(PlotBaseMixin):
         # TODO: support ref list
         for ref in [self.ref_monthly_data, self.ref_annual_data]:
             if ref is not None:
-                self.ref_catalogs = [r.AQUA_catalog for r in ref]
-                self.ref_models = [r.AQUA_model for r in ref]
-                self.ref_exps = [r.AQUA_exp for r in ref]
-                self.ref_startdate = [r.time[0].values for r in ref]
-                self.ref_enddate = [r.time[-1].values for r in ref]
+                self.ref_catalogs = ref.AQUA_catalog
+                self.ref_models = ref.AQUA_model
+                self.ref_exps = ref.AQUA_exp
+                self.ref_startdate = ref.time[0].values
+                self.ref_enddate = ref.time[-1].values
                 self.logger.debug(f'Reference: {self.ref_catalogs} {self.ref_models} {self.ref_exps}')
                 break
 
