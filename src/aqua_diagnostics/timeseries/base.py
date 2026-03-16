@@ -294,6 +294,8 @@ class PlotBaseMixin():
         self.ref_exps = None
         self.startdate  = None
         self.enddate = None
+        self.ref_startdate = None
+        self.ref_enddate = None
         self.std_startdate = None
         self.std_enddate = None
         self.region = None
@@ -404,8 +406,12 @@ class PlotBaseMixin():
                     description += f' ERA5'
                 elif isinstance(self.ref_models, list):
                     description += f' {self.ref_models[i]} {self.ref_exps[i]}'
+                    if self.ref_startdate is not None and self.ref_enddate is not None:
+                        description += f" (from {time_to_string(self.ref_startdate[i], format='%Y-%m')} to {time_to_string(self.ref_enddate[i], format='%Y-%m')})"
                 else:
                     description += f' {self.ref_models} {self.ref_exps}'
+                    if self.ref_startdate is not None and self.ref_enddate is not None:
+                        description += f" (from {time_to_string(self.ref_startdate, format='%Y-%m')} to {time_to_string(self.ref_enddate, format='%Y-%m')})"
         description += '. '
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
