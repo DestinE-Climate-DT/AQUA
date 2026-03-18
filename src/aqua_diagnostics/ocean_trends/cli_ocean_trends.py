@@ -109,7 +109,23 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    trends_plot.plot_multilevel(
+                        levels = [10, 100, 500, 1000, 3000, 5000],
+                        cbar_limits=
+                        {
+                            "thetao":
+                                {
+                                    'vmin': -1.5,
+                                    'vmax': 1.5,
+                                },
+                            "so":
+                                {
+                                    'vmin': -.2,
+                                    'vmax': .2,
+                                }
+                        },
+                        sym = True,
+                        save_pdf=save_pdf, save_png=save_png, dpi=dpi)
 
                     zonal_trend_plot = PlotTrends(
                         data=data_trends.trend_coef.mean('lon'),
@@ -118,7 +134,7 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    # zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
 
