@@ -53,10 +53,13 @@ class PlotTrends:
         )
 
     def plot_multilevel(self,
-                        levels = None,
+                        levels: list = None,
                         rebuild: bool = True,
                         save_pdf: bool = True,
-                        save_png: bool = True, dpi: int = 300):
+                        save_png: bool = True,
+                        cbar_limits: dict = None,
+                        sym: bool = False,
+                        dpi: int = 300):
         """Plot multi-level maps of trends.
         
         Args:
@@ -64,15 +67,22 @@ class PlotTrends:
             formats (list, optional): List of output formats. Defaults to ['pdf'].
         """
         self.diagnostic_product = 'multilevel_trend'
-        if levels is None:
+        if levels:
+            self.levels = levels
+        else:
             self.levels = [10, 100, 500, 1000, 3000, 5000]
         self.logger.debug(f"Levels set to: {self.levels}")
+        self.cbar_limits = cbar_limits
+        self.vmin = None
+        self.vmax = None
+        self.sym = sym
         self.set_central_longitude()
         self.set_data_list()
         self.set_suptitle(plot_type='Multi-level Trends')
         self.set_title()
         self.set_description(content="Multi-level Trends")
         self.set_ytext()
+        self.set_vmin_vmax()
         self.set_cbar_labels()
         self.set_nrowcol()
         self.set_extent()
@@ -82,6 +92,9 @@ class PlotTrends:
             ncols=self.ncols,
             proj=ccrs.PlateCarree(central_longitude=self.central_longitude),
             title=self.suptitle,
+            col_vmin=self.vmin,
+            col_vmax=self.vmax,
+            sym=self.sym,
             titles=self.title_list,
             extent=self.extent,
             cbar_labels=self.cbar_labels,
@@ -140,6 +153,13 @@ class PlotTrends:
         for format in formats:
             self.save_plot(fig, diagnostic_product=self.diagnostic_product, metadata={"description": self.description},
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
+
+    def set_vmin_vmax(self):
+        self.vmin = []
+        self.vmax = []
+        if self.cbar_limits:
+            self.vmin = [self.cbar_limits[var]['vmin'] for var in self.vars]
+            self.vmax = [self.cbar_limits[var]['vmax'] for var in self.vars]
 
     def set_nrowcol(self):
         if hasattr(self, "levels") and self.levels:
