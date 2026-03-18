@@ -28,10 +28,18 @@ get_file() {
 
     if [[ -n "$4" ]]; then
         log_message INFO "Getting file $2 from rsync target $4 writing to $3"
-        rsync -avz $4/$2 $3
+        if rsync "$4/$2" > /dev/null 2>&1; then
+            rsync -avz $4/$2 $3
+        else
+            log_message WARNING "File $2 not found in rsync target $4. Creating empty file $3"
+            touch $3
+        fi
     else
         log_message INFO "Getting file $2 from bucket $1 on LUMI-O"
-        python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2
+        if ! python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2; then
+            log_message WARNING "File $2 not found in bucket $1. Creating empty file $3"
+            touch $3
+        fi
     fi
 }
 
