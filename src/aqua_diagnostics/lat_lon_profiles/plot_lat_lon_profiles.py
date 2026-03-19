@@ -262,7 +262,8 @@ class PlotLatLonProfiles():
         """
         len_data = len(self.data) if self.data else 0
         
-        if self.data_type == 'annual':
+        # Both 'annual' and 'longterm' have ref_data as a single DataArray
+        if self.data_type in ['annual', 'longterm']:
             len_ref = 1 if self.ref_data is not None else 0
         elif self.data_type == 'seasonal':
             len_ref = len(self.ref_data) if self.ref_data else 0
@@ -331,7 +332,7 @@ class PlotLatLonProfiles():
         dataset_names = [f'{self.models[i]} {self.exps[i]}' for i in range(min(self.len_data, num_items))]
         description += strlist_to_phrase(items=dataset_names)
 
-        description += f' (from {self.startdate} to {self.enddate} '
+        description += f' from {self.startdate} to {self.enddate}'
         
         # Reference data description
         if self.len_ref > 0 and self.ref_data is not None:
@@ -343,11 +344,14 @@ class PlotLatLonProfiles():
                 # For longterm, ref_data is a single DataArray
                 ref_item = self.ref_data
             
+            # Initialize variables before use
+            ref_model = None
+            ref_exp = None
             if ref_item is not None and hasattr(ref_item, 'AQUA_model'):
                 ref_model = ref_item.AQUA_model
                 ref_exp = ref_item.AQUA_exp
-                
-                # Build reference string
+            
+            # Build reference string
             if ref_model and ref_exp:
                 description += f' compared to {ref_model} {ref_exp}'
 
@@ -358,7 +362,7 @@ class PlotLatLonProfiles():
                 description += f' (from {self.std_startdate} to {self.std_enddate})'
             
         description += "."
-        self.logger.warning('Description: %s', description)
+        self.logger.debug('Description: %s', description)
         return description
 
     def run(self,
