@@ -62,10 +62,10 @@ class LatLonProfiles(Diagnostic):
 
 		# Set the region based on the region name or the lon and lat limits
 		self.region, self.lon_limits, self.lat_limits = self._set_region(region=region,
-																			diagnostic='lat_lon_profiles',
-																			regions_file_path=regions_file_path,
-																			lon_limits=lon_limits,
-																			lat_limits=lat_limits)
+																   		 diagnostic='lat_lon_profiles',
+																		 regions_file_path=regions_file_path,
+																		 lon_limits=lon_limits,
+																		 lat_limits=lat_limits)
 
 		# Initialize the possible results
 		self.seasonal = None  # Seasonal means [DJF, MAM, JJA, SON]
