@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.path as mpath
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.util import (
@@ -144,19 +145,47 @@ def plot_maps(
             gridlines=False,
             **kwargs,
         )
-        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
-        
-        gl.xlabel_style = {'color': 'gray'}
-        gl.ylabel_style = {'color': 'gray'}
 
-        gl.top_labels = False
-        gl.right_labels = False
-        if i != 0:
-            gl.left_labels = False
+
+        if proj.__class__ == ccrs.Orthographic:
+            theta = np.linspace(0, 2 * np.pi, 100)
+            verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+            circle = mpath.Path(verts * 0.5 + 0.5)
+            ax.set_boundary(circle, transform=ax.transAxes)
+
+            gl = ax.gridlines(draw_labels=False, linewidth=0.5, color='gray', alpha=0.3)
+            gl.xlabel_style = {'color': 'gray'}
+            gl.ylabel_style = {'color': 'gray'}
+
+            lon_min, lon_max, lat_min, lat_max = extent
+
+            lat_ticks = np.arange(np.ceil(lat_min/10)*10, lat_max, 10)
+            lon_ticks = np.arange(np.ceil(lon_min/30)*30, lon_max, 30)
+
+            for lat in lat_ticks:
+                ax.text(lon_min, lat, f"{lat:.0f}°N",
+                        transform=ccrs.PlateCarree(),
+                        fontsize=8, color='gray', ha='left', va='bottom', zorder=10)
+
+            for lon in lon_ticks:
+                ax.text(lon, lat_min, f"{lon:.0f}°",
+                        transform=ccrs.PlateCarree(),
+                        fontsize=8, color='gray', ha='center', va='bottom', zorder=10)
+                
         else:
-            gl.left_labels = True
-        gl.bottom_labels = True
+            gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+            gl.xlabel_style = {'color': 'gray'}
+            gl.ylabel_style = {'color': 'gray'}
 
+            gl.top_labels = False
+            gl.right_labels = False
+            if i != 0:
+                gl.left_labels = False
+            else:
+                gl.left_labels = True
+            gl.bottom_labels = True
+
+        
         ax.set_facecolor("lightgray")
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
@@ -223,7 +252,7 @@ def plot_maps(
                 sym=sym,
                 nlevels=nlevels,
                 ticks_rounding=cbar_ticks_rounding,
-                max_ticks=10,
+                max_ticks=5,
                 loglevel=loglevel,
             )
             # cbar.set_ticks([vmin, vmax])
