@@ -1,0 +1,44 @@
+datasets:
+  - catalog: null
+    model: null
+    exp: null
+    source: monthly
+    regrid: r100
+    reader_kwargs: null # it can be a dictionary with reader kwargs
+    startdate: null
+    enddate: null
+
+output:
+  outputdir: 'output'
+  rebuild: true
+  save_pdf: true
+  save_png: true
+  dpi: 300
+  create_catalog_entry: false
+
+diagnostics:
+  ecmean: 
+    nprocs: 1
+    interface_file: 'interface_AQUA_climatedt.yaml'
+    config_file: 'ecmean_config_climatedt.yaml'
+
+    global_mean:
+      run: true
+      diagnostic_name: 'climate_metrics'
+      atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
+        'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
+        'u', 'v', 't', 'q']
+      oce_vars: ['tos', 'siconc', 'sos']
+      year1: null #if you want to select some specific years, otherwise use the entire dataset
+      year2: null
+
+    performance_indices:
+      run: true
+      diagnostic_name: 'climate_metrics'
+      atm_vars: ['2t', 'tprate', 'msl', 'ie', 'iews', 'inss', 'tcc', 'tsrwe',
+        'tnswrf', 'tnlwrf', 'snswrf', 'snlwrf', 'ishf', 'slhtf',
+        'u', 'v', 't', 'q']
+      oce_vars: ['tos', 'siconc', 'sos']
+      year1: null #if you want to select some specific years, otherwise use the entire 
+      year2: null
+  
