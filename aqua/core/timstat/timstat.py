@@ -44,7 +44,7 @@ class TimStat:
         **kwargs,
     ):
         """
-        Compute a time statistic on the input data. 
+        Compute a time statistic on the input data.
         The statistic is computed over a time window defined by the frequency
         parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object.
         The statistic can be 'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'.

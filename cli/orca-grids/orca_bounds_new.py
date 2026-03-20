@@ -123,7 +123,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
 
     def _get_corner_dict(self):
         """
-        Get an info dictionary about the relative arranging 
+        Get an info dictionary about the relative arranging
         (center, vertex, symmetry for the edges) of the desired gridpoint.
         """
 
