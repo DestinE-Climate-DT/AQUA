@@ -157,29 +157,29 @@ def plot_maps(
             # gl.xlabel_style = {'color': 'gray'}
             # gl.ylabel_style = {'color': 'gray'}
 
-            lon_min, lon_max, lat_min, lat_max = extent
+            # lon_min, lon_max, lat_min, lat_max = extent
 
-            lat_ticks = np.arange(np.ceil(lat_min/10)*10, lat_max, 10)
-            lon_ticks = np.arange(np.ceil(lon_min/30)*30, lon_max, 30)
+            # lat_ticks = np.arange(np.ceil(lat_min/10)*10, lat_max, 10)
+            # lon_ticks = np.arange(np.ceil(lon_min/30)*30, lon_max, 30)
 
-            for lat in lat_ticks:
-                ax.text(lon_min, lat, f"{lat:.0f}°",
-                        transform=ccrs.PlateCarree(),
-                        fontsize=8, color='gray', ha='left', va='bottom', zorder=10)
+            # for lat in lat_ticks:
+            #     ax.text(lon_min, lat, f"{lat:.0f}°",
+            #             transform=ccrs.PlateCarree(),
+            #             fontsize=8, color='gray', ha='left', va='bottom', zorder=10)
 
-            is_antarctic = lat_min <= -80  # or however you detect it
-            is_arctic = lat_max >= 80
-            for lon in lon_ticks:
-                if is_antarctic:
-                    label_lat = lat_max + 2
-                elif is_arctic:
-                    label_lat = lat_min - 2  # ← place near the outer ring, not below
-                else:
-                    label_lat = lat_min + 2
-                ax.text(lon, label_lat, f"{lon:.0f}°",
-                        transform=ccrs.PlateCarree(),
-                        fontsize=8, color='gray', ha='center',# va='bottom',
-                        zorder=10)
+            # is_antarctic = lat_min <= -80  # or however you detect it
+            # is_arctic = lat_max >= 80
+            # for lon in lon_ticks:
+            #     if is_antarctic:
+            #         label_lat = lat_max + 2
+            #     elif is_arctic:
+            #         label_lat = lat_min - 2  # ← place near the outer ring, not below
+            #     else:
+            #         label_lat = lat_min + 2
+            #     ax.text(lon, label_lat, f"{lon:.0f}°",
+            #             transform=ccrs.PlateCarree(),
+            #             fontsize=8, color='gray', ha='center',# va='bottom',
+            #             zorder=10)
                 
         else:
             gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)

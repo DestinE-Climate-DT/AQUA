@@ -94,7 +94,7 @@ class PlotMLD:
             cbar_number="single",
             cbar_label=self.cbar_label,
             figsize=self.figsize,
-            cmap="Blues",
+            cmap="viridis",
             ytext=self.ytext,
             return_fig=True,
             vmax=self.vmax,
