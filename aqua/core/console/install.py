@@ -83,7 +83,8 @@ class InstallMixin:
             try:
                 if os.path.exists(locator.config_file):
                     self.logger.error(
-                        "AQUA configuration found at %s but failed to load. A configured catalog might be missing or corrupted.",
+                        "AQUA configuration found at %s but failed to load. "
+                        "A configured catalog might be missing or corrupted.",
                         locator.config_file,
                     )
                     sys.exit(1)
@@ -260,7 +261,8 @@ class InstallMixin:
                     sys.exit(1)
                 if install_info["diagnostics"]["installed"]:
                     self.logger.error(
-                        "Diagnostics component is already installed. We cannot add it again, please use 'aqua uninstall' before"
+                        "Diagnostics component is already installed. "
+                        "We cannot add it again, please use 'aqua uninstall' before"
                     )
                     sys.exit(1)
                 self.logger.info(

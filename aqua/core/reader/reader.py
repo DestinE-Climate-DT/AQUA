@@ -195,8 +195,9 @@ class Reader:
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             if not files_exist(self.esmcat.urlpath):
                 raise NoDataError(
-                    f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}"
-                )  # noqa E501
+                    f"No NetCDF files available for {self.model} {self.exp} {self.source}, ",
+                    f"please check the urlpath: {self.esmcat.urlpath}",
+                )
 
         # extend the unit registry
         units_extra_definition()
@@ -252,7 +253,8 @@ class Reader:
         if regrid:
             if not areas:
                 self.logger.warning(
-                    "Regridding requires info on areas. As areas can usually be generated with smmregrid, setting areas to 'True'"
+                    "Regridding requires info on areas. As areas can usually be generated with smmregrid, "
+                    "setting areas to 'True'"
                 )
                 areas = True
             self.tgt_fldstat = FldStat(
@@ -846,8 +848,9 @@ class Reader:
 
         final = log_history(
             final,
-            f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.",
-        )  # noqa E501
+            f"Interpolated from original levels {data[vert_coord].values} "
+            f"{data[vert_coord].units} to level {levels} using {method} method.",
+        )
 
         final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
@@ -1020,8 +1023,9 @@ class Reader:
                 chunks["time"] = self.aggregation
             if self.streaming and not self.aggregation:
                 self.logger.warning(
-                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value"
-                )  # noqa E501
+                    "Aggregation is not set, using default time resolution for streaming. "
+                    "If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value"
+                )
 
         if dask:
             if chunks:  # if the chunking or aggregation option is specified override that from the catalog

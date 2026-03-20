@@ -113,7 +113,8 @@ def select_season(xr_data, season: str):
         return xr_data
     else:
         raise ValueError(
-            f"Invalid season abbreviation. Available options are: {', '.join(TRIPLET_MONTHS.keys())}, or 'annual' to perform no season selection."
+            f"Invalid season abbreviation. Available options are: {', '.join(TRIPLET_MONTHS.keys())}, "
+            f"or 'annual' to perform no season selection."
         )
 
 

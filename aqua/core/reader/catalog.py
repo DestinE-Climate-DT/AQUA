@@ -26,7 +26,8 @@ def show_catalog_content(
         model (str | None): Optional model filter. If provided, only shows entries for this model.
         exp (str | None): Optional experiment filter. If provided, only shows entries for this exp.
         source (str | None): Optional source filter. If provided, only shows entries for this source.
-        configdir (str, optional): The directory containing the configuration files. If not provided, ConfigPath will determine it automatically.
+        configdir (str, optional): The directory containing the configuration files. If not provided, 
+            ConfigPath will determine it automatically.
         catalog_name (str, optional): Override the catalog name. If not provided, uses the default catalog.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         verbose (bool): If True, prints the formatted catalog structure. Defaults to True.

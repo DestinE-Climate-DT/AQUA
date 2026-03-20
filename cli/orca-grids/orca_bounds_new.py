@@ -122,7 +122,11 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         return ds_mesh
 
     def _get_corner_dict(self):
-        """Get an info dictionary about the relative arranging (center, vertex, symmetry for the edges) of the desired gridpoint."""
+        """
+        Get an info dictionary about the relative arranging 
+        (center, vertex, symmetry for the edges) of the desired gridpoint.
+        """
+
         nodetype = self.stagg
         assert nodetype in ("t", "u", "v", "f"), "nodetype {} unknown".format(nodetype)
 

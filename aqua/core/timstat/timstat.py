@@ -44,15 +44,19 @@ class TimStat:
         **kwargs,
     ):
         """
-        Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
-        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object. The statistic can be
-        'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'. The output is a new xarray dataset with the time dimension
+        Compute a time statistic on the input data. 
+        The statistic is computed over a time window defined by the frequency
+        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object.
+        The statistic can be 'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'.
+        The output is a new xarray dataset with the time dimension
         resampled to the desired frequency and the statistic computed over the time window.
 
         Args:
             data (xarray.Dataset): Input data to compute the statistic on.
-            stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'sum', 'first', 'last', 'histogram'] or a custom function.
-            freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object.
+            stat (str, func): Statistic to compute. Can be a string
+                in ['mean', 'std', 'max', 'min', 'sum', 'first', 'last', 'histogram'] or a custom function.
+            freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y')
+                or a pandas frequency object.
             exclude_incomplete (bool): If True, exclude incomplete chunks from the output.
             time_bounds (bool): If True, add time bounds to the output data.
             center_time (bool): If True, center the time axis of the output data.

@@ -128,8 +128,10 @@ class Drop:
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
-            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min', 'sum' or 'histogram'. Default is 'mean'.
-            stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram, default is empty dict.
+            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min', 'sum' or 'histogram'.
+                Default is 'mean'.
+            stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram.
+                Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
