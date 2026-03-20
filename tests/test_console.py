@@ -603,7 +603,6 @@ class TestAquaConsoleShared:
         """Basic tests for list command"""
 
         # getting fixture
-        mydir = shared_aqua_install
 
         run_aqua(["add", "ci"])
         run_aqua(["add", "ciccio", "-e", "AQUA_tests/catalog_copy"])

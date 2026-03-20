@@ -35,7 +35,7 @@ class TestChecksumModule:
 
         assert checksum_file.exists()
         with checksum_file.open("r", encoding="utf8") as f:
-            content = f.read()
+            f.read()
 
         verify_checksums(tmp_path, ["."], str(checksum_file))
         captured = capsys.readouterr()
