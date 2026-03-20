@@ -61,6 +61,7 @@ class PlotMLD:
         rebuild: bool = True,
         region: str = None,
         proj_name: str = "PlateCarree",
+        extent: list = None,
         save_pdf: bool = True,
         save_png: bool = True,
         dpi: int = 300,
@@ -68,6 +69,7 @@ class PlotMLD:
         self.diagnostic_product = "mld"
         self.clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
         self.region = region if region else self.region
+        self.extent = extent 
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
         self.set_central_lat_lon()
         self.set_proj(proj_name=proj_name)
@@ -152,11 +154,11 @@ class PlotMLD:
         lonmax = self.data.lon.max().values
 
         if self.region == "arctic":
-            latmin = 50
+            latmin = 40
             latmax = 90
         elif self.region == "antarctic":
             latmin = -90
-            latmax = -50
+            latmax = -40
         else:
             latmin = self.data.lat.min().values
             latmax = self.data.lat.max().values

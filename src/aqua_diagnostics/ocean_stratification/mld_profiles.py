@@ -171,9 +171,9 @@ def plot_maps(
             is_arctic = lat_max >= 80
             for lon in lon_ticks:
                 if is_antarctic:
-                    label_lat = lat_min + 42
+                    label_lat = lat_max + 2
                 elif is_arctic:
-                    label_lat = lat_max - 40  # ← place near the outer ring, not below
+                    label_lat = lat_min - 2  # ← place near the outer ring, not below
                 else:
                     label_lat = lat_min + 2
                 ax.text(lon, label_lat, f"{lon:.0f}°",
