@@ -29,13 +29,14 @@ projections_maps = {
     "equal_earth": ccrs.EqualEarth,
     "hammer": ccrs.Hammer,
     "lambert_equal_area": ccrs.LambertAzimuthalEqualArea,
-    "gnomonic": ccrs.Gnomonic
-    }
+    "gnomonic": ccrs.Gnomonic,
+}
+
 
 def get_projection(projname: str, **kwargs) -> ccrs.Projection:
     """
-    Return a Cartopy projection by name. Refer to the Cartopy 
-    documentation (https://scitools.org.uk/cartopy/) to review the 
+    Return a Cartopy projection by name. Refer to the Cartopy
+    documentation (https://scitools.org.uk/cartopy/) to review the
     supported keyword arguments for each projection class.
 
     Args:
@@ -47,8 +48,7 @@ def get_projection(projname: str, **kwargs) -> ccrs.Projection:
     """
     projname = projname.lower()
     if projname not in projections_maps:
-        raise ValueError(f"Unsupported projection: '{projname}'. "
-                         f"Available options are: {list(projections_maps.keys())}")
+        raise ValueError(f"Unsupported projection: '{projname}'. Available options are: {list(projections_maps.keys())}")
 
     projection_class = projections_maps[projname]
     return projection_class(**kwargs)

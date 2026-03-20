@@ -132,9 +132,7 @@ class CoordIdentifier:
             for coord_type, (score, matched_attrs) in scores[coord_name].items():
                 if score > 0:  # Only consider coordinates with positive scores
                     if coord_type == "time":
-                        coord_info = self._get_time_attributes(
-                            coord, score, matched_attrs
-                        )
+                        coord_info = self._get_time_attributes(coord, score, matched_attrs)
                     else:
                         coord_info = self._get_attributes(
                             coord,
@@ -241,9 +239,7 @@ class CoordIdentifier:
         """
         Print log messages for identified and unidentified coordinates.
         """
-        identified = [
-            key for key, value in self.coord_dict.items() if value is not None
-        ]
+        identified = [key for key, value in self.coord_dict.items() if value is not None]
         unidentified = [key for key, value in self.coord_dict.items() if value is None]
 
         if identified:
@@ -251,9 +247,7 @@ class CoordIdentifier:
         if unidentified:
             self.logger.debug("Coordinates not identified: %s", unidentified)
 
-    def _get_time_attributes(
-        self, coord, confidence_score=None, matched_attributes=None
-    ):
+    def _get_time_attributes(self, coord, confidence_score=None, matched_attributes=None):
         """
         Get the attributes of the time coordinates.
 
@@ -304,9 +298,7 @@ class CoordIdentifier:
         vertical = ["isobaric", "depth", "height"]
 
         if coord.ndim == 1 and coord_name in horizontal:
-            direction = (
-                "increasing" if coord.values[-1] > coord.values[0] else "decreasing"
-            )
+            direction = "increasing" if coord.values[-1] > coord.values[0] else "decreasing"
 
         # this might require an update since it is only diagnostic
         if coord_name in vertical:
@@ -502,7 +494,7 @@ class CoordIdentifier:
             score += self.SCORE_WEIGHTS["axis"]  # Use axis weight for substring match
             matched.append("axis")
         if is_meter(coord.attrs.get("units")):
-            score += self.SCORE_WEIGHTS["units"]*0.9  # HACK - if units are m this could also be depth, which is more likely
+            score += self.SCORE_WEIGHTS["units"] * 0.9  # HACK - if units are m this could also be depth, which is more likely
             matched.append("units")
         if "height" in coord.attrs.get("long_name", ""):
             score += self.SCORE_WEIGHTS["long_name"]

@@ -2,6 +2,7 @@
 Class for supplementary coordinate and dimension fixes beyond base data model.
 Works BEFORE base data model transformation (DataModel/CoordTransformer).
 """
+
 import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
@@ -10,30 +11,30 @@ from aqua.core.logger import log_configure, log_history
 class FixerDataModel:
     """
     Apply supplementary coordinate and dimension fixes beyond base data model.
-    
+
     Works BEFORE base data model transformation by DataModel/CoordTransformer.
     Handles additional fixes specified in experiment-specific YAML files.
-    
+
     This class handles:
     - Coordinate renaming (source → target)
     - Units override (without conversion)
     - Dimension renaming
-    
+
     Args:
         fixes (dict): Dictionary containing the fixes from YAML file.
         loglevel (str): Log level for logging. Defaults to 'WARNING'.
-        
+
     """
 
-    def __init__(self, fixes=None, loglevel='WARNING'):
+    def __init__(self, fixes=None, loglevel="WARNING"):
         self.fixes = fixes
-        self.logger = log_configure(log_level=loglevel, log_name='FixerDataModel')
+        self.logger = log_configure(log_level=loglevel, log_name="FixerDataModel")
         self.loglevel = loglevel
 
     def apply(self, data: xr.Dataset) -> xr.Dataset:
         """
         Apply supplementary coordinate and dimension fixes.
-        
+
         This method should be called AFTER DataModel.apply() has been run.
         It applies experiment-specific fixes that override or supplement
         the base data model transformations.
@@ -88,7 +89,7 @@ class FixerDataModel:
                 if coord in data.coords:
                     self.logger.debug("Coordinate %s units overridden to %s", coord, tgt_units)
                     self.logger.warning("Units override applied - no conversion performed")
-                    data[coord].attrs['units'] = tgt_units
+                    data[coord].attrs["units"] = tgt_units
                     log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by FixerDataModel")
                 else:
                     self.logger.warning("Coordinate %s not found", coord)

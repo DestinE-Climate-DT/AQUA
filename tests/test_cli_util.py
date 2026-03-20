@@ -15,35 +15,50 @@ def test_template_parse_arguments():
     parser = template_parse_arguments(parser)
 
     # Parse with all arguments
-    args = parser.parse_args([
-        '--loglevel', 'INFO',
-        '--catalog', 'test_catalog',
-        '--model', 'IFS',
-        '--exp', 'test-exp',
-        '--source', 'monthly',
-        '--realization', 'r1',
-        '--config', 'config.yaml',
-        '--nworkers', '2',
-        '--cluster', 'tcp://127.0.0.1:8786',
-        '--regrid', 'r100',
-        '--outputdir', '/tmp/output',
-        '--startdate', '2020-01-01',
-        '--enddate', '2020-12-31'
-    ])
+    args = parser.parse_args(
+        [
+            "--loglevel",
+            "INFO",
+            "--catalog",
+            "test_catalog",
+            "--model",
+            "IFS",
+            "--exp",
+            "test-exp",
+            "--source",
+            "monthly",
+            "--realization",
+            "r1",
+            "--config",
+            "config.yaml",
+            "--nworkers",
+            "2",
+            "--cluster",
+            "tcp://127.0.0.1:8786",
+            "--regrid",
+            "r100",
+            "--outputdir",
+            "/tmp/output",
+            "--startdate",
+            "2020-01-01",
+            "--enddate",
+            "2020-12-31",
+        ]
+    )
 
-    assert args.loglevel == 'INFO'
-    assert args.catalog == 'test_catalog'
-    assert args.model == 'IFS'
-    assert args.exp == 'test-exp'
-    assert args.source == 'monthly'
-    assert args.realization == 'r1'
-    assert args.config == 'config.yaml'
+    assert args.loglevel == "INFO"
+    assert args.catalog == "test_catalog"
+    assert args.model == "IFS"
+    assert args.exp == "test-exp"
+    assert args.source == "monthly"
+    assert args.realization == "r1"
+    assert args.config == "config.yaml"
     assert args.nworkers == 2
-    assert args.cluster == 'tcp://127.0.0.1:8786'
-    assert args.regrid == 'r100'
-    assert args.outputdir == '/tmp/output'
-    assert args.startdate == '2020-01-01'
-    assert args.enddate == '2020-12-31'
+    assert args.cluster == "tcp://127.0.0.1:8786"
+    assert args.regrid == "r100"
+    assert args.outputdir == "/tmp/output"
+    assert args.startdate == "2020-01-01"
+    assert args.enddate == "2020-12-31"
 
 
 def test_template_parse_arguments_optional():
@@ -67,4 +82,3 @@ def test_template_parse_arguments_optional():
     assert args.outputdir is None
     assert args.startdate is None
     assert args.enddate is None
-

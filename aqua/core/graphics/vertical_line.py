@@ -9,22 +9,28 @@ from aqua.core.util import to_list, unit_to_latex
 from .styles import ConfigStyle
 
 
-def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
-                        ref_data: xr.DataArray = None,
-                        lev_name: str = "plev",
-                        lev_min: Optional[float] = None, lev_max: Optional[float] = None,
-                        labels: Optional[list[str]] = None,
-                        ref_label: Optional[str] = None,
-                        label_size: Optional[int] = 14,
-                        axis_label_size: Optional[int] = 14,
-                        title: Optional[str] = None, title_size: Optional[int] = 18,
-                        style: Optional[str] = None,
-                        logscale: bool = False,
-                        invert_yaxis: bool = True,
-                        return_fig: bool = True, figsize: Tuple[int, int] = (6, 10),
-                        fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                        ax_pos: Tuple[int, int, int] = (1, 1, 1),
-                        loglevel: str = "WARNING"):
+def plot_vertical_lines(
+    data: xr.DataArray | list[xr.DataArray],
+    ref_data: xr.DataArray = None,
+    lev_name: str = "plev",
+    lev_min: Optional[float] = None,
+    lev_max: Optional[float] = None,
+    labels: Optional[list[str]] = None,
+    ref_label: Optional[str] = None,
+    label_size: Optional[int] = 14,
+    axis_label_size: Optional[int] = 14,
+    title: Optional[str] = None,
+    title_size: Optional[int] = 18,
+    style: Optional[str] = None,
+    logscale: bool = False,
+    invert_yaxis: bool = True,
+    return_fig: bool = True,
+    figsize: Tuple[int, int] = (6, 10),
+    fig: Optional[plt.Figure] = None,
+    ax: Optional[plt.Axes] = None,
+    ax_pos: Tuple[int, int, int] = (1, 1, 1),
+    loglevel: str = "WARNING",
+):
     """
     Plots a vertical line plot.
 
@@ -67,7 +73,7 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
         if ref_data is not None:
             lev_min = min(lev_min, ref_data[lev_name].min().item())
             lev_max = max(lev_max, ref_data[lev_name].max().item())
-    else: # If at least one is provided, limit to the provided range
+    else:  # If at least one is provided, limit to the provided range
         ax.set_ylim(lev_max, lev_min)
 
     logger.debug(f"Plotting vertical line from {lev_min} to {lev_max} {lev_name}")
@@ -101,10 +107,10 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
 
     if ref_data is not None:
         mask = (ref_data[lev_name] >= lev_min) & (ref_data[lev_name] <= lev_max)
-        ax.plot(ref_data.where(mask), ref_data[lev_name].where(mask), label=ref_label, linestyle='--', color='black')
+        ax.plot(ref_data.where(mask), ref_data[lev_name].where(mask), label=ref_label, linestyle="--", color="black")
 
     ax.legend(fontsize=label_size)
-    ax.grid(True, axis='y')
+    ax.grid(True, axis="y")
 
     if invert_yaxis:
         ax.invert_yaxis()

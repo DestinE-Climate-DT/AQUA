@@ -5,7 +5,7 @@ import re
 from contextlib import contextmanager
 from glob import glob
 
-#import intake_esm
+# import intake_esm
 import intake_xarray
 import pandas as pd
 import xarray as xr
@@ -36,23 +36,35 @@ xr.set_options(keep_attrs=True)
 DATA_MODEL_DEFAULT = "aqua"
 
 
-class Reader():
+class Reader:
     """General reader for climate data."""
 
     instance = None  # Used to store the latest instance of the class
 
-    def __init__(self, model=None, exp=None, source=None, catalog=None,
-                 fix=True,
-                 datamodel=None,
-                 regrid=None, regrid_method=None,
-                 areas=True,
-                 streaming=False,
-                 startdate=None, enddate=None,
-                 rebuild=False, loglevel=None, nproc=4,
-                 aggregation=None, chunks=None,
-                 preproc=None, convention='eccodes',
-                 engine='fdb',
-                 **kwargs):
+    def __init__(
+        self,
+        model=None,
+        exp=None,
+        source=None,
+        catalog=None,
+        fix=True,
+        datamodel=None,
+        regrid=None,
+        regrid_method=None,
+        areas=True,
+        streaming=False,
+        startdate=None,
+        enddate=None,
+        rebuild=False,
+        loglevel=None,
+        nproc=4,
+        aggregation=None,
+        chunks=None,
+        preproc=None,
+        convention="eccodes",
+        engine="fdb",
+        **kwargs,
+    ):
         """
         Initializes the Reader class, which uses the catalog
         `config/config.yaml` to identify the required data.
@@ -89,7 +101,7 @@ class Reader():
                                         (Only one supported so far)
             engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.
 
-        Keyword Args: 
+        Keyword Args:
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
             realization (int, optional): The ensemble realization number.
             **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
@@ -102,13 +114,13 @@ class Reader():
 
         # define the internal logger
         self.loglevel = loglevel
-        self.logger = log_configure(log_level=self.loglevel, log_name='Reader')
+        self.logger = log_configure(log_level=self.loglevel, log_name="Reader")
 
         self.exp = exp
         self.model = model
         self.source = source
         # these infos are used by the regridder to correct define areas/weights name
-        reader_kwargs = {'model': model, 'exp': exp, 'source': source}
+        reader_kwargs = {"model": model, "exp": exp, "source": source}
         self.regrid_method = regrid_method
         self.nproc = nproc
         self.vert_coord = None
@@ -128,10 +140,7 @@ class Reader():
         self.vert_coord = None
 
         if streaming:
-            self.streamer = Streaming(startdate=startdate,
-                                      enddate=enddate,
-                                      aggregation=aggregation,
-                                      loglevel=self.loglevel)
+            self.streamer = Streaming(startdate=startdate, enddate=enddate, aggregation=aggregation, loglevel=self.loglevel)
             # Export streaming methods TO DO: probably useless
             self.reset_stream = self.streamer.reset
             self.stream = self.streamer.stream
@@ -148,7 +157,8 @@ class Reader():
         self.machine = configurer.get_machine()
         self.config_file = configurer.config_file
         self.cat, self.catalog_file, self.machine_file = configurer.deliver_intake_catalog(
-            catalog=catalog, model=model, exp=exp, source=source)
+            catalog=catalog, model=model, exp=exp, source=source
+        )
         self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
 
         # deduce catalog name
@@ -158,12 +168,14 @@ class Reader():
         machine_paths, intake_vars = configurer.get_machine_info()
 
         # load the catalog
-        aqua.core.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
+        aqua.core.gsv.GSVSource.first_run = (
+            True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
+        )
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
 
         # check machine compatibility
-        self.machine_from_catalog = self.expcat.metadata.get('machine')
-        if engine != 'polytope':
+        self.machine_from_catalog = self.expcat.metadata.get("machine")
+        if engine != "polytope":
             if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
                 self.logger.warning(
                     "The machine configured (%s) is different from the machine in the catalog (%s). "
@@ -182,34 +194,38 @@ class Reader():
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             if not files_exist(self.esmcat.urlpath):
-                raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}")  # noqa E501
+                raise NoDataError(
+                    f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}"
+                )  # noqa E501
 
         # extend the unit registry
         units_extra_definition()
         # Get fixes dictionary and find them
         self.fix = fix  # fix activation flag
-        self.fixer_name = self.esmcat.metadata.get('fixer_name', None)
+        self.fixer_name = self.esmcat.metadata.get("fixer_name", None)
         self.convention = convention
-        if self.convention is not None and self.convention != 'eccodes':
+        if self.convention is not None and self.convention != "eccodes":
             raise ValueError(f"Convention {self.convention} not supported, only 'eccodes' is supported so far.")
 
         # case to disable automatic fix
         if self.fixer_name is False:
-            self.logger.warning('A False flag is specified in fixer_name metadata, disabling fix!')
+            self.logger.warning("A False flag is specified in fixer_name metadata, disabling fix!")
             self.fix = False
 
         # Initialize variable fixer
         if self.fix:
             self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
-            self.fixer = Fixer(fixer_name=self.fixer_name,
-                               convention=self.convention,
-                               fixes_dictionary=self.fixes_dictionary,
-                               metadata=self.esmcat.metadata,
-                               loglevel=self.loglevel)
+            self.fixer = Fixer(
+                fixer_name=self.fixer_name,
+                convention=self.convention,
+                fixes_dictionary=self.fixes_dictionary,
+                metadata=self.esmcat.metadata,
+                loglevel=self.loglevel,
+            )
 
         # if data model is not passed to Reader, try to get it from the catalog source metadata
         if datamodel is None:
-            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT)
+            self.datamodel_name = self.esmcat.metadata.get("data_model", DATA_MODEL_DEFAULT)
         else:
             self.datamodel_name = datamodel
 
@@ -220,35 +236,35 @@ class Reader():
         else:
             self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
 
-
         # define grid names
-        self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
+        self.src_grid_name = self.esmcat.metadata.get("source_grid_name")
         self.tgt_grid_name = regrid
 
         # init the regridder and the areas
-        self._configure_regridder(machine_paths, regrid=regrid, areas=areas,
-                                  rebuild=rebuild, reader_kwargs=reader_kwargs)
+        self._configure_regridder(machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs)
 
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
         self.src_fldstat = FldStat(
-            cell_area, grid_name=self.src_grid_name,
-            horizontal_dims=self.src_space_coord, loglevel=self.loglevel
-            )
+            cell_area, grid_name=self.src_grid_name, horizontal_dims=self.src_space_coord, loglevel=self.loglevel
+        )
         self.tgt_fldstat = None
         if regrid:
             if not areas:
-                self.logger.warning("Regridding requires info on areas. As areas can usually be generated with smmregrid, setting areas to 'True'")
+                self.logger.warning(
+                    "Regridding requires info on areas. As areas can usually be generated with smmregrid, setting areas to 'True'"
+                )
                 areas = True
             self.tgt_fldstat = FldStat(
-                self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
-                horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
-                )
+                self.tgt_grid_area.cell_area,
+                grid_name=self.tgt_grid_name,
+                horizontal_dims=self.tgt_space_coord,
+                loglevel=self.loglevel,
+            )
 
         self.trender = Trender(loglevel=self.loglevel)
 
-    def _configure_regridder(self, machine_paths, regrid=False, areas=False,
-                             rebuild=False, reader_kwargs=None):
+    def _configure_regridder(self, machine_paths, regrid=False, areas=False, rebuild=False, reader_kwargs=None):
         """
         Configure the regridder and generate areas and weights.
 
@@ -262,32 +278,29 @@ class Reader():
 
         # load and check the regrid
         if regrid or areas:
-
             # create the configuration dictionary
-            cfg_regrid = load_multi_yaml(folder_path=self.grids_folder,
-                                         definitions=machine_paths['paths'],
-                                         loglevel=self.loglevel)
+            cfg_regrid = load_multi_yaml(
+                folder_path=self.grids_folder, definitions=machine_paths["paths"], loglevel=self.loglevel
+            )
             cfg_regrid = {**machine_paths, **cfg_regrid}
 
             if self.src_grid_name is None:
-                self.logger.info('Grid metadata is not defined. Trying to access the real data')
+                self.logger.info("Grid metadata is not defined. Trying to access the real data")
                 data = self._retrieve_plain()
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
             elif self.src_grid_name is False:
-                self.logger.info('Grid metadata is False, regrid and areas disabled')
+                self.logger.info("Grid metadata is False, regrid and areas disabled")
                 regrid = False
                 areas = False
                 return
             else:
-                self.logger.info('Grid metadata is %s', self.src_grid_name)
-                self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name,
-                                           loglevel=self.loglevel)
+                self.logger.info("Grid metadata is %s", self.src_grid_name)
+                self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, loglevel=self.loglevel)
 
                 if self.regridder.error:
-                    self.logger.warning('Issues in the Regridder() init: trying with data')
+                    self.logger.warning("Issues in the Regridder() init: trying with data")
                     data = self._retrieve_plain()
-                    self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name,
-                                               data=data, loglevel=self.loglevel)
+                    self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, data=data, loglevel=self.loglevel)
 
             # export src space coord and vertical coord
             self.src_space_coord = self.regridder.src_horizontal_dims
@@ -315,7 +328,8 @@ class Reader():
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
-                reader_kwargs=reader_kwargs)
+                reader_kwargs=reader_kwargs,
+            )
             if self.fix:
                 weights = self._fix_datamodel_weights(weights, mode="fixer")
             if self.datamodel:
@@ -347,15 +361,15 @@ class Reader():
         new_weights = {}
         for item, value in weights.items():
             self.logger.debug("Applying %s to weights item %s", mode, item)
-            if mode=="datamodel":
+            if mode == "datamodel":
                 fixed = self.datamodel.apply(value, flip_coords=False)
-            elif mode=="fixer":
+            elif mode == "fixer":
                 fixed = self.fixer.fixerdatamodel.apply(value)
             else:
                 raise ValueError(f"Mode {mode} not recognized for weights fixing")
 
             # Check if fixed object has coordinates before accessing
-            coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
+            coords = list(fixed.coords) if hasattr(fixed, "coords") and fixed.coords else []
             if not coords:
                 self.logger.debug("No coordinates found in weights item %s after applying %s", item, mode)
                 new_weights[item] = fixed  # Use original item name as fallback
@@ -363,9 +377,7 @@ class Reader():
                 new_weights[coords[0]] = fixed
         return new_weights
 
-    def retrieve(self, var=None, level=None,
-                 startdate=None, enddate=None,
-                 history=True, sample=False):
+    def retrieve(self, var=None, level=None, startdate=None, enddate=None, history=True, sample=False):
         """
         Perform a data retrieve.
 
@@ -396,13 +408,12 @@ class Reader():
         else:
             # If we are retrieving from fdb we have to specify the var
             if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-
                 metadata = self.esmcat.metadata
                 if metadata:
-                    loadvar = metadata.get('variables')
+                    loadvar = metadata.get("variables")
 
                     if loadvar is None:
-                        loadvar = [self.esmcat._request['param']]  # retrieve var from catalog
+                        loadvar = [self.esmcat._request["param"]]  # retrieve var from catalog
 
                     if not isinstance(loadvar, list):
                         loadvar = [loadvar]
@@ -419,12 +430,11 @@ class Reader():
         ffdb = False
 
         # If this is an ESM-intake catalog use first dictionary value,
-        #if isinstance(self.esmcat, intake_esm.core.esm_datastore):
+        # if isinstance(self.esmcat, intake_esm.core.esm_datastore):
         #    data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
         if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-            data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate,
-                                   dask=True, level=level)
+            data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate, dask=True, level=level)
             ffdb = True  # These data have been read from fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
@@ -450,8 +460,7 @@ class Reader():
 
         # Time threatment: we want to ensure that time is always in Gregorian calendar
         # and to change the default numpy datetime64 resolution to microseconds
-        if 'time' in data.coords:
-
+        if "time" in data.coords:
             # TODO: Check, the commented code is probably not needed
             # Convert time to datetime64 microsecond resolution by default
             # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
@@ -462,8 +471,8 @@ class Reader():
         # log an error if some variables have no units
         if isinstance(data, xr.Dataset) and self.fix:
             for variable in data.data_vars:
-                if not hasattr(data[variable], 'units'):
-                    self.logger.warning('Variable %s has no units!', variable)
+                if not hasattr(data[variable], "units"):
+                    self.logger.warning("Variable %s has no units!", variable)
 
         if self.streaming:
             data = self.streamer.stream(data)
@@ -482,11 +491,15 @@ class Reader():
             data = self.preproc(data)
 
         # Add info metadata in each dataset
-        info_metadata = {'AQUA_model': self.model, 'AQUA_exp': self.exp,
-                         'AQUA_source': self.source, 'AQUA_catalog': self.catalog,
-                         'AQUA_version': aqua_version}
+        info_metadata = {
+            "AQUA_model": self.model,
+            "AQUA_exp": self.exp,
+            "AQUA_source": self.source,
+            "AQUA_catalog": self.catalog,
+            "AQUA_version": aqua_version,
+        }
         for kwarg in self.kwargs:
-            info_metadata[f'AQUA_{kwarg}'] = str(self.kwargs[kwarg])
+            info_metadata[f"AQUA_{kwarg}"] = str(self.kwargs[kwarg])
 
         data = set_attrs(data, info_metadata)
 
@@ -541,9 +554,7 @@ class Reader():
 
         # do the selection on the first vertical coordinate found
         if len(full_vert_coord) > 1:
-            self.logger.warning(
-                "Found more than one vertical coordinate, using the first one: %s",
-                full_vert_coord[0])
+            self.logger.warning("Found more than one vertical coordinate, using the first one: %s", full_vert_coord[0])
 
         # check if levels are among the values in the coordinate
         if not all(l in data[full_vert_coord[0]].values for l in level):
@@ -579,7 +590,7 @@ class Reader():
         """Call the regridder function returning container or iterator"""
 
         if self.tgt_grid_name is None:
-            raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
+            raise NoRegridError("regrid has not been initialized in the Reader, cannot perform any regrid.")
 
         data = counter_reverse_coordinate(data)
 
@@ -606,7 +617,7 @@ class Reader():
     #     final.aqua.set_default(self)
     #     return final
 
-    def detrend(self, data, dim='time', degree=1, skipna=False):
+    def detrend(self, data, dim="time", degree=1, skipna=False):
         """
         Remove the trend from an xarray object using polynomial fitting.
 
@@ -678,29 +689,29 @@ class Reader():
         Reformats the realization string for the access to the reader
         If realization is in the format rXX and the intake type is int, it converts to int XX.
         """
-        realization = kwargs.get('realization')
+        realization = kwargs.get("realization")
         if realization is None:
             return kwargs
 
-        param_types = {p['name']: p['type'] for p in self.intake_user_parameters}
-        realization_type = param_types.get('realization')
+        param_types = {p["name"]: p["type"] for p in self.intake_user_parameters}
+        realization_type = param_types.get("realization")
 
         if realization_type is None:
             self.logger.info("'realization' not in intake parameters %s — removing it.", list(param_types))
-            kwargs.pop('realization', None)
+            kwargs.pop("realization", None)
             return kwargs
 
         # if type is string, return as is
-        if realization_type == 'str':
-            self.logger.debug('realization parameter is of type string, will use it is as is: %s', str(realization))
-            kwargs['realization'] = str(realization)
+        if realization_type == "str":
+            self.logger.debug("realization parameter is of type string, will use it is as is: %s", str(realization))
+            kwargs["realization"] = str(realization)
             return kwargs
 
         # if it is in the rXX format and the type is int, convert to int
-        if realization_type == 'int':
-            if isinstance(realization, str) and realization.startswith('r') and realization[1:].isdigit():
-                kwargs['realization'] = int(realization[1:])
-                self.logger.info('realization parameter converted from rXXX format to int: %d', kwargs['realization'])
+        if realization_type == "int":
+            if isinstance(realization, str) and realization.startswith("r") and realization[1:].isdigit():
+                kwargs["realization"] = int(realization[1:])
+                self.logger.info("realization parameter converted from rXXX format to int: %d", kwargs["realization"])
                 return kwargs
             if isinstance(realization, int):
                 return kwargs  # already an int
@@ -710,11 +721,11 @@ class Reader():
     @property
     def intake_user_parameters(self):
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
-        if not hasattr(self, '_intake_user_parameters'):
-            self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
+        if not hasattr(self, "_intake_user_parameters"):
+            self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
         return self._intake_user_parameters
 
-    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict={}, databridge: str = None) -> dict:
+    def _filter_kwargs(self, kwargs: dict = {}, engine: str = "fdb", intake_vars: dict = {}, databridge: str = None) -> dict:
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
@@ -722,7 +733,7 @@ class Reader():
         Args:
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
-            databridge (str): The databridge used for the GSV retrieval, default is None. 
+            databridge (str): The databridge used for the GSV retrieval, default is None.
             intake_vars (dict): Machine-specific intake variables to exclude from checks.
 
         Returns:
@@ -735,7 +746,7 @@ class Reader():
 
         # Create a dictionary lookup of parameter definitions
         # This avoids repeated iteration and index lookups in the loop
-        param_defs = {p['name']: p for p in self.intake_user_parameters}
+        param_defs = {p["name"]: p for p in self.intake_user_parameters}
         valid_params = set(param_defs.keys())
 
         if kwargs:
@@ -745,24 +756,24 @@ class Reader():
             # Find and log dropped keys efficiently using set difference
             dropped_keys = kwargs.keys() - valid_params
             for key in dropped_keys:
-                self.logger.warning('kwarg %s is not in the intake parameters of the source, removing it', key)
+                self.logger.warning("kwarg %s is not in the intake parameters of the source, removing it", key)
 
         # Handle 'engine' for GSV/FDB sources
         if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-            if 'engine' not in filtered_kwargs:
-                filtered_kwargs['engine'] = engine
-                self.logger.debug('Adding engine=%s to the filtered kwargs', engine)
+            if "engine" not in filtered_kwargs:
+                filtered_kwargs["engine"] = engine
+                self.logger.debug("Adding engine=%s to the filtered kwargs", engine)
 
-        if engine == 'polytope' and databridge is not None:
+        if engine == "polytope" and databridge is not None:
             # If the engine is polytope, we need to add the databridge parameter
-            if 'databridge' not in filtered_kwargs:
-                filtered_kwargs.update({'databridge': databridge})
-                self.logger.debug('Adding databridge=%s to the filtered kwargs', databridge)
+            if "databridge" not in filtered_kwargs:
+                filtered_kwargs.update({"databridge": databridge})
+                self.logger.debug("Adding databridge=%s to the filtered kwargs", databridge)
 
         # HACK: Keep chunking info if present as reader kwarg
         if self.chunks is not None:
-            self.logger.warning('Keeping chunks=%s in the filtered kwargs', self.chunks)
-            filtered_kwargs['chunks'] = self.chunks
+            self.logger.warning("Keeping chunks=%s in the filtered kwargs", self.chunks)
+            filtered_kwargs["chunks"] = self.chunks
 
         # Check for missing required parameters and apply defaults, with logging
         # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
@@ -775,21 +786,20 @@ class Reader():
 
         for param in missing_params:
             element = param_defs[param]
-            default_val = element.get('default')
+            default_val = element.get("default")
 
             # Log the default application
-            self.logger.info('%s parameter is required but is missing, setting to default %s', param, default_val)
+            self.logger.info("%s parameter is required but is missing, setting to default %s", param, default_val)
 
-            allowed = element.get('allowed', None)
+            allowed = element.get("allowed", None)
             if allowed is not None:
-                self.logger.info('Available values for %s are: %s', param, allowed)
+                self.logger.info("Available values for %s are: %s", param, allowed)
 
             filtered_kwargs[param] = default_val
 
         return filtered_kwargs
 
-    def vertinterp(self, data, levels=None, vert_coord='plev', units=None,
-                   method='linear'):
+    def vertinterp(self, data, levels=None, vert_coord="plev", units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
         of xarray within AQUA. Given an xarray object, will interpolate the
@@ -809,45 +819,45 @@ class Reader():
         """
 
         if levels is None:
-            raise KeyError('Levels for interpolation must be specified')
+            raise KeyError("Levels for interpolation must be specified")
 
         # error if vert_coord is not there
         if vert_coord not in data.coords:
-            raise KeyError(f'The vert_coord={vert_coord} is not in the data!')
+            raise KeyError(f"The vert_coord={vert_coord} is not in the data!")
 
         # if you not specified the units, guessing from the data
         if units is None:
-            if hasattr(data[vert_coord], 'units'):
-                self.logger.warning('Units of vert_coord=%s has not defined, reading from the data', vert_coord)
+            if hasattr(data[vert_coord], "units"):
+                self.logger.warning("Units of vert_coord=%s has not defined, reading from the data", vert_coord)
                 units = data[vert_coord].units
             else:
-                raise ValueError('Original dataset has not unit on the vertical axis, failing!')
+                raise ValueError("Original dataset has not unit on the vertical axis, failing!")
 
         if isinstance(data, xr.DataArray):
-            final = self._vertinterp(data=data, levels=levels, units=units,
-                                     vert_coord=vert_coord, method=method)
+            final = self._vertinterp(data=data, levels=levels, units=units, vert_coord=vert_coord, method=method)
 
         elif isinstance(data, xr.Dataset):
             selected_vars = [da for da in data.data_vars if vert_coord in data[da].coords]
-            final = data[selected_vars].map(self._vertinterp, keep_attrs=True,
-                                            levels=levels, units=units,
-                                            vert_coord=vert_coord, method=method)
+            final = data[selected_vars].map(
+                self._vertinterp, keep_attrs=True, levels=levels, units=units, vert_coord=vert_coord, method=method
+            )
         else:
-            raise ValueError('This is not an xarray object!')
+            raise ValueError("This is not an xarray object!")
 
         final = log_history(
-            final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.") # noqa E501
+            final,
+            f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.",
+        )  # noqa E501
 
         final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
         return final
 
-    def _vertinterp(self, data, levels=None, units='Pa', vert_coord='plev', method='linear'):
+    def _vertinterp(self, data, levels=None, units="Pa", vert_coord="plev", method="linear"):
 
         # verify units are good
         if data[vert_coord].units != units:
-            self.logger.warning('Converting vert_coord units to interpolate from %s to %s',
-                                data[vert_coord].units, units)
+            self.logger.warning("Converting vert_coord units to interpolate from %s to %s", data[vert_coord].units, units)
             data = data.metpy.convert_coordinate_units(vert_coord, units)
 
         # very simple interpolation
@@ -866,20 +876,22 @@ class Reader():
         Returns:
             xarray.Dataset: The dataset retrieved from the intake-esm catalog.
         """
-        xarray_open_kwargs = esmcat.metadata.get('xarray_open_kwargs',
-                                         esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}}))
-        query = esmcat.metadata['query']
+        xarray_open_kwargs = esmcat.metadata.get(
+            "xarray_open_kwargs", esmcat.metadata.get("cdf_kwargs", {"chunks": {"time": 1}})
+        )
+        query = esmcat.metadata["query"]
         if var:
-            query_var = esmcat.metadata.get('query_var', 'short_name')
+            query_var = esmcat.metadata.get("query_var", "short_name")
             # Convert to list if not already
             query[query_var] = var.split() if isinstance(var, str) else var
         subcat = esmcat.search(**query)
-        data = subcat.to_dataset_dict(xarray_open_kwargs=xarray_open_kwargs,
-                                      # zarr_kwargs=dict(consolidated=True),
-                                      # decode_times=True,
-                                      # use_cftime=True)
-                                      progressbar=False
-                                      )
+        data = subcat.to_dataset_dict(
+            xarray_open_kwargs=xarray_open_kwargs,
+            # zarr_kwargs=dict(consolidated=True),
+            # decode_times=True,
+            # use_cftime=True)
+            progressbar=False,
+        )
         return list(data.values())[0]
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
@@ -895,7 +907,7 @@ class Reader():
             level (list, float, int): level to be read, overriding default in catalog
 
         Returns:
-            An xarray.Dataset 
+            An xarray.Dataset
         """
         # Var can be a list or a single one of these cases:
         # - an int, in which case it is a paramid
@@ -906,7 +918,7 @@ class Reader():
         var = to_list(var)
         var_match = []
 
-        fdb_var = esmcat.metadata.get('variables', None)
+        fdb_var = esmcat.metadata.get("variables", None)
         # This is a fallback for the case in which no 'variables' metadata is defined
         # It is a backward compatibility feature and it may be removed in the future
         # We need to access with describe because the 'param' element is not a class
@@ -930,7 +942,7 @@ class Reader():
         # We're trying to set the if/else by int vs str and then eventually by the fix option
         # We store the fixer_dict once for all for semplicity of the if case.
         if self.fix is True:
-            fixer_dict = self.fixer.fixes.get('vars', {})
+            fixer_dict = self.fixer.fixes.get("vars", {})
             if fixer_dict == {}:
                 self.logger.debug("No 'vars' block in the fixer, guessing variable names base on ecCodes")
         if var != fdb_var:
@@ -943,15 +955,15 @@ class Reader():
                     if match and len(match) == 1:
                         var_match.append(match[0])
                     elif match and len(match) > 1:
-                        self.logger.warning('Multiple matches found for %s, using the first one', element)
+                        self.logger.warning("Multiple matches found for %s, using the first one", element)
                         var_match.append(match[0])
                     else:
-                        self.logger.warning('No match found for %s, skipping it', element)
+                        self.logger.warning("No match found for %s, skipping it", element)
                 elif isinstance(element, str):
                     if self.fix is True:
                         if element in fixer_dict:
-                            src_element = fixer_dict[element].get('source', None)
-                            derived_element = fixer_dict[element].get('derived', None)
+                            src_element = fixer_dict[element].get("source", None)
+                            derived_element = fixer_dict[element].get("derived", None)
                             if derived_element is not None or src_element is None:  # We let eccodes to find the paramid
                                 var_match.append(derived_element)
                             else:  # src_element is not None and it is not a derived variable
@@ -959,12 +971,12 @@ class Reader():
                                 if match and len(match) == 1:
                                     var_match.append(match[0])
                                 elif match and len(match) > 1:
-                                    self.logger.warning('Multiple paramids found for %s: %s, using: %s',
-                                                        element, match, match[0])
+                                    self.logger.warning(
+                                        "Multiple paramids found for %s: %s, using: %s", element, match, match[0]
+                                    )
                                     var_match.append(match[0])
                                 else:
-                                    self.logger.warning('No match found for %s, using eccodes to find the paramid',
-                                                        element)
+                                    self.logger.warning("No match found for %s, using eccodes to find the paramid", element)
                                     var_match.append(element)
                     else:
                         var_match.append(element)
@@ -975,10 +987,10 @@ class Reader():
                     if match and len(match) == 1:
                         var_match.append(match[0])
                     elif match and len(match) > 1:
-                        self.logger.warning('Multiple matches found for %s, using the first one', element)
+                        self.logger.warning("Multiple matches found for %s, using the first one", element)
                         var_match.append(match[0])
                     else:
-                        self.logger.error('No match found for %s, skipping it', element)
+                        self.logger.error("No match found for %s, skipping it", element)
                 else:  # Something weird is happening, we may want to have a raise instead
                     self.logger.error("Element %s is not a valid type, skipping it", element)
         else:  # There is no need to scan the list of variables, total match
@@ -1004,31 +1016,61 @@ class Reader():
             chunks = self.chunks
 
         if isinstance(chunks, dict):
-            if self.aggregation and not chunks.get('time'):
-                chunks['time'] = self.aggregation
+            if self.aggregation and not chunks.get("time"):
+                chunks["time"] = self.aggregation
             if self.streaming and not self.aggregation:
                 self.logger.warning(
-                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value") # noqa E501
+                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value"
+                )  # noqa E501
 
         if dask:
             if chunks:  # if the chunking or aggregation option is specified override that from the catalog
-                data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
-                              chunks=chunks, logging=True, loglevel=self.loglevel).to_dask()
+                data = esmcat(
+                    request=request,
+                    startdate=startdate,
+                    enddate=enddate,
+                    var=var,
+                    level=level,
+                    chunks=chunks,
+                    logging=True,
+                    loglevel=self.loglevel,
+                ).to_dask()
             else:
-                data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
-                              logging=True, loglevel=self.loglevel).to_dask()
+                data = esmcat(
+                    request=request,
+                    startdate=startdate,
+                    enddate=enddate,
+                    var=var,
+                    level=level,
+                    logging=True,
+                    loglevel=self.loglevel,
+                ).to_dask()
         else:
             if chunks:
-                data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
-                              chunks=chunks, logging=True, loglevel=self.loglevel).read_chunked()
+                data = esmcat(
+                    request=request,
+                    startdate=startdate,
+                    enddate=enddate,
+                    var=var,
+                    level=level,
+                    chunks=chunks,
+                    logging=True,
+                    loglevel=self.loglevel,
+                ).read_chunked()
             else:
-                data = esmcat(request=request, startdate=startdate, enddate=enddate, var=var, level=level,
-                              logging=True, loglevel=self.loglevel).read_chunked()
+                data = esmcat(
+                    request=request,
+                    startdate=startdate,
+                    enddate=enddate,
+                    var=var,
+                    level=level,
+                    logging=True,
+                    loglevel=self.loglevel,
+                ).read_chunked()
 
         return data
 
     def _filter_netcdf_files(self, esmcat, filter_key="year"):
-
         """
         Filter the esmcat to include only netcdf files based on specfici filter_key
         Args:
@@ -1048,10 +1090,9 @@ class Reader():
         if filter_key == "year":
             if not (self.startdate and self.enddate):
                 return esmcat
-            keys = list(range(pd.Timestamp(self.startdate).year,
-                               pd.Timestamp(self.enddate).year + 1))
+            keys = list(range(pd.Timestamp(self.startdate).year, pd.Timestamp(self.enddate).year + 1))
             # create regex pattern for each year: only yyyy will be detected
-            pattern = [re.compile(rf'(?<!\d){yr}(?!\d)') for yr in keys]
+            pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
 
         else:
             raise ValueError(f"Filter type {filter_key} not recognized.")
@@ -1062,8 +1103,7 @@ class Reader():
         if len(esmcat.urlpath) == 0:
             raise NoDataError("No files found after filtering the catalog!")
 
-        self.logger.debug("Selected: %s files from %s to %s",
-                          len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
+        self.logger.debug("Selected: %s files from %s to %s", len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
 
         return esmcat
 
@@ -1083,20 +1123,20 @@ class Reader():
 
         # use filter_key metadata to filter netcdf files if present
         # speed up for catalogs with many small files
-        if 'filter_key' in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
-            esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
+        if "filter_key" in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
+            self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get("filter_key"))
+            esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata["filter_key"])
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if hasattr(esmcat, "xarray_kwargs") and "use_cftime" not in esmcat.xarray_kwargs:
-            if 'time_coder' in esmcat.metadata:
-                self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
-                coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
+            if "time_coder" in esmcat.metadata:
+                self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
+                coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
             else:
                 coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
-            esmcat.xarray_kwargs.update({'decode_times': coder})
+            esmcat.xarray_kwargs.update({"decode_times": coder})
 
         data = esmcat.to_dask()
 
@@ -1111,7 +1151,7 @@ class Reader():
                 if match:
                     loadvar_match.append(match[0])
                 else:
-                    self.logger.warning('No match found for %s', element)
+                    self.logger.warning("No match found for %s", element)
             loadvar = loadvar_match
 
             if all(element in data.data_vars for element in loadvar):
@@ -1119,17 +1159,19 @@ class Reader():
             else:
                 try:
                     data = data[var]
-                    self.logger.warning("You are asking for var %s but the fixes definition requires %s, which is not there.",
-                                        var, loadvar)
-                    self.logger.warning("Retrieving %s, but it would be safer to run with fix=False or to correct the fixes",
-                                        var)
+                    self.logger.warning(
+                        "You are asking for var %s but the fixes definition requires %s, which is not there.", var, loadvar
+                    )
+                    self.logger.warning(
+                        "Retrieving %s, but it would be safer to run with fix=False or to correct the fixes", var
+                    )
                 except Exception as e:
                     raise KeyError("You are asking for variables which we cannot find in the catalog!") from e
 
         # check for duplicates
-        if 'time' in data.coords:
+        if "time" in data.coords:
             len0 = len(data.time)
-            data = data.drop_duplicates(dim='time', keep=keep)
+            data = data.drop_duplicates(dim="time", keep=keep)
             if len(data.time) != len0:
                 self.logger.warning("Duplicate entries found along the time axis, keeping the %s one.", keep)
 
@@ -1162,15 +1204,12 @@ class Reader():
             A xarray.Dataset containing the required miminal sample data.
         """
         if self.sample_data is not None:
-            self.logger.debug('Sample data already availabe, avoid _retrieve_plain()')
+            self.logger.debug("Sample data already availabe, avoid _retrieve_plain()")
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None,
-                                   fix=False, streaming=False,
-                                   datamodel = False,
-                                   preproc=None):
-            self.logger.debug('Getting sample data through _retrieve_plain()...')
+        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, streaming=False, datamodel=False, preproc=None):
+            self.logger.debug("Getting sample data through _retrieve_plain()...")
             data = self.retrieve(history=False, *args, **kwargs)
 
         self.sample_data = self._grid_inspector(data)
@@ -1192,22 +1231,23 @@ class Reader():
         gridtypes = gridinspect.get_gridtype()
 
         # get info on time dimensions and variables
-        minimal_variables = gridinspect.get_gridtype_attr(gridtypes, 'variables')
-        minimal_time = gridinspect.get_gridtype_attr(gridtypes, 'time_dims')
+        minimal_variables = gridinspect.get_gridtype_attr(gridtypes, "variables")
+        minimal_time = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
 
         if minimal_variables:
-            self.logger.debug('Variables found: %s', minimal_variables)
+            self.logger.debug("Variables found: %s", minimal_variables)
             data = data[minimal_variables]
         if minimal_time:
-            self.logger.debug('Time dimensions found: %s', minimal_time)
+            self.logger.debug("Time dimensions found: %s", minimal_time)
             data = data.isel({t: 0 for t in minimal_time})
         return data
 
-    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None,
-                region=None, region_sel=None, mask_kwargs={}, **kwargs):
+    def fldstat(
+        self, data, stat, lon_limits=None, lat_limits=None, dims=None, region=None, region_sel=None, mask_kwargs={}, **kwargs
+    ):
         """
-        Field statistic wrapper which is calling the fldstat module from FldStat class. 
-        This method is exposing and providing field functions as Reader class 
+        Field statistic wrapper which is calling the fldstat module from FldStat class.
+        This method is exposing and providing field functions as Reader class
         methods through the wrapper accessors.
 
         Args:
@@ -1224,16 +1264,28 @@ class Reader():
         # Handle regridding logic - use appropriate fldstat module
         if self._check_if_regridded(data) and self.tgt_fldstat:
             data = self.tgt_fldstat.fldstat(
-                data, stat=stat,
-                lon_limits=lon_limits, lat_limits=lat_limits,
-                region=region, region_sel=region_sel, mask_kwargs=mask_kwargs,
-                dims=dims, **kwargs)
+                data,
+                stat=stat,
+                lon_limits=lon_limits,
+                lat_limits=lat_limits,
+                region=region,
+                region_sel=region_sel,
+                mask_kwargs=mask_kwargs,
+                dims=dims,
+                **kwargs,
+            )
         else:
             data = self.src_fldstat.fldstat(
-                data, stat=stat,
-                lon_limits=lon_limits, lat_limits=lat_limits,
-                region=region, region_sel=region_sel, mask_kwargs=mask_kwargs,
-                dims=dims, **kwargs)
+                data,
+                stat=stat,
+                lon_limits=lon_limits,
+                lat_limits=lat_limits,
+                region=region,
+                region_sel=region_sel,
+                mask_kwargs=mask_kwargs,
+                dims=dims,
+                **kwargs,
+            )
 
         data.aqua.set_default(self)
         return data
@@ -1243,49 +1295,48 @@ class Reader():
         """
         Field mean wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='mean', **kwargs)
+        return self.fldstat(data, stat="mean", **kwargs)
 
     def fldmax(self, data, **kwargs):
         """
         Field max wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='max', **kwargs)
+        return self.fldstat(data, stat="max", **kwargs)
 
     def fldmin(self, data, **kwargs):
         """
         Field min wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='min', **kwargs)
+        return self.fldstat(data, stat="min", **kwargs)
 
     def fldstd(self, data, **kwargs):
         """
         Field standard deviation wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='std', **kwargs)
+        return self.fldstat(data, stat="std", **kwargs)
 
     def fldsum(self, data, **kwargs):
         """
         Field sum wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='sum', **kwargs)
+        return self.fldstat(data, stat="sum", **kwargs)
 
     def fldintg(self, data, **kwargs):
         """
         Field integral wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='integral', **kwargs)
+        return self.fldstat(data, stat="integral", **kwargs)
 
     def fldarea(self, data, **kwargs):
         """
         Field area wrapper which is calling the fldstat module.
         """
-        return self.fldstat(data, stat='areasum', **kwargs)
+        return self.fldstat(data, stat="areasum", **kwargs)
 
-    def timstat(self, data, stat, freq=None, exclude_incomplete=False,
-                time_bounds=False, center_time=False, **kwargs):
+    def timstat(self, data, stat, freq=None, exclude_incomplete=False, time_bounds=False, center_time=False, **kwargs):
         """
-        Time statistic wrapper which is calling the timstat module from TimStat class. 
-        This method is exposing and providing time functions as Reader class 
+        Time statistic wrapper which is calling the timstat module from TimStat class.
+        This method is exposing and providing time functions as Reader class
         methods through the wrapper accessors.
 
         Args:
@@ -1298,54 +1349,58 @@ class Reader():
             kwargs:  additional arguments to be passed to the statistical function
         """
         data = self.timemodule.timstat(
-            data, stat=stat, freq=freq,
+            data,
+            stat=stat,
+            freq=freq,
             exclude_incomplete=exclude_incomplete,
             time_bounds=time_bounds,
-            center_time=center_time, **kwargs)
-        data.aqua.set_default(self) #accessor linking
+            center_time=center_time,
+            **kwargs,
+        )
+        data.aqua.set_default(self)  # accessor linking
         return data
 
     def timmean(self, data, **kwargs):
         """
         Time mean wrapper which is calling the timstat module.
         """
-        return self.timstat(data, stat='mean', **kwargs)
+        return self.timstat(data, stat="mean", **kwargs)
 
     def timmax(self, data, **kwargs):
         """
         Time max wrapper which is calling the timstat module.
         """
-        return self.timstat(data, stat='max', **kwargs)
+        return self.timstat(data, stat="max", **kwargs)
 
     def timmin(self, data, **kwargs):
-       """
-       Time min wrapper which is calling the timstat module.
-       """
-       return self.timstat(data, stat='min', **kwargs)
+        """
+        Time min wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat="min", **kwargs)
 
     def timstd(self, data, **kwargs):
-       """
-       Time standard deviation wrapper which is calling the timstat module.
-       """
-       return self.timstat(data, stat='std', **kwargs)
+        """
+        Time standard deviation wrapper which is calling the timstat module.
+        """
+        return self.timstat(data, stat="std", **kwargs)
 
     def timsum(self, data, **kwargs):
         """
         Time sum wrapper which is calling the timstat module.
         """
-        return self.timstat(data, stat='sum', **kwargs)
+        return self.timstat(data, stat="sum", **kwargs)
 
     def timfirst(self, data, **kwargs):
         """
         Time first wrapper which is calling the timstat module.
         """
-        return self.timstat(data, stat='first', **kwargs)
+        return self.timstat(data, stat="first", **kwargs)
 
     def timlast(self, data, **kwargs):
         """
         Time last wrapper which is calling the timstat module.
         """
-        return self.timstat(data, stat='last', **kwargs)
+        return self.timstat(data, stat="last", **kwargs)
 
     def timhist(self, data, **kwargs):
         """
@@ -1360,16 +1415,17 @@ class Reader():
         """
         return histogram(data, **kwargs)
 
+
 def units_extra_definition():
     """Add units to the pint registry"""
 
     # special units definition
     # needed to work with metpy 1.4.0 see
     # https://github.com/Unidata/MetPy/issues/2884
-    units._on_redefinition = 'ignore'
-    units.define('fraction = [] = Fraction = frac')
-    units.define('psu = 1e-3 frac')
-    units.define('PSU = 1e-3 frac')
-    units.define('Sv = 1e+6 m^3/s')
+    units._on_redefinition = "ignore"
+    units.define("fraction = [] = Fraction = frac")
+    units.define("psu = 1e-3 frac")
+    units.define("PSU = 1e-3 frac")
+    units.define("Sv = 1e+6 m^3/s")
     units.define("North = degrees_north = degreesN = degN")
     units.define("East = degrees_east = degreesE = degE")

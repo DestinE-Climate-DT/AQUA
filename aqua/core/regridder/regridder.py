@@ -1,4 +1,5 @@
 """New Regrid class independent from the Reader"""
+
 import os
 import re
 import shutil
@@ -16,14 +17,14 @@ from .griddicthandler import GridDictHandler
 from .regridder_util import check_existing_file, validate_reader_kwargs
 
 # parameters which will affect the weights and areas name
-DEFAULT_WEIGHTS_AREAS_PARAMETERS = ['zoom']
+DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
 
 # default CDO regrid method
-DEFAULT_GRID_METHOD = 'ycon'
+DEFAULT_GRID_METHOD = "ycon"
 
 # default dimension for the weights and areas
-DEFAULT_DIMENSION = '2d'
-DEFAULT_DIMENSION_MASK = '2dm'  # masked grid
+DEFAULT_DIMENSION = "2d"
+DEFAULT_DIMENSION_MASK = "2dm"  # masked grid
 
 # please notice: check_gridfile is a function from smmregrid.util
 # to check and if a grid is a cdo grid,
@@ -31,14 +32,17 @@ DEFAULT_DIMENSION_MASK = '2dm'  # masked grid
 # but should be likely developed on the smmregrid side.
 
 
-class Regridder():
+class Regridder:
     """AQUA Regridder class"""
 
-    def __init__(self, cfg_grid_dict: dict = None,
-                 src_grid_name: str = None,
-                 data: xr.Dataset = None,
-                 cdo: str = None,
-                 loglevel: str = "WARNING"):
+    def __init__(
+        self,
+        cfg_grid_dict: dict = None,
+        src_grid_name: str = None,
+        data: xr.Dataset = None,
+        cdo: str = None,
+        loglevel: str = "WARNING",
+    ):
         """
         The (new) Regridder class. Can be initialized with a data (xr.Dataset/DataArray) or a src_grid_name
         It provides methods to generate areas and weights, and to regrid a dataset.
@@ -74,24 +78,22 @@ class Regridder():
             raise ValueError("Either src_grid_name or data must be provided.")
 
         self.loglevel = loglevel
-        self.logger = log_configure(log_level=loglevel, log_name='Regridder')
+        self.logger = log_configure(log_level=loglevel, log_name="Regridder")
 
         # define basic attributes:
         self.cfg_grid_dict = cfg_grid_dict if cfg_grid_dict else {}  # full grid dictionary
         self.src_grid_name = src_grid_name  # source grid name
 
         # we want all the grid dictionary to be real dictionaries
-        self.handler = GridDictHandler(cfg_grid_dict,
-                                       default_dimension=DEFAULT_DIMENSION,
-                                       loglevel=loglevel)
+        self.handler = GridDictHandler(cfg_grid_dict, default_dimension=DEFAULT_DIMENSION, loglevel=loglevel)
         self.src_grid_dict = self.handler.normalize_grid_dict(self.src_grid_name)
-        self.src_grid_path = self.src_grid_dict.get('path')
+        self.src_grid_path = self.src_grid_dict.get("path")
 
         self.logger.debug("Normalized grid dictionary: %s", self.src_grid_dict)
         self.logger.debug("Normalized grid path: %s", self.src_grid_path)
 
         # this not used but can be shipped back to the reader
-        self.src_horizontal_dims = self.src_grid_dict.get('space_coord', None)
+        self.src_horizontal_dims = self.src_grid_dict.get("space_coord", None)
         self.src_mask_dim = list(self.src_grid_path.keys())
         self.tgt_horizontal_dims = None
         self.error = None
@@ -100,10 +102,7 @@ class Regridder():
         self.logger.debug("Vertical dimensions: %s", self.src_mask_dim)
 
         # store dimension to be send to smmregrid if needed
-        self.extra_dims = {
-            'mask': to_list(self.src_mask_dim),
-            'horizontal': to_list(self.src_horizontal_dims)
-        }
+        self.extra_dims = {"mask": to_list(self.src_mask_dim), "horizontal": to_list(self.src_horizontal_dims)}
 
         # check data to extract information for CDO
         if data is not None:
@@ -159,8 +158,7 @@ class Regridder():
             self.logger.debug("Found CDO path: %s", cdo)
             return cdo
 
-        raise FileNotFoundError(
-                "CDO not found in path: Weight and area generation will fail.")
+        raise FileNotFoundError("CDO not found in path: Weight and area generation will fail.")
 
     def _get_info_from_data(self, data):
         """
@@ -188,7 +186,7 @@ class Regridder():
             vdim = self.src_mask_dim if self.src_mask_dim else DEFAULT_DIMENSION
             self.logger.info("Using provided dataset as a grid path for %s", vdim)
             self.src_grid_dict = {"path": {vdim: data}}
-            self.src_grid_path = self.src_grid_dict.get('path')
+            self.src_grid_path = self.src_grid_dict.get("path")
 
     def areas(self, tgt_grid_name=None, rebuild=False, reader_kwargs=None):
         """
@@ -211,20 +209,15 @@ class Regridder():
             grid_dict = self.src_grid_dict
 
         # generate the area
-        grid_area = self._load_area(
-            grid_name=tgt_grid_name,
-            grid_dict=grid_dict,
-            reader_kwargs=reader_kwargs,
-            rebuild=rebuild
-        )
+        grid_area = self._load_area(grid_name=tgt_grid_name, grid_dict=grid_dict, reader_kwargs=reader_kwargs, rebuild=rebuild)
 
         # assign the area to the correct attribute
         if tgt_grid_name:
             self.tgt_grid_area = grid_area
             # Extra: infer target grid horizontal dimensions
-            self.tgt_horizontal_dims = GridInspector(
-                self.tgt_grid_area, loglevel=self.loglevel
-            ).get_gridtype()[0].horizontal_dims
+            self.tgt_horizontal_dims = (
+                GridInspector(self.tgt_grid_area, loglevel=self.loglevel).get_gridtype()[0].horizontal_dims
+            )
 
         else:
             self.src_grid_area = grid_area
@@ -233,7 +226,7 @@ class Regridder():
 
     def _safe_to_netcdf(self, data, filename):
         """Save to netcdf safely using a temporary file.
-        
+
         Args:
             data (xr.Dataset or xr.DataArray): Data to save.
             filename (str): Destination file path.
@@ -243,7 +236,7 @@ class Regridder():
         if dest_dir:  # Handle edge case where filename has no directory component
             os.makedirs(dest_dir, exist_ok=True)
         else:
-            dest_dir = '.'  # Use current directory
+            dest_dir = "."  # Use current directory
 
         # Create temp file in same directory as destination (same filesystem)
         with TemporaryDirectory(dir=dest_dir) as tmpdirname:
@@ -291,10 +284,9 @@ class Regridder():
         """
 
         # if they have been provided, read from the AQUA dict
-        cellareas, cellareas_var = grid_dict.get('cellareas'), grid_dict.get('cellareas_var')
+        cellareas, cellareas_var = grid_dict.get("cellareas"), grid_dict.get("cellareas_var")
         if cellareas and cellareas_var:
-            self.logger.info("Using cellareas from variable %s in file %s",
-                             cellareas_var, cellareas)
+            self.logger.info("Using cellareas from variable %s in file %s", cellareas_var, cellareas)
             if not os.path.exists(cellareas):
                 raise FileNotFoundError(f"Grid based cell area  file {cellareas} not found.")
             return xr.open_mfdataset(cellareas)[cellareas_var].rename("cell_area").squeeze().to_dataset()
@@ -305,20 +297,19 @@ class Regridder():
 
         self.logger.info("Generating %s area for %s", area_type, grid_name)
 
-        source_grid = self._get_grid_path(grid_dict.get('path')) if area_type == "source" else None
-        target_grid = self._get_grid_path(grid_dict.get('path')) if area_type == "target" else None
+        source_grid = self._get_grid_path(grid_dict.get("path")) if area_type == "source" else None
+        target_grid = self._get_grid_path(grid_dict.get("path")) if area_type == "target" else None
 
         return CdoGenerate(
             source_grid=source_grid,
             target_grid=target_grid,
-            cdo_extra=grid_dict.get('cdo_extra'),
-            cdo_options=grid_dict.get('cdo_options'),
+            cdo_extra=grid_dict.get("cdo_extra"),
+            cdo_options=grid_dict.get("cdo_options"),
             cdo=self.cdo,
-            loglevel=self.loglevel
+            loglevel=self.loglevel,
         ).areas(target=bool(grid_name))
 
-    def weights(self, tgt_grid_name, regrid_method=None, nproc=1,
-                rebuild=False, reader_kwargs=None):
+    def weights(self, tgt_grid_name, regrid_method=None, nproc=1, rebuild=False, reader_kwargs=None):
         """
         Load or generate regridding weights by calling smmregrid
 
@@ -335,7 +326,7 @@ class Regridder():
         """
 
         # define regrid method
-        default_regrid_method = self.src_grid_dict.get('regrid_method', DEFAULT_GRID_METHOD)
+        default_regrid_method = self.src_grid_dict.get("regrid_method", DEFAULT_GRID_METHOD)
         regrid_method = regrid_method if regrid_method else default_regrid_method
         if regrid_method is not DEFAULT_GRID_METHOD:
             self.logger.info("Regrid method: %s", regrid_method)
@@ -344,29 +335,23 @@ class Regridder():
         tgt_grid_dict = self.handler.normalize_grid_dict(tgt_grid_name)
 
         # get the cdo options from the configuration
-        cdo_extra = self.src_grid_dict.get('cdo_extra', None)
-        cdo_options = self.src_grid_dict.get('cdo_options', None)
+        cdo_extra = self.src_grid_dict.get("cdo_extra", None)
+        cdo_options = self.src_grid_dict.get("cdo_options", None)
 
         weights = {}
         # loop over the vertical coordinates: DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, or any other
         for mask_dim in self.src_grid_path:
-
             # define the vertical coordinate in the smmregrid world
-            smm_mask_dim = None if mask_dim in [
-                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
+            smm_mask_dim = None if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
 
-            weights_filename = self._weights_filename(tgt_grid_name, regrid_method,
-                                                      mask_dim, reader_kwargs)
+            weights_filename = self._weights_filename(tgt_grid_name, regrid_method, mask_dim, reader_kwargs)
 
             # check if weights already exist, if not, generate them
             if rebuild or not check_existing_file(weights_filename):
-
                 if os.path.exists(weights_filename):
-                    self.logger.info(
-                        "Weights file %s exists. Regenerating.", weights_filename)
+                    self.logger.info("Weights file %s exists. Regenerating.", weights_filename)
                 else:
-                    self.logger.info(
-                        "Generating weights for %s grid: %s", tgt_grid_name, mask_dim)
+                    self.logger.info("Generating weights for %s grid: %s", tgt_grid_name, mask_dim)
 
                 if smm_mask_dim:
                     self.logger.warning("Mask-changing vertical dimension identified, weights generation might take a few!")
@@ -374,22 +359,21 @@ class Regridder():
                 # smmregrid call
                 # TODO: here or better in smmregird, we could use GridInspect to get the grid info
                 # and reduce the dimensionality of the input data.
-                generator = CdoGenerate(source_grid=self.src_grid_path[mask_dim],
-                                        target_grid=self._get_grid_path(tgt_grid_dict.get('path')),
-                                        cdo_extra=cdo_extra,
-                                        cdo_options=cdo_options,
-                                        cdo=self.cdo,
-                                        loglevel=self.loglevel)
+                generator = CdoGenerate(
+                    source_grid=self.src_grid_path[mask_dim],
+                    target_grid=self._get_grid_path(tgt_grid_dict.get("path")),
+                    cdo_extra=cdo_extra,
+                    cdo_options=cdo_options,
+                    cdo=self.cdo,
+                    loglevel=self.loglevel,
+                )
 
                 # generate and save the weights
-                weights_dim = generator.weights(method=regrid_method,
-                                            mask_dim=smm_mask_dim,
-                                            nproc=nproc)
+                weights_dim = generator.weights(method=regrid_method, mask_dim=smm_mask_dim, nproc=nproc)
                 self._safe_to_netcdf(weights_dim, weights_filename)
 
             else:
-                self.logger.info(
-                    "Loading existing weights from %s.", weights_filename)
+                self.logger.info("Loading existing weights from %s.", weights_filename)
 
             # load the weights
             weights[mask_dim] = xr.open_dataset(weights_filename)
@@ -407,21 +391,19 @@ class Regridder():
         """
 
         for mask_dim in weights.keys():
-
             # define the vertical coordinate in the smmregrid world
-            smm_mask_dim = None if mask_dim in [
-                DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
+            smm_mask_dim = None if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
 
             # initialize the regridder
             self.smmregridder[mask_dim] = SMMRegridder(
                 weights=weights[mask_dim],
                 horizontal_dims=self.src_horizontal_dims,
                 mask_dim=smm_mask_dim,
-                loglevel=self.loglevel
+                loglevel=self.loglevel,
             )
 
     def _area_filename(self, tgt_grid_name, reader_kwargs):
-        """"
+        """ "
         Generate the area filename.
 
         Args:
@@ -429,11 +411,10 @@ class Regridder():
             reader_kwargs (dict): The reader kwargs, including info on model, exp, source, etc.
         """
 
-        area_dict = self.cfg_grid_dict.get('areas')
+        area_dict = self.cfg_grid_dict.get("areas")
 
         if not area_dict:
-            self.logger.warning(
-                "Areas block not found in the configuration file, using fallback naming scheme.")
+            self.logger.warning("Areas block not found in the configuration file, using fallback naming scheme.")
             if tgt_grid_name:
                 return f"cell_area_{tgt_grid_name}.nc"
             return f"cell_area_{self.src_grid_name}.nc"
@@ -441,23 +422,18 @@ class Regridder():
         # destination grid name is provided, use grid template
         if tgt_grid_name:
             filename = area_dict["template_grid"].format(grid=tgt_grid_name)
-            self.logger.debug(
-                "Using grid-based template for target grid. Filename: %s", filename)
+            self.logger.debug("Using grid-based template for target grid. Filename: %s", filename)
         # source grid name is provided, check if it is data
         else:
-            if check_gridfile(self._get_grid_path(self.src_grid_path)) != 'xarray':
-                filename = area_dict["template_grid"].format(
-                    grid=self.src_grid_name)
-                self.logger.debug(
-                    "Using grid-based template for source grid. Filename: %s", filename)
+            if check_gridfile(self._get_grid_path(self.src_grid_path)) != "xarray":
+                filename = area_dict["template_grid"].format(grid=self.src_grid_name)
+                self.logger.debug("Using grid-based template for source grid. Filename: %s", filename)
             else:
                 reader_kwargs = validate_reader_kwargs(reader_kwargs)
                 filename = area_dict["template_default"].format(
-                    model=reader_kwargs["model"],
-                    exp=reader_kwargs["exp"],
-                    source=reader_kwargs["source"])
-                self.logger.debug(
-                    "Using source-based template for source grid. Filename: %s", filename)
+                    model=reader_kwargs["model"], exp=reader_kwargs["exp"], source=reader_kwargs["source"]
+                )
+                self.logger.debug("Using source-based template for source grid. Filename: %s", filename)
 
         filename = self._insert_kwargs(filename, reader_kwargs)
         filename = self._filename_prepend_path(filename, kind="areas")
@@ -474,25 +450,20 @@ class Regridder():
             reader_kwargs (dict): The reader kwargs, including info on model, exp, source, etc.
         """
 
-        levname = mask_dim if mask_dim in [
-            DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else f"3d-{mask_dim}"
+        levname = mask_dim if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else f"3d-{mask_dim}"
 
-        weights_dict = self.cfg_grid_dict.get('weights')
+        weights_dict = self.cfg_grid_dict.get("weights")
 
         if not weights_dict:
-            self.logger.warning(
-                "Weights block not found in the configuration file, using fallback naming scheme.")
+            self.logger.warning("Weights block not found in the configuration file, using fallback naming scheme.")
             return f"weights_{tgt_grid_name}_{regrid_method}_l{levname}.nc"
 
         # destination grid name is provided, use grid template
-        if check_gridfile(self.src_grid_path[mask_dim]) != 'xarray':
+        if check_gridfile(self.src_grid_path[mask_dim]) != "xarray":
             filename = weights_dict["template_grid"].format(
-                sourcegrid=self.src_grid_name,
-                method=regrid_method,
-                targetgrid=tgt_grid_name,
-                level=levname)
-            self.logger.debug(
-                "Using grid-based template for target grid. Filename: %s", filename)
+                sourcegrid=self.src_grid_name, method=regrid_method, targetgrid=tgt_grid_name, level=levname
+            )
+            self.logger.debug("Using grid-based template for target grid. Filename: %s", filename)
         else:
             reader_kwargs = validate_reader_kwargs(reader_kwargs)
             filename = weights_dict["template_default"].format(
@@ -501,9 +472,9 @@ class Regridder():
                 source=reader_kwargs["source"],
                 method=regrid_method,
                 targetgrid=tgt_grid_name,
-                level=levname)
-            self.logger.debug(
-                "Using source-based template for target grid. Filename: %s", filename)
+                level=levname,
+            )
+            self.logger.debug("Using source-based template for target grid. Filename: %s", filename)
 
         filename = self._insert_kwargs(filename, reader_kwargs)
         filename = self._filename_prepend_path(filename, kind="weights")
@@ -514,20 +485,16 @@ class Regridder():
         Prepend the path to the filename with some fall back option
         """
         if not self.cfg_grid_dict.get("paths"):
-            self.logger.warning(
-                "Paths block not found in the configuration file, using present directory.")
+            self.logger.warning("Paths block not found in the configuration file, using present directory.")
         else:
             if not self.cfg_grid_dict["paths"].get(kind):
-                self.logger.warning(
-                    "%s block not found in the paths block, using present directory.", kind)
+                self.logger.warning("%s block not found in the paths block, using present directory.", kind)
             else:
                 # if path does not exist, create it
                 if not os.path.exists(self.cfg_grid_dict["paths"][kind]):
-                    self.logger.warning(
-                        "%s path in %s does not exist: creating!", kind, self.cfg_grid_dict["paths"][kind])
+                    self.logger.warning("%s path in %s does not exist: creating!", kind, self.cfg_grid_dict["paths"][kind])
                     os.makedirs(self.cfg_grid_dict["paths"][kind], exist_ok=True)
-                filename = os.path.join(
-                    self.cfg_grid_dict["paths"][kind], filename)
+                filename = os.path.join(self.cfg_grid_dict["paths"][kind], filename)
         return filename
 
     def _expand_dims(self, data, mask_dims):
@@ -538,8 +505,7 @@ class Regridder():
         if not list(set(data.dims) & set(mask_dims)):
             for mask_dim in mask_dims:
                 if mask_dim in data.coords:
-                    self.logger.debug(
-                        "Expanding dimensions to include %s", mask_dim)
+                    self.logger.debug("Expanding dimensions to include %s", mask_dim)
                     data = data.expand_dims(dim=mask_dim, axis=0)
         return data
 
@@ -560,8 +526,7 @@ class Regridder():
         # TODO: masked vars based on attributes are still missing
         if self.masked_vars:
             shared_vars[DEFAULT_DIMENSION_MASK] = self.masked_vars
-            self.logger.debug("Variables for coordinate %s: %s",
-                              DEFAULT_DIMENSION_MASK, shared_vars[DEFAULT_DIMENSION_MASK])
+            self.logger.debug("Variables for coordinate %s: %s", DEFAULT_DIMENSION_MASK, shared_vars[DEFAULT_DIMENSION_MASK])
         # Get the masked variables safely
         masked_vars = shared_vars.get(DEFAULT_DIMENSION_MASK, [])
 
@@ -573,13 +538,11 @@ class Regridder():
             variables = list(gridtype.variables.keys())
 
             if gridtype.mask_dim:
-                self.logger.debug("Variables for dimension %s: %s",
-                                  gridtype.mask_dim, variables)
+                self.logger.debug("Variables for dimension %s: %s", gridtype.mask_dim, variables)
                 shared_vars[gridtype.mask_dim] = [var for var in variables if var not in masked_vars]
             else:
                 shared_vars[DEFAULT_DIMENSION] = [var for var in variables if var not in masked_vars]
-                self.logger.debug("Variables for dimensions %s: %s",
-                                  DEFAULT_DIMENSION, shared_vars[DEFAULT_DIMENSION])
+                self.logger.debug("Variables for dimensions %s: %s", DEFAULT_DIMENSION, shared_vars[DEFAULT_DIMENSION])
 
         return shared_vars
 
@@ -620,9 +583,9 @@ class Regridder():
             datar = []
             for vertical in shared_vars:
                 if not self.smmregridder.get(vertical):
-                        self.logger.error("Regridder for vertical coordinate %s not found.", vertical)
-                        self.logger.error("Cannot regrid variables %s", shared_vars[vertical])
-                        continue
+                    self.logger.error("Regridder for vertical coordinate %s not found.", vertical)
+                    self.logger.error("Cannot regrid variables %s", shared_vars[vertical])
+                    continue
                 else:
                     existing_vars = [v for v in shared_vars[vertical] if v in data]
                     if existing_vars:
@@ -650,10 +613,7 @@ class Regridder():
         if isinstance(reader_kwargs, dict):
             for parameter in DEFAULT_WEIGHTS_AREAS_PARAMETERS:
                 if parameter in reader_kwargs:
-                    filename = re.sub(
-                        r'\.nc', '_' + parameter +
-                        str(reader_kwargs[parameter]) + r'\g<0>',
-                        filename)
+                    filename = re.sub(r"\.nc", "_" + parameter + str(reader_kwargs[parameter]) + r"\g<0>", filename)
 
         return filename
 
@@ -675,8 +635,7 @@ class Regridder():
             return None, None
 
         masked_vars = masked_info.get("vars")
-        masked_attrs = {k: v for k, v in masked_info.items() if k !=
-                        "vars"} or None
+        masked_attrs = {k: v for k, v in masked_info.items() if k != "vars"} or None
 
         return masked_attrs, masked_vars
 

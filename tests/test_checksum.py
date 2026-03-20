@@ -31,10 +31,10 @@ class TestChecksumModule:
         file2.write_text("Sample content 2")
 
         checksum_file = Path("checksums.md5")
-        generate_checksums(tmp_path, ["."],str(checksum_file))
+        generate_checksums(tmp_path, ["."], str(checksum_file))
 
         assert checksum_file.exists()
-        with checksum_file.open("r", encoding='utf8') as f:
+        with checksum_file.open("r", encoding="utf8") as f:
             content = f.read()
 
         verify_checksums(tmp_path, ["."], str(checksum_file))
@@ -42,6 +42,3 @@ class TestChecksumModule:
         assert "All files are verified successfully" in captured.out
 
         os.remove(checksum_file)
-
-
-

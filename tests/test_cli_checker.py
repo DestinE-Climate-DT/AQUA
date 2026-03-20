@@ -15,32 +15,36 @@ pytestmark = pytest.mark.aqua
 def test_cli_checker_parse_arguments():
     """Test that parse_arguments correctly parses cli_checker specific arguments and defaults."""
     # Test with all flags provided
-    args = parse_arguments([
-        '--model', 'IFS',
-        '--exp', 'test-tco79',
-        '--source', 'short',
-        '--yaml', '/tmp/test',
-        '--no-read',
-        '--no-rebuild',
-        '--realization', 'r1',
-        '--regrid', 'r200'
-    ])
+    args = parse_arguments(
+        [
+            "--model",
+            "IFS",
+            "--exp",
+            "test-tco79",
+            "--source",
+            "short",
+            "--yaml",
+            "/tmp/test",
+            "--no-read",
+            "--no-rebuild",
+            "--realization",
+            "r1",
+            "--regrid",
+            "r200",
+        ]
+    )
 
-    assert args.model == 'IFS'
-    assert args.exp == 'test-tco79'
-    assert args.source == 'short'
-    assert args.yaml == '/tmp/test'
+    assert args.model == "IFS"
+    assert args.exp == "test-tco79"
+    assert args.source == "short"
+    assert args.yaml == "/tmp/test"
     assert args.read is False  # --no-read sets read=False
     assert args.rebuild is False  # --no-rebuild sets rebuild=False
-    assert args.realization == 'r1'
-    assert args.regrid == 'r200'
+    assert args.realization == "r1"
+    assert args.regrid == "r200"
 
     # Test defaults when flags are not provided
-    args_defaults = parse_arguments([
-        '--model', 'IFS',
-        '--exp', 'test-tco79',
-        '--source', 'short'
-    ])
+    args_defaults = parse_arguments(["--model", "IFS", "--exp", "test-tco79", "--source", "short"])
 
     assert args_defaults.yaml is None
     assert args_defaults.read is True  # Default is True (read data)
@@ -51,7 +55,7 @@ def test_cli_checker_parse_arguments():
 @pytest.mark.slow
 def test_cli_checker_valid_entry(tmp_path):
     """Test cli_checker with a valid catalog entry.
-    
+
     This test requires AQUA to be installed with the 'ci' catalog.
     Note: This test may be skipped if AQUA is not fully installed.
     """
@@ -63,19 +67,26 @@ def test_cli_checker_valid_entry(tmp_path):
     # Test with a valid entry from the 'ci' catalog, using --no-read to speed up
     result = subprocess.run(
         [
-            sys.executable, checker_script,
-            '--catalog', 'ci',
-            '--model', 'IFS',
-            '--exp', 'test-tco79',
-            '--source', 'short',
-            '--yaml', str(yaml_dir),
-            '--no-read',  # Don't read data, just check catalog and create yaml
-            '--no-rebuild',  # Don't rebuild areas
-            '--loglevel', 'WARNING'
+            sys.executable,
+            checker_script,
+            "--catalog",
+            "ci",
+            "--model",
+            "IFS",
+            "--exp",
+            "test-tco79",
+            "--source",
+            "short",
+            "--yaml",
+            str(yaml_dir),
+            "--no-read",  # Don't read data, just check catalog and create yaml
+            "--no-rebuild",  # Don't rebuild areas
+            "--loglevel",
+            "WARNING",
         ],
         capture_output=True,
         text=True,
-        timeout=60
+        timeout=60,
     )
 
     # Should succeed if AQUA is properly installed
@@ -95,18 +106,24 @@ def test_cli_checker_invalid_entry():
     # Test with an invalid entry
     result = subprocess.run(
         [
-            sys.executable, checker_script,
-            '--catalog', 'ci',
-            '--model', 'invalid-model',
-            '--exp', 'invalid-exp',
-            '--source', 'invalid-source',
-            '--no-read',
-            '--no-rebuild',
-            '--loglevel', 'WARNING'
+            sys.executable,
+            checker_script,
+            "--catalog",
+            "ci",
+            "--model",
+            "invalid-model",
+            "--exp",
+            "invalid-exp",
+            "--source",
+            "invalid-source",
+            "--no-read",
+            "--no-rebuild",
+            "--loglevel",
+            "WARNING",
         ],
         capture_output=True,
         text=True,
-        timeout=30
+        timeout=30,
     )
 
     # Should fail with exit code 1 (or any non-zero)
@@ -121,18 +138,12 @@ def test_cli_checker_missing_arguments():
 
     # Test with missing model
     result = subprocess.run(
-        [
-            sys.executable, checker_script,
-            '--exp', 'test-tco79',
-            '--source', 'short',
-            '--loglevel', 'WARNING'
-        ],
+        [sys.executable, checker_script, "--exp", "test-tco79", "--source", "short", "--loglevel", "WARNING"],
         capture_output=True,
         text=True,
-        timeout=10
+        timeout=10,
     )
 
     # Should fail (either ValueError or SystemExit from argparse)
     assert result.returncode != 0
     assert "model, exp and source are required" in result.stderr or "ValueError" in result.stderr
-

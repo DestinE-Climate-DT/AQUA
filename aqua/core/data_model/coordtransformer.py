@@ -30,9 +30,7 @@ class CoordTransformer:
 
         self.data = data
 
-        self.src_coords = CoordIdentifier(
-            data.coords, loglevel=loglevel
-        ).identify_coords()
+        self.src_coords = CoordIdentifier(data.coords, loglevel=loglevel).identify_coords()
         self.tgt_coords = None
         self.gridtype = self._info_grid(data.coords)
         self.logger.info("Grid type: %s", self.gridtype)
@@ -98,9 +96,7 @@ class CoordTransformer:
                 data = self.convert_units(data, src_coord, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
-                self.logger.info(
-                    "Coordinate %s not found in source coordinates.", coord
-                )
+                self.logger.info("Coordinate %s not found in source coordinates.", coord)
 
         log_history(data, f"Coordinates fixed toward {outname} datamodel")
 
@@ -118,9 +114,7 @@ class CoordTransformer:
             xr.Dataset or xr.DataArray: The Xarray object with renamed coordinate.
         """
         if src_coord["name"] != tgt_coord["name"]:
-            self.logger.info(
-                "Renaming coordinate %s to %s", src_coord["name"], tgt_coord["name"]
-            )
+            self.logger.info("Renaming coordinate %s to %s", src_coord["name"], tgt_coord["name"])
             data = data.rename({src_coord["name"]: tgt_coord["name"]})
             log_history(
                 data,
@@ -159,9 +153,7 @@ class CoordTransformer:
         """
         if src_coord["bounds"] is not None:
             if src_coord["bounds"] in data:
-                self.logger.info(
-                    "Renaming bounds %s to %s", src_coord["bounds"], tgt_coord["bounds"]
-                )
+                self.logger.info("Renaming bounds %s to %s", src_coord["bounds"], tgt_coord["bounds"])
                 data = data.rename({src_coord["bounds"]: tgt_coord["bounds"]})
                 data[tgt_coord["name"]].attrs["bounds"] = tgt_coord["bounds"]
             else:
@@ -183,9 +175,7 @@ class CoordTransformer:
         if "stored_direction" not in tgt_coord:
             return data
         if tgt_coord["stored_direction"] not in ["increasing", "decreasing"]:
-            raise ValueError(
-                f"tgt direction must be 'increasing' or 'decreasing', not  {tgt_coord['stored_direction']}"
-            )
+            raise ValueError(f"tgt direction must be 'increasing' or 'decreasing', not  {tgt_coord['stored_direction']}")
         if src_coord["stored_direction"] not in ["increasing", "decreasing"]:
             self.logger.warning(
                 "src direction is not 'increasing' or 'decreasing', but %s. Disabling reverse!",
@@ -265,9 +255,7 @@ class CoordTransformer:
                 return data
             if factor != 0:
                 self.logger.info("Conversion factor is: %s ", factor)
-                data = data.assign_coords(
-                    {tgt_coord["name"]: data[tgt_coord["name"]] * factor}
-                )
+                data = data.assign_coords({tgt_coord["name"]: data[tgt_coord["name"]] * factor})
                 tgt_coord["bounds"] = f"{tgt_coord['name']}_bnds"
                 data = self._convert_bounds(data, src_coord, tgt_coord, factor)
                 log_history(
@@ -301,11 +289,10 @@ class CoordTransformer:
         for key, value in tgt_coord.items():
             if key not in ["name", "units", "positive", "stored_direction", "bounds"]:
                 if key not in data.coords[tgt_coord["name"]].attrs:
-                    self.logger.debug(
-                        "Adding attribute %s to coordinate %s", key, tgt_coord["name"]
-                    )
+                    self.logger.debug("Adding attribute %s to coordinate %s", key, tgt_coord["name"])
                     data.coords[tgt_coord["name"]].attrs[key] = value
         return data
+
 
 def counter_reverse_coordinate(data):
     """

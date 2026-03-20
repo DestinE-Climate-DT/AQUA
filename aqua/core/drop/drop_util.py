@@ -104,8 +104,8 @@ def list_drop_files_complete(path):
     yearly_dict = {}
     monthly_dict = {}
     searchpath = "*"
-    yearly_dict['files'] = sorted(glob(os.path.join(path, searchpath) + '_????.nc'))
-    monthly_dict['files'] = sorted(glob(os.path.join(path, searchpath) + '_??????.nc'))
+    yearly_dict["files"] = sorted(glob(os.path.join(path, searchpath) + "_????.nc"))
+    monthly_dict["files"] = sorted(glob(os.path.join(path, searchpath) + "_??????.nc"))
 
     # path = os.path.join(path, model, exp, reso, freq)
     return yearly_dict, monthly_dict
@@ -132,6 +132,7 @@ def list_drop_files_complete(path):
 #         monthly_dict[var] = sorted(glob(os.path.join(path, var) + '_??????.nc'))
 
 #     return yearly_dict, monthly_dict
+
 
 def move_tmp_files(tmp_directory, output_directory):
     """

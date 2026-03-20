@@ -1,4 +1,5 @@
 """Fixer mixin for the Reader class"""
+
 import re
 
 import numpy as np
@@ -13,9 +14,10 @@ from .fixer_operator import FixerOperator
 
 DEFAULT_DELTAT = 1
 
-class Fixer():
+
+class Fixer:
     """Fixer module
-    
+
     Args:
         fixer_name (str): The fixer name defined in the fixes dictionary
         datamodel (str): The target datamodel name
@@ -23,23 +25,22 @@ class Fixer():
         convention (name): The convention name
         metadata (dict): The metadata dictionary
         loglevel (str): The log level
-    
+
     """
 
-    def __init__(self, fixer_name=None, fixes_dictionary=None,
-                 convention=None, metadata=None, loglevel='WARNING'):
+    def __init__(self, fixer_name=None, fixes_dictionary=None, convention=None, metadata=None, loglevel="WARNING"):
 
         self.fixes_dictionary = fixes_dictionary
         self.fixer_name = fixer_name
         self.convention = convention
         self.metadata = metadata
-        self.logger = log_configure(log_level=loglevel, log_name='Fixer')
+        self.logger = log_configure(log_level=loglevel, log_name="Fixer")
         self.loglevel = loglevel
 
         # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
-            convention=self.convention, fixes_dictionary=self.fixes_dictionary,
-            fixer_name=self.fixer_name, loglevel=loglevel)
+            convention=self.convention, fixes_dictionary=self.fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
+        )
         self.fixes = self.fixerconfigure.find_fixes()
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
         self.time_correction = False
@@ -85,14 +86,13 @@ class Fixer():
             return data
 
         # Default input datamodel
-        #src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
-        #self.logger.debug("Default input datamodel: %s", src_datamodel)
-
+        # src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
+        # self.logger.debug("Default input datamodel: %s", src_datamodel)
 
         # Special case for monthly deltat
         if self.deltat == "monthly":
-            self.logger.info('%s deltat found, we will estimate a correction based on number of days per month', self.deltat)
-            self.deltat = 3600*24
+            self.logger.info("%s deltat found, we will estimate a correction based on number of days per month", self.deltat)
+            self.deltat = 3600 * 24
             self.time_correction = data.time.dt.days_in_month
 
         jump = self.fixes.get("jump", None)  # if to correct for a monthly accumulation jump
@@ -110,7 +110,6 @@ class Fixer():
 
         if vars_to_fix:
             for var in vars_to_fix:
-
                 # Dictionary of fixes of the single var
                 varfix = vars_to_fix[var]
 
@@ -150,15 +149,16 @@ class Fixer():
                         # Having more than a match should be a problem for a dataset, we do not raise an error
                         # but we warn the user
                         if len(match) > 1:
-                            self.logger.error("Multiple matches found for variable %s: %s, the first one will be taken",
-                                              var, match)
+                            self.logger.error(
+                                "Multiple matches found for variable %s: %s, the first one will be taken", var, match
+                            )
                         # Even if we have only a match, we make sure that source is a string
                         source = match[0]
 
                         # If a gribcode is the source match, convert it to shortname to access it
                         if str(source).isdigit():
-                            self.logger.info('The source %s is a grib code, need to convert it', source)
-                            source = get_eccodes_attr(f'var{source}', loglevel=self.loglevel)['shortName']
+                            self.logger.info("The source %s is a grib code, need to convert it", source)
+                            source = get_eccodes_attr(f"var{source}", loglevel=self.loglevel)["shortName"]
 
                         # Here we update the fixd dictionary with the source and the variable
                         # The rename is done as {source: var} and at the end of the function
@@ -170,7 +170,7 @@ class Fixer():
                     else:  # if there is no match
                         # We do not know in advance if the source is available, so we loop over all the available in the final
                         # merge of the fixes
-                        self.logger.debug('While fixing variable %s, no match found with sources %s', var, source)
+                        self.logger.debug("While fixing variable %s, no match found with sources %s", var, source)
                         continue
 
                 # 2. derived case: let's compute the formula it and create the new variable
@@ -180,13 +180,15 @@ class Fixer():
                     # Asking for a derived variable that is also a source variable is not allowed
                     # since it may lead to changing how the fixer based on the source variable is applied
                     if formula == var:
-                        self.logger.error('Derived variable %s cannot have the same name as the source variable, skipping it',
-                                          var)
+                        self.logger.error(
+                            "Derived variable %s cannot have the same name as the source variable, skipping it", var
+                        )
                         continue
                     try:
                         source = shortname
-                        data[source] = EvaluateFormula(data=data, formula=formula, short_name=shortname,
-                                                       loglevel=self.loglevel).evaluate()
+                        data[source] = EvaluateFormula(
+                            data=data, formula=formula, short_name=shortname, loglevel=self.loglevel
+                        ).evaluate()
                         attributes.update({"derived": formula})
                         self.logger.debug("Derived %s from %s", var, formula)
                         log_history(data[source], f"Variable {var}, derived with {formula} by fixer")
@@ -194,16 +196,15 @@ class Fixer():
                         # The variable could not be computed, let's skip it
                         if destvar is not None:
                             # issue an error if you are asking that specific variable!
-                            self.logger.error('Requested derived variable %s cannot be computed, is it available?', shortname)
+                            self.logger.error("Requested derived variable %s cannot be computed, is it available?", shortname)
                         else:
-                            self.logger.info('%s is defined in the fixes but cannot be computed, is it available?',
-                                             shortname)
+                            self.logger.info("%s is defined in the fixes but cannot be computed, is it available?", shortname)
                         continue
 
                 # safe check debugging
-                self.logger.debug('Name of fixer var: %s', var)
-                self.logger.debug('Name of data source var: %s', source)
-                self.logger.debug('Name of target var: %s', shortname)
+                self.logger.debug("Name of fixer var: %s", var)
+                self.logger.debug("Name of data source var: %s", source)
+                self.logger.debug("Name of target var: %s", shortname)
 
                 # fix source units
                 data = self._override_src_units(data, varfix, var, source)
@@ -221,20 +222,20 @@ class Fixer():
                 tgt_units = self._override_tgt_units(tgt_units, varfix, var)
 
                 if "units" not in data[source].attrs:  # Houston we have had a problem, no units!
-                    self.logger.error('Variable %s has no units!', source)
+                    self.logger.error("Variable %s has no units!", source)
 
                 # adjust units
                 if tgt_units:
-
-                    if tgt_units.count('{'):  # WHAT IS THIS ABOUT?
-                        tgt_units = self.fixes_dictionary["defaults"]["units"]["shortname"][tgt_units.replace('{',
-                                                                                                              '').replace('}',
-                                                                                                                          '')]
+                    if tgt_units.count("{"):  # WHAT IS THIS ABOUT?
+                        tgt_units = self.fixes_dictionary["defaults"]["units"]["shortname"][
+                            tgt_units.replace("{", "").replace("}", "")
+                        ]
                     self.logger.info("%s: converting units %s --> %s", var, data[source].units, tgt_units)
                     if data[source].units != tgt_units:
                         log_history(data[source], f"Converting units of {var}: from {data[source].units} to {tgt_units}")
-                    conversion_dictionary = convert_units(data[source].units, tgt_units, deltat=self.deltat,
-                                                          var=var, loglevel=self.loglevel)
+                    conversion_dictionary = convert_units(
+                        data[source].units, tgt_units, deltat=self.deltat, var=var, loglevel=self.loglevel
+                    )
 
                     # if some unit conversion is defined, modify the attributes and history for later usage
                     if conversion_dictionary:
@@ -244,8 +245,12 @@ class Fixer():
                             self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, float(value))
                             log_history(data[source], f"Fixing {source} to {var}. Unit fix: {key}={value}")
                     elif conversion_dictionary == {} and data[source].units != tgt_units:
-                        self.logger.info("No conversion needed for %s, but units are renamed from %s to %s",
-                                         var, data[source].units, tgt_units)
+                        self.logger.info(
+                            "No conversion needed for %s, but units are renamed from %s to %s",
+                            var,
+                            data[source].units,
+                            tgt_units,
+                        )
                         data[source].attrs.update({"units": tgt_units})
 
                 # Set to NaN before a certain date
@@ -266,9 +271,9 @@ class Fixer():
         if vars_to_fix:
             data = self.operator.wrapper_decumulate(data, self.deltat, vars_to_fix, varlist, jump)
             if nanfirst_enddate:  # This is a temporary fix for IFS data, run ony if an end date is specified
-                data = self.operator.wrapper_nanfirst(data, vars_to_fix, varlist,
-                                              startdate=nanfirst_startdate,
-                                              enddate=nanfirst_enddate)
+                data = self.operator.wrapper_nanfirst(
+                    data, vars_to_fix, varlist, startdate=nanfirst_startdate, enddate=nanfirst_enddate
+                )
 
         if apply_unit_fix:
             for var in data.data_vars:
@@ -284,28 +289,26 @@ class Fixer():
 
     def _define_deltat(self, default):
         """
-        Define the deltat for the fixer. 
+        Define the deltat for the fixer.
         The priority is given to the metadata, then to the fixes and finally to the default value.
         Return deltat in seconds.
         """
 
         # First case: get from metadata
-        metadata_deltat = self.metadata.get('deltat')
+        metadata_deltat = self.metadata.get("deltat")
         if metadata_deltat:
-            self.logger.debug('deltat = %s read from metadata', metadata_deltat)
+            self.logger.debug("deltat = %s read from metadata", metadata_deltat)
             return metadata_deltat
 
         # Second case if not available: get from fixes
         fix_deltat = self.fixes.get("deltat")
         if fix_deltat:
-            self.logger.debug('deltat = %s read from fixes', fix_deltat)
+            self.logger.debug("deltat = %s read from fixes", fix_deltat)
             return fix_deltat
 
         # Third case: get from default
-        self.logger.debug('deltat = %s defined as Fixer() default', default)
+        self.logger.debug("deltat = %s defined as Fixer() default", default)
         return default
-
-
 
     def _override_tgt_units(self, tgt_units, varfix, var):
         """
@@ -315,8 +318,7 @@ class Fixer():
         # Override destination units
         fixer_tgt_units = varfix.get("units", None)
         if fixer_tgt_units:
-            self.logger.debug('Variable %s: Overriding target units "%s" with "%s"',
-                              var, tgt_units, fixer_tgt_units)
+            self.logger.debug('Variable %s: Overriding target units "%s" with "%s"', var, tgt_units, fixer_tgt_units)
             return fixer_tgt_units
         else:
             return tgt_units
@@ -330,12 +332,12 @@ class Fixer():
         fixer_src_units = varfix.get("src_units", None)
         if fixer_src_units:
             if "units" in data[source].attrs:
-                self.logger.debug('Variable %s: Overriding source units "%s" with "%s"',
-                                  var, data[source].units, fixer_src_units)
+                self.logger.debug(
+                    'Variable %s: Overriding source units "%s" with "%s"', var, data[source].units, fixer_src_units
+                )
                 data[source].attrs.update({"units": fixer_src_units})
             else:
-                self.logger.debug('Variable %s: Setting missing source units to "%s"',
-                                  var, fixer_src_units)
+                self.logger.debug('Variable %s: Setting missing source units to "%s"', var, fixer_src_units)
                 data[source].attrs["units"] = fixer_src_units
 
         return data
@@ -353,11 +355,13 @@ class Fixer():
         """
         self.logger.debug("Grib variable %s, looking for attributes", var)
         try:
-            attributes = get_eccodes_attr(var, loglevel=self.loglevel).copy()  # The copy is needed because the function in eccodes.py is cached
+            attributes = get_eccodes_attr(
+                var, loglevel=self.loglevel
+            ).copy()  # The copy is needed because the function in eccodes.py is cached
             shortname = attributes.get("shortName", None)
             self.logger.debug("Grib variable %s, shortname is %s", var, shortname)
 
-            if var not in ['~', shortname]:
+            if var not in ["~", shortname]:
                 self.logger.debug("For grib variable %s find eccodes shortname %s, replacing it", var, shortname)
                 var = shortname
 
@@ -422,24 +426,26 @@ class Fixer():
         loadvar = []
         for vvv in var:
             if vvv in variables.keys():
-
                 # get the source ones
-                if 'source' in variables[vvv]:
-                    loadvar.append(variables[vvv]['source'])
+                if "source" in variables[vvv]:
+                    loadvar.append(variables[vvv]["source"])
 
                 # get the ones from the equation of the derived ones
-                if 'derived' in variables[vvv]:
+                if "derived" in variables[vvv]:
                     # filter operations
-                    required = [s for s in re.split(r'[-+*/]', variables[vvv]['derived']) if s]
+                    required = [s for s in re.split(r"[-+*/]", variables[vvv]["derived"]) if s]
                     # filter constants
-                    required_strings = [x for x in required if not x.replace('.', '').isnumeric()]
+                    required_strings = [x for x in required if not x.replace(".", "").isnumeric()]
                     if bool(set(required_strings) & set(variables.keys())):
-                        self.logger.error("Recursive fixer definition: %s are variables defined in the fixer!",
-                                          required_strings)
-                        raise KeyError((
-                                    "Recursive fixer definition are not supported when selecting variables or working with FDB sources."  # noqa: E501
-                                    "Please change the fixes or call the retrieve() without the var arguments")
-                                    )
+                        self.logger.error(
+                            "Recursive fixer definition: %s are variables defined in the fixer!", required_strings
+                        )
+                        raise KeyError(
+                            (
+                                "Recursive fixer definition are not supported when selecting variables or working with FDB sources."  # noqa: E501
+                                "Please change the fixes or call the retrieve() without the var arguments"
+                            )
+                        )
 
                     loadvar = loadvar + required_strings
             else:
@@ -447,4 +453,3 @@ class Fixer():
 
         self.logger.debug("Variables to be loaded: %s", loadvar)
         return loadvar
-

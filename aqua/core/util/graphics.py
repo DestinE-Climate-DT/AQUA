@@ -1,4 +1,5 @@
 """Graphics utilities for Aqua."""
+
 import math
 
 import cartopy.crs as ccrs
@@ -67,7 +68,7 @@ def plot_box(num_plots=0):
         ValueError: If the number of plots is 0.
     """
     if num_plots == 0:
-        raise ValueError('Number of plots must be greater than 0.')
+        raise ValueError("Number of plots must be greater than 0.")
 
     num_cols = math.ceil(math.sqrt(num_plots))
     num_rows = math.ceil(num_plots / num_cols)
@@ -91,8 +92,10 @@ def minmax_maps(maps: list):
         vmax (float): Maximum value of the colorbar.
     """
 
-    minmax = (min([map.min().values for map in maps if map is not None]),
-              max([map.max().values for map in maps if map is not None]))
+    minmax = (
+        min([map.min().values for map in maps if map is not None]),
+        max([map.max().values for map in maps if map is not None]),
+    )
 
     vmin = minmax[0]
     vmax = minmax[1]
@@ -118,7 +121,7 @@ def evaluate_colorbar_limits(maps: list, sym: bool = True):
         vmax (float): Maximum value of the colorbar.
     """
     if maps is None:
-        raise ValueError('DataArrays must be specified.')
+        raise ValueError("DataArrays must be specified.")
 
     if sym:
         vmin, vmax = minmax_maps(maps)
@@ -129,8 +132,7 @@ def evaluate_colorbar_limits(maps: list, sym: bool = True):
     return vmin, vmax
 
 
-def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
-                   loglevel='WARNING'):
+def cbar_get_label(data: xr.DataArray, cbar_label: str = None, loglevel="WARNING"):
     """
     Evaluate the colorbar label.
 
@@ -142,17 +144,17 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
     Returns:
         cbar_label (str): Colorbar label.
     """
-    logger = log_configure(loglevel, 'cbar get label')
+    logger = log_configure(loglevel, "cbar get label")
 
     if cbar_label is None:
-        cbar_label = getattr(data, 'long_name', None)
+        cbar_label = getattr(data, "long_name", None)
         if cbar_label is None:
-            cbar_label = getattr(data, 'short_name', None)
+            cbar_label = getattr(data, "short_name", None)
         if cbar_label is None:
-            cbar_label = getattr(data, 'shortName', None)
+            cbar_label = getattr(data, "shortName", None)
         logger.debug("Using %s as colorbar label", cbar_label)
 
-        units = getattr(data, 'units', None)
+        units = getattr(data, "units", None)
 
         if units:
             cbar_label = f"{cbar_label} [{unit_to_latex(units)}]"
@@ -164,11 +166,17 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
     return cbar_label
 
 
-def set_map_title(data: xr.DataArray, title: str = None,
-                  put_units=False, set_units=None,
-                  use_attr_name=None, put_model_name=True,
-                  put_exp_name=True, skip_varname=False,
-                  loglevel='WARNING'):
+def set_map_title(
+    data: xr.DataArray,
+    title: str = None,
+    put_units=False,
+    set_units=None,
+    use_attr_name=None,
+    put_model_name=True,
+    put_exp_name=True,
+    skip_varname=False,
+    loglevel="WARNING",
+):
     """
     Evaluate the map title.
 
@@ -186,7 +194,7 @@ def set_map_title(data: xr.DataArray, title: str = None,
     Returns:
         title (str): Map title.
     """
-    logger = log_configure(loglevel, 'set map title')
+    logger = log_configure(loglevel, "set map title")
 
     if title:
         logger.debug("Explicit title provided: %s", title)
@@ -204,26 +212,26 @@ def set_map_title(data: xr.DataArray, title: str = None,
 
     if varname is None:
         # Getting the variables from the possible attrs in data
-        for attr in ['long_name', 'short_name', 'shortName']:
+        for attr in ["long_name", "short_name", "shortName"]:
             varname = data.attrs[attr] if attr in data.attrs else None
             if varname is not None:
                 break
 
-    units = set_units if set_units is not None else data.attrs.get('units', None)
-    model = data.attrs["AQUA_model"] if 'AQUA_model' in data.attrs else None
-    exp = data.attrs["AQUA_exp"] if 'AQUA_exp' in data.attrs else None
-    time = data.time.values if 'time' in data.dims else None
+    units = set_units if set_units is not None else data.attrs.get("units", None)
+    model = data.attrs["AQUA_model"] if "AQUA_model" in data.attrs else None
+    exp = data.attrs["AQUA_exp"] if "AQUA_exp" in data.attrs else None
+    time = data.time.values if "time" in data.dims else None
 
     if varname and not skip_varname:
         title += varname
         if units and put_units:
             title += f" [{unit_to_latex(units)}]"
     if put_model_name and model:
-            title += f" {model}"
+        title += f" {model}"
     if put_exp_name and exp:
-            title += f" {exp}"
+        title += f" {exp}"
     if time is not None:
-        time = np.datetime_as_string(time, unit='h')
+        time = np.datetime_as_string(time, unit="h")
         title += f" {time}"
     if title == "":
         logger.warning("No title found, please specify one with the title argument.")
@@ -241,20 +249,20 @@ def coord_names(data: xr.DataArray):
         data (xarray.DataArray): Input data array.
 
     Returns:
-        tuple: (lon_name, lat_name) - Names of longitude and latitude coordinates, 
+        tuple: (lon_name, lat_name) - Names of longitude and latitude coordinates,
                or (None, None) if not found.
     """
     lon_name = None
     lat_name = None
 
     # Find longitude coordinate
-    for lon_candidate in ['lon', 'longitude']:
+    for lon_candidate in ["lon", "longitude"]:
         if lon_candidate in data.coords:
             lon_name = lon_candidate
             break
 
     # Find latitude coordinate
-    for lat_candidate in ['lat', 'latitude']:
+    for lat_candidate in ["lat", "latitude"]:
         if lat_candidate in data.coords:
             lat_name = lat_candidate
             break
@@ -286,15 +294,17 @@ def ticks_round(ticks: list, round_to: int = None):
     return np.round(ticks, round_to)
 
 
-def set_ticks(data: xr.DataArray,
-              fig: plt.figure,
-              ax: plt.axes,
-              nticks: tuple,
-              lon_name: str,
-              lat_name: str,
-              ticks_rounding: int = None,
-              proj=ccrs.PlateCarree(),
-              loglevel='WARNING'):
+def set_ticks(
+    data: xr.DataArray,
+    fig: plt.figure,
+    ax: plt.axes,
+    nticks: tuple,
+    lon_name: str,
+    lat_name: str,
+    ticks_rounding: int = None,
+    proj=ccrs.PlateCarree(),
+    loglevel="WARNING",
+):
     """
     Set the ticks of the map.
 
@@ -311,18 +321,17 @@ def set_ticks(data: xr.DataArray,
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._subplots.AxesSubplot: Figure and axes.
     """
-    logger = log_configure(loglevel, 'set_ticks')
+    logger = log_configure(loglevel, "set_ticks")
     nxticks, nyticks = nticks
 
     try:
         lon_min = data[lon_name].values.min()
         lon_max = data[lon_name].values.max()
-        (lon_min, lon_max), _ = check_coordinates(lon=(lon_min, lon_max),
-                                                  lat=None,
-                                                  default_coords={"lon_min": -180,
-                                                                  "lon_max": 180,
-                                                                  "lat_min": -90,
-                                                                  "lat_max": 90},)
+        (lon_min, lon_max), _ = check_coordinates(
+            lon=(lon_min, lon_max),
+            lat=None,
+            default_coords={"lon_min": -180, "lon_max": 180, "lat_min": -90, "lat_max": 90},
+        )
         logger.debug("Setting longitude ticks from %s to %s", lon_min, lon_max)
     except KeyError:
         logger.critical("No longitude coordinate found, setting default values")
@@ -341,12 +350,11 @@ def set_ticks(data: xr.DataArray,
     try:
         lat_min = data[lat_name].values.min()
         lat_max = data[lat_name].values.max()
-        _, (lat_min, lat_max) = check_coordinates(lat=(lat_min, lat_max),
-                                                  lon=None,
-                                                  default_coords={"lon_min": -180,
-                                                                  "lon_max": 180,
-                                                                  "lat_min": -90,
-                                                                  "lat_max": 90},)
+        _, (lat_min, lat_max) = check_coordinates(
+            lat=(lat_min, lat_max),
+            lon=None,
+            default_coords={"lon_min": -180, "lon_max": 180, "lat_min": -90, "lat_max": 90},
+        )
         logger.debug("Setting latitude ticks from %s to %s", lat_min, lat_max)
     except KeyError:
         logger.critical("No latitude coordinate found, setting default values")
@@ -362,8 +370,8 @@ def set_ticks(data: xr.DataArray,
 
     return fig, ax
 
-def generate_colorbar_ticks(vmin, vmax, nlevels=11, sym=False,
-                            ticks_rounding=None, max_ticks=15, loglevel='WARNING'):
+
+def generate_colorbar_ticks(vmin, vmax, nlevels=11, sym=False, ticks_rounding=None, max_ticks=15, loglevel="WARNING"):
     """
     Generate and optionally round colorbar ticks for consistent and readable display.
 
@@ -379,7 +387,7 @@ def generate_colorbar_ticks(vmin, vmax, nlevels=11, sym=False,
     Returns:
         np.ndarray: Array of colorbar tick positions.
     """
-    logger = log_configure(loglevel, 'generate_colorbar_ticks')
+    logger = log_configure(loglevel, "generate_colorbar_ticks")
 
     if sym:
         vmax = max(abs(vmin), abs(vmax))
@@ -402,6 +410,7 @@ def generate_colorbar_ticks(vmin, vmax, nlevels=11, sym=False,
 
     return cbar_ticks
 
+
 def apply_circular_window(ax, extent=None, apply_black_circle=False):
     """
     Apply a circular boundary mask to a Cartopy GeoAxes and set geographic extent
@@ -415,7 +424,7 @@ def apply_circular_window(ax, extent=None, apply_black_circle=False):
         ax (GeoAxes): Modified axes with circular boundary and extent.
     """
     if extent is None:
-        extent = [-180, 180, 10, 90] # [west, east, south, north]
+        extent = [-180, 180, 10, 90]  # [west, east, south, north]
 
     # create circular boundary path
     theta = np.linspace(0, 2 * np.pi, 100)
@@ -430,10 +439,11 @@ def apply_circular_window(ax, extent=None, apply_black_circle=False):
     if apply_black_circle:
         # overlay a more visible black circle outline (drawn in axes coordinates)
         circle_patch = mpatches.Circle(
-            center, radius=radius, transform=ax.transAxes,
-            fill=False, color='darkgrey', linewidth=1.5, zorder=10)
+            center, radius=radius, transform=ax.transAxes, fill=False, color="darkgrey", linewidth=1.5, zorder=10
+        )
         ax.add_patch(circle_patch)
     return ax
+
 
 """
 Following functions are taken and adjusted from the easygems package,
@@ -441,16 +451,18 @@ on this repository:
 
 https://github.com/mpimet/easygems/blob/main/easygems/healpix/__init__.py
 """
+
+
 def get_nside(data):
     """
     Get the nside of a HEALPix map.
 
     Args:
         data (numpy.ndarray or xarray.DataArray): HEALPix map.
-    
+
     Returns:
         int: nside of the HEALPix map.
-    
+
     Raises:
         ValueError: If the input data is not a valid HEALPix map.
     """
@@ -466,6 +478,7 @@ def get_nside(data):
         raise ValueError(f"Invalid HEALPix map: npix={npix}")
     return hp.npix2nside(npix)
 
+
 def get_npix(data):
     """
     Get the number of pixels in a HEALPix map based on the map data.
@@ -478,18 +491,19 @@ def get_npix(data):
     """
     return hp.nside2npix(get_nside(data))
 
+
 def healpix_resample(
-        var,
-        xlims=None,
-        ylims=None,
-        nx=None,
-        ny=None,
-        src_crs=None,
-        method="nearest",
-        nest=True,
-        nside_out=None,
-        loglevel="WARNING",
-        ):
+    var,
+    xlims=None,
+    ylims=None,
+    nx=None,
+    ny=None,
+    src_crs=None,
+    method="nearest",
+    nest=True,
+    nside_out=None,
+    loglevel="WARNING",
+):
     """
     Resample a HEALPix map to a lat/lon grid.
 
@@ -537,9 +551,7 @@ def healpix_resample(
     xvals2, yvals2 = np.meshgrid(xvals, yvals)
 
     # Transform to lat/lon
-    latlon = ccrs.PlateCarree().transform_points(
-        src_crs, xvals2, yvals2, np.zeros_like(xvals2)
-    )
+    latlon = ccrs.PlateCarree().transform_points(src_crs, xvals2, yvals2, np.zeros_like(xvals2))
     valid = np.all(np.isfinite(latlon), axis=-1)
     points = latlon[valid].T
 
@@ -556,12 +568,8 @@ def healpix_resample(
         )
         if var.size < get_npix(var):
             if not isinstance(var, xr.DataArray):
-                raise ValueError(
-                    "Sparse HEALPix grids are only supported as xr.DataArray"
-                )
-            res[valid] = var.sel(cell=pix, method="nearest").where(
-                lambda x: x.cell == pix
-            )
+                raise ValueError("Sparse HEALPix grids are only supported as xr.DataArray")
+            res[valid] = var.sel(cell=pix, method="nearest").where(lambda x: x.cell == pix)
         else:
             res[valid] = var[pix]
 

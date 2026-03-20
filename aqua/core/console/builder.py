@@ -9,45 +9,43 @@ from aqua.core.util import get_arg, load_yaml
 
 
 def builder_parser(parser=None):
-
     """
     Parse command line arguments for the builder CLI.
     """
     if parser is None:
-        parser = argparse.ArgumentParser(description='AQUA grids builder CLI')
-    parser.add_argument('-c', '--config', type=str,
-                        help='YAML configuration file for the builder [default: None]')
-    parser.add_argument('--catalog', type=str, help='Catalog for the Reader')
-    parser.add_argument('-m', '--model', type=str,
-                        help='Model name (e.g. "ECMWF", "ERA5")')
-    parser.add_argument('-e', '--exp', type=str,
-                        help='Experiment name (e.g. "historical", "future")')
-    parser.add_argument('-s', '--source', type=str,
-                        help='Data source (e.g. "reanalysis", "forecast")')
-    parser.add_argument('-l', '--loglevel', type=str, default=None,
-                        help='Log level [default: WARNING]')
-    parser.add_argument('--rebuild', action='store_true',
-                        help='Rebuild the grid even if it already exists')
-    parser.add_argument('--vert_coord', type=str,
-                        help='Vertical coordinate name for 3D grids [default: None]')
-    parser.add_argument('--version', type=int,
-                        help='Version number for the grid file [default: None]')
-    parser.add_argument('--outdir', type=str, default='.',
-                        help='Output directory for the grid file [default: current directory]')
-    parser.add_argument('--original', type=str,
-                        help='Original resolution of the grid [default: None]')
-    parser.add_argument('--modelname', type=str,
-                        help='alternative name for the model for grid naming [default: None]')
-    parser.add_argument('--gridname', type=str,
-                        help='alternative name for the grid for grid naming [default: None]. Required for Curvilinear and Unstructured grids.')
-    parser.add_argument('--fix', action='store_true',
-                        help='Fix and apply data model to the original source [default: False]')
-    parser.add_argument('--verify', action='store_true', default=False,
-                        help='Verify the grid file after creation [default: False]')
-    parser.add_argument('--yaml', action='store_true', default=False,
-                        help='Create the grid entry in the grid file [default: False]')
-    parser.add_argument('--force_unstructured', action='store_true', default=False,
-                        help='Force grid detection to use unstructured grid type [default: False]')
+        parser = argparse.ArgumentParser(description="AQUA grids builder CLI")
+    parser.add_argument("-c", "--config", type=str, help="YAML configuration file for the builder [default: None]")
+    parser.add_argument("--catalog", type=str, help="Catalog for the Reader")
+    parser.add_argument("-m", "--model", type=str, help='Model name (e.g. "ECMWF", "ERA5")')
+    parser.add_argument("-e", "--exp", type=str, help='Experiment name (e.g. "historical", "future")')
+    parser.add_argument("-s", "--source", type=str, help='Data source (e.g. "reanalysis", "forecast")')
+    parser.add_argument("-l", "--loglevel", type=str, default=None, help="Log level [default: WARNING]")
+    parser.add_argument("--rebuild", action="store_true", help="Rebuild the grid even if it already exists")
+    parser.add_argument("--vert_coord", type=str, help="Vertical coordinate name for 3D grids [default: None]")
+    parser.add_argument("--version", type=int, help="Version number for the grid file [default: None]")
+    parser.add_argument(
+        "--outdir", type=str, default=".", help="Output directory for the grid file [default: current directory]"
+    )
+    parser.add_argument("--original", type=str, help="Original resolution of the grid [default: None]")
+    parser.add_argument("--modelname", type=str, help="alternative name for the model for grid naming [default: None]")
+    parser.add_argument(
+        "--gridname",
+        type=str,
+        help="alternative name for the grid for grid naming [default: None]. Required for Curvilinear and Unstructured grids.",
+    )
+    parser.add_argument("--fix", action="store_true", help="Fix and apply data model to the original source [default: False]")
+    parser.add_argument(
+        "--verify", action="store_true", default=False, help="Verify the grid file after creation [default: False]"
+    )
+    parser.add_argument(
+        "--yaml", action="store_true", default=False, help="Create the grid entry in the grid file [default: False]"
+    )
+    parser.add_argument(
+        "--force_unstructured",
+        action="store_true",
+        default=False,
+        help="Force grid detection to use unstructured grid type [default: False]",
+    )
 
     return parser
 
@@ -59,29 +57,29 @@ def builder_execute(args):
     config = {}
     reader_config = {}
     builder_config = {}
-    if hasattr(args, 'config') and args.config:
+    if hasattr(args, "config") and args.config:
         config = load_yaml(args.config)
-        reader_config = config.get('reader', {})
-        builder_config = config.get('builder', {})
+        reader_config = config.get("reader", {})
+        builder_config = config.get("builder", {})
 
     # Use get_arg to merge CLI args and config file values
-    catalog = get_arg(args, 'catalog', reader_config.get('catalog'))
-    model = get_arg(args, 'model', reader_config.get('model'))
-    exp = get_arg(args, 'exp', reader_config.get('exp'))
-    source = get_arg(args, 'source', reader_config.get('source'))
-    fix = get_arg(args, 'fix', reader_config.get('fix', False))
-    datamodel = get_arg(args, 'fix', reader_config.get('datamodel', False))
-    loglevel = get_arg(args, 'loglevel', builder_config.get('loglevel', 'WARNING'))
-    outdir = get_arg(args, 'outdir', builder_config.get('outdir', '.'))
-    original_resolution = get_arg(args, 'original', builder_config.get('original'))
-    modelname = get_arg(args, 'modelname', builder_config.get('modelname'))
-    gridname = get_arg(args, 'gridname', builder_config.get('gridname'))
-    rebuild = get_arg(args, 'rebuild', builder_config.get('rebuild', False))
-    version = get_arg(args, 'version', builder_config.get('version'))
-    verify = get_arg(args, 'verify', builder_config.get('verify', False))
-    create_yaml = get_arg(args, 'yaml', builder_config.get('yaml', False))
-    vert_coord = get_arg(args, 'vert_coord', builder_config.get('vert_coord'))
-    force_unstructured = get_arg(args, 'force_unstructured', builder_config.get('force_unstructured', False))
+    catalog = get_arg(args, "catalog", reader_config.get("catalog"))
+    model = get_arg(args, "model", reader_config.get("model"))
+    exp = get_arg(args, "exp", reader_config.get("exp"))
+    source = get_arg(args, "source", reader_config.get("source"))
+    fix = get_arg(args, "fix", reader_config.get("fix", False))
+    datamodel = get_arg(args, "fix", reader_config.get("datamodel", False))
+    loglevel = get_arg(args, "loglevel", builder_config.get("loglevel", "WARNING"))
+    outdir = get_arg(args, "outdir", builder_config.get("outdir", "."))
+    original_resolution = get_arg(args, "original", builder_config.get("original"))
+    modelname = get_arg(args, "modelname", builder_config.get("modelname"))
+    gridname = get_arg(args, "gridname", builder_config.get("gridname"))
+    rebuild = get_arg(args, "rebuild", builder_config.get("rebuild", False))
+    version = get_arg(args, "version", builder_config.get("version"))
+    verify = get_arg(args, "verify", builder_config.get("verify", False))
+    create_yaml = get_arg(args, "yaml", builder_config.get("yaml", False))
+    vert_coord = get_arg(args, "vert_coord", builder_config.get("vert_coord"))
+    force_unstructured = get_arg(args, "force_unstructured", builder_config.get("force_unstructured", False))
 
     # Ensure required arguments are present
     if model is None:
@@ -92,8 +90,9 @@ def builder_execute(args):
         raise ValueError("Source must be specified via --source or in the config file")
 
     # Retrieve the data
-    reader = Reader(catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel,
-                    areas=False, fix=fix, datamodel=datamodel)
+    reader = Reader(
+        catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix, datamodel=datamodel
+    )
     data = reader.retrieve()
 
     # Create GridBuilder instance
@@ -104,11 +103,8 @@ def builder_execute(args):
         model_name=modelname,
         grid_name=gridname,
         vert_coord=vert_coord,
-        force_unstructured=force_unstructured
+        force_unstructured=force_unstructured,
     )
 
     # Build the grid
-    grid_builder.build(
-        data, rebuild=rebuild,
-        version=version, verify=verify,
-        create_yaml=create_yaml)
+    grid_builder.build(data, rebuild=rebuild, version=version, verify=verify, create_yaml=create_yaml)
