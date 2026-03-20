@@ -6,13 +6,14 @@ from conftest import APPROX_REL, LOGLEVEL
 approx_rel = APPROX_REL
 loglevel = LOGLEVEL
 
-@pytest.fixture(scope='module')
-def reader_instance(fesom_test_pi_original_2d_r200_fixFalse_reader):
-    return fesom_test_pi_original_2d_r200_fixFalse_reader
 
-@pytest.fixture(scope='module')
-def data(fesom_test_pi_original_2d_r200_fixFalse_data):
-    return fesom_test_pi_original_2d_r200_fixFalse_data
+@pytest.fixture(scope="module")
+def reader_instance(fesom_test_pi_original_2d_r200_fixfalse_reader):
+    return fesom_test_pi_original_2d_r200_fixfalse_reader
+
+@pytest.fixture(scope="module")
+def data(fesom_test_pi_original_2d_r200_fixfalse_data):
+    return fesom_test_pi_original_2d_r200_fixfalse_data
 
 @pytest.fixture(scope='module')
 def reader_ifs_tco79_long(ifs_tco79_long_reader):

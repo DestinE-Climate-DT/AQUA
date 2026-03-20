@@ -3,8 +3,7 @@ from aqua.core.graphics import ConfigStyle
 
 @pytest.mark.graphics
 class TestConfigStyle:
-
-    def test_ConfigStyle_maptplotlib(self):
+    def test_configstyle_maptplotlib(self):
         """
         Test that ConfigStyle class is correctly initialized
         with a matplotlib style
@@ -14,7 +13,7 @@ class TestConfigStyle:
         cs = ConfigStyle(style=style)
         assert cs.style == style
 
-    def test_ConfigStyle_default(self):
+    def test_configstyle_default(self):
         """
         Test that ConfigStyle class is correctly initialized with default style
         """
