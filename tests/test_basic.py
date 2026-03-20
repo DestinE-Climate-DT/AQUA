@@ -9,13 +9,13 @@ loglevel = LOGLEVEL
 
 
 @pytest.fixture(scope="module")
-def reader_instance(fesom_test_pi_original_2d_r200_fixFalse_reader):
-    return fesom_test_pi_original_2d_r200_fixFalse_reader
+def reader_instance(fesom_test_pi_original_2d_r200_fixfalse_reader):
+    return fesom_test_pi_original_2d_r200_fixfalse_reader
 
 
 @pytest.fixture(scope="module")
-def data(fesom_test_pi_original_2d_r200_fixFalse_data):
-    return fesom_test_pi_original_2d_r200_fixFalse_data
+def data(fesom_test_pi_original_2d_r200_fixfalse_data):
+    return fesom_test_pi_original_2d_r200_fixfalse_data
 
 
 @pytest.fixture(scope="module")

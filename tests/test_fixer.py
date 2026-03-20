@@ -20,21 +20,21 @@ def data_ifs_tco79_long(ifs_tco79_long_data):
 
 
 @pytest.fixture(scope="module")
-def reader_ifs_tco79_long_fixFalse(ifs_tco79_long_fixFalse_reader):
-    return ifs_tco79_long_fixFalse_reader
+def reader_ifs_tco79_long_fixfalse(ifs_tco79_long_fixfalse_reader):
+    return ifs_tco79_long_fixfalse_reader
 
 
 @pytest.fixture(scope="module")
-def data_ifs_tco79_long_fixFalse(ifs_tco79_long_fixFalse_data):
-    return ifs_tco79_long_fixFalse_data
+def data_ifs_tco79_long_fixfalse(ifs_tco79_long_fixfalse_data):
+    return ifs_tco79_long_fixfalse_data
 
 
 @pytest.mark.aqua
-def test_fixer_ifs_long(data_ifs_tco79_long, data_ifs_tco79_long_fixFalse):
+def test_fixer_ifs_long(data_ifs_tco79_long, data_ifs_tco79_long_fixfalse):
     """Test basic fixing"""
 
     ntime = [10, 20, 1000]  # points in time to be checked (includes 1 month jump)
-    data0 = data_ifs_tco79_long_fixFalse  # Retrieve not fixed data
+    data0 = data_ifs_tco79_long_fixfalse  # Retrieve not fixed data
     ttr0 = data0.ttr[ntime, 0, 0]
     tas0 = data0["2t"][ntime, 5, 5]
 

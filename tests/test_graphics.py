@@ -49,13 +49,13 @@ def data_era5_r100(era5_hpz3_monthly_r100_data):
 
 
 @pytest.fixture(scope="module")
-def fesom_r200_fixFalse_reader(fesom_test_pi_original_2d_r200_fixFalse_reader):
-    return fesom_test_pi_original_2d_r200_fixFalse_reader
+def fesom_r200_fixfalse_reader(fesom_test_pi_original_2d_r200_fixfalse_reader):
+    return fesom_test_pi_original_2d_r200_fixfalse_reader
 
 
 @pytest.fixture(scope="module")
-def fesom_r200_fixFalse_data(fesom_test_pi_original_2d_r200_fixFalse_data):
-    return fesom_test_pi_original_2d_r200_fixFalse_data
+def fesom_r200_fixfalse_data(fesom_test_pi_original_2d_r200_fixfalse_data):
+    return fesom_test_pi_original_2d_r200_fixfalse_data
 
 
 @pytest.fixture(scope="module")
@@ -72,11 +72,11 @@ def data_ifs_tc(reader_ifs_tc):
 class TestMaps:
     """Basic tests for the Single map functions"""
 
-    def test_plot_single_map(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
+    def test_plot_single_map(self, tmp_path, fesom_r200_fixfalse_reader, fesom_r200_fixfalse_data):
         """
         Test the plot_single_map function
         """
-        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        data_regrid = fesom_r200_fixfalse_reader.regrid(fesom_r200_fixfalse_data)
         plot_data = data_regrid["sst"].isel(time=0)
         fig, ax = plot_single_map(
             data=plot_data,
@@ -118,13 +118,13 @@ class TestMaps:
         fig.savefig(tmp_path / "test_plot_single_map_hpx.png")
         assert os.path.exists(tmp_path / "test_plot_single_map_hpx.png")
 
-    def test_plot_single_map_diff(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
+    def test_plot_single_map_diff(self, tmp_path, fesom_r200_fixfalse_reader, fesom_r200_fixfalse_data):
         """
         Test the plot_single_map_diff function
         """
-        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        data_regrid = fesom_r200_fixfalse_reader.regrid(fesom_r200_fixfalse_data)
         plot_data = data_regrid["sst"].isel(time=0)
-        data_regrid2 = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        data_regrid2 = fesom_r200_fixfalse_reader.regrid(fesom_r200_fixfalse_data)
         plot_data2 = data_regrid2["sst"].isel(time=1)
 
         fig, ax = plot_single_map_diff(
@@ -167,11 +167,11 @@ class TestMaps:
         fig.savefig(tmp_path / "test_plot_single_map_diff_hpx.png")
         assert os.path.exists(tmp_path / "test_plot_single_map_diff_hpx.png")
 
-    def test_plot_single_map_no_diff(self, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
+    def test_plot_single_map_no_diff(self, fesom_r200_fixfalse_reader, fesom_r200_fixfalse_data):
         """
         Test the plot_single_map_diff function
         """
-        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        data_regrid = fesom_r200_fixfalse_reader.regrid(fesom_r200_fixfalse_data)
         plot_data = data_regrid["sst"].isel(time=0)
         plot_data2 = plot_data.copy()
 
@@ -180,11 +180,11 @@ class TestMaps:
         assert fig is not None
         assert ax is not None
 
-    def test_maps(self, tmp_path, fesom_r200_fixFalse_reader, fesom_r200_fixFalse_data):
+    def test_maps(self, tmp_path, fesom_r200_fixfalse_reader, fesom_r200_fixfalse_data):
         """Test plot_maps function"""
-        data_regrid = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        data_regrid = fesom_r200_fixfalse_reader.regrid(fesom_r200_fixfalse_data)
         plot_data = data_regrid["sst"].isel(time=0)
-        data_regrid2 = fesom_r200_fixFalse_reader.regrid(fesom_r200_fixFalse_data)
+        data_regrid2 = fesom_r200_fixfalse_reader.regrid(fesom_r200_fixfalse_data)
         plot_data2 = data_regrid2["sst"].isel(time=1)
         fig = plot_maps(
             maps=[plot_data, plot_data2],

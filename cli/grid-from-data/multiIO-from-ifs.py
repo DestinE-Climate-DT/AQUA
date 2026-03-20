@@ -8,14 +8,14 @@ import argparse
 import os
 import sys
 
-from cdo import *  # python version
+from cdo import *  # noqa: F403 (cdo-python: Cdo and operators only exposed via star import)
 
 from aqua import Reader
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, get_arg, load_yaml
 
-cdo = Cdo()
+cdo = Cdo()  # noqa: F405 (name from star import above)
 
 
 def parse_arguments(args):
