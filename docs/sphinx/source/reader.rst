@@ -98,6 +98,7 @@ The basic call to the ``Reader`` is:
 
 This will return a ``Reader`` object that can be used to access the data.
 The ``retrieve()`` method will return an ``xarray.Dataset`` to be used for further processing.
+
 The ``catalog``, differently from the ``model``, ``exp`` and ``source`` arguments, is optional.
 However, if the triplet is not unique across catalogs, the ``Reader`` will guess the correct catalog,
 so it is suggested to always specify it when possible.
@@ -106,6 +107,14 @@ The basic call enables fixer, area and time average functionalities, but no regr
 To have a complete overview of the available options, please check the :doc:`api_reference`.
 
 If some information about the data is needed, it is possible to use the ``info()`` method of the ``Reader`` class.
+
+The ``retrieve()`` method accepts further arguments to select only specific variables or vertical levels as in this example:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly")
+    data = reader.retrieve(var=["t", "2t"], level=[50000, 70000])
 
 .. warning::
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.

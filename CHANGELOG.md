@@ -9,7 +9,12 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Fix area selection, `default_coords` are deduced from the dataset (#2768)
+- Attributes guessing for eccodes works also with local destine table (#2759)
+- Expose fldstat methods through `AquaAccessor` (#2770)
+- Allow level selection for non-fdb sources (#2731)
 - `frequency_string_to_pandas` function can now handle frequencies with a numerical prefix, such as "3hourly" (#2730)
+- Pinning everything in the conda environment file and leave pyproject free (#2772)
 
 ## [v1.0.0a4]
 
@@ -19,6 +24,7 @@ Main changes:
 
 Complete list:
 - Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748)
+- Remove metadata embedding functions for figures to centralise them in the `OutputSaver` (#2750)
 - Remove necessity of FDB paths if engine is polytope (#2656)
 - Fix null catalog entry (#2725)
 - Histogram function now accepts weights dataarray argument (#2734)

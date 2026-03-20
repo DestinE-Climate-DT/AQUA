@@ -298,3 +298,43 @@ class TestFldStatWrappers():
         # Test logical relationships
         assert (reader_ifs.fldmin(data_var) <= reader_ifs.fldmean(data_var)).all()
         assert (reader_ifs.fldmean(data_var) <= reader_ifs.fldmax(data_var)).all()
+
+
+@pytest.mark.aqua
+class TestAccessorFldStat():
+    """Test class for fldstat methods exposed via the aqua accessor"""
+
+    def test_accessor_fldstat_generic(self, reader_ifs, data_ifs):
+        """Accessor fldstat(stat='mean') must match Reader.fldstat(stat='mean')."""
+        reader_ifs.set_default()
+        data_var = data_ifs['2t']
+
+        mean_accessor = data_var.aqua.fldstat(stat='mean')
+        mean_reader = reader_ifs.fldstat(data_var, stat='mean')
+
+        assert mean_accessor.equals(mean_reader)
+
+    @pytest.mark.parametrize(
+        ("method_name", "stat_name"),
+        [
+            ("fldmean", "mean"),
+            ("fldmax", "max"),
+            ("fldmin", "min"),
+            ("fldstd", "std"),
+            ("fldsum", "sum"),
+            ("fldintg", "integral"),
+            ("fldarea", "areasum"),
+        ],
+    )
+    def test_accessor_wrappers_match_reader(self, reader_ifs, data_ifs, method_name, stat_name):
+        """
+        Each fld* accessor method must give the same result as the corresponding
+        Reader.fldstat(..., stat=...) wrapper.
+        """
+        reader_ifs.set_default()
+        data_var = data_ifs['2t']
+
+        accessor_result = getattr(data_var.aqua, method_name)()
+        reader_result = reader_ifs.fldstat(data_var, stat=stat_name)
+
+        assert accessor_result.equals(reader_result)

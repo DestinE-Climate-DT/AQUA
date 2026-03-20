@@ -66,8 +66,11 @@ class FldStat():
                 dims: list | None = None,
                 **kwargs):
         """
-        Perform a weighted global average.
-        If a subset of the data is provided, the average is performed only on the subset.
+        Compute a spatial statistic on the input field, optionally area-weighted.
+        The statistic can be computed globally or over a sub-region selected either
+        by longitude/latitude bounds or via a ``regionmask.Regions`` definition.
+        If an ``area`` dataset is provided at initialization, supported statistics
+        are performed with area-weighting where applicable.
 
         Args:
             data (xr.DataArray or xarray.DataDataset):  the input data
@@ -78,14 +81,11 @@ class FldStat():
             lon_limits (list, optional):  the longitude limits of the subset
             lat_limits (list, optional):  the latitude limits of the subset
             dims (list, optional):  the dimensions to average over, if not provided, horizontal_dims are used
-            **kwargs: additional arguments passed to fldstat
-
-        Kwargs:
-            - box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
-                                  Default is True
-
+            **kwargs: Additional keyword arguments forwarded to ``AreaSelection.select_area()``; for example:
+                - box_brd (bool, optional): if coordinates are comprised or not in area selection, default is True.
+                - to_180 (bool, optional): if longitude coordinates are converted to [-180, 180] range, default is True.
         Returns:
-            The value of the averaged field
+            xr.DataArray or xr.Dataset: Result of the requested spatial statistic.
         """
 
         if stat not in [s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]:
@@ -167,8 +167,7 @@ class FldStat():
                     region: regionmask.Regions | None = None,
                     region_sel: str | int | list | None = None,
                     mask_kwargs: dict = {},
-                    default_coords: dict = {"lat_min": -90, "lat_max": 90,
-                                            "lon_min": 0, "lon_max": 360},
+                    default_coords: dict | None = None,
                     to_180: bool = True) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.

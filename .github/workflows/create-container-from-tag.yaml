@@ -13,7 +13,7 @@ jobs:
        contents: read
     steps:
       - name: "Check out code"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Detect target branch and select image name
         id: select_image
         run: |
