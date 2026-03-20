@@ -65,8 +65,11 @@ def frequency_string_to_pandas(freq):
     else:
         new_freq = trans.get(freq, freq)
 
-    if freq in ['M', 'ME', 'Y', 'YE']:
-        logger.warning('You are using a pandas frequency pointing at the end of a period, this can behave unexpectedly if you have subdaily data')
+    if freq in ["M", "ME", "Y", "YE"]:
+        logger.warning(
+            "You are using a pandas frequency pointing at the end of a period, "
+            "this can behave unexpectedly if you have subdaily data."
+        )
 
     return new_freq
 

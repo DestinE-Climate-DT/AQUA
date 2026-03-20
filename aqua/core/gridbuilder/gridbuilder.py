@@ -42,7 +42,8 @@ class GridBuilder():
             model_name (str, optional): The name of the model, if different from the model argument.
             grid_name (str, optional): The name of the grid, to specify extra information in the grid file
             original_resolution (str, optional): The original resolution of the grid if using an interpolated source.
-            vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one detected by the GridInspector.
+            vert_coord (str, optional): The vertical coordinate to consider for the grid build, to override the one
+                detected by the GridInspector.
             force_unstructured (bool): Whether to force the grid detection to use unstructured grid type.
             loglevel (str, optional): The logging level for the logger. Defaults to 'warning'.
         """

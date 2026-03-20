@@ -171,7 +171,8 @@ class CoordIdentifier:
                 if len(max_score_entries) > 1:
                     # Multiple coordinates with same highest score - disable all
                     self.logger.warning(
-                        "Coordinate '%s' assigned to multiple types with identical scores: %s. Disabling data model check for this coordinate.",
+                        "Coordinate '%s' assigned to multiple types with identical scores: %s. "
+                        "Disabling data model check for this coordinate.",
                         name,
                         [(key, score) for key, score in max_score_entries],
                     )
@@ -229,7 +230,8 @@ class CoordIdentifier:
                 # Multiple coordinates with same highest score - disable
                 else:
                     self.logger.warning(
-                        "Multiple %s coordinates found with identical scores: %s. Disabling data model check for this coordinate.",
+                        "Multiple %s coordinates found with identical scores: %s. "
+                        "Disabling data model check for this coordinate.",
                         key,
                         [(x["name"], x.get("confidence_score", "N/A")) for x in value],
                     )

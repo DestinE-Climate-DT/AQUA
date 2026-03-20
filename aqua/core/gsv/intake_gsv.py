@@ -71,7 +71,8 @@ class GSVSource(base.DataSource):
             metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
             switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb' if not specified.
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'.
+                Defaults to 'fdb' if not specified.
             databridge (str, optional): Only for the Polytope engine. Sets wether the data must be retrieved from the
             Lumi databridge or from the MN5 databridge. Defaults to None.
             loglevel (string) : The loglevel for the GSVSource
@@ -79,9 +80,10 @@ class GSVSource(base.DataSource):
         """
         # If engine is not specified, we set it to 'fdb' and we activate the dummy_run flag.
         # This means that we are running a dummy run, where the GSVRetriever is not actually used.
-        # This is useful for testing and for the probe call of intake, which is used to get the schema without actually reading the data.
-        self.engine = engine or 'fdb'
-        self.dummy_run = (engine is None)
+        # This is useful for testing and for the probe call of intake, which is used to get
+        # the schema without actually reading the data.
+        self.engine = engine or "fdb"
+        self.dummy_run = engine is None
 
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
 
@@ -636,7 +638,8 @@ class GSVSource(base.DataSource):
 
         # The following is a hack around a pyfdb/fdb5 bug which requires a double initialization when reading from bridge
         # See https://github.com/DestinE-Climate-DT/AQUA/issues/1715
-        # Notice also that for some mysterious reason this works only if the result is stored in self (even if then it is not used)
+        # Notice also that for some mysterious reason this works only if the
+        # result is stored in self (even if then it is not used)
         if self.chk_type[i]:
             self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
         gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
@@ -717,7 +720,14 @@ class GSVSource(base.DataSource):
             # has changed. This is a warning to the user. However the final variable name will be influenced
             # by this only if fix=False.
             if updated_var != var:
-                self.logger.warning("Variable shortname %s has been interpreted with another eccodes. Current eccodes %s will read paramid %s as %s", var, eccodes.__version__, original_paramid, updated_var)
+                self.logger.warning(
+                    "Variable shortname %s has been interpreted with another eccodes. "
+                    "Current eccodes %s will read paramid %s as %s",
+                    var,
+                    eccodes.__version__,
+                    original_paramid,
+                    updated_var,
+                )
             # Create a dask array from a list of delayed get_partition calls
             if not self.chunking_vertical:
                 dalist = [self.get_part_delayed(i, original_paramid, shape, dtype) for i in range(self.npartitions)]
@@ -849,7 +859,11 @@ class GSVSource(base.DataSource):
         if self.hpc_expver:
             expver = self.hpc_expver
 
-        file_mask = f"{req['class']}:{req['dataset']}:{req['activity']}:{req['experiment']}:{req['generation']}:{req['model']}:{req['realization']}:{expver}:{req['stream']}:*"
+        file_mask = (
+            f"{req['class']}:{req['dataset']}:{req['activity']}:"
+            f"{req['experiment']}:{req['generation']}:{req['model']}:"
+            f"{req['realization']}:{expver}:{req['stream']}:*"
+        )
 
         file_mask = file_mask.lower()
         file_list = [
