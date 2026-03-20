@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 # This script uploads the contents of a directory or a single file to an S3 bucket.
-# The AWS credentials can be stored in the ~/.aws/credentials file or in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or passed as arguments.
+# The AWS credentials can be stored in the ~/.aws/credentials file or in environment
+# variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or passed as arguments.
+
 # The script uses the boto3 library to interact with the S3 service.
 # The script can be run as follows:
-# python push_s3.py <bucket_name> <source> [-d <destination>] [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
+# python push_s3.py <bucket_name> <source> [-d <destination>]
+# [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
 
 import argparse
 import os
@@ -64,7 +67,8 @@ def upload_directory_to_s3(client, bucket_name, source, dest):
 
 def main():
     """Parse command-line arguments and upload a directory or single file to an S3 bucket.
-       Store the AWS credentials in the ~/.aws/credentials file or in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments.
+    Store the AWS credentials in the ~/.aws/credentials file or in environment 
+    variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments.
     """
 
     parser = argparse.ArgumentParser(description="Upload the contents of a directory or a single file to a S3 bucket.")
@@ -74,7 +78,15 @@ def main():
     parser.add_argument("-k", "--aws_access_key_id", help="AWS access key ID.")
     parser.add_argument("-s", "--aws_secret_access_key", help="AWS secret access key.")
     parser.add_argument("--endpoint_url", help="Custom endpoint URL for S3.", default="https://lumidata.eu")
-    parser.add_argument("-g", "--get", action="store_true", help="Flag to download a single file from the S3 bucket instead of uploading. Destination is intended as a path on the remote.")
+    parser.add_argument(
+        "-g",
+        "--get",
+        action="store_true",
+        help=(
+            "Flag to download a single file from the S3 bucket instead of uploading. "
+            "Destination is intended as a path on the remote."
+        ),
+    )
 
     args = parser.parse_args()
 

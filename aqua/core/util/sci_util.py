@@ -107,7 +107,10 @@ def select_season(xr_data, season: str):
     elif season == 'annual':
         return xr_data
     else:
-        raise ValueError(f"Invalid season abbreviation. Available options are: {', '.join(TRIPLET_MONTHS.keys())}, or 'annual' to perform no season selection.")
+        raise ValueError(
+            f"Invalid season abbreviation. Available options are: {', '.join(TRIPLET_MONTHS.keys())}, "
+            f"or 'annual' to perform no season selection."
+        )
 
 
 def generate_quarter_months(anchor_month='JAN'):

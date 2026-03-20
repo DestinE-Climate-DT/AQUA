@@ -298,7 +298,8 @@ class TestAquaConsole():
 
     #     log_file = os.path.join(output_path, 'dummy-dummy_tool.log')
     #     assert os.path.exists(log_file), \
-    #         f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) if os.path.exists(output_path) else 'directory does not exist'}"
+    #         f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) "
+    #         f"if os.path.exists(output_path) else 'directory does not exist'}"
 
     #     # Check if "This is a dummy CLI script that does nothing." is in the log
     #     with open(log_file, 'r', encoding='utf-8') as f:
