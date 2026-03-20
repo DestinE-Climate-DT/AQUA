@@ -153,9 +153,9 @@ def plot_maps(
             circle = mpath.Path(verts * 0.5 + 0.5)
             ax.set_boundary(circle, transform=ax.transAxes)
 
-            gl = ax.gridlines(draw_labels=False, linewidth=0.5, color='gray', alpha=0.3)
-            gl.xlabel_style = {'color': 'gray'}
-            gl.ylabel_style = {'color': 'gray'}
+            # gl = ax.gridlines(draw_labels=False, linewidth=0.5, color='gray', alpha=0.3)
+            # gl.xlabel_style = {'color': 'gray'}
+            # gl.ylabel_style = {'color': 'gray'}
 
             lon_min, lon_max, lat_min, lat_max = extent
 
@@ -163,14 +163,23 @@ def plot_maps(
             lon_ticks = np.arange(np.ceil(lon_min/30)*30, lon_max, 30)
 
             for lat in lat_ticks:
-                ax.text(lon_min, lat, f"{lat:.0f}°N",
+                ax.text(lon_min, lat, f"{lat:.0f}°",
                         transform=ccrs.PlateCarree(),
                         fontsize=8, color='gray', ha='left', va='bottom', zorder=10)
 
+            is_antarctic = lat_min <= -80  # or however you detect it
+            is_arctic = lat_max >= 80
             for lon in lon_ticks:
-                ax.text(lon, lat_min, f"{lon:.0f}°",
+                if is_antarctic:
+                    label_lat = lat_min + 42
+                elif is_arctic:
+                    label_lat = lat_max - 40  # ← place near the outer ring, not below
+                else:
+                    label_lat = lat_min + 2
+                ax.text(lon, label_lat, f"{lon:.0f}°",
                         transform=ccrs.PlateCarree(),
-                        fontsize=8, color='gray', ha='center', va='bottom', zorder=10)
+                        fontsize=8, color='gray', ha='center',# va='bottom',
+                        zorder=10)
                 
         else:
             gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
