@@ -21,7 +21,7 @@ def check_catalog_source(cat, model, exp, source, name="dictionary"):
 
     if model not in cat:
         avail = list(cat.keys())
-        raise KeyError(f"Model {model} not found in {name}. " 
+        raise KeyError(f"Model {model} not found in {name}. "
                        f"Please choose between available models: {avail}")
     if exp not in cat[model]:
         avail = list(cat[model].keys())

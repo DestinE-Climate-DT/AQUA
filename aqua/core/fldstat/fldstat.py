@@ -1,8 +1,7 @@
 """AQUA class for field statitics"""
-import xarray as xr
 import numpy as np
 import regionmask
-
+import xarray as xr
 from smmregrid import GridInspector
 
 from aqua.core.logger import log_configure, log_history
@@ -129,7 +128,7 @@ class FldStat():
 
         # align coordinates values of area to match data
         self.area = self.align_area_coordinates(data)
-    
+
         if lon_limits is not None or lat_limits is not None or region is not None:
             self.logger.debug("Selecting area for field stat calculation.")
             data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
@@ -218,8 +217,8 @@ class FldStat():
         return area_weighted_integral
 
     def sum_area(self,
-                 data: xr.Dataset | xr.DataArray, 
-                 areacell: xr.DataArray, 
+                 data: xr.Dataset | xr.DataArray,
+                 areacell: xr.DataArray,
                  dims: list):
         """
         Compute the sum of area cells where masked data is not null.

@@ -1,7 +1,8 @@
-import pytest
 import numpy as np
-from aqua import Reader
+import pytest
 from conftest import APPROX_REL, LOGLEVEL
+
+from aqua import Reader
 
 approx_rel = APPROX_REL
 loglevel = LOGLEVEL
@@ -73,7 +74,7 @@ class TestAqua:
         assert global_mean.shape == (2,)
         assert global_mean.values[0] == pytest.approx(17.99434183, rel=approx_rel)
         assert global_mean.values[1] == pytest.approx(17.98060367, rel=approx_rel)
-        
+
     def test_chunks(self):
         """
         Test that the Reader class correctly handles chunking
@@ -110,12 +111,12 @@ class TestAqua:
         Test that time selection works correctly
         """
         reader = reader_ifs_tco79_long
-        
+
         data = reader.retrieve(startdate='2020-03-01', enddate='2020-03-31')
-        
+
         assert len(data.time) > 0
         assert '2t' in data
-        
+
         assert all(data.time.dt.month == 3)
 
     @pytest.fixture(
@@ -173,4 +174,4 @@ class TestAqua:
         reader = Reader(model="ICON", exp="test-healpix", source="fake-ensemble-str",
                         loglevel=loglevel, areas=False, realization='r2i1p1')
         assert reader.kwargs['realization'] == 'r2i1p1'
-        
+

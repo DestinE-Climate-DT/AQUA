@@ -1,12 +1,18 @@
 """Module for aqua grid build"""
 import os
-from typing import Optional, Any
+from typing import Any, Optional
+
 from smmregrid import GridInspector
 
 from aqua.core.logger import log_configure, log_history
-from .extragridbuilder import HealpixGridBuilder, RegularGridBuilder
-from .extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
-from .extragridbuilder import GaussianRegularGridBuilder
+
+from .extragridbuilder import (
+    CurvilinearGridBuilder,
+    GaussianRegularGridBuilder,
+    HealpixGridBuilder,
+    RegularGridBuilder,
+    UnstructuredGridBuilder,
+)
 from .gridentrymanager import GridEntryManager
 
 

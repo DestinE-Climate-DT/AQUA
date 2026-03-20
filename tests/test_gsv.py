@@ -1,12 +1,11 @@
 import pytest
 import xarray as xr
-
-from dask.distributed import LocalCluster, Client
-
-from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
-from aqua.core.configurer import ConfigPath
-from aqua import Reader
 from conftest import LOGLEVEL
+from dask.distributed import Client, LocalCluster
+
+from aqua import Reader
+from aqua.core.configurer import ConfigPath
+from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
 
 if not gsv_available:
     pytest.skip('Skipping GSV tests: FDB5 libraries not available', allow_module_level=True)
@@ -34,9 +33,9 @@ DEFAULT_GSV_PARAMS = {
         'time': '1200',
         'step': '0'
     },
-    'data_start_date': '20080101T1200', 
-    'data_end_date': '20080101T1200', 
-    'timestep': 'h', 
+    'data_start_date': '20080101T1200',
+    'data_end_date': '20080101T1200',
+    'timestep': 'h',
     'timestyle': 'date'
 }
 
@@ -243,7 +242,7 @@ class TestGsv():
                        loglevel="debug", engine="polytope", areas=False)
         data = reader.retrieve(var='2t')
         assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
-    
+
     def test_reader_polytope_mn5(self) -> None:
         """
         Reading from mn5 databridge using polytope
@@ -254,7 +253,7 @@ class TestGsv():
         assert 'databridge' in reader.kwargs
         assert reader.kwargs['databridge'] == 'mn5'
         assert data.isel(time=20)['2t'].values[0] == pytest.approx(301.0878448486328)
-        
+
     def test_fdb_from_file(self) -> None:
         """
         Reading fdb dates from a file.
@@ -263,7 +262,7 @@ class TestGsv():
         """
         source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
                            metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
-                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'}, 
+                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'},
                                      engine='fdb', loglevel=loglevel)
 
         assert source.data_start_date == '19900101T0000'

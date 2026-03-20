@@ -1,15 +1,17 @@
 """Tests for string unit conversion utilities"""
 
-import pytest
 import string
-from aqua.core.util.string import unit_to_latex, generate_random_string
-from aqua.core.util.string import get_quarter_anchor_month, clean_filename
+
+import pytest
+
+from aqua.core.util.string import clean_filename, generate_random_string, get_quarter_anchor_month, unit_to_latex
+
 
 @pytest.mark.aqua
 @pytest.mark.parametrize("input_str, expected", [
     # Basic cases
     ("kg", "kg"),
-    
+
     # Simple exponents (explicit and implicit)
     ("m^2", "m$^{2}$"),
     ("m**2", "m$^{2}$"),
@@ -17,28 +19,28 @@ from aqua.core.util.string import get_quarter_anchor_month, clean_filename
     ("m-2", "m$^{-2}$"),
     ("m^-2", "m$^{-2}$"),
     ("m**-2", "m$^{-2}$"),
-    
+
     # Division notation
     ("W/m^2", "W m$^{-2}$"),
     ("m/s", "m s$^{-1}$"),
     ("kg/m/s", "kg m$^{-1}$ s$^{-1}$"),
     ("J/kg/K", "J kg$^{-1}$ K$^{-1}$"),
-    
+
     # Grouped division
     ("W/(m^2 s)", "W m$^{-2}$ s$^{-1}$"),
     ("kg/(m s^2)", "kg m$^{-1}$ s$^{-2}$"),
-    
+
     # Mixed notation
     ("kg m-1 s-1", "kg m$^{-1}$ s$^{-1}$"),
     ("kg m^-1 s^-1", "kg m$^{-1}$ s$^{-1}$"),
     ("kg m**-1 s**-1", "kg m$^{-1}$ s$^{-1}$"),
-    
+
     # Special characters
     ("°C", "°C"),
     ("µg m^-3", "µg m$^{-3}$"),
     ("µg/m^3", "µg m$^{-3}$"),
     ("%", r"$\%$"),
-    
+
     # Dimensionless units
     ("1", "1"),
     ("1 ", "1"),
@@ -49,7 +51,7 @@ from aqua.core.util.string import get_quarter_anchor_month, clean_filename
     (None, None),
     ("   ", ""),
     ("m/s/s", "m s$^{-1}$ s$^{-1}$"),
-    
+
     # Already LaTeX (should be preserved)
     ("$\\mathrm{km}^2$", "$\\mathrm{km}^2$"),
     ("10^6 $\\mathrm{km}^2$", "10^6 $\\mathrm{km}^2$"),

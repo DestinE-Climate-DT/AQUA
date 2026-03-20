@@ -5,16 +5,16 @@ AQUA catalog operations mixin
 '''
 
 import os
-import sys
 import shutil
+import sys
 from urllib.error import HTTPError
 
 import fsspec
 
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import load_yaml, dump_yaml
-from aqua.core.util.util import to_list, HiddenPrints
 from aqua.core.reader.catalog import show_catalog_content as print_catalog
+from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.util.util import HiddenPrints, to_list
 
 # folder used for reading/storing catalogs
 CATPATH = 'catalogs'
@@ -178,7 +178,7 @@ class CatalogMixin:
             source_dir = f"{CATPATH}/{catalog}"
             self.logger.info('Fetching remote catalog %s from github to %s', catalog, cdir)
             os.makedirs(cdir, exist_ok=True)
-            
+
             # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
             self._fsspec_get_single_call(fs, source_dir, cdir)
             self.logger.info('Download complete!')

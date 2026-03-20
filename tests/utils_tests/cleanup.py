@@ -5,6 +5,7 @@ This module provides utilities for cleaning up files created during tests,
 preventing race conditions in parallel test execution.
 """
 import os
+
 from aqua.core.logger import log_configure
 
 # Files created by tests that need cleanup. Paths are relative to configdir (e.g. ~/.aqua/)
@@ -23,7 +24,7 @@ class TestCleanupRegistry:
     This class provides a simple way to clean up test artifacts
     that are created in the AQUA configuration directory (~/.aqua).
     """
-        
+
     def __init__(self, configdir: str, loglevel: str = 'WARNING'):
         """
         Initialize the cleanup registry.
@@ -34,7 +35,7 @@ class TestCleanupRegistry:
         """
         self.configdir = configdir
         self.logger = log_configure(log_level=loglevel, log_name='TestCleanupRegistry')
-        
+
     def cleanup(self):
         """
         Remove test-generated files after all tests complete.

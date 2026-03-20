@@ -3,15 +3,17 @@ Module including time utilities for AQUA
 """
 import math
 import re
+
+import cftime
 import numpy as np
 import pandas as pd
 import xarray as xr
-import cftime
-from xarray.coding.times import cftime_to_nptime
 from pandas.tseries.frequencies import to_offset
-from aqua.core.util.sci_util import generate_quarter_months, TRIPLET_MONTHS
-from aqua.core.util.string import get_quarter_anchor_month
+from xarray.coding.times import cftime_to_nptime
+
 from aqua.core.logger import log_configure
+from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
+from aqua.core.util.string import get_quarter_anchor_month
 
 DEFAULT_TIME_UNIT = 'us'  # default to microseconds for datetime64 for a wider dates range
 
@@ -208,11 +210,11 @@ def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     chunks = pd.date_range(start=normalized_dates[0],
                            end=normalized_dates[-1],
                            freq=resample_frequency)
-    
-    logger.info('%s chunks from %s to %s at %s frequency to be analysed', 
-                len(chunks), chunks[0], 
+
+    logger.info('%s chunks from %s to %s at %s frequency to be analysed',
+                len(chunks), chunks[0],
                 chunks[-1], resample_frequency)
-    
+
     # if no chunks, no averages
     if len(chunks) == 0:
         raise ValueError(f'No chunks! Cannot compute average on {resample_frequency} period, not enough data')
@@ -303,7 +305,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
     quarters_full = generate_quarter_months(anchor_month)
     quarter_months = quarters_full[anchor_month] # e.g. {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], ...}
 
-    # Build season_months: map from start_month 
+    # Build season_months: map from start_month
     # e.g., {12: {12, 1, 2}, 3: {3, 4, 5}, 6: {6, 7, 8}, 9: {9, 10, 11}}
     season_months = {}
     for quarter_key in ['Q1', 'Q2', 'Q3', 'Q4']:
@@ -313,7 +315,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
 
     if 'D' in data_frequency or 'h' in data_frequency:
         logger.info('Data is sub-monthly (%s), first checking monthly completeness...', data_frequency)
-        monthly_mask = check_chunk_completeness(xdataset, 
+        monthly_mask = check_chunk_completeness(xdataset,
                                                 resample_frequency='MS',
                                                 loglevel=loglevel)
         # Get only complete months, use .resample().mean() to get time axis
@@ -337,7 +339,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
         expected_months = season_months.get(start_month, set())
 
         # Get actual months present in this quarter period
-        quarter_data = xdataset.time[(xdataset['time'] >= chunk) & 
+        quarter_data = xdataset.time[(xdataset['time'] >= chunk) &
                                      (xdataset['time'] < end_date)]
 
         if len(quarter_data) == 0:

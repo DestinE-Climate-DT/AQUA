@@ -1,8 +1,11 @@
 import os
+
 import xarray as xr
 from metpy.units import units
-from aqua.core.logger import log_configure, log_history
+
 from aqua.core.configurer import ConfigPath
+from aqua.core.logger import log_configure, log_history
+
 from .yaml import load_yaml
 
 
@@ -140,7 +143,7 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
     return data_fixed
 
 
-def multiply_units(unit1: str, unit2: str, normalise_units=True, 
+def multiply_units(unit1: str, unit2: str, normalise_units=True,
                    to_base_units=True, loglevel: str = 'WARNING') -> str:
     """
     Multiply two unit strings together using metpy.
@@ -165,8 +168,8 @@ def multiply_units(unit1: str, unit2: str, normalise_units=True,
     """
     unit1 = normalize_units(unit1, loglevel) if normalise_units else unit1
     unit2 = normalize_units(unit2, loglevel) if normalise_units else unit2
-    
+
     result = units(unit1) * units(unit2)
-    
+
     result = result.to_base_units() if to_base_units else result
     return str(result.units)

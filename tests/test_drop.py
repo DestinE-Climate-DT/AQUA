@@ -1,14 +1,16 @@
 import os
 import re
 import shutil
+
+import pandas as pd
 import pytest
 import xarray as xr
-import pandas as pd
+from conftest import LOGLEVEL
+
 from aqua import Drop, Reader
-from aqua.core.drop.output_path_builder import OutputPathBuilder
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import AVAILABLE_STATS
-from conftest import LOGLEVEL
+from aqua.core.drop.output_path_builder import OutputPathBuilder
 
 DROP_PATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
 DROP_PATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'

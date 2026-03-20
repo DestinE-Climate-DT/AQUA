@@ -9,8 +9,10 @@
 import argparse
 import os
 import sys
+
 import boto3
 from botocore.client import Config
+
 
 def get_file_from_s3(client, bucket_name, object_name, dest_path):
     """Try to download a single file from an S3 bucket."""

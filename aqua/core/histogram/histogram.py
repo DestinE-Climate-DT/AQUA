@@ -1,9 +1,11 @@
+import builtins
+
+import dask.array as da
 import numpy as np
 import xarray as xr
-import builtins
-import dask.array as da
-from aqua.core.util import convert_data_units
+
 from aqua.core.logger import log_configure
+from aqua.core.util import convert_data_units
 
 
 def histogram(data: xr.DataArray, range: tuple = None, bins: int = 10,  units: str = None,

@@ -1,6 +1,8 @@
 import pytest
-from aqua import Reader
 from conftest import LOGLEVEL
+
+from aqua import Reader
+
 
 @pytest.mark.aqua
 class TestKwargs:

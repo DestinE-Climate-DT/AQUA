@@ -13,31 +13,30 @@ Main features:
 - Parallel processing with Dask
 - Memory-efficient chunked processing
 """
-import os
-from time import time
-import subprocess
 import glob
+import os
 import shutil
+import subprocess
+from time import time
+
 import dask
-import xarray as xr
 import numpy as np
 import pandas as pd
-
-from dask.distributed import Client, LocalCluster, progress, performance_report
+import xarray as xr
 from dask.diagnostics import ProgressBar
+from dask.distributed import Client, LocalCluster, performance_report, progress
 from dask.distributed.diagnostics import MemorySampler
 
+from aqua.core.configurer import ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
+from aqua.core.util import create_zarr_reference, dump_yaml, load_yaml, replace_intake_vars
 from aqua.core.util.io_util import create_folder, file_is_complete
-from aqua.core.util import dump_yaml, load_yaml
-from aqua.core.configurer import ConfigPath
-from aqua.core.util import create_zarr_reference, replace_intake_vars
 from aqua.core.util.string import generate_random_string
-from .drop_util import move_tmp_files, list_drop_files_complete
-from .catalog_entry_builder import CatalogEntryBuilder
 
+from .catalog_entry_builder import CatalogEntryBuilder
+from .drop_util import list_drop_files_complete, move_tmp_files
 
 TIME_ENCODING = {
     'units': 'days since 1850-01-01 00:00:00',
@@ -401,7 +400,7 @@ class Drop():
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, 
+                basedir=self.basedir, catblock=catblock,
                 source_grid_name=sgn
             )
 

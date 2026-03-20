@@ -8,16 +8,15 @@ import os
 import shutil
 import sys
 
+from aqua.core.configurer import ConfigLocator, ConfigPath
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import load_yaml, dump_yaml
-from aqua.core.configurer import ConfigPath, ConfigLocator
+from aqua.core.util import dump_yaml, load_yaml
 
 from .util import query_yes_no
 
 # check if aqua.diagnostics is installed
 try:
-    from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES
-    from aqua.diagnostics import DIAGNOSTIC_TEMPLATE_DIRECTORIES
+    from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES
 except ImportError:
     DIAGNOSTIC_CONFIG_DIRECTORIES = []
     DIAGNOSTIC_TEMPLATE_DIRECTORIES = []
@@ -73,7 +72,7 @@ class InstallMixin:
                     }
                 }
                 return info
-                
+
         except FileNotFoundError:
             if return_info:
                 return {
@@ -92,7 +91,7 @@ class InstallMixin:
                 self.logger.error('No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
                                 'or manually set the AQUA_CONFIG environment variable to an existing AQUA installation directory.')
                 sys.exit(1)
-        
+
     def _check_component_installed(self, component):
         """
         Check if a specific component is already installed
@@ -175,15 +174,15 @@ class InstallMixin:
         else:
             # Use the default source path
             actual_source = source_path
-    
+
         # Install config directories
         os.makedirs(self.configpath, exist_ok=True)
         for directory in config_dirs:
             source = os.path.join(actual_source, directory)
             target = os.path.join(self.configpath, directory)
-        
+
             self._copy_update_folder_file(source, target, link=link)
-    
+
         # do the same for the templates
         template_source_base = os.path.join(actual_source, '..', 'templates')
 
@@ -191,7 +190,7 @@ class InstallMixin:
         for directory in template_dirs:
             source = os.path.join(template_source_base, directory)
             target = os.path.join(self.templatepath, directory)
-    
+
             if os.path.exists(source):
                 self._copy_update_folder_file(source, target, link=link)
 
@@ -218,7 +217,7 @@ class InstallMixin:
                 return self._get_install_mode(diag_arg)
             if core_arg is not None:
                 return False
-  
+
         # Neither specified: full install in standard mode
         return {'mode': 'standard', 'path': None}
 
@@ -238,10 +237,10 @@ class InstallMixin:
 
         # define the template path
         self.templatepath = os.path.join(self.configpath, 'templates')
-    
+
         # Check current installation status
         install_info = self._check(silent=True, return_info=True)
-        
+
         # Determine installation mode for each component
         core_mode = self._determine_component_mode(args.core, args.diagnostics, 'core')
         diag_mode = self._determine_component_mode(args.core, args.diagnostics, 'diagnostics')
@@ -254,7 +253,7 @@ class InstallMixin:
                 self.logger.warning('It will remove the diagnostics component if already installed.')
                 if not self._remove_installation(confirm=True):
                     sys.exit()
-            
+
             if core_mode is False and diag_mode:
                 if not install_info['core']['installed']:
                     self.logger.error('Cannot install diagnostics without core. Install core first or use full installation.')
@@ -264,7 +263,7 @@ class InstallMixin:
                     sys.exit(1)
                 self.logger.info('Core already installed (%s mode), adding diagnostics component',
                            install_info['core']['mode'])
-    
+
         # Validation: if installing only diagnostics, core must already be installed
         if core_mode is False and diag_mode:
             if not install_info['core']['installed']:
@@ -283,7 +282,7 @@ class InstallMixin:
                 config_dirs=CORE_CONFIG_DIRECTORIES,
                 template_dirs=CORE_TEMPLATE_DIRECTORIES
             )
-        
+
             self.logger.debug('Creating config-aqua.yaml configuration file')
             self._copy_update_folder_file(
                 os.path.join(self.corepath, 'config-aqua.tmpl'),
@@ -464,23 +463,23 @@ class InstallMixin:
         """
         for directory in config_dirs:
             target = os.path.join(self.configpath, directory)
-            
+
             # Skip if in editable mode
             if os.path.islink(target):
                 self.logger.info(f'Skipping {component_name}/{directory} (editable mode)')
                 continue
-                
+
             source = os.path.join(source_path, directory)
             self._copy_update_folder_file(source, target, update=True)
 
         for directory in template_dirs:
             target = os.path.join(self.templatepath, directory)
-            
+
             # Skip if in editable mode
             if os.path.islink(target):
                 self.logger.info(f'Skipping {component_name}/{directory} template (editable mode)')
                 continue
-                
+
             source = os.path.join(source_path, '..', 'templates', directory)
             self._copy_update_folder_file(source, target, update=True)
 
@@ -562,7 +561,7 @@ class InstallMixin:
 
         if return_list:
             return list_files
-        
+
     @staticmethod
     def _get_config_dirs(component):
         """
@@ -579,7 +578,7 @@ class InstallMixin:
         if component == 'diagnostics':
             return DIAGNOSTIC_CONFIG_DIRECTORIES
         raise ValueError(f"Unknown component: {component}")
-    
+
     @staticmethod
     def _get_install_mode(specific_arg):
         """

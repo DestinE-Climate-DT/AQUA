@@ -5,22 +5,25 @@ AQUA wrapper for DROP CLI to submit parallel slurm job based on EACH variable
 Use with caution, it can submit tens of sbatch jobs!
 '''
 
-import subprocess
 import argparse
-import re
 import os
+import re
+import subprocess
 import sys
+
 import jinja2
-from aqua.core.util import load_yaml, get_arg, to_list
+
 from aqua.core.configurer import ConfigPath
+from aqua.core.util import get_arg, load_yaml, to_list
+
 
 def is_job_running(job_name, username):
     """verify that a job name is not already submitted in the slurm queue"""
     # Run the squeue command to get the list of jobs
-    output = subprocess.run(['squeue', '-u', username, '--format', '%j'], 
+    output = subprocess.run(['squeue', '-u', username, '--format', '%j'],
                             capture_output=True, check=True)
     output = output.stdout.decode('utf-8').splitlines()[1:]
-    
+
     # Parse the output to check if the job name is in the list
     return job_name in output
 
@@ -39,13 +42,13 @@ def load_jinja_template(template_file='aqua_drop.j2'):
     templateenv = jinja2.Environment(loader=templateloader, trim_blocks=True, lstrip_blocks=True)
     if os.path.exists(template_file):
         return templateenv.get_template(os.path.basename(template_file))
-    
+
     raise FileNotFoundError(f'Cannot file template file {template_file}')
 
 def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_file,
                   workers=1, definitive=False, overwrite=False,
                   dependency=None, singularity=None):
-    
+
     """
     Submit a sbatch script for the DROP CLI with basic options
 

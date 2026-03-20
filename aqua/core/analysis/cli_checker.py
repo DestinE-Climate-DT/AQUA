@@ -5,9 +5,10 @@ AQUA analysis checker command line interface.
 Check that the imports are correct and the requested model is available in the
 Reader catalog.
 '''
-import sys
-import os
 import argparse
+import os
+import sys
+
 from aqua.core.util import template_parse_arguments
 
 
@@ -39,11 +40,11 @@ if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
 
     try:
-        from aqua import __version__ as aqua_version
         from aqua import Reader
-        from aqua.core.logger import log_configure
-        from aqua.core.util import get_arg, dump_yaml
+        from aqua import __version__ as aqua_version
         from aqua.core.exceptions import NoDataError
+        from aqua.core.logger import log_configure
+        from aqua.core.util import dump_yaml, get_arg
 
         loglevel = get_arg(args, 'loglevel', 'WARNING')
         logger = log_configure(log_name='Setup check', log_level=loglevel)

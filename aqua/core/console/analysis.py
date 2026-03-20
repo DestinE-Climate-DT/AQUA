@@ -1,17 +1,18 @@
 """AQUA analysis command line interface."""
 
-import os
-import sys
 import argparse
 import logging
+import os
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dask.distributed import LocalCluster
-from aqua.core.analysis import run_diagnostic_func, run_command, get_aqua_paths
-from aqua.core.util import load_yaml, create_folder, format_realization
-from aqua.core.configurer import ConfigPath
-from aqua.core.util import expand_env_vars
-from aqua.core.logger import log_configure
 from importlib import resources as pypath
+
+from dask.distributed import LocalCluster
+
+from aqua.core.analysis import get_aqua_paths, run_command, run_diagnostic_func
+from aqua.core.configurer import ConfigPath
+from aqua.core.logger import log_configure
+from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
 
 
 def analysis_parser(parser=None):

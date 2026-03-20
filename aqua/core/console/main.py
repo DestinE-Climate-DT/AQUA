@@ -9,18 +9,16 @@ from importlib import resources as pypath
 
 from aqua.core.logger import log_configure
 
-from .parser import parse_arguments
 from .analysis import analysis_execute
 from .builder import builder_execute
-from .drop import drop_execute
-from .catgen import catgen_execute
-from .install import InstallMixin
 from .catalog import CatalogMixin
+from .catgen import catgen_execute
+from .drop import drop_execute
 from .files import FilesMixin
 
 # this are used to check existence of aqua.diagnostics
-from .install import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES
-
+from .install import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES, InstallMixin
+from .parser import parse_arguments
 
 
 class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):

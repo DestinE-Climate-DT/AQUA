@@ -1,10 +1,12 @@
 from typing import Optional, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+
 from .styles import ConfigStyle
 
 
@@ -12,7 +14,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_name: str = "plev", x_coord: str = "lat",
                           lev_min: Optional[float] = None,lev_max: Optional[float] = None,
                           vmin: Optional[float] = None, vmax: Optional[float] = None,
-                          nlevels: int = 18, 
+                          nlevels: int = 18,
                           title: Optional[str] = None, title_size: Optional[int] = 16,
                           style: Optional[str] = None,
                           logscale: bool = False,
@@ -110,7 +112,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
 
 
 def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
-                               var: str, 
+                               var: str,
                                lev_name: str = "plev", x_coord: str = "lat",
                                lev_min: Optional[float] = None, lev_max: Optional[float] = None,
                                vmin: Optional[float] = None, vmax: Optional[float] = None,

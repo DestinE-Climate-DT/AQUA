@@ -1,9 +1,11 @@
 """Utilities for calendar and timestep calculations"""
 
-import pandas as pd
-from datetime import datetime
 import os
+from datetime import datetime
+
 import numpy as np
+import pandas as pd
+
 
 def date2str(dateobj):
     """
@@ -240,7 +242,7 @@ def read_bridge_date(obj):
     """
     Reads the bridge end date from a file or string
     """
-    
+
     if obj and obj != "complete" and os.path.isfile(obj):
         with open(obj, 'r') as file:
             date = file.read()
@@ -248,7 +250,7 @@ def read_bridge_date(obj):
         return date.strftime('%Y%m%dT%H%M')
     else:
         return obj
-    
+
 def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
     """
     Floors a datetime object to the specified pandas frequency, 
@@ -278,9 +280,9 @@ def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
         dt = pd.Timestamp(dt.year, 1, 1)
     elif freq in ['ME', 'YE']:
         raise KeyError(f'Freq {freq} is not supported, please use {freq[0]}S')
-    elif 'W' in freq: 
+    elif 'W' in freq:
         raise KeyError('Weekly frequency not supported')
     else:
         dt = dt.floor(freq)
-    
+
     return dt.strftime(output_format)

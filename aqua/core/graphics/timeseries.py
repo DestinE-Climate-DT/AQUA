@@ -4,13 +4,15 @@ both with monthly and annual aggregation options
 """
 import textwrap
 from typing import Optional
-import xarray as xr
+
 import matplotlib.pyplot as plt
+import xarray as xr
+
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
-from .util_timeseries import plot_timeseries_data, plot_timeseries_ref_data
-from .util_timeseries import plot_timeseries_ensemble, _plot_lx
+
 from .styles import ConfigStyle
+from .util_timeseries import _plot_lx, plot_timeseries_data, plot_timeseries_ensemble, plot_timeseries_ref_data
 
 
 def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,

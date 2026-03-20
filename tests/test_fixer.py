@@ -1,7 +1,8 @@
 """Test fixer functionality for Reader"""
 
-import pytest
 import numpy as np
+import pytest
+
 from aqua import Reader
 from aqua.core.fixer import EvaluateFormula
 
@@ -150,7 +151,7 @@ def test_fixer_fesom_names():
 @pytest.mark.aqua
 def test_fixer_deltat():
     """Check that output for deltat read from metadata and from fixes are the same"""
-    
+
     reader1 = Reader(model='IFS', exp='test-tco79', source='long-deltat', loglevel=LOGLEVEL)
     data_metadata = reader1.retrieve(var='tnlwrf').isel(time=5)
     reader2 = Reader(model='IFS', exp='test-tco79', source='long', loglevel=LOGLEVEL)
@@ -206,7 +207,7 @@ class TestEvaluateFormula:
             units='K',
             short_name="magnitude_2t",
             long_name='Magnitude of 2t vector').evaluate()
-        
+
         assert convert.attrs['short_name'] == 'magnitude_2t'
         assert convert.attrs['long_name'] == 'Magnitude of 2t vector'
         assert convert.attrs['units'] == 'K'

@@ -1,15 +1,14 @@
 """Class to create a catalog entry for DROP"""
 
 import pandas as pd
+
 from aqua.core.logger import log_configure
-from aqua.core.util import format_realization
-from aqua.core.util import replace_intake_vars, replace_urlpath_jinja
-from aqua.core.util import frequency_string_to_pandas
+from aqua.core.util import format_realization, frequency_string_to_pandas, replace_intake_vars, replace_urlpath_jinja
+
 from .output_path_builder import OutputPathBuilder
 
-
 # default grid name for DROP outputs, if not specified otherwise
-DEFAULT_DROP_GRID = 'lon-lat-r100'  
+DEFAULT_DROP_GRID = 'lon-lat-r100'
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for DROP"""
@@ -102,15 +101,15 @@ class CatalogEntryBuilder():
         if freq:
             rng = pd.date_range(
                 f'{baseyear}-01-01', f'{baseyear+1}-01-01',
-                freq=freq, 
+                freq=freq,
                 inclusive="left"
             )
             chunks.update({'time': len(rng)})
 
         return chunks
 
-    def create_entry_details(self, basedir=None, catblock=None, 
-                             driver='netcdf', 
+    def create_entry_details(self, basedir=None, catblock=None,
+                             driver='netcdf',
                              source_grid_name=DEFAULT_DROP_GRID):
         """
         Create an entry in the catalog for DROP

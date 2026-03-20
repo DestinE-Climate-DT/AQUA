@@ -1,12 +1,19 @@
 """Timmean mixin for the Reader class"""
+from functools import partial
+
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
-from functools import partial
-from aqua.core.util import check_chunk_completeness, check_seasonal_chunk_completeness, frequency_string_to_pandas
-from aqua.core.util import extract_literal_and_numeric, fix_calendar
-from aqua.core.logger import log_history, log_configure
+
 from aqua.core.histogram import histogram
+from aqua.core.logger import log_configure, log_history
+from aqua.core.util import (
+    check_chunk_completeness,
+    check_seasonal_chunk_completeness,
+    extract_literal_and_numeric,
+    fix_calendar,
+    frequency_string_to_pandas,
+)
 
 
 class TimStat():
@@ -93,7 +100,7 @@ class TimStat():
                 resample_data = data.resample(time=resample_freq)
             except ValueError as exc:
                 raise ValueError(f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
-            
+
         # if frequency is undefined, meaning that we operate on the entire set
         else:
             resample_data = data
@@ -109,9 +116,9 @@ class TimStat():
             if stat in ['first', 'last']:
                 resampled_times = getattr(data.time.resample(time=resample_freq), stat)(**extra_kwargs)
                 out = out.assign_coords(time=resampled_times)
-                
+
         else:  # we can safely assume that it is a callable function now
-            self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
+            self.logger.info('Resampling to %s frequency and computing custom function...', str(resample_freq))
             if resample_freq is not None:
                 out = resample_data.map(partial(stat, **func_kwargs, **kwargs))
             else:
@@ -154,7 +161,7 @@ class TimStat():
             log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
-    
+
     # this is not yet a great solution, but is more general than the previous one
     def center_time_axis(self, avg_data: xr.Dataset, resample_freq: str) -> xr.Dataset:
         """

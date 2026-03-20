@@ -1,7 +1,8 @@
 """Tests for GSV timeutile in AQUA"""
 
-import pytest
 import pandas as pd
+import pytest
+
 from aqua.core.gsv.timeutil import floor_datetime
 
 # Assuming floor_datetime is already imported

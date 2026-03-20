@@ -1,6 +1,7 @@
 """Module containing general utility functions for AQUA"""
 
 from __future__ import annotations
+
 import os
 import sys
 

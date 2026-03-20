@@ -9,18 +9,28 @@ Author: Matteo Nurisso
 Date: Feb 2024
 """
 from typing import Optional
+
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import healpy as hp
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import healpy as hp
+
 from aqua.core.logger import log_configure
-from aqua.core.util import add_cyclic_lon, evaluate_colorbar_limits
-from aqua.core.util import healpix_resample, coord_names, set_ticks
-from aqua.core.util import cbar_get_label, set_map_title, generate_colorbar_ticks
+from aqua.core.util import (
+    add_cyclic_lon,
+    cbar_get_label,
+    coord_names,
+    evaluate_colorbar_limits,
+    generate_colorbar_ticks,
+    healpix_resample,
+    set_map_title,
+    set_ticks,
+)
+
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
-import cartopy.feature as cfeature
 
 
 def plot_single_map(data: xr.DataArray,
@@ -29,11 +39,11 @@ def plot_single_map(data: xr.DataArray,
                     extent: Optional[list] = None, coastlines: bool = True,
                     style: Optional[str] = None, figsize: tuple = (11, 8.5), nlevels: int = 11,
                     vmin: Optional[float] = None, vmax: Optional[float] = None, cmap: str = 'RdBu_r',
-                    cbar: bool = True, cbar_label: Optional[str] = None, 
+                    cbar: bool = True, cbar_label: Optional[str] = None,
                     norm: Optional[object] = None,
                     title: Optional[str] = None, title_size: Optional[int] = 12, transform_first: bool = False, cyclic_lon: bool = True,
                     add_land: bool = False, fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                    ax_pos: tuple = (1, 1, 1), return_fig: bool = False, 
+                    ax_pos: tuple = (1, 1, 1), return_fig: bool = False,
                     loglevel='WARNING',  **kwargs):
     """
     Plot contour or pcolormesh map of a single variable. By default the contour map is plotted.
@@ -119,7 +129,7 @@ def plot_single_map(data: xr.DataArray,
         if sym:
             logger.warning("sym=True, vmin and vmax given will be ignored")
             vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
-            
+
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
         levels = np.linspace(vmin, vmax, nlevels + 1)
@@ -205,7 +215,7 @@ def plot_single_map(data: xr.DataArray,
 
         cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
         cbar_ticks = generate_colorbar_ticks(vmin=vmin,
-                                             vmax=vmax, 
+                                             vmax=vmax,
                                              sym=sym,
                                              nlevels=nlevels,
                                              ticks_rounding=cbar_ticks_rounding,

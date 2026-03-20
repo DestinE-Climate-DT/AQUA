@@ -2,9 +2,10 @@
 Module including string utilities for AQUA
 """
 
-import re
 import random
+import re
 import string
+
 
 def generate_random_string(length):
     """
@@ -107,7 +108,7 @@ def unit_to_latex(unit_str):
     """
     if not unit_str:
         return unit_str
-        
+
     if not unit_str.strip():
         return ""
 
@@ -130,13 +131,13 @@ def unit_to_latex(unit_str):
         return '/' + content.replace(' ', '/')
 
     s = re.sub(r'/\s*\(([^)]+)\)', _repl_div_group, s)
-    
+
     # Remove any remaining parentheses
     s = s.replace('(', '').replace(')', '')
 
     # Split by '/' to handle division
     parts = s.split('/')
-    
+
     latex_parts = []
     # Process numerator
     latex_parts.extend(_parse_unit_parts(parts[0], invert=False))
@@ -159,28 +160,28 @@ def _parse_unit_parts(text, invert):
     # Pattern matches: optional leading space, unit (letters/µ/°/%), optional exponent
     # This preserves spaces between units
     pattern = r'(\s*)([a-zA-Zµ°%]+)(?:\^?\s*(-?\d+)|(-?\d+))?'
-    
+
     matches = re.findall(pattern, text)
     results = []
-    
+
     for match in matches:
         leading_space = match[0]  # Preserve any leading whitespace
         unit = match[1]
         if not unit:
             continue
-        
+
         # Get exponent from either capture group (^number or implicit number)
         exp_str = match[2] or match[3]
-        
+
         # Parse exponent, default to 1 (no exponent)
         exp = int(exp_str) if exp_str else 1
-        
+
         if invert:
             exp = -exp
-        
+
         # Escape % for LaTeX (must be \% to display properly)
         unit_escaped = unit.replace('%', r"$\%$")
-        
+
         # Format: only wrap exponents
         if exp == 1:
             # No exponent: just the unit with its leading space
@@ -188,5 +189,5 @@ def _parse_unit_parts(text, invert):
         else:
             # With exponent: unit + $^{exp}$ with leading space
             results.append(leading_space + unit_escaped + f"$^{{{exp}}}$")
-    
+
     return results

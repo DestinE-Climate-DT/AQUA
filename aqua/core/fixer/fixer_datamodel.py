@@ -3,7 +3,8 @@ Class for supplementary coordinate and dimension fixes beyond base data model.
 Works BEFORE base data model transformation (DataModel/CoordTransformer).
 """
 import xarray as xr
-from aqua.core.logger import log_history, log_configure
+
+from aqua.core.logger import log_configure, log_history
 
 
 class FixerDataModel:
@@ -46,7 +47,7 @@ class FixerDataModel:
         if self.fixes is None:
             self.logger.debug("No supplementary fixes to apply")
             return data
-        
+
         # Apply supplementary fixes from YAML
         data = self._fix_dims(data)
         data = self._fix_coord(data)
@@ -93,7 +94,7 @@ class FixerDataModel:
                     self.logger.warning("Coordinate %s not found", coord)
 
         return data
-    
+
     def _fix_dims(self, data: xr.Dataset):
         """
         Apply supplementary dimension fixes from fixes file.

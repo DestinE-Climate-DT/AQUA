@@ -49,6 +49,6 @@ def get_projection(projname: str, **kwargs) -> ccrs.Projection:
     if projname not in projections_maps:
         raise ValueError(f"Unsupported projection: '{projname}'. "
                          f"Available options are: {list(projections_maps.keys())}")
-    
+
     projection_class = projections_maps[projname]
     return projection_class(**kwargs)

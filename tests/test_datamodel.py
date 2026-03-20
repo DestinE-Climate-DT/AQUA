@@ -1,9 +1,11 @@
 """Tests for the aqua.datamodel module."""
-import xarray as xr
 import numpy as np
 import pytest
+import xarray as xr
+
 from aqua import Reader
-from aqua.core.data_model import CoordTransformer, CoordIdentifier
+from aqua.core.data_model import CoordIdentifier, CoordTransformer
+
 
 @pytest.mark.aqua
 class TestDataModel():
@@ -16,7 +18,7 @@ class TestDataModel():
                 "wind": (["height", "lat", "lon", "time"], np.random.rand(4, 3, 4, 2)),
             },
             coords={
-                "level": [1000, 850, 700, 500, 300], 
+                "level": [1000, 850, 700, 500, 300],
                 "LATITUDE": [10, 20, 30],
                 "longi": [100, 110, 120, 130],
                 "deeepth": [0, 10, 20],
@@ -24,7 +26,7 @@ class TestDataModel():
                 "height": [0, 5, 10, 15],
             },
         )
-    
+
     def test_coords_error(self, data):
         """Error case"""
 
@@ -39,11 +41,11 @@ class TestDataModel():
             coord.transform_coords(name=123)
         with pytest.raises(FileNotFoundError):
             coord.transform_coords(name="antani")
-        
+
     def test_basic_transform_vertical(self):
         """Basic test for the CoordTransformer class."""
 
-        reader = Reader(model="FESOM", exp="test-pi", source="original_3d", fix=False) 
+        reader = Reader(model="FESOM", exp="test-pi", source="original_3d", fix=False)
         data = reader.retrieve()
 
         # case for multiple vertical coordinates, ignore along the vertical
@@ -144,7 +146,7 @@ class TestDataModel():
 
         data = data.rename({"LATITUDE": "lat"})
         data['longi'].attrs = {"axis": "Y"}
-        
+
         identifier = CoordIdentifier(data.coords, loglevel='debug')
         coord_dict = identifier.identify_coords()
 
@@ -157,7 +159,7 @@ class TestDataModel():
 
         data = data.rename({"LATITUDE": "lat"})
         data = data.rename({"longi": "latitude"})
-        
+
         identifier = CoordIdentifier(data.coords, loglevel='debug')
         coord_dict = identifier.identify_coords()
 
