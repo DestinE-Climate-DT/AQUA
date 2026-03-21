@@ -196,8 +196,10 @@ class CoordTransformer:
                 data[tgt_coord["name"]].attrs["flipped"] = 1
                 log_history(
                     data,
-                    (f"Flipped coordinate {tgt_coord['name']} from ",
-                    f"{src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel"),
+                    (
+                        f"Flipped coordinate {tgt_coord['name']} from ",
+                        f"{src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel",
+                    ),
                 )
             else:
                 self.logger.info(

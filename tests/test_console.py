@@ -490,7 +490,7 @@ class TestAquaConsoleShared:
             run_aqua(["add", catalog_name])
             assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs", catalog_name))
             config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
-            assert catalog_name  in config_file["catalog"]
+            assert catalog_name in config_file["catalog"]
 
         # set catalog
         run_aqua(["set", "ci"])
