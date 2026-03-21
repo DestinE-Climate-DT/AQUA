@@ -258,23 +258,23 @@ def icon_test_r2b0_short_data(icon_test_r2b0_short_reader):
 # NEMO fixtures
 # ======================================================================
 @pytest.fixture(scope="session")
-def nemo_test_eORCA1_long_2d_reader():
+def nemo_test_e_orca1_long_2d_reader():
     return Reader(model="NEMO", exp="test-eORCA1", source="long-2d", loglevel=LOGLEVEL)
 
 
 @pytest.fixture(scope="session")
-def nemo_test_eORCA1_long_2d_data(nemo_test_eORCA1_long_2d_reader):
-    return nemo_test_eORCA1_long_2d_reader.retrieve(var="tos")
+def nemo_test_e_orca1_long_2d_data(nemo_test_e_orca1_long_2d_reader):
+    return nemo_test_e_orca1_long_2d_reader.retrieve(var="tos")
 
 
 @pytest.fixture(scope="session")
-def nemo_test_eORCA1_short_3d_reader():
+def nemo_test_e_orca1_short_3d_reader():
     return Reader(model="NEMO", exp="test-eORCA1", source="short-3d", loglevel=LOGLEVEL)
 
 
 @pytest.fixture(scope="session")
-def nemo_test_eORCA1_short_3d_data(nemo_test_eORCA1_short_3d_reader):
-    return nemo_test_eORCA1_short_3d_reader.retrieve(var="so")
+def nemo_test_e_orca1_short_3d_data(nemo_test_e_orca1_short_3d_reader):
+    return nemo_test_e_orca1_short_3d_reader.retrieve(var="so")
 
 
 # ======================================================================

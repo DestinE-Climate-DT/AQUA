@@ -54,7 +54,7 @@ class FldStat:
         self.area_selection = AreaSelection(loglevel=loglevel)
 
     @property
-    def AVAILABLE_FLDSTATS(self):
+    def available_fldstats(self):
         """Return available field statistics."""
         return {"custom": ["integral", "areasum"], "standard": ["mean", "std", "max", "min", "sum"]}
 
@@ -93,10 +93,10 @@ class FldStat:
             xr.DataArray or xr.Dataset: Result of the requested spatial statistic.
         """
 
-        if stat not in [s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]:
+        if stat not in [s for stats in self.available_fldstats.values() for s in stats]:
             raise ValueError(
                 f"Statistic {stat} not supported by AQUA FldStat(), only "
-                f"{[s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]} are supported."
+                f"{[s for stats in self.available_fldstats.values() for s in stats]} are supported."
             )
 
         if not isinstance(data, (xr.DataArray, xr.Dataset)):
@@ -126,7 +126,7 @@ class FldStat:
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
             # compact call, equivalent of "out = data.mean()"
-            if stat in self.AVAILABLE_FLDSTATS["standard"]:
+            if stat in self.available_fldstats["standard"]:
                 self.logger.info("Computing unweighted %s on %s dimensions", stat, self.horizontal_dims)
                 log_history(data, f"Unweighted {stat} computed on {self.horizontal_dims} dimensions")
                 return getattr(data, stat)(dim=self.horizontal_dims)

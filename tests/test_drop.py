@@ -12,8 +12,8 @@ from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import AVAILABLE_STATS
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 
-DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
-DROP_PATH_DAILY = "ci/IFS/test-tco79/r1/r100/daily/mean/europe"
+drop_path = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
+drop_path_daily = "ci/IFS/test-tco79/r1/r100/daily/mean/europe"
 
 # pytestmark groups tests that run sequentially on the same worker to avoid conflicts
 pytestmark = [pytest.mark.aqua, pytest.mark.console, pytest.mark.xdist_group(name="dask_operations")]
@@ -59,11 +59,11 @@ class TestOutputPathBuilder:
         )
 
         if not expected:
-            DROP_PATH = f"ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}"
+            drop_path = f"ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}"
             expected = os.path.join(
                 os.getcwd(),
                 drop_arguments["outdir"],
-                DROP_PATH,
+                drop_path,
                 f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc",
             )
         else:
@@ -138,7 +138,7 @@ class TestDROP:
 
         test.retrieve()
         test.drop_generator()
-        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
+        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], drop_path))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     @pytest.mark.parametrize("nworkers", [1, 2])
@@ -159,7 +159,7 @@ class TestDROP:
         test.drop_generator()
 
         file_path = os.path.join(
-            os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc"
+            os.getcwd(), drop_arguments["outdir"], drop_path, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc"
         )
         test.check_integrity(varname=drop_arguments["var"])
         assert os.path.isfile(file_path)
@@ -189,7 +189,7 @@ class TestDROP:
         test.drop_generator()
 
         file_path = os.path.join(
-            os.getcwd(), drop_arguments["outdir"], DROP_PATH_DAILY, "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc"
+            os.getcwd(), drop_arguments["outdir"], drop_path_daily, "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc"
         )
         assert os.path.isfile(file_path), "File not found: {}".format(file_path)
 
@@ -242,7 +242,7 @@ class TestDROP:
 
         test.retrieve()
         test.drop_generator()
-        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
+        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], drop_path))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_exclude_incomplete(self, drop_arguments, tmp_path):
@@ -262,10 +262,10 @@ class TestDROP:
         test.drop_generator()
 
         missing_file = os.path.join(
-            os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc"
+            os.getcwd(), drop_arguments["outdir"], drop_path, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc"
         )
         existing_file = os.path.join(
-            os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc"
+            os.getcwd(), drop_arguments["outdir"], drop_path, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc"
         )
 
         assert not os.path.exists(missing_file)

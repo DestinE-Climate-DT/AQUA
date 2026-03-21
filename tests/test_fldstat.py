@@ -38,23 +38,23 @@ def data_icon_r2b0(icon_test_r2b0_short_data):
 
 
 @pytest.fixture(scope="module")
-def reader_nemo_2d(nemo_test_eORCA1_long_2d_reader):
-    return nemo_test_eORCA1_long_2d_reader
+def reader_nemo_2d(nemo_test_e_orca1_long_2d_reader):
+    return nemo_test_e_orca1_long_2d_reader
 
 
 @pytest.fixture(scope="module")
-def data_nemo_2d(nemo_test_eORCA1_long_2d_data):
-    return nemo_test_eORCA1_long_2d_data
+def data_nemo_2d(nemo_test_e_orca1_long_2d_data):
+    return nemo_test_e_orca1_long_2d_data
 
 
 @pytest.fixture(scope="module")
-def reader_nemo_3d(nemo_test_eORCA1_short_3d_reader):
-    return nemo_test_eORCA1_short_3d_reader
+def reader_nemo_3d(nemo_test_e_orca1_short_3d_reader):
+    return nemo_test_e_orca1_short_3d_reader
 
 
 @pytest.fixture(scope="module")
-def data_nemo_3d(nemo_test_eORCA1_short_3d_data):
-    return nemo_test_eORCA1_short_3d_data
+def data_nemo_3d(nemo_test_e_orca1_short_3d_data):
+    return nemo_test_e_orca1_short_3d_data
 
 
 @pytest.fixture(scope="module")

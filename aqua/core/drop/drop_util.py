@@ -39,10 +39,10 @@ from glob import glob
 #     logger.info('Creating catalog entry %s %s %s', model, exp, entry_name)
 
 #     # load the catalog experiment file
-#     Configurer = ConfigPath()
-#     configdir = Configurer.configdir
+#     configurer = ConfigPath()
+#     configdir = configurer.configdir
 #     if catalog is None:
-#         catalog = Configurer.catalog
+#         catalog = configurer.catalog
 
 #     # find the catalog of my experiment
 #     catalogfile = os.path.join(configdir, 'catalogs', catalog,

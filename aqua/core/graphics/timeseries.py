@@ -231,8 +231,8 @@ def plot_seasonalcycle(
 
     ConfigStyle(style=style, loglevel=loglevel)
 
-    monthsNumeric = range(0, 13 + 1)  # Numeric months
-    monthsNames = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
+    months_numeric = range(0, 13 + 1)  # Numeric months
+    months_names = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
 
     if data is not None:
         if isinstance(data, xr.DataArray):
@@ -256,8 +256,8 @@ def plot_seasonalcycle(
             logger.debug(f"Error plotting std data: {e}")
 
     ax.legend(fontsize="small")
-    ax.set_xticks(monthsNumeric)
-    ax.set_xticklabels(monthsNames)
+    ax.set_xticks(months_numeric)
+    ax.set_xticklabels(months_names)
     ax.set_xlim(0.5, 12.5)
     ax.set_axisbelow(True)
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)

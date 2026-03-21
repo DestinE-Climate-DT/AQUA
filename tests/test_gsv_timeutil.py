@@ -32,6 +32,6 @@ def test_floor_datetime_all_cases():
         if isinstance(expected, str):  # For valid cases
             result = floor_datetime(dt, freq)
             assert result == expected, f"Failed for {freq} on {dt_str}: expected {expected}, got {result}"
-        elif expected == KeyError:  # For invalid frequencies
+        elif expected is KeyError:  # For invalid frequencies
             with pytest.raises(KeyError):
                 floor_datetime(dt, freq)

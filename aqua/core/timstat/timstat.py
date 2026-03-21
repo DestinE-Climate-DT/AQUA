@@ -28,7 +28,7 @@ class TimStat:
         self.logger = log_configure(loglevel, "TimStat")
 
     @property
-    def AVAILABLE_STATS(self):
+    def available_stats(self):
         """Return the list of available statistics."""
         return ["mean", "std", "max", "min", "sum", "first", "last", "histogram"]
 
@@ -67,7 +67,7 @@ class TimStat:
             xarray.Dataset: Output data with the required statistic computed at the desired frequency.
         """
 
-        if isinstance(stat, str) and stat not in self.AVAILABLE_STATS:
+        if isinstance(stat, str) and stat not in self.available_stats:
             raise KeyError(f"{stat} is not a statistic supported by AQUA")
 
         if not isinstance(stat, str) and not callable(stat):
