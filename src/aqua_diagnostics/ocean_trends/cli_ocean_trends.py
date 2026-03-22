@@ -134,7 +134,7 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    # zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
 
