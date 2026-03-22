@@ -46,5 +46,5 @@ diagnostics:
       var: ['thetao', 'so']
       # Note: region and climatology are zipped together, so if you want the same region with different climatologies, you need to repeat it
       regions: ['arctic', 'antarctic']
-      climatology: ['JJA', 'DJF']
+      climatology: ['DJF', 'JJA']
       # dim_mean: ['lat', 'lon']
