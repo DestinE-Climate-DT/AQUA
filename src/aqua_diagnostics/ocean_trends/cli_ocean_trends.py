@@ -115,13 +115,13 @@ if __name__ == '__main__':
                         {
                             "thetao":
                                 {
-                                    'vmin': -1.5,
-                                    'vmax': 1.5,
+                                    'vmin': -0.7,
+                                    'vmax': 0.7,
                                 },
                             "so":
                                 {
-                                    'vmin': -.2,
-                                    'vmax': .2,
+                                    'vmin': -.12,
+                                    'vmax': .12,
                                 }
                         },
                         sym = True,
