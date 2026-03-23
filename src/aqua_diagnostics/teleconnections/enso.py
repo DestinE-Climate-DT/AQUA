@@ -34,7 +34,7 @@ class ENSO(BaseMixin):
                              This is used to deduce the variable name and the lat/lon for the index.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
-        super().__init__(telecname='Niño 3.4 index', catalog=catalog, model=model, exp=exp, source=source,
+        super().__init__(telecname='ENSO', catalog=catalog, model=model, exp=exp, source=source,
                          regrid=regrid, startdate=startdate, enddate=enddate,
                          configdir=configdir, definition=definition,
                          loglevel=loglevel)
@@ -96,7 +96,7 @@ class ENSO(BaseMixin):
         data_an = data.groupby('time.month') - data.groupby('time.month').mean(dim='time')
         field_mean_an = data_an.rolling(time=months_window, center=True).mean(skipna=True)
         field_mean_an = field_mean_an.rename('index')
-        field_mean_an.attrs['long_name'] = f'{self.telecname} index'
+        field_mean_an.attrs['long_name'] = 'Niño 3.4 index'
 
         self.logger.debug('Index evaluated')
 
