@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+
 AQUA core complete list:
 - Attributes guessing for eccodes works also with local destine table (#2785)
 - Fix area selection, `default_coords` are deduced from the dataset (#2771)
