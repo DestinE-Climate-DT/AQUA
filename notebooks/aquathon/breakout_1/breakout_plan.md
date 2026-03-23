@@ -1,4 +1,4 @@
-# Breakout Session Plan: AQUA Analysis 
+# Breakout Session Plan: AQUA Analysis
 
 # Table of Contents
 
@@ -36,15 +36,15 @@ This session will focus on **Sailing with AQUA:**, which includes running the aq
 ---
 **Objective:** Introduce the session's objectives.
 
-#### 1.1 Briefly explain the session purpose and key activities 
-  
+#### 1.1 Briefly explain the session purpose and key activities
+
 - To demonstrate examples of **diagnostics** using the AQUA package.
 - To discuss **troubleshooting**, the current stage, and the upcoming **refactoring** of AQUA Analyses and diagnostics.
 - To show how to **run** and **adjust** scientific **analyses** with AQUA.
 
 
 #### 1.2 The tools that will be used during the session
-  
+
   - **Notes**: Key takeaways and explanations will be provided in markdown notes.
   - **Python Scripts**: Scripts for running the diagnostics and analyses.
   - **Bash Scripts**: Shell scripts for automating tasks and submitting jobs.
@@ -53,7 +53,7 @@ This session will focus on **Sailing with AQUA:**, which includes running the aq
 
 
 
-#### 1.3 Preparational Steps for AQUAthon Git Branch 
+#### 1.3 Preparational Steps for AQUAthon Git Branch
 
 Follow these steps to update your local branch with remote changes while keeping your local modifications intact:
 
@@ -111,7 +111,7 @@ These **diagnostics** aim to **monitor** and **diagnose** model **drifts**, **im
 
 #### 2.2 General Folder Contents:
 
-- **`cli/`**: 
+- **`cli/`**:
   - Contains command-line interface (CLI) tools or Python scripts used to run the diagnostics.
   - **Example**: `nworkers` and `memory` update scripts for adjusting parallel processing settings.
 
@@ -129,7 +129,7 @@ These **diagnostics** aim to **monitor** and **diagnose** model **drifts**, **im
 
 - **Extra files**:
   - Diagnostics may contain precomputed data, directories for storing results, additional scientific analysis outputs, or optional files like `pyproject.toml`.
-  - **Example**: 
+  - **Example**:
     - **`pyproject.toml`**: Defines the project’s dependencies, environment settings, and packaging configurations. Some diagnostics include this file for versioning and dependencies.
     - Data or result folders specific to each diagnostic.
 
@@ -137,12 +137,12 @@ These **diagnostics** aim to **monitor** and **diagnose** model **drifts**, **im
 <details>
   <summary>⚠️ <span style="color: red;">Disclaimer</span></summary>
 
-> A major refactoring of diagnostics is underway, so be aware that this information may change. 
->  
-> Each scientific diagnostic has been developed by different contributors, leading to variations in usage and structure. We are currently standardizing the diagnostics with clear requirements for implementation, documentation, and usage.  
->  
-> Within the next month, there will be changes to how diagnostics are used.  
-  
+> A major refactoring of diagnostics is underway, so be aware that this information may change.
+>
+> Each scientific diagnostic has been developed by different contributors, leading to variations in usage and structure. We are currently standardizing the diagnostics with clear requirements for implementation, documentation, and usage.
+>
+> Within the next month, there will be changes to how diagnostics are used.
+
 </details>
 
 #### 2.3 Comprehensive Example
@@ -161,7 +161,7 @@ If you would like to see a detailed example of how each diagnostic is used, plea
 - Include data from `1990-01-01` to `1999-12-01`.
 - Set standard deviation start and end dates to match the period.
 
-  
+
 <details>
   <summary>💡 <strong><span style="color: orange;">Solution</span></strong></summary>
 ```python
@@ -257,9 +257,9 @@ The AQUA analyses wrapper is currently implemented as a bash script located at [
 
 <details>
   <summary>⚠️ <span style="color: red;">Disclaimer</span></summary>
-  
+
   The AQUA wrapper is currently being refactored and **will soon be replaced by a Python script** for improved functionality and flexibility.
-  
+
 </details>
 
 
@@ -293,7 +293,7 @@ diagnostics:
     outname: {{ outname, str }}  # Name of output directory
 ```
 
-#### **`nworkers` Key** 
+#### **`nworkers` Key**
 <details>
   <summary><span style="color: green;">Click to expand</span></summary>
 
@@ -345,7 +345,7 @@ This ensures that output files are organized in clearly labeled directories, mak
 ---
 ### 4. **Running AQUA Analyses (10 min)**
 ---
-**Objective:** Guide participants through the process of executing AQUA analyses using Python and Bash scripts, and submitting the jobs to the SLURM queue for parallel processing. 
+**Objective:** Guide participants through the process of executing AQUA analyses using Python and Bash scripts, and submitting the jobs to the SLURM queue for parallel processing.
 
 #### 4.1 Running the AQUA Analyses CLI for a Specific Diagnostic
 
@@ -353,7 +353,7 @@ To execute the AQUA Analyses CLI for a specific diagnostic using command-line ar
 
 
 ```bash
- python diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py 
+ python diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py
 ```
 
 ##### Required arguments for CLI:
@@ -370,14 +370,14 @@ To execute the AQUA Analyses CLI for a specific diagnostic using command-line ar
 
 ```bash
 python diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py  --model IFS-NEMO --exp historical --source lra-r100-monthly \
- --config config.aqua-web.yaml --loglevel INFO 
+ --config config.aqua-web.yaml --loglevel INFO
 ```
 
 <details>
   <summary>⚠️ <span style="color: red;">Disclaimer</span></summary>
-  
+
   Each diagnostic has a configuration file. If the command-line arguments (such as `model`, `exp`, `source`, etc.) are not provided, the values from the configuration file will be used. However, if these arguments are supplied via the command line, they will override the values in the configuration file and will be considered the main ones for the analysis.
-  
+
 </details>
 
 
@@ -391,31 +391,31 @@ bash ./cli/aqua-analysis/aqua-analysis.sh
 
 ##### Required arguments for CLI (Bash Script `aqua-analysis.sh`):
 
-- `-f`, `--config <FILE>`:  
+- `-f`, `--config <FILE>`:
   Specifies the YAML configuration file to be used. This file contains settings for the diagnostics. Default is `config.aqua-analysis.yaml`.
 
-- `-m`, `--model <MODEL>`:  
+- `-m`, `--model <MODEL>`:
   Specifies the model to be analyzed (both atmospheric and oceanic models). Overrides the model from the configuration file if provided.
 
-- `-e`, `--exp <EXP>`:  
+- `-e`, `--exp <EXP>`:
   Specifies the experiment to be run. Overrides the experiment from the configuration file if provided.
 
-- `-s`, `--source <SOURCE>`:  
+- `-s`, `--source <SOURCE>`:
   Specifies the data source to be used. Overrides the source from the configuration file if provided.
 
-- `-d`, `--outputdir <DIR>`:  
+- `-d`, `--outputdir <DIR>`:
   Specifies the output directory for the analysis results. If not provided, the directory will be fetched from the configuration file.
 
-- `-l`, `--loglevel <LEVEL>`:  
+- `-l`, `--loglevel <LEVEL>`:
   Specifies the log level for the script. Accepted values are `INFO`, `DEBUG`, `ERROR`, `WARNING`, and `CRITICAL`. Default is `WARNING`.
 
-- `-p`, `--parallel`:  
+- `-p`, `--parallel`:
   Enables running diagnostics in parallel, allowing faster execution by utilizing multiple processes.
 
-- `-t`, `--threads <N>`:  
+- `-t`, `--threads <N>`:
   Specifies the maximum number of threads to be used for parallel execution. If not specified, all available threads will be used.
 
-- `-c`, `--catalog <CATALOG>`:  
+- `-c`, `--catalog <CATALOG>`:
   Specifies the catalog for data sources. If provided, it will override the catalog specified in the configuration file.
 
 
@@ -428,17 +428,17 @@ bash ./cli/aqua-analysis/aqua-analysis.sh --model IFS-NEMO --exp historical --so
   <summary>📚 <span style="color: green;">Homework</span></summary>
 
 1) Run the **aqua-analysis** bash script on **Levante** or **Lumi** for **global mean time series** and **Sea Ice diagnostics**, saving the output to your new folder: `$HOME/homework`. Make sure to set the log level to **warning**.
-  
+
 2) On **Levante** or **Lumi** , run the **aqua-analysis** bash script for the **climatedt-phase1** catalog, with the following parameters:
    - Model: `IFS-NEMO`
    - Experiment: `ssp370`
    - Source: `lra-r100-monthly`
-  
+
 </details>
 
 
 #### 4.3 Submitting AQUA Analyses to the SLURM Queue for a Set of Catalog Sources
-  
+
 Use the pre-prepared scripts in the `$AQUA/cli/aqua-web` folder to simplify the process.
 
 Submit the wrapper with this command:
@@ -449,7 +449,7 @@ python cli/aqua-web/submit-aqua-web.py -p /users/jvonhar/aqua-web.experiment.lis
 
 <details>
   <summary>⚠️ <span style="color: red;">Disclaimer</span></summary>
-  
+
   This script not only manages submission to SLURM but also handles the submission of results to [AQUA Web](https://aqua-web-climatedt.2.rahtiapp.fi/). It is used operationally, but you are welcome to explore, personalize, and adapt it to suit your own workflow or project needs. Feel free to get inspired and customize it as you see fit.
 </details>
 
@@ -463,19 +463,19 @@ python cli/aqua-web/submit-aqua-web.py -p /users/jvonhar/aqua-web.experiment.lis
 
 The output folder is organized in a clear hierarchical structure to help users easily navigate the analysis results. Below is a breakdown of the structure:
 
-- **Catalog Level:**  
+- **Catalog Level:**
   Top-level directories represent the models or simulations included in the analysis.
 
-- **Model Level:**  
+- **Model Level:**
   These directories specify the particular model used in the analysis.
 
-- **Experiment Level:**  
+- **Experiment Level:**
   Each model directory contains subdirectories for different experiments or simulation periods.
 
-- **Diagnostic Level:**  
+- **Diagnostic Level:**
   Inside each experiment folder, diagnostics are categorized by type (e.g., time series, seasonal cycles).
 
-- **Output Files:**  
+- **Output Files:**
   Diagnostic folders contain various output files:
   - **Log files:** Track the progress and details of the analysis.
   - **PDF reports:** Provide visual summaries of the diagnostics.

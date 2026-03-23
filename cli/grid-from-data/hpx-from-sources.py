@@ -36,7 +36,7 @@ if __name__ == '__main__':
     logger = log_configure(log_level=loglevel, log_name='hpx-from-sources')
 
     file = get_arg(args, 'config', None)
-    
+
     logger.info('Reading configuration from %s', file)
     config = load_yaml(file)
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     #    mykwargs = {**mykwargs, **{'zoom': int(zoom)}}
     if catalog:
         mykwargs = {**mykwargs, **{'catalog': catalog}}
-        
+
 
     # Create Reader object
     reader = Reader(model=model, exp=exp, source=source,
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     # cdo command setup:
     nside = 2**zoom
-   
+
     # Setting grid name
     if nested:
         grid_name = f'hp{nside}_nested'

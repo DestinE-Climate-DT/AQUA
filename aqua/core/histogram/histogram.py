@@ -20,7 +20,7 @@ def histogram(data: xr.DataArray, range: tuple = None, bins: int = 10,  units: s
         weights (xr.DataArray, optional): Weights for the histogram. Defaults to None.
         dask (bool, optional):     If True, uses Dask for parallel computation. Defaults to True.
         units (str, optional):     Convert data to these units. Defaults to None.
-        check (bool, optional):    Checks if the sum of counts in the histogram is equal to the size of the data. 
+        check (bool, optional):    Checks if the sum of counts in the histogram is equal to the size of the data.
                                    Defaults to False. This forces the histogram to be computed.
         density (bool, optional):  Returns a probability density function,
                                    normalized such that the integral over the range is 1. Defaults to False.

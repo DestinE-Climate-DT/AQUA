@@ -5,7 +5,7 @@ fixer_name:
             ie:
                 source: E
                 src_units: m/day
-            tprate: 
+            tprate:
                 source: TP
                 src_units: m/day
             slhtf:
@@ -32,7 +32,7 @@ fixer_name:
             tnlwrf:
                 src_units: J m**-2 day**-1
                 source: TTR
-              
+
     ERA5-daily-destine-v1:
         convention: eccodes
         delete:
@@ -86,19 +86,19 @@ fixer_name:
             tprate:
                 derived: TP*24
                 src_units: m/day
-                
+
     # CERES
     ceres-ebaf-sfc-destine-v1:
-        convention: eccodes 
+        convention: eccodes
         data_model: False
         vars:
-            snlwrf: 
+            snlwrf:
                 derived: sfc_net_lw_all_mon
-            snswrf: 
+            snswrf:
                 source: sfc_net_sw_all_mon
 
     ceres-ebaf-toa-destine-v1:
-        convention: eccodes 
+        convention: eccodes
         data_model: False
         vars:
             tnlwrf:
@@ -106,8 +106,8 @@ fixer_name:
                 attributes:
                     valid_min: -500
                     valid_max: 0
-                    positive: down  
-            tnswrf: 
+                    positive: down
+            tnswrf:
                 derived: solar_mon-toa_sw_all_mon
                 attributes:
                     valid_min: 0
@@ -127,11 +127,11 @@ fixer_name:
                     positive: down
 
     ceres-syn-destine-v1:
-        convention: eccodes 
+        convention: eccodes
         data_model: False
         vars:
             toa_lw_all_daily_eb:
-                derived: toa_lw_all_daily*1.0060667743 
+                derived: toa_lw_all_daily*1.0060667743
                 attributes:
                     long_name: Observed Top of the Atmosphere Longwave Flux, All-sky conditions, Daily Means, Energy balanced
                     standard_name: toa_outgoing_longwave_flux
@@ -164,7 +164,7 @@ fixer_name:
                 attributes:
                     valid_min: -500
                     valid_max: 0
-                    positive: down    
+                    positive: down
             tnswrf:
                 # The fixer does not allow multiplying by negative numbers yet
                 derived: toa_solar_all_daily_eb-toa_sw_all_daily_eb
@@ -176,7 +176,7 @@ fixer_name:
                     positive: down
 
     eobs-destine-v1:
-        convention: eccodes 
+        convention: eccodes
         data_model: false
         deltat: 86400 # precipitation on daily basis
         coords:
@@ -195,7 +195,7 @@ fixer_name:
                 source: tx
 
     era5-arco:
-        convention: eccodes 
+        convention: eccodes
         data_model: false
         coords:
             lat:
@@ -205,15 +205,15 @@ fixer_name:
 
     # EN4
     EN4-default:
-        convention: eccodes 
+        convention: eccodes
         data_model: false
         vars:
             so:
                 src_units: psu
-  
+
     # GPM
     GPM-default:
-        convention: eccodes 
+        convention: eccodes
         vars:
             # Automatic conversion to destination grib units
             tprate:
@@ -221,19 +221,19 @@ fixer_name:
 
     # MSWEP
     MSWEP-default:
-        convention: eccodes 
+        convention: eccodes
         vars:
             tprate:
                 source: precipitation
 
     # OSI-SAF
     OSI-SAF-default:
-        convention: eccodes 
+        convention: eccodes
         data_model: false  # Do not attempt to fix coordinates
 
     # PHC3
     PHC3-default:
-        convention: eccodes 
+        convention: eccodes
         data_model: false
         vars:
             thetao:
@@ -244,12 +244,12 @@ fixer_name:
 
     #PSC
     PSC-default:
-        convention: eccodes 
+        convention: eccodes
         data_model: False
 
     # GIOMAS and PIOMAS
     GIOMAS:
-        convention: eccodes 
+        convention: eccodes
         data_model: false  # Do not attempt to fix coordinates
         delete: [latitude, longitude]
         vars:
@@ -257,9 +257,9 @@ fixer_name:
                 source: sftof
                 src_units: frac
                 units: frac
-    
+
     PIOMAS:
-        convention: eccodes 
+        convention: eccodes
         data_model: false  # Do not attempt to fix coordinates
         delete: [latitude, longitude]
         vars:
@@ -267,13 +267,13 @@ fixer_name:
                 source: sftof
                 src_units: frac
                 units: frac
-   
+
     ssh-adt:
         data_model: false  # Do not attempt to fix coordinates
         vars:
             zos:
-                source: adt 
-    
+                source: adt
+
     WAGHC:
         convention: eccodes
         data_model: false
@@ -286,7 +286,6 @@ fixer_name:
             tos:
                 source: temperature
                 src_units: C
-            sos:   
+            sos:
                 source: salinity
                 src_units: psu
-    

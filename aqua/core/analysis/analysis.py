@@ -124,12 +124,12 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
     for tool, tool_config in diag_config.items():
 
         logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
-        
+
         cli_path = cli.get(tool)
         if cli_path is None:
             logger.error("CLI path for tool '%s' not found, skipping.", tool)
             continue
- 
+
         if not os.path.exists(cli_path):
             logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
             continue

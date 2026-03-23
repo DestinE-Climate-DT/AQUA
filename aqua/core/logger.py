@@ -135,7 +135,7 @@ class CustomLogColors(logging.Formatter):
     LGREY = "\x1b[37m"
     # DGREY = "\x1b[90m"
     #  LBLUE = "\x1b[38;2;64;183;197m"
-    
+
     # 8 bit
     GREEN = "\x1b[32m"  # Less vibrant green
     ORANGE = "\x1b[33m" # Less vibrant orange

@@ -240,7 +240,7 @@ def read_bridge_date(obj):
     """
     Reads the bridge end date from a file or string
     """
-    
+
     if obj and obj != "complete" and os.path.isfile(obj):
         with open(obj, 'r') as file:
             date = file.read()
@@ -248,17 +248,17 @@ def read_bridge_date(obj):
         return date.strftime('%Y%m%dT%H%M')
     else:
         return obj
-    
+
 def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
     """
-    Floors a datetime object to the specified pandas frequency, 
+    Floors a datetime object to the specified pandas frequency,
     using `to_period` and special last string drop for better handling of non-fixed frequencies.
-    
+
     Parameters:
         dt (datetime or pandas.Timestamp): The datetime object to be floored.
         freq (str): The frequency string (e.g., 'H', 'D', '6H', '1MS', '3YS').
          output_format (str): The format for output datetime as a string. Default is "%Y%m%dT%H%M".
-        
+
     Returns:
         String with "%Y%m%dT%H%M" format (e.g. 19900101T000)
     """
@@ -278,9 +278,9 @@ def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
         dt = pd.Timestamp(dt.year, 1, 1)
     elif freq in ['ME', 'YE']:
         raise KeyError(f'Freq {freq} is not supported, please use {freq[0]}S')
-    elif 'W' in freq: 
+    elif 'W' in freq:
         raise KeyError('Weekly frequency not supported')
     else:
         dt = dt.floor(freq)
-    
+
     return dt.strftime(output_format)

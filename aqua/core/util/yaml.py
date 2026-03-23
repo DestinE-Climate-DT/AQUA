@@ -16,7 +16,7 @@ def construct_yaml_merge(loader, node):
     if isinstance(node, yaml.ScalarNode):
         # Handle scalar nodes
         return loader.construct_scalar(node)
-    
+
     # Handle sequence nodes
     maps = []
     for subnode in node.value:
@@ -27,7 +27,7 @@ def construct_yaml_merge(loader, node):
     return result
 
 
-# Run this to enable YAML override for the yaml package when using SafeLoader in intake 
+# Run this to enable YAML override for the yaml package when using SafeLoader in intake
 yaml.SafeLoader.add_constructor(
             'tag:yaml.org,2002:merge',
             construct_yaml_merge)

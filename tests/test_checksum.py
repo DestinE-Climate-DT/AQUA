@@ -14,7 +14,7 @@ class TestChecksumModule:
         file.write_text("Test content")
 
         md5 = compute_md5(str(file))
-        
+
         assert md5 is not None
         assert len(md5) == 32  # MD5 checksum should be 32 characters long
 
@@ -42,6 +42,3 @@ class TestChecksumModule:
         assert "All files are verified successfully" in captured.out
 
         os.remove(checksum_file)
-
-
-

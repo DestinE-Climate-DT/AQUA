@@ -2,7 +2,7 @@
 import numpy as np
 import cartopy.crs as ccrs
 
-def draw_manual_gridlines(ax, lon_interval=30, lat_interval=30, 
+def draw_manual_gridlines(ax, lon_interval=30, lat_interval=30,
                           lon_range=(-180, 180), lat_range=(-90, 90),
                           linestyle='--', color='gray', linewidth=1,
                           alpha=0.5, zorder=50):

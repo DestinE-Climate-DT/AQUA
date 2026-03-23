@@ -29,11 +29,11 @@ def plot_single_map(data: xr.DataArray,
                     extent: Optional[list] = None, coastlines: bool = True,
                     style: Optional[str] = None, figsize: tuple = (11, 8.5), nlevels: int = 11,
                     vmin: Optional[float] = None, vmax: Optional[float] = None, cmap: str = 'RdBu_r',
-                    cbar: bool = True, cbar_label: Optional[str] = None, 
+                    cbar: bool = True, cbar_label: Optional[str] = None,
                     norm: Optional[object] = None,
                     title: Optional[str] = None, title_size: Optional[int] = 12, transform_first: bool = False, cyclic_lon: bool = True,
                     add_land: bool = False, fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                    ax_pos: tuple = (1, 1, 1), return_fig: bool = False, 
+                    ax_pos: tuple = (1, 1, 1), return_fig: bool = False,
                     loglevel='WARNING',  **kwargs):
     """
     Plot contour or pcolormesh map of a single variable. By default the contour map is plotted.
@@ -119,7 +119,7 @@ def plot_single_map(data: xr.DataArray,
         if sym:
             logger.warning("sym=True, vmin and vmax given will be ignored")
             vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
-            
+
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
         levels = np.linspace(vmin, vmax, nlevels + 1)
@@ -205,7 +205,7 @@ def plot_single_map(data: xr.DataArray,
 
         cbar_ticks_rounding = kwargs.get('cbar_ticks_rounding', None)
         cbar_ticks = generate_colorbar_ticks(vmin=vmin,
-                                             vmax=vmax, 
+                                             vmax=vmax,
                                              sym=sym,
                                              nlevels=nlevels,
                                              ticks_rounding=cbar_ticks_rounding,

@@ -92,7 +92,7 @@ class Reader():
                                         (Only one supported so far)
             engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.
 
-        Keyword Args: 
+        Keyword Args:
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
             realization (int, optional): The ensemble realization number.
             **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
@@ -209,10 +209,10 @@ class Reader():
                                fixes_dictionary=self.fixes_dictionary,
                                metadata=self.esmcat.metadata,
                                loglevel=self.loglevel)
-        
+
         # if data model is not passed to Reader, try to get it from the catalog source metadata
         if datamodel is None:
-            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT) 
+            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT)
         else:
             self.datamodel_name = datamodel
 
@@ -222,8 +222,8 @@ class Reader():
             self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
         else:
             self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
-    
-            
+
+
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get('source_grid_name')
         self.tgt_grid_name = regrid
@@ -231,7 +231,7 @@ class Reader():
         # init the regridder and the areas
         self._configure_regridder(machine_paths, regrid=regrid, areas=areas,
                                   rebuild=rebuild, reader_kwargs=reader_kwargs)
-        
+
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
         self.src_fldstat = FldStat(
@@ -247,7 +247,7 @@ class Reader():
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord, loglevel=self.loglevel
                 )
-    
+
         self.trender = Trender(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False,
@@ -283,13 +283,13 @@ class Reader():
                 return
             else:
                 self.logger.info('Grid metadata is %s', self.src_grid_name)
-                self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, 
+                self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name,
                                            loglevel=self.loglevel)
 
                 if self.regridder.error:
                     self.logger.warning('Issues in the Regridder() init: trying with data')
                     data = self._retrieve_plain()
-                    self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, 
+                    self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name,
                                                data=data, loglevel=self.loglevel)
 
             # export src space coord and vertical coord
@@ -356,7 +356,7 @@ class Reader():
                 fixed = self.fixer.fixerdatamodel.apply(value)
             else:
                 raise ValueError(f"Mode {mode} not recognized for weights fixing")
-            
+
             # Check if fixed object has coordinates before accessing
             coords = list(fixed.coords) if hasattr(fixed, 'coords') and fixed.coords else []
             if not coords:
@@ -530,7 +530,7 @@ class Reader():
         if not level:
             return data
 
-        # find the vertical coordinate, which can be the smmregrid one or 
+        # find the vertical coordinate, which can be the smmregrid one or
         # any other with a dimension compatible (Pa, cm, etc)
         full_vert_coord = find_vert_coord(data)
 
@@ -538,14 +538,14 @@ class Reader():
         if not full_vert_coord:
             self.logger.error("Levels selected but no vertical coordinate found in data!")
             return data
-        
+
         # ensure that level is a list
         level = to_list(level)
 
         # do the selection on the first vertical coordinate found
         if len(full_vert_coord) > 1:
             self.logger.warning(
-                "Found more than one vertical coordinate, using the first one: %s", 
+                "Found more than one vertical coordinate, using the first one: %s",
                 full_vert_coord[0])
 
         # check if levels are among the values in the coordinate
@@ -583,7 +583,7 @@ class Reader():
 
         if self.tgt_grid_name is None:
             raise NoRegridError('regrid has not been initialized in the Reader, cannot perform any regrid.')
-        
+
         data = counter_reverse_coordinate(data)
 
         out = self.regridder.regrid(data)
@@ -609,7 +609,7 @@ class Reader():
     #     final.aqua.set_default(self)
     #     return final
 
-    def detrend(self, data, dim='time', degree=1, skipna=False):    
+    def detrend(self, data, dim='time', degree=1, skipna=False):
         """
         Remove the trend from an xarray object using polynomial fitting.
 
@@ -717,7 +717,7 @@ class Reader():
             self._intake_user_parameters = self.esmcat.describe().get('user_parameters', {})
         return self._intake_user_parameters
 
-    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict={}, databridge: str = None) -> dict:        
+    def _filter_kwargs(self, kwargs: dict={}, engine: str = 'fdb', intake_vars: dict={}, databridge: str = None) -> dict:
         """
         Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
         Kwargs which are not present in the intake_vars will be removed.
@@ -725,7 +725,7 @@ class Reader():
         Args:
             kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
             engine (str): The engine used for the GSV retrieval, default is 'fdb'.
-            databridge (str): The databridge used for the GSV retrieval, default is None. 
+            databridge (str): The databridge used for the GSV retrieval, default is None.
             intake_vars (dict): Machine-specific intake variables to exclude from checks.
 
         Returns:
@@ -735,7 +735,7 @@ class Reader():
             intake_vars = {}
 
         filtered_kwargs = {}
-        
+
         # Create a dictionary lookup of parameter definitions
         # This avoids repeated iteration and index lookups in the loop
         param_defs = {p['name']: p for p in self.intake_user_parameters}
@@ -744,7 +744,7 @@ class Reader():
         if kwargs:
             # Filter kwargs that are valid parameters
             filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
-            
+
             # Find and log dropped keys efficiently using set difference
             dropped_keys = kwargs.keys() - valid_params
             for key in dropped_keys:
@@ -769,24 +769,24 @@ class Reader():
 
         # Check for missing required parameters and apply defaults, with logging
         # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
-        
+
         # params that are already covered by user kwargs or machine-specific intake_vars
         covered_params = set(filtered_kwargs) | set(intake_vars)
-        
+
         # Identify missing parameters using set difference
         missing_params = valid_params - covered_params
 
         for param in missing_params:
             element = param_defs[param]
             default_val = element.get('default')
-            
+
             # Log the default application
             self.logger.info('%s parameter is required but is missing, setting to default %s', param, default_val)
-            
+
             allowed = element.get('allowed', None)
             if allowed is not None:
                 self.logger.info('Available values for %s are: %s', param, allowed)
-            
+
             filtered_kwargs[param] = default_val
 
         return filtered_kwargs
@@ -869,7 +869,7 @@ class Reader():
         Returns:
             xarray.Dataset: The dataset retrieved from the intake-esm catalog.
         """
-        xarray_open_kwargs = esmcat.metadata.get('xarray_open_kwargs', 
+        xarray_open_kwargs = esmcat.metadata.get('xarray_open_kwargs',
                                          esmcat.metadata.get('cdf_kwargs', {"chunks": {"time": 1}}))
         query = esmcat.metadata['query']
         if var:
@@ -898,7 +898,7 @@ class Reader():
             level (list, float, int): level to be read, overriding default in catalog
 
         Returns:
-            An xarray.Dataset 
+            An xarray.Dataset
         """
         # Var can be a list or a single one of these cases:
         # - an int, in which case it is a paramid
@@ -1029,7 +1029,7 @@ class Reader():
                               logging=True, loglevel=self.loglevel).read_chunked()
 
         return data
-    
+
     def _filter_netcdf_files(self, esmcat, filter_key="year"):
 
         """
@@ -1046,9 +1046,9 @@ class Reader():
         files = sorted([f for x in esmcat.urlpath for f in glob(x)])
         self.logger.debug("Total files before filtering: %s", len(files))
 
-        # this will consider only files that have "year" in their filename 
+        # this will consider only files that have "year" in their filename
         # within the startdate and enddate range
-        if filter_key == "year": 
+        if filter_key == "year":
             if not (self.startdate and self.enddate):
                 return esmcat
             keys = list(range(pd.Timestamp(self.startdate).year,
@@ -1064,7 +1064,7 @@ class Reader():
 
         if len(esmcat.urlpath) == 0:
             raise NoDataError("No files found after filtering the catalog!")
-        
+
         self.logger.debug("Selected: %s files from %s to %s",
                           len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
 
@@ -1089,7 +1089,7 @@ class Reader():
         if 'filter_key' in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get('filter_key'))
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
-    
+
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if hasattr(esmcat, "xarray_kwargs") and not "use_cftime" in esmcat.xarray_kwargs:
@@ -1169,7 +1169,7 @@ class Reader():
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None, 
+        with self._temporary_attrs(aggregation=None, chunks=None,
                                    fix=False, streaming=False,
                                    datamodel = False,
                                    preproc=None):
@@ -1206,11 +1206,11 @@ class Reader():
             data = data.isel({t: 0 for t in minimal_time})
         return data
 
-    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None, 
+    def fldstat(self, data, stat, lon_limits=None, lat_limits=None, dims=None,
                 region=None, region_sel=None, mask_kwargs={}, **kwargs):
         """
-        Field statistic wrapper which is calling the fldstat module from FldStat class. 
-        This method is exposing and providing field functions as Reader class 
+        Field statistic wrapper which is calling the fldstat module from FldStat class.
+        This method is exposing and providing field functions as Reader class
         methods through the wrapper accessors.
 
         Args:
@@ -1287,8 +1287,8 @@ class Reader():
     def timstat(self, data, stat, freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False, **kwargs):
         """
-        Time statistic wrapper which is calling the timstat module from TimStat class. 
-        This method is exposing and providing time functions as Reader class 
+        Time statistic wrapper which is calling the timstat module from TimStat class.
+        This method is exposing and providing time functions as Reader class
         methods through the wrapper accessors.
 
         Args:
@@ -1307,7 +1307,7 @@ class Reader():
             center_time=center_time, **kwargs)
         data.aqua.set_default(self) #accessor linking
         return data
-    
+
     def timmean(self, data, **kwargs):
         """
         Time mean wrapper which is calling the timstat module.
@@ -1319,19 +1319,19 @@ class Reader():
         Time max wrapper which is calling the timstat module.
         """
         return self.timstat(data, stat='max', **kwargs)
-    
+
     def timmin(self, data, **kwargs):
        """
        Time min wrapper which is calling the timstat module.
        """
        return self.timstat(data, stat='min', **kwargs)
-    
+
     def timstd(self, data, **kwargs):
        """
        Time standard deviation wrapper which is calling the timstat module.
        """
        return self.timstat(data, stat='std', **kwargs)
-    
+
     def timsum(self, data, **kwargs):
         """
         Time sum wrapper which is calling the timstat module.
