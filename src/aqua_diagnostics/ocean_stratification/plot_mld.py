@@ -249,7 +249,11 @@ class PlotMLD:
 
     def set_cbar_limits(self):
         self.vmin = 0.0
-        self.vmax = 2000
+        if self.region=='antarctic':
+            self.vmax = 800
+        else:
+            self.vmax = 2000
+
         self.nlevels = 20
         # if self.obs:
         #     self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
