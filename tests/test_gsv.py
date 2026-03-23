@@ -285,7 +285,7 @@ class TestGsv():
         LocalCluster is created with dashboard_address=None to avoid dashboard port conflicts under pytest-xdist
         """
         with LocalCluster(threads_per_worker=1, n_workers=2, dashboard_address=None) as cluster:
-            with Client(cluster) as client:
+            with Client(cluster):
                 reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
                 data = reader.retrieve()
                 # Test if the correct dates have been found
