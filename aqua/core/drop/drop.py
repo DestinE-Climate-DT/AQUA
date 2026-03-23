@@ -401,7 +401,7 @@ class Drop():
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, 
+                basedir=self.basedir, catblock=catblock,
                 source_grid_name=sgn
             )
 
@@ -711,7 +711,7 @@ class Drop():
     def append_history(self, data):
         """
         Append comprehensive processing history to the data attributes
-   
+
         Args:
             data: xarray Dataset or DataArray to append history to
 

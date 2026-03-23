@@ -152,7 +152,7 @@ class CoordIdentifier:
         """
         name_groups = {}
         for key, value in self.coord_dict.items():
-            if isinstance(value, dict) and value.get("name") is not None:                
+            if isinstance(value, dict) and value.get("name") is not None:
                 name = value["name"]
                 if name not in name_groups:
                     name_groups[name] = []
@@ -164,10 +164,10 @@ class CoordIdentifier:
             if len(entries) > 1:
                 # Sort by confidence_score (highest first)
                 entries.sort(key=lambda x: x[1], reverse=True)
-                
+
                 # Check if multiple entries have the same highest score
                 max_score_entries = [entry for entry in entries if entry[1] == entries[0][1]]
-                
+
                 if len(max_score_entries) > 1:
                     # Multiple coordinates with same highest score - disable all
                     self.logger.warning(

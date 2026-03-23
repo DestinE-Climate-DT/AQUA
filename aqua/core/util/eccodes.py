@@ -2,7 +2,7 @@
 This module provides utilities for working with ecCodes, specifically
 to retrieve attributes of GRIB parameters by their short names or param IDs.
 It operates with caching to improve performance and handles preferentially GRIB2 format.
-A tentative is done to access also GRIB1 format in case of errors with GRIB2, but it 
+A tentative is done to access also GRIB1 format in case of errors with GRIB2, but it
 should be noted that GRIB1 is deprecated and not recommended for use.
 """
 #import os

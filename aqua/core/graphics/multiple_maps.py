@@ -17,7 +17,7 @@ def plot_maps(maps: list,
               proj: ccrs.Projection = ccrs.Robinson(), extent: list = None,
               style=None, figsize: tuple = None,
               vmin: float = None, vmax: float = None, nlevels: int = 11,
-              title: str = None, title_size: int = 16, titles: list = None, titles_size: int = None, 
+              title: str = None, title_size: int = 16, titles: list = None, titles_size: int = None,
               cmap='RdBu_r', cbar_label: str = None,
               transform_first=False, cyclic_lon=True,
               return_fig=False, loglevel='WARNING', **kwargs):

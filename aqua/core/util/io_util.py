@@ -147,7 +147,7 @@ def normalize_value(value):
     # Check if value is a dictionary, normalize its keys
     if isinstance(value, dict):
         return {normalize_key(k): normalize_value(v) for k, v in value.items()}
-    
+
     # Check if value is a string that looks like a dictionary-like structure
     if isinstance(value, str):
         if re.match(r"^\{.*\}$", value.strip()):
@@ -160,7 +160,7 @@ def normalize_value(value):
             except Exception as e:
                 # Log parsing errors and return the original string if parsing fails
                 log_configure('WARNING', 'normalize_value').warning(f"Failed to parse string as dictionary: {e}")
-    
+
     # Return the value as-is if it can't be processed further
     return value
 

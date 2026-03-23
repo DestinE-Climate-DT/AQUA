@@ -53,7 +53,7 @@ if __name__ == '__main__':
     reader = Reader(model=model, exp=exp, source=source,
                     areas=False, fix=False, loglevel=loglevel)
     data = reader.retrieve(var=var)
-    
+
     configdir = ConfigPath().get_config_dir()
     grid_definition = load_yaml(os.path.join(configdir, 'grids', 'default.yaml'))
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     logger.info('CDO grid defined as %s', cdo_grid)
 
     GRID_NAME = model_name + '-multiIO-' + resolution
-    temp_file = os.path.join(tgt, 'temp_unstructured.nc') 
+    temp_file = os.path.join(tgt, 'temp_unstructured.nc')
     grid_file = os.path.join(tgt, GRID_NAME + '.nc')
     area_file = os.path.join(tgt, 'cell_area_' + GRID_NAME + '.nc')
 
@@ -77,5 +77,5 @@ if __name__ == '__main__':
     cdo.setgrid(temp_file, input=f'-gridarea {grid_file}', output = area_file)
 
     os.remove(temp_file)
-    
+
     logger.info('Done')

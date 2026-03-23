@@ -14,7 +14,7 @@ loglevel = LOGLEVEL
 def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
     """
     Load configuration, execute catgen, and return generated catalog sources.
-    
+
     This function ensures test isolation by using tmp_path for the catalog directory,
     preventing race conditions when tests run in parallel. All generated files are
     automatically cleaned up by pytest's tmp_path fixture.
@@ -25,26 +25,26 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
         kind: Data portfolio type (minimal, reduced, full)
         reso: Resolution of the data (lowres, intermediate, production, etc.)
         num_of_realizations: Number of realizations for the ensemble
-        
+
     Returns:
         dict: Catalog sources dictionary loaded from the generated YAML file
-        
+
     Raises:
         subprocess.CalledProcessError: If catgen command fails
         AssertionError: If generated catalog files are not found
     """
     tmp_path = Path(tmp_path)
     config_template = Path('tests/catgen/config-test-catgen.j2')
-    
+
     # Prepare configuration
     config = _prepare_config(config_template, model, kind, reso, num_of_realizations, tmp_path)
-    
+
     # Setup isolated catalog directory structure
     _setup_catalog_directory(config, tmp_path)
-    
+
     # Execute catgen command
     _run_catgen(config, kind, tmp_path)
-    
+
     # Load and return generated sources
     return _load_generated_sources(config)
 
@@ -59,11 +59,11 @@ def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_p
         'expid': 'test'
     }
     config = load_yaml(str(template_path), definitions)
-    
+
     # Use tmp_path for catalog directory to ensure test isolation
     catalog_base = tmp_path / 'Climate-DT-catalog'
     config['repos']['Climate-DT-catalog_path'] = str(catalog_base)
-    
+
     return config
 
 
@@ -72,10 +72,10 @@ def _setup_catalog_directory(config, tmp_path):
     catalog_base = Path(config['repos']['Climate-DT-catalog_path'])
     catalog_dir = config['catalog_dir']
     catalog_yaml_path = catalog_base / 'catalogs' / catalog_dir / 'catalog.yaml'
-    
+
     # Create directory structure
     catalog_yaml_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Create initial catalog.yaml if it doesn't exist (required by catgen)
     if not catalog_yaml_path.exists():
         dump_yaml(str(catalog_yaml_path), {'sources': {}})
@@ -85,9 +85,9 @@ def _run_catgen(config, kind, tmp_path):
     """Execute the catgen command via subprocess."""
     config_path = tmp_path / 'test.yaml'
     dump_yaml(str(config_path), config)
-    
+
     command = ["aqua", "catgen", '-p', kind, '-c', str(config_path), '-l', loglevel]
-    
+
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         logging.info("Command succeeded with output: %s", result.stdout)
@@ -107,15 +107,15 @@ def _load_generated_sources(config):
     catalog_dir = config['catalog_dir']
     model = config['model']
     exp = config['exp']
-    
+
     catalog_entry_dir = catalog_path / 'catalogs' / catalog_dir / 'catalog' / model.upper()
     entry_file = catalog_entry_dir / f'{exp}.yaml'
     main_yaml_file = catalog_entry_dir / 'main.yaml'
-    
+
     # Validate that required files were generated
     assert main_yaml_file.exists(), f"main.yaml not found at {main_yaml_file}"
     assert entry_file.exists(), f"Catalog entry not found at {entry_file}"
-    
+
     return load_yaml(str(entry_file))
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
@@ -124,7 +124,7 @@ def _load_generated_sources(config):
 def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     """test for minimal portfolio"""
 
-    ensemble = 5 
+    ensemble = 5
 
     sources = load_and_prepare(tmp_path=tmp_path, model=model,
                                kind='minimal', reso='lowres',

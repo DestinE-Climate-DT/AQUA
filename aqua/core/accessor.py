@@ -43,27 +43,27 @@ class AquaAccessor:
     def timmean(self, **kwargs):
         """Perform time averaging."""
         return self.instance.timmean(self._obj, **kwargs)
-    
+
     def timmax(self, **kwargs):
         """Perform time maximum."""
         return self.instance.timmax(self._obj, **kwargs)
-    
+
     def timmin(self, **kwargs):
         """Perform time minimum."""
         return self.instance.timmin(self._obj, **kwargs)
-    
+
     def timstd(self, **kwargs):
         """Perform time standard deviation."""
         return self.instance.timstd(self._obj, **kwargs)
-    
+
     def timfirst(self, **kwargs):
         """Perform time first element."""
         return self.instance.timfirst(self._obj, **kwargs)
-    
+
     def timlast(self, **kwargs):
         """Perform time last element."""
         return self.instance.timlast(self._obj, **kwargs)
-    
+
     def timstat(self, **kwargs):
         """Perform time statistics."""
         return self.instance.timstat(self._obj, **kwargs)

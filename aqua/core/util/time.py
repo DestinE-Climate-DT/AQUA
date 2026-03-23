@@ -192,7 +192,7 @@ def _normalize_period_freq(freq: str) -> str:
 def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     """
     Common setup for chunk completeness checking.
-    
+
     Returns:
         tuple: (data_frequency, chunks)
     """
@@ -208,11 +208,11 @@ def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     chunks = pd.date_range(start=normalized_dates[0],
                            end=normalized_dates[-1],
                            freq=resample_frequency)
-    
-    logger.info('%s chunks from %s to %s at %s frequency to be analysed', 
-                len(chunks), chunks[0], 
+
+    logger.info('%s chunks from %s to %s at %s frequency to be analysed',
+                len(chunks), chunks[0],
                 chunks[-1], resample_frequency)
-    
+
     # if no chunks, no averages
     if len(chunks) == 0:
         raise ValueError(f'No chunks! Cannot compute average on {resample_frequency} period, not enough data')
@@ -277,19 +277,19 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
     """
     Support function for timmean() to check seasonal chunk completeness.
     Verify that all seasonal (quarterly) chunks have complete months.
-    
+
     For seasonal data (QS-DEC), this checks if each quarter has all 3 of its
     constituent months. Uses the same season definitions as select_season().
-    
+
     Args:
         xdataset: The original dataset before averaging
-        resample_frequency: the frequency on which we are planning to resample, 
+        resample_frequency: the frequency on which we are planning to resample,
                           expected to be 'QS-DEC' (or similar quarterly frequency)
         loglevel: logging level
-    
+
     Raise:
         ValueError if there are no available chunks
-    
+
     Returns:
         A Xarray DataArray binary, 1 for complete quarters and 0 for incomplete ones
     """
@@ -303,7 +303,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
     quarters_full = generate_quarter_months(anchor_month)
     quarter_months = quarters_full[anchor_month] # e.g. {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], ...}
 
-    # Build season_months: map from start_month 
+    # Build season_months: map from start_month
     # e.g., {12: {12, 1, 2}, 3: {3, 4, 5}, 6: {6, 7, 8}, 9: {9, 10, 11}}
     season_months = {}
     for quarter_key in ['Q1', 'Q2', 'Q3', 'Q4']:
@@ -313,7 +313,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
 
     if 'D' in data_frequency or 'h' in data_frequency:
         logger.info('Data is sub-monthly (%s), first checking monthly completeness...', data_frequency)
-        monthly_mask = check_chunk_completeness(xdataset, 
+        monthly_mask = check_chunk_completeness(xdataset,
                                                 resample_frequency='MS',
                                                 loglevel=loglevel)
         # Get only complete months, use .resample().mean() to get time axis
@@ -337,7 +337,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
         expected_months = season_months.get(start_month, set())
 
         # Get actual months present in this quarter period
-        quarter_data = xdataset.time[(xdataset['time'] >= chunk) & 
+        quarter_data = xdataset.time[(xdataset['time'] >= chunk) &
                                      (xdataset['time'] < end_date)]
 
         if len(quarter_data) == 0:
@@ -418,7 +418,7 @@ def time_to_string(time=None, format='%Y-%m-%d'):
 def int_month_name(month, abbreviated=False):
     """
     Return month name from integer (1-12) if xarray functions cannot be used
-    
+
     Args:
         month (int): The month as an integer (1-12).
         abbreviated (bool): Whether to return the abbreviated month name (default is False).

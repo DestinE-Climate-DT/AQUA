@@ -219,13 +219,13 @@ class TestHealpixResample:
         nside = 8
         full_npix = hp.nside2npix(nside)  # 768, valid
         selected_cells = np.random.choice(full_npix, size=100, replace=False)
-        
+
         # Build a *sparse* DataArray, but with npix = 768 (valid)
         # Set all values to NaN, except for the selected_cells
         data_array = np.full(full_npix, np.nan, dtype=np.float32)
         values = np.random.rand(100).astype(np.float32)
         data_array[selected_cells] = values
-        
+
         # Assign the 'cell' coordinate
         var = xr.DataArray(data_array, coords={"cell": np.arange(full_npix)}, dims=["cell"])
 

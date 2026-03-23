@@ -17,11 +17,11 @@ from importlib import resources as pypath
 def analysis_parser(parser=None):
     """
     Parser for the AQUA analysis command line interface.
-    
+
     Args:
         parser (argparse.ArgumentParser, optional): An existing parser to extend. If None,
             a new parser will be created.
-    
+
     Returns:
         argparse.ArgumentParser: The configured argument parser.
     """

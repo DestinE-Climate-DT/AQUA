@@ -105,7 +105,7 @@ class Benchmarker():
         self.logger.info('Benchmarking reader')
         single = timeit(lambda: Reader(self.model, self.exp, self.source), number=self.nrepeat)
         return round(single / self.nrepeat, 1)
-    
+
     def benchmark_fldmean(self, tsteps=100):
         """
         Benchmark the fldmean method.
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     # create benchmarker object
     Bench = Benchmarker(model = model, exp = exp, source = source,
                         nproc = int(args.workers), loglevel = args.loglevel)
-    
+
     # create a list of methods and their names
     methods = [(Bench.benchmark_reader, 'Reader initialization'),
                (Bench.benchmark_fldmean, 'Fldmean'),
@@ -152,4 +152,3 @@ if __name__ == '__main__':
         print(f"{name} took on average {time} seconds over {Bench.nrepeat} runs")
 
     print('All benchmarks done')
-

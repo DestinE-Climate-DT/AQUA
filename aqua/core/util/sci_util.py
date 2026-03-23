@@ -128,13 +128,13 @@ def generate_quarter_months(anchor_month='JAN'):
 
     anchor_month_num = monlist.index(anchor_month) + 1
 
-    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys) 
+    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys)
                                   if TRIPLET_MONTHS[key][0] == anchor_month_num)
 
     quarter_months = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)}
 
     return {anchor_month: quarter_months}
-    
+
 
 def merge_attrs(target, source, overwrite=False):
     """Merge attributes from source into target.

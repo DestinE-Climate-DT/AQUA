@@ -23,7 +23,7 @@ def test_cli_checker_parse_arguments():
         '--realization', 'r1',
         '--regrid', 'r200'
     ])
-    
+
     assert args.model == 'IFS'
     assert args.exp == 'test-tco79'
     assert args.source == 'short'
@@ -32,14 +32,14 @@ def test_cli_checker_parse_arguments():
     assert args.rebuild is False  # --no-rebuild sets rebuild=False
     assert args.realization == 'r1'
     assert args.regrid == 'r200'
-    
+
     # Test defaults when flags are not provided
     args_defaults = parse_arguments([
         '--model', 'IFS',
         '--exp', 'test-tco79',
         '--source', 'short'
     ])
-    
+
     assert args_defaults.yaml is None
     assert args_defaults.read is True  # Default is True (read data)
     assert args_defaults.rebuild is True  # Default is True (rebuild areas)
@@ -49,15 +49,15 @@ def test_cli_checker_parse_arguments():
 @pytest.mark.slow
 def test_cli_checker_valid_entry(tmp_path):
     """Test cli_checker with a valid catalog entry.
-    
+
     This test requires AQUA to be installed with the 'ci' catalog.
     Note: This test may be skipped if AQUA is not fully installed.
     """
-    
+
     checker_script = os.path.join(aqua_pkg_path[0], "core", "analysis", "cli_checker.py")
     yaml_dir = tmp_path / "yaml_output"
     yaml_dir.mkdir()
-    
+
     # Test with a valid entry from the 'ci' catalog, using --no-read to speed up
     result = subprocess.run(
         [
@@ -75,7 +75,7 @@ def test_cli_checker_valid_entry(tmp_path):
         text=True,
         timeout=60
     )
-    
+
     # Should succeed if AQUA is properly installed
     if result.returncode == 0:
         # Check that experiment.yaml was created
@@ -89,7 +89,7 @@ def test_cli_checker_valid_entry(tmp_path):
 def test_cli_checker_invalid_entry():
     """Test cli_checker with an invalid catalog entry raises NoDataError."""
     checker_script = os.path.join(aqua_pkg_path[0], "core", "analysis", "cli_checker.py")
-    
+
     # Test with an invalid entry
     result = subprocess.run(
         [
@@ -106,7 +106,7 @@ def test_cli_checker_invalid_entry():
         text=True,
         timeout=30
     )
-    
+
     # Should fail with exit code 1 (or any non-zero)
     assert result.returncode != 0, "cli_checker should fail for invalid entry"
     # Check for error message (may be NoDataError or other Reader initialization error)
@@ -116,7 +116,7 @@ def test_cli_checker_invalid_entry():
 def test_cli_checker_missing_arguments():
     """Test cli_checker fails when required arguments are missing."""
     checker_script = os.path.join(aqua_pkg_path[0], "core", "analysis", "cli_checker.py")
-    
+
     # Test with missing model
     result = subprocess.run(
         [
@@ -129,8 +129,7 @@ def test_cli_checker_missing_arguments():
         text=True,
         timeout=10
     )
-    
+
     # Should fail (either ValueError or SystemExit from argparse)
     assert result.returncode != 0
     assert "model, exp and source are required" in result.stderr or "ValueError" in result.stderr
-

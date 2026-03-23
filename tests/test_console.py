@@ -190,7 +190,7 @@ class TestAquaConsole():
         run_aqua_console_with_input(['uninstall'], 'yes')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
-    def test_console_drop(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input): 
+    def test_console_drop(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
         """Test for running DROP via the console"""
 
         mydir = str(tmpdir)
@@ -218,7 +218,7 @@ class TestAquaConsole():
                 'data': {
                     'IFS': {
                         'test-tco79': {
-                            'long': {'vars': '2t'} 
+                            'long': {'vars': '2t'}
                         }
                     }
                 }
@@ -236,7 +236,7 @@ class TestAquaConsole():
         path = os.path.join(os.path.join(mydir, 'drop_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
-        
+
         # remove aqua
         run_aqua_console_with_input(['uninstall'], 'yes')
 
@@ -244,7 +244,7 @@ class TestAquaConsole():
         (['install', MACHINE, '--core'], False),
         (['install', MACHINE, '--diagnostics'], True),
     ])
-    def test_console_selective_install(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input, 
+    def test_console_selective_install(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input,
                                        install_args, should_fail):
         """Test for running selective install via the console (parametrized)"""
 
@@ -290,22 +290,22 @@ class TestAquaConsole():
     #     # run the analysis and verify that at least one file exist
     #     run_aqua(['analysis', '--config', config_path, '-m', model, '-e', experiment,
     #             '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
-        
+
     #     output_path = os.path.join(output_dir, catalog, model, experiment, 'r1')
-        
+
     #     assert os.path.exists(os.path.join(output_path, 'experiment.yaml')), \
     #         "experiment.yaml not found"
-        
+
     #     log_file = os.path.join(output_path, 'dummy-dummy_tool.log')
     #     assert os.path.exists(log_file), \
     #         f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) if os.path.exists(output_path) else 'directory does not exist'}"
-        
+
     #     # Check if "This is a dummy CLI script that does nothing." is in the log
     #     with open(log_file, 'r', encoding='utf-8') as f:
     #         content = f.read()
     #     assert "This is a dummy CLI script that does nothing." in content, \
     #         "Expected content not found in dummy-dummy_tool.log"
-        
+
     #     assert os.path.exists(os.path.join(output_path, 'setup_checker.log')), \
     #         "setup_checker.log not found"
 
@@ -607,30 +607,30 @@ class TestAquaConsoleShared():
 
         out, _ = capfd.readouterr()
         assert '.aqua/catalogs/ci ..' in out
-    
+
     @pytest.mark.parametrize("is_editable", [False, True])
     def test_add_catalog_cleanup_on_failure(self, shared_aqua_install, run_aqua, monkeypatch, is_editable):
         """Test that failed catalog additions are properly cleaned up"""
         mydir = shared_aqua_install
         catalog_name = f'cleanup_test_{"editable" if is_editable else "standard"}'
         catalog_path = os.path.join(mydir, '.aqua/catalogs', catalog_name)
-        
+
         if is_editable:
             # For editable, mock a write failure
             with tempfile.TemporaryDirectory() as src_dir:
                 # Create minimal valid catalog
                 with open(os.path.join(src_dir, 'catalog.yaml'), 'w') as f:
                     f.write("sources: {}")
-                
+
                 # define a mock failing dump_yaml function to fail during _set_catalog
                 def failing_dump_yaml(filepath, data):
                     if 'config-aqua.yaml' in filepath:
                         raise PermissionError("Simulated write failure")
                     return dump_yaml(filepath, data)
-                
+
                 # replace the dump_yaml function with the mock failing function
                 monkeypatch.setattr(catalog, 'dump_yaml', failing_dump_yaml)
-                
+
                 with pytest.raises(SystemExit) as excinfo:
                     run_aqua(['-v', 'add', catalog_name, '-e', src_dir])
         else:
@@ -640,7 +640,7 @@ class TestAquaConsoleShared():
 
         # both must fail
         assert excinfo.value.code == 1
-        
+
         # Verify cleanup
         assert not os.path.exists(catalog_path), "Catalog path should be cleaned up"
         if is_editable:
