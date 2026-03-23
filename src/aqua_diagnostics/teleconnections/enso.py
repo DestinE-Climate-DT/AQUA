@@ -34,7 +34,7 @@ class ENSO(BaseMixin):
                              This is used to deduce the variable name and the lat/lon for the index.
             loglevel (str): Logging level. Default is 'WARNING'.
         """
-        super().__init__(telecname='ENSO', catalog=catalog, model=model, exp=exp, source=source,
+        super().__init__(telecname='Niño 3.4 index', catalog=catalog, model=model, exp=exp, source=source,
                          regrid=regrid, startdate=startdate, enddate=enddate,
                          configdir=configdir, definition=definition,
                          loglevel=loglevel)
