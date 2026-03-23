@@ -389,7 +389,7 @@ class Plot2DSeaIce:
             # Define custom boundaries for a discrete normalization
             boundaries = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5,
                           5.5, 6, 6.5, 7, 7.5, 8.0, 10, 15, 20, 30]
-            colormap = plt.get_cmap('viridis')
+            colormap = plt.get_cmap('turbo')
             norm = mcolors.BoundaryNorm(boundaries, ncolors=colormap.N, clip=True)
 
         return {'colormap': colormap, 'norm': norm, 'boundaries': boundaries}
