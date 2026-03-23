@@ -9,13 +9,13 @@ We welcome contributions to the AQUA project in many forms, and there's always p
 Before opening an issue, please [search the if the issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments). If it does, please add a comment to the existing issue instead of opening a new one.
 
 As a general rule, if you are unsure, please open an issue anyway and we will help you.
-There is no automatic assignement of issues to anyone. If it is a bug, please fill all the cases and verify that reproducible code is reported. 
+There is no automatic assignement of issues to anyone. If it is a bug, please fill all the cases and verify that reproducible code is reported.
 If you open a pull request to close some issues, please reference the issue it solves in the description.
 
 ### Reporting bugs
 
-If you find a bug in the source code, you can help us by opening an issue in the AQUA repository. 
-If you have a solution to it, you can submit a Pull Request with a fix. 
+If you find a bug in the source code, you can help us by opening an issue in the AQUA repository.
+If you have a solution to it, you can submit a Pull Request with a fix.
 Please use the `bug` label for bugs issue and the `fix` label for Pull Requests with a fix.
 
 When describing the bug, please include as much information as possible. This includes:
@@ -26,8 +26,8 @@ When describing the bug, please include as much information as possible. This in
 
 ## Pull Requests
 
-The contribution workflow is based on Pull Requests (PR). 
-A Pull Request is a request to merge a set of changes into the `main` branch of the repository. 
+The contribution workflow is based on Pull Requests (PR).
+A Pull Request is a request to merge a set of changes into the `main` branch of the repository.
 It is the main way to contribute to AQUA.
 
 ### Creating a Pull Request
@@ -46,7 +46,7 @@ If your Pull Request is adding some new dependencies, please make sure to state 
 
 If your Pull Request is a work in progress, please add `[WIP]` to the title.
 When your Pull Request is ready to be reviewed, please remove `[WIP]` from the title. A label `run tests` can be added to the Pull Request to activate the CI tests.
-A label `ready to merge` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author. 
+A label `ready to merge` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
 
 Before asking for a review, please make sure to:
 - be up to date with the `main` branch

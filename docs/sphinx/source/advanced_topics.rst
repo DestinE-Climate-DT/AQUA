@@ -54,7 +54,7 @@ The configuration folder after the installation has this structure:
     │   ├── grids
     │   └── catalogs
     │       ├── climatedt-phase1
-    │       │   ├── catalog 
+    │       │   ├── catalog
     │       │   └── catalog.yaml
     │       │   └── machine.yaml
     │       ├── obs
@@ -84,18 +84,18 @@ folder under version control if needed.
     cd /path/of/your/catalog
     mkdir new_catalog
 
-A machine specific file ``machine.yaml`` need to be created as a first step. This will include the path 
-where the grids, weights and areas produced by AQUA will be stored. A default can be provided to be used in 
+A machine specific file ``machine.yaml`` need to be created as a first step. This will include the path
+where the grids, weights and areas produced by AQUA will be stored. A default can be provided to be used in
 whatsoever machine where AQUA is installed, but also machine specific paths can be defined
 
 .. code-block:: yaml
 
-    default: 
+    default:
         paths:
             grids: /path/to/aqua/data/grids
             weights: /path/to/aqua/data/weights
             areas: /path/to/aqua/data/areas
-    myhpc: 
+    myhpc:
         paths:
             grids: /path/to/aqua/data/grids
             weights: /path/to/aqua/data/weights
@@ -156,7 +156,7 @@ This is done with the ``aqua add`` command.
 Access to `aqua-dvc` data for developers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From September 2025, AQUA data used in the catalogs is stored and versioned using DVC (Data Version Control). 
+From September 2025, AQUA data used in the catalogs is stored and versioned using DVC (Data Version Control).
 A private GitHub repository [aqua-dvc](https://github.com/DestinE-Climate-DT/aqua-dvc) contains the DVC data and provides
 a README.md with instructions to set up access to the data.
 This new infrastructure relies on a remote storage (AWS S3) provided by DKRZ and will be the standard in the future for all AQUA support data.
@@ -179,14 +179,14 @@ Please refer to the section :ref:`grids-downloader` for more details.
 .. warning::
 
     Grids are now versioned using DVC and are available in the `aqua-dvc` repository.
-    
+
 
 .. _FDB_dask:
 
 Dask access to FDB or GSV
 --------------------------
 
-If an appropriate entry has been created in the catalog, the reader can also read data from a FDB/GSV source. 
+If an appropriate entry has been created in the catalog, the reader can also read data from a FDB/GSV source.
 The request is transparent to the user (no apparent difference to other data sources) in the call.
 
 .. code-block:: python
@@ -244,8 +244,8 @@ the regridder is still able to deal with this situation using the information in
     Please avoid performing regridding on datasets in which single levels have been selected for multiple
     3D variables using different vertical dimensions or on datasets containing also 2D data,
     because in such cases it may not be possible to reconstruct which vertical dimension
-    each variable was supposed to be using. 
-    In these cases it is better to first select a variable, then select levels and finally regrid. 
+    each variable was supposed to be using.
+    In these cases it is better to first select a variable, then select levels and finally regrid.
     The regridder will issue a warning if it detects such a situation.
     An alternative is to maintain the vertical dimension when selecting a single level by specifying a list with one element,
     for example using ``isel(nz1=[40])`` instead of ``isel(nz1=40)``.
@@ -290,7 +290,7 @@ The block to add should look like this:
 
 .. code-block:: yaml
 
-    myhpc: 
+    myhpc:
         paths:
             grids: /path/to/aqua/data/grids
             weights: /path/to/aqua/data/weights
@@ -312,7 +312,7 @@ Developer notes
 ---------------
 
 The standard setup of AQUA is thought to be used in a conda environment by users who are not going to modify under version control the downloaded catalogs.
-For this reason we suggest to install the AQUA configuration files in the ``$HOME/.aqua``. 
+For this reason we suggest to install the AQUA configuration files in the ``$HOME/.aqua``.
 Anyway, this configuration could be not ideal if you're creating a new catalog or modifying an existing one and you want to keep it under version control.
 For this reason the following steps are suggested to set up the AQUA package in a developer environment.
 
