@@ -46,3 +46,9 @@ diagnostics:
       var: ['thetao', 'so']
       regions: ['go'] # ['go', 'io', 'ao', 'so', 'arc_o', 'po'] # for now disabling other regions 
       # dim_mean: ['lat']
+    zonal:
+      diagnostic_name: 'ocean3d'
+      run: true
+      var: ['thetao', 'so']
+      regions: ['go', 'io', 'ao', 'so', 'arc_o', 'po'] # for now disabling other regions 
+      # dim_mean: ['lat']
