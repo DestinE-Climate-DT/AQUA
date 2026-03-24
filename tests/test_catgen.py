@@ -139,13 +139,13 @@ def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     assert "realization: '{{ realization }}'"
 
     # check number of vertical levels in the atmosphere
-    assert len(sources['sources']['monthly-hpz5-atm3d']['metadata']['levels']) == 19
+    assert len(sources['sources'][f'monthly-hpz5-atm3d']['metadata']['levels']) == 19
 
     # check number of vertical levels in the ocean
-    assert len(sources['sources']['monthly-hpz5-oce3d']['metadata']['levels']) == nocelevels
+    assert len(sources['sources'][f'monthly-hpz5-oce3d']['metadata']['levels']) == nocelevels
 
     # check ensembles are correctly produced
-    assert sources['sources']['monthly-hpz5-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
+    assert sources['sources'][f'monthly-hpz5-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
