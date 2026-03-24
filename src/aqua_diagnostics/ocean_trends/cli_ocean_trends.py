@@ -110,7 +110,7 @@ if __name__ == '__main__':
                         loglevel=loglevel
                     )
                     trends_plot.plot_multilevel(
-                        levels = [10, 100, 500, 1000, 3000, 5000],
+                        levels = [10, 100, 500, 1000],
                         cbar_limits=
                         {
                             "thetao":
