@@ -86,11 +86,7 @@ class InstallMixin:
             locator = ConfigLocator(logger=self.logger)
             try:
                 if os.path.exists(locator.config_file):
-                    self.logger.error(
-                        "AQUA configuration found at %s but failed to load. "
-                        "A configured catalog might be missing or corrupted.",
-                        locator.config_file,
-                    )
+                    self.logger.error('AQUA configuration found at %s but failed to load. A configured catalog might be missing or corrupted.', locator.config_file)
                     sys.exit(1)
             except FileNotFoundError:
                 self.logger.error('No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
@@ -263,11 +259,8 @@ class InstallMixin:
                 if not install_info['core']['installed']:
                     self.logger.error('Cannot install diagnostics without core. Install core first or use full installation.')
                     sys.exit(1)
-                if install_info["diagnostics"]["installed"]:
-                    self.logger.error(
-                        "Diagnostics component is already installed. "
-                        "We cannot add it again, please use 'aqua uninstall' before"
-                    )
+                if install_info['diagnostics']['installed']:
+                    self.logger.error('Diagnostics component is already installed. We cannot add it again, please use \'aqua uninstall\' before')
                     sys.exit(1)
                 self.logger.info('Core already installed (%s mode), adding diagnostics component',
                            install_info['core']['mode'])

@@ -119,8 +119,7 @@ class CatalogEntryBuilder():
             basedir (str): Base directory for the output files.
             catblock (dict, optional): Existing catalog block to update. Defaults to None if not existing.
             driver (str): Driver type for the catalog entry. Defaults to 'netcdf', alternative is 'zarr'.
-            source_grid_name (str): Name of the source grid. Defaults to 'lon-lat'.
-                Can be AQUA grid, or 'False' if not applicable.
+            source_grid_name (str): Name of the source grid. Defaults to 'lon-lat'. Can be AQUA grid, or 'False' if not applicable.
 
         Returns:
             dict: The catalog block with the updated urlpath and metadata.
@@ -173,9 +172,6 @@ class CatalogEntryBuilder():
                 self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock['args']['urlpath'])
 
             # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
-            # catblock['args']['urlpath'] = (
-            #     catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str)
-            #     else list(set(catblock['args']['urlpath']))
-            # )
+            # catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))
 
         return catblock

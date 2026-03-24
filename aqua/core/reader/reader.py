@@ -185,10 +185,7 @@ class Reader():
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             if not files_exist(self.esmcat.urlpath):
-                raise NoDataError(
-                    f"No NetCDF files available for {self.model} {self.exp} {self.source}, ",
-                    f"please check the urlpath: {self.esmcat.urlpath}",
-                )
+                raise NoDataError(f"No NetCDF files available for {self.model} {self.exp} {self.source}, please check the urlpath: {self.esmcat.urlpath}")  # noqa E501
 
         # extend the unit registry
         units_extra_definition()
@@ -244,10 +241,7 @@ class Reader():
         self.tgt_fldstat = None
         if regrid:
             if not areas:
-                self.logger.warning(
-                    "Regridding requires info on areas. As areas can usually be generated with smmregrid, "
-                    "setting areas to 'True'"
-                )
+                self.logger.warning("Regridding requires info on areas. As areas can usually be generated with smmregrid, setting areas to 'True'")
                 areas = True
             self.tgt_fldstat = FldStat(
                 self.tgt_grid_area.cell_area, grid_name=self.tgt_grid_name,
@@ -845,10 +839,7 @@ class Reader():
             raise ValueError('This is not an xarray object!')
 
         final = log_history(
-            final,
-            f"Interpolated from original levels {data[vert_coord].values} "
-            f"{data[vert_coord].units} to level {levels} using {method} method.",
-        )
+            final, f"Interpolated from original levels {data[vert_coord].values} {data[vert_coord].units} to level {levels} using {method} method.") # noqa E501
 
         final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
@@ -1020,9 +1011,7 @@ class Reader():
                 chunks['time'] = self.aggregation
             if self.streaming and not self.aggregation:
                 self.logger.warning(
-                    "Aggregation is not set, using default time resolution for streaming. "
-                    "If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value"
-                )
+                    "Aggregation is not set, using default time resolution for streaming. If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value") # noqa E501
 
         if dask:
             if chunks:  # if the chunking or aggregation option is specified override that from the catalog

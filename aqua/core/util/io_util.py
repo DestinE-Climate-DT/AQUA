@@ -172,8 +172,7 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
 
     Args:
         metadata (dict, optional): The original metadata dictionary.
-        additional_metadata (dict, optional): A dictionary containing additional
-            metadata fields (e.g., diagnostic, model, experiment, etc.).
+        additional_metadata (dict, optional): A dictionary containing additional metadata fields (e.g., diagnostic, model, experiment, etc.).
 
     Returns:
         dict: The updated metadata dictionary.

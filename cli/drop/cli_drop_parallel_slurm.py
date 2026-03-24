@@ -117,11 +117,10 @@ def submit_sbatch(model, exp, source, varname, realization, slurm_dict, yaml_fil
     # Execute sbatch command
     if definitive:
         try:
-            # command_str = ' '.join(sbatch_cmd)
-            # result = subprocess.run(command_str, shell=True, capture_output = True,
-            # check=True, env=os.environ).stdout.decode('utf-8')
-            result = subprocess.run(sbatch_cmd, capture_output=True, check=True).stdout.decode("utf-8")
-            jobid = re.findall(r"\b\d+\b", result)[-1]
+            #command_str = ' '.join(sbatch_cmd)
+            #result = subprocess.run(command_str, shell=True, capture_output = True, check=True, env=os.environ).stdout.decode('utf-8')
+            result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
+            jobid = re.findall(r'\b\d+\b', result)[-1]
             if os.path.exists(tempfile):
                 os.remove(tempfile)
             return jobid
