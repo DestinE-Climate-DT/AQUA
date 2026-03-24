@@ -79,10 +79,8 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.long_name = self.monthly_data[0].long_name if hasattr(self.monthly_data[0], 'long_name') else None
             self.units = self.monthly_data[0].units if hasattr(self.monthly_data[0], 'units') else None
             # this does not work since monthly_data has not information about time period
-            #self.startdate = [d.time[0].values for d in self.monthly_data]
-            #self.enddate = [d.time[-1].values for d in self.monthly_data]
-            self.startdate = [None for d in self.monthly_data]
-            self.enddate = [None for d in self.monthly_data]
+            self.startdate = [d.AQUA_startdate if hasattr(d, 'AQUA_startdate') else None for d in self.monthly_data]
+            self.enddate = [d.AQUA_enddate if hasattr(d, 'AQUA_enddate') else None for d in self.monthly_data]
             self.realizations = get_realizations(self.monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
@@ -94,6 +92,8 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.ref_catalogs = self.ref_monthly_data.AQUA_catalog
             self.ref_models = self.ref_monthly_data.AQUA_model
             self.ref_exps = self.ref_monthly_data.AQUA_exp
+            self.ref_startdate = self.ref_monthly_data.AQUA_startdate if hasattr(self.ref_monthly_data, 'AQUA_startdate') else None
+            self.ref_enddate = self.ref_monthly_data.AQUA_enddate if hasattr(self.ref_monthly_data, 'AQUA_enddate') else None
             self.logger.debug(f'Reference: {self.ref_catalogs} {self.ref_models} {self.ref_exps}')
 
         if self.std_monthly_data is not None:
