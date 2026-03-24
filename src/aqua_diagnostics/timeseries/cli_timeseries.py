@@ -261,10 +261,6 @@ if __name__ == '__main__':
                             sc[i].run(**run_args, create_catalog_entry=create_catalog_entry,
                                       reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
-                        # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = pd.Timestamp(min(t.plt_startdate for t in ts))
-                        enddate = pd.Timestamp(max(t.plt_enddate for t in ts))
-
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             sc_ref = [None] * len(config_dict['references'])
@@ -272,7 +268,9 @@ if __name__ == '__main__':
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                                 'exp': reference['exp'], 'source': reference['source'],
-                                                'startdate': startdate, 'enddate': enddate,
+                                                # Startdate and enddate are set to be the same as the period for the std
+                                                'startdate': var_config.get('std_startdate'),
+                                                'enddate': var_config.get('std_enddate'),
                                                 'std_startdate': var_config.get('std_startdate'),
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid} # if regrid is not None else reference.get('regrid', None)}
