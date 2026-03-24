@@ -2,9 +2,10 @@
 Module including string utilities for AQUA
 """
 
-import re
 import random
+import re
 import string
+
 
 def generate_random_string(length):
     """
@@ -26,9 +27,12 @@ def strlist_to_phrase(items: list[str], oxford_comma: bool = False) -> str:
     Args:
         items (list[str]): The list of strings to format.
     """
-    if not items: return ""
-    if len(items) == 1: return items[0]
-    if len(items) == 2: return f"{items[0]} and {items[1]}"
+    if not items:
+        return ""
+    if len(items) == 1:
+        return items[0]
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
     return ", ".join(items[:-1]) + (", and " if oxford_comma else " and ") + items[-1]
 
 

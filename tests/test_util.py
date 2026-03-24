@@ -1,16 +1,24 @@
 """Test for some of the utils"""
 
-import pytest
-import xarray as xr
 import numpy as np
 import pandas as pd
-from aqua import Reader
-from aqua.core.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
-from aqua.core.util import format_realization, extract_attrs, time_to_string
-from aqua.core.util.string import strlist_to_phrase, lat_to_phrase
-from aqua.core.util.units import multiply_units
-from aqua.core.util.time import frequency_string_to_pandas
+import pytest
+import xarray as xr
 from conftest import LOGLEVEL
+
+from aqua import Reader
+from aqua.core.util import (
+    convert_data_units,
+    extract_attrs,
+    extract_literal_and_numeric,
+    file_is_complete,
+    format_realization,
+    to_list,
+)
+from aqua.core.util.string import lat_to_phrase, strlist_to_phrase
+from aqua.core.util.time import frequency_string_to_pandas
+from aqua.core.util.units import multiply_units
+
 
 @pytest.fixture
 def test_text():

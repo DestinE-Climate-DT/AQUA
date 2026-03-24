@@ -5,14 +5,17 @@ AQUA wrapper for DROP CLI to submit parallel slurm job based on EACH variable
 Use with caution, it can submit tens of sbatch jobs!
 '''
 
-import subprocess
 import argparse
-import re
 import os
+import re
+import subprocess
 import sys
+
 import jinja2
-from aqua.core.util import load_yaml, get_arg, to_list
+
 from aqua.core.configurer import ConfigPath
+from aqua.core.util import get_arg, load_yaml, to_list
+
 
 def is_job_running(job_name, username):
     """verify that a job name is not already submitted in the slurm queue"""

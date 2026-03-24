@@ -1,9 +1,11 @@
 """Tests for string unit conversion utilities"""
 
-import pytest
 import string
-from aqua.core.util.string import unit_to_latex, generate_random_string
-from aqua.core.util.string import get_quarter_anchor_month, clean_filename
+
+import pytest
+
+from aqua.core.util.string import clean_filename, generate_random_string, get_quarter_anchor_month, unit_to_latex
+
 
 @pytest.mark.aqua
 @pytest.mark.parametrize("input_str, expected", [

@@ -1,8 +1,9 @@
-import pytest
 import numpy as np
+import pytest
+from conftest import LOGLEVEL
+
 from aqua import Reader
 from aqua.core.exceptions import NoDataError
-from conftest import LOGLEVEL
 
 
 @pytest.mark.aqua

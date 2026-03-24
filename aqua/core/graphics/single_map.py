@@ -9,18 +9,28 @@ Author: Matteo Nurisso
 Date: Feb 2024
 """
 from typing import Optional
+
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import healpy as hp
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import healpy as hp
+
 from aqua.core.logger import log_configure
-from aqua.core.util import add_cyclic_lon, evaluate_colorbar_limits
-from aqua.core.util import healpix_resample, coord_names, set_ticks
-from aqua.core.util import cbar_get_label, set_map_title, generate_colorbar_ticks
+from aqua.core.util import (
+    add_cyclic_lon,
+    cbar_get_label,
+    coord_names,
+    evaluate_colorbar_limits,
+    generate_colorbar_ticks,
+    healpix_resample,
+    set_map_title,
+    set_ticks,
+)
+
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
-import cartopy.feature as cfeature
 
 
 def plot_single_map(data: xr.DataArray,
@@ -31,7 +41,8 @@ def plot_single_map(data: xr.DataArray,
                     vmin: Optional[float] = None, vmax: Optional[float] = None, cmap: str = 'RdBu_r',
                     cbar: bool = True, cbar_label: Optional[str] = None,
                     norm: Optional[object] = None,
-                    title: Optional[str] = None, title_size: Optional[int] = 12, transform_first: bool = False, cyclic_lon: bool = True,
+                    title: Optional[str] = None, title_size: Optional[int] = 12,
+                    transform_first: bool = False, cyclic_lon: bool = True,
                     add_land: bool = False, fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
                     ax_pos: tuple = (1, 1, 1), return_fig: bool = False,
                     loglevel='WARNING',  **kwargs):

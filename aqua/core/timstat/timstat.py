@@ -1,12 +1,19 @@
 """Timmean mixin for the Reader class"""
+from functools import partial
+
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
-from functools import partial
-from aqua.core.util import check_chunk_completeness, check_seasonal_chunk_completeness, frequency_string_to_pandas
-from aqua.core.util import extract_literal_and_numeric, fix_calendar
-from aqua.core.logger import log_history, log_configure
+
 from aqua.core.histogram import histogram
+from aqua.core.logger import log_configure, log_history
+from aqua.core.util import (
+    check_chunk_completeness,
+    check_seasonal_chunk_completeness,
+    extract_literal_and_numeric,
+    fix_calendar,
+    frequency_string_to_pandas,
+)
 
 
 class TimStat():
@@ -20,14 +27,14 @@ class TimStat():
         self.logger = log_configure(loglevel, 'TimStat')
 
     @property
-    def AVAILABLE_STATS(self):
+    def available_stats(self):
         """Return the list of available statistics."""
         return ['mean', 'std', 'max', 'min', 'sum', 'first', 'last', 'histogram']
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False, func_kwargs={}, **kwargs):
         """
-        Compute a time statistic on the input data. 
+        Compute a time statistic on the input data.
         The statistic is computed over a time window defined by the frequency
         parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object.
         The statistic can be 'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'.
@@ -50,7 +57,7 @@ class TimStat():
             xarray.Dataset: Output data with the required statistic computed at the desired frequency.
         """
 
-        if isinstance(stat, str) and stat not in self.AVAILABLE_STATS:
+        if isinstance(stat, str) and stat not in self.available_stats:
             raise KeyError(f'{stat} is not a statistic supported by AQUA')
 
         if not isinstance(stat, str) and not callable(stat):
@@ -96,7 +103,9 @@ class TimStat():
                 # Resample to the desired frequency
                 resample_data = data.resample(time=resample_freq)
             except ValueError as exc:
-                raise ValueError(f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
+                raise ValueError(
+                    f'Cannot find a frequency to resample, using resample_freq={resample_freq} not work, aborting!'
+                    ) from exc
 
         # if frequency is undefined, meaning that we operate on the entire set
         else:
@@ -115,7 +124,7 @@ class TimStat():
                 out = out.assign_coords(time=resampled_times)
 
         else:  # we can safely assume that it is a callable function now
-            self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
+            self.logger.info('Resampling to %s frequency and computing custom function...', str(resample_freq))
             if resample_freq is not None:
                 out = resample_data.map(partial(stat, **func_kwargs, **kwargs))
             else:

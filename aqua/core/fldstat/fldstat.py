@@ -1,8 +1,7 @@
 """AQUA class for field statitics"""
-import xarray as xr
 import numpy as np
 import regionmask
-
+import xarray as xr
 from smmregrid import GridInspector
 
 from aqua.core.logger import log_configure, log_history
@@ -52,7 +51,7 @@ class FldStat():
         self.area_selection = AreaSelection(loglevel=loglevel)
 
     @property
-    def AVAILABLE_FLDSTATS(self):
+    def available_fldstats(self):
         """Return available field statistics."""
         return {"custom":   ['integral', 'areasum'],
                 "standard": ['mean', 'std', 'max', 'min', 'sum']}
@@ -88,9 +87,9 @@ class FldStat():
             xr.DataArray or xr.Dataset: Result of the requested spatial statistic.
         """
 
-        if stat not in [s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]:
+        if stat not in [s for stats in self.available_fldstats.values() for s in stats]:
             raise ValueError(f"Statistic {stat} not supported by AQUA FldStat(), only "
-                             f"{[s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]} are supported.")
+                             f"{[s for stats in self.available_fldstats.values() for s in stats]} are supported.")
 
         if not isinstance(data, (xr.DataArray, xr.Dataset)):
             raise ValueError("Data must be an xarray DataArray or Dataset.")
@@ -119,7 +118,7 @@ class FldStat():
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
             # compact call, equivalent of "out = data.mean()"
-            if stat in self.AVAILABLE_FLDSTATS["standard"]:
+            if stat in self.available_fldstats["standard"]:
                 self.logger.info("Computing unweighted %s on %s dimensions", stat, self.horizontal_dims)
                 log_history(data, f"Unweighted {stat} computed on {self.horizontal_dims} dimensions")
                 return getattr(data, stat)(dim=self.horizontal_dims)
@@ -272,7 +271,10 @@ class FldStat():
         self.logger.warning("Area %s and data %s have different horizontal dimensions! Renaming them!",
                             area_horizontal_dims, self.horizontal_dims)
         # create a dictionary for renaming matching dimensions have the same length
-        matching_dims = {a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims) if self.area.sizes[a] == data.sizes[d]}
+        matching_dims = {
+            a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims)
+            if self.area.sizes[a] == data.sizes[d]
+        }
         self.logger.info("Area dimensions has been renamed with %s",  matching_dims)
         return self.area.rename(matching_dims)
 

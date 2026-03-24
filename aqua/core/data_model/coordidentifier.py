@@ -2,10 +2,12 @@
 Module to identify the nature of coordinates of an Xarray object.
 """
 
-import xarray as xr
 import numpy as np
+import xarray as xr
+
 from aqua.core.logger import log_configure
-from .coord_utils import get_coord_defaults, is_pressure, is_meter
+
+from .coord_utils import get_coord_defaults, is_meter, is_pressure
 
 
 class CoordIdentifier:

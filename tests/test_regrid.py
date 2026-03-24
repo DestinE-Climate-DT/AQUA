@@ -1,11 +1,14 @@
 """Test regridding from Reader"""
+from unittest.mock import MagicMock
+
+import numpy as np
 import pytest
 import xarray as xr
-import numpy as np
-from unittest.mock import MagicMock
 from conftest import APPROX_REL, LOGLEVEL
+
 from aqua import Reader, Regridder
 from aqua.core.regridder.griddicthandler import GridDictHandler
+
 
 @pytest.fixture(
     params=[

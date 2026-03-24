@@ -1,9 +1,11 @@
 """Test for cli_checker command line interface"""
 
 import os
-import sys
 import subprocess
+import sys
+
 import pytest
+
 from aqua import __path__ as aqua_pkg_path
 from aqua.core.analysis.cli_checker import parse_arguments
 

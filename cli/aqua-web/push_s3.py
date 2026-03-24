@@ -12,8 +12,10 @@
 import argparse
 import os
 import sys
+
 import boto3
 from botocore.client import Config
+
 
 def get_file_from_s3(client, bucket_name, object_name, dest_path):
     """Try to download a single file from an S3 bucket."""
@@ -67,7 +69,7 @@ def upload_directory_to_s3(client, bucket_name, source, dest):
 
 def main():
     """Parse command-line arguments and upload a directory or single file to an S3 bucket.
-    Store the AWS credentials in the ~/.aws/credentials file or in environment 
+    Store the AWS credentials in the ~/.aws/credentials file or in environment
     variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments.
     """
 

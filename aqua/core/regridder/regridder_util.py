@@ -2,6 +2,7 @@
 
 import os
 
+
 def check_existing_file(filename):
     """
     Checks if an area/weights file exists and is valid.

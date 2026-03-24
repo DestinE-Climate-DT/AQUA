@@ -8,16 +8,15 @@ import os
 import shutil
 import sys
 
+from aqua.core.configurer import ConfigLocator, ConfigPath
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import load_yaml, dump_yaml
-from aqua.core.configurer import ConfigPath, ConfigLocator
+from aqua.core.util import dump_yaml, load_yaml
 
 from .util import query_yes_no
 
 # check if aqua.diagnostics is installed
 try:
-    from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES
-    from aqua.diagnostics import DIAGNOSTIC_TEMPLATE_DIRECTORIES
+    from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES
 except ImportError:
     DIAGNOSTIC_CONFIG_DIRECTORIES = []
     DIAGNOSTIC_TEMPLATE_DIRECTORIES = []
@@ -93,8 +92,10 @@ class InstallMixin:
                     )
                     sys.exit(1)
             except FileNotFoundError:
-                self.logger.error('No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
-                                'or manually set the AQUA_CONFIG environment variable to an existing AQUA installation directory.')
+                self.logger.error(
+                    'No AQUA configuration found (config-aqua.yaml). Use `aqua install` to initialize a new installation, '
+                    'or manually set the AQUA_CONFIG environment variable to an existing AQUA installation directory.'
+                )
                 sys.exit(1)
 
     def _check_component_installed(self, component):
@@ -366,7 +367,9 @@ class InstallMixin:
                 os.symlink(path, link)
             else:
                 self.logger.error('$HOME not found. Cannot create a link to the installation path')
-                self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable', path)
+                self.logger.warning(
+                    'AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable', path
+                )
         else:
             self.logger.warning('AQUA will be installed in %s, but please remember to define AQUA_CONFIG environment variable',
                                 path)

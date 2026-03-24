@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import abc
+import argparse
+import sys
+import traceback
 
 import numpy as np
 import xarray as xr
-import traceback
-import argparse
-import sys
 
 
 class OrcaMesh(metaclass=abc.ABCMeta):
@@ -144,7 +144,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
 
     def _get_corner_dict(self):
         """
-        Get an info dictionary about the relative arranging 
+        Get an info dictionary about the relative arranging
         (center, vertex, symmetry for the edges) of the desired gridpoint.
         """
 
@@ -304,7 +304,8 @@ def get_args():
     parser.add_argument(
         "--stagg", type=str,  default='T', help="type of ORCA points concerned (T, U, V or F)")
     parser.add_argument('--xesmf', action=argparse.BooleanOptionalAction,
-                        help="generate xesmf-type of file, with bounds stored as (y+1, x+1) array, instead of CF-compliant (y,x,4) bounds")
+                        help="generate xesmf-type of file, with bounds stored as "
+                             "(y+1, x+1) array, instead of CF-compliant (y,x,4) bounds")
     parser.add_argument('--unstructured', action=argparse.BooleanOptionalAction,
                         help="produce unstructured grid (instead of curvilinear) to be used with NEMO GRIB files")
     parser.add_argument('--level', action=argparse.BooleanOptionalAction,

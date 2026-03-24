@@ -1,8 +1,9 @@
-import xarray as xr
 import matplotlib.pyplot as plt
+import xarray as xr
 
-from .styles import ConfigStyle
 from .lat_lon_profiles import plot_lat_lon_profiles
+from .styles import ConfigStyle
+
 
 def plot_seasonal_lat_lon_profiles(seasonal_data,
                                    ref_data=None,
