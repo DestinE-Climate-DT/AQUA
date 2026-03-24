@@ -18,5 +18,5 @@ __all__ = ["plot_single_map", "plot_maps", "plot_single_map_diff", "plot_timeser
            "plot_lat_lon_profiles", "plot_seasonal_lat_lon_profiles",
            "Drop",
            "Reader", "Streaming", "show_catalog_content",
-           "Regridder", "GridBuilder",
+           "Regridder", "GridBuilder", 
            "Fixer", "FldStat"]

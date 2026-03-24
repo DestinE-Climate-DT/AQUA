@@ -10,7 +10,7 @@ aqua catgen -c <config_file> -p <portfolio>
 -------------------------------------------
 
 This subcommand launch the source catalog entry generator, specifically for FDB sources part of the ClimateDT experiments.
-This simplifies the process of adding new experiments to the catalog, based on the data-portfolio structure of the Destination Earth ClimateDT.
+This simplifies the process of adding new experiments to the catalog, based on the data-portfolio structure of the Destination Earth ClimateDT. 
 It exploits the capabilities of the Jinja2 package to obtain a cleaner and more flexible code.
 
 
@@ -18,14 +18,14 @@ It exploits the capabilities of the Jinja2 package to obtain a cleaner and more 
 
     The configuration file to use. A ``config.tmpl`` is available to be copied and edited.
 
-.. option:: -p <portfolio>, --portfolio <portfolio>
+.. option:: -p <portfolio>, --portfolio <portfolio>  
 
     The data portfolio to be used. At moment ``full``, ``minimal`` and ``reduced`` are supported.
 
 .. option:: -l <loglevel>, --loglevel <loglevel>
 
     The logging level, following the python standards.
-
+    
 Basic usage
 ^^^^^^^^^^^
 
@@ -42,7 +42,7 @@ Configuration file
 The configuration file ``config.tmpl`` contains the following keys:
 
 - ``author``: the author of the experiment. This field is mandatory.
-- ``maintainer``: the maintainer of the experiment.
+- ``maintainer``: the maintainer of the experiment. 
 - ``machine``: the machine where the experiment is running. This field is mandatory. Supported machine names so far are ``lumi``, ``MN5``, ``levante``, ``hpc2020``.
 - ``repos``: the paths to the data-portfolio and Climate-DT-catalog repositories.
 - ``resolution``: the resolution of the experiment, which can be ``production``, ``develop``, ``intermediate``, ``lowres``.
@@ -73,7 +73,7 @@ Info on the experiment:
 
 Info for the dashboard:
 - ``menu``: the name that will appear in the dashboard. This field is not mandatory. If not specified, the ``exp`` will be used.
-- ``note``: a note to complement experiment description, if needed. This field is not mandatory.
+- ``note``: a note to complement experiment description, if needed. This field is not mandatory. 
 
 Paths:
 - ``fdb_home``: the path to the FDB home

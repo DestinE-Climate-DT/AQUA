@@ -7,7 +7,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --time=00:20:00
-#SBATCH --mem=200G
+#SBATCH --mem=200G 
 set -e
 
 # set the number of dask workers
@@ -16,3 +16,4 @@ workers=8
 
 # overwrite option with short dataset
 ./cli_benchmarker.py -w ${workers}
+

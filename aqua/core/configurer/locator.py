@@ -49,3 +49,4 @@ class ConfigLocator:
                 return configdir
 
         raise FileNotFoundError(f"No config file {self.filename} found in {configdirs}")
+

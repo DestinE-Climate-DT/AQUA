@@ -131,7 +131,7 @@ class FixerOperator:
                     log_history(data[varname], f"Variable {varname} decumulated by fixer")
 
         return data
-
+    
     def simple_decumulate(self, data, deltat=3600, jump=None, keep_first=True):
         """
         Remove cumulative effect on IFS fluxes.

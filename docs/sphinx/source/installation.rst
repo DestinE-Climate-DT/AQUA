@@ -67,7 +67,7 @@ Prerequisites
 Before installing AQUA, ensure that you have the following software installed:
 
 - `Git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_: AQUA is hosted on GitHub, and you will need Git to clone the repository.
-- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process.
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process. 
 
 Installation with Miniforge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -194,7 +194,7 @@ Use the following configuration, replacing ``<port_number>`` with a unique port 
     Host mn5
         RemoteForward <port_number>
 
-After logging into MN5, export the following proxy environment variables to direct traffic through the SSH tunnel.
+After logging into MN5, export the following proxy environment variables to direct traffic through the SSH tunnel. 
 Replace ``<port_number>`` with the same port number used in your SSH configuration:
 
 .. code-block:: bash
@@ -245,14 +245,14 @@ Installation on ECMWF HPC2020
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HPC2020 is moving to a more container-based approach, so the suggested installation process uses a technology similar to the one used on LUMI.
-In fact, using directly conda or mamba on lustre filesystems (``$PERM`` and ``$HPCPERM``) is not recommended
+In fact, using directly conda or mamba on lustre filesystems (``$PERM`` and ``$HPCPERM``) is not recommended 
 and has been verified to lead to severe performance issues.
 
 The recommended approach is to use the `tykky module <https://docs.csc.fi/computing/containers/tykky/>`_ developed by CSC, and available on HPC2020, which provides
-the same container wrapper technology used for an install on LUMI.
+the same container wrapper technology used for an install on LUMI. 
 This process is also described in the relevant HPC2020 `documentation pages <https://confluence.ecmwf.int/display/UDOC/Moving+away+from+Anaconda+and+Miniconda>`_.
 
-While basically you could follow the instructions in the ECMWF docs on how to create a tykky environment, a small bug in one of the AQUA dependencies requires a slightly
+While basically you could follow the instructions in the ECMWF docs on how to create a tykky environment, a small bug in one of the AQUA dependencies requires a slightly 
 more complex procedure, so that, as for LUMI, a convenience installation script has been created.
 
 First, clone the AQUA repository from GitHub as described in the previous section.
@@ -291,7 +291,7 @@ Please note that adding AQUA to your PATH will make you use the aqua environment
 Instead, the recommended way to use AQUA is by loading the environment with a conda-like syntax:
 
 .. code-block:: bash
-
+    
     module load tykky
     tykky activate aqua
 

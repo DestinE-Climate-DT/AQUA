@@ -40,7 +40,7 @@ Load the container
 
 The container can be loaded using the following command:
 
-.. parsed-literal::
+.. parsed-literal:: 
 
    singularity shell --cleanenv aqua\_\ |version|\.sif
 
@@ -67,7 +67,7 @@ Otherwise some options can be passed to the script to avoid the interactive mode
 
    Load the container with the local version of AQUA found in the ``$AQUA`` environment variable (which must be defined).
    Please also notice that to be fully able to exploit the local installation of AQUA you will need to run `pip install -e $AQUA`
-   once you are in the container. Use this option with caution since it is not how the container is meant to work.
+   once you are in the container. Use this option with caution since it is not how the container is meant to work. 
 
 .. option:: -v, --version <version>
 
@@ -82,7 +82,7 @@ Otherwise some options can be passed to the script to avoid the interactive mode
    Execute an executable script (e.g. python or bash) after loading it.
 
 .. option:: -h, --help
-
+   
    Show the help message.
 
 .. note::
@@ -160,13 +160,13 @@ This will provide a server URL like: ``http://nodeurl:<port>/lab?token=random_to
 .. note::
     Using the ``load-aqua-container.sh`` script will launch the Jupyter Lab server on the node where the script is executed.
     You may want to use a computational node to run the Jupyter Lab server, especially if you are running a large notebook.
-    This can be achieved by requiring a computational node and then running the Jupyter Lab server on that node or
+    This can be achieved by requiring a computational node and then running the Jupyter Lab server on that node or 
     by using the Slurm script to run the Jupyter Lab server (you can find an example in the Slurm script itself).
 
 Running Jupyter Notebook within VSCode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want to open notebooks in VSCode, follow the same steps as above, but then:
+If you want to open notebooks in VSCode, follow the same steps as above, but then: 
 
 - Copy the Jupyter server URL.
 - Open a notebook in VS Code and in the top-right corner of the notebook,

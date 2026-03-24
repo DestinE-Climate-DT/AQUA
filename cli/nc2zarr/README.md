@@ -7,7 +7,7 @@ You will need the nc2zarr tool, available from [github](https://github.com/bcdev
 If your machine allows it, adding it to a conda environment is the easiest solution. We provide a sample file `env.yml`.
 Unless added to the AQUA environment, on lumi you will need to install it as a separate container-wrapper.
 We provide the `install.sh` script to this end (please edit the target directory).
-To use the tool you will then need to add the path to this directory `$OUTDIR` to your path with
+To use the tool you will then need to add the path to this directory `$OUTDIR` to your path with 
 `export path=$OUTDIR:$PATH` (see the `setnc2zarr.sh` script for an example).
 
 ## Usage
@@ -28,3 +28,4 @@ The enclosed job script `nc2zarr_era5.job` shows an example of how to run it on 
 ## Notes
 
 Chunking is an aspect to pay attention to before creating a zarr. Please inspect the current chunking of your data, for example with `ncdump -sh yourfile.nc`. For AQUA the best option is to have no chunking in space and to chunk along other dimensions (time, levels), possibly with a step of 1. The sample configuration file provided here implements this. In some cases it has been better (e.g. MSWEP), to reduce the workload of the tool, to first rechunk the data using cdo and afterward produce the zarr.
+

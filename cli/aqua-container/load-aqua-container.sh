@@ -51,11 +51,11 @@ parse_machine() {
     shift  # Shift the first argument to process options
 
     # Default values for options
-    native_mode=0  # AQUA reads from container
+    native_mode=0  # AQUA reads from container 
     script=""     # Script to be read as argument
     cmd="shell"   # Standard container init
     mode=""    # Container mode: none, script or bash
-
+ 
     # Use getopt to parse options
     OPTIONS=$(getopt -o hnc:s:v: --long help,native,version:,command:,script: -n "$0" -- "$@")
     if [ $? -ne 0 ]; then
@@ -78,7 +78,7 @@ parse_machine() {
                 usage ;;
             --)
                 shift
-                break
+                break   
                 ;;
             *)
                 echo "ERROR: Invalid option '$1'"
@@ -100,7 +100,7 @@ parse_machine() {
             echo "ERROR: AQUA directory is not set!"
             exit 1
         fi
-        # Check if AQUA is set and the file exists
+        # Check if AQUA is set and the file exists 
         echo "Selecting native AQUA path: $AQUA"
         echo "Please use this with caution since it is not how the container is meant to be used!"
         echo "Remember to run: pip install -e `$AQUA` once you are in the container"
@@ -122,7 +122,7 @@ parse_machine() {
         else
             echo "ERROR: Cannot find script $script to run"
             exit 1
-        fi
+        fi 
     elif [[ "$mode" == "bash" ]]; then
         echo "Executing command line: $script"
     fi
@@ -140,30 +140,30 @@ function setup_container_path(){
         "lumi")
             AQUA_folder="/project/project_465000454/containers/aqua"
             ;;
-
+        
         "levante")
             AQUA_folder="/work/bb1153/b382289/container/aqua"
             ;;
-
+        
         "MN5")
             AQUA_folder="/gpfs/projects/ehpc01/containers/aqua"
             ;;
         "nord4")
             AQUA_folder="/esarchive/scratch/AQUA/containers"
-            ;;
+            ;;                
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
             ;;
     esac
 
-
+    
     if [ ${version} == "latest" ] ; then
         echo "Asking for latest AQUA version, detecting the more recent available in ${AQUA_folder}" >&2
         available_versions=$(find ${AQUA_folder}/ -type f -name 'aqua_*.sif' -exec basename {} .sif \; | sed 's/^aqua_//')
         version=$(printf "%s\n" "${available_versions[@]}" | sort -V -r | head -n 1 )
         echo "AQUA v${version} selected! If you are not happy, please specify your version with -v flag" >&2
-    fi
+    fi 
 
     AQUA_container="$AQUA_folder/aqua_${version}.sif"
 
@@ -208,7 +208,7 @@ function setup_envs(){
             GSV_WEIGHTS_PATH=""
             GRID_DEFINITION_PATH=""
             ESMFMKFILE="/opt/conda/lib/esmf.mk"
-            ;;
+            ;;            
         *)
             echo "ERROR: The machine $machine is not supported" >&2
             return 1
@@ -335,7 +335,7 @@ singularity $cmd --cleanenv $env_args --no-mount /etc/localtime $bind_args $AQUA
 # On top right corner of the notebook, select for "select kernel" option.
 # Next "Select another kernel" and then "Existing Jupyter Server".
 # Paste the jupyter server url there and keep the password blank and Enter.
-# Then you can use "Python 3(ipykernel)" kernel for AQUA env.
+# Then you can use "Python 3(ipykernel)" kernel for AQUA env. 
 
 # If you want to open jupyer-lab on your browser:
 # run this in your system terminal "ssh -L port:localhost:port lumi_user@lumi.csc.fi", port is localhost channel.

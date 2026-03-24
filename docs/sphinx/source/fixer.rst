@@ -34,7 +34,7 @@ The fixer performs a range of operations on data:
   (like ``tprate`` in kg m-2 s-1). (See :ref:`metadata-fix` for more details)
 - using the ``metpy.units`` module, it is capable of **guessing some basic units conversions**.
   In particular, if a density is missing, it will assume that it is the density of water and will take it into account.
-  If there is an extra time unit, it will assume that division by the timestep is needed.
+  If there is an extra time unit, it will assume that division by the timestep is needed. 
 
 The fixer is split in two dictionaries that can be merged together, the ``convention`` and the ``fixer_name``.
 We describe in the following sections the structure of the two dictionaries and in which files they should be placed.
@@ -107,8 +107,8 @@ Here we show an example of a fixer file, including all the possible options:
 .. code-block:: yaml
 
     fixer_name:
-        documentation-mother:
-            delete:
+        documentation-mother: 
+            delete: 
                 - bad_variable
             vars:
                 mtpr:
@@ -133,7 +133,7 @@ Here we show an example of a fixer file, including all the possible options:
                 mtntrf: # Auto unit conversion from eccodes
                     derived: ttr
                     grib: true
-                    decumulate: true
+                    decumulate: true     
                 2t_increased: # Simple formula
                     derived: 2t+1.0
                     grib: true
@@ -149,21 +149,21 @@ Here we show an example of a fixer file, including all the possible options:
                         long_name: Mean top net thermal radiation flux doubled
                         paramId: '999179' # assigning an (invented) paramId
 
-We put together many different fixes, but let's take a look at the
+We put together many different fixes, but let's take a look at the 
 different sections of the fixer file.
 
 - **documentation-fix**: This is the name of the fixer. We refer to it as ``fixer_name``.
   It is used to identify the fixer and will be used in the entry metadata to specify which fixer to use. (See :ref:`add-data` for more details)
-- **parent**: a source ``fixer_name`` with which the current fixes have to be merged.
-  In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it.
+- **parent**: a source ``fixer_name`` with which the current fixes have to be merged. 
+  In the above example, the ``documentation-fix`` will extend the ``documentation-mother`` fix integrating it. 
   Notice that this is another ``fixer_name``, so that if the convention is specified in one of the two, it will be used as well.
 - **convention**: the name of the convention to be used. This is used to merge the convention file with the fixer file.
   If this key is not present, the fixer will not be merged with the convention file.
 - **data_model**: the name of the data model for coordinates. The default is ``aqua`` convention (See :ref:`coord-fix`).
 - **coords**: extra coordinates handling if data model is not flexible enough. (See :ref:`coord-fix`).
 - **dims**: extra dimensions handling if data model is not flexible enough.  (See :ref:`coord-fix`).
-- **decumulation**:
-    - If only ``deltat`` is specified, all the variables that are considered as cumulated flux variables
+- **decumulation**: 
+    - If only ``deltat`` is specified, all the variables that are considered as cumulated flux variables 
       (i.e. that present a time unit mismatch from the source to target units) will be divided
       by ``deltat``. This is done automatically based on the values of target and source units.
       ``deltat`` can be an integer in seconds, or alternatively a string with ``monthly``: in this case
@@ -177,8 +177,8 @@ different sections of the fixer file.
       Only months are supported at the moment, implying that fluxes are reset at the beginning of each month.
 - **timeshift**: Roll the time axis forward/back in time by a certain amount. This could be an integer that will
   be interpreted as a number of timesteps, or a pandas Timedelta string (e.g. ``1D``). Positive numbers
-  will move the time axis forward, while negative ones will move it backward (e.g. ``-2H``). Please note that only the
-  time axis will be affected, the Dataset will maintain all its properties.
+  will move the time axis forward, while negative ones will move it backward (e.g. ``-2H``). Please note that only the 
+  time axis will be affected, the Dataset will maintain all its properties. 
 - **vars**: this is the main fixer block, described in detail on the following section :ref:`metadata-fix`.
 - **delete**: a list of variable or coordinates that the users want to remove from the output Dataset
 
@@ -208,7 +208,7 @@ Merge of convention and fixer
 If a convention is specified in the fixer file, the final fix dictionary will be merged with the convention file.
 The priority is given to the ``fixer_name`` and it is done variable by variable.
 This means that if a variable is present in both the convention and the fixer, the fixer will override
-the subfields that are found in both.
+the subfields that are found in both. 
 
 Let's consider an example where my variable ``tdswrf`` is already present in the convention file,
 but I need to specify that it should be decumulated.
@@ -231,7 +231,7 @@ to specify all the details of the variable already present in the convention as 
                         - mtdwswrf
                         - tisr
                     grib: 260676
-
+    
     fixer_name:
         documentation-fix:
             convention: eccodes
@@ -258,13 +258,13 @@ The final block for the variable ``tdswrf`` will be:
 Variables block structure
 =========================
 
-The section :ref:`fix-structure` provides an exhaustive list of cases.
+The section :ref:`fix-structure` provides an exhaustive list of cases. 
 In order to create a fix for a specific variable, two approaches are possibile:
 
 - **source**: it will modify an existent variable changing its name (e.g from ``tp`` to ``tprate``).
   This will eventually be merged with the convention file as described in the previous section.
 - **derived**: it will create a new variable, which can also be obtained with basic operations between
-  multiple variables (e.g. getting ``mtntrf2`` from ``ttr`` + ``tsr``).
+  multiple variables (e.g. getting ``mtntrf2`` from ``ttr`` + ``tsr``). 
 
 .. note ::
     The ``derived`` block supports basic arithmetic operations (``+``, ``-``, ``*``, ``/``, ``^``) and parentheses.
@@ -273,14 +273,14 @@ Then, extra keys can be then specified for **each** variable to allow for furthe
 
 - **grib**: if set to a number, the fixer will associate the variable with the GRIB ParamID.
   It is the preferred way to retrieve metadata.
-  If set ``True``, the fixer will look for GRIB ShortName associated with the new variable and
+  If set ``True``, the fixer will look for GRIB ShortName associated with the new variable and 
   will retrieve the associated metadata.
 - **src_units**: override the source unit in case of specific issues (e.g. units which cannot be processed by MetPy).
 - **units**: override the target unit.
 - **decumulate**: if set to ``True``, activate the decumulation of the variable.
-- **attributes**: with this key, it is possible to define a dictionary of attributes to be modified.
-  Please refer to the example in section :ref:`fix-structure` to see the possible implementation.
-- **mindate**: used to set to NaN all data before a specified date.
+- **attributes**: with this key, it is possible to define a dictionary of attributes to be modified. 
+  Please refer to the example in section :ref:`fix-structure` to see the possible implementation. 
+- **mindate**: used to set to NaN all data before a specified date. 
   This is useful when dealing with data that are not available for the whole period of interest or which are partially wrong.
 
 .. warning ::
@@ -293,7 +293,7 @@ Data Model and Coordinates/Dimensions Correction
 
 As a parallel feature, AQUA can adopt a common **coordinate data model**, meaning that will try to standardize coordinate in the ``Reader`` class.
 
-The principle of the data model is to identify coordinates based on their attributes (name, units, dimensions, etc.),
+The principle of the data model is to identify coordinates based on their attributes (name, units, dimensions, etc.), 
 and then converting them to a common name, units, and direction. The default is the **aqua** data model,
 which is a simplified version of the CF data model and is stored in the ``aqua/core/config/data_model/aqua.yaml`` folder.
 If this data model is not appropriate for a specific source, it is possible to specify a different one in the catalog source, but it has to be defined accordingly in the config folder.
@@ -301,12 +301,12 @@ It also possible to disable the data model treatment by setting ``data_model: fa
 the `Reader()`` with ``datamodel=False``.
 
 .. note::
-    So far only latitude, longitude, time, pressure level, depth, and height coordinates are automatically treated by the data model.
+    So far only latitude, longitude, time, pressure level, depth, and height coordinates are automatically treated by the data model. 
 
-More in details, the data model scans the dataset and identify the coordinates based on a series of rules and try to guess which
+More in details, the data model scans the dataset and identify the coordinates based on a series of rules and try to guess which 
 coordinate is which based on a point-based ranking system. For example, if the dataset has a coordinate named "lat" with units "degrees_north"
 and another named "latitude" without units, the data model will assign more points to the first coordinate and will identify it as the latitude coordinate.
-If you want to force the detection of a specific coordinate, you can add it to the ``aqua/core/data_model/coord_defaults.yaml``.
+If you want to force the detection of a specific coordinate, you can add it to the ``aqua/core/data_model/coord_defaults.yaml``. 
 This file contains a list of possible names for each coordinate, and the data model will assign the coordinates that match these names.
 
 .. warning::
@@ -325,7 +325,7 @@ does not take care of it, it is possible to specify a fix like:
 
 .. code-block:: yaml
 
-    coords:
+    coords: 
         lon:
             source: longitude
 
@@ -335,12 +335,12 @@ This will rename the coordinate to ``lon``. A similar fix can be applied to dime
     When possible, prefer a **data model** treatment of coordinates and use the **coords**
     block as second option.
 
-Similarly, if units are ill-defined in the dataset, it is possible to override them with the same fixer structure.
+Similarly, if units are ill-defined in the dataset, it is possible to override them with the same fixer structure. 
 Of course, this feature is valid only for **coords**:
 
 .. code-block:: yaml
 
-    coords:
+    coords: 
         level:
             tgt_units: m
 
@@ -362,5 +362,5 @@ as described in :ref:`fix-structure`.
 Please note that the ``default.yaml`` is reserved to define a few of useful tools:
 
 - the default ``data_model`` (See :ref:`coord-fix`).
-- the list of units that should be added to the default MetPy unit list.
+- the list of units that should be added to the default MetPy unit list. 
 - A series of nicknames (``shortname``) for units to be replaced in the fixes yaml file.

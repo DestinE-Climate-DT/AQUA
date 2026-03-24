@@ -44,7 +44,7 @@ def parse_arguments():
 
     drop_subparser = subparsers.add_parser("drop", description="Data Reduction OPerator")
     drop_subparser = drop_parser(parser=drop_subparser)
-
+ 
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
     catgen_subparser = catgen_parser(parser=catgen_subparser)
 
@@ -66,7 +66,7 @@ def parse_arguments():
     install_parser.add_argument('-d', '--diagnostics', nargs='?', const='standard', type=str, metavar="AQUA_DIAG_PATH",
                                 help='Install AQUA diagnostics. Without path: standard installation of diagnostics only. '
                                      'With path: editable installation from that path')
-
+    
 
     catalog_add_parser.add_argument("catalog", metavar="CATALOG_NAME",
                                     help="Catalog to be installed")
@@ -74,7 +74,7 @@ def parse_arguments():
                                     help='Install a catalog in editable mode from the original source: provide the Path')
     catalog_add_parser.add_argument('-r', '--repository', type=str,
                                     help='Install a catalog from a specific repository: provide the user/repo string')
-
+    
     avail_parser.add_argument('-r', '--repository', type=str,
                               help='Explore a specific repository: provide the user/repo string')
 

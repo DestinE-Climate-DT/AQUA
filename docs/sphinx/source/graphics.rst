@@ -9,9 +9,9 @@ Plot styles
 ^^^^^^^^^^^
 
 AQUA supports in the available graphical functions the matplotlib styles.
-A default for the plot appearance is present in the ``aqua.mplstyle`` file (in ``aqua/core/config/styles``),
+A default for the plot appearance is present in the ``aqua.mplstyle`` file (in ``aqua/core/config/styles``), 
 and this includes all the default settings for the plot functions.
-This file can be modified to change the default appearance of the plots.
+This file can be modified to change the default appearance of the plots. 
 
 
 Other styles can be created following the `matplotlib guidelines <https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style>`_.
@@ -37,7 +37,7 @@ and it is possible to customize the plot with many options, including a differen
 In the following example we plot an sst map from the first timestep of ERA5 reanalysis:
 
 .. code-block:: python
-
+    
     from aqua import Reader
     from aqua.core.graphics import plot_single_map
 
@@ -79,11 +79,11 @@ Projections and custom maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 AQUA also supports a wide variety of map projections provided by the ``cartopy`` library.
-To simplify projection selection,
-a utility function ``get_projection()`` is provided, which accepts a lowercase function names (e.g. ``"plate_carree"``) to select the
+To simplify projection selection, 
+a utility function ``get_projection()`` is provided, which accepts a lowercase function names (e.g. ``"plate_carree"``) to select the 
 desired projection.
 A dictionary with the complete list of available projections can be found in the ``projections.py`` file in the ``aqua/core/util`` folder.
-The function ``get_projection()`` also accepts additional keyword arguments depending on the selected projection and and user-defined plotting requirements.
+The function ``get_projection()`` also accepts additional keyword arguments depending on the selected projection and and user-defined plotting requirements. 
 The returned ``cartopy.crs`` objects can be used directly with ``plot_single_map()``.
 A minimal example using subplots with different projections is shown below:
 
@@ -135,17 +135,17 @@ In the following example we plot the vertical profile of specific humidity from 
     from aqua import Reader
     from aqua.core.graphics import plot_vertical_profile, plot_vertical_profile_diff
 
-    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly")
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly") 
     data = reader.retrieve()
     data = data['q'].isel(time=1).mean('lon')
     plot_vertical_profile(data=data, var='q', lev_name='plev', x_coord='lat', vmin=-0.002, vmax=0.002, logscale=True)
 
-    reader = Reader(model="ERA5", exp="era5", source="monthly")
+    reader = Reader(model="ERA5", exp="era5", source="monthly") 
     data_ref = reader.retrieve()
     data_ref = data_ref['q'].isel(time=1).mean('lon')
     plot_vertical_profile_diff(data=data, data_ref=data_ref, var='q', lev_name='plev', x_coord='lat',
-                               vmin=-0.002, vmax=0.002,
-                               vmin_contour=-0.002, vmax_contour=0.002,
+                               vmin=-0.002, vmax=0.002, 
+                               vmin_contour=-0.002, vmax_contour=0.002, 
                                logscale=True, add_contour=True)
 
 This will produce the following plot:
@@ -180,7 +180,7 @@ The function is built to plot time series of a single variable,
 with the possibility to plot multiple lines for different models and special lines for a reference dataset.
 The reference dataset can have a representation of the uncertainty over time using the standard deviation arguments.
 It is also possible to plot the ensemble mean of the models and its standard deviation.
-If the ensemble mean is provided, the monthly and annual time series of the models are plotted as grey lines,
+If the ensemble mean is provided, the monthly and annual time series of the models are plotted as grey lines, 
 considered as the ensemble spread, while the ensemble mean is plotted as a thick line.
 
 By default the function is built to be able to plot monthly and yearly time series.

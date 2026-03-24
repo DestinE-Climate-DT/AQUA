@@ -16,13 +16,13 @@ grids:
     path: '{{ grids }}/ERA5/n320_unstructured.nc'
     space_coord: ["values"]
   era5-r025s:
-    path:
+    path: 
       2d: '{{ grids }}/ERA5/r025_grid.nc'
       2dm: '{{ grids }}/ERA5/r025_grid_masked.nc'
-    masked:
+    masked: 
       vars: ["SSTK", "sst", "tos"]
     space_coord: ["lon", "lat"]
-
+    
 
   # OSI-SAF
   # osi-saf-nh:

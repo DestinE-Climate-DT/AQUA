@@ -1,13 +1,13 @@
 grids:
   # FESOM oceanic healpix before 2023 update in land-sea-mask.
-  # used in initial runs for ClimateDT phase1
+  # used in initial runs for ClimateDT phase1 
   fesom-NG5-hpz5-nested-v1:
     cdo_options: "--force"
     space_coord: ["ncells"]
     path: '{{ grids }}/HealPix/fesom-NG5_hpz5_nested_oce_v1.nc'
   fesom-NG5-hpz5-nested-3d-v1:
     cdo_options: "--force"
-    path:
+    path: 
       level: '{{ grids }}/HealPix/fesom-NG5_hpz5_nested_oce_level_v1.nc'
     space_coord: ["ncells"]
   # for hpz7, 53512 missing values
@@ -72,7 +72,7 @@ grids:
     path:
       level: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_level_v2.nc'
     space_coord: ["ncells"]
-
+  
   # FESOM v3: These are grids for DestinE O-25.1 cycle.
   # Interpolation to HealPix is now conservative and this
   # produced a change in the land sea mask, so all the grids
@@ -179,17 +179,17 @@ grids:
       nz: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz.nc'
       nz1: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz1.nc'
     space_coord: ["nod2"]
-    cdo_extra:
-    - -setgrid,'{{ grids }}/FESOM/NG5_griddes_nodes_IFS.nc'
+    cdo_extra: 
+    - -setgrid,'{{ grids }}/FESOM/NG5_griddes_nodes_IFS.nc' 
   ng5-elems-2d:
     space_coord: ['elem']
-    cdo_extra:
-    - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc'
+    cdo_extra: 
+    - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc' 
   ng5-elems-3d:
     path:
       nz1: '{{ grids }}/FESOM/NG5_elem_fesom_mask_nz1.nc'
     space_coord: ["elem"]
-    cdo_extra:
+    cdo_extra: 
     - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc'
 
   # FESOM interpolated

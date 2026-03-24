@@ -178,7 +178,7 @@ class CatalogMixin:
             source_dir = f"{CATPATH}/{catalog}"
             self.logger.info('Fetching remote catalog %s from github to %s', catalog, cdir)
             os.makedirs(cdir, exist_ok=True)
-
+            
             # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
             self._fsspec_get_single_call(fs, source_dir, cdir)
             self.logger.info('Download complete!')

@@ -1,9 +1,9 @@
 grids:
   tco79-testmask:
-    path:
+    path:  
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
-    masked:
+    masked: 
       vars: ["2t"] # for testing purposes
   tco79-nn:
       path: '{{ grids }}/IFS/tco79_grid.nc'
@@ -27,15 +27,15 @@ grids:
     cdo_extra:
     - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
   # ICON
-  test-healpix:
+  test-healpix: 
     path: '{{ grids }}/ICON/icon_healpix0.nc'
     cdo_options: --force
   test-r2b0:
     path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc
   test-eORCA1-3d:
-    path:
+    path: 
       level: '{{ grids }}/NEMO/test-eorca1_3D.nc'
-    cdo_extra:
+    cdo_extra: 
       - -selname,dummy
   # Healpix
   test-hpz3-nested:

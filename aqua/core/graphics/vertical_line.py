@@ -83,7 +83,7 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
         xlabel = f"{var_name} ({var_units_latex})"
     else:
         xlabel = "Unknown variable"
-
+        
     ylabel = f"{lev_name} ({units_latex})" if units_latex else lev_name  # Replace 'units' with actual units if available
 
     ax.set_ylabel(ylabel, fontsize=axis_label_size)
@@ -95,7 +95,7 @@ def plot_vertical_lines(data: xr.DataArray | list[xr.DataArray],
         ax.plot(d.where(mask), d[lev_name].where(mask), label=label)
 
     logger.debug("Plotting reference data" if ref_data is not None else "No reference data to plot")
-
+    
     if ref_data is not None:
         mask = (ref_data[lev_name] >= lev_min) & (ref_data[lev_name] <= lev_max)
         ax.plot(ref_data.where(mask), ref_data[lev_name].where(mask), label=ref_label, linestyle='--', color='black')

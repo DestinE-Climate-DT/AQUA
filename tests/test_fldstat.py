@@ -190,7 +190,7 @@ class TestFldStatDims():
     def test_fldmean_custom_dims_icon(self, reader_icon_r2b0, data_icon_r2b0):
         """Test fldmean with custom dims parameter on ICON grid"""
         fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
-
+        
         # Test with explicit horizontal dims (should be ['cell'] for ICON)
         result = fldmodule.fldstat(data_icon_r2b0['t'], stat='mean', dims=['cell'])
         assert result.shape == (2, 90)  # time, height levels
@@ -199,7 +199,7 @@ class TestFldStatDims():
     def test_fldmean_partial_dims_icon_3d(self, reader_icon_r2b0, data_icon_r2b0):
         """Test fldmean with subset of horizontal dims on 3D data"""
         fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
-
+        
         # Test averaging over only spatial dimension, keeping height
         result = fldmodule.fldstat(data_icon_r2b0['t'], stat='mean', dims=['cell'])
         # Should preserve height dimension but average over space
@@ -210,7 +210,7 @@ class TestFldStatDims():
     def test_fldmean_dims_validation_icon(self, reader_icon_r2b0, data_icon_r2b0):
         """Test dims validation with ICON data"""
         fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
-
+        
         # Test invalid dimension
         with pytest.raises(ValueError, match="Dimension invalid_dim not found in horizontal dimensions"):
             fldmodule.fldstat(data_icon_r2b0['t'], stat='mean', dims=['invalid_dim'])
@@ -218,11 +218,11 @@ class TestFldStatDims():
     def test_fldmean_dims_default_vs_explicit_icon(self, reader_icon_r2b0, data_icon_r2b0):
         """Test that default and explicit dims give same results on ICON"""
         fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
-
+        
         # Compare default behavior with explicit dims
         result_default = fldmodule.fldstat(data_icon_r2b0['t'], stat='mean')
         result_explicit = fldmodule.fldstat(data_icon_r2b0['t'], stat='mean', dims=['cell'])
-
+        
         # Results should be identical
         assert result_default.equals(result_explicit)
         assert result_default.values[1, 1] == pytest.approx(214.4841)
@@ -230,14 +230,14 @@ class TestFldStatDims():
     def test_fldmean_dims_not_list(self, reader_icon_r2b0, data_icon_r2b0):
         """Test that dims must be a list"""
         fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
-
+        
         with pytest.raises(ValueError, match="dims must be a list of dimension names."):
             fldmodule.fldstat(data_icon_r2b0['t'], stat='mean', dims='cell')
 
 @pytest.mark.aqua
 class TestFldStatWrappers():
     """Test class for fldstat wrapper methods"""
-
+    
     def test_fldmean(self, reader_ifs, data_ifs):
         """Test fldmean wrapper method"""
         avg = reader_ifs.fldmean(data_ifs['2t'])
@@ -284,17 +284,17 @@ class TestFldStatWrappers():
     def test_fldstat_compare(self, reader_ifs, data_ifs):
         """Test that wrapper methods give consistent results"""
         data_var = data_ifs['2t']
-
+        
         # Compare wrapper methods with generic fldstat
         mean_wrapper = reader_ifs.fldmean(data_var)
         mean_generic = reader_ifs.fldstat(data_var, stat='mean')
-
+        
         max_wrapper = reader_ifs.fldmax(data_var)
         max_generic = reader_ifs.fldstat(data_var, stat='max')
-
+        
         assert mean_wrapper.equals(mean_generic)
         assert max_wrapper.equals(max_generic)
-
+        
         # Test logical relationships
         assert (reader_ifs.fldmin(data_var) <= reader_ifs.fldmean(data_var)).all()
         assert (reader_ifs.fldmean(data_var) <= reader_ifs.fldmax(data_var)).all()

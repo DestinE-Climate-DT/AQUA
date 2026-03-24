@@ -54,7 +54,7 @@ fi
 if [[ $model == "all" ]] ; then
 	models=("EC-EARTH" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
 else
-    models=( $model )
+    models=( $model ) 	
 fi
 
 griddir="/work/bb1153/b382075/aqua/grids"

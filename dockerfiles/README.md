@@ -27,7 +27,7 @@ Slurm calling Singularity to run simple tests.
 The final test was using FDB data that uses the DestinE schema, but with
 fewer data entries.
 
-A second file `Dockerfile.ubuntu` is used to generate a Docker image with
+A second file `Dockerfile.ubuntu` is used to generate a Docker image with 
 a recent version of Ubuntu LTS and containing updated versions of FDB, ecCodes, metkit, eckit and ecbuild.  The AQUA docker image is then derived from this one.
 
 
@@ -70,7 +70,7 @@ $ docker build -t <USER>/aqua:latest -f dockerfiles/Dockerfile .
 ```
 
 That command may take anything between five and thirty minutes, depending
-on networking and local computational resources.
+on networking and local computational resources. 
 
 To confirm the image was created, you can run:
 

@@ -21,7 +21,7 @@ models:
                     tprate:
                         source: tp
                         grib: true
-                        decumulate: true
+                        decumulate: true    
                     # Convert overriding source units and specifying target by hand
                     mer:
                         source: e
@@ -74,7 +74,7 @@ models:
             interpolated_global_TS:
                 data_model: False  # Do not attempto to correct coordinates
                 vars:
-                    ocpt:
+                    ocpt: 
                         source: temp
                         src_units: degC
                         grib: true
@@ -112,7 +112,7 @@ models:
             default:
                 vars:
                     toa_lw_all_daily_eb:
-                        derived: toa_lw_all_daily*1.0060667743
+                        derived: toa_lw_all_daily*1.0060667743 
                         attributes:
                             long_name: Observed Top of the Atmosphere Longwave Flux, All-sky conditions, Daily Means, Energy balanced
                             standard_name: toa_outgoing_longwave_flux
@@ -145,7 +145,7 @@ models:
                         attributes:
                             valid_min: -500
                             valid_max: 0
-                            positive: down
+                            positive: down    
                     mtnsrf:
                         # The fixer does not allow multiplying by negative numbers yet
                         derived: toa_solar_all_daily_eb-toa_sw_all_daily_eb

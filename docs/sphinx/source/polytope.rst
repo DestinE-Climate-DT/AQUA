@@ -15,7 +15,7 @@ and have requested "upgraded access" to the data (follow the link "Access policy
 
 Once the upgraded access has been granted, you can create the key to access the data.
 Follow the instructions in the `Polytope documentation <https://github.com/destination-earth-digital-twins/polytope-examples>`_
-and the username and password which you defined for the Destine Service Platform to download the credentials into this file.
+and the username and password which you defined for the Destine Service Platform to download the credentials into this file. 
 
 Once the key is generated, you can create the file ``~/.polytopeapirc`` in your home directory.
 

@@ -19,6 +19,6 @@ Please apply the "run tests" label if you want to trigger CI tests.
  - [ ] Documentation is included if a new feature is included.
  - [ ] Docstrings are updated if needed.
  - [ ] Changelog is updated.
- - [ ] Notebooks which requires changes are updated.
+ - [ ] Notebooks which requires changes are updated. 
  - [ ] Run Cross check tests for AQUA-diagnostics [AQUA-diagnostics cross-check workflow](https://github.com/DestinE-Climate-DT/AQUA-diagnostics/actions/workflows/aqua-diagnostics-cross-check.yml)
  - [ ] environment.yml and pyproject.toml are updated if needed, together with the lumi installation tool. Installation instructions are updated if new conda dependencies are added.

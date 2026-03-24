@@ -147,7 +147,7 @@ def boxplot(fldmeans: list[xr.Dataset],
         models_str = ', '.join(model_names)
         wrapped_title = textwrap.fill(f'Boxplot of {vars_str}', 70)
         ax.set_title(wrapped_title, fontsize=fontsize+2)
-
+ 
     ax.set_xlabel('Variables', fontsize=fontsize)
 
     # Y-axis label from units
@@ -156,7 +156,7 @@ def boxplot(fldmeans: list[xr.Dataset],
         first_var = variables[0][1:] if variables[0].startswith('-') else variables[0]
         units_str = fldmeans[0][first_var].attrs.get('units', '')
         units_latex = unit_to_latex(units_str) if units_str else ''
-        ax.set_ylabel(units_latex, fontsize=fontsize, labelpad=12)
+        ax.set_ylabel(units_latex, fontsize=fontsize, labelpad=12)    
     else:
         ax.set_ylabel('Values (various units)', fontsize=fontsize, labelpad=12)
 

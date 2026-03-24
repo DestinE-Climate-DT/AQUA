@@ -91,7 +91,7 @@ def _log_xdist_event(config, event, nodeid, outcome=None):
 
     worker_id = worker_input.get("workerid", "unknown")
     log_path = _get_xdist_log_path(config)
-
+    
     if not log_path:
         return
 
@@ -99,7 +99,7 @@ def _log_xdist_event(config, event, nodeid, outcome=None):
     line = f"{worker_id}\t{event}\t{nodeid}"
     if outcome:
         line += f"\t{outcome}"
-
+    
     try:
         # Ensure directory exists
         log_path.parent.mkdir(parents=True, exist_ok=True)

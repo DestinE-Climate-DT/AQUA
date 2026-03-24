@@ -24,7 +24,7 @@ from .time import time_to_string, int_month_name, xarray_to_pandas_freq, check_s
 from .time import fix_calendar, DEFAULT_TIME_UNIT
 from .zarr import create_zarr_reference
 
-__all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard',
+__all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard', 
            'template_parse_arguments',
            'get_eccodes_attr',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
@@ -38,7 +38,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'format_realization', 'get_realizations', 'DEFAULT_REALIZATION',
            'lon_to_180', 'lon_to_360', 'check_coordinates',
            'select_season', 'merge_attrs', 'find_vert_coord',
-           'generate_random_string', 'strlist_to_phrase', 'lat_to_phrase',
+           'generate_random_string', 'strlist_to_phrase', 'lat_to_phrase', 
            'clean_filename', 'extract_literal_and_numeric', 'unit_to_latex',
            'multiply_units', 'normalize_units', 'convert_units', 'convert_data_units',
            'expand_env_vars', 'extract_attrs', 'get_arg', 'to_list','username',

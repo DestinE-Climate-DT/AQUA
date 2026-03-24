@@ -21,7 +21,7 @@ DEFAULT_COORD_NAMES = {
         "lat",
     ],
     "longitude": [
-        "longitude",
+        "longitude", 
         "lon"
     ],
     "time": ["time", "time_counter"],

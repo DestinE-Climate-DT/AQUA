@@ -6,19 +6,19 @@ from aqua.core.util import to_list, unit_to_latex
 
 def _plot_lx(da: xr.DataArray, ax: plt.Axes, **plot_kwargs):
     """
-    Wrapper around xarray's plot method that temporarily
+    Wrapper around xarray's plot method that temporarily 
     converts units to LaTeX format.
-
+    
     Args:
         da (xr.DataArray): DataArray to plot.
         ax (plt.Axes): Axes to plot on.
         **plot_kwargs: Additional arguments passed to xarray's plot method.
-
+    
     Returns:
         Same return type as xarray's plot method (Line2D or list of Line2D).
     """
     original_units = da.attrs.get('units', None)
-
+    
     if original_units:
         # Create a copy with independent attrs to ensure original data is not modified
         da = da.copy(deep=False)
@@ -27,12 +27,12 @@ def _plot_lx(da: xr.DataArray, ax: plt.Axes, **plot_kwargs):
         units_latex = unit_to_latex(original_units)
         # Set LaTeX units only on the copy
         da.attrs['units'] = units_latex
-
+    
     # Call xarray plot - it will automatically use the LaTeX
     result = da.plot(ax=ax, **plot_kwargs)
-
+    
     return result
-
+    
 
 def plot_timeseries_data(ax: plt.Axes,
                          data: xr.DataArray | list[xr.DataArray],
@@ -52,7 +52,7 @@ def plot_timeseries_data(ax: plt.Axes,
         realization (bool, optional): Whether the data is a realization. Default is False.
         kind (str, optional): 'monthly' or 'annual'. Determines the line style.
         colors (list[str], optional): List of colors to use for the lines.
-
+    
     Returns:
         list[plt.Line2D]: List of Line2D objects representing the plotted lines.
     """
@@ -184,13 +184,13 @@ def plot_timeseries_ensemble(ax: plt.Axes,
     if std_data is not None:
         if kind == 'monthly':
             ax.fill_between(data.time,
-                            data - 2.*std_data, #.sel(month=data["time.month"]),
-                            data + 2.*std_data, #.sel(month=data["time.month"]),
+                            data - 2.*std_data, #.sel(month=data["time.month"]), 
+                            data + 2.*std_data, #.sel(month=data["time.month"]),                            
                             alpha=0.25, facecolor="#1898e0")
         elif kind == 'annual':
             ax.fill_between(data.time,
                             data - 2.*std_data,
                             data + 2.*std_data,
                             alpha=0.2, facecolor="#f89e13")
-
+            
     _plot_lx(data, **plot_kwargs)

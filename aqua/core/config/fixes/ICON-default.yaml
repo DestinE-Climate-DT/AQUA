@@ -46,7 +46,7 @@ fixer_name:
         convention: eccodes
         timeshift: -1
 
-    ICON-hpx:
+    ICON-hpx: 
         data_model: false
         convention: eccodes
         vars:

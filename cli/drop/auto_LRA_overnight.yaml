@@ -29,7 +29,7 @@ data:
       hourly-hpz6-atm2d:
         workers: 24
         #workers: 1
-        vars: ['tprate', '2t', 'msl', 'tcc', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+        vars: ['tprate', '2t', 'msl', 'tcc', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
           'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews']
       hourly-hpz6-atm3d:
         workers: 16
@@ -62,7 +62,7 @@ data:
     # a1al:
     #   hourly-hpz7-atm2d:
     #     workers: 24
-    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
     #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
     #   hourly-hpz7-atm3d:
     #     workers: 16
@@ -76,7 +76,7 @@ data:
     # a16z:
     #   hourly-hpz7-atm2d:
     #     workers: 24
-    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
     #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
     #   hourly-hpz7-atm3d:
     #     workers: 16
@@ -90,7 +90,7 @@ data:
     # a18j:
     #   hourly-hpz7-atm2d:
     #     workers: 24
-    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+    #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
     #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
     #   hourly-hpz7-atm3d:
     #     workers: 16
@@ -104,7 +104,7 @@ data:
           #    hs3l-historical-1990:
           #      monthly-hpz7-atm2d:
           #        workers: 24
-          #        vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+          #        vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
           #          'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
           #      monthly-hpz7-atm3d:
           #        workers: 16
@@ -112,7 +112,7 @@ data:
           #    hs3l-control-1990:
           #      monthly-hpz7-atm2d:
           #        workers: 24
-          #      vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+          #      vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
           #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
           #      monthly-hpz7-atm3d:
           #     workers: 16
@@ -122,7 +122,7 @@ data:
   #   story-2017-control:
   #     hourly-hpz7-atm2d:
   #       workers: 24
-  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
   #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
   #     hourly-hpz7-atm3d:
   #       workers: 16
@@ -137,7 +137,7 @@ data:
   #   story-2017-T2K:
   #     hourly-hpz7-atm2d:
   #       workers: 24
-  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
+  #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf', 
   #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
   #     hourly-hpz7-atm3d:
   #       workers: 16

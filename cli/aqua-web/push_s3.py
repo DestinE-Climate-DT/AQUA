@@ -64,7 +64,7 @@ def upload_directory_to_s3(client, bucket_name, source, dest):
 
 def main():
     """Parse command-line arguments and upload a directory or single file to an S3 bucket.
-       Store the AWS credentials in the ~/.aws/credentials file or in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments.
+       Store the AWS credentials in the ~/.aws/credentials file or in environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments. 
     """
 
     parser = argparse.ArgumentParser(description="Upload the contents of a directory or a single file to a S3 bucket.")

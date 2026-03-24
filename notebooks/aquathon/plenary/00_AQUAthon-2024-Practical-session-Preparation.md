@@ -5,7 +5,7 @@
 ## :exclamation: Important info
 
 :::info
-* Time: Thursday 12th September, 2.30 pm to 4.30pm CEST
+* Time: Thursday 12th September, 2.30 pm to 4.30pm CEST 
 * Location: Zoom link: [link](https://didattica.polito.it/pls/portal30/sviluppo.bbb_corsi.waitRoom?id=59903&p_tipo=DOCENTE)
 * Link to this document: [link](https://siili.rahtiapp.fi/SG2E5GTnT5mIDpB7v2bxKA#)
 * [Slides theoretical session](https://docs.google.com/presentation/d/1TMExAamjBO9gMspaF3UL7lKsUpvgRMe-/edit?usp=sharing&ouid=103539641833901507286&rtpof=true&sd=true)
@@ -19,7 +19,7 @@
 
 ##  :clock230: Agenda
 
-:::danger
+:::danger 
 :fire: All times in CEST (pm)! :fire:
 :::
 
@@ -40,7 +40,7 @@ Here you can find the links to the different leve session plenary modules. In al
 
 ##  :beers: Icebreaker
 
-Leave an x on your answer in the following questions. :x:
+Leave an x on your answer in the following questions. :x: 
 In which machine do you usually work?
 
 - Lumi :x:
@@ -240,7 +240,7 @@ Then you can copy and open the URL on your browser.
 
 :rocket: [To the next module](https://siili.rahtiapp.fi/BDUSgW6-Q2-cNra58Sswow#)
 
-### :interrobang: Issues
+### :interrobang: Issues 
 
 Feel free to modify the following red paragraph with possible questions you have about the preparation procedure:
 

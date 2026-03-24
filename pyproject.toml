@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=77.0.3"]
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools.build_meta" 
 
 # For setuptools: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 [project]
@@ -119,7 +119,7 @@ version = {attr = "aqua.core.version.__version__"}
 
 [tool.pytest.ini_options]
 # verbose to have full test, run coverage on src folder and use pyproject as a configuration file
-addopts = "--durations=10 -v --cov=aqua"
+addopts = "--durations=10 -v --cov=aqua" 
 testpaths = [
     "tests"
 ]
@@ -138,6 +138,7 @@ branch = true
 command_line = '-m pytest tests'
 source = ["aqua/core"]
 omit = [
-    "tests/*",
+    "tests/*", 
     "**/__init__.py",
     ]
+

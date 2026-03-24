@@ -41,17 +41,17 @@ class TestAquaStreaming:
             offset = pd.DateOffset(**{"days": 1})
 
         step = pd.DateOffset(hours=1)
-
+        
         start_date = pd.to_datetime(reader.startdate)
         if reader.enddate:
             end_date = pd.to_datetime(reader.enddate) + pd.Timedelta(days=1)
         else:
             end_date = start_date + offset
 
-        dates = pd.date_range(start=start_date, end=end_date, freq='h')
-
+        dates = pd.date_range(start=start_date, end=end_date, freq='h')          
+            
         num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
-
+        
         data = reader.retrieve()
 
          # Test if it has the right size
@@ -59,7 +59,7 @@ class TestAquaStreaming:
 
         # Test if starting date is ok
         assert data.time.values[0] == pd.to_datetime(start_date)
-
+        
         # Test if end date is ok
         assert data.time.values[-1] == pd.to_datetime(end_date - step)
 

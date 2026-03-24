@@ -12,7 +12,7 @@ DEFAULT_DELTAT = 1
 
 class Fixer():
     """Fixer module
-
+    
     Args:
         fixer_name (str): The fixer name defined in the fixes dictionary
         datamodel (str): The target datamodel name
@@ -20,7 +20,7 @@ class Fixer():
         convention (name): The convention name
         metadata (dict): The metadata dictionary
         loglevel (str): The log level
-
+    
     """
 
     def __init__(self, fixer_name=None, fixes_dictionary=None,
@@ -35,7 +35,7 @@ class Fixer():
 
         # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
-            convention=self.convention, fixes_dictionary=self.fixes_dictionary,
+            convention=self.convention, fixes_dictionary=self.fixes_dictionary, 
             fixer_name=self.fixer_name, loglevel=loglevel)
         self.fixes = self.fixerconfigure.find_fixes()
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
@@ -85,7 +85,7 @@ class Fixer():
         #src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
         #self.logger.debug("Default input datamodel: %s", src_datamodel)
 
-
+      
         # Special case for monthly deltat
         if self.deltat == "monthly":
             self.logger.info('%s deltat found, we will estimate a correction based on number of days per month', self.deltat)
@@ -276,12 +276,12 @@ class Fixer():
 
         # remove variables following the fixes request
         data = self.operator.delete_variables(data)
-
+        
         return data
 
     def _define_deltat(self, default):
         """
-        Define the deltat for the fixer.
+        Define the deltat for the fixer. 
         The priority is given to the metadata, then to the fixes and finally to the default value.
         Return deltat in seconds.
         """
@@ -297,13 +297,13 @@ class Fixer():
         if fix_deltat:
             self.logger.debug('deltat = %s read from fixes', fix_deltat)
             return fix_deltat
-
+        
         # Third case: get from default
         self.logger.debug('deltat = %s defined as Fixer() default', default)
         return default
 
-
-
+ 
+    
     def _override_tgt_units(self, tgt_units, varfix, var):
         """
         Override destination units for the single variable
@@ -444,3 +444,4 @@ class Fixer():
 
         self.logger.debug("Variables to be loaded: %s", loadvar)
         return loadvar
+

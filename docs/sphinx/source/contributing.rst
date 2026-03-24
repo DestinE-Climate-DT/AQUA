@@ -1,7 +1,7 @@
 Contributing to AQUA
 ====================
 
-We welcome contributions to the AQUA project!
+We welcome contributions to the AQUA project! 
 Whether you're reporting bugs, suggesting new features, or contributing code, your involvement helps make AQUA better for everyone.
 This guide outlines the process for contributing to AQUA.
 
@@ -42,7 +42,7 @@ To contribute code to AQUA, follow these general steps:
 8. In the pull request on GitHub, you can run tests by adding the ``run tests`` label to the pull request.
    This will trigger the CI/CD pipeline to run the tests. Please do this only if needed, as the github action hours are limited.
 9. Add a line to the ``CHANGELOG.md`` file in the `Unreleased` section, describing your changes.
-10. Once your pull request is approved, it will be merged into the main branch by the development team.
+10. Once your pull request is approved, it will be merged into the main branch by the development team. 
 
 .. warning::
    Please do not merge pull requests into the main branch yourself and never, ever, commit any
@@ -65,12 +65,12 @@ Testing
 -------
 
 Testing is an essential part of developing and maintaining a robust Python package.
-Our package uses ``pytest``, a widely-used testing framework in the Python ecosystem,
-for writing and running tests.
+Our package uses ``pytest``, a widely-used testing framework in the Python ecosystem, 
+for writing and running tests. 
 
-Continuous Integration/Continuous Deployment (CI/CD) is currently handled by GitHub Actions,
+Continuous Integration/Continuous Deployment (CI/CD) is currently handled by GitHub Actions, 
 which runs the test suite on various Python versions whenever changes are pushed to the repository.
-In the future (CI/CD) will also be run on HPC systems.
+In the future (CI/CD) will also be run on HPC systems. 
 
 Running Tests Locally
 ^^^^^^^^^^^^^^^^^^^^^
@@ -86,7 +86,7 @@ To run the test suite, navigate to the root directory of the project and run the
     Since September 2025, AQUA data used in the tests is stored and versioned using DVC (Data Version Control).
     The current script still point to the older archive on SWIFT but it will be deprecated in the near future.
 
-This will download the data needed for the tests and change the catalog name in the ``config/config-aqua.yaml`` to ``ci``.
+This will download the data needed for the tests and change the catalog name in the ``config/config-aqua.yaml`` to ``ci``. 
 Remember to change it to your catalog name after the tests are finished.
 
 Then, run the following command:
@@ -106,7 +106,7 @@ Have a look at the ``tests`` directory for more tests.
 Running Tests in Parallel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To speed up test execution, AQUA supports parallel testing using the ``pytest-xdist`` plugin.
+To speed up test execution, AQUA supports parallel testing using the ``pytest-xdist`` plugin. 
 This allows tests to run on multiple CPU cores simultaneously, significantly reducing the total test runtime.
 
 To run the tests in parallel, use the ``-n`` flag followed by the number of cores you want to use.
@@ -115,7 +115,7 @@ To run the tests in parallel, use the ``-n`` flag followed by the number of core
 
     pytest -n 4
 
-This will run the test suite using 4 parallel workers. You can adjust this number based on your available CPU cores.
+This will run the test suite using 4 parallel workers. You can adjust this number based on your available CPU cores.  
 For more control over parallel execution, you can also use the ``--max-worker-restart`` option to automatically restart workers that fail:
 
 .. code-block:: bash
@@ -126,11 +126,11 @@ For more control over parallel execution, you can also use the ``--max-worker-re
    Some tests in AQUA use the ``xdist_group`` marker to ensure they run on the same worker process.
    This is necessary for tests that perform operations that could conflict when run in parallel,
    such as Dask operations or diagnostic setup. These groups include:
-
+   
    - ``dask_operations``: Tests that perform distributed computing operations
    - ``diagnostic_setup_class``: Tests that set up diagnostic classes with shared state
-
-   You don't need to worry about these groups when running tests - pytest will automatically handle them.
+   
+   You don't need to worry about these groups when running tests - pytest will automatically handle them.  
 
 Writing Tests
 ^^^^^^^^^^^^^

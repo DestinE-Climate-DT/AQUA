@@ -53,7 +53,7 @@ class Trender:
             DataArray or Dataset: The detrended data.
         """
         return self._apply_trend_or_detrend(data, self._detrend, dim, degree, skipna)
-
+    
     def coeffs(self, data: xr.DataArray | xr.Dataset, dim: str = 'time',
                degree: int = 1, skipna: bool = False, normalize: bool = False) -> xr.DataArray | xr.Dataset:
         """"
@@ -118,7 +118,7 @@ class Trender:
         Internal dispatcher for trend/detrend logic.
         """
         action = func.__name__.capitalize() # Get the action name (Trend or Detrend)
-
+        
         self.logger.info(
             "Applying %s with polynomial of order %d along '%s' dimension.", action, degree, dim
         )

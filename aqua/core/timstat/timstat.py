@@ -29,10 +29,10 @@ class TimStat():
         """
         Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
         parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object. The statistic can be
-        'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'. The output is a new xarray dataset with the time dimension
+        'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'. The output is a new xarray dataset with the time dimension 
         resampled to the desired frequency and the statistic computed over the time window.
 
-        Args:
+        Args: 
             data (xarray.Dataset): Input data to compute the statistic on.
             stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'sum', 'first', 'last', 'histogram'] or a custom function.
             freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object.
@@ -93,7 +93,7 @@ class TimStat():
                 resample_data = data.resample(time=resample_freq)
             except ValueError as exc:
                 raise ValueError(f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
-
+            
         # if frequency is undefined, meaning that we operate on the entire set
         else:
             resample_data = data
@@ -109,7 +109,7 @@ class TimStat():
             if stat in ['first', 'last']:
                 resampled_times = getattr(data.time.resample(time=resample_freq), stat)(**extra_kwargs)
                 out = out.assign_coords(time=resampled_times)
-
+                
         else:  # we can safely assume that it is a callable function now
             self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
             if resample_freq is not None:
@@ -154,7 +154,7 @@ class TimStat():
             log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
-
+    
     # this is not yet a great solution, but is more general than the previous one
     def center_time_axis(self, avg_data: xr.Dataset, resample_freq: str) -> xr.Dataset:
         """

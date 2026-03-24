@@ -88,7 +88,7 @@ class TestTimmean():
         """Selecting first or last value in each group"""
         firstval = data_2t['2t'].aqua.timfirst(freq='daily')
         lastval = data_2t['2t'].aqua.timlast(freq='daily')
-
+        
         assert firstval.shape == (197, 9, 18)
         assert lastval.shape == (197, 9, 18)
         assert firstval.time[0] < lastval.time[0]
@@ -98,16 +98,16 @@ class TestTimmean():
         """first and last statistics require a frequency to be specified"""
         with pytest.raises(ValueError, match=r'Frequency must be specified when using first or last statistic'):
             reader.timstat(data_2t['2t'], stat=stat)
-
+    
     def test_timstat_compare(self, reader, data_2t):
         """Time operations provide robust values"""
         minval = reader.timmin(data_2t['2t'], freq='daily')
         maxval = reader.timmax(data_2t['2t'], freq='daily')
         avg = reader.timmean(data_2t['2t'], freq='daily')
-
+        
         assert (minval <= avg).all()
         assert (avg <= maxval).all()
-
+        
     def test_timmin_yearly_exclude_incomplete(self, reader, data_ttr):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
         avg = reader.timmin(data_ttr, freq='yearly', exclude_incomplete=True)
@@ -209,7 +209,7 @@ class TestTimmean():
         """Test that exclude_incomplete mask coordinates align with resampled time axis"""
         da = data_2t['2t'].isel(lon=0, lat=0)
 
-        # Get the averaged result
+        # Get the averaged result 
         avg_with_mask = reader.timmean(da, freq='daily', exclude_incomplete=True)
 
         # Get what the resample time axis should be

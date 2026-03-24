@@ -7,7 +7,7 @@ fixer_name:
         jump: month
         vars:
             2t:
-                attributes:
+                attributes: 
                     donald: 'duck'
             tnlwrf: # This is a block merged with the conversion-eccodes which gives the GRIB details
                 decumulate: true
@@ -16,7 +16,7 @@ fixer_name:
             mtntrf: # Convert with auto unit conversion from eccodes properties, notice that this is an old shortname
                 derived: ttr
                 grib: true
-                decumulate: true
+                decumulate: true     
             var235: # Test to specify using grib code as a target (actually does nothing) and adding a constant
                 derived: 2t+1.0
                 grib: true
@@ -28,7 +28,7 @@ fixer_name:
                 attributes:
                     long_name: Mean top net thermal radiation flux doubled # assigning a long_name
                     paramId: '999179' # assigning an (invented) paramId
-
+    
     ifs-ci-mindate:
         parent: ifs-ci-test
         vars:
@@ -42,7 +42,7 @@ fixer_name:
         dims:
             cellspippo:
                 source: cell
-
+    
     ci-teleconnections:
         data_model: false
         delete:
@@ -73,7 +73,7 @@ fixer_name:
     ifs-ci-timestep:
         parent: ifs-ci-test
         timeshift: -24
-
+    
     ifs-ci-pandas:
         parent: ifs-ci-test
         timeshift: -19D
@@ -86,7 +86,7 @@ fixer_name:
                 decumulate: true
                 attributes:
                     description: "Top thermal radiation originally found in the dataset and decumulated"
-
+    
     test-fesom-3d:
         convention: eccodes
         delete: [healpix]

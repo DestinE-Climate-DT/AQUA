@@ -5,41 +5,41 @@ grids:
   tl159:
     path: '{{ grids }}/IFS/tl159_grid.nc'
   tco79:
-    path:
+    path:  
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
-    masked:
+    masked: 
       vars: ["ci", "sst"]
   tco399:
-    path:
+    path: 
       2d: '{{ grids }}/IFS/tco399_grid.nc'
       2dm: '{{ grids }}/IFS/tco399_grid_masked.nc'
     # space_coord: ["cell"] # levante
     # space_coord: ["ncells"] # lumi and mafalda
-    masked:
+    masked: 
       vars: ["ci", "sst"]
   tco1279:
-    path:
+    path: 
       2d: '{{ grids }}/IFS/tco1279_grid.nc'
       2dm: '{{ grids }}/IFS/tco1279_grid_masked.nc'
-    masked:
+    masked: 
       vars: ["ci", "sst"]
-
+    
     # space_coord: ["value"] # levante
     # space_coord: ["ncells"] # lumi
   tco2559:
-    path:
+    path: 
       2d: '{{ grids }}/IFS/tco2559_grid.nc'
       2dm: '{{ grids }}/IFS/tco2559_grid_masked.nc'
-    masked:
+    masked: 
       vars: ["ci", "sst"]
     # space_coord: ["value"]
-  tco3999:
+  tco3999: 
     path: '{{ grids }}/IFS/tco3999_grid.nc'
     # space_coord: ["value"]
-
+  
   # IFS interpolated
-  ifs-interpolated:
+  ifs-interpolated: 
     path: '{{ grids }}/IFS/ifs_interpolated5400x2700.nc'
     space_coord: ["lon", "lat"]
   ifs-healpix:
@@ -47,7 +47,7 @@ grids:
     path: '{{ grids }}/HealPix_old/ifs_hpx10.nc'
 
 # IFS multIO grids
-# these are regular grids (staggered,like r100s=r360x181)
+# these are regular grids (staggered,like r100s=r360x181) 
 # but they are stored as unstructured in the original source
 # specific grid and cell_area file must be created
 # a script /cli/grids-from.data/multIO-from-ifs.py is available

@@ -69,7 +69,7 @@ def drop_parser(parser=None):
     parser.add_argument('--zarr', action="store_true",
                         help='Create zarr')
     parser.add_argument('--verify-zarr', action="store_true",
-                        help='Verify the created zarr')
+                        help='Verify the created zarr')  
 
     return parser
 
@@ -223,7 +223,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                                     frequency=frequency, fix=fix,
                                     outdir=outdir, tmpdir=tmpdir,
                                     nproc=workers, loglevel=loglevel,
-                                    region=region,
+                                    region=region, 
                                     stat=stat, stat_kwargs=stat_kwargs,
                                     definitive=definitive, overwrite=overwrite,
                                     rebuild=rebuild,

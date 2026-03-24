@@ -8,9 +8,9 @@ from .regridder_util import check_existing_file
 class GridDictHandler:
     """
     Class to handle AQUA grid dictionaries.
-    It is used to normalize all the different dictionaries and strings
+    It is used to normalize all the different dictionaries and strings 
     that can be used to define a grid.
-    It covers many cases (it might seem overdetailed), and can be used also
+    It covers many cases (it might seem overdetailed), and can be used also 
     in absence of a cfg_grid_dict dictionary.
     """
 
@@ -18,12 +18,12 @@ class GridDictHandler:
 
         """"
         Initialize the GridDictHandler.
-
+        
         Args:
             cfg_grid_dict (dict): The AQUA grid dictionary from the configuration file.
-                                  It can be None or empty dictionary but in this case
+                                  It can be None or empty dictionary but in this case 
                                   only CDO grid names can be used.
-            default_dimension (str): The default dimension to use for the grid path.
+            default_dimension (str): The default dimension to use for the grid path. 
                                      '2d' by default.
             loglevel (str): The logging level.
         """
@@ -53,8 +53,8 @@ class GridDictHandler:
             grid_name (str): The grid name (could be a CDO grid).
 
         Returns:
-            dict: The normalized AQUA grid dictionary.
-                  If grid name is none, dictionary with 'path' key as empty dictionary.
+            dict: The normalized AQUA grid dictionary. 
+                  If grid name is none, dictionary with 'path' key as empty dictionary. 
         """
 
         grid_dict = self._normalize_grid_dict(grid_name)
@@ -111,7 +111,7 @@ class GridDictHandler:
     def _normalize_grid_path(self, grid_dict):
         """
         Normalize the grid path to a dictionary with the self.default_dimension key.
-        3 cases handled:
+        3 cases handled: 
             - an empty dictionary, return an empty dictionary
             - a dictionary with a path string, a CDO grid name or a file path
             - a dictionary with a dictionary of path, one for each vertical coordinate
