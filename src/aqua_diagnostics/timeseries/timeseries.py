@@ -137,7 +137,7 @@ class Timeseries(BaseMixin):
                 data.attrs['AQUA_region'] = self.region
 
             # Due to the possible usage of the standard period, the time may need to be reselected correctly.
-            self.logger.warning(
+            self.logger.info(
                 f"Data pre-slice are from {data.time.min().values} to {data.time.max().values}. "
                 f"Reselecting data for the plot period {self.plt_startdate} - {self.plt_enddate}"
             )
@@ -161,7 +161,7 @@ class Timeseries(BaseMixin):
             else:  # No period-based slicing for higher frequencies.
                 data = data.sel(time=slice(self.plt_startdate, self.plt_enddate))
 
-            self.logger.warning(f"Data post-slice are from {data.time.min().values} to {data.time.max().values}")
+            self.logger.info(f"Data post-slice are from {data.time.min().values} to {data.time.max().values}")
 
             # Load data in memory for faster plot
             self.logger.debug(f"Loading data for frequency {str_freq} in memory")
