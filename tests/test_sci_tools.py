@@ -1,14 +1,13 @@
+import numpy as np
 import pytest
 import regionmask
 import xarray as xr
-import numpy as np
-from typeguard import TypeCheckError
-from aqua.core.fldstat import AreaSelection
-from aqua.core.util import select_season
-from aqua.core.util.sci_util import generate_quarter_months
-from aqua.core.util import check_seasonal_chunk_completeness
-
 from conftest import LOGLEVEL
+from typeguard import TypeCheckError
+
+from aqua.core.fldstat import AreaSelection
+from aqua.core.util import check_seasonal_chunk_completeness, select_season
+from aqua.core.util.sci_util import generate_quarter_months
 
 loglevel = LOGLEVEL
 

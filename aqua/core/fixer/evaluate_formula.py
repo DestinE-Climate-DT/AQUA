@@ -1,6 +1,8 @@
 import operator
 import re
+
 import xarray as xr
+
 from aqua.core.logger import log_configure, log_history
 
 # define math operators: order is important, since defines

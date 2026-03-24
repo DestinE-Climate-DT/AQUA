@@ -1,12 +1,14 @@
 """Strategies for fixing issues in the code."""
 
 from datetime import timedelta
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from aqua.core.logger import log_history, log_configure
-from aqua.core.util import to_list, normalize_units
+from aqua.core.logger import log_configure, log_history
+from aqua.core.util import normalize_units, to_list
+
 
 class FixerOperator:
     """

@@ -6,8 +6,10 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+
 from aqua.core.logger import log_configure
-from aqua.core.util import plot_box, evaluate_colorbar_limits, cbar_get_label
+from aqua.core.util import cbar_get_label, evaluate_colorbar_limits, plot_box
+
 from .single_map import plot_single_map, plot_single_map_diff
 from .styles import ConfigStyle
 

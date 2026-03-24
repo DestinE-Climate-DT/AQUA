@@ -1,6 +1,7 @@
 """Module to handle gridlines in Cartopy maps"""
-import numpy as np
 import cartopy.crs as ccrs
+import numpy as np
+
 
 def draw_manual_gridlines(ax, lon_interval=30, lat_interval=30,
                           lon_range=(-180, 180), lat_range=(-90, 90),

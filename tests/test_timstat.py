@@ -1,7 +1,9 @@
 """Test for timmean method"""
-import pytest
 import numpy as np
+import pytest
+
 from aqua.core.histogram import histogram
+
 
 @pytest.fixture(scope='module', params=['long', 'long400'])
 def source_name(request):
@@ -154,21 +156,23 @@ class TestTimmean():
 
     def test_timmean_invalid_frequency(self, reader, data_2t):
         """Test for timmean method with an invalid frequency"""
-        with pytest.raises(ValueError, match=r'Cant find a frequency to resample, using resample_freq=invalid not work, aborting!'):
+        with pytest.raises(ValueError,
+                           match=r'Cannot find a frequency to resample, using resample_freq=invalid not work, aborting!'):
             reader.timmean(data_2t, freq='invalid')
 
     def test_timstd_error(self, reader, data_2t):
         """Test for timstd method with a single time step"""
         single = data_2t.sel(time=data_2t.time[0])
         with pytest.raises(ValueError, match=r'Time dimension not found in the input data. Cannot compute timstd statistic'):
-            avg = reader.timstat(single, stat='std', freq='monthly')
+            reader.timstat(single, stat='std', freq='monthly')
 
     def test_timstat_histogram(self, reader, data_2t):
         """Test histogram through timstat"""
         bins, range = 20, (250,330)
 
         #test passing a string
-        hist1 = reader.timstat(data_2t['2t'], freq='monthly', stat='histogram', bins=bins, range=range, exclude_incomplete=True)
+        hist1 = reader.timstat(data_2t['2t'], freq='monthly', stat='histogram', bins=bins,
+                               range=range, exclude_incomplete=True)
         # timhist passes a function
         hist2 = reader.timhist(data_2t['2t'], freq='monthly', bins=bins, range=range, exclude_incomplete=True)
         hist3 = reader.timstat(data_2t['2t'], freq='monthly', stat=histogram, bins=bins, range=range, exclude_incomplete=True)

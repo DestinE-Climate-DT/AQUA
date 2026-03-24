@@ -1,18 +1,19 @@
 """Graphics utilities for Aqua."""
 import math
 
-import xarray as xr
-import cartopy.util as cutil
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
-import numpy as np
+import cartopy.util as cutil
 import healpy as hp
-from scipy.interpolate import griddata
-import matplotlib.pyplot as plt
-import matplotlib.path as mpath
 import matplotlib.patches as mpatches
+import matplotlib.path as mpath
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+from scipy.interpolate import griddata
 
 from aqua.core.logger import log_configure
+
 from .sci_util import check_coordinates
 from .string import unit_to_latex
 

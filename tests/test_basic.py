@@ -1,7 +1,8 @@
-import pytest
 import numpy as np
-from aqua import Reader
+import pytest
 from conftest import APPROX_REL, LOGLEVEL
+
+from aqua import Reader
 
 approx_rel = APPROX_REL
 loglevel = LOGLEVEL

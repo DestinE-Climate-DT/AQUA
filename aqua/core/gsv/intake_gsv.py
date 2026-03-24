@@ -1,19 +1,32 @@
 """An intake driver for FDB/GSV access"""
-import os
-import fnmatch
 import datetime
-import requests
-import eccodes
-import xarray as xr
-import numpy as np
+import fnmatch
+import os
+
 import dask
-from ruamel.yaml import YAML
+import eccodes
+import numpy as np
+import requests
+import xarray as xr
 from intake.source import base
-from aqua.core.util.eccodes import get_eccodes_attr
+from ruamel.yaml import YAML
+
+from aqua.core.logger import _check_loglevel, log_configure
 from aqua.core.util import to_list
-from aqua.core.logger import log_configure, _check_loglevel
-from .timeutil import check_dates, shift_time_dataset, floor_datetime, read_bridge_date, todatetime
-from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
+from aqua.core.util.eccodes import get_eccodes_attr
+
+from .timeutil import (
+    add_offset,
+    check_dates,
+    date2str,
+    date2yyyymm,
+    floor_datetime,
+    make_timeaxis,
+    read_bridge_date,
+    shift_time_dataset,
+    split_date,
+    todatetime,
+)
 
 # Test if FDB5 binary library is available
 try:
@@ -210,7 +223,9 @@ class GSVSource(base.DataSource):
                 if isinstance(lev, list) and len(lev) > 1:
                     self.onelevel = True  # If yes we can afford to read only one level
             else:
-                self.logger.warning("A speedup of data retrieval could be achieved by specifying the levels keyword in metadata.")
+                self.logger.warning(
+                    "A speedup of data retrieval could be achieved by specifying the levels keyword in metadata."
+                    )
 
         timeaxis = make_timeaxis(self.data_start_date, self.startdate, self.enddate,
                                  shiftmonth=self.timeshift, timestep=timestep,
@@ -322,7 +337,9 @@ class GSVSource(base.DataSource):
             if data_start_date == 'auto' or data_end_date == 'auto':
                 self.logger.debug('Autoguessing of the FDB start and end date enabled.')
                 if self.timestyle == 'yearmonth':
-                    raise ValueError('Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!')
+                    raise ValueError(
+                        'Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!'
+                        )
                 self.data_start_date, self.data_end_date = self.parse_fdb(data_start_date, data_end_date)
             else:
                 self.data_start_date = data_start_date
@@ -735,7 +752,7 @@ class GSVSource(base.DataSource):
             else:
                 dalist = []
                 for j in range(self.nlevelchunks):
-                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, original_paramid, shape, dtype) for i in range(self.ntimechunks)]
+                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, original_paramid, shape, dtype) for i in range(self.ntimechunks)] # noqa: E501
                     dalist.append(dask.array.concatenate(dalistlev, axis=self.itime))
                 darr = dask.array.concatenate(dalist, axis=self.ilevel)  # This is a lazy dask array
 

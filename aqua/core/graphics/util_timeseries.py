@@ -1,6 +1,7 @@
 """Functions to plot monthly and annual data, as well as reference data."""
 import matplotlib.pyplot as plt
 import xarray as xr
+
 from aqua.core.util import to_list, unit_to_latex
 
 

@@ -1,9 +1,10 @@
 """Tests for streaming"""
 
-import pytest
 import pandas as pd
-from aqua import Reader
+import pytest
 from conftest import APPROX_REL, LOGLEVEL
+
+from aqua import Reader
 
 # pytest approximation, to bear with different machines
 approx_rel = APPROX_REL

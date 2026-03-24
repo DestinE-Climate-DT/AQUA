@@ -5,18 +5,19 @@
 AQUA basic tool for generating catalog entries based on jinja
 '''
 
+import argparse
 import os
 import re
 import sys
-import argparse
+
 import jinja2
-
-from aqua.core.util import load_yaml, dump_yaml, get_arg
-from aqua.core.configurer import ConfigPath
-from aqua.core.logger import log_configure
-
-from aqua.core.lock import SafeFileLock
 from ruamel.yaml import YAML
+
+from aqua.core.configurer import ConfigPath
+from aqua.core.lock import SafeFileLock
+from aqua.core.logger import log_configure
+from aqua.core.util import dump_yaml, get_arg, load_yaml
+
 yaml = YAML()
 yaml.default_flow_style = None  # Ensure default flow style is None
 
@@ -250,8 +251,8 @@ class AquaFDBGenerator:
             'oce2d' if profile["levtype"] == 'o2d' else
             'oce3d' if profile["levtype"] == 'o3d' and 'full' in profile['vertical'] else
             'oce3d-half' if profile["levtype"] == 'o3d' and 'half' in profile['vertical'] else
-            'sol4' if profile["levtype"] == 'sol' and profile['vertical'] == 'IFS-sol4' or profile['vertical'] == 'ICON-sol4' else
-            'sol5' if profile["levtype"] == 'sol' and profile['vertical'] == 'IFS-sol5' or profile['vertical'] == 'ICON-sol5' else
+            'sol4' if profile["levtype"] == 'sol' and profile['vertical'] == 'IFS-sol4' or profile['vertical'] == 'ICON-sol4' else # noqa: E501
+            'sol5' if profile["levtype"] == 'sol' and profile['vertical'] == 'IFS-sol5' or profile['vertical'] == 'ICON-sol5' else # noqa: E501
             profile["levtype"]
         )
 

@@ -1,8 +1,9 @@
 "Module defining a new aqua accessor to extend xarray"
 
 import xarray as xr
-from .reader import Reader
+
 from .graphics import plot_single_map
+from .reader import Reader
 
 
 # For now not distinguishing between dataarray and dataset methods

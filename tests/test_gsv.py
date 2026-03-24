@@ -1,12 +1,11 @@
 import pytest
 import xarray as xr
-
-from dask.distributed import LocalCluster, Client
-
-from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
-from aqua.core.configurer import ConfigPath
-from aqua import Reader
 from conftest import LOGLEVEL
+from dask.distributed import Client, LocalCluster
+
+from aqua import Reader
+from aqua.core.configurer import ConfigPath
+from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
 
 if not gsv_available:
     pytest.skip('Skipping GSV tests: FDB5 libraries not available', allow_module_level=True)

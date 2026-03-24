@@ -1,9 +1,9 @@
 """Test levels selection in Reader.retrieve for a netcdf source"""
 
-import pytest
-import xarray as xr
-from aqua import Reader
 from unittest.mock import MagicMock
+
+import pytest
+
 
 @pytest.fixture(scope="module")
 def reader_era5(era5_hpz3_monthly_reader):

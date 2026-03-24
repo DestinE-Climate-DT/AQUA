@@ -1,12 +1,18 @@
 """Module for aqua grid build"""
 import os
-from typing import Optional, Any
+from typing import Any, Optional
+
 from smmregrid import GridInspector
 
 from aqua.core.logger import log_configure, log_history
-from .extragridbuilder import HealpixGridBuilder, RegularGridBuilder
-from .extragridbuilder import UnstructuredGridBuilder, CurvilinearGridBuilder
-from .extragridbuilder import GaussianRegularGridBuilder
+
+from .extragridbuilder import (
+    CurvilinearGridBuilder,
+    GaussianRegularGridBuilder,
+    HealpixGridBuilder,
+    RegularGridBuilder,
+    UnstructuredGridBuilder,
+)
 from .gridentrymanager import GridEntryManager
 
 
@@ -118,17 +124,17 @@ class GridBuilder():
         self.logger.info("Grid type is: %s", kind)
 
         # Access the class registry to get the builder class appropriate for the gridtype
-        BuilderClass = self.GRIDTYPE_REGISTRY.get(kind)
-        if not BuilderClass:
+        builder_class = self.GRIDTYPE_REGISTRY.get(kind)
+        if not builder_class:
             raise NotImplementedError(f"Grid type {kind} is not implemented yet")
-        self.logger.debug("Builder class: %s", BuilderClass)
+        self.logger.debug("Builder class: %s", builder_class)
 
         # Vertical coordinate detection
         vert_coord = self.vert_coord if self.vert_coord else gridtype.mask_dim
         self.logger.info("Detected vertical coordinate: %s", vert_coord)
 
         # Initialize the builder
-        builder = BuilderClass(
+        builder = builder_class(
             vert_coord=vert_coord, model_name=self.model_name, grid_name=self.grid_name,
             original_resolution=self.original_resolution, loglevel=self.loglevel
         )

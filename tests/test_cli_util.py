@@ -1,7 +1,9 @@
 """Test for CLI utility functions"""
 
-import pytest
 import argparse
+
+import pytest
+
 from aqua.core.util import template_parse_arguments
 
 pytestmark = pytest.mark.aqua

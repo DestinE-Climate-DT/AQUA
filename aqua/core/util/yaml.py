@@ -1,13 +1,16 @@
 """YAML utility functions"""
 
 import os
-from string import Template as DefaultTemplate
 from collections import defaultdict
+from string import Template as DefaultTemplate
 from tempfile import TemporaryDirectory
+
+import yaml  # This is needed to allow YAML override in intake
 from jinja2 import Template
 from ruamel.yaml import YAML
-import yaml  # This is needed to allow YAML override in intake
+
 from aqua.core.logger import log_configure
+
 
 def construct_yaml_merge(loader, node):
     """
