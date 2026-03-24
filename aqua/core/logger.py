@@ -1,9 +1,8 @@
 """Module to implement logging configurations"""
 
 import logging
-import warnings
-
 import pandas as pd
+import warnings
 
 
 def log_configure(log_level=None, log_name=None):

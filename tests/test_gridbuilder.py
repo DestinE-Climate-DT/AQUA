@@ -1,11 +1,11 @@
 """Tests for the GridBuilder class."""
+import subprocess
 import os
-
 import pytest
-
-from aqua import GridBuilder, Reader
-from aqua.core.configurer import ConfigPath
+from aqua import GridBuilder
+from aqua import Reader
 from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
+from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
 
 pytestmark = [pytest.mark.aqua, pytest.mark.xdist_group(name="grid_builder")]

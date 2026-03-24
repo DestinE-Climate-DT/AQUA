@@ -3,17 +3,15 @@ import os
 import re
 import shutil
 from tempfile import TemporaryDirectory
-
 import xarray as xr
 from smmregrid import CdoGenerate, GridInspector
 from smmregrid import Regridder as SMMRegridder
 from smmregrid.util import check_gridfile
-
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
-
 from .griddicthandler import GridDictHandler
 from .regridder_util import check_existing_file, validate_reader_kwargs
+
 
 # parameters which will affect the weights and areas name
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ['zoom']

@@ -1,9 +1,7 @@
 """Basic grid dictionary handling."""
 
 from smmregrid import CdoGrid
-
 from aqua.core.logger import log_configure
-
 from .regridder_util import check_existing_file
 
 

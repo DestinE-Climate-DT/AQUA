@@ -2,18 +2,16 @@
 
 import os
 import shutil
-import subprocess
 import sys
-import tempfile
-
+import subprocess
 import pytest
-
-from aqua import __path__ as pypath
-from aqua import __version__ as version
-from aqua.core.console import catalog
+import tempfile
 from aqua.core.console.main import AquaConsole
+from aqua.core.console import catalog
 from aqua.core.console.util import query_yes_no
 from aqua.core.util import dump_yaml, load_yaml, to_list
+from aqua import __version__ as version
+from aqua import __path__ as pypath
 
 TESTFILE = 'testfile.txt'
 MACHINE = 'github'
@@ -175,9 +173,7 @@ class TestAquaConsole():
             assert excinfo.value.code == 1
 
         # create a test for DROP
-        with pytest.raises(
-            FileNotFoundError, match=("ERROR: drop_config.yaml not found: you need to have this configuration file!"),
-        ):
+        with pytest.raises(FileNotFoundError, match="ERROR: drop_config.yaml not found: you need to have this configuration file!"):
             run_aqua(['drop'])
 
         # create a test for catgen
@@ -230,10 +226,7 @@ class TestAquaConsole():
         )
 
         # run DROP and verify that at least one file exist
-        run_aqua([
-            'drop', '--config', drop_test, '-w', '1', '-d', '--rebuild',
-            '--startdate', '2020-01-01', '--enddate', '2020-03-31',
-        ])
+        run_aqua(['drop', '--config', drop_test, '-w', '1', '-d', '--rebuild', '--startdate', '2020-01-01', '--enddate', '2020-03-31'])
         path = os.path.join(os.path.join(mydir, 'drop_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/mean/global/2t_ci_IFS_test-tco79_r1_r200_monthly_mean_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
@@ -592,6 +585,7 @@ class TestAquaConsoleShared():
         """Basic tests for list command"""
 
         # getting fixture
+        mydir = shared_aqua_install
 
         run_aqua(['add', 'ci'])
         run_aqua(['add', 'ciccio', '-e', 'AQUA_tests/catalog_copy'])

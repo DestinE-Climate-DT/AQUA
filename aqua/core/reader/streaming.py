@@ -1,10 +1,10 @@
 """Streaming Mixin for Reader"""
 
-import numpy as np
 import pandas as pd
-
+import numpy as np
 #from aqua.core.logger import log_configure
-from aqua.core.util import extract_literal_and_numeric, frequency_string_to_pandas
+from aqua.core.util import frequency_string_to_pandas
+from aqua.core.util import extract_literal_and_numeric
 
 
 class Streaming():

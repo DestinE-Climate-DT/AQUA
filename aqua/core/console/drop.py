@@ -7,12 +7,11 @@ Functionality can be controlled through CLI options and
 a configuration yaml file.
 '''
 
-import argparse
 import sys
-
+import argparse
 from aqua import Drop
+from aqua.core.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
-from aqua.core.util import get_arg, load_yaml, to_list
 
 
 def drop_parser(parser=None):
@@ -98,10 +97,8 @@ def drop_execute(args):
 
     # safety check
     for item in ['target', 'paths', 'data', 'options']:
-        if item not in config:
-            raise KeyError(
-                f'Configuration file {file} does not have the "{item}" key, please modify it according to the template'
-            )
+        if not item in config:
+            raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
 
     # paths
     paths = config['paths']

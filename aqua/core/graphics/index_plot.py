@@ -1,8 +1,6 @@
-import matplotlib.pyplot as plt
 import xarray as xr
-
+import matplotlib.pyplot as plt
 from aqua.core.logger import log_configure
-
 from .styles import ConfigStyle
 
 

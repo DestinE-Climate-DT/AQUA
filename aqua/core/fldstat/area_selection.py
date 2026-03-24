@@ -1,7 +1,6 @@
-import regionmask
 import xarray as xr
+import regionmask
 from typeguard import typechecked
-
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 

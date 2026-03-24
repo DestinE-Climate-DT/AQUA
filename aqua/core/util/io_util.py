@@ -2,16 +2,15 @@
 
 import os
 import re
-from glob import glob
-
 import numpy as np
-import pandas as pd
 import xarray as xr
-
+import pandas as pd
+from glob import glob
+from .util import to_list
+from pypdf import PdfReader, PdfWriter
+from PIL import Image, PngImagePlugin
 from aqua.core.logger import log_configure
 from aqua.core.version import __version__ as version
-
-from .util import to_list
 
 
 def files_exist(path):

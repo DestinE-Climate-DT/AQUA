@@ -1,11 +1,10 @@
 """Tests for SafeFileLock class with concurrent access"""
 
 import os
-import threading
 import time
-from unittest.mock import patch
-
 import pytest
+import threading
+from unittest.mock import patch
 from filelock import Timeout
 
 from aqua.core.lock import SafeFileLock

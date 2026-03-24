@@ -1,7 +1,7 @@
 """Testing if the accessor works"""
 
 import pytest
-
+from aqua import Reader
 
 # Aliases with module scope for fixtures
 @pytest.fixture(scope='module')

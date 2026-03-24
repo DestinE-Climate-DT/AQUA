@@ -1,11 +1,9 @@
 """Tests for the aqua.datamodel module."""
+import xarray as xr
 import numpy as np
 import pytest
-import xarray as xr
-
 from aqua import Reader
-from aqua.core.data_model import CoordIdentifier, CoordTransformer
-
+from aqua.core.data_model import CoordTransformer, CoordIdentifier
 
 @pytest.mark.aqua
 class TestDataModel():

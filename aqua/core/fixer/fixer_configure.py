@@ -1,7 +1,6 @@
 """Class for fixer configuration and loading"""
 from aqua.core.logger import log_configure
 
-
 class FixerConfigure:
     """
     Class to configure the fixer based on convention and fixer_name.

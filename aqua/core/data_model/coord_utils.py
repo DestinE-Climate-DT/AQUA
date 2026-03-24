@@ -1,11 +1,9 @@
 """Utility functions for coordinate handling and data model loading."""
 
-import os
 from functools import cache
-
+import os
 from metpy.units import units
 from pint.errors import DimensionalityError, UndefinedUnitError
-
 from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
 

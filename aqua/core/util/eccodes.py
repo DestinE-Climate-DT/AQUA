@@ -10,11 +10,10 @@ should be noted that GRIB1 is deprecated and not recommended for use.
 #from packaging import version
 
 import functools
-
-from eccodes import CodesInternalError, codes_get, codes_grib_new_from_samples, codes_release, codes_set
-
-from aqua.core.exceptions import NoEcCodesShortNameError
+from eccodes import codes_grib_new_from_samples, codes_set, codes_get, codes_release
+from eccodes import CodesInternalError
 from aqua.core.logger import log_configure
+from aqua.core.exceptions import NoEcCodesShortNameError
 
 # some eccodes shortnames are not unique: we need a manual mapping
 #NOT_UNIQUE_SHORTNAMES = {

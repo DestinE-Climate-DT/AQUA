@@ -1,10 +1,7 @@
 import os
-
 import pytest
-
 from aqua.core.drop import drop_util
 from aqua.core.util import replace_intake_vars
-
 
 @pytest.fixture
 def tmp_directory(tmpdir):

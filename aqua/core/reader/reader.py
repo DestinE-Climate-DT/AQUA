@@ -1,39 +1,42 @@
 """The main AQUA Reader class"""
 
-import os
-import re
 from contextlib import contextmanager
 from glob import glob
-
+import os
+import re
 #import intake_esm
 import intake_xarray
-import pandas as pd
 import xarray as xr
+import pandas as pd
 from metpy.units import units
+
 from smmregrid import GridInspector
 
-import aqua.core.gsv
+from aqua.core.util import load_multi_yaml, files_exist, to_list
+from aqua.core.util import find_vert_coord
+from aqua.core.util import fix_calendar, DEFAULT_TIME_UNIT
 from aqua.core.configurer import ConfigPath
-from aqua.core.data_model import DataModel, counter_reverse_coordinate
-from aqua.core.exceptions import NoDataError, NoRegridError
-from aqua.core.fixer import Fixer
-from aqua.core.fldstat import FldStat
-from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
-from aqua.core.regridder import Regridder
-from aqua.core.timstat import TimStat
-from aqua.core.util import default_time_unit, files_exist, find_vert_coord, fix_calendar, load_multi_yaml, to_list
+from aqua.core.exceptions import NoDataError, NoRegridError
 from aqua.core.version import __version__ as aqua_version
+from aqua.core.regridder import Regridder
+from aqua.core.fldstat import FldStat
+from aqua.core.timstat import TimStat
+from aqua.core.fixer import Fixer
+from aqua.core.data_model import DataModel, counter_reverse_coordinate
+from aqua.core.histogram import histogram
+import aqua.core.gsv
 
-from .reader_utils import set_attrs
 from .streaming import Streaming
 from .trender import Trender
+
+from .reader_utils import set_attrs
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
 # set default data model
-data_model_default = "aqua"
+DATA_MODEL_DEFAULT = "aqua"
 
 
 class Reader():
@@ -158,8 +161,7 @@ class Reader():
         machine_paths, intake_vars = configurer.get_machine_info()
 
         # load the catalog
-        # Hack needed to avoid double checking of paths when working via polytope.
-        aqua.core.gsv.GSVSource.first_run = True
+        aqua.core.gsv.GSVSource.first_run = True  # Hack needed to avoid double checking of paths (which would not work if on another machine using polytope)
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
 
         # check machine compatibility
@@ -213,7 +215,7 @@ class Reader():
 
         # if data model is not passed to Reader, try to get it from the catalog source metadata
         if datamodel is None:
-            self.datamodel_name = self.esmcat.metadata.get('data_model', data_model_default)
+            self.datamodel_name = self.esmcat.metadata.get('data_model', DATA_MODEL_DEFAULT)
         else:
             self.datamodel_name = datamodel
 
@@ -462,7 +464,7 @@ class Reader():
             # TODO: Check, the commented code is probably not needed
             # Convert time to datetime64 microsecond resolution by default
             # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
-            #     data['time'] = data.time.astype(f"datetime64[{default_time_unit}]")
+            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
             # Fix the calendar to Gregorian if needed
             data = fix_calendar(data, loglevel=self.loglevel)
 
@@ -1100,13 +1102,13 @@ class Reader():
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata['filter_key'])
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs
-        if hasattr(esmcat, "xarray_kwargs") and "use_cftime" not in esmcat.xarray_kwargs:
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
+        if hasattr(esmcat, "xarray_kwargs") and not "use_cftime" in esmcat.xarray_kwargs:
             if 'time_coder' in esmcat.metadata:
                 self.logger.info('Using custom pandas/xarray time coder: %s', esmcat.metadata['time_coder'])
                 coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata['time_coder'])
             else:
-                coder = xr.coders.CFDatetimeCoder(time_unit=default_time_unit)
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
             esmcat.xarray_kwargs.update({'decode_times': coder})
 

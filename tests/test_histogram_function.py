@@ -1,10 +1,8 @@
-import dask.array as da
 import numpy as np
-import pytest
 import xarray as xr
-
+import pytest
+import dask.array as da
 from aqua import histogram
-
 
 @pytest.fixture
 def sample_data():

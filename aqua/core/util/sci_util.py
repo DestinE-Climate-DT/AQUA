@@ -100,13 +100,7 @@ def select_season(xr_data, season: str):
     """
     if season in TRIPLET_MONTHS:
         selected_months = TRIPLET_MONTHS[season]
-        selected =  xr_data.sel(
-            time=(
-                (xr_data['time.month'] == selected_months[0]) |
-                (xr_data['time.month'] == selected_months[1]) |
-                (xr_data['time.month'] == selected_months[2])
-            )
-        )
+        selected =  xr_data.sel(time=(xr_data['time.month'] == selected_months[0]) | (xr_data['time.month'] == selected_months[1]) | (xr_data['time.month'] == selected_months[2]))
         # Add AQUA_season attribute
         selected.attrs['AQUA_season'] = season
         return selected
@@ -140,7 +134,7 @@ def generate_quarter_months(anchor_month='JAN'):
     start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys)
                                   if TRIPLET_MONTHS[key][0] == anchor_month_num)
 
-    quarter_months = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)} # noqa: E501
+    quarter_months = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)}
 
     return {anchor_month: quarter_months}
 

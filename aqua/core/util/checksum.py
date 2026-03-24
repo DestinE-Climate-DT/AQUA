@@ -1,12 +1,10 @@
 
 """checksum verification module"""
 
-import hashlib
 import os
 import sys
-
+import hashlib
 import pandas as pd
-
 from aqua.core.util import to_list
 
 

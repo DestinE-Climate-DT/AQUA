@@ -4,15 +4,13 @@ both with monthly and annual aggregation options
 """
 import textwrap
 from typing import Optional
-
-import matplotlib.pyplot as plt
 import xarray as xr
-
+import matplotlib.pyplot as plt
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
-
+from .util_timeseries import plot_timeseries_data, plot_timeseries_ref_data
+from .util_timeseries import plot_timeseries_ensemble, _plot_lx
 from .styles import ConfigStyle
-from .util_timeseries import _plot_lx, plot_timeseries_data, plot_timeseries_ensemble, plot_timeseries_ref_data
 
 
 def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
@@ -77,8 +75,7 @@ def plot_timeseries(monthly_data: list[xr.DataArray] | xr.DataArray = None,
     if fig is None and ax is None:
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
-    if ((monthly_data is not None and ens_monthly_data is not None) or
-        (annual_data is not None and ens_annual_data is not None)):
+    if (monthly_data is not None and ens_monthly_data is not None) or (annual_data is not None and ens_annual_data is not None):
         logger.info("monthly_data and annual_data will be considered as realizations of an ensemble")
         realization = True
 
@@ -214,8 +211,8 @@ def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
 
     ConfigStyle(style=style, loglevel=loglevel)
 
-    months_numeric = range(0, 13 + 1)  # Numeric months
-    months_names = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
+    monthsNumeric = range(0, 13 + 1)  # Numeric months
+    monthsNames = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
 
     if data is not None:
         if isinstance(data, xr.DataArray):
@@ -240,8 +237,8 @@ def plot_seasonalcycle(data: list[xr.DataArray] | xr.DataArray,
             logger.debug(f"Error plotting std data: {e}")
 
     ax.legend(fontsize='small')
-    ax.set_xticks(months_numeric)
-    ax.set_xticklabels(months_names)
+    ax.set_xticks(monthsNumeric)
+    ax.set_xticklabels(monthsNames)
     ax.set_xlim(0.5, 12.5)
     ax.set_axisbelow(True)
     ax.grid(True, axis="y", linestyle='-', color='silver', alpha=0.8)

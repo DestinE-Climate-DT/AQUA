@@ -1,8 +1,8 @@
 import os
-from pathlib import Path
-
 import pytest
-
+from pathlib import Path
+import tempfile
+import subprocess
 from aqua.core.util.checksum import compute_md5, generate_checksums, verify_checksums
 
 
@@ -35,7 +35,7 @@ class TestChecksumModule:
 
         assert checksum_file.exists()
         with checksum_file.open("r", encoding='utf8') as f:
-            f.read()
+            content = f.read()
 
         verify_checksums(tmp_path, ["."], str(checksum_file))
         captured = capsys.readouterr()

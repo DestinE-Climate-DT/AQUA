@@ -1,8 +1,7 @@
 """Tests for GSV timeutile in AQUA"""
 
-import pandas as pd
 import pytest
-
+import pandas as pd
 from aqua.core.gsv.timeutil import floor_datetime
 
 # Assuming floor_datetime is already imported
@@ -31,6 +30,6 @@ def test_floor_datetime_all_cases():
         if isinstance(expected, str):  # For valid cases
             result = floor_datetime(dt, freq)
             assert result == expected, f"Failed for {freq} on {dt_str}: expected {expected}, got {result}"
-        elif expected is KeyError:  # For invalid frequencies
+        elif expected == KeyError:  # For invalid frequencies
             with pytest.raises(KeyError):
                 floor_datetime(dt, freq)

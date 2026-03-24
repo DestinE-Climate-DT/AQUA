@@ -3,19 +3,17 @@ Module including time utilities for AQUA
 """
 import math
 import re
-
-import cftime
 import numpy as np
 import pandas as pd
 import xarray as xr
-from pandas.tseries.frequencies import to_offset
+import cftime
 from xarray.coding.times import cftime_to_nptime
-
-from aqua.core.logger import log_configure
-from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
+from pandas.tseries.frequencies import to_offset
+from aqua.core.util.sci_util import generate_quarter_months, TRIPLET_MONTHS
 from aqua.core.util.string import get_quarter_anchor_month
+from aqua.core.logger import log_configure
 
-default_time_unit = 'us'  # default to microseconds for datetime64 for a wider dates range
+DEFAULT_TIME_UNIT = 'us'  # default to microseconds for datetime64 for a wider dates range
 
 
 def frequency_string_to_pandas(freq):
@@ -378,9 +376,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
             check_completeness.append(False)
 
     if sum(check_completeness) == 0:
-        logger.warning(
-            f'Not enough data to compute any complete seasonal average on {resample_frequency} period, returning empty array'
-            )
+        logger.warning(f'Not enough data to compute any complete seasonal average on {resample_frequency} period, returning empty array')
 
     taxis = xdataset.time.resample(time=resample_frequency).mean()
 
@@ -466,9 +462,9 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    default_calendar = 'gregorian'
-    # default_calendar_start = 'microseconds since 1850-01-01'
-    unit = default_time_unit
+    DEFAULT_CALENDAR = 'gregorian'
+    # DEFAULT_CALENDAR_START = 'microseconds since 1850-01-01'
+    unit = DEFAULT_TIME_UNIT
 
     logger = log_configure(loglevel, 'fix_calendar')
     cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
@@ -479,14 +475,14 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
             unit = np.datetime_data(data.time.values.dtype)[0]
             logger.debug(f'Time units detected as {unit} from datetime64 dtype')
 
-        logger.info(f'Converting calendar from {cal} to {default_calendar} for data retrieval...')
-        data = data.convert_calendar(default_calendar, align_on='year')
+        logger.info(f'Converting calendar from {cal} to {DEFAULT_CALENDAR} for data retrieval...')
+        data = data.convert_calendar(DEFAULT_CALENDAR, align_on='year')
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
         if (data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime)):
-            logger.info(f"Rolling back cftime to datetime64[{default_time_unit}] after calendar conversion")
+            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_TIME_UNIT}] after calendar conversion")
 
-            np_time = cftime_to_nptime(data.time.values, time_unit=default_time_unit)
+            np_time = cftime_to_nptime(data.time.values, time_unit=DEFAULT_TIME_UNIT)
             logger.debug(f"Time axis is now of type {np_time.dtype}, first step {np_time[0]}")
             data = data.assign_coords(time=np_time)
         else:  # Still datetime64, ensure we keep original precision

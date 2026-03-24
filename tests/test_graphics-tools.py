@@ -1,20 +1,17 @@
-import healpy as hp
-import numpy as np
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
+import numpy as np
+import healpy as hp
+from scipy.interpolate import griddata
+from pypdf import PdfReader
 
 from aqua import Reader
-from aqua.core.util import (
-    cbar_get_label,
-    coord_names,
-    evaluate_colorbar_limits,
-    get_npix,
-    get_nside,
-    healpix_resample,
-    set_map_title,
-)
-from aqua.core.util.graphics import add_cyclic_lon, minmax_maps, plot_box
+from aqua.core.util.graphics import add_cyclic_lon, plot_box, minmax_maps
+from aqua.core.util import cbar_get_label, evaluate_colorbar_limits
+from aqua.core.util import get_nside, get_npix, healpix_resample
+from aqua.core.util import coord_names, set_map_title
+from aqua.core.graphics import plot_single_map
+from conftest import DPI, LOGLEVEL
 
 loglevel = LOGLEVEL
 

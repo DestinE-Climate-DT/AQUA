@@ -1,5 +1,6 @@
 """utilities for formatting realizations."""
 from typing import Optional, Union
+import xarray as xr
 
 DEFAULT_REALIZATION = 'r1'  # Default realization if not specified
 

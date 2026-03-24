@@ -5,10 +5,9 @@ AQUA analysis checker command line interface.
 Check that the imports are correct and the requested model is available in the
 Reader catalog.
 '''
-import argparse
-import os
 import sys
-
+import os
+import argparse
 from aqua.core.util import template_parse_arguments
 
 
@@ -28,8 +27,7 @@ def parse_arguments(args):
     parser.add_argument("--yaml", type=str,
                         required=False, help="write an experiment.yaml file to a given directory")
     parser.add_argument("--no-read", action="store_false", dest='read',
-                        required=False,
-                        help="do not attempt to read data (used with --yaml to speed up when creating only yaml)")
+                        required=False, help="do not attempt to read data (used with --yaml to speed up when creating only yaml)")
     parser.add_argument("--no-rebuild", action="store_false", dest='rebuild',
                         required=False, help="by default rebuild of areas is forced, this prevents it")
 
@@ -41,11 +39,11 @@ if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
 
     try:
-        from aqua import Reader
         from aqua import __version__ as aqua_version
-        from aqua.core.exceptions import NoDataError
+        from aqua import Reader
         from aqua.core.logger import log_configure
-        from aqua.core.util import dump_yaml, get_arg
+        from aqua.core.util import get_arg, dump_yaml
+        from aqua.core.exceptions import NoDataError
 
         loglevel = get_arg(args, 'loglevel', 'WARNING')
         logger = log_configure(log_name='Setup check', log_level=loglevel)

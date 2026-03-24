@@ -1,14 +1,13 @@
 """Catalog configuration helpers for AQUA."""
 import os
-
 #import platform
 import intake
 
-from aqua.core.logger import log_configure
 from aqua.core.util.util import to_list
 from aqua.core.util.yaml import load_yaml
-
+from aqua.core.logger import log_configure
 from .locator import ConfigLocator
+
 
 
 class ConfigPath():
@@ -276,10 +275,7 @@ class ConfigPath():
         catalog_file = self.base_available[catalog]['reader']['catalog']
         self.logger.debug('Catalog file is %s', catalog_file)
         if not os.path.exists(catalog_file):
-            raise FileNotFoundError(
-                f'Cannot find catalog file in {catalog_file}. '
-                f'Did you install it with "aqua add {catalog}"?'
-            )
+            raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}. Did you install it with "aqua add {catalog}"?')
 
         machine_file = self.base_available[catalog]['reader']['machine']
         self.logger.debug('Machine file is %s', machine_file)

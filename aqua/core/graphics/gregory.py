@@ -1,10 +1,8 @@
+from matplotlib import rcParams
 import matplotlib.pyplot as plt
 import xarray as xr
-from matplotlib import rcParams
-
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, to_list
-
+from aqua.core.util import evaluate_colorbar_limits, to_list, unit_to_latex
 from .styles import ConfigStyle
 
 

@@ -1,10 +1,10 @@
-import numpy as np
-import pandas as pd
 import pytest
 import xarray
-from conftest import LOGLEVEL
+import numpy as np
+import pandas as pd
 
 from aqua import Reader
+from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 

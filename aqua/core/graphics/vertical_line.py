@@ -1,11 +1,8 @@
 from typing import Optional, Tuple
-
 import matplotlib.pyplot as plt
 import xarray as xr
-
-from aqua.core.logger import log_configure
 from aqua.core.util import to_list, unit_to_latex
-
+from aqua.core.logger import log_configure
 from .styles import ConfigStyle
 
 

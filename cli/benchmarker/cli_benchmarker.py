@@ -7,10 +7,8 @@ AQUA tool to evalute speedo of some methods
 import argparse
 import sys
 from timeit import timeit
-
 import dask
 from dask.distributed import Client, LocalCluster
-
 from aqua import Reader
 from aqua import __version__ as version
 from aqua.core.logger import log_configure

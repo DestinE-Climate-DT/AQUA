@@ -3,7 +3,6 @@ This module contains the specific grid type builders for the different grid type
 """
 
 import numpy as np
-
 from .basegridbuilder import BaseGridBuilder
 
 

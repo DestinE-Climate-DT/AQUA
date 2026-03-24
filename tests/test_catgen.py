@@ -1,15 +1,13 @@
 """Testing for the catalog generator"""
 
-import logging
-import os
 import subprocess
-from pathlib import Path
-
+import os
 import pytest
-from conftest import LOGLEVEL
-
+import logging
+from pathlib import Path
+from aqua.core.util import load_yaml, dump_yaml
 from aqua.core.console.catgen import AquaFDBGenerator
-from aqua.core.util import dump_yaml, load_yaml
+from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 
@@ -139,13 +137,13 @@ def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     assert "realization: '{{ realization }}'"
 
     # check number of vertical levels in the atmosphere
-    assert len(sources['sources']['monthly-hpz5-atm3d']['metadata']['levels']) == 19
+    assert len(sources['sources'][f'monthly-hpz5-atm3d']['metadata']['levels']) == 19
 
     # check number of vertical levels in the ocean
-    assert len(sources['sources']['monthly-hpz5-oce3d']['metadata']['levels']) == nocelevels
+    assert len(sources['sources'][f'monthly-hpz5-oce3d']['metadata']['levels']) == nocelevels
 
     # check ensembles are correctly produced
-    assert sources['sources']['monthly-hpz5-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
+    assert sources['sources'][f'monthly-hpz5-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),

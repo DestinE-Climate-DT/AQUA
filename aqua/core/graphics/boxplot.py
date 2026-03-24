@@ -1,18 +1,14 @@
-import textwrap
-
 import matplotlib.pyplot as plt
+import xarray as xr
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import xarray as xr
-from matplotlib import colors as mcolors
 from metpy.units import units
-
-from aqua.core.logger import log_configure
 from aqua.core.util import to_list, unit_to_latex
-
+from aqua.core.logger import log_configure
 from .styles import ConfigStyle
-
+from matplotlib import colors as mcolors
+import textwrap
 
 def boxplot(fldmeans: list[xr.Dataset],
             model_names: list[str],

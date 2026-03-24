@@ -1,28 +1,17 @@
-import os
-
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
-import numpy as np
 import pytest
+import os
+import numpy as np
 import xarray as xr
-from conftest import DPI, LOGLEVEL
-
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
 from aqua import Reader
-from aqua.core.graphics import (
-    plot_histogram,
-    plot_hovmoller,
-    plot_lat_lon_profiles,
-    plot_maps,
-    plot_maps_diff,
-    plot_seasonal_lat_lon_profiles,
-    plot_seasonalcycle,
-    plot_single_map,
-    plot_single_map_diff,
-    plot_timeseries,
-    plot_vertical_lines,
-    plot_vertical_profile,
-    plot_vertical_profile_diff,
-)
+from aqua.core.graphics import plot_single_map, plot_single_map_diff
+from aqua.core.graphics import plot_vertical_profile, plot_vertical_profile_diff
+from aqua.core.graphics import plot_timeseries, plot_seasonalcycle
+from aqua.core.graphics import plot_maps, plot_maps_diff, plot_hovmoller
+from aqua.core.graphics import plot_vertical_lines, plot_histogram
+from aqua.core.graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
+from conftest import DPI, LOGLEVEL
 
 loglevel = LOGLEVEL
 

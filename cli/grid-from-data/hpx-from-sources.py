@@ -4,14 +4,12 @@
 AQUA command line tool to create an healpix grid from an oceanic file
 """
 import argparse
-import os
 import sys
-
+import os
 from cdo import Cdo
-
 from aqua import Reader
+from aqua.core.util import load_yaml, get_arg, create_folder
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, get_arg, load_yaml
 
 reasonable_vert_coords = ['depth_full', 'depth_half', 'level']
 

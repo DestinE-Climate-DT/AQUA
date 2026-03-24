@@ -1,15 +1,12 @@
 """Fixer mixin for the Reader class"""
 import re
-
 import numpy as np
-
-from aqua.core.logger import log_configure, log_history
-from aqua.core.util import convert_units, get_eccodes_attr, to_list
-
-from .evaluate_formula import EvaluateFormula
-from .fixer_configure import FixerConfigure
-from .fixer_datamodel import FixerDataModel
+from aqua.core.util import to_list, convert_units, get_eccodes_attr
+from aqua.core.logger import log_history, log_configure
 from .fixer_operator import FixerOperator
+from .fixer_datamodel import FixerDataModel
+from .fixer_configure import FixerConfigure
+from .evaluate_formula import EvaluateFormula
 
 DEFAULT_DELTAT = 1
 
@@ -353,8 +350,7 @@ class Fixer():
         """
         self.logger.debug("Grib variable %s, looking for attributes", var)
         try:
-            # Copy is needed because get_eccodes_attr is cached.
-            attributes = get_eccodes_attr(var, loglevel=self.loglevel).copy()
+            attributes = get_eccodes_attr(var, loglevel=self.loglevel).copy()  # The copy is needed because the function in eccodes.py is cached
             shortname = attributes.get("shortName", None)
             self.logger.debug("Grib variable %s, shortname is %s", var, shortname)
 

@@ -1,11 +1,9 @@
 import os
-import threading
 import time
-
+import threading
 from filelock import SoftFileLock, Timeout
 
 from aqua.core.logger import log_configure
-
 
 class SafeFileLock:
     """

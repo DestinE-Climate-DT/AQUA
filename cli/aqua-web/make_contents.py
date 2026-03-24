@@ -2,14 +2,13 @@
 
 # This script creates content.yaml and content.json files for each experiment in the content/png directory.
 
-import argparse
-import json
-import logging
 import os
 import sys
-from fnmatch import fnmatch
-
 import yaml
+import json
+import argparse
+import logging
+from fnmatch import fnmatch
 from pypdf import PdfReader
 
 # Get a logger instance
@@ -135,8 +134,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                     info_parts.append(experiment["expid"])
                 if info_parts:
                     experiment["title"] += f" ({','.join(info_parts)})"
-                # If realization is already specified in experiment.yaml, keep it.
-                if not has_valid_key(experiment, "realization"):
+                if not has_valid_key(experiment, "realization"):  # if realization already spoecified in experiment.yaml use that one
                     experiment["realization"] = realization if realization else "r1"
 
         else:
@@ -144,8 +142,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             logger.warning(f"No experiment.yaml found for {path}. Using legacy info from config.")
             exp_metadata = config_experiments.get(f"{catalog}_{model}_{exp}")
             experiment = {"catalog": catalog, "model": model, "experiment": exp}
-            # Default realization if not specified, does not harm
-            experiment["realization"] = realization if realization else "r1"
+            experiment["realization"] = realization if realization else "r1"  # Default realization if not specified, does not harm
 
             if exp_metadata:
                 experiment['title'] = exp_metadata.get("title", f"{exp}")
@@ -290,25 +287,21 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
         for catalog in os.listdir("."):
             catalog_path = os.path.join(".", catalog)
-            if not os.path.isdir(catalog_path):
-                continue
+            if not os.path.isdir(catalog_path): continue
             logger.debug(f"Scanning catalog: {catalog}")
             for model in os.listdir(catalog_path):
                 model_path = os.path.join(catalog_path, model)
-                if not os.path.isdir(model_path):
-                    continue
+                if not os.path.isdir(model_path): continue
                 logger.debug(f"Scanning model: {model}")
                 for exp in os.listdir(model_path):
                     exp_path = os.path.join(model_path, exp)
-                    if not os.path.isdir(exp_path):
-                        continue
+                    if not os.path.isdir(exp_path): continue
                     logger.debug(f"Scanning experiment: {exp}")
 
                     if ensemble:  # If new structure, iterate through 4 levels
                         for realization in os.listdir(exp_path):
                             realization_path = os.path.join(exp_path, realization)
-                            if not os.path.isdir(realization_path):
-                                continue
+                            if not os.path.isdir(realization_path): continue
                             logger.debug(f"Processing ensemble member: {catalog}/{model}/{exp}/{realization}")
                             make_content(catalog, model, exp, realization, diagnostics, config_experiments, force)
                     else:
@@ -321,9 +314,7 @@ def parse_arguments(arguments):
     Parse command line arguments
     """
 
-    parser = argparse.ArgumentParser(
-        description='Create content.yaml and content.json files for each experiment in the content/png directory.'
-        )
+    parser = argparse.ArgumentParser(description='Create content.yaml and content.json files for each experiment in the content/png directory.')
 
     parser.add_argument(
         "-n",

@@ -1,10 +1,9 @@
 """Test masked source"""
 
-import numpy as np
 import pytest
-from conftest import APPROX_REL, LOGLEVEL
-
+import numpy as np
 from aqua import Reader
+from conftest import APPROX_REL, LOGLEVEL
 
 approx_rel = APPROX_REL
 loglevel = LOGLEVEL

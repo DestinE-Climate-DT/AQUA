@@ -3,8 +3,7 @@ Class for supplementary coordinate and dimension fixes beyond base data model.
 Works BEFORE base data model transformation (DataModel/CoordTransformer).
 """
 import xarray as xr
-
-from aqua.core.logger import log_configure, log_history
+from aqua.core.logger import log_history, log_configure
 
 
 class FixerDataModel:

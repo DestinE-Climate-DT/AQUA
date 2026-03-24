@@ -1,7 +1,6 @@
 """Helpers to resolve AQUA configuration directories and files."""
 import os
 
-
 class ConfigLocator:
     """
     Helper to resolve AQUA configuration directories/files.

@@ -13,30 +13,31 @@ Main features:
 - Parallel processing with Dask
 - Memory-efficient chunked processing
 """
-import glob
 import os
-import shutil
-import subprocess
 from time import time
-
+import subprocess
+import glob
+import shutil
 import dask
+import xarray as xr
 import numpy as np
 import pandas as pd
-import xarray as xr
+
+from dask.distributed import Client, LocalCluster, progress, performance_report
 from dask.diagnostics import ProgressBar
-from dask.distributed import Client, LocalCluster, performance_report, progress
 from dask.distributed.diagnostics import MemorySampler
 
-from aqua.core.configurer import ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
-from aqua.core.util import create_zarr_reference, dump_yaml, load_yaml, replace_intake_vars
 from aqua.core.util.io_util import create_folder, file_is_complete
+from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.configurer import ConfigPath
+from aqua.core.util import create_zarr_reference, replace_intake_vars
 from aqua.core.util.string import generate_random_string
-
+from .drop_util import move_tmp_files, list_drop_files_complete
 from .catalog_entry_builder import CatalogEntryBuilder
-from .drop_util import list_drop_files_complete, move_tmp_files
+
 
 TIME_ENCODING = {
     'units': 'days since 1850-01-01 00:00:00',
@@ -50,7 +51,7 @@ VAR_ENCODING = {
     '_FillValue': np.nan
 }
 
-available_stats = ['mean', 'std', 'max', 'min', 'sum', 'histogram']
+AVAILABLE_STATS = ['mean', 'std', 'max', 'min', 'sum', 'histogram']
 
 
 class Drop():
@@ -163,8 +164,8 @@ class Drop():
 
         # configure statistics
         self.stat = stat
-        if self.stat not in available_stats:
-            raise ValueError(f'Please specify a valid statistic: {available_stats}.')
+        if self.stat not in AVAILABLE_STATS:
+            raise ValueError(f'Please specify a valid statistic: {AVAILABLE_STATS}.')
         if not isinstance(stat_kwargs, dict):
             raise TypeError('stat_kwargs must be a dictionary.')
         self.stat_kwargs = stat_kwargs

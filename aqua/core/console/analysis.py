@@ -1,18 +1,17 @@
 """AQUA analysis command line interface."""
 
-import argparse
-import logging
 import os
 import sys
+import argparse
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from importlib import resources as pypath
-
 from dask.distributed import LocalCluster
-
-from aqua.core.analysis import get_aqua_paths, run_command, run_diagnostic_func
+from aqua.core.analysis import run_diagnostic_func, run_command, get_aqua_paths
+from aqua.core.util import load_yaml, create_folder, format_realization
 from aqua.core.configurer import ConfigPath
+from aqua.core.util import expand_env_vars
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
+from importlib import resources as pypath
 
 
 def analysis_parser(parser=None):
@@ -32,10 +31,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
-    parser.add_argument(
-        "--source_oce",
-        type=str, help="Extra source for oceanic data when --source is used for atmospheric data and both are needed",
-    )
+    parser.add_argument("--source_oce", type=str, help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
     parser.add_argument("--realization", type=str, help="Realization (default: None)")
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
     parser.add_argument("-f", "--config", type=str, help="Configuration file")
@@ -124,8 +120,7 @@ def analysis_execute(args):
     if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
         connect_timeout = config.get('cluster', {}).get('connect_timeout', None)
         if connect_timeout:
-            # Increase timeout (certainly needed on LUMI, possibly useful elsewhere too).
-            os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"
+            os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"  # increase timeout (certainly needed on lumi, possibly good anyway)
     if "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP" not in os.environ:
         tcp_timeout = config.get('cluster', {}).get('tcp_timeout', None)
         if tcp_timeout:
@@ -145,10 +140,7 @@ def analysis_execute(args):
         logger.info("Running setup checker")
         checker_script_path = os.path.join(pypath.files('aqua.core'), 'analysis', 'cli_checker.py')
         output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        command = (
-            f"python {checker_script_path} --model {model} --exp {exp} "
-            f"--source {source} -l {loglevel} --yaml {output_dir}"
-        )
+        command = f"python {checker_script_path} --model {model} --exp {exp} --source {source} -l {loglevel} --yaml {output_dir}"
         if regrid:
             command += f" --regrid {regrid}"
         if catalog:

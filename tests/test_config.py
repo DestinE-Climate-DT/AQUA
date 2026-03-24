@@ -1,10 +1,8 @@
 import os
-
 import pytest
 
-from aqua import show_catalog_content
 from aqua.core.configurer import ConfigPath
-
+from aqua import show_catalog_content
 
 @pytest.mark.aqua
 def test_config_plain():

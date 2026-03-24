@@ -4,20 +4,18 @@
 AQUA cli tool to submit parallel aqua-web slurm jobs
 '''
 
-import argparse
-import os
-import re
 import subprocess
+import argparse
+import re
 import sys
+import os
 import uuid
-from tempfile import NamedTemporaryFile
-
 from jinja2 import Template
 from ruamel.yaml import YAML
-
-from aqua.core.configurer import ConfigPath
+from tempfile import NamedTemporaryFile
 from aqua.core.logger import log_configure
 from aqua.core.util import get_arg
+from aqua.core.configurer import ConfigPath
 
 
 class Submitter():

@@ -1,8 +1,7 @@
 """Test fixer functionality for Reader"""
 
-import numpy as np
 import pytest
-
+import numpy as np
 from aqua import Reader
 from aqua.core.fixer import EvaluateFormula
 

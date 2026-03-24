@@ -2,7 +2,6 @@
 
 import sys
 
-
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via input() and return their answer.
 
