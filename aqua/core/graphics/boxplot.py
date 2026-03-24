@@ -101,7 +101,7 @@ def boxplot(fldmeans: list[xr.Dataset],
     if add_mean_line:
         means = df.groupby(['Variables', 'Models'])['Values'].mean().unstack(fill_value=np.nan)
 
-        # n_vars = len(order)
+        n_vars = len(order)
         n_hues = len(hue_order)
         total_box_width = 0.8  # same width passed to sns.boxplot
         if n_hues > 0:
@@ -144,7 +144,7 @@ def boxplot(fldmeans: list[xr.Dataset],
         ax.set_title(title, fontsize=fontsize + 3)
     else:
         vars_str = ', '.join(labels[v] for v in variables)
-        # models_str = ', '.join(model_names)
+        models_str = ', '.join(model_names)
         wrapped_title = textwrap.fill(f'Boxplot of {vars_str}', 70)
         ax.set_title(wrapped_title, fontsize=fontsize+2)
 
