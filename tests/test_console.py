@@ -468,11 +468,11 @@ class TestAquaConsoleShared():
         mydir = shared_aqua_install
 
         # add two catalogs
-        for catalog_name in ["ci", "levante"]:
-            run_aqua(["add", catalog_name])
-            assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs", catalog_name))
-            config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
-            assert catalog_name  in config_file["catalog"]
+        for catalog in ['ci', 'levante']:
+            run_aqua(['add', catalog])
+            assert os.path.isdir(os.path.join(mydir, '.aqua/catalogs', catalog))
+            config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+            assert catalog in config_file['catalog']
 
         # set catalog
         run_aqua(['set', 'ci'])
