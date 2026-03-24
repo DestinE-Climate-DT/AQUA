@@ -13,7 +13,7 @@ def source_name(request):
 def reader(request, source_name):
     """Picks the correct reader fixture based on source_name."""
     suffix = "long" if source_name == "long" else "long400"
-    fixture_name = f"ifs_tco79_{suffix}_fixFalse_reader"
+    fixture_name = f"ifs_tco79_{suffix}_fixfalse_reader"
     return request.getfixturevalue(fixture_name)
 
 
@@ -21,7 +21,7 @@ def reader(request, source_name):
 def data(request, source_name):
     """Picks the correct data fixture based on source_name."""
     suffix = "long" if source_name == "long" else "long400"
-    fixture_name = f"ifs_tco79_{suffix}_fixFalse_data"
+    fixture_name = f"ifs_tco79_{suffix}_fixfalse_data"
     return request.getfixturevalue(fixture_name)
 
 @pytest.fixture(scope="module")
