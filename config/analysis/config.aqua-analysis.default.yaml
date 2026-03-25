@@ -78,78 +78,78 @@ run:
 diagnostics:
   atmosphere2d: 
     biases: 
-      config: ["${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-berkeley.yaml", 
-               "${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-era5.yaml"]
+      config: ["${AQUA_CONFIG}/diagnostics/default/atmosphere2d/config-atmosphere2d-berkeley.yaml", 
+               "${AQUA_CONFIG}/diagnostics/default/atmosphere2d/config-atmosphere2d-era5.yaml"]
     timeseries:
-      config: ["${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-berkeley.yaml",
-               "${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-era5.yaml"]
+      config: ["${AQUA_CONFIG}/diagnostics/default/atmosphere2d/config-atmosphere2d-berkeley.yaml",
+               "${AQUA_CONFIG}/diagnostics/default/atmosphere2d/config-atmosphere2d-era5.yaml"]
     lat_lon_profiles:
-      config: "${AQUA_CONFIG}/diagnostics/atmosphere2d/config-atmosphere2d-berkeley.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/atmosphere2d/config-atmosphere2d-berkeley.yaml"
 
   atmosphere3d:
     biases:
-      config: "${AQUA_CONFIG}/diagnostics/atmosphere3d/config-atmosphere3d-era5.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/atmosphere3d/config-atmosphere3d-era5.yaml"
 
   climate_metrics:
     ecmean:
-      config: "${AQUA_CONFIG}/diagnostics/climate_metrics/config-climate_metrics-ecmean.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/climate_metrics/config-climate_metrics-ecmean.yaml"
       nocluster: true  # ECmean does not use the global dask cluster
       source_oce: true  # if a --source_oce argument was passed use it
     gregory:
-      config: "${AQUA_CONFIG}/diagnostics/climate_metrics/config-climate_metrics-gregory.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/climate_metrics/config-climate_metrics-gregory.yaml"
 
   ocean2d:
     biases:
-      config: "${AQUA_CONFIG}/diagnostics/ocean2d/config-ocean2d-esacci.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/ocean2d/config-ocean2d-esacci.yaml"
 
   ocean3d-part1:
     trends:
-      config: "${AQUA_CONFIG}/diagnostics/ocean3d/config-ocean3d-en4-trend-drift.yaml"  # these diagnostics need a different chunking
+      config: "${AQUA_CONFIG}/diagnostics/default/ocean3d/config-ocean3d-en4-trend-drift.yaml"  # these diagnostics need a different chunking
       outname: "ocean3d"
     drift:
-      config: "${AQUA_CONFIG}/diagnostics/ocean3d/config-ocean3d-en4-trend-drift.yaml"  # these diagnostics need a different chunking
+      config: "${AQUA_CONFIG}/diagnostics/default/ocean3d/config-ocean3d-en4-trend-drift.yaml"  # these diagnostics need a different chunking
       outname: "ocean3d"
 
   ocean3d-part2:
     stratification:
-      config: "${AQUA_CONFIG}/diagnostics/ocean3d/config-ocean3d-en4-stratification.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/ocean3d/config-ocean3d-en4-stratification.yaml"
       outname: "ocean3d"
 
   radiation-toa:
     biases:
-      config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-ceres.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/radiation_toa/config-radiation_toa-ceres.yaml"
     boxplots:
-      config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-boxplots.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/radiation_toa/config-radiation_toa-boxplots.yaml"
     timeseries:
-      config: "${AQUA_CONFIG}/diagnostics/radiation_toa/config-radiation_toa-ceres.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/radiation_toa/config-radiation_toa-ceres.yaml"
 
   radiation-surface:
     biases:
-      config: ["${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-ceres.yaml",
-               "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-era5.yaml"]
+      config: ["${AQUA_CONFIG}/diagnostics/default/radiation_surface/config-radiation_surface-ceres.yaml",
+               "${AQUA_CONFIG}/diagnostics/default/radiation_surface/config-radiation_surface-era5.yaml"]
     boxplots:
-      config: "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-boxplots.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/radiation_surface/config-radiation_surface-boxplots.yaml"
     timeseries:
-      config: ["${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-ceres.yaml",
-               "${AQUA_CONFIG}/diagnostics/radiation_surface/config-radiation_surface-era5.yaml"]
+      config: ["${AQUA_CONFIG}/diagnostics/default/radiation_surface/config-radiation_surface-ceres.yaml",
+               "${AQUA_CONFIG}/diagnostics/default/radiation_surface/config-radiation_surface-era5.yaml"]
 
   seaice:
     seaice:
-      config: "${AQUA_CONFIG}/diagnostics/seaice/config-seaice.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/seaice/config-seaice.yaml"
 
   teleconnections:
     nao:
-      config: "${AQUA_CONFIG}/diagnostics/teleconnections/config-teleconnections-nao.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/teleconnections/config-teleconnections-nao.yaml"
     enso:
-      config: "${AQUA_CONFIG}/diagnostics/teleconnections/config-teleconnections-enso.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/teleconnections/config-teleconnections-enso.yaml"
 
   water_cycle:
     timeseries:
-      config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-mswep.yaml"
-    biases:
-      config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-mswep.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/water_cycle/config-water_cycle-mswep.yaml"
+    biases: 
+      config: "${AQUA_CONFIG}/diagnostics/default/water_cycle/config-water_cycle-mswep.yaml"
     lat_lon_profiles:
-      config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-mswep.yaml"
+      config: "${AQUA_CONFIG}/diagnostics/default/water_cycle/config-water_cycle-mswep.yaml"
     # tropical_rainfall:
-    #   config: "${AQUA_CONFIG}/diagnostics/water_cycle/config-water_cycle-tropical_rainfall.yaml"
+    #   config: "${AQUA_CONFIG}/diagnostics/default/water_cycle/config-water_cycle-tropical_rainfall.yaml"
     #   extra: "--regrid=r100 --freq=M --xmax=75 --bufferdir=${OUTPUT}/tropical_rainfall/"
