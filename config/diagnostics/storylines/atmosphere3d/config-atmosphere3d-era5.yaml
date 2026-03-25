@@ -37,14 +37,14 @@ diagnostics:
     variables: ['t', 'u', 'v', 'q']
     params:
       default:
-        plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
+        plev: [85000, 25000] # Level plot for 2D bias map if variable 3d
         seasons: true
         seasons_stat: 'mean' # May become a list
         vertical: true     # Vertical profile if variable 3d
         startdate_data: null
         enddate_data: null
-        startdate_ref: "1990-01-01"
-        enddate_ref: "2014-12-31"
+        startdate_ref: "2017-01-01"
+        enddate_ref: "2024-12-31"
     plot_params:
       default: 
         projection: 'robinson'

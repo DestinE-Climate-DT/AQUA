@@ -99,6 +99,9 @@ class SeasonalCycles(BaseMixin):
                                    lon_limits=self.lon_limits, lat_limits=self.lat_limits)
         data = self.reader.timmean(data, freq='MS', exclude_incomplete=exclude_incomplete,
                                    center_time=center_time)
+        
+        data.attrs['AQUA_startdate'] = data.time[0].dt.strftime('%Y-%m-%d').item()
+        data.attrs['AQUA_enddate'] = data.time[-1].dt.strftime('%Y-%m-%d').item()
 
         if self.region is not None:
             data.attrs['AQUA_region'] = self.region
