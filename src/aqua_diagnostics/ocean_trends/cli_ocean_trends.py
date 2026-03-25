@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     if 'multilevel' in config_dict['diagnostics']['ocean_trends']:
         trends_config = config_dict['diagnostics']['ocean_trends']['multilevel']
-        logger.info(f"Ocean Trends diagnostic is set to {trends_config['run']}")
+        logger.info(f"Ocean Multilevel Trends diagnostic is set to {trends_config['run']}")
         if trends_config['run']:
             regions = trends_config.get('regions', [None])
             diagnostic_name = trends_config.get('diagnostic_name', 'ocean_trends')
@@ -109,7 +109,58 @@ if __name__ == '__main__':
                         rebuild=rebuild,
                         loglevel=loglevel
                     )
-                    trends_plot.plot_multilevel(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    trends_plot.plot_multilevel(
+                        levels = [10, 100, 500, 1000],
+                        cbar_limits=
+                        {
+                            "thetao":
+                                {
+                                    'vmin': -0.7,
+                                    'vmax': 0.7,
+                                },
+                            "so":
+                                {
+                                    'vmin': -.12,
+                                    'vmax': .12,
+                                }
+                        },
+                        sym = True,
+                        save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                except Exception as e:
+                    logger.error(f"Error processing region {region}: {e}")
+
+    if 'zonal' in config_dict['diagnostics']['ocean_trends']:
+        trends_config = config_dict['diagnostics']['ocean_trends']['zonal']
+        logger.info(f"Ocean Zonal Trends diagnostic is set to {trends_config['run']}")
+        if trends_config['run']:
+            regions = trends_config.get('regions', [None])
+            diagnostic_name = trends_config.get('diagnostic_name', 'ocean_trends')
+            var = trends_config.get('var', None)
+            dim_mean = trends_config.get('dim_mean', None) 
+            # Add the global region if not present
+            # if regions != [None] or 'go' not in regions:
+            #     regions.append('go')
+            for region in regions:
+                logger.info(f"Processing region: {region}")
+
+                try:
+                    data_trends = Trends(
+                        diagnostic_name=diagnostic_name,
+                        catalog=catalog,
+                        model=model,
+                        exp=exp,
+                        source=source,
+                        regrid=regrid,
+                        loglevel=loglevel
+                    )
+                    data_trends.run(
+                        region=region,
+                        var=var,
+                        # dim_mean=dim_mean,
+                        outputdir=outputdir,
+                        rebuild=rebuild,
+                        reader_kwargs=reader_kwargs
+                    )
 
                     zonal_trend_plot = PlotTrends(
                         data=data_trends.trend_coef.mean('lon'),
@@ -121,7 +172,7 @@ if __name__ == '__main__':
                     zonal_trend_plot.plot_zonal(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
                 except Exception as e:
                     logger.error(f"Error processing region {region}: {e}")
-
+                    
     close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
     logger.info("Ocean Trends diagnostic completed.")

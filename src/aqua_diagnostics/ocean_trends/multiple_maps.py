@@ -18,8 +18,9 @@ def plot_maps(maps: list[xr.DataArray],
               titles: list = None,
               proj: ccrs.Projection = ccrs.PlateCarree(),
               extent: list = None,
-              vmin: list = None,
-              vmax: list = None,
+              col_vmin: list = None,
+              col_vmax: list = None,
+              sym: bool = True,
               cmap: str = "RdBu_r",
               cbar_labels: list = None,
               ytext: list = None,
@@ -99,25 +100,6 @@ def plot_maps(maps: list[xr.DataArray],
     )
     axs = axs.flatten()
 
-    #Evaluation Vmax Vmin for each Colum
-    vmin_all, vmax_all = {}, {}
-    for i in range(len(maps)):
-        col = i % ncols
-        row = i // ncols
-        vmin, vmax = evaluate_colorbar_limits(maps=[maps[i]], sym=True)
-        vmin_all[row, col] = vmin
-        vmax_all[row, col] = vmax
-        
-
-    # Calculate overall absolute max for each column
-    col_vmax = {}
-    for col in range(ncols):
-        abs_max = max(
-            max(abs(vmin_all[row, col]), abs(vmax_all[row, col]))
-            for row in range(nrows)
-        )
-        col_vmax[col] = abs_max
-            
     for i in range(len(maps)):
         try:
             maps[i] = add_cyclic_lon(maps[i])
@@ -127,8 +109,14 @@ def plot_maps(maps: list[xr.DataArray],
         row = i // ncols
         col = i % ncols
         
-        #assigning vmin vmax
-        vmin, vmax = -col_vmax[col], col_vmax[col]
+        if col_vmax and col_vmin:
+            vmin, vmax = col_vmin[col], col_vmax[col]
+            if sym:
+                vmin, vmax = -max(abs(vmin), abs(vmax)), max(abs(vmin), abs(vmax))
+        else:
+            col_maps = [maps[j] for j in range(len(maps)) if j % ncols == col]
+            vmin, vmax = evaluate_colorbar_limits(maps=col_maps, sym=sym)
+
         ticks = np.linspace(vmin, vmax, int(nlevels/2) + 1)
         if len(ticks) < 3:  # ensure at least 3 ticks for colorbar
             ticks = np.linspace(vmin, vmax, 3)

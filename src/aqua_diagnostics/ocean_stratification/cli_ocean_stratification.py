@@ -125,7 +125,7 @@ if __name__ == "__main__":
                         region=region,
                         var=var,
                         dim_mean=dim_mean,
-                        mld=True,
+                        mld=False,
                         climatology=climatology,
                         outputdir=outputdir,
                         reader_kwargs=reader_kwargs,
@@ -172,7 +172,22 @@ if __name__ == "__main__":
                     strat_plot.plot_stratification(
                         save_pdf=save_pdf, save_png=save_png, dpi=dpi
                     )
-
+    if "mld" in config_dict["diagnostics"]["ocean_stratification"]:
+        mld_config = config_dict["diagnostics"]["ocean_stratification"][
+            "mld"
+        ]
+        logger.info(
+            f"Mixed Layer Depth diagnostic is set to {mld_config['run']}"
+        )
+        if mld_config["run"]:
+            regions = to_list(mld_config.get("regions", None))
+            diagnostic_name = mld_config.get(
+                "diagnostic_name", "ocean_stratification"
+            )
+            climatologies = mld_config.get("climatology", None)
+            for region, climatology in zip(regions, climatologies):
+                    logger.info(f"Processing region: {region}, climatology: {climatology}")
+                    var = mld_config.get("var", None)
                     # Mixed Layer Depth instance
                     # Model data
                     model_stratification = Stratification(
@@ -187,7 +202,7 @@ if __name__ == "__main__":
                         loglevel=loglevel,
                     )
                     model_stratification.run(
-                        region=region,
+                        region='go',
                         var=var,
                         # dim_mean=dim_mean,
                         mld=True,
@@ -212,7 +227,7 @@ if __name__ == "__main__":
                                 loglevel=loglevel,
                             )
                             obs_stratification.run(
-                                region=region,
+                                region='go',
                                 var=var,
                                 # dim_mean=dim_mean,
                                 mld=True,
@@ -234,7 +249,10 @@ if __name__ == "__main__":
                         outputdir=outputdir,
                         loglevel=loglevel,
                     )
-                    mld_plot.plot_mld(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    mld_plot.plot_mld(
+                        region=region,
+                        proj_name="Orthographic",
+                        save_pdf=save_pdf, save_png=save_png, dpi=dpi)
 
         close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 
