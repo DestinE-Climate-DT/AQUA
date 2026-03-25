@@ -247,10 +247,10 @@ class PlotGlobalBiases:
 
 
         description = (
-            f"Seasonal climatology of {data[var].attrs.get('long_name', var).lower()}"
+            f"Seasonal differences of {data[var].attrs.get('long_name', var).lower()}"
             f"{' at ' + str(int(plev / 100)) + ' hPa' if plev else ''} "
-            f"for {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')}, contours) "
-            f"and differences against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format='%Y-%m')} to {time_to_string(data_ref.enddate, format='%Y-%m')}, shading)."
+            f"for {data.AQUA_model} {data.AQUA_exp} (from {time_to_string(data.startdate, format='%Y-%m')} to {time_to_string(data.enddate, format='%Y-%m')} "
+            f"against {data_ref.AQUA_model} (from {time_to_string(data_ref.startdate, format='%Y-%m')} to {time_to_string(data_ref.enddate, format='%Y-%m')}."
         )
 
         self._save_figure(fig=fig, diagnostic_product='seasonal_bias', data=data, data_ref=data_ref,
