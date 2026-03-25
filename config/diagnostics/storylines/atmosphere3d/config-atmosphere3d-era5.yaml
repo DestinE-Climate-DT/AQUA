@@ -37,7 +37,7 @@ diagnostics:
     variables: ['t', 'u', 'v', 'q']
     params:
       default:
-        plev: [85000, 20000] # Level plot for 2D bias map if variable 3d
+        plev: [85000, 25000] # Level plot for 2D bias map if variable 3d
         seasons: true
         seasons_stat: 'mean' # May become a list
         vertical: true     # Vertical profile if variable 3d
