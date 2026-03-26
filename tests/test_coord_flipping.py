@@ -1,8 +1,10 @@
+import numpy as np
 import pytest
 import xarray as xr
-import numpy as np
-from aqua.core.data_model import CoordTransformer
 from conftest import LOGLEVEL
+
+from aqua import Reader
+from aqua.core.data_model import CoordTransformer
 
 loglevel = LOGLEVEL
 pytestmark = pytest.mark.aqua
@@ -176,3 +178,21 @@ def test_counter_reverse_coordinate(dataset_decreasing_lat, lat_decreasing):
     # Verify flip occurred
     assert ds_transformed.lat.attrs.get("flipped", None) == 1
     assert ds_transformed.lat.values[0] < ds_transformed.lat.values[-1]
+
+
+def test_reader_regrid_flipped():
+    """Test flipping lat coord by datamodel"""
+    reader = Reader(catalog="ci", model="ERA5", exp="era5-2d-flip", source="monthly", regrid="r100")
+
+    data = reader.retrieve()
+    da = data["2t"]
+
+    # Latitude should be marked as flipped by the data model
+    assert da.lat.attrs.get("flipped", None) == 1
+
+    # After regridding, the 'flipped' attribute must be consistently removed from the latitude
+    da_regrid = reader.regrid(da)
+    assert da_regrid.lat.attrs.get("flipped", None) is None
+
+    # Latitude should remain strictly increasing after regridding
+    assert np.all(np.diff(da_regrid.lat.values) > 0)

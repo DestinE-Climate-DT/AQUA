@@ -1,8 +1,9 @@
 """Test cases for the Trender class."""
 
 import pytest
-from aqua import Reader
 from conftest import LOGLEVEL
+
+from aqua import Reader
 
 loglevel = LOGLEVEL
 

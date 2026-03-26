@@ -1,11 +1,14 @@
 """Test regridding from Reader"""
+from unittest.mock import MagicMock
+
+import numpy as np
 import pytest
 import xarray as xr
-import numpy as np
-from unittest.mock import MagicMock
 from conftest import APPROX_REL, LOGLEVEL
+
 from aqua import Reader, Regridder
 from aqua.core.regridder.griddicthandler import GridDictHandler
+
 
 @pytest.fixture(
     params=[
@@ -81,7 +84,7 @@ class TestRegridder():
         assert gdh.normalize_grid_dict("lovely")['path'] == {'2d': 'tests'}
         assert gdh.normalize_grid_dict("wonderful")['path'] == {'2d': 'r360x180'}
         assert gdh.normalize_grid_dict("romantic")['path'] == {'2d': 'n128'}
-        
+
         # errors on grid path
         with pytest.raises(FileNotFoundError, match="Grid file 'noise.nc' does not exist."):
             gdh.normalize_grid_dict("doing")
@@ -89,7 +92,7 @@ class TestRegridder():
             gdh.normalize_grid_dict("tests")
         with pytest.raises(ValueError, match="Grid path 'banana' is not a valid CDO grid name nor a file path."):
             gdh.normalize_grid_dict("amazing")
-        
+
 
     def test_regridder(self):
         """Testing the regridder all in independent way"""
@@ -131,6 +134,11 @@ class TestRegridder():
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=APPROX_REL)  # land fraction
+        assert hasattr(rgd, 'AQUA_catalog')
+
+        # test on Dataset regridding
+        rgd = data.aqua.regrid()[variable]
+        assert hasattr(rgd, 'AQUA_exp')
 
     def test_recompute_weights_fesom2d(self):
         """
@@ -257,22 +265,22 @@ class TestRegridder():
             {"temp": (("lat", "lon"), np.random.rand(10, 20))},
             coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
         )
-        
+
         # Initialize Regridder for 'r36x18' (a CDO grid name)
         regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
         # Ensure smmregridder exists even if init returned early
         if not hasattr(regridder, 'smmregridder'):
             regridder.smmregridder = {}
-        
+
         # Mock the logger
         regridder.logger = MagicMock()
-        
+
         # Mock shared_vars to include a vertical coordinate that doesn't exist in smmregridder
         shared_vars = {"missing_vertical": ["temp"]}
-        
+
         # Call _apply_regrid directly to trigger lines 621-622
         regridder._apply_regrid(ds, shared_vars)
-        
+
         # Verify logger.error was called
         regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
         regridder.logger.error.assert_any_call("Cannot regrid variables %s", ["temp"])
@@ -286,29 +294,29 @@ class TestRegridder():
             dims=("lat", "lon"),
             name="temp"
         )
-        
+
         # Initialize Regridder
         regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
         # Ensure smmregridder exists even if init returned early
         if not hasattr(regridder, 'smmregridder'):
             regridder.smmregridder = {}
-        
+
         # Mock the logger
         regridder.logger = MagicMock()
-        
+
         # Mock shared_vars
         shared_vars = {"missing_vertical": ["temp"]}
-        
+
         # Call _apply_regrid directly to trigger lines 633-634
         regridder._apply_regrid(da, shared_vars)
-        
+
         # Verify logger.error was called
         regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
 
     def test_regridder_invalid_data_type(self):
         """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""
         regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
-        
+
         with pytest.raises(ValueError, match="Data must be an xarray Dataset or DataArray."):
             regridder._apply_regrid("not a dataset", {})
 

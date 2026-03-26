@@ -1,9 +1,10 @@
-import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
+import xarray as xr
 
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list, unit_to_latex
+
 from .styles import ConfigStyle
 
 
@@ -16,6 +17,8 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
                    ax: plt.Axes | None = None,
                    figsize: tuple = (10, 6),
                    title: str | None = None,
+                   xlabel: str | None = None,
+                   ylabel: str | None = None,
                    xlogscale: bool = False,
                    ylogscale: bool = True,
                    xmax: float | None = None,
@@ -24,14 +27,14 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
                    ymin: float | None = None,
                    smooth: bool = False,
                    smooth_window: int = 5,
+                   labelsize: int = 13,
                    loglevel: str = 'WARNING'):
     """
     Plot histogram or PDF data.
 
     Args:
-        data (xr.DataArray | list[xr.DataArray]): Histogram data to plot. 
+        data (xr.DataArray | list[xr.DataArray]): Histogram data to plot.
             Must be xarray DataArrays with 'center_of_bin' dimension.
-            Can be a single DataArray or a list of DataArrays.
         ref_data (xr.DataArray, optional): Reference histogram data to plot.
         data_labels (list | None, optional): Labels for the data.
         ref_label (str | None, optional): Label for the reference data.
@@ -40,6 +43,8 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         ax (plt.Axes | None, optional): Matplotlib axes object.
         figsize (tuple, optional): Figure size if a new figure is created.
         title (str | None, optional): Title for the plot.
+        xlabel (str | None, optional): Label for x-axis.
+        ylabel (str | None, optional): Label for y-axis.
         xlogscale (bool, optional): Use logarithmic scale for x-axis.
         ylogscale (bool, optional): Use logarithmic scale for y-axis.
         xmax (float | None, optional): Maximum value for x-axis.
@@ -48,6 +53,7 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         ymin (float | None, optional): Minimum value for y-axis.
         smooth (bool, optional): Apply smoothing to the data.
         smooth_window (int, optional): Window size for smoothing.
+        labelsize (int, optional): Font size for labels.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -55,7 +61,7 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
     """
     logger = log_configure(loglevel, 'plot_histogram')
     ConfigStyle(style=style, loglevel=loglevel)
-    
+
     # Convert data to list
     data_list = to_list(data)
 
@@ -72,14 +78,14 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         if 'center_of_bin' not in d.dims:
             logger.warning(f"Data {i} has no 'center_of_bin' dimension, skipping")
             continue
-        
+
         x = d.center_of_bin.values
         y = d.values
-        
+
         # Apply smoothing if requested
         if smooth:
             y = _smooth_data(y, window_size=smooth_window)
-        
+
         label = data_labels[i] if data_labels and i < len(data_labels) else None
         ax.plot(x, y, label=label, linewidth=2, zorder=3)
 
@@ -88,12 +94,12 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
         if 'center_of_bin' in ref_data.dims:
             x_ref = ref_data.center_of_bin.values
             y_ref = ref_data.values
-            
+
             # Apply smoothing if requested
             if smooth:
                 y_ref = _smooth_data(y_ref, window_size=smooth_window)
-            
-            ax.plot(x_ref, y_ref, 
+
+            ax.plot(x_ref, y_ref,
                    label=ref_label if ref_label else 'Reference',
                    color='black', linestyle='-', linewidth=2, alpha=1.0, zorder=1)
 
@@ -112,20 +118,46 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
     # Finalize plot
     if data_labels or ref_label:
         ax.legend(fontsize='small', loc='upper right')
-    
+
     ax.grid(True, linestyle='-', alpha=0.3)
-    
+
     # Set labels
     first_data = data_list[0]
-    xlabel = "Value"
-    if hasattr(first_data, 'center_of_bin') and hasattr(first_data.center_of_bin, 'units'):
-        xlabel += f" [{unit_to_latex(first_data.center_of_bin.units)}]"
-    ax.set_xlabel(xlabel)
-    
-    ylabel = "Frequency"
-    if hasattr(first_data, 'units'):
-        ylabel += f" [{unit_to_latex(first_data.units)}]"
-    ax.set_ylabel(ylabel)
+
+    if xlabel is None:
+        # Get a descriptive name from center_of_bin attributes
+        if 'center_of_bin' in first_data.dims:
+            var_name = getattr(first_data.center_of_bin, 'long_name', None) or \
+                       getattr(first_data.center_of_bin, 'standard_name', None) or \
+                       "Value"
+            var_units = getattr(first_data.center_of_bin, 'units', None)
+
+            if var_units and var_name:
+                xlabel = f"{var_name} [{unit_to_latex(var_units)}]"
+            elif var_name:
+                xlabel = var_name
+            else:
+                xlabel = "Value"
+        else:
+            xlabel = "Value"
+
+    ax.set_xlabel(xlabel, fontsize=labelsize)
+
+    if ylabel is None:
+        # Determine if this is a PDF or histogram based on data units attribute
+        is_pdf = hasattr(first_data, 'units') and 'probability' in str(first_data.units).lower()
+
+        if is_pdf:
+            # For PDF, try to get the inverse units from center_of_bin
+            if hasattr(first_data, 'center_of_bin') and hasattr(first_data.center_of_bin, 'units'):
+                bin_units = first_data.center_of_bin.units
+                ylabel = f"Probability Density [1/{unit_to_latex(bin_units)}]"
+            else:
+                ylabel = "Probability Density"
+        else:
+            ylabel = "Counts"
+
+    ax.set_ylabel(ylabel, fontsize=labelsize)
 
     # Set title if provided
     if title:
@@ -137,24 +169,24 @@ def plot_histogram(data: xr.DataArray | list[xr.DataArray],
 def _smooth_data(data, window_size=5):
     """
     Apply moving average smoothing to data.
-    
+
     Args:
         data (array): Data to smooth.
         window_size (int): Size of smoothing window.
-    
+
     Returns:
         array: Smoothed data.
     """
     if window_size < 2:
         return data
-    
+
     # Simple moving average
     kernel = np.ones(window_size) / window_size
     smoothed = np.convolve(data, kernel, mode='same')
-    
+
     # Fix edges
     for i in range(window_size // 2):
         smoothed[i] = np.mean(data[:i+window_size//2+1])
         smoothed[-(i+1)] = np.mean(data[-(i+window_size//2+1):])
-    
+
     return smoothed

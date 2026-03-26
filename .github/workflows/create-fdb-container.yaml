@@ -13,7 +13,7 @@ jobs:
        contents: read
     steps:
       - name: "Check out code"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: "Log in to registry"
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }}  --password-stdin
       - name: "build fdb container"
