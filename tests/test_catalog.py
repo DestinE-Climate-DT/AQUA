@@ -2,9 +2,10 @@
 
 import pytest
 import xarray
+from conftest import LOGLEVEL
+
 from aqua import Reader
 from aqua.core.reader import show_catalog_content as catalog
-from conftest import LOGLEVEL
 
 
 @pytest.fixture(params=[(model, exp, source)

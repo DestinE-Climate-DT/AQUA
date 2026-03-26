@@ -1,7 +1,8 @@
 """Test for get_projection functions"""
 
-import pytest
 import cartopy.crs as ccrs
+import pytest
+
 from aqua.core.util import get_projection
 
 # List of (projection name, expected class, required kwargs if any)

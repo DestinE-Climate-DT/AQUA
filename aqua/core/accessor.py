@@ -1,8 +1,9 @@
 "Module defining a new aqua accessor to extend xarray"
 
 import xarray as xr
-from .reader import Reader
+
 from .graphics import plot_single_map
+from .reader import Reader
 
 
 # For now not distinguishing between dataarray and dataset methods
@@ -39,30 +40,69 @@ class AquaAccessor:
         """Perform regridding of the input dataset."""
         return self.instance.regrid(self._obj, **kwargs)
 
+    # Time stat operations
     def timmean(self, **kwargs):
         """Perform time averaging."""
         return self.instance.timmean(self._obj, **kwargs)
-    
+
     def timmax(self, **kwargs):
         """Perform time maximum."""
         return self.instance.timmax(self._obj, **kwargs)
-    
+
     def timmin(self, **kwargs):
         """Perform time minimum."""
         return self.instance.timmin(self._obj, **kwargs)
-    
+
     def timstd(self, **kwargs):
         """Perform time standard deviation."""
         return self.instance.timstd(self._obj, **kwargs)
-    
+
+    def timfirst(self, **kwargs):
+        """Perform time first element."""
+        return self.instance.timfirst(self._obj, **kwargs)
+
+    def timlast(self, **kwargs):
+        """Perform time last element."""
+        return self.instance.timlast(self._obj, **kwargs)
+
     def timstat(self, **kwargs):
         """Perform time statistics."""
         return self.instance.timstat(self._obj, **kwargs)
+
+    # Field stat operations
+    def fldstat(self, **kwargs):
+        """Perform a weighted field statistic."""
+        return self.instance.fldstat(self._obj, **kwargs)
 
     def fldmean(self, **kwargs):
         """Perform a weighted global average."""
         return self.instance.fldmean(self._obj, **kwargs)
 
+    def fldmax(self, **kwargs):
+        """Return the field maximum."""
+        return self.instance.fldmax(self._obj, **kwargs)
+
+    def fldmin(self, **kwargs):
+        """Return the field minimum."""
+        return self.instance.fldmin(self._obj, **kwargs)
+
+    def fldstd(self, **kwargs):
+        """Perform a weighted field standard deviation."""
+        return self.instance.fldstd(self._obj, **kwargs)
+
+    def fldsum(self, **kwargs):
+        """Perform a weighted field sum."""
+        return self.instance.fldsum(self._obj, **kwargs)
+
+    def fldintg(self, **kwargs):
+        """Perform a weighted field integral."""
+        return self.instance.fldintg(self._obj, **kwargs)
+
+    def fldarea(self, **kwargs):
+        """Return the sum of area cells where data is not null."""
+        return self.instance.fldarea(self._obj, **kwargs)
+
+    # Other operations
     def vertinterp(self, **kwargs):
         """A basic vertical interpolation."""
         return self.instance.vertinterp(self._obj, **kwargs)

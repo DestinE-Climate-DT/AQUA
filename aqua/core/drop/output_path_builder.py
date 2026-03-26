@@ -4,6 +4,7 @@ DROP Output Path Builder
 
 import os
 from typing import Optional
+
 from aqua.core.util import format_realization
 
 

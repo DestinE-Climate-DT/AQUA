@@ -21,7 +21,7 @@ def check_catalog_source(cat, model, exp, source, name="dictionary"):
 
     if model not in cat:
         avail = list(cat.keys())
-        raise KeyError(f"Model {model} not found in {name}. " 
+        raise KeyError(f"Model {model} not found in {name}. "
                        f"Please choose between available models: {avail}")
     if exp not in cat[model]:
         avail = list(cat[model].keys())
@@ -75,7 +75,7 @@ def set_attrs(ds, attrs):
     Args:
         ds (xarray.Dataset or xarray.DataArray): Dataset to set attributes on
         attrs (dict): Dictionary of attributes to set
-    
+
     Returns:
         xarray.Dataset or xarray.DataArray: Updated Dataset or DataArray, or the same object if not this.
     """
@@ -88,4 +88,3 @@ def set_attrs(ds, attrs):
     elif isinstance(ds, xr.DataArray):
         ds.attrs.update(attrs)
     return ds
-

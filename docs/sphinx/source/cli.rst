@@ -4,7 +4,7 @@ Command Line Interface tools
 ============================
 
 This sections describes a series of Command Line Interface (CLI) tools currently available in AQUA.
-It includes software with a variety of goals, which are mostly made for advanced usage. 
+It includes software with a variety of goals, which are mostly made for advanced usage.
 
 
 .. _benchmarker:
@@ -13,8 +13,8 @@ Benchmarker
 -----------
 
 A tool to benchmark the performance of the AQUA analysis tools. The tool is available in the ``cli/benchmarker`` folder.
-It runs a few selected methods for multiple times and report the durations of multiple execution: it has to be run in batch mode with 
-the associated jobscript in order to guarantee robust results. 
+It runs a few selected methods for multiple times and report the durations of multiple execution: it has to be run in batch mode with
+the associated jobscript in order to guarantee robust results.
 It will be replaced in future by more robust performance machinery.
 
 .. _grids-management:
@@ -56,11 +56,11 @@ by specifying the group of grids to download (usually one per model).
 Generation of grid from data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A tool to create CDO-compliant grid files (which are fundamental for proper regridding) specifically 
-for oceanic model in order to ensure the right treatment of masks. 
+A tool to create CDO-compliant grid files (which are fundamental for proper regridding) specifically
+for oceanic model in order to ensure the right treatment of masks.
 Two scripts in the the ``cli/grid-from-data`` folder are available.
 
-Both ``hpx-from-source.py`` and ``multiIO-from-source.py`` works starting from specific sources, 
+Both ``hpx-from-source.py`` and ``multiIO-from-source.py`` works starting from specific sources,
 saving them to disk and processing the final results with CDO to ensure the creation
 of CDO-compliant grid files that can be later used for areas and remapping computation.
 
@@ -103,7 +103,7 @@ Grids uploader
 
 A script to upload the grids to the SWIFT platform is available in the ``cli/grids-downloader/`` folder.
 You will need to be on levante and to have the access to the SWIFT platform to run the script.
-With the automatic setup updated folders will be uploaded in the same location on the SWIFT platform and 
+With the automatic setup updated folders will be uploaded in the same location on the SWIFT platform and
 no updates of the links in the `grids-downloader.sh` script will be needed.
 
 Basic usage:
@@ -128,7 +128,7 @@ Basic usage:
 ORCA grid generator
 ^^^^^^^^^^^^^^^^^^^
 
-A tool to generate ORCA grid files (with bounds) from the `mesh_mask.nc`. 
+A tool to generate ORCA grid files (with bounds) from the `mesh_mask.nc`.
 A script in the ``cli/orca-grids`` folder is available.
 
 Basic usage:

@@ -1,6 +1,8 @@
 import pytest
-from aqua import Reader
 from conftest import LOGLEVEL
+
+from aqua import Reader
+
 
 @pytest.mark.aqua
 class TestKwargs:
@@ -21,7 +23,7 @@ class TestKwargs:
 
     @pytest.mark.aqua
     def test_kwargs_two_options(self):
-        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", year=1986, variable='a_ice', fix=False, loglevel=LOGLEVEL)
+        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", year=1986, variable='a_ice', fix=False, loglevel=LOGLEVEL) # noqa: E501
         data = reader.retrieve()
         assert list(data.data_vars) == ['a_ice']
         assert data.time.dt.year == 1986

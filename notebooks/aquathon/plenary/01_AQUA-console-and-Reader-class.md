@@ -17,7 +17,7 @@ mamba activate aqua # if AQUA is installed with a conda manager
 aqua install <machine-name> -e $AQUA/config
 ```
 
-This will create a folder `$HOME/.aqua` where a config-aqua.yaml file with user setting is stored. Also the catalogs we want to add will be stored in this folder. 
+This will create a folder `$HOME/.aqua` where a config-aqua.yaml file with user setting is stored. Also the catalogs we want to add will be stored in this folder.
 
 :::info
 The `-e $AQUA/config` will guarantee that instead of copying other necessary files (grid and fix definitions), we link the files of our source code. This is important if we want to customize them or to keep them always updated when we pull the source code from github.
@@ -85,15 +85,15 @@ Both the sources are regular lon-lat grids, so we can compute for the two easily
 
 <details>
   <summary>Need an hint? (Spoiler alert)</summary>
-  
+
 - **hint1**: the global mean in a regular grid requires the computation of the area weighted mean, which can be done with the `weighted` method of the `xarray.Dataset` object.
 - **hint2**: the Reader returns always an xarray.Dataset object, also when asking for only one variable.
-  
+
 </details>
 
 <details>
   <summary>Need the solution? (Spoiler alert)</summary>
-    
+
     from aqua import Reader
     import matplotlib.pyplot as plt
     import numpy as np

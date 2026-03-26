@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import abc
+import argparse
+import sys
+import traceback
 
 import numpy as np
 import xarray as xr
-import traceback
-import argparse
-import sys
 
 
 class OrcaMesh(metaclass=abc.ABCMeta):
@@ -14,11 +14,11 @@ class OrcaMesh(metaclass=abc.ABCMeta):
 
     # vertical axis dimension name
     #VDIM = 'level'
-    
+
     # bounds dimension name
     BNDS_DIM = 'bnds'
     VBNDS_DIM = 'vbnds'
-    
+
     # dimension for unstructured grid
     UNSTRUCT_DIM = 'cell'
 
@@ -38,24 +38,24 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         WARNING: this is not perfect as it does **not** account for:
         1) partial cells at the bottom (on each column, each deepest cell is 'cut'
            thinner to better represent topography');
-        2) vertical-varying layers, if used in the NEMO runs (at each time step and on each column, 
+        2) vertical-varying layers, if used in the NEMO runs (at each time step and on each column,
            ssh variations are distributed throughout the full column.
         """
-        
+
         zdim = list(depths_ctn.dims)[0]
         nz = depths_ctn.sizes[zdim]
-        
+
         ctns_arr = depths_ctn.values
         bnds_tmp = np.ndarray(shape=[nz+1], dtype=float)
-        
+
         bnds_tmp[0] = 0.
         for k in range(0, nz):
             bnds_tmp[k+1] = 2 * ctns_arr[k] - bnds_tmp[k]
-        
+
         return xr.DataArray(data=np.transpose([bnds_tmp[:-1],
                                                bnds_tmp[1:]]),
                             dims=[zdim, vbnds_dim])
-        
+
 
     def _set_mesh_attrs(self):
         """ Set attributes on mesh dataset. """
@@ -74,9 +74,9 @@ class OrcaMesh(metaclass=abc.ABCMeta):
             ds_out[var].encoding = {'_FillValue': None}
 
         ds_out.attrs['node_type'] = self.stagg.upper()
-            
+
         return ds_out
-        
+
     def _geom_to_xesmf(self, meshfile):
         """ Return grid/mask dataset understandable by xESMF. """
 
@@ -88,7 +88,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
 
         if self.level:
             get_vars += ['gdept_1d']
-            
+
         ds_mesh = xr.open_dataset(meshfile, drop_variables=['time_counter'])\
                     .squeeze()
 
@@ -96,7 +96,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
 
         ds_mesh = ds_mesh[get_vars]
         ds_mesh = xr.merge((ds_mesh, ds_bounds))
-        
+
         if 'nav_lev' in ds_mesh.variables:
             ds_mesh = ds_mesh.drop_vars(['nav_lev'])
 
@@ -111,13 +111,13 @@ class OrcaMesh(metaclass=abc.ABCMeta):
                                     'dtype': 'int32'}
         if not self.level:
             ds_mesh['mask'] = ds_mesh['mask'].max(dim='nav_lev')
-        
+
         ds_mesh['cell_area'] = (ds_mesh['e1'+self.stagg] * ds_mesh['e2'+self.stagg])
         ds_mesh['cell_area'].attrs = {'standard_name': 'cell_area',
                                       'units': 'm2'}
         ds_mesh['cell_area'].encoding = {'_FillValue': -1.e20,
                                          'dtype': 'int64'}
-                        
+
         ds_mesh = ds_mesh.drop_vars(['e1'+self.stagg, 'e2'+self.stagg])
 
         if self.level:
@@ -133,17 +133,21 @@ class OrcaMesh(metaclass=abc.ABCMeta):
                                            '_FillValue': None}
             ds_mesh[self.VDIM+'_'+self.VBNDS_DIM] = self._get_level_bnds(ds_mesh[self.VDIM],
                                                                          self.VBNDS_DIM)
-                
+
             ds_mesh['cell_area'] = ds_mesh['cell_area']\
                 .where((ds_mesh['mask'] > 0.5).any(dim=self.VDIM))
         else:
             ds_mesh['cell_area'] = ds_mesh['cell_area']\
                 .where(ds_mesh['mask'] > 0.5)
-        
+
         return ds_mesh
 
     def _get_corner_dict(self):
-        """ Get an info dictionary about the relative arranging (center, vertex, symmetry for the edges) of the desired gridpoint."""
+        """
+        Get an info dictionary about the relative arranging
+        (center, vertex, symmetry for the edges) of the desired gridpoint.
+        """
+
         nodetype = self.stagg
         assert nodetype in ('t', 'u', 'v', 'f'), "nodetype {} unknown".format(nodetype)
 
@@ -198,7 +202,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         for coord in ['lon', 'lat']:
             tmp_bnds = xr.DataArray(data=np.ndarray(shape=[ny + 1, nx + 1],
                                                     dtype=float), dims=['y_b', 'x_b'])
-            
+
             tmp_bnds.loc[dict(x_b=slice_main_x,
                               y_b=slice_main_y)] = \
                                   ds_all_coords[crn_info['crn']][coord].data
@@ -206,7 +210,7 @@ class OrcaMesh(metaclass=abc.ABCMeta):
             tmp_bnds.loc[dict(x_b=idx_single_x, y_b=slice_main_y)] = \
                 2 * ds_all_coords[crn_info['pivot_x']][coord].isel(x=idx_single_x).data \
                 - ds_all_coords[crn_info['crn']][coord].isel(x=idx_single_x).data
-            
+
             tmp_bnds.loc[dict(y_b=idx_single_y, x_b=slice_main_x)] = \
                 2 * ds_all_coords[crn_info['pivot_y']][coord].isel(y=idx_single_y).data \
                 - ds_all_coords[crn_info['crn']][coord].isel(y=idx_single_y).data
@@ -216,12 +220,12 @@ class OrcaMesh(metaclass=abc.ABCMeta):
                 - ds_all_coords[crn_info['crn']][coord].isel(x=idx_single_x, y=idx_single_y).data
 
             ds_out[coord+'_b'] = tmp_bnds
-            
+
         return ds_out
 
     def get_ds_cf(self):
         """ Convert the bounds from xESMF (y+1, x+1) convention into CF convention (y,x,bnds). """
-        
+
         ds_out = self.ds_xesmf.drop_vars(['lon_b', 'lat_b'])
         ny, nx = ds_out['lat'].sizes['y'], ds_out['lat'].sizes['x']
 
@@ -251,9 +255,9 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         ds_out['dummy'].encoding = {'dtype': 'float32',
                                     '_FillValue': self.FILLVAL}
         ds_out['dummy'].attrs = {'standard_name': 'dummy_variable'}
-            
+
         return ds_out
-    
+
     def reorder_vars(self, dset):
         """ Reorder variable order in netCDF file. """
 
@@ -265,9 +269,9 @@ class OrcaMesh(metaclass=abc.ABCMeta):
                   'cell_area',
                   'mask',
                   'dummy']
-        
-        return dset[vvars]        
-    
+
+        return dset[vvars]
+
     @staticmethod
     def _get_all_coords(ds_mesh):
         """ Get u/u/v/f node coordinates. """
@@ -284,13 +288,13 @@ class OrcaMesh(metaclass=abc.ABCMeta):
         """Reshape your array to be a unstructured grid instead of a curvilinear grid"""
 
         new = original.stack({self.UNSTRUCT_DIM: ('y', 'x')}).drop_vars(['x','y', self.UNSTRUCT_DIM])
-        new['lon_' + self.BNDS_DIM] = new['lon_' + self.BNDS_DIM].transpose(self.UNSTRUCT_DIM, self.BNDS_DIM) 
+        new['lon_' + self.BNDS_DIM] = new['lon_' + self.BNDS_DIM].transpose(self.UNSTRUCT_DIM, self.BNDS_DIM)
         new['lat_'+ self.BNDS_DIM] = new['lat_' + self.BNDS_DIM].transpose(self.UNSTRUCT_DIM, self.BNDS_DIM)
         new['dummy'].attrs['grid_type'] = 'unstructured'
         new['mask'].attrs['grid_type'] = 'unstructured'
-        
+
         return new
- 
+
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -300,7 +304,8 @@ def get_args():
     parser.add_argument(
         "--stagg", type=str,  default='T', help="type of ORCA points concerned (T, U, V or F)")
     parser.add_argument('--xesmf', action=argparse.BooleanOptionalAction,
-                        help="generate xesmf-type of file, with bounds stored as (y+1, x+1) array, instead of CF-compliant (y,x,4) bounds")
+                        help="generate xesmf-type of file, with bounds stored as "
+                             "(y+1, x+1) array, instead of CF-compliant (y,x,4) bounds")
     parser.add_argument('--unstructured', action=argparse.BooleanOptionalAction,
                         help="produce unstructured grid (instead of curvilinear) to be used with NEMO GRIB files")
     parser.add_argument('--level', action=argparse.BooleanOptionalAction,
@@ -313,11 +318,11 @@ def get_args():
 
     return parser.parse_args()
 
-    
+
 def main(args):
 
     orca = OrcaMesh(args)
-    
+
     if args.xesmf:
         ds_out = orca.ds_xesmf
     else:
@@ -327,7 +332,7 @@ def main(args):
         ds_out = orca.reshape_unstructured(ds_out)
 
     ds_out = orca.reorder_vars(ds_out)
-    
+
     #print(ds_out)
     ds_out.to_netcdf(args.outfile)
 

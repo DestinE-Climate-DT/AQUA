@@ -125,7 +125,7 @@ convert_pdf_to_png() {
         dstdir="./content/png/$1"
 
         mkdir -p $dstdir
-    
+
         if [ $ensemble -eq 1 ]; then
             IFS='/' read -r catalog model experiment realization <<< "$1"
             $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment" "$realization"
@@ -146,11 +146,11 @@ print_help() {
     echo "Options:"
     echo "  -b, --bucket BUCKET    push to the specified bucket (defaults to 'aqua-web')"
     echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml in \$AQUA/config/analysis)"
-    echo "  -d, --no-update        do not update the remote github repository"  
+    echo "  -d, --no-update        do not update the remote github repository"
     echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
-    echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"  
+    echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"
     echo "  -r, --repository       remote aqua-web repository (default 'DestinE-Climate-DT/aqua-web'). If it starts with 'local:' a local directory is used."
     echo "  -s, --rsync URL        remote rsync target (takes priority over s3 bucket if specified)"
 }
@@ -367,4 +367,3 @@ if [ $localrepo -eq 0 ]; then
 fi
 
 log_message INFO "push_analysis job completed."
-

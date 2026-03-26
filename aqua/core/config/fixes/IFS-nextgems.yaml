@@ -38,7 +38,7 @@ fixer_name:
             snswrf:
                 decumulate: true
             sdswrf:
-                decumulate: true    
+                decumulate: true
             snlwrf:
                 decumulate: true
             sdlwrf:
@@ -46,17 +46,17 @@ fixer_name:
             tnswrf:
                 decumulate: true
             tnlwrf:
-                decumulate: true         
+                decumulate: true
             var172045:  # if the variable has no short name we can use its paramId
                 source: smlt
                 grib: true
                 decumulate: true
             iews:
-                decumulate: true  
-            inss: 
+                decumulate: true
+            inss:
                 decumulate: true
             surfror:  # a very recent version of eccodes is needed for this one
-                decumulate: true 
+                decumulate: true
             lcc:
                 src_units: frac
 

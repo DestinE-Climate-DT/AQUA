@@ -1,10 +1,12 @@
 """Zarr reference module"""
 
-import os
 import json
+import os
+
 import xarray as xr
-from kerchunk.hdf import SingleHdf5ToZarr
 from kerchunk.combine import MultiZarrToZarr
+from kerchunk.hdf import SingleHdf5ToZarr
+
 from aqua.core.logger import log_configure
 
 
