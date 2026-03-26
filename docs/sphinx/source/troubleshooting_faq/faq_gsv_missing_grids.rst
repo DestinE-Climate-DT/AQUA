@@ -13,5 +13,5 @@ The GSV package that AQUA uses to access the data on FDB requires the environmen
 This variable must point to the location of grid-defining netCDF files.
 
 To solve this issue, you can set the environment variable ``GRID_DEFINITION_PATH`` to the location of the grid-defining netCDF files.
-On Lumi and Levante (and possible other HPCs supported on DestinE-Climate-DT) you can rely on shared grid definition files that are already available on the system.
+On LUMI and Levante (and possible other HPCs supported on DestinE-Climate-DT) you can rely on shared grid definition files that are already available on the system.
 Please refer to the corresponding installation guidelines for more information: :ref:`installation-lumi` or :ref:`installation-levante`.
