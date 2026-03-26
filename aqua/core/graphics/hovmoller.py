@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from aqua.core.util import create_folder, evaluate_colorbar_limits, unit_to_latex
 from aqua.core.logger import log_configure
+from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+
 from .styles import ConfigStyle
 
 # set default options for xarray
@@ -194,7 +195,7 @@ def plot_hovmoller(data: xr.DataArray,
         logger.debug("Adding text in the plot: %s", text)
         ax.text(-0.3, 0.33, text, fontsize=15, color='dimgray', rotation=90, transform=ax.transAxes, ha='center')
 
-    if title:    
+    if title:
         ax.set_title(title, fontsize=20)
 
     if return_fig:

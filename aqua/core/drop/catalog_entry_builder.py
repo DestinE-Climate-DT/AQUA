@@ -1,15 +1,14 @@
 """Class to create a catalog entry for DROP"""
 
 import pandas as pd
+
 from aqua.core.logger import log_configure
-from aqua.core.util import format_realization
-from aqua.core.util import replace_intake_vars, replace_urlpath_jinja
-from aqua.core.util import frequency_string_to_pandas
+from aqua.core.util import format_realization, frequency_string_to_pandas, replace_intake_vars, replace_urlpath_jinja
+
 from .output_path_builder import OutputPathBuilder
 
-
 # default grid name for DROP outputs, if not specified otherwise
-DEFAULT_DROP_GRID = 'lon-lat-r100'  
+DEFAULT_DROP_GRID = 'lon-lat-r100'
 
 class CatalogEntryBuilder():
     """Class to create a catalog entry for DROP"""
@@ -80,10 +79,10 @@ class CatalogEntryBuilder():
 
     def define_optimal_chunks(self, baseyear=1990):
         """Define optimal chunking for DROP outputs.
-        
+
         Args:
             baseyear (int): Base year to define time chunking. Defaults to 1990
-            
+
         Returns:
             dict: Dictionary with optimal chunk sizes for 'time', 'lat', and 'lon'."""
 
@@ -102,15 +101,15 @@ class CatalogEntryBuilder():
         if freq:
             rng = pd.date_range(
                 f'{baseyear}-01-01', f'{baseyear+1}-01-01',
-                freq=freq, 
+                freq=freq,
                 inclusive="left"
             )
             chunks.update({'time': len(rng)})
 
         return chunks
 
-    def create_entry_details(self, basedir=None, catblock=None, 
-                             driver='netcdf', 
+    def create_entry_details(self, basedir=None, catblock=None,
+                             driver='netcdf',
                              source_grid_name=DEFAULT_DROP_GRID):
         """
         Create an entry in the catalog for DROP
@@ -119,7 +118,8 @@ class CatalogEntryBuilder():
             basedir (str): Base directory for the output files.
             catblock (dict, optional): Existing catalog block to update. Defaults to None if not existing.
             driver (str): Driver type for the catalog entry. Defaults to 'netcdf', alternative is 'zarr'.
-            source_grid_name (str): Name of the source grid. Defaults to 'lon-lat'. Can be AQUA grid, or 'False' if not applicable.
+            source_grid_name (str): Name of the source grid. Defaults to 'lon-lat'.
+                Can be AQUA grid, or 'False' if not applicable.
 
         Returns:
             dict: The catalog block with the updated urlpath and metadata.
@@ -172,6 +172,9 @@ class CatalogEntryBuilder():
                 self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock['args']['urlpath'])
 
             # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
-            # catblock['args']['urlpath'] = catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str) else list(set(catblock['args']['urlpath']))
+            # catblock['args']['urlpath'] = (
+            #     catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str)
+            #     else list(set(catblock['args']['urlpath']))
+            # )
 
         return catblock

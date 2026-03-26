@@ -3,15 +3,20 @@
 """
 AQUA command line tool to create a multio UNSTRUCTURED grid file from IFS
 """
+
 import argparse
-import sys
 import os
+import sys
+
+from cdo import *  # noqa: F403 (cdo-python: Cdo and operators only exposed via star import)
+
 from aqua import Reader
-from aqua.core.util import load_yaml, get_arg, create_folder
-from aqua.core.logger import log_configure
 from aqua.core.configurer import ConfigPath
-from cdo import *   # python version
-cdo = Cdo()
+from aqua.core.logger import log_configure
+from aqua.core.util import create_folder, get_arg, load_yaml
+
+cdo = Cdo()  # noqa: F405 (name from star import above)
+
 
 def parse_arguments(args):
     """
@@ -53,7 +58,7 @@ if __name__ == '__main__':
     reader = Reader(model=model, exp=exp, source=source,
                     areas=False, fix=False, loglevel=loglevel)
     data = reader.retrieve(var=var)
-    
+
     configdir = ConfigPath().get_config_dir()
     grid_definition = load_yaml(os.path.join(configdir, 'grids', 'default.yaml'))
 
@@ -64,7 +69,7 @@ if __name__ == '__main__':
     logger.info('CDO grid defined as %s', cdo_grid)
 
     GRID_NAME = model_name + '-multiIO-' + resolution
-    temp_file = os.path.join(tgt, 'temp_unstructured.nc') 
+    temp_file = os.path.join(tgt, 'temp_unstructured.nc')
     grid_file = os.path.join(tgt, GRID_NAME + '.nc')
     area_file = os.path.join(tgt, 'cell_area_' + GRID_NAME + '.nc')
 
@@ -77,5 +82,5 @@ if __name__ == '__main__':
     cdo.setgrid(temp_file, input=f'-gridarea {grid_file}', output = area_file)
 
     os.remove(temp_file)
-    
+
     logger.info('Done')

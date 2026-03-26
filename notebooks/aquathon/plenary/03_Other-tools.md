@@ -41,7 +41,7 @@ Can you reproduce the result of the exercise 1, but making use of AQUA built-in 
 
 <details>
   <summary>Need the solution? (Spoiler alert)</summary>
-    
+
     from aqua import Reader
     from aqua.core.graphics import plot_timeseries
 

@@ -5,6 +5,15 @@
 
 version: 2
 updates:
+  - package-ecosystem: "conda"
+    directory: "conda"
+    schedule:
+      interval: "daily"
+      day: "monday"
+      time: "06:00"
+    commit-message:
+      prefix: "[Dependabot-conda]"
+
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
@@ -12,5 +21,13 @@ updates:
       day: "monday"           # You can pick any day
       time: "08:00"
     commit-message:
-      prefix: "[Dependabot]"
+      prefix: "[Dependabot-pip]"
+    ignore:
+      - dependency-name: "eccodes"
+      - dependency-name: "intake"
 
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every week
+      interval: "weekly"

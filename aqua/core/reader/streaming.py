@@ -1,10 +1,10 @@
 """Streaming Mixin for Reader"""
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 #from aqua.core.logger import log_configure
-from aqua.core.util import frequency_string_to_pandas
-from aqua.core.util import extract_literal_and_numeric
+from aqua.core.util import extract_literal_and_numeric, frequency_string_to_pandas
 
 
 class Streaming():
@@ -77,7 +77,7 @@ class Streaming():
         else:
             tim = data.time
 
-        literal, numeric = extract_literal_and_numeric(aggregation)        
+        literal, numeric = extract_literal_and_numeric(aggregation)
 
         if literal == 'S':
             #nsteps = np.maximum(int('0' + numeric), 1)  # this allows also "S" for "1S"

@@ -7,23 +7,23 @@ Basic Concepts
 --------------
 
 AQUA core is designed to simplify the access and process of high-resolution climate models outputs.
-This is done by creating a series of tools that simplifies data access and basic data operations so that the 
+This is done by creating a series of tools that simplifies data access and basic data operations so that the
 users - diagnostics developers or climate researchers interested in accessing model data - can focus only on scientific analysis.
 For this reason, whatever object accessed by AQUA is delivered as a `xarray <https://docs.xarray.dev/en/stable/>`_ object.
 The package is built around a few core concepts:
 
-- **Data reading and preprocessing**: Data are exposed through `intake <https://intake.readthedocs.io/en/stable/>`_ catalogs 
-  and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects. 
-  This allows us to easily read and preprocess data from various sources, including local files, remote servers, 
+- **Data reading and preprocessing**: Data are exposed through `intake <https://intake.readthedocs.io/en/stable/>`_ catalogs
+  and represented as `xarray <https://docs.xarray.dev/en/stable/>`_ objects.
+  This allows us to easily read and preprocess data from various sources, including local files, remote servers,
   and cloud storage, from climate models and observational datasets.
 - **Data fixing**: AQUA provides capabilities to change metadata (e.g., variable names) and data themselves
   (e.g., convert to different units or homogeneize coordinate names) so that model data reach the users with a common data format.
-- **Regridding and interpolation**: AQUA offers robust regridding and interpolation functionalities 
+- **Regridding and interpolation**: AQUA offers robust regridding and interpolation functionalities
   to align datasets with different grids and spatial resolutions.
 - **Averaging and aggregation**: AQUA provides tools to perform temporal and spatial averaging and aggregation of climate data.
-- **Parallel processing**: AQUA supports parallel processing through `dask <https://examples.dask.org/xarray.html>`_ to 
+- **Parallel processing**: AQUA supports parallel processing through `dask <https://examples.dask.org/xarray.html>`_ to
   speed up the execution of diagnostics.
-- **Lazy evaluation**: AQUA uses `xarray <https://docs.xarray.dev/en/stable/>`_ to represent data, 
+- **Lazy evaluation**: AQUA uses `xarray <https://docs.xarray.dev/en/stable/>`_ to represent data,
   which allows for lazy evaluation of operations, meaning that the data are not loaded into memory until they are needed.
 
 Python installation
@@ -92,7 +92,7 @@ For example, to add the catalog for ``climatedt-phase1``, run:
 
 This command will copy the catalog folder to the configuration folder. Please notice that will operate fetching the catalog.
 
-.. caution:: 
+.. caution::
 
   You will need an internet connection available since the catalog are fetched from the `Climate-DT GitHub repository <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_ .
 

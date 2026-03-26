@@ -1,5 +1,5 @@
 fixer_name:
-    FESOM-default: 
+    FESOM-default:
         convention: eccodes
         data_model: false
         delete:  # variables to drop at the end
@@ -7,7 +7,7 @@ fixer_name:
             - u
             - w
         vars:
-            vdf: 
+            vdf:
                 source: Kv
                 grib: true
             mlotst125:
@@ -18,5 +18,5 @@ fixer_name:
                 derived: w
             uoe:
                 derived: u
-            von: 
+            von:
                 derived: v

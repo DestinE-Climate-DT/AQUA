@@ -7,17 +7,17 @@
         experiment: {{ experiment }}  # To be overwritten by workflow/config file
         generation: {{ generation | default(1) }}  # To be overwritten by workflow/config file
         model: {{ model }}
-        realization: {% if num_of_realizations > 1 %}{% raw %}'{{ realization }}'{% endraw %}{% else %}1{% endif %} 
+        realization: {% if num_of_realizations > 1 %}{% raw %}'{{ realization }}'{% endraw %}{% else %}1{% endif %}
         resolution: {{ resolution }}
-        expver: {{ expver }}  # To be overwritten by workflow/config file
+        expver: {{ expver }}  # To be overwritten by workflow/config file
         expid: {{ expid }}
         type: fc
         stream: {{ stream }}
         {% if stream == 'clmn' %}
         year: {{ data_start_date[:4] }}
-        month: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  
+        month: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         {% else %}
-        date: {{ data_start_date }} 
+        date: {{ data_start_date }}
         time: {{ time }}
         {% endif %}
         param: {{ param }}
