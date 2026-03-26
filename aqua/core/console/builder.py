@@ -3,9 +3,9 @@ This module contains the CLI for the GridBuilder.
 """
 
 import argparse
-from aqua import Reader
-from aqua import GridBuilder
-from aqua.core.util import load_yaml, get_arg
+
+from aqua import GridBuilder, Reader
+from aqua.core.util import get_arg, load_yaml
 
 
 def builder_parser(parser=None):
@@ -15,7 +15,7 @@ def builder_parser(parser=None):
     """
     if parser is None:
         parser = argparse.ArgumentParser(description='AQUA grids builder CLI')
-    parser.add_argument('-c', '--config', type=str, 
+    parser.add_argument('-c', '--config', type=str,
                         help='YAML configuration file for the builder [default: None]')
     parser.add_argument('--catalog', type=str, help='Catalog for the Reader')
     parser.add_argument('-m', '--model', type=str,
@@ -39,7 +39,8 @@ def builder_parser(parser=None):
     parser.add_argument('--modelname', type=str,
                         help='alternative name for the model for grid naming [default: None]')
     parser.add_argument('--gridname', type=str,
-                        help='alternative name for the grid for grid naming [default: None]. Required for Curvilinear and Unstructured grids.')
+                        help='alternative name for the grid for grid naming [default: None]. '
+                             'Required for Curvilinear and Unstructured grids.')
     parser.add_argument('--fix', action='store_true',
                         help='Fix and apply data model to the original source [default: False]')
     parser.add_argument('--verify', action='store_true', default=False,
@@ -99,7 +100,7 @@ def builder_execute(args):
     # Create GridBuilder instance
     grid_builder = GridBuilder(
         loglevel=loglevel,
-        outdir=outdir, 
+        outdir=outdir,
         original_resolution=original_resolution,
         model_name=modelname,
         grid_name=gridname,

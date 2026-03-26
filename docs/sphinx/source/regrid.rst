@@ -3,15 +3,15 @@
 Regrid and interpolation capabilities
 -------------------------------------
 
-AQUA provides functions to interpolate and regrid data to match the spatial resolution of different datasets. 
-AQUA regridding functionalities are based on the external tool `smmregrid <https://github.com/jhardenberg/smmregrid>`_ which 
+AQUA provides functions to interpolate and regrid data to match the spatial resolution of different datasets.
+AQUA regridding functionalities are based on the external tool `smmregrid <https://github.com/jhardenberg/smmregrid>`_ which
 operates sparse matrix computation based on pre-computed weights.
 They are wrapper within a `Regridder()` class that can be used in a modular way to regrid data to a target grid, or seamlessy within the `Reader()`
 
 Basic usage within the Reader()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the reccomended usage. 
+This is the reccomended usage.
 When the ``Reader`` is called, if regrid functionalities are needed, the target grid has to be specified
 during the class initialization.
 
@@ -44,11 +44,11 @@ Alternatively - although not recommended - the regridding functionalities can be
 
 When using the ``Regridder()`` in this way, users can provide a dataset (``xr.Dataset`` or ``xr.DataArray``)
 and then regrid it to a target grid.
-The class can also initialized with a dictionary containing a set of 
-AQUA grids: however, in this case it might be preferrer to go through the ``Reader()``. 
-The target grid has to be specified when generating the weights (which is a mandatory step). 
-Please notice that the regridder will write the data provided to the disk to initialize the regridding process, 
-so it might be a long operation if data are not sampled in the right way. 
+The class can also initialized with a dictionary containing a set of
+AQUA grids: however, in this case it might be preferrer to go through the ``Reader()``.
+The target grid has to be specified when generating the weights (which is a mandatory step).
+Please notice that the regridder will write the data provided to the disk to initialize the regridding process,
+so it might be a long operation if data are not sampled in the right way.
 
 .. code-block:: python
 
@@ -72,14 +72,14 @@ Concept
 ^^^^^^^
 
 The idea of the regridder is first to generate the weights for the interpolation and
-then to use them for each regridding operation. 
+then to use them for each regridding operation.
 The ``Reader`` generates the regridding weights automatically (with CDO) if not already
 existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/machine.yaml`` file
 or set with the ``aqua grids set <path>`` command (see :ref:`aqua-grids`).
 If the ``machine.yaml`` is used, a ``default`` argument will be used as path if no machine name match is found.
 
-In other words, weights are computed externally by CDO (an operation that needs to be done only once) and 
-then stored on the machine so that further operations are considerably fast. 
+In other words, weights are computed externally by CDO (an operation that needs to be done only once) and
+then stored on the machine so that further operations are considerably fast.
 
 Such an approach has two main advantages:
 
@@ -132,7 +132,7 @@ For example, ``r100`` is a regular grid at 1° resolution, ``r005`` at 0.05°, e
 The list is available in the ``aqua/core/config/grids/default.yaml`` file.
 
 .. note::
-    The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered 
+    The currently defined target grids follow the convention that for example a 1° grid (``r100``) has 360x180 points centered
     in latitude between 89.5 and -89.5 degrees. Notice that an alternative grid definition with 360x181 points,
     centered between 90 and -90 degrees is sometimes used in the field and it is available in AQUA with the convention of adding
     an s to the corresponding convention defined above (e.g. ``r100s`` ).
@@ -146,7 +146,7 @@ The list is available in the ``aqua/core/config/grids/default.yaml`` file.
 Oceanic grid files naming scheme
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The oceanic grid naming scheme is quite complex and here is reported for internal usage and future memory. 
+The oceanic grid naming scheme is quite complex and here is reported for internal usage and future memory.
 Unfortunately, every small change in land sea mask requires a new oceanic grids since interpolation relies on pre-computed weights.
 
 Elements Description
@@ -191,7 +191,7 @@ Vertical interpolation
 Aside from the horizontal regridding, AQUA offers also the possibility to perform
 a simple linear vertical interpolation building  on the capabilities of Xarray.
 This is done with the ``vertinterp`` method of the ``Reader`` class.
-This can of course be use in the combination of the ``regrid`` method so that it is possible to operate 
+This can of course be use in the combination of the ``regrid`` method so that it is possible to operate
 both interpolations in a few steps.
 Users can also change the unit of the vertical coordinate.
 

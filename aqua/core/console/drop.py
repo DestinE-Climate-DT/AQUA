@@ -7,11 +7,12 @@ Functionality can be controlled through CLI options and
 a configuration yaml file.
 '''
 
-import sys
 import argparse
+import sys
+
 from aqua import Drop
-from aqua.core.util import load_yaml, get_arg, to_list
 from aqua import __version__ as version
+from aqua.core.util import get_arg, load_yaml, to_list
 
 
 def drop_parser(parser=None):
@@ -69,7 +70,7 @@ def drop_parser(parser=None):
     parser.add_argument('--zarr', action="store_true",
                         help='Create zarr')
     parser.add_argument('--verify-zarr', action="store_true",
-                        help='Verify the created zarr')  
+                        help='Verify the created zarr')
 
     return parser
 
@@ -97,8 +98,10 @@ def drop_execute(args):
 
     # safety check
     for item in ['target', 'paths', 'data', 'options']:
-        if not item in config:
-            raise KeyError(f'Configuration file {file} does not have the "{item}" key, please modify it according to the template')
+        if item not in config:
+            raise KeyError(
+                f'Configuration file {file} does not have the "{item}" key, please modify it according to the template'
+            )
 
     # paths
     paths = config['paths']
@@ -223,7 +226,7 @@ def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=No
                                     frequency=frequency, fix=fix,
                                     outdir=outdir, tmpdir=tmpdir,
                                     nproc=workers, loglevel=loglevel,
-                                    region=region, 
+                                    region=region,
                                     stat=stat, stat_kwargs=stat_kwargs,
                                     definitive=definitive, overwrite=overwrite,
                                     rebuild=rebuild,

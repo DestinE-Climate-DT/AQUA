@@ -7,4 +7,3 @@ This section provides a detailed reference for AQUA's Application Programming In
     :members:
     :undoc-members:
     :show-inheritance:
-

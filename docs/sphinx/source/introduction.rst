@@ -6,8 +6,8 @@ Overview of AQUA
 
 AQUA (Climate DT Applications for QUality Assessment)
 is a model evaluation framework designed for accessing and running diagnostics on high-resolution data produced by climate models.
-The package provides a flexible and efficient framework to process and analyze large volumes of climate data. 
-With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic 
+The package provides a flexible and efficient framework to process and analyze large volumes of climate data.
+With its modular design, AQUA offers seamless integration of core functions and a wide range of diagnostic
 tools that can be run in parallel.
 
 The repository for the AQUA core functionalities (data access and preprocessing) is the `AQUA-core <https://github.com/DestinE-Climate-DT/AQUA>`_ repository and the documentation refers to this repository for core functionalities.
@@ -19,8 +19,8 @@ It is designed to be used together with the AQUA core framework which provides d
 Purpose
 -------
 
-The purpose of AQUA core is to allow an easy access and processing of high-resolution climate models outputs, 
-making it easier for researchers and scientists to analyze and interpret climate data. 
+The purpose of AQUA core is to allow an easy access and processing of high-resolution climate models outputs,
+making it easier for researchers and scientists to analyze and interpret climate data.
 AQUA core aims to provide a comprehensive toolkit for data preparation on climate model outputs.
 
 Key Features

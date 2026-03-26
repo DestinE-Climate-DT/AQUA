@@ -4,14 +4,15 @@ It is used to create the grid entry name, block, and write the grid entry to the
 It also control the filename of the grid file.
 """
 
-import os
 import glob
+import os
 import re
-from typing import Optional, Any, Dict
-from aqua.core.util import load_yaml, dump_yaml
+from typing import Any, Dict, Optional
+
 from aqua.core.configurer import ConfigPath
-from aqua.core.logger import log_configure
 from aqua.core.lock.safelock import SafeFileLock
+from aqua.core.logger import log_configure
+from aqua.core.util import dump_yaml, load_yaml
 
 
 class GridEntryManager:
