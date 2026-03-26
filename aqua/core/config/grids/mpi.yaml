@@ -6,3 +6,7 @@ grids:
     - lat
     - lon
     vert_coord: lev
+    
+  mpi-esm1-2d:
+    path: '{{ grids }}/MPI/mpi_esm1_2d.nc'
+    space_coord: ["y", "x"]
