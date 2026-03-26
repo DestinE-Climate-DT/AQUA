@@ -11,4 +11,3 @@ do
    cp $dir/eccodes-$src/definitions/grib2/$f $dir/eccodes-$dst/definitions/grib2/$f
 done
 done
-

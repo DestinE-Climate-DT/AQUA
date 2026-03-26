@@ -6,9 +6,9 @@
 version: 2
 updates:
   - package-ecosystem: "conda"
-    directory: "/."
+    directory: "conda"
     schedule:
-      interval: "weekly"
+      interval: "daily"
       day: "monday"
       time: "06:00"
     commit-message:
@@ -31,4 +31,3 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
-

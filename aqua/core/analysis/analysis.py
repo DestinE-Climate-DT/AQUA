@@ -4,12 +4,12 @@ AQUA analysis module for running diagnostics and handling configurations.
 """
 
 import os
-import sys
 import subprocess
+import sys
 from importlib import resources as pypath
 
-from aqua.core.util import create_folder, to_list
 from aqua.core.configurer import ConfigPath
+from aqua.core.util import create_folder, to_list
 
 
 def run_command(cmd: str, log_file: str, logger=None) -> int:
@@ -124,12 +124,12 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
     for tool, tool_config in diag_config.items():
 
         logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
-        
+
         cli_path = cli.get(tool)
         if cli_path is None:
             logger.error("CLI path for tool '%s' not found, skipping.", tool)
             continue
- 
+
         if not os.path.exists(cli_path):
             logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
             continue
@@ -158,7 +158,8 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
             enddate=enddate
         )
 
-        if tool_config.get('source_oce', False) and source_oce:  # pass source_oce only if allowed by the diagnostic config file
+        # pass source_oce only if allowed by the diagnostic config file
+        if tool_config.get('source_oce', False) and source_oce:
             extra_args += f" --source_oce {source_oce}"
 
         cfgs = to_list(tool_config.get('config'))
@@ -202,7 +203,11 @@ def get_aqua_paths(*, args, logger):
     aqua_configdir = ConfigPath().configdir
     logger.debug(f"AQUA config dir: {aqua_configdir}")
 
-    aqua_analysis_config_path = os.path.expandvars(args.config) if args.config and args.config.strip() else os.path.join(aqua_configdir, "analysis/config.aqua-analysis.yaml")
+    aqua_analysis_config_path = (
+        os.path.expandvars(args.config)
+        if args.config and args.config.strip()
+        else os.path.join(aqua_configdir, "analysis/config.aqua-analysis.yaml")
+    )
     if not os.path.exists(aqua_analysis_config_path):
         logger.error(f"Config file {aqua_analysis_config_path} not found.")
         sys.exit(1)

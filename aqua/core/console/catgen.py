@@ -5,18 +5,19 @@
 AQUA basic tool for generating catalog entries based on jinja
 '''
 
+import argparse
 import os
 import re
 import sys
-import argparse
+
 import jinja2
-
-from aqua.core.util import load_yaml, dump_yaml, get_arg
-from aqua.core.configurer import ConfigPath
-from aqua.core.logger import log_configure
-
-from aqua.core.lock import SafeFileLock
 from ruamel.yaml import YAML
+
+from aqua.core.configurer import ConfigPath
+from aqua.core.lock import SafeFileLock
+from aqua.core.logger import log_configure
+from aqua.core.util import dump_yaml, get_arg, load_yaml
+
 yaml = YAML()
 yaml.default_flow_style = None  # Ensure default flow style is None
 
@@ -195,7 +196,7 @@ class AquaFDBGenerator:
             }
         }
         return freq2time[frequency]
-    
+
 
     @staticmethod
     def get_value_from_map(value, value_map, value_type):
@@ -220,11 +221,11 @@ class AquaFDBGenerator:
         """
 
         templateloader = jinja2.FileSystemLoader(searchpath=os.path.dirname(template_file))
-        templateenv = jinja2.Environment(loader=templateloader, trim_blocks=True, lstrip_blocks=True)
+        templateenv = jinja2.Environment(loader=templateloader, trim_blocks=False, lstrip_blocks=False)
         if os.path.exists(template_file):
             self.logger.debug('Loading template for %s', template_file)
             return templateenv.get_template(os.path.basename(template_file))
-        
+
         raise FileNotFoundError(f'Cannot file template file {template_file}')
 
     def get_profile_content(self, profile, grid_resolution):
@@ -240,7 +241,7 @@ class AquaFDBGenerator:
         """
 
         grid = self.local_grids[f"horizontal-{self.model.upper()}-{grid_resolution}"]
-        
+
         aqua_grid = self.matching_grids[grid]
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
         levtype_str = (
@@ -260,7 +261,7 @@ class AquaFDBGenerator:
             self.atm_grid = self.matching_grids['atm_grid'][self.model][self.resolution]
             if self.atm_grid is None:
                 raise ValueError(f"No atmospheric grid available for: {self.model} {self.resolution}")
-                
+
         grid_mappings = self.matching_grids['grid_mappings']
         levtype = profile["levtype"]
 
@@ -269,7 +270,7 @@ class AquaFDBGenerator:
                 self.model, grid_mappings[levtype].get('default')).format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
         else:
             grid_str = grid_mappings['default'].format(aqua_grid=aqua_grid)
- 
+
         source = f"{profile['frequency']}-{aqua_grid}-{levtype_str}"
         self.logger.info('Source: %s', source)
 
@@ -283,7 +284,7 @@ class AquaFDBGenerator:
             self.config.get("description")
             or f'"{self.model} {self.config["exp"]} {self.config["data_start_date"][:4]}, '
             f'grids: {self.atm_grid} {self.ocean_grid}"' )
-        
+
         # Set the stream based on the frequency
         stream = 'clmn' if profile['frequency'] == 'monthly' else 'clte'
 
@@ -301,7 +302,7 @@ class AquaFDBGenerator:
             "param": profile["variables"][0],
             "time": time_dict['time'],
             "chunks": time_dict['chunks'],
-            "savefreq": time_dict['savefreq'], 
+            "savefreq": time_dict['savefreq'],
             "description": self.description
         }
         return kwargs
@@ -341,7 +342,7 @@ class AquaFDBGenerator:
                 'lowres': 'LR',
                 'intermediate': 'MR'
             }
-            
+
             resolution_id = self.get_value_from_map(self.config['resolution'], resolution_map, 'resolution')
 
             forcing_map = {
@@ -355,14 +356,14 @@ class AquaFDBGenerator:
             if not forcing:
                 experiment = self.config['experiment']
                 forcing = forcing_map.get(experiment, re.sub(r'[^a-z0-9]', '', experiment.lower()))
-            
+
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
                 'metadata': {
                     'author': self.author,
                     'maintainer': self.config.get('maintainer') or 'not specified',
                     'machine': self.machine,
-                    'expid': self.config['expid'],                
+                    'expid': self.config['expid'],
                     'resolution_atm': self.atm_grid,
                     'resolution_oce': self.ocean_grid,
                     'forcing': forcing,
@@ -389,8 +390,8 @@ class AquaFDBGenerator:
             if catalog_yaml.get('sources') is None:
                 catalog_yaml['sources'] = {}
 
-            if self.model not in catalog_yaml.get('sources', {}):  
-                catalog_yaml.setdefault('sources', {}) 
+            if self.model not in catalog_yaml.get('sources', {}):
+                catalog_yaml.setdefault('sources', {})
                 catalog_yaml['sources'][self.model.upper()] = {
                     'description': f"{self.model.upper()} model",
                     'driver': 'yaml_file_cat',
@@ -410,7 +411,7 @@ class AquaFDBGenerator:
 
         # Retrieve available resolutions for the current model
         self.grid_resolutions = self.get_available_resolutions(self.local_grids, self.model)
-        
+
         if not self.grid_resolutions:
             self.logger.error('No resolutions found, generating an empty file!')
             return
@@ -419,12 +420,12 @@ class AquaFDBGenerator:
 
             # Filter out omitted resolutions, if any
             current_resolutions = [
-                res for res in self.grid_resolutions 
+                res for res in self.grid_resolutions
                 if 'omit-resolutions' not in profile or res not in profile['omit-resolutions']
             ]
 
             for grid_resolution in current_resolutions:
-        
+
                 content = self.get_profile_content(profile, grid_resolution)
                 combined = {**self.config, **content}
                 source_name = combined.get('source')
@@ -467,4 +468,3 @@ if __name__ == '__main__':
 
     args = catgen_parser().parse_args(sys.argv[1:])
     catgen_execute(args)
-

@@ -3,7 +3,7 @@
 # Install AQUA framework.
 
 # Usage
-# bash lumi_install.sh 
+# bash lumi_install.sh
 
 set -e
 
@@ -39,7 +39,7 @@ load_aqua_file="$HOME/load_aqua.sh" #check if $HOME does not exist
 export INSTALLATION_PATH="$MAMBADIR/aqua"
 log_message INFO "Installation path has been set to ${INSTALLATION_PATH}"
 
-# Remove the installation path from the $PATH. 
+# Remove the installation path from the $PATH.
 # This is AI-based block which creates a new $PATH removing path including 'aqua'
 
 # Word to check and remove from $PATH
@@ -83,7 +83,7 @@ install_aqua() {
   module load LUMI/24.03
   module load lumi-container-wrapper
   log_message INFO "Modules have been loaded."
-  
+
   # install AQUA framework
   conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/cli/lumi-install/environment_lumi.yml"
   conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/cli/lumi-install/pip_lumi.txt"
@@ -149,7 +149,7 @@ create_aqua_file() {
   # These are loaded automatically with the fdb module
   # echo 'module load eckit/1.26.3-cpeCray-24.03' >> $load_aqua_file
   # echo 'module load metkit/1.11.14-cpeCray-24.03' >> $load_aqua_file
-    
+
   log_message INFO "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 
   # Config GSV: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
@@ -172,7 +172,7 @@ create_aqua_file() {
 
 # check if load_aqua_file exist and clean it
 if [ -f "$load_aqua_file" ]; then
-  log_message $next_level_msg_type "Existing ${load_aqua_file} found. Would you like to remove it? Safer to say yes (y/n) " 
+  log_message $next_level_msg_type "Existing ${load_aqua_file} found. Would you like to remove it? Safer to say yes (y/n) "
   read -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
