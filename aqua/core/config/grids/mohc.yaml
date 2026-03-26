@@ -1,11 +1,4 @@
-# Met Office Hadley Centre (MOHC)
 grids:
-  hadgem3-gc31-hh-atm-2d:
-    path: '{{ grids }}/MOHC/hadgem3-gc31-hh_atm_2d.nc'
-    space_coord:
-    - lon
-    - lat
-
   # Met Office Hadley Centre (MOHC)
   hadgem3-orca12-2d:
     path: '{{ grids }}/MOHC/hadgem3_ORCA12_2d.nc'

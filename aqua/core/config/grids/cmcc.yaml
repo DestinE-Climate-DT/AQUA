@@ -1,9 +1,4 @@
 grids:
-  cmcc-cm2-vhr4-atm:
-    path: '{{ grids }}/CMCC/cmcc-cm2-vhr4_atm.nc'
-    space_coord:
-    - lon
-    - lat
   #CMCC-CM2
   cmcc-cm2-orca25-2d:
     path: '{{ grids }}/CMCC2/cmcc_cm2_ORCA25_2d.nc'

@@ -1,10 +1,4 @@
 grids:
-  ecmwf-ifs-hr-atm:
-    path: '{{ grids }}/ECMWF/ecmwf-ifs-hr_atm.nc'
-    space_coord:
-    - lat
-    - lon
-
   # ECMWF NEMO grids
   ecmwf-orca25-2d:
     path: '{{ grids }}/ECMWF/ecmwf_ORCA25_2d.nc'

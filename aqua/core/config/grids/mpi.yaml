@@ -1,12 +1,4 @@
 grids:
-  mpi-esm1-2-xr-atm:
-    path:
-      lev: "{{ grids }}/MPI/mpi-esm1-2-xr_atm.nc"
-    space_coord:
-    - lat
-    - lon
-    vert_coord: lev
-    
   mpi-esm1-2d:
     path: '{{ grids }}/MPI/mpi_esm1_2d.nc'
     space_coord: ["y", "x"]
