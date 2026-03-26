@@ -1,4 +1,5 @@
 """This module base class for grid type builders and its extensions."""
+
 import os
 from typing import Dict, Optional
 
@@ -15,6 +16,7 @@ class BaseGridBuilder:
     Base class for grid type builders.
     Contains common methods and attributes for all grid builders.
     """
+
     requires_bounds = False
     bounds_error_message = "Data has no bounds, cannot create grid"
     logger_name = "BaseGridBuilder"
@@ -26,7 +28,7 @@ class BaseGridBuilder:
         original_resolution: str,
         model_name: str,
         grid_name: Optional[str] = None,
-        loglevel: str = 'warning'
+        loglevel: str = "warning",
     ) -> None:
         """
         Initialize the BaseGridBuilder.
@@ -65,31 +67,30 @@ class BaseGridBuilder:
             data[var].attrs = {}
 
         # Setting attributes for mask
-        data['mask'].attrs['_FillValue'] = -9999
-        data['mask'].attrs['missing_value'] = -9999
-        data['mask'].attrs['long_name'] = 'mask'
-        data['mask'].attrs['units'] = '1'
-        data['mask'].attrs['standard_name'] = 'mask'
+        data["mask"].attrs["_FillValue"] = -9999
+        data["mask"].attrs["missing_value"] = -9999
+        data["mask"].attrs["long_name"] = "mask"
+        data["mask"].attrs["units"] = "1"
+        data["mask"].attrs["standard_name"] = "mask"
 
         # Attribute checks for coordinates
         for coord in data.coords:
-
             # Remove axis which can confuse CDO
             if not self.vert_coord or coord != self.vert_coord:
                 self.logger.debug("Removing axis for %s", coord)
-                if 'axis' in data[coord].attrs:
-                    del data[coord].attrs['axis']
+                if "axis" in data[coord].attrs:
+                    del data[coord].attrs["axis"]
 
             # Remove bounds which can confuse CDO
             if not self.has_bounds(data):
                 self.logger.debug("No bounds found for %s", coord)
-                if 'bounds' in data[coord].attrs:
+                if "bounds" in data[coord].attrs:
                     self.logger.debug("Removing bounds for %s", coord)
-                    del data[coord].attrs['bounds']
+                    del data[coord].attrs["bounds"]
 
         # Adding vertical properties
         if self.vert_coord:
-            data[self.vert_coord].attrs['axis'] = 'Z'
+            data[self.vert_coord].attrs["axis"] = "Z"
 
         return data
 
@@ -103,9 +104,9 @@ class BaseGridBuilder:
         Returns:
             bool: True if bounds are present, False otherwise.
         """
-        if 'lon_bounds' in data.variables and 'lat_bounds' in data.variables:
+        if "lon_bounds" in data.variables and "lat_bounds" in data.variables:
             return True
-        if 'lon_bnds' in data.variables and 'lat_bnds' in data.variables:
+        if "lon_bnds" in data.variables and "lat_bnds" in data.variables:
             return True
         return False
 
@@ -142,8 +143,8 @@ class BaseGridBuilder:
         #       and a simple keep_attrs does not work, it works in notebooks
         # Store lon and lat attributes before any operation
         # This is lost in the 'where' operation below
-        lon_attrs = data['lon'].attrs.copy() if 'lon' in data else {}
-        lat_attrs = data['lat'].attrs.copy() if 'lat' in data else {}
+        lon_attrs = data["lon"].attrs.copy() if "lon" in data else {}
+        lat_attrs = data["lat"].attrs.copy() if "lat" in data else {}
 
         # Guess time dimension from the GridType
         timedim = gridtype.time_dims[0] if gridtype.time_dims else None
@@ -153,26 +154,26 @@ class BaseGridBuilder:
             data = data.isel({timedim: 0}, drop=True)
 
         # Load the variables and rename to mask for consistency
-        space_bounds = [bound for bound in gridtype.bounds if 'time' not in bound]
+        space_bounds = [bound for bound in gridtype.bounds if "time" not in bound]
         load_vars = [var] + space_bounds  # (gridtype.bounds or [])
         data = data[load_vars]
-        data = data.rename({var: 'mask'})
+        data = data.rename({var: "mask"})
 
         # Drop the remnant vertical coordinate if present
-        #if vert_coord and f"idx_{vert_coord}" in data.coords:
+        # if vert_coord and f"idx_{vert_coord}" in data.coords:
         #    data = data.drop_vars(f"idx_{vert_coord}")
 
         # Set the mask variable to 1 where data is not null
-        data['mask'] = xr.where(data['mask'].isnull(), np.nan, 1)
+        data["mask"] = xr.where(data["mask"].isnull(), np.nan, 1)
 
         # Preserve the attributes of the original variable
-        data['mask'].attrs = attrs
+        data["mask"].attrs = attrs
 
         # Preserve lon and lat attributes after any operation
-        if 'lon' in data:
-            data['lon'].attrs = lon_attrs
-        if 'lat' in data:
-            data['lat'].attrs = lat_attrs
+        if "lon" in data:
+            data["lon"].attrs = lon_attrs
+        if "lat" in data:
+            data["lat"].attrs = lat_attrs
 
         return data
 
@@ -206,7 +207,7 @@ class BaseGridBuilder:
         Returns:
             Optional[str]: 'oce', 'land', or None if no mask is detected.
         """
-        nan_count = float(data['mask'].isnull().sum().values) / data['mask'].size
+        nan_count = float(data["mask"].isnull().sum().values) / data["mask"].size
         self.logger.info("Nan count: %s", nan_count)
         if nan_count == 0:
             self.masked = None
@@ -218,9 +219,7 @@ class BaseGridBuilder:
             raise ValueError(f"Unexpected nan count {nan_count}")
         return self.masked
 
-    def verify_weights(
-        self, filename: str, metadata: Dict, target_grid: str = "r180x90"
-    ) -> None:
+    def verify_weights(self, filename: str, metadata: Dict, target_grid: str = "r180x90") -> None:
         """
         Verify the creation of the weights from the grid file.
 
@@ -229,24 +228,21 @@ class BaseGridBuilder:
             metadata (dict): Metadata dictionary for weights generation.
             target_grid (str, optional): Target grid for weights generation. Defaults to "r180x90".
         """
-        remap_method = metadata.get('remap_method', "con")
-        cdo_options = metadata.get('cdo_options')
+        remap_method = metadata.get("remap_method", "con")
+        cdo_options = metadata.get("cdo_options")
         try:
             self.logger.info(
-                "Generating weights for %s with method %s and vert_coord %s",
-                filename,
-                remap_method,
-                self.vert_coord)
+                "Generating weights for %s with method %s and vert_coord %s", filename, remap_method, self.vert_coord
+            )
             generator = CdoGenerate(
-                source_grid=filename,
-                target_grid=target_grid,
-                cdo_options=cdo_options,
-                loglevel=self.loglevel)
+                source_grid=filename, target_grid=target_grid, cdo_options=cdo_options, loglevel=self.loglevel
+            )
             weights = generator.weights(method=remap_method, mask_dim=self.vert_coord)
             self.logger.info(
                 "Weights %s generated successfully for %s!!! This grid file is approved for AQUA, take a bow!",
                 remap_method,
-                filename)
+                filename,
+            )
         except Exception as e:
             self.logger.error("Error generating weights, something is wrong with weights generation: %s", e)
             raise
@@ -256,12 +252,13 @@ class BaseGridBuilder:
                 data = xr.open_dataset(filename)
             else:
                 # HACK: temporary remove cdo_options since it conflicts with pyCDO calls
-                data = self.cdo.const(f'1,{filename}', returnXDataset=True)
+                data = self.cdo.const(f"1,{filename}", returnXDataset=True)
             regridder.regrid(data)
             self.logger.info(
                 "Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!",
                 remap_method,
-                filename)
+                filename,
+            )
         except Exception as e:
             self.logger.error("Error regridding, something is wrong with the regridding: %s", e)
             raise
@@ -276,9 +273,9 @@ class BaseGridBuilder:
             metadata (dict): Metadata dictionary from prepare().
             output_file (str): Path to the final output file.
         """
-        if metadata.get('cdogrid'):
-            self.logger.info("Writing grid file to %s with CDO grid %s", output_file, metadata['cdogrid'])
-            self.cdo.setgrid(metadata['cdogrid'], input=input_file, output=output_file, options=self.CDOZIP)
+        if metadata.get("cdogrid"):
+            self.logger.info("Writing grid file to %s with CDO grid %s", output_file, metadata["cdogrid"])
+            self.cdo.setgrid(metadata["cdogrid"], input=input_file, output=output_file, options=self.CDOZIP)
         else:
             self.logger.info("Writing grid file to %s", output_file)
             self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)

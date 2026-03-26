@@ -8,8 +8,7 @@ from aqua.core.util import check_coordinates, to_list
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
-DEFAULT_COORDS = {"lat_min": -90, "lat_max": 90,
-                  "lon_min": 0, "lon_max": 360}
+DEFAULT_COORDS = {"lat_min": -90, "lat_max": 90, "lon_min": 0, "lon_max": 360}
 
 
 class AreaSelection:
@@ -22,9 +21,7 @@ class AreaSelection:
         Args:
             loglevel (str, optional): The logging level. Default is "WARNING".
         """
-        self.logger = log_configure(
-            log_level=loglevel, log_name="AreaSelection"
-        )
+        self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
 
     @typechecked
     def select_area(
@@ -74,10 +71,7 @@ class AreaSelection:
         # By default we work with the AQUA data_model but we keep the
         # flexibility to adapt to other data models.
         if lat_name not in data.coords or lon_name not in data.coords:
-            raise KeyError(
-                f"Latitude or Longitude coordinates not found. "
-                f"Expected '{lat_name}' and '{lon_name}'."
-            )
+            raise KeyError(f"Latitude or Longitude coordinates not found. Expected '{lat_name}' and '{lon_name}'.")
 
         # Case1: Regionmask selection
         if region is not None:
@@ -92,10 +86,7 @@ class AreaSelection:
             region_sel = to_list(region_sel)
 
             # Convert region names to numbers if necessary
-            region_numbers = [
-                region.map_keys(name) if isinstance(name, str) else name
-                for name in region_sel
-            ]
+            region_numbers = [region.map_keys(name) if isinstance(name, str) else name for name in region_sel]
 
             # Combine masks for selected regions
             reg_mask = xr.zeros_like(mask, dtype=bool)
@@ -106,10 +97,7 @@ class AreaSelection:
 
             selected = data.where(reg_mask, drop=drop)
 
-            region_sel = [
-                region.names[rs] if isinstance(rs, int) else rs
-                for rs in region_sel
-            ]
+            region_sel = [region.names[rs] if isinstance(rs, int) else rs for rs in region_sel]
             region_str = ", ".join([str(rs) for rs in region_sel])
 
             selected = log_history(selected, f"Regionmask selection: {region_str}")
@@ -122,9 +110,7 @@ class AreaSelection:
         if lon is None and lat is None:
             return data
 
-        default_coords = self._resolve_default_coords(
-            data, lon_name=lon_name, default_coords=default_coords
-        )
+        default_coords = self._resolve_default_coords(data, lon_name=lon_name, default_coords=default_coords)
 
         lon, lat = check_coordinates(lon, lat, default_coords)
 
@@ -133,11 +119,7 @@ class AreaSelection:
         # [280, 30]). In that case we convert the final selected
         # longitudes to [-180, 180] and sort them so the selection is
         # contiguous for plotting.
-        crossing_greenwich = (
-            default_coords.get("lon_min") == 0
-            and default_coords.get("lon_max") == 360
-            and lon[0] > lon[1]
-        )
+        crossing_greenwich = default_coords.get("lon_min") == 0 and default_coords.get("lon_max") == 360 and lon[0] > lon[1]
 
         # Building the mask
         lat_condition = (
@@ -147,8 +129,7 @@ class AreaSelection:
         )
 
         lon_condition = self._lon_condition(
-            data, lon_name=lon_name, lon0=lon[0], lon1=lon[1],
-            box_brd=box_brd, default_coords=default_coords
+            data, lon_name=lon_name, lon0=lon[0], lon1=lon[1], box_brd=box_brd, default_coords=default_coords
         )
 
         # Apply the selection on data
@@ -168,9 +149,7 @@ class AreaSelection:
             # sort longitudes so they are ascending (-80 .. 30)
             selected = selected.sortby(lon_name)
 
-        selected = log_history(
-            selected, f"Area selection: lat={lat}, lon={lon}"
-        )
+        selected = log_history(selected, f"Area selection: lat={lat}, lon={lon}")
 
         return selected
 
@@ -195,7 +174,9 @@ class AreaSelection:
 
         self.logger.debug(
             "Resolved default coordinates %s from longitude range [%s, %s]",
-            inferred_coords, lon_min, lon_max,
+            inferred_coords,
+            lon_min,
+            lon_max,
         )
 
         return inferred_coords
@@ -210,19 +191,19 @@ class AreaSelection:
         default_coords: dict | None = None,
     ):
         """
-    Build longitude selection condition. Support selections that
-    cross the coordinate wrap (e.g. across Greenwich).
+        Build longitude selection condition. Support selections that
+        cross the coordinate wrap (e.g. across Greenwich).
 
-        Args:
-            data: The dataset containing the longitude values.
-            lon_name: The name of the longitude variable in the dataset.
-            lon0: The first longitude value.
-            lon1: The second longitude value.
-            box_brd: Whether to include the boundaries in the selection.
-            default_coords: The default coordinate system boundaries.
+            Args:
+                data: The dataset containing the longitude values.
+                lon_name: The name of the longitude variable in the dataset.
+                lon0: The first longitude value.
+                lon1: The second longitude value.
+                box_brd: Whether to include the boundaries in the selection.
+                default_coords: The default coordinate system boundaries.
 
-        Returns:
-            A boolean mask for selecting the appropriate longitude values.
+            Returns:
+                A boolean mask for selecting the appropriate longitude values.
         """
         default_coords = default_coords or DEFAULT_COORDS
 
@@ -230,18 +211,11 @@ class AreaSelection:
 
         # Normal case
         if lon0 <= lon1:
-            return (
-                (lon >= lon0) & (lon <= lon1) if box_brd
-                else (lon > lon0) & (lon < lon1)
-            )
+            return (lon >= lon0) & (lon <= lon1) if box_brd else (lon > lon0) & (lon < lon1)
         else:
             # Across Greenwich
             return (
-                (lon >= lon0) & (lon <= default_coords["lon_max"])
-            ) | (
-                (lon >= default_coords["lon_min"]) & (lon <= lon1)
-            ) if box_brd else (
-                (lon > lon0) & (lon <= default_coords["lon_max"])
-            ) | (
-                (lon >= default_coords["lon_min"]) & (lon < lon1)
+                ((lon >= lon0) & (lon <= default_coords["lon_max"])) | ((lon >= default_coords["lon_min"]) & (lon <= lon1))
+                if box_brd
+                else ((lon > lon0) & (lon <= default_coords["lon_max"])) | ((lon >= default_coords["lon_min"]) & (lon < lon1))
             )

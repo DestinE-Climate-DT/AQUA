@@ -1,4 +1,5 @@
 """Module for scientific utility functions."""
+
 import xarray as xr
 
 # set default options for xarray
@@ -6,19 +7,20 @@ xr.set_options(keep_attrs=True)
 
 
 TRIPLET_MONTHS = {
-    'DJF': [12, 1, 2],   # December-January-February
-    'JFM': [1, 2, 3],    # January-February-March
-    'FMA': [2, 3, 4],    # February-March-April
-    'MAM': [3, 4, 5],    # March-April-May
-    'AMJ': [4, 5, 6],    # April-May-June
-    'MJJ': [5, 6, 7],    # May-June-July
-    'JJA': [6, 7, 8],    # June-July-August
-    'JAS': [7, 8, 9],    # July-August-September
-    'ASO': [8, 9, 10],   # August-September-October
-    'SON': [9, 10, 11],  # September-October-November
-    'OND': [10, 11, 12], # October-November-December
-    'NDJ': [11, 12, 1],  # November-December-January
+    "DJF": [12, 1, 2],  # December-January-February
+    "JFM": [1, 2, 3],  # January-February-March
+    "FMA": [2, 3, 4],  # February-March-April
+    "MAM": [3, 4, 5],  # March-April-May
+    "AMJ": [4, 5, 6],  # April-May-June
+    "MJJ": [5, 6, 7],  # May-June-July
+    "JJA": [6, 7, 8],  # June-July-August
+    "JAS": [7, 8, 9],  # July-August-September
+    "ASO": [8, 9, 10],  # August-September-October
+    "SON": [9, 10, 11],  # September-October-November
+    "OND": [10, 11, 12],  # October-November-December
+    "NDJ": [11, 12, 1],  # November-December-January
 }
+
 
 def lon_to_360(lon: float) -> float:
     """
@@ -49,43 +51,42 @@ def lon_to_180(lon: float) -> float:
     return lon - 360 if lon > 180 else lon
 
 
-def check_coordinates(lon: list | None, lat: list | None,
-                           default_coords: dict) -> tuple[list, list]:
-        """
-        Validate and normalize latitude/longitude ranges.
+def check_coordinates(lon: list | None, lat: list | None, default_coords: dict) -> tuple[list, list]:
+    """
+    Validate and normalize latitude/longitude ranges.
 
-        Returns:
-            tuple: (lon_range, lat_range) with values mapped to default system.
-        """
-        # --- Latitude ---
-        # Populate with maximum extent if no Latitude is provided
-        if lat is None:
-            lat = [default_coords["lat_min"], default_coords["lat_max"]]
-        # Swap if values are inverted
-        elif lat[0] > lat[1]:
-            lat = [lat[1], lat[0]]
-        # If the two latitudes are equal raise an error
-        elif lat[0] == lat[1]:
-            raise ValueError(f"Both latitude values are equal: {lat[0]}, please provide a valid range.")
-        # Check that values are within the maximum range
-        if lat[0] < default_coords["lat_min"] or lat[1] > default_coords["lat_max"]:
-            raise ValueError(f"Latitude must be within {default_coords['lat_min']} and {default_coords['lat_max']}")
+    Returns:
+        tuple: (lon_range, lat_range) with values mapped to default system.
+    """
+    # --- Latitude ---
+    # Populate with maximum extent if no Latitude is provided
+    if lat is None:
+        lat = [default_coords["lat_min"], default_coords["lat_max"]]
+    # Swap if values are inverted
+    elif lat[0] > lat[1]:
+        lat = [lat[1], lat[0]]
+    # If the two latitudes are equal raise an error
+    elif lat[0] == lat[1]:
+        raise ValueError(f"Both latitude values are equal: {lat[0]}, please provide a valid range.")
+    # Check that values are within the maximum range
+    if lat[0] < default_coords["lat_min"] or lat[1] > default_coords["lat_max"]:
+        raise ValueError(f"Latitude must be within {default_coords['lat_min']} and {default_coords['lat_max']}")
 
-        # --- Longitude ---
-        # Populate with maximum extent if no Longitude is provided
-        if lon is None or (lon[0] == 0 and lon[1] == 360) or (lon[0] == -180 and lon[1] == 180):
-            lon = [default_coords["lon_min"], default_coords["lon_max"]]
-        # If the two longitudes are equal raise an error
-        elif lon[0] == lon[1]:
-            raise ValueError(f"Longitude: {lon[0]} == {lon[1]}, please provide a valid range.")
-        else:
-            # Normalize according to coordinate system
-            if default_coords["lon_min"] == 0 and default_coords["lon_max"] == 360:
-                lon = [lon_to_360(l) for l in lon]
-            elif default_coords["lon_min"] == -180 and default_coords["lon_max"] == 180:
-                lon = [lon_to_180(l) for l in lon]
+    # --- Longitude ---
+    # Populate with maximum extent if no Longitude is provided
+    if lon is None or (lon[0] == 0 and lon[1] == 360) or (lon[0] == -180 and lon[1] == 180):
+        lon = [default_coords["lon_min"], default_coords["lon_max"]]
+    # If the two longitudes are equal raise an error
+    elif lon[0] == lon[1]:
+        raise ValueError(f"Longitude: {lon[0]} == {lon[1]}, please provide a valid range.")
+    else:
+        # Normalize according to coordinate system
+        if default_coords["lon_min"] == 0 and default_coords["lon_max"] == 360:
+            lon = [lon_to_360(l) for l in lon]
+        elif default_coords["lon_min"] == -180 and default_coords["lon_max"] == 180:
+            lon = [lon_to_180(l) for l in lon]
 
-        return lon, lat
+    return lon, lat
 
 
 def select_season(xr_data, season: str):
@@ -100,17 +101,17 @@ def select_season(xr_data, season: str):
     """
     if season in TRIPLET_MONTHS:
         selected_months = TRIPLET_MONTHS[season]
-        selected =  xr_data.sel(
+        selected = xr_data.sel(
             time=(
-                (xr_data['time.month'] == selected_months[0]) |
-                (xr_data['time.month'] == selected_months[1]) |
-                (xr_data['time.month'] == selected_months[2])
+                (xr_data["time.month"] == selected_months[0])
+                | (xr_data["time.month"] == selected_months[1])
+                | (xr_data["time.month"] == selected_months[2])
             )
         )
         # Add AQUA_season attribute
-        selected.attrs['AQUA_season'] = season
+        selected.attrs["AQUA_season"] = season
         return selected
-    elif season == 'annual':
+    elif season == "annual":
         return xr_data
     else:
         raise ValueError(
@@ -119,7 +120,7 @@ def select_season(xr_data, season: str):
         )
 
 
-def generate_quarter_months(anchor_month='JAN'):
+def generate_quarter_months(anchor_month="JAN"):
     """
     Construct four consecutive quarters every 3rd triplet starting from the anchor month.
     Args:
@@ -129,7 +130,7 @@ def generate_quarter_months(anchor_month='JAN'):
     """
     anchor_month = anchor_month.upper()
 
-    monlist = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    monlist = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
     triplet_keys = list(TRIPLET_MONTHS)
 
     if anchor_month not in monlist:
@@ -137,10 +138,11 @@ def generate_quarter_months(anchor_month='JAN'):
 
     anchor_month_num = monlist.index(anchor_month) + 1
 
-    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys)
-                                  if TRIPLET_MONTHS[key][0] == anchor_month_num)
+    start_idx_anchor_month = next(i for i, key in enumerate(triplet_keys) if TRIPLET_MONTHS[key][0] == anchor_month_num)
 
-    quarter_months = {f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)} # noqa: E501
+    quarter_months = {
+        f"Q{q + 1}": TRIPLET_MONTHS[triplet_keys[(start_idx_anchor_month + q * 3) % len(triplet_keys)]] for q in range(4)
+    }  # noqa: E501
 
     return {anchor_month: quarter_months}
 

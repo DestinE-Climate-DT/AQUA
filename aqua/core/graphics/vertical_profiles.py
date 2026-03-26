@@ -10,23 +10,32 @@ from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
 from .styles import ConfigStyle
 
 
-def plot_vertical_profile(data: xr.DataArray, var: str= None,
-                          lev_name: str = "plev", x_coord: str = "lat",
-                          lev_min: Optional[float] = None,lev_max: Optional[float] = None,
-                          vmin: Optional[float] = None, vmax: Optional[float] = None,
-                          nlevels: int = 18,
-                          title: Optional[str] = None, title_size: Optional[int] = 16,
-                          style: Optional[str] = None,
-                          logscale: bool = False,
-                          grid: bool = True,
-                          add_land: bool = False,
-                          cbar: bool = True,
-                          cmap: str = "RdBu_r",
-                          cbar_label: Optional[str] = None,
-                          return_fig: bool = False, figsize: Tuple[int, int] = (10, 8),
-                          fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None,
-                          ax_pos: Tuple[int, int, int] = (1, 1, 1),
-                          loglevel: str = "WARNING"):
+def plot_vertical_profile(
+    data: xr.DataArray,
+    var: str = None,
+    lev_name: str = "plev",
+    x_coord: str = "lat",
+    lev_min: Optional[float] = None,
+    lev_max: Optional[float] = None,
+    vmin: Optional[float] = None,
+    vmax: Optional[float] = None,
+    nlevels: int = 18,
+    title: Optional[str] = None,
+    title_size: Optional[int] = 16,
+    style: Optional[str] = None,
+    logscale: bool = False,
+    grid: bool = True,
+    add_land: bool = False,
+    cbar: bool = True,
+    cmap: str = "RdBu_r",
+    cbar_label: Optional[str] = None,
+    return_fig: bool = False,
+    figsize: Tuple[int, int] = (10, 8),
+    fig: Optional[plt.Figure] = None,
+    ax: Optional[plt.Axes] = None,
+    ax_pos: Tuple[int, int, int] = (1, 1, 1),
+    loglevel: str = "WARNING",
+):
     """
     Plots a zonal mean vertical profile.
 
@@ -82,8 +91,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
     ax = ax or fig.add_subplot(*ax_pos)
 
     # Plot
-    cax = ax.contourf(data[x_coord], data[lev_name], data,
-                      cmap=cmap, levels=levels, extend="both")
+    cax = ax.contourf(data[x_coord], data[lev_name], data, cmap=cmap, levels=levels, extend="both")
     if logscale:
         ax.set_yscale("log")
     ax.set_xlabel("Latitude") if x_coord == "lat" else x_coord
@@ -91,8 +99,8 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
     ax.invert_yaxis()
     if cbar:
         if cbar_label is None:
-            units = data.attrs.get('units', '')
-            units_latex = unit_to_latex(units) if units else ''
+            units = data.attrs.get("units", "")
+            units_latex = unit_to_latex(units) if units else ""
             cbar_label = f"{var} [{units_latex}]" if units_latex else f"{var}"
         fig.colorbar(cax, ax=ax, label=cbar_label)
     if grid:
@@ -100,7 +108,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
 
     if add_land:
         logger.debug("Adding land")
-        ax.set_facecolor(color='grey')
+        ax.set_facecolor(color="grey")
 
     if title:
         logger.debug("Setting title to %s", title)
@@ -111,20 +119,31 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
         return fig, ax
 
 
-def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
-                               var: str,
-                               lev_name: str = "plev", x_coord: str = "lat",
-                               lev_min: Optional[float] = None, lev_max: Optional[float] = None,
-                               vmin: Optional[float] = None, vmax: Optional[float] = None,
-                               vmin_contour: Optional[float] = None, vmax_contour: Optional[float] = None,
-                               sym_contour: bool = False, add_contour: bool = False,
-                               nlevels: int = 18,
-                               title: Optional[str] = None, title_size: Optional[int] = 16,
-                               style: Optional[str] = None,
-                               return_fig: bool = False, fig: Optional[plt.Figure] = None,
-                               ax: Optional[plt.Axes] = None, ax_pos: Tuple[int, int, int] = (1, 1, 1),
-                               loglevel: str = "WARNING",
-                                **kwargs):
+def plot_vertical_profile_diff(
+    data: xr.DataArray,
+    data_ref: xr.DataArray,
+    var: str,
+    lev_name: str = "plev",
+    x_coord: str = "lat",
+    lev_min: Optional[float] = None,
+    lev_max: Optional[float] = None,
+    vmin: Optional[float] = None,
+    vmax: Optional[float] = None,
+    vmin_contour: Optional[float] = None,
+    vmax_contour: Optional[float] = None,
+    sym_contour: bool = False,
+    add_contour: bool = False,
+    nlevels: int = 18,
+    title: Optional[str] = None,
+    title_size: Optional[int] = 16,
+    style: Optional[str] = None,
+    return_fig: bool = False,
+    fig: Optional[plt.Figure] = None,
+    ax: Optional[plt.Axes] = None,
+    ax_pos: Tuple[int, int, int] = (1, 1, 1),
+    loglevel: str = "WARNING",
+    **kwargs,
+):
     """
     Plot the difference (data - data_ref) as vertical profile.
     Optionally add contour lines of the reference data.
@@ -161,10 +180,21 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
     diff = data - data_ref
 
     fig, ax = plot_vertical_profile(
-        diff, var=var, lev_min=lev_min, lev_max=lev_max,
-        vmin=vmin, vmax=vmax, nlevels=nlevels,
-        style=style, return_fig=True, fig=fig, ax=ax, ax_pos=ax_pos,
-        loglevel=loglevel, **kwargs)
+        diff,
+        var=var,
+        lev_min=lev_min,
+        lev_max=lev_max,
+        vmin=vmin,
+        vmax=vmax,
+        nlevels=nlevels,
+        style=style,
+        return_fig=True,
+        fig=fig,
+        ax=ax,
+        ax_pos=ax_pos,
+        loglevel=loglevel,
+        **kwargs,
+    )
 
     # Add contours of reference data
     if add_contour:
@@ -175,10 +205,8 @@ def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
         levels = np.linspace(vmin_contour, vmax_contour, max(2, int(nlevels)))
         data_common = data.sel({lev_name: diff[lev_name]})
 
-        cs = ax.contour(data_common[x_coord], data_common[lev_name], data_common,
-                        levels=levels, colors="k", linewidths=0.5)
-        fmt = {lvl: f"{lvl:.1e}" if (abs(lvl) < 0.1 or abs(lvl) > 1000)
-               else f"{lvl:.1f}" for lvl in cs.levels}
+        cs = ax.contour(data_common[x_coord], data_common[lev_name], data_common, levels=levels, colors="k", linewidths=0.5)
+        fmt = {lvl: f"{lvl:.1e}" if (abs(lvl) < 0.1 or abs(lvl) > 1000) else f"{lvl:.1f}" for lvl in cs.levels}
         ax.clabel(cs, fmt=fmt, fontsize=6, inline=True)
 
     if title:
