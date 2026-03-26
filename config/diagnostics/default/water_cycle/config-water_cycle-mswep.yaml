@@ -102,6 +102,8 @@ diagnostics:
     longterm: true
     params:
       default:
+        startdate: '19900101'
+        enddate: '20141231'
         std_startdate: '19900101'
         std_enddate: '20141231'
     variables:
