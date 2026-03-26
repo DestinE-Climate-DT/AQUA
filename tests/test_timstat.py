@@ -1,7 +1,9 @@
 """Test for timmean method"""
-import pytest
 import numpy as np
+import pytest
+
 from aqua.core.histogram import histogram
+
 
 @pytest.fixture(scope='module', params=['long', 'long400'])
 def source_name(request):
@@ -13,7 +15,7 @@ def source_name(request):
 def reader(request, source_name):
     """Picks the correct reader fixture based on source_name."""
     suffix = "long" if source_name == "long" else "long400"
-    fixture_name = f"ifs_tco79_{suffix}_fixFalse_reader"
+    fixture_name = f"ifs_tco79_{suffix}_fixfalse_reader"
     return request.getfixturevalue(fixture_name)
 
 
@@ -21,7 +23,7 @@ def reader(request, source_name):
 def data(request, source_name):
     """Picks the correct data fixture based on source_name."""
     suffix = "long" if source_name == "long" else "long400"
-    fixture_name = f"ifs_tco79_{suffix}_fixFalse_data"
+    fixture_name = f"ifs_tco79_{suffix}_fixfalse_data"
     return request.getfixturevalue(fixture_name)
 
 @pytest.fixture(scope="module")
@@ -88,7 +90,7 @@ class TestTimmean():
         """Selecting first or last value in each group"""
         firstval = data_2t['2t'].aqua.timfirst(freq='daily')
         lastval = data_2t['2t'].aqua.timlast(freq='daily')
-        
+
         assert firstval.shape == (197, 9, 18)
         assert lastval.shape == (197, 9, 18)
         assert firstval.time[0] < lastval.time[0]
@@ -98,16 +100,16 @@ class TestTimmean():
         """first and last statistics require a frequency to be specified"""
         with pytest.raises(ValueError, match=r'Frequency must be specified when using first or last statistic'):
             reader.timstat(data_2t['2t'], stat=stat)
-    
+
     def test_timstat_compare(self, reader, data_2t):
         """Time operations provide robust values"""
         minval = reader.timmin(data_2t['2t'], freq='daily')
         maxval = reader.timmax(data_2t['2t'], freq='daily')
         avg = reader.timmean(data_2t['2t'], freq='daily')
-        
+
         assert (minval <= avg).all()
         assert (avg <= maxval).all()
-        
+
     def test_timmin_yearly_exclude_incomplete(self, reader, data_ttr):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
         avg = reader.timmin(data_ttr, freq='yearly', exclude_incomplete=True)
@@ -154,21 +156,23 @@ class TestTimmean():
 
     def test_timmean_invalid_frequency(self, reader, data_2t):
         """Test for timmean method with an invalid frequency"""
-        with pytest.raises(ValueError, match=r'Cant find a frequency to resample, using resample_freq=invalid not work, aborting!'):
+        with pytest.raises(ValueError,
+                           match=r'Cannot find a frequency to resample, using resample_freq=invalid not work, aborting!'):
             reader.timmean(data_2t, freq='invalid')
 
     def test_timstd_error(self, reader, data_2t):
         """Test for timstd method with a single time step"""
         single = data_2t.sel(time=data_2t.time[0])
         with pytest.raises(ValueError, match=r'Time dimension not found in the input data. Cannot compute timstd statistic'):
-            avg = reader.timstat(single, stat='std', freq='monthly')
+            reader.timstat(single, stat='std', freq='monthly')
 
     def test_timstat_histogram(self, reader, data_2t):
         """Test histogram through timstat"""
         bins, range = 20, (250,330)
 
         #test passing a string
-        hist1 = reader.timstat(data_2t['2t'], freq='monthly', stat='histogram', bins=bins, range=range, exclude_incomplete=True)
+        hist1 = reader.timstat(data_2t['2t'], freq='monthly', stat='histogram', bins=bins,
+                               range=range, exclude_incomplete=True)
         # timhist passes a function
         hist2 = reader.timhist(data_2t['2t'], freq='monthly', bins=bins, range=range, exclude_incomplete=True)
         hist3 = reader.timstat(data_2t['2t'], freq='monthly', stat=histogram, bins=bins, range=range, exclude_incomplete=True)
@@ -209,7 +213,7 @@ class TestTimmean():
         """Test that exclude_incomplete mask coordinates align with resampled time axis"""
         da = data_2t['2t'].isel(lon=0, lat=0)
 
-        # Get the averaged result 
+        # Get the averaged result
         avg_with_mask = reader.timmean(da, freq='daily', exclude_incomplete=True)
 
         # Get what the resample time axis should be

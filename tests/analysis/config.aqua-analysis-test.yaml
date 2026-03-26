@@ -3,11 +3,11 @@ job:
   loglevel: 'DEBUG'
 
 run:
-  - ['dummy'] 
+  - ['dummy']
 
 diagnostics:
   dummy:
-    dummy_tool: 
+    dummy_tool:
       config: 'dummy_config.yaml'
       outname: 'dummy_output'
       extra: ''

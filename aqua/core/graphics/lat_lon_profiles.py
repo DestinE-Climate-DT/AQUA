@@ -1,9 +1,11 @@
-import xarray as xr
 import matplotlib.pyplot as plt
+import xarray as xr
 
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list, coord_names
+from aqua.core.util import coord_names, to_list
+
 from .styles import ConfigStyle
+
 
 def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
                           ref_data: xr.DataArray | None = None,
@@ -20,8 +22,8 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
     Plot latitude or longitude profiles of data, averaging over the specified axis.
 
     Args:
-        data (xr.DataArray | list[xr.DataArray] | None): Data to plot. Must be xarray DataArrays 
-            with 'lat', 'lon', 'latitude', or 'longitude' dimensions. Can be a single DataArray 
+        data (xr.DataArray | list[xr.DataArray] | None): Data to plot. Must be xarray DataArrays
+            with 'lat', 'lon', 'latitude', or 'longitude' dimensions. Can be a single DataArray
             or a list of DataArrays.
         ref_data (xr.DataArray, optional): Reference data to plot.
         ref_std_data (xr.DataArray | None, optional): Standard deviation of the reference data.
@@ -39,7 +41,7 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
     """
     logger = log_configure(loglevel, 'plot_lat_lon_profiles')
     ConfigStyle(style=style, loglevel=loglevel)
-    
+
     # Convert data to list, handling both single DataArrays and lists
     data_list = to_list(data)
 
@@ -60,20 +62,20 @@ def plot_lat_lon_profiles(data: xr.DataArray | list[xr.DataArray],
         if coord_name is None:
             logger.warning(f"Data {i} has no spatial coordinates, skipping")
             continue
-            
+
         label = data_labels[i] if data_labels else None
         d.plot(ax=ax, label=label, linewidth=3, zorder=3)
 
     # Handle reference data (lower zorder = background)
     if ref_data is not None:
-        
+
         # Find coordinate for ref_data
         lon_name, lat_name = coord_names(ref_data)
         coord_name = lat_name if lat_name is not None else lon_name
-        
+
         if coord_name is not None:
             ref_x_coord = ref_data[coord_name].values
-            
+
             # Plot reference std if available
             if ref_std_data is not None:
                 if hasattr(ref_std_data, 'compute'):

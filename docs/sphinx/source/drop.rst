@@ -3,15 +3,15 @@
 DROP - Data Reduction OPerator
 ===============================================
 
-DROP (Data Reduction OPerator) is a comprehensive tool within the AQUA framework designed 
+DROP (Data Reduction OPerator) is a comprehensive tool within the AQUA framework designed
 to extract, process, and organize data from any climate dataset.
-    
+
 What is DROP?
 -------------
 
-DROP is a comprehensive data reduction operator that combines the regridding, fixing, and time 
-averaging capabilities included in AQUA. The ``Drop`` class uses ``dask`` to exploit parallel 
-computations and can process any supported dataset, and it serves as a general-purpose data 
+DROP is a comprehensive data reduction operator that combines the regridding, fixing, and time
+averaging capabilities included in AQUA. The ``Drop`` class uses ``dask`` to exploit parallel
+computations and can process any supported dataset, and it serves as a general-purpose data
 reduction platform.
 
 
@@ -30,7 +30,7 @@ DROP's architecture enables various data processing tasks:
 **Spatial Processing:**
 
 - Regridding to any supported resolution or native grid
-- Regional data extraction with configurable boundaries  
+- Regional data extraction with configurable boundaries
 - Support for both regular and irregular grids
 
 **Data Management:**
@@ -54,13 +54,13 @@ The Low Resolution Archive (LRA) Context
 ----------------------------------------
 
 The Low Resolution Archive is a key use case for DROP. The LRA is an intermediate layer of data
-reduction that simplifies analysis of extreme high-resolution data by providing monthly data 1 
+reduction that simplifies analysis of extreme high-resolution data by providing monthly data 1
 degree resolution, permitting reduced storage and computational requirements.
 
 .. note ::
 
-    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg 
-    resolution) and at ``monthly`` frequency. The corresponding catalog entry name is 
+    LRA built available on Levante and Lumi by AQUA team are all at ``r100`` (i.e. 1 deg
+    resolution) and at ``monthly`` frequency. The corresponding catalog entry name is
     ``lra-r100-monthly``.
 
 Source Naming Convention
@@ -99,13 +99,13 @@ Different processing options can be accessed via Reader kwargs:
 .. code-block:: python
 
     # Access specific statistics (if generated)
-    reader = Reader(model="IFS-NEMO", exp="historical-1990", 
+    reader = Reader(model="IFS-NEMO", exp="historical-1990",
                    source="r100-monthly", stat="std")
-    
-    # Access regional data (if generated) 
+
+    # Access regional data (if generated)
     reader = Reader(model="IFS-NEMO", exp="historical-1990",
                    source="r100-monthly", region="europe")
-    
+
     # Access specific ensemble realizations
     reader = Reader(model="IFS-NEMO", exp="historical-1990",
                    source="r100-monthly", realization="r2")
@@ -114,7 +114,7 @@ Different processing options can be accessed via Reader kwargs:
 Accessing DROP-generated data
 -----------------------------
 
-Once DROP has processed the data, generated outputs can be accessed via the standard ``Reader`` 
+Once DROP has processed the data, generated outputs can be accessed via the standard ``Reader``
 interface using the automatically created catalog sources.
 
 .. code-block:: python
@@ -130,12 +130,12 @@ interface using the automatically created catalog sources.
     # Access standard deviation instead of mean
     reader = Reader(model="ERA5", exp="era5", source="r100-monthly", stat="std")
     std_data = reader.retrieve()
-    
+
     # Access regional European data
-    reader = Reader(model="IFS-NEMO", exp="historical-1990", 
+    reader = Reader(model="IFS-NEMO", exp="historical-1990",
                    source="r25-daily", region="europe")
     eu_data = reader.retrieve()
-    
+
     # Access specific ensemble member
     reader = Reader(model="IFS-NEMO", exp="historical-1990",
                    source="r100-daily", realization="r3")
@@ -152,7 +152,7 @@ You can access data using Zarr reference files for improved performance, when av
     data = reader.retrieve()
 
 .. note ::
-    The specific source names depend on the resolution and frequency you configured when 
+    The specific source names depend on the resolution and frequency you configured when
     running DROP. See the "Source Naming Convention" section above for details.
 
 .. warning ::
@@ -163,8 +163,8 @@ Using DROP to process data
 
 DROP processes data through a command line interface (CLI) available with the subcommand ``aqua drop``.
 
-Configuration is done via a YAML file that can be built from the ``drop_config.tmpl``, 
-available in the ``.aqua/templates/drop`` folder after installation. The configuration 
+Configuration is done via a YAML file that can be built from the ``drop_config.tmpl``,
+available in the ``.aqua/templates/drop`` folder after installation. The configuration
 file allows you to specify:
 
 - Target resolution and frequency
@@ -179,21 +179,21 @@ The configuration follows the model-exp-source 3-level hierarchy in the ``data``
 Key configuration options include:
 
 - ``vars``: variables to process
-- ``resolution``: target spatial resolution (e.g., ``r100``, ``r25``, ``native``) 
+- ``resolution``: target spatial resolution (e.g., ``r100``, ``r25``, ``native``)
 - ``frequency``: target temporal frequency (e.g., ``monthly``, ``daily``, ``3hourly``)
 - ``stat``: statistic to compute (``mean``, ``std``, ``max``, ``min``)
 - ``region``: spatial subsetting configuration
 - ``engine``: The engine used for the GSV retrieval, options are 'fdb' and 'polytope'.
 
 .. warning::
-    Catalog detection is automatic, but specify the catalog name explicitly in the configuration 
+    Catalog detection is automatic, but specify the catalog name explicitly in the configuration
     file if you have identically named triplets in different catalogs.
 
 Configuration File
 ^^^^^^^^^^^^^^^^^^
 
-The DROP configuration file is structured in YAML format with four main sections: ``target``, 
-``paths``, ``options``, ``slurm``, and ``data``. Below is a detailed explanation of each 
+The DROP configuration file is structured in YAML format with four main sections: ``target``,
+``paths``, ``options``, ``slurm``, and ``data``. Below is a detailed explanation of each
 configuration parameter.
 
 **Target Section**
@@ -216,40 +216,40 @@ The ``target`` section defines the primary output characteristics for the DROP p
       stat_kwargs: {}
 
 - **resolution** (string, required): Target spatial resolution for regridding.
-  
+
   - ``r100``: 1° resolution (~100km) or any other supported target grid (see :ref:`available-target-grids`)
   - ``native``: Keep original model grid (no regridding)
 
 - **frequency** (string, required): Target temporal frequency for output.
-  
+
   - ``monthly``, ``daily``, ``3hourly``, ``6hourly``, ``hourly``
   - Any valid frequency string supported by pandas ``resample``
   - If not specified, keeps original data frequency
 
-- **catalog** (string, optional): Name of the catalog to process. 
-  
+- **catalog** (string, optional): Name of the catalog to process.
+
   - It will be used for all the models listed in the ``data`` section.
 
 - **startdate** (string, optional): Starting date for data processing.
-  
+
   - Format: ``YYYY-MM-DD`` or any valid date string parsable by pandas
   - Example: ``"2020-01-01"``
   - If omitted, processes from the first available date
 
 - **enddate** (string, optional): Ending date for data processing.
-  
+
   - Format: ``YYYY-MM-DD`` or any valid date string parsable by pandas
   - Example: ``"2020-12-31"``
   - If omitted, processes until the last available date
 
 - **region** (dict, optional): Spatial subsetting configuration. If omitted, processes global data.
-  
+
   - **name** (string): Region identifier (e.g., ``Europe``, ``Tropics``)
   - **lat** (list): Latitude range as ``[min, max]`` (e.g., ``[35, 70]``)
   - **lon** (list): Longitude range as ``[min, max]`` (e.g., ``[-10, 40]``)
 
 - **stat** (string, optional): Statistical operator for temporal aggregation. Default: ``mean``
-  
+
   - ``mean``: Arithmetic mean
   - ``std``: Standard deviation
   - ``max``: Maximum value
@@ -258,7 +258,7 @@ The ``target`` section defines the primary output characteristics for the DROP p
   - ``histogram``: Compute histogram (requires ``stat_kwargs`` to specify the `range` argument)
 
 - **stat_kwargs** (dict, optional): Additional arguments for the statistical function. Default: ``{}``
-  
+
   - For ``histogram`` e.g.: ``{bins: 20, range: [0, 100]}``
   - Empty dict or missing line for other statistics that don't require additional arguments
 
@@ -273,12 +273,12 @@ Defines the directory structure for outputs and temporary files:
       tmpdir: /path/to/tmp
 
 - **outdir** (string, required): Directory where final DROP outputs will be stored.
-  
+
   - Should have sufficient space for processed data
   - Subdirectories are automatically created based on catalog/model/exp/source hierarchy
 
 - **tmpdir** (string, required): Directory for temporary files during processing.
-  
+
   - Must be on fast storage (ideally local to compute node)
   - Should have space for intermediate monthly files and aggregated yearly files
 
@@ -301,57 +301,57 @@ Controls processing behavior and performance settings:
       performance_reporting: False
 
 - **engine** (string, optional): Data retrieval engine. Default: ``fdb``
-  
+
   - needed only for GSV retrieval, options are 'fdb' and 'polytope'
   - ``fdb``: Fields DataBase, you should be on the same machine where the database is located
   - ``polytope``: Polytope service (remote access). Be sure to have the correct credentials and network access to use this option.
 
 - **loglevel** (string, optional): Logging verbosity. Default: ``WARNING``
-  
+
   - Available levels: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``
 
 - **zarr** (bool, optional): Create Zarr reference files for faster subsequent access. Default: ``False``
-  
+
   - ``True``: Generate Zarr references after processing
   - ``False``: Only create NetCDF files, default behavior
 
 - **verify_zarr** (bool, optional): Verify Zarr references after creation. Default: ``False``
-  
+
   - ``True``: Test Zarr references by loading data
   - ``False``: Skip verification
   - Only relevant when ``zarr: True``
 
 - **overwrite** (bool, optional): Overwrite existing output files. Default: ``False``
-  
+
   - ``True``: Replace existing files
   - ``False``: Skip processing if files exist
   - DROP checks if the existing files are complete before skipping, so it won't skip if files are incomplete or corrupted
 
 - **exclude_incomplete** (bool, optional): Exclude incomplete temporal chunks. Default: ``False``
-  
+
   - ``True``: Drop months/periods with missing data
   - ``False``: Process all available data
 
 - **rebuild** (bool, optional): Force rebuilding of regridding weights. Default: ``False``
-  
+
   - ``True``: Regenerate area and weight files
   - ``False``: Use cached weights if available
   - Set to ``True`` if you suspect weights are outdated (e.g., after a major update to CDO or AQUA)
 
 - **compact** (string, optional): Method for concatenating monthly files into yearly files. Default: ``xarray``
-  
+
   - ``xarray``: Use xarray for concatenation
   - ``cdo``: Use Climate Data Operators
   - ``null`` or omit: No compacting, keep monthly files
 
 - **cdo_options** (list, optional): Options passed to CDO when ``compact: cdo``. Default: ``["-f", "nc4", "-z", "zip_1"]``
-  
+
   - ``-f nc4``: NetCDF4 format
   - ``-z zip_1``: Compression level 1
   - Add additional CDO flags as list elements
 
 - **performance_reporting** (bool, optional): Generate Dask performance HTML report. Default: ``False``
-  
+
   - ``True``: Create detailed performance report for one chunk. Then the job will stop.
   - ``False``: No performance monitoring
 
@@ -401,16 +401,16 @@ The ``data`` section uses a three-level nested structure:
 Each source configuration supports the following parameters:
 
 - **vars** (list, required): List of variable short names to process.
-  
+
   - Example: ``['2t', 'tprate', 'msl']``
 
 - **workers** (int, optional): Number of Dask workers for parallel processing. Default: 1
-  
+
   - Typical range: 4-16 depending on available memory and vertical levels
   - 1 worker disables parallel processing
 
 - **realizations** (list, optional): Specific ensemble members to process.
-  
+
   - Example: ``[0, 1, 2]`` processes r0, r1, and r2
   - If omitted, processes the default realization (r1)
   - Only applicable to ensemble datasets
@@ -434,12 +434,12 @@ Each source configuration supports the following parameters:
             resolution: r100
             frequency: daily
             stat: mean
-          
+
           daily-hpz10-oce2d:
             vars: ['avg_sithick', 'avg_siconc']
             workers: 16
             frequency: monthly
-            
+
       IFS-NEMO:
         historical-1950:
           daily:
@@ -465,7 +465,7 @@ When the same parameter appears at multiple levels, the precedence order is:
 2. **Source-level settings** in the ``data`` section
 3. **Target-level settings** in the ``target`` section (lowest priority)
 
-This allows you to set global defaults in ``target`` and override them for specific 
+This allows you to set global defaults in ``target`` and override them for specific
 sources or via command line.
 
 Usage
@@ -542,7 +542,7 @@ Usage
 
 .. option:: --engine
 
-    The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'. 
+    The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'.
 
 **Examples:**
 
@@ -560,21 +560,21 @@ Generate daily data at 0.25° resolution with 8 workers:
 
 .. warning ::
 
-    Keep in mind that this script is ideally submitted via batch to a HPC node, 
-    so that a template for SLURM is also available in the same directory (``.aqua/templates/drop/drop-submitter.tmpl``). 
+    Keep in mind that this script is ideally submitted via batch to a HPC node,
+    so that a template for SLURM is also available in the same directory (``.aqua/templates/drop/drop-submitter.tmpl``).
     Be aware that although the computation is split among different months, the memory consumption of loading very big data
     is a limiting factor, so that unless you have very fat node it is unlikely you can use more than 16 workers.
 
 **Output:**
 
-After processing, new catalog entries are automatically created following the naming 
+After processing, new catalog entries are automatically created following the naming
 convention described above, allowing immediate access to your processed data.
 
 Parallel DROP tool
 ^^^^^^^^^^^^^^^^^^
 
 Using DROP can be a memory-intensive task, that cannot be easily parallelized within a single job.
-For processing multiple variables or large datasets, use the parallel execution script 
+For processing multiple variables or large datasets, use the parallel execution script
 ``cli_drop_parallel_slurm.py`` to submit multiple SLURM jobs simultaneously:
 
 .. code-block:: bash
@@ -583,7 +583,7 @@ For processing multiple variables or large datasets, use the parallel execution 
 
 This processes data using 4 workers per node with up to 4 concurrent SLURM jobs.
 It builds on Jinja2 template replacement from a typical SLURM script `aqua_drop.j2`.
-For now it is configured only to be run on LUMI but further development should allow for 
+For now it is configured only to be run on LUMI but further development should allow for
 larger portability.
 
 A ``-s`` option to call the run via container instead of using the local installation.

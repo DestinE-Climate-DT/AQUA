@@ -4,12 +4,14 @@
 AQUA command line tool to create an healpix grid from an oceanic file
 """
 import argparse
-import sys
 import os
+import sys
+
 from cdo import Cdo
+
 from aqua import Reader
-from aqua.core.util import load_yaml, get_arg, create_folder
 from aqua.core.logger import log_configure
+from aqua.core.util import create_folder, get_arg, load_yaml
 
 reasonable_vert_coords = ['depth_full', 'depth_half', 'level']
 
@@ -36,7 +38,7 @@ if __name__ == '__main__':
     logger = log_configure(log_level=loglevel, log_name='hpx-from-sources')
 
     file = get_arg(args, 'config', None)
-    
+
     logger.info('Reading configuration from %s', file)
     config = load_yaml(file)
 
@@ -63,7 +65,7 @@ if __name__ == '__main__':
     #    mykwargs = {**mykwargs, **{'zoom': int(zoom)}}
     if catalog:
         mykwargs = {**mykwargs, **{'catalog': catalog}}
-        
+
 
     # Create Reader object
     reader = Reader(model=model, exp=exp, source=source,
@@ -99,7 +101,7 @@ if __name__ == '__main__':
 
     # cdo command setup:
     nside = 2**zoom
-   
+
     # Setting grid name
     if nested:
         grid_name = f'hp{nside}_nested'

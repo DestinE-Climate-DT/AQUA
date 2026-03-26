@@ -1,6 +1,7 @@
 """Class for fixer configuration and loading"""
 from aqua.core.logger import log_configure
 
+
 class FixerConfigure:
     """
     Class to configure the fixer based on convention and fixer_name.
@@ -109,10 +110,16 @@ class FixerConfigure:
         # TODO: version should be a parameter in the fixer_name and in the convention dictionary
         if base_convention is not None:
             if base_convention != convention and convention is not None:
-                raise ValueError(f"The convention in the convention dictionary: {base_convention} is different from the fixer_name: {convention}")
-            if 'version' in base_fixes and 'version' in convention_dictionary:
-                if base_fixes['version'] != convention_dictionary['version']:
-                    raise ValueError(f"The version in the convention dictionary: {base_fixes['version']} is different from the fixer_name: {convention_dictionary['version']}")
+                raise ValueError(
+                    f"The convention in the convention dictionary: {base_convention} is different from the "
+                    f"fixer_name: {convention}"
+                )
+            if "version" in base_fixes and "version" in convention_dictionary:
+                if base_fixes["version"] != convention_dictionary["version"]:
+                    raise ValueError(
+                        f"The version in the convention dictionary: {base_fixes['version']} is different from the "
+                        f"fixer_name: {convention_dictionary['version']}"
+                    )
         else:
             self.logger.info("No convention found in the fixer_name, the convention dictionary will not be used")
             return base_fixes

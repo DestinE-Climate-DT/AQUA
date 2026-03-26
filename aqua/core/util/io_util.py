@@ -2,15 +2,16 @@
 
 import os
 import re
-import numpy as np
-import xarray as xr
-import pandas as pd
 from glob import glob
-from .util import to_list
-from pypdf import PdfReader, PdfWriter
-from PIL import Image, PngImagePlugin
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+
 from aqua.core.logger import log_configure
 from aqua.core.version import __version__ as version
+
+from .util import to_list
 
 
 def files_exist(path):
@@ -147,7 +148,7 @@ def normalize_value(value):
     # Check if value is a dictionary, normalize its keys
     if isinstance(value, dict):
         return {normalize_key(k): normalize_value(v) for k, v in value.items()}
-    
+
     # Check if value is a string that looks like a dictionary-like structure
     if isinstance(value, str):
         if re.match(r"^\{.*\}$", value.strip()):
@@ -160,7 +161,7 @@ def normalize_value(value):
             except Exception as e:
                 # Log parsing errors and return the original string if parsing fails
                 log_configure('WARNING', 'normalize_value').warning(f"Failed to parse string as dictionary: {e}")
-    
+
     # Return the value as-is if it can't be processed further
     return value
 
@@ -172,7 +173,8 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
 
     Args:
         metadata (dict, optional): The original metadata dictionary.
-        additional_metadata (dict, optional): A dictionary containing additional metadata fields (e.g., diagnostic, model, experiment, etc.).
+        additional_metadata (dict, optional): A dictionary containing additional
+            metadata fields (e.g., diagnostic, model, experiment, etc.).
 
     Returns:
         dict: The updated metadata dictionary.

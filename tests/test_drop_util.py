@@ -1,7 +1,10 @@
 import os
+
 import pytest
+
 from aqua.core.drop import drop_util
 from aqua.core.util import replace_intake_vars
+
 
 @pytest.fixture
 def tmp_directory(tmpdir):
@@ -23,8 +26,8 @@ def lra_arguments(request):
 #     fixer_name = 'fixer'
 #     frequency = 'monthly'
 #     loglevel = 'WARNING'
-#     entry_name = drop_util.opa_catalog_entry(datadir=tmp_directory, model=model, exp=exp, 
-#                                             source=source, fixer_name=fixer_name, frequency=frequency, 
+#     entry_name = drop_util.opa_catalog_entry(datadir=tmp_directory, model=model, exp=exp,
+#                                             source=source, fixer_name=fixer_name, frequency=frequency,
 #                                             loglevel=loglevel, catalog='ci')
 
 #     # Create temporary files
