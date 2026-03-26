@@ -16,13 +16,13 @@ Conda/Mamba installation with pip
 
 Prerequisites
 ^^^^^^^^^^^^^
-- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process. 
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process.
 
 Installation with Miniforge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 AQUA-core is available on the Python Package Index (PyPI) repository and can be installed with pip.
-However, some dependencies are not available on PyPI, so you may need to install them manually: 
+However, some dependencies are not available on PyPI, so you may need to install them manually:
 recommended way to do this is to use Mamba/Conda package manager for the installation process of the dependencies, and then use pip to install AQUA-core itself.
 This can be achieved with:
 
