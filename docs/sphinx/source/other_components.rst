@@ -11,7 +11,8 @@ It is possible to perform time statistics, including
 time averaging, minimum, maximum and standard deviation at a given time frequency by using the ``Timstat()`` class and its method ``timstat()```
 which allow for several statistical operations.
 The class is nested into the ``Reader``, and its method are exposed so that is sufficient
-to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()`` and ``timstd()``, as in the case below. 
+to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``, ``timsum()``,
+``timfirst()``, ``timlast()`` and ``timstd()``, as in the case below.
 
 .. code-block:: python
 
@@ -22,6 +23,7 @@ to use ``timstat()`` and its sibilings ``timmean()``, ``timmin()``, ``timmax()``
     # alternatively: daily = reader.timstat(data, stat='mean', freq='daily')
 
 Data have now been averaged at the desired daily timescale. Similarly operations can be performed with others methods.
+``timfirst()`` and ``timlast()`` can be used to select the first and last record in each group after resampling the data at a given frequency.
 
 .. note::
     The ``TimStat()`` class supposes that the input data has a time coordinate and converts it to a Gregorian calendar if needed.
@@ -33,11 +35,11 @@ Some extra options are available:
 
 - ``exclude_incomplete=True``: this flag will remove averaged chunks which are not complete
   (for example, verify  that all the record from each month are available before doing the time mean).
-- ``center_time=True``: this flag will center the time coordinate on the mean time window. 
+- ``center_time=True``: this flag will center the time coordinate on the mean time window.
   Otherwise, the time coordinate will be the first timestamp of the time window.
 - ``time_bounds=True``: this flag can be activated to build time bounds in a similar way to CMOR-like standard.
 
-The ``timhist()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()`` 
+The ``timhist()``method is also available as a method of the ``Reader()`` class, passsing through the ``TimStat()``
 class, so that it is easy to compute histograms on time-resampled data:
 
 .. code-block:: python
@@ -50,7 +52,7 @@ or
 
     hist = data['t2m'].aqua.timhist(freq="1D", bins=100, range=(250, 350), units='K')
 
-When no time frequency information is provided, this method operates on the full time series, 
+When no time frequency information is provided, this method operates on the full time series,
 providing results identical to the ``histogram()`` method.
 See the ``histogram()`` section below for more details on the available options.
 
@@ -71,14 +73,14 @@ The ``detrend`` method can be used as a high-level wrapper of xarray polyfit fun
     data = reader.retrieve()
     daily = reader.detrend(data['2t'], dim='time')
 
-In this way, linear trend is removed from each grid point of the original dataset along the time dimension. 
-Other dimension can be targeted too, although with limited physical meaning. 
+In this way, linear trend is removed from each grid point of the original dataset along the time dimension.
+Other dimension can be targeted too, although with limited physical meaning.
 Of course, it can be used in collaboration with temporal and spatial averaging. Higher order polynominial fits are available too.
 
 Some options includes:
 
 - ``degree``: this will define with an integer the order of the polynominial fit. Default is 1, i.e. linear detrending.
-- ``skipna=True``: removing the NaN from the fit. Default is ``True``. 
+- ``skipna=True``: removing the NaN from the fit. Default is ``True``.
 
 .. warning::
     Trend and detrend might lead to incorrect results if there is not an equal amount of time elements (e.g. same amount of months or days) in the dataset.
@@ -135,8 +137,8 @@ Statistical operations can be area-weighted if the class is initialized with an 
 
 The class is nested into the ``Reader()``, which computes/load the areas of the corresponding source at the initialization.
 Thus when calling for example ``reader.fldmean()`` method area-weighted spatial averaging will be performed.
-The methods are exposed so that is sufficient to use ``fldstat(data, stat=statname)`` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``; 
-Otherwise the relative sibilings can be called ``fldmean()``, ``fldmin()``, ``fldmax()``, ``fldsum()``, ``fldstd()``, ``fldintg()``, ``fldarea()``. 
+The methods are exposed so that is sufficient to use ``fldstat(data, stat=statname)`` with `statname` being a string such as: ``mean``, ``min``, ``max``, ``sum``, ``std``, ``integral``, ``areasum``;
+Otherwise the relative sibilings can be called ``fldmean()``, ``fldmin()``, ``fldmax()``, ``fldsum()``, ``fldstd()``, ``fldintg()``, ``fldarea()``.
 For example, if we run the following commands:
 
 .. code-block:: python
@@ -164,8 +166,17 @@ This will internally use the ``AreaSelection()`` class described in the :ref:`sp
     If the dataset does not include these coordinates, this can be achieved with the fixer
     described in the :ref:`fixer` section.
 
-    Also, if you do not specify the ``dims`` argument (e.g. ``dims=['lon']``), the statistical operation will be operated on both 
+    Also, if you do not specify the ``dims`` argument (e.g. ``dims=['lon']``), the statistical operation will be operated on both
     the (automatically found) horizontal dimensions of the dataset!
+
+The same field statistics methods are also available through the ``aqua`` accessor on
+``xarray`` objects, mirroring the behaviour of the ``Reader`` methods. For example:
+
+.. code-block:: python
+
+    global_thick_mean = regrid_sithick.aqua.fldmean()
+    # or with an explicit choice of statistic and regional selection:
+    regional_sum = regrid_sithick.aqua.fldstat(stat='sum', lon_limits=[-50, 50], lat_limits=[-10, 20])
 
 Histogram
 ---------
@@ -175,6 +186,7 @@ The syntax is similar to the ``numpy.histogram()`` function, but it returns a Da
 If the input DataArray is Dask-based then the computation will be lazy.
 If a Dataset is passed, the first variable will be used.
 Latitudinal weighting is activated by default, so the 'counts' of the histogram will not be integers.
+This can be overridden by setting the ``weighted=False`` argument or by passing a weights DataArray to the ``weights`` argument.
 It is possible to compute a complete PDF (Probability Density Function) by setting the ``density=True`` argument.
 
 .. code-block:: python
@@ -184,7 +196,7 @@ It is possible to compute a complete PDF (Probability Density Function) by setti
     reader = Reader(model="IFS", exp="tco2559-ng5", source="ICMGG_atm2d")
     data = reader.retrieve()
     hist = histogram(data['t2m'], bins=100, range=(250, 350), units='K')
-  
+
 This will return a DataArray with the histogram of the ``t2m`` variable, with 100 bins ranging from 250 to 350,
 with area weighting (on by default) after converting the units to 'K' (if needed)
 In the output DataArray the ``center_of_bin`` and ``width`` coordinates contains the center and width of each bin respectively.
@@ -192,10 +204,11 @@ The ``bins`` and ``range`` arguments are recommended, all others totally optiona
 
 Some extra options are available:
 
+- ``weights=xr.DataArray``: this will pass a weights DataArray to the histogram computation.
 - ``weighted=False``: this will switch off computing a weighted histogram, where the weights are the cosines of the latitudes (true by default).
 - ``density=True``: this will compute a PDF (Probability Density Function) instead of a histogram (false by default).
 - ``dask=False``: this will force the computation of the histogram using numpy (true by default).
-- ``check=True``: this will perform a test to verify that the sum of the counts is equal to the number of elements in the input data. 
+- ``check=True``: this will perform a test to verify that the sum of the counts is equal to the number of elements in the input data.
                   It will fail if not appropriate bounds are used for the classes. Can be only used if the ``density`` flag is ``False``.
                   It will force a computation of the histogram and a numpy array will be returned.
 
@@ -231,12 +244,12 @@ The levels are specified in the same units as they are stored in the archive
 (for example in hPa for atmospheric IFS data, but an index for NEMO data in the FDB archive).
 
 .. note::
-    In the case of FDB data this presents the great advantage that a significantly reduced request will be read from the FDB 
+    In the case of FDB data this presents the great advantage that a significantly reduced request will be read from the FDB
     (by default all levels would be read for each timestep even if later a ``sel()`` or ``isel()`` selection
     is performed on the XArray).
 
 .. warning::
-    If you're dealing with level selection and regridding, please take a look at 
+    If you're dealing with level selection and regridding, please take a look at
     the section :ref:`lev-selection-regrid`.
 
 .. _streaming:
@@ -260,7 +273,7 @@ If, for example, we want to stream the data every three days from ``'2020-05-01'
 
     from aqua import Reader
     reader = Reader(model="IFS", exp= "tco2559-ng5", source="ICMGG_atm2d",
-                    streaming=True, aggregation = '3D', startdate = '2020-05-01')    
+                    streaming=True, aggregation = '3D', startdate = '2020-05-01')
     data = reader.retrieve()
 
 The data available with the first retrieve will be only 3 days of the available times.
@@ -322,9 +335,9 @@ Usage examples when multiple readers are used:
     from aqua import Reader
     reader1=Reader(model="IFS", exp="test-tco79", source="short", regrid="r100")  # the default is now reader1
     reader2=Reader(model="IFS", exp="test-tco79", source="short", regrid="r200")  # the default is now reader2
-    data1 = reader1.retrieve()  # the default is now reader1 
+    data1 = reader1.retrieve()  # the default is now reader1
     data2 = reader2.retrieve()  # the default is now reader2
-    reader1.set_default()  # the default is now reader1 
+    reader1.set_default()  # the default is now reader1
     data1r = data1.aqua.regrid()
     data2r = data2.aqua.regrid()  # data2 was created by retrieve(), so it remembers its default reader
     data2r = data2['2t'].aqua.set_default(reader2).aqua.regrid()  # the default is set to reader2 before using a method
@@ -332,7 +345,7 @@ Usage examples when multiple readers are used:
 Parallel Processing
 -------------------
 
-Since most of the objects in AQUA are based on ``xarray``, you can use parallel processing capabilities provided by 
+Since most of the objects in AQUA are based on ``xarray``, you can use parallel processing capabilities provided by
 ``xarray`` through integration with ``dask`` to speed up the execution of data processing tasks.
 
 For example, if you are working with AQUA interactively

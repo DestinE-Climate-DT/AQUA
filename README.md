@@ -13,7 +13,7 @@ The Application for QUality Assessment (AQUA) is a model evaluation framework de
 - Support for various data formats, such as NetCDF, GRIB, Zarr or FDB;
 - Robust and fast regridding functionality based on CDO;
 - Averaging and aggregation tools for temporal and spatial analyses;
-- Modular design for easy integration of new diagnostics. 
+- Modular design for easy integration of new diagnostics.
 
 ## Installation
 
@@ -30,7 +30,7 @@ mamba activate aqua
 
 This installation will provide both the AQUA framework and the AQUA diagnostics.
 
-### Use of AQUA container 
+### Use of AQUA container
 
 An alternative deployment making use of containers is available. Please refer to the `Container` chapter in the [AQUA Documentation](https://aqua.readthedocs.io/en/latest/container.html).
 
@@ -44,7 +44,7 @@ Please look at the `notebook` folder to explore AQUA functionalities.
 
 ## Command lines tools
 
-Please look at the `cli` folder to have access to the AQUA command line tools. 
+Please look at the `cli` folder to have access to the AQUA command line tools.
 
 ## Contributing guide
 

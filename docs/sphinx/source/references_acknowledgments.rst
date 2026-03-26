@@ -24,12 +24,10 @@ and please include also the following acknowledgements:
 Acknowledgments
 ---------------
 
-We would like to thank the numerous contributors who have helped developing, testing, and maintaining AQUA. 
+We would like to thank the numerous contributors who have helped developing, testing, and maintaining AQUA.
 
 The development of AQUA has been funded by the European Union through Contract `DE_340_CSC - Destination Earth Programme
 Climate Adaptation Digital Twin (Climate DT)`.
 Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union, the European Commission or ECMWF.
 Neither the European Union and the European Commission nor ECMWF can be held responsible for them.
 Destination Earth is a European Union funded initiative and is implemented by ECMWF, ESA, and EUMETSAT.
-
-

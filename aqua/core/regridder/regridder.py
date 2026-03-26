@@ -3,15 +3,17 @@ import os
 import re
 import shutil
 from tempfile import TemporaryDirectory
+
 import xarray as xr
 from smmregrid import CdoGenerate, GridInspector
 from smmregrid import Regridder as SMMRegridder
 from smmregrid.util import check_gridfile
+
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
+
 from .griddicthandler import GridDictHandler
 from .regridder_util import check_existing_file, validate_reader_kwargs
-
 
 # parameters which will affect the weights and areas name
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ['zoom']
@@ -228,10 +230,10 @@ class Regridder():
             self.src_grid_area = grid_area
 
         return grid_area
-    
+
     def _safe_to_netcdf(self, data, filename):
         """Save to netcdf safely using a temporary file.
-        
+
         Args:
             data (xr.Dataset or xr.DataArray): Data to save.
             filename (str): Destination file path.
@@ -242,7 +244,7 @@ class Regridder():
             os.makedirs(dest_dir, exist_ok=True)
         else:
             dest_dir = '.'  # Use current directory
-        
+
         # Create temp file in same directory as destination (same filesystem)
         with TemporaryDirectory(dir=dest_dir) as tmpdirname:
             tmp_file = os.path.join(tmpdirname, "temp.nc")
@@ -604,12 +606,7 @@ class Regridder():
         shared_vars = self._group_shared_dims(data)
 
         # apply regridding to each variable using the correct regridder
-        data = self._apply_regrid(data, shared_vars)    
-
-        # Remove the flipped attribute from any coordinate if exists
-        for coord in data.coords:
-            if 'flipped' in data[coord].attrs:
-                del data[coord].attrs['flipped']
+        data = self._apply_regrid(data, shared_vars)
 
         return data
 
@@ -630,7 +627,7 @@ class Regridder():
                     existing_vars = [v for v in shared_vars[vertical] if v in data]
                     if existing_vars:
                         datar.append(self.smmregridder[vertical].regrid(data[existing_vars]))
-            data = xr.merge(datar) 
+            data = xr.merge(datar)
         elif isinstance(data, xr.DataArray):
             for vertical, variables in shared_vars.items():
                 if data.name in variables:

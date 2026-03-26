@@ -1,11 +1,11 @@
 """Tests for the GridBuilder class."""
-import subprocess
 import os
+
 import pytest
-from aqua import GridBuilder
-from aqua import Reader
-from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
+
+from aqua import GridBuilder, Reader
 from aqua.core.configurer import ConfigPath
+from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
 from aqua.core.util import load_yaml
 
 pytestmark = [pytest.mark.aqua, pytest.mark.xdist_group(name="grid_builder")]
@@ -41,7 +41,7 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution='tco79')
         grid_builder.build(data, verify=True, rebuild=rebuild, create_yaml=True)
         assert os.path.exists(f'{self.grid_dir}/regular.yaml')
-    
+
     def test_grid_curvilinear(self, tmp_path):
         """Test the GridBuilder class with a regular grid."""
         reader = Reader(model='ECE4-FAST', exp='test', source='monthly-oce', loglevel='debug', areas=False)
@@ -60,7 +60,7 @@ class TestGridBuilder:
         grid_builder = GridBuilder(outdir=tmp_path, model_name='ifs', grid_name='tl63')
         grid_builder.build(data, verify=True, create_yaml=True) # this is not working yet
         assert os.path.exists(f'{self.grid_dir}/ifs-unstructured.yaml')
-    
+
     def test_grid_healpix(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
         reader = Reader(model='ERA5', exp='era5-hpz3', source='monthly', loglevel='debug', areas=False)
@@ -92,7 +92,7 @@ class TestGridEntryManager:
         else:
             assert f'{model.lower()}-{kind}.yaml' == os.path.basename(filename)
             assert f'{model.lower()}_{aquagrid}' == basename
-       
+
         entry = gem.create_grid_entry_name(aquagrid, cdogrid)
         assert basename.replace('_', '-') == entry
 
@@ -106,7 +106,7 @@ class TestGridEntryManager:
         assert basename == 'nemo_orca2_3d_depth'
         entry = gem.create_grid_entry_name(aquagrid='orca2', cdogrid=None, masked='oce', vert_coord='depth')
         assert 'nemo-orca2-3d-depth' == entry
-    
+
         block = gem.create_grid_entry_block(
             path='orca2_oce_depth_v1.nc',
             horizontal_dims='cells',
@@ -119,4 +119,3 @@ class TestGridEntryManager:
         assert block['cdo_options'] == '-f nc'
         assert block['remap_method'] == 'bil'
         assert block['path']['depth'] == 'orca2_oce_depth_v1.nc'
-

@@ -6,8 +6,10 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+
 from aqua.core.logger import log_configure
-from aqua.core.util import plot_box, evaluate_colorbar_limits, cbar_get_label
+from aqua.core.util import cbar_get_label, evaluate_colorbar_limits, plot_box
+
 from .single_map import plot_single_map, plot_single_map_diff
 from .styles import ConfigStyle
 
@@ -17,7 +19,7 @@ def plot_maps(maps: list,
               proj: ccrs.Projection = ccrs.Robinson(), extent: list = None,
               style=None, figsize: tuple = None,
               vmin: float = None, vmax: float = None, nlevels: int = 11,
-              title: str = None, title_size: int = 16, titles: list = None, titles_size: int = None, 
+              title: str = None, title_size: int = 16, titles: list = None, titles_size: int = None,
               cmap='RdBu_r', cbar_label: str = None,
               transform_first=False, cyclic_lon=True,
               return_fig=False, loglevel='WARNING', **kwargs):

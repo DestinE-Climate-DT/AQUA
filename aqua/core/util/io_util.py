@@ -2,15 +2,16 @@
 
 import os
 import re
-import numpy as np
-import xarray as xr
-import pandas as pd
 from glob import glob
-from .util import to_list
-from pypdf import PdfReader, PdfWriter
-from PIL import Image, PngImagePlugin
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+
 from aqua.core.logger import log_configure
 from aqua.core.version import __version__ as version
+
+from .util import to_list
 
 
 def files_exist(path):
@@ -147,7 +148,7 @@ def normalize_value(value):
     # Check if value is a dictionary, normalize its keys
     if isinstance(value, dict):
         return {normalize_key(k): normalize_value(v) for k, v in value.items()}
-    
+
     # Check if value is a string that looks like a dictionary-like structure
     if isinstance(value, str):
         if re.match(r"^\{.*\}$", value.strip()):
@@ -160,95 +161,9 @@ def normalize_value(value):
             except Exception as e:
                 # Log parsing errors and return the original string if parsing fails
                 log_configure('WARNING', 'normalize_value').warning(f"Failed to parse string as dictionary: {e}")
-    
+
     # Return the value as-is if it can't be processed further
     return value
-
-
-def add_pdf_metadata(filename: str,
-                     metadata_value: str | dict,
-                     metadata_name: str = '/Description',
-                     old_metadata: bool = True,
-                     loglevel: str = 'WARNING'):
-    """
-    Open a pdf and add new metadata.
-
-    Args:
-        filename (str): the filename of the pdf.
-                        It must be a valid full path.
-        metadata_value (str | dict): the value(s) of the new metadata.
-        metadata_name (str): the name of the new metadata.
-                            Default is '/Description'.
-        old_metadata (bool): if True, the old metadata will be kept.
-                            Default is True.
-        loglevel (str): the log level. Default is 'WARNING'.
-
-    Raise:
-        FileNotFoundError: if the file does not exist.
-    """
-    logger = log_configure(loglevel, 'add_pdf_metadata')
-
-    if not os.path.isfile(filename):
-        raise FileNotFoundError(f'File {filename} not found')
-
-    # Ensure metadata_name starts with '/'
-    if metadata_name and not metadata_name.startswith('/'):
-        logger.debug('metadata_name does not start with "/". Adding it...')
-        metadata_name = '/' + metadata_name
-
-    pdf_reader = PdfReader(filename)
-    pdf_writer = PdfWriter()
-
-    # Add existing pages to the new PDF
-    for page in pdf_reader.pages:
-        pdf_writer.add_page(page)
-
-    # Keep old metadata if required
-    if old_metadata:
-        logger.debug('Keeping old metadata')
-        metadata = pdf_reader.metadata
-        pdf_writer.add_metadata(metadata)
-
-    # Add the new metadata
-    if isinstance(metadata_value, dict):
-        metadata_value = {f'/{k}' if not k.startswith('/') else k: v for k, v in metadata_value.items()}  # Ensure keys start with '/'
-        pdf_writer.add_metadata(metadata_value)
-    else:
-        pdf_writer.add_metadata({metadata_name: metadata_value})
-
-    # Overwrite input PDF
-    with open(filename, 'wb') as f:
-        pdf_writer.write(f)
-
-
-def add_png_metadata(png_path: str, metadata: dict, loglevel: str = 'WARNING'):
-    """
-    Add metadata to a PNG image file.
-
-    Args:
-        png_path (str): The path to the PNG image file.
-        metadata (dict): A dictionary of metadata to add to the PNG file.
-                         Note: Metadata keys do not need a '/' prefix.
-        loglevel (str): The log level. Default is 'WARNING'.
-    """
-    logger = log_configure(loglevel, 'add_png_metadata')
-
-    if not os.path.isfile(png_path):
-        raise FileNotFoundError(f'File {png_path} not found')
-
-    image = Image.open(png_path)
-
-    # Create a dictionary for the PNG metadata
-    png_info = PngImagePlugin.PngInfo()
-
-    # Add the new metadata
-    for key, value in metadata.items():
-        png_info.add_text(key, str(value))
-        logger.debug(f'Adding metadata: {key} = {value}')
-
-    # Save the file with the new metadata
-    image.save(png_path, "PNG", pnginfo=png_info)
-    logger.info(f"Metadata added to PNG: {png_path}")
 
 
 def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> dict:
@@ -258,7 +173,8 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
 
     Args:
         metadata (dict, optional): The original metadata dictionary.
-        additional_metadata (dict, optional): A dictionary containing additional metadata fields (e.g., diagnostic, model, experiment, etc.).
+        additional_metadata (dict, optional): A dictionary containing additional
+            metadata fields (e.g., diagnostic, model, experiment, etc.).
 
     Returns:
         dict: The updated metadata dictionary.

@@ -1,8 +1,10 @@
 """ Utility to parse a yaml file from bash """
 
-import sys
-import yaml
 import os
+import sys
+
+import yaml
+
 
 def get_nested(data, keys):
     """

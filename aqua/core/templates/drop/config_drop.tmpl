@@ -12,17 +12,20 @@ target:
   catalog: {{ catalog }}
   startdate: {{ startdate }}  # Optional: starting date for Drop analysis
   enddate: {{ enddate }}      # Optiona: ending date for Drop analysis
-  
+
   # Optional: Regional selection
   # Uncomment to extract specific regions
   #region:
   #  name: Europe        # Region identifier
   #  lat: [35, 70]       # Latitude range [min, max]
   #  lon: [-10, 40]      # Longitude range [min, max]
-  
+
   # Optional: Statistical operator (default: mean)
   # Options: mean, std, max, min
+  # Additional option: kwargs for the statistical callable function can be set
+  # here as a dictionary
   #stat: mean
+  #stat_kwargs: {}
 
 # Output paths
 paths:
@@ -30,32 +33,32 @@ paths:
   tmpdir: {{ tmpdir }}
 
 # Processing options
-options: 
+options:
 
-  # The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'. 
-  engine: 'fdb' 
+  # The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'.
+  engine: 'fdb'
 
   loglevel: INFO
-  
+
   # Zarr reference creation for faster data access
   zarr: False
   verify_zarr: False
-  
+
   # Overwrite existing files
   overwrite: False
-  
+
   # Exclude incomplete time chunks when averaging
   exclude_incomplete: False
-  
+
   # Rebuild regridding weights
   rebuild: False
-  
+
   # Compacting method: xarray, cdo, or null for no compacting
   compact: xarray
-  
+
   # CDO options (used if compact: cdo)
   cdo_options: ["-f", "nc4", "-z", "zip_1"]
-  
+
   # Performance monitoring (creates HTML report)
   performance_reporting: False
 
@@ -72,33 +75,33 @@ data:
   ICON:
     historical-1990:
       hourly-hpz10-atm2d:
-        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf', 
+        vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf',
                'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
         workers: 12
-        
+
         # Optional: process specific realizations
         #realizations: [0, 1, 2] #process only r0, r1 and r2 (if supported by the catalog)
-        
+
         # Optional: zoom level (if supported by catalog)
         #zoom: 8
-        
+
         # Optional: custom resolution for this source (overrides target.resolution)
         #resolution: r25
-        
+
         # Optional: custom frequency for this source (overrides target.frequency)
         #frequency: daily
-        
+
         # Optional: custom statistic for this source (overrides target.stat)
         #stat: std
-        
+
       hourly-hpz10-atm3d:
         vars: ['q', 't', 'u', 'v']
         workers: 6
-        
+
       daily-hpz10-oce2d:
         vars: ['avg_sithick', 'avg_siconc']
         workers: 16
-        
+
       daily-hpz10-oce3d:
         vars: ['avg_thetao', 'avg_so']
         workers: 10
