@@ -213,7 +213,7 @@ def plot_maps(maps: list[xr.DataArray],
             ax.set_title(titles[i], fontsize=12)
 
     if title:
-        plt.suptitle(title, fontsize=ncols*9, y=0.95)
+        plt.suptitle(title, fontsize=ncols*7, y=0.95)
 
     if return_fig:
         return fig
