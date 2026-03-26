@@ -59,13 +59,13 @@ diagnostics:
       u:
         vmin: -10
         vmax: 10
-        vmin_v: -25
-        vmax_v: 25
+        vmin_v: -12
+        vmax_v: 12
       v:
         vmin: -3
         vmax: 3
-        vmin_v: -3
-        vmax_v: 3
+        vmin_v: -1
+        vmax_v: 1
       #q:
       #  vmin: -0.002
       #  vmax: 0.002
