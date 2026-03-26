@@ -1,19 +1,32 @@
 """An intake driver for FDB/GSV access"""
-import os
-import fnmatch
 import datetime
-import requests
-import eccodes
-import xarray as xr
-import numpy as np
+import fnmatch
+import os
+
 import dask
-from ruamel.yaml import YAML
+import eccodes
+import numpy as np
+import requests
+import xarray as xr
 from intake.source import base
-from aqua.core.util.eccodes import get_eccodes_attr
+from ruamel.yaml import YAML
+
+from aqua.core.logger import _check_loglevel, log_configure
 from aqua.core.util import to_list
-from aqua.core.logger import log_configure, _check_loglevel
-from .timeutil import check_dates, shift_time_dataset, floor_datetime, read_bridge_date, todatetime
-from .timeutil import split_date, make_timeaxis, date2str, date2yyyymm, add_offset
+from aqua.core.util.eccodes import get_eccodes_attr
+
+from .timeutil import (
+    add_offset,
+    check_dates,
+    date2str,
+    date2yyyymm,
+    floor_datetime,
+    make_timeaxis,
+    read_bridge_date,
+    shift_time_dataset,
+    split_date,
+    todatetime,
+)
 
 # Test if FDB5 binary library is available
 try:
@@ -39,7 +52,7 @@ class GSVSource(base.DataSource):
     _da = None
     dask_access = False  # Flag if dask has been requested
 
-    def __init__(self, request, data_start_date, data_end_date, bridge_start_date=None, bridge_end_date=None, 
+    def __init__(self, request, data_start_date, data_end_date, bridge_start_date=None, bridge_end_date=None,
                  hpc_expver=None, timestyle="date",
                  chunks="S", savefreq="h", timestep="h", timeshift=None,
                  startdate=None, enddate=None, var=None, metadata=None, level=None,
@@ -71,18 +84,20 @@ class GSVSource(base.DataSource):
             metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
             level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
             switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb' if not specified.
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'.
+                Defaults to 'fdb' if not specified.
             databridge (str, optional): Only for the Polytope engine. Sets wether the data must be retrieved from the
             Lumi databridge or from the MN5 databridge. Defaults to None.
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
         # If engine is not specified, we set it to 'fdb' and we activate the dummy_run flag.
-        # This means that we are running a dummy run, where the GSVRetriever is not actually used. 
-        # This is useful for testing and for the probe call of intake, which is used to get the schema without actually reading the data.
-        self.engine = engine or 'fdb'
-        self.dummy_run = (engine is None)
-        
+        # This means that we are running a dummy run, where the GSVRetriever is not actually used.
+        # This is useful for testing and for the probe call of intake, which is used to get
+        # the schema without actually reading the data.
+        self.engine = engine or "fdb"
+        self.dummy_run = engine is None
+
         self.logger = log_configure(log_level=loglevel, log_name='GSVSource')
 
         if self.engine == 'polytope':
@@ -159,7 +174,7 @@ class GSVSource(base.DataSource):
         # flooring to the frequency the time to ensure that hourly, daily and monthly data
         # are read at the right time frequency
         # setting hpc and bridge availability dates
-        for attr in ["data_start_date", "data_end_date", "bridge_end_date", 
+        for attr in ["data_start_date", "data_end_date", "bridge_end_date",
                      "bridge_start_date", "startdate", "enddate"]:
             setattr(self, attr, floor_datetime(getattr(self, attr), savefreq))
 
@@ -208,7 +223,9 @@ class GSVSource(base.DataSource):
                 if isinstance(lev, list) and len(lev) > 1:
                     self.onelevel = True  # If yes we can afford to read only one level
             else:
-                self.logger.warning("A speedup of data retrieval could be achieved by specifying the levels keyword in metadata.")
+                self.logger.warning(
+                    "A speedup of data retrieval could be achieved by specifying the levels keyword in metadata."
+                    )
 
         timeaxis = make_timeaxis(self.data_start_date, self.startdate, self.enddate,
                                  shiftmonth=self.timeshift, timestep=timestep,
@@ -237,7 +254,7 @@ class GSVSource(base.DataSource):
                     raise FileNotFoundError(f'fdbhome path {self.fdbhome} does not exist!')
                 if self.fdbpath and not os.path.exists(self.fdbpath):
                     raise FileNotFoundError(f'fdbpath path {self.fdbpath} does not exist!')
-            
+
             if np.any(self.chk_type == 1):  # We have bridge chunks
                 if not self.fdbpath_bridge and not self.fdbhome_bridge:
                     raise ValueError('Some data is on bridge but no bridge FDB path or FDB home specified in catalog.')
@@ -283,10 +300,10 @@ class GSVSource(base.DataSource):
             fdb_info = self._read_fdb_info()
         else:
             fdb_info = None
-        
+
         # Data dates
         self._setup_data_dates(data_start_date, data_end_date, fdb_info)
-        
+
         # Bridge dates
         self._setup_bridge_dates(bridge_start_date, bridge_end_date, fdb_info)
         self._adjust_bridge_bounds()
@@ -294,7 +311,7 @@ class GSVSource(base.DataSource):
     def _read_fdb_info(self):
         """
         Read FDB information from file if available
-        
+
         Returns:
             dict or None: FDB information if available, None otherwise
         """
@@ -306,7 +323,7 @@ class GSVSource(base.DataSource):
     def _setup_data_dates(self, data_start_date, data_end_date, fdb_info):
         """
         Setup data start and end dates
-        
+
         Args:
             data_start_date (str): Start date of the available data.
             data_end_date (str): End date of the available data.
@@ -320,7 +337,9 @@ class GSVSource(base.DataSource):
             if data_start_date == 'auto' or data_end_date == 'auto':
                 self.logger.debug('Autoguessing of the FDB start and end date enabled.')
                 if self.timestyle == 'yearmonth':
-                    raise ValueError('Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!')
+                    raise ValueError(
+                        'Auto date selection not supported for timestyle=yearmonth. Please specify start and end date!'
+                        )
                 self.data_start_date, self.data_end_date = self.parse_fdb(data_start_date, data_end_date)
             else:
                 self.data_start_date = data_start_date
@@ -329,7 +348,7 @@ class GSVSource(base.DataSource):
     def _setup_bridge_dates(self, bridge_start_date, bridge_end_date, fdb_info):
         """
         Setup bridge start and end dates
-        
+
         Args:
             bridge_start_date (str): Start date of the bridge data.
             bridge_end_date (str): End date of the bridge data.
@@ -346,7 +365,7 @@ class GSVSource(base.DataSource):
     def _setup_bridge_dates_from_file(self, fdb_info):
         """
         Setup bridge dates from FDB info file
-        
+
         Args:
             fdb_info (dict): FDB information from file
         """
@@ -362,13 +381,13 @@ class GSVSource(base.DataSource):
         self.bridge_start_date, self.bridge_end_date = self.get_dates_from_stac_api(self._request, BRIDGE_API_URL)
         self.bridge_end_date = self.bridge_end_date + 'T2300'
         self.bridge_start_date = self.bridge_start_date + 'T0000'
-        self.logger.debug('STAC API bridge start data: %s, bridge end date: %s', 
+        self.logger.debug('STAC API bridge start data: %s, bridge end date: %s',
                         self.bridge_start_date, self.bridge_end_date)
 
     def _setup_bridge_dates_from_input(self, bridge_start_date, bridge_end_date):
         """
         Setup bridge dates from input parameters
-        
+
         Args:
             bridge_start_date (str): Start date of the bridge data.
             bridge_end_date (str): End date of the bridge data.
@@ -636,7 +655,8 @@ class GSVSource(base.DataSource):
 
         # The following is a hack around a pyfdb/fdb5 bug which requires a double initialization when reading from bridge
         # See https://github.com/DestinE-Climate-DT/AQUA/issues/1715
-        # Notice also that for some mysterious reason this works only if the result is stored in self (even if then it is not used)
+        # Notice also that for some mysterious reason this works only if the
+        # result is stored in self (even if then it is not used)
         if self.chk_type[i]:
             self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
         gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
@@ -717,7 +737,14 @@ class GSVSource(base.DataSource):
             # has changed. This is a warning to the user. However the final variable name will be influenced
             # by this only if fix=False.
             if updated_var != var:
-                self.logger.warning("Variable shortname %s has been interpreted with another eccodes. Current eccodes %s will read paramid %s as %s", var, eccodes.__version__, original_paramid, updated_var)
+                self.logger.warning(
+                    "Variable shortname %s has been interpreted with another eccodes. "
+                    "Current eccodes %s will read paramid %s as %s",
+                    var,
+                    eccodes.__version__,
+                    original_paramid,
+                    updated_var,
+                )
             # Create a dask array from a list of delayed get_partition calls
             if not self.chunking_vertical:
                 dalist = [self.get_part_delayed(i, original_paramid, shape, dtype) for i in range(self.npartitions)]
@@ -725,7 +752,7 @@ class GSVSource(base.DataSource):
             else:
                 dalist = []
                 for j in range(self.nlevelchunks):
-                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, original_paramid, shape, dtype) for i in range(self.ntimechunks)]
+                    dalistlev = [self.get_part_delayed(i*self.nlevelchunks+j, original_paramid, shape, dtype) for i in range(self.ntimechunks)] # noqa: E501
                     dalist.append(dask.array.concatenate(dalistlev, axis=self.itime))
                 darr = dask.array.concatenate(dalist, axis=self.ilevel)  # This is a lazy dask array
 
@@ -849,7 +876,11 @@ class GSVSource(base.DataSource):
         if self.hpc_expver:
             expver = self.hpc_expver
 
-        file_mask = f"{req['class']}:{req['dataset']}:{req['activity']}:{req['experiment']}:{req['generation']}:{req['model']}:{req['realization']}:{expver}:{req['stream']}:*"
+        file_mask = (
+            f"{req['class']}:{req['dataset']}:{req['activity']}:"
+            f"{req['experiment']}:{req['generation']}:{req['model']}:"
+            f"{req['realization']}:{expver}:{req['stream']}:*"
+        )
 
         file_mask = file_mask.lower()
         file_list = [
@@ -869,13 +900,13 @@ class GSVSource(base.DataSource):
             self.logger.info('Automatic FDB date range: %s - %s', start_date, end_date)
 
         return start_date, end_date
-    
+
     @staticmethod
     def get_dates_from_stac_api(params, base_url=BRIDGE_API_URL):
         """
         Function to get from the STAC data bridge the available
         dates of a dataset on the bridge
-        
+
         Args:
             params (dict): Dictionary of parameters to interrogate the STAC API.
                         In principle, the same as the usual FDB request
@@ -916,7 +947,7 @@ class GSVSource(base.DataSource):
         except ValueError as exc:
             raise ValueError("Failed to parse STAC API response as JSON") from exc
 
-    
+
         dateblock = [el for el in stac_json['links'] if el.get('title') == 'date']
         if not dateblock:
             raise ValueError(f"The first link in the response is not a date link, but {dateblock}")
@@ -924,7 +955,7 @@ class GSVSource(base.DataSource):
         # specific extraction of the dates: new format following the qube STAC API
         dates = dateblock[0].get('variables').get('date').get('enum')
         sorted_dates = sorted(dates)
-        
+
         return sorted_dates[0], sorted_dates[-1]
 
 

@@ -88,7 +88,7 @@ for model in "${models[@]}"; do
     # EN4 link
     if [ "$model" == "EN4" ]; then
         path="https://swift.dkrz.de/v1/dkrz_a973e394-5f24-4f4d-8bbf-1a83bd387ccb/AQUA/grids/EN4.tar.gz?temp_url_sig=a62db3040e0d39e7d26d276842844c8fb47cd0d7&temp_url_expires=2027-02-04T14:28:04Z"
-    fi 
+    fi
 
     # ERA5 link
     if [ "$model" == "ERA5" ]; then

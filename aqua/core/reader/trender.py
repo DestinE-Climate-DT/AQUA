@@ -1,10 +1,10 @@
 """Class for handling trend and detrending of xarray objects."""
 
-import xarray as xr
 import numpy as np
 import pandas as pd
-from aqua.core.logger import log_configure, log_history
+import xarray as xr
 
+from aqua.core.logger import log_configure, log_history
 
 
 class Trender:
@@ -53,7 +53,7 @@ class Trender:
             DataArray or Dataset: The detrended data.
         """
         return self._apply_trend_or_detrend(data, self._detrend, dim, degree, skipna)
-    
+
     def coeffs(self, data: xr.DataArray | xr.Dataset, dim: str = 'time',
                degree: int = 1, skipna: bool = False, normalize: bool = False) -> xr.DataArray | xr.Dataset:
         """"
@@ -62,7 +62,8 @@ class Trender:
 
         return self._apply_trend_or_detrend(data, self._coeffs, dim, degree, skipna, normalize=normalize)
 
-    def _coeffs(self, data: xr.DataArray | xr.Dataset, dim: str, degree: int, skipna: bool, normalize: bool) -> xr.DataArray | xr.Dataset:
+    def _coeffs(self, data: xr.DataArray | xr.Dataset, dim: str,
+                degree: int, skipna: bool, normalize: bool) -> xr.DataArray | xr.Dataset:
         """
         Compute the polynomial coefficients for the trend, adjusted to the input data.
 
@@ -118,7 +119,7 @@ class Trender:
         Internal dispatcher for trend/detrend logic.
         """
         action = func.__name__.capitalize() # Get the action name (Trend or Detrend)
-        
+
         self.logger.info(
             "Applying %s with polynomial of order %d along '%s' dimension.", action, degree, dim
         )

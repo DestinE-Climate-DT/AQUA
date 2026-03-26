@@ -51,7 +51,7 @@ jobs:
 
           # Remove leading 'v' if present and replace '+' with '-' for Docker tag compatibility
           VERSION=$(echo "$RAW_REF" | sed -e 's/^v//' -e 's/+/-/g')
-          
+
            # Handle main branch special case
           [ "$VERSION" == "main" ] && VERSION=latest
 

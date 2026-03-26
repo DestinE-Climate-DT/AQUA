@@ -41,4 +41,3 @@ def template_parse_arguments(parser: argparse.ArgumentParser):
                         required=False, help="end date (YYYY-MM-DD)")
 
     return parser
-

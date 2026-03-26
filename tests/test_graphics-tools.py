@@ -1,17 +1,20 @@
+import healpy as hp
+import numpy as np
 import pytest
 import xarray as xr
-import numpy as np
-import healpy as hp
-from scipy.interpolate import griddata
-from pypdf import PdfReader
+from conftest import LOGLEVEL
 
 from aqua import Reader
-from aqua.core.util.graphics import add_cyclic_lon, plot_box, minmax_maps
-from aqua.core.util import cbar_get_label, evaluate_colorbar_limits
-from aqua.core.util import get_nside, get_npix, healpix_resample
-from aqua.core.util import coord_names, set_map_title
-from aqua.core.graphics import plot_single_map
-from conftest import DPI, LOGLEVEL
+from aqua.core.util import (
+    cbar_get_label,
+    coord_names,
+    evaluate_colorbar_limits,
+    get_npix,
+    get_nside,
+    healpix_resample,
+    set_map_title,
+)
+from aqua.core.util.graphics import add_cyclic_lon, minmax_maps, plot_box
 
 loglevel = LOGLEVEL
 
@@ -219,13 +222,13 @@ class TestHealpixResample:
         nside = 8
         full_npix = hp.nside2npix(nside)  # 768, valid
         selected_cells = np.random.choice(full_npix, size=100, replace=False)
-        
+
         # Build a *sparse* DataArray, but with npix = 768 (valid)
         # Set all values to NaN, except for the selected_cells
         data_array = np.full(full_npix, np.nan, dtype=np.float32)
         values = np.random.rand(100).astype(np.float32)
         data_array[selected_cells] = values
-        
+
         # Assign the 'cell' coordinate
         var = xr.DataArray(data_array, coords={"cell": np.arange(full_npix)}, dims=["cell"])
 

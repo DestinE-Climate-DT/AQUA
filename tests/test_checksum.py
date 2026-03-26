@@ -1,8 +1,8 @@
 import os
-import pytest
 from pathlib import Path
-import tempfile
-import subprocess
+
+import pytest
+
 from aqua.core.util.checksum import compute_md5, generate_checksums, verify_checksums
 
 
@@ -14,7 +14,7 @@ class TestChecksumModule:
         file.write_text("Test content")
 
         md5 = compute_md5(str(file))
-        
+
         assert md5 is not None
         assert len(md5) == 32  # MD5 checksum should be 32 characters long
 
@@ -35,13 +35,10 @@ class TestChecksumModule:
 
         assert checksum_file.exists()
         with checksum_file.open("r", encoding='utf8') as f:
-            content = f.read()
+            f.read()
 
         verify_checksums(tmp_path, ["."], str(checksum_file))
         captured = capsys.readouterr()
         assert "All files are verified successfully" in captured.out
 
         os.remove(checksum_file)
-
-
-

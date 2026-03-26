@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from aqua.core.util import create_folder, evaluate_colorbar_limits, unit_to_latex
 from aqua.core.logger import log_configure
+from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+
 from .styles import ConfigStyle
 
 # set default options for xarray

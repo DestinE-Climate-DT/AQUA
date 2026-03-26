@@ -1,14 +1,13 @@
+import numpy as np
 import pytest
 import regionmask
 import xarray as xr
-import numpy as np
-from typeguard import TypeCheckError
-from aqua.core.fldstat import AreaSelection
-from aqua.core.util import select_season
-from aqua.core.util.sci_util import generate_quarter_months
-from aqua.core.util import check_seasonal_chunk_completeness
-
 from conftest import LOGLEVEL
+from typeguard import TypeCheckError
+
+from aqua.core.fldstat import AreaSelection
+from aqua.core.util import check_seasonal_chunk_completeness, select_season
+from aqua.core.util.sci_util import generate_quarter_months
 
 loglevel = LOGLEVEL
 
@@ -122,7 +121,7 @@ def test_missing_data():
     """Test with missing data or wrong type"""
     with pytest.raises(TypeError):
         AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
-        
+
     with pytest.raises(TypeCheckError):
         AreaSelection(loglevel=loglevel).select_area('invalid_data', lat=[15, 25], lon=[45, 55], box_brd=True)
 
@@ -200,7 +199,7 @@ def test_full_globe_selection(data_fixture, lon_limits, request):
 
 
 @pytest.mark.aqua
-@pytest.mark.parametrize("data_fixture, lon_limits, expected_in, expected_out", 
+@pytest.mark.parametrize("data_fixture, lon_limits, expected_in, expected_out",
 [
     ("sample_data_180", [-100, 100], [-45, 0, 45, 90], [-135, 135]),
     ("sample_data_180", [-40, -20], [-30], [-45, 0, 90, 135]),

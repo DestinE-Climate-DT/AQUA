@@ -1,10 +1,12 @@
 """This module base class for grid type builders and its extensions."""
 import os
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 import numpy as np
 import xarray as xr
 from cdo import Cdo
-from smmregrid import CdoGenerate, Regridder, GridType
+from smmregrid import CdoGenerate, GridType, Regridder
+
 from aqua.core.logger import log_configure
 
 
@@ -151,7 +153,7 @@ class BaseGridBuilder:
             data = data.isel({timedim: 0}, drop=True)
 
         # Load the variables and rename to mask for consistency
-        space_bounds = [bound for bound in gridtype.bounds if not 'time' in bound]
+        space_bounds = [bound for bound in gridtype.bounds if 'time' not in bound]
         load_vars = [var] + space_bounds  # (gridtype.bounds or [])
         data = data[load_vars]
         data = data.rename({var: 'mask'})

@@ -1,13 +1,14 @@
 """Catalog configuration helpers for AQUA."""
 import os
+
 #import platform
 import intake
 
+from aqua.core.logger import log_configure
 from aqua.core.util.util import to_list
 from aqua.core.util.yaml import load_yaml
-from aqua.core.logger import log_configure
-from .locator import ConfigLocator
 
+from .locator import ConfigLocator
 
 
 class ConfigPath():
@@ -221,11 +222,11 @@ class ConfigPath():
         if 'machine' in base:
             self.logger.debug('Machine found in configuration file, set to %s', machine)
             return base['machine']
-        
+
         # warning for unknown machine
         self.logger.warning('No machine entry found in configuration file, set to %s', machine)
         return machine
-    
+
         # if the entry is auto, or the machine unknown, try autodetection
         # if self.machine in ['auto', 'unknown']:
         #     self.logger.debug('Machine is %s, trying to self detect', self.machine)
@@ -275,7 +276,10 @@ class ConfigPath():
         catalog_file = self.base_available[catalog]['reader']['catalog']
         self.logger.debug('Catalog file is %s', catalog_file)
         if not os.path.exists(catalog_file):
-            raise FileNotFoundError(f'Cannot find catalog file in {catalog_file}. Did you install it with "aqua add {catalog}"?')
+            raise FileNotFoundError(
+                f'Cannot find catalog file in {catalog_file}. '
+                f'Did you install it with "aqua add {catalog}"?'
+            )
 
         machine_file = self.base_available[catalog]['reader']['machine']
         self.logger.debug('Machine file is %s', machine_file)
@@ -359,7 +363,7 @@ class ConfigPath():
         if not catalogs_to_scan:
             self.logger.warning('No catalogs available to scan')
             return results
-        
+
         self.logger.debug("Catalogs to show: %s", catalogs_to_scan)
 
         for cat_name in catalogs_to_scan:
@@ -373,12 +377,12 @@ class ConfigPath():
 
             structure = {}
             descriptions = {}  # model -> exp -> {source: description}
-            
+
             models = [model] if model else list(cat.keys())
 
             for model_name in models:
                 if model_name not in cat:
-                    self.logger.warning('Model %s not found in catalog %s. Available: %s', 
+                    self.logger.warning('Model %s not found in catalog %s. Available: %s',
                                         model_name, cat_name, list(cat.keys()))
                     continue
 
@@ -387,7 +391,7 @@ class ConfigPath():
 
                 for exp_name in experiments:
                     if exp_name not in model_cat:
-                        self.logger.warning('Experiment %s not found in model %s. Available: %s', 
+                        self.logger.warning('Experiment %s not found in model %s. Available: %s',
                                             exp_name, model_name, list(model_cat.keys()))
                         continue
 
@@ -428,7 +432,7 @@ class ConfigPath():
             walk_dict = exp_cat.walk()
         except Exception:  # noqa: BLE001
             return {}
-            
+
         descs = {}
         for source in sources:
             try:
@@ -445,7 +449,7 @@ class ConfigPath():
     def format_catalog_structure(structure, catalog_name, descriptions=None):
         """
         Format catalog structure as a nicely aligned tree.
-        
+
         Args:
             structure: Dictionary with model/exp/source structure
             catalog_name: Name of the catalog
@@ -463,7 +467,7 @@ class ConfigPath():
 
                 if not sources:
                     continue
-                    
+
                 sorted_sources = sorted(sources)
 
                 if descriptions:

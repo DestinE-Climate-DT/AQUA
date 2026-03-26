@@ -4,18 +4,20 @@
 AQUA cli tool to submit parallel aqua-web slurm jobs
 '''
 
-import subprocess
 import argparse
-import re
-import sys
 import os
+import re
+import subprocess
+import sys
 import uuid
+from tempfile import NamedTemporaryFile
+
 from jinja2 import Template
 from ruamel.yaml import YAML
-from tempfile import NamedTemporaryFile
+
+from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
 from aqua.core.util import get_arg
-from aqua.core.configurer import ConfigPath
 
 
 class Submitter():
@@ -61,10 +63,10 @@ class Submitter():
     def is_job_running(self, job_name, username):
         """verify that a job name is not already submitted in the slurm queue"""
         # Run the squeue command to get the list of jobs
-        output = subprocess.run(['squeue', '-u', username, '--format', '%j'], 
+        output = subprocess.run(['squeue', '-u', username, '--format', '%j'],
                                 capture_output=True, check=True)
         output = output.stdout.decode('utf-8').splitlines()[1:]
-        
+
         # Parse the output to check if the job name is in the list
         return job_name in output
 
@@ -146,7 +148,7 @@ class Submitter():
 
         if self.dryrun:
             self.logger.debug("SLURM job:\n %s", rendered_job)
-        
+
         sbatch_cmd = [ 'sbatch' ]
 
         if dependency is not None:
@@ -216,7 +218,7 @@ class Submitter():
 
         if self.dryrun:
             self.logger.debug("SLURM job:\n %s", rendered_job)
-        
+
         sbatch_cmd = [ 'sbatch' ]
 
         sbatch_cmd.append('--dependency=afterany:' + ":".join(jobid_list))
@@ -316,7 +318,7 @@ def parse_arguments(arguments):
                         help='use the native (native) AQUA version (default is the container version)')
     parser.add_argument('-f', '--fresh', action="store_true",
                         help='use a fresh (new) output directory, do not recycle original one')
-     
+
     # List of experiments is a positional argument
     parser.add_argument('list', nargs='?', type=str,
                         help='list of experiments in format: model, exp, source')
@@ -372,7 +374,7 @@ if __name__ == '__main__':
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-    
+
                 if ensemble:
                     catalog, model, exp, realization, *source = re.split(r',|\s+|\t+', line.strip())
                 else:
@@ -391,14 +393,14 @@ if __name__ == '__main__':
                             parent_job = str(jobid)
 
                 count = count + 1
-                
+
                 jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
                 jobid_list.append(jobid)
-    
+
         if push:
-            submitter.submit_push(jobid_list, listfile)     
+            submitter.submit_push(jobid_list, listfile)
 
     else:
         jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
         if push:
-            submitter.submit_push([jobid], f'{model}/{exp}') 
+            submitter.submit_push([jobid], f'{model}/{exp}')

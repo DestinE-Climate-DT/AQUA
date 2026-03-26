@@ -3,9 +3,11 @@ DataModel class for applying base coordinate transformations.
 Provides a clean interface to CoordTransformer with caching.
 """
 import xarray as xr
+
 from aqua.core.logger import log_configure
-from .coordtransformer import CoordTransformer
+
 from .coord_utils import get_data_model
+from .coordtransformer import CoordTransformer
 
 
 class DataModel:

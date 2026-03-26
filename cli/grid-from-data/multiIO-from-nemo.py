@@ -5,9 +5,9 @@ AQUA command line tool to create an healpix grid from an oceanic file
 """
 import argparse
 import sys
+
 from aqua import Reader
-from aqua.core.util import load_yaml, get_arg, create_folder
-from aqua.core.util import log_configure
+from aqua.core.util import create_folder, get_arg, load_yaml, log_configure
 
 
 def parse_arguments(args):

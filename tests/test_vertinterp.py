@@ -1,8 +1,9 @@
 """Tests for streaming"""
 
 import pytest
-from aqua import Reader
 from conftest import LOGLEVEL
+
+from aqua import Reader
 
 loglevel = LOGLEVEL
 
@@ -14,7 +15,7 @@ def reader():
 def data(reader):
     """Retrieve 3D FESOM data once for all vertinterp tests"""
     return reader.retrieve()
-    
+
 @pytest.mark.aqua
 def test_vertinterp(reader, data):
     """Trivial test for vertical interpolation. to be expanded"""

@@ -1,14 +1,18 @@
+import textwrap
+
 import matplotlib.pyplot as plt
-import xarray as xr
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from metpy.units import units
-from aqua.core.util import to_list, unit_to_latex
-from aqua.core.logger import log_configure
-from .styles import ConfigStyle
+import xarray as xr
 from matplotlib import colors as mcolors
-import textwrap
+from metpy.units import units
+
+from aqua.core.logger import log_configure
+from aqua.core.util import to_list, unit_to_latex
+
+from .styles import ConfigStyle
+
 
 def boxplot(fldmeans: list[xr.Dataset],
             model_names: list[str],
@@ -105,7 +109,7 @@ def boxplot(fldmeans: list[xr.Dataset],
     if add_mean_line:
         means = df.groupby(['Variables', 'Models'])['Values'].mean().unstack(fill_value=np.nan)
 
-        n_vars = len(order)
+        # n_vars = len(order)
         n_hues = len(hue_order)
         total_box_width = 0.8  # same width passed to sns.boxplot
         if n_hues > 0:
@@ -148,10 +152,10 @@ def boxplot(fldmeans: list[xr.Dataset],
         ax.set_title(title, fontsize=fontsize + 2)
     else:
         vars_str = ', '.join(labels[v] for v in variables)
-        models_str = ', '.join(model_names)
+        # models_str = ', '.join(model_names)
         wrapped_title = textwrap.fill(f'Boxplot of {vars_str}', LINE_LENGTH_TITLE)
         ax.set_title(wrapped_title, fontsize=fontsize+2)
- 
+
     ax.set_xlabel('Variables', fontsize=fontsize)
 
     # Y-axis label from units
@@ -160,7 +164,7 @@ def boxplot(fldmeans: list[xr.Dataset],
         first_var = variables[0][1:] if variables[0].startswith('-') else variables[0]
         units_str = fldmeans[0][first_var].attrs.get('units', '')
         units_latex = unit_to_latex(units_str) if units_str else ''
-        ax.set_ylabel(units_latex, fontsize=fontsize, labelpad=12)    
+        ax.set_ylabel(units_latex, fontsize=fontsize, labelpad=12)
     else:
         ax.set_ylabel('Values (various units)', fontsize=fontsize, labelpad=12)
 
