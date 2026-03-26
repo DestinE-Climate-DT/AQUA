@@ -142,12 +142,12 @@ def drop_execute(args):
     default_workers = get_arg(args, 'workers', 1)
 
     drop_cli(args=args, config=config, catalog=catalog, resolution=resolution,
-            frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
-            outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
-            region=region, stat=stat, compact=compact,
-            definitive=definitive, overwrite=overwrite, rebuild=rebuild,
-            default_workers=default_workers, engine=engine, chunks=chunks,
-            monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
+             frequency=frequency, fix=fix, enddate=enddate, startdate=startdate,
+             outdir=outdir, tmpdir=tmpdir, loglevel=loglevel,
+             region=region, stat=stat, compact=compact,
+             definitive=definitive, overwrite=overwrite, rebuild=rebuild,
+             default_workers=default_workers, engine=engine, chunks=chunks,
+             monitoring=monitoring, do_zarr=do_zarr, verify_zarr=verify_zarr, only_catalog=only_catalog)
 
 def drop_cli(args, config, catalog=None, resolution=None, frequency=None, fix=None,
              startdate=None, enddate=None, outdir=None, tmpdir=None, loglevel=None,
