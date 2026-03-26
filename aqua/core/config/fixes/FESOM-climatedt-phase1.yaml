@@ -8,3 +8,8 @@ fixer_name:
                 src_units: degC
             thetao:
                 src_units: degC
+
+        coords:
+            level:
+                source: level
+                tgt_units: 'm'

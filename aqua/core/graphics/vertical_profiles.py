@@ -1,10 +1,12 @@
 from typing import Optional, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits
+from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+
 from .styles import ConfigStyle
 
 
@@ -12,7 +14,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
                           lev_name: str = "plev", x_coord: str = "lat",
                           lev_min: Optional[float] = None,lev_max: Optional[float] = None,
                           vmin: Optional[float] = None, vmax: Optional[float] = None,
-                          nlevels: int = 18, 
+                          nlevels: int = 18,
                           title: Optional[str] = None, title_size: Optional[int] = 16,
                           style: Optional[str] = None,
                           logscale: bool = False,
@@ -88,7 +90,10 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
     ax.set_ylabel("Pressure Level (Pa)" if lev_name == "plev" else lev_name)
     ax.invert_yaxis()
     if cbar:
-        cbar_label = cbar_label or f"{var} [{data.attrs.get('units', '')}]"
+        if cbar_label is None:
+            units = data.attrs.get('units', '')
+            units_latex = unit_to_latex(units) if units else ''
+            cbar_label = f"{var} [{units_latex}]" if units_latex else f"{var}"
         fig.colorbar(cax, ax=ax, label=cbar_label)
     if grid:
         ax.grid(True)
@@ -107,7 +112,7 @@ def plot_vertical_profile(data: xr.DataArray, var: str= None,
 
 
 def plot_vertical_profile_diff(data: xr.DataArray, data_ref: xr.DataArray,
-                               var: str, 
+                               var: str,
                                lev_name: str = "plev", x_coord: str = "lat",
                                lev_min: Optional[float] = None, lev_max: Optional[float] = None,
                                vmin: Optional[float] = None, vmax: Optional[float] = None,

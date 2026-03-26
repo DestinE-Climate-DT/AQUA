@@ -1,12 +1,16 @@
 import os
+import re
 import shutil
+
+import pandas as pd
 import pytest
 import xarray as xr
-import pandas as pd
-from aqua import Drop, Reader
-from aqua.core.drop.output_path_builder import OutputPathBuilder
-from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder   
 from conftest import LOGLEVEL
+
+from aqua import Drop, Reader
+from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
+from aqua.core.drop.drop import available_stats
+from aqua.core.drop.output_path_builder import OutputPathBuilder
 
 DROP_PATH = 'ci/IFS/test-tco79/r1/r100/monthly/mean/global'
 DROP_PATH_DAILY = 'ci/IFS/test-tco79/r1/r100/daily/mean/europe'
@@ -17,6 +21,7 @@ pytestmark = [
     pytest.mark.console,
     pytest.mark.xdist_group(name="dask_operations")
 ]
+
 
 @pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "drop_test"}])
 def drop_arguments(request):
@@ -49,13 +54,14 @@ class TestOutputPathBuilder:
             var=drop_arguments['var'], year=2020, month=1)
 
         if not expected:
-            DROP_PATH = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
-            expected = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH,
-                                         f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
+            drop_path = f'ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}'
+            expected = os.path.join(os.getcwd(), drop_arguments["outdir"], drop_path,
+                                    f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc")
         else:
             expected = os.path.join(os.getcwd(), drop_arguments["outdir"], expected)
 
         assert path == expected
+
 
 class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
@@ -65,7 +71,17 @@ class TestCatalogEntryBuilder:
         ('r200', 'daily', 'r1', 'global', 'mean', 'lon-lat', {'time': 365, 'lat': 90, 'lon': 180}),
         ('r050s', 'monthly', 'r4', 'europe', 'max', 'lon-lat', {'time': 12, 'lat': 361, 'lon': 720}),
       ])
-    def test_create_entry_name(self, drop_arguments, resolution, frequency, realization, region, stat, source_grid_name, chunks):
+    def test_create_entry_name(
+        self,
+        drop_arguments,
+        resolution,
+        frequency,
+        realization,
+        region,
+        stat,
+        source_grid_name,
+        chunks,
+    ):
         """Test creation of entry name."""
         builder = CatalogEntryBuilder(
             catalog='ci', **drop_arguments,
@@ -74,12 +90,12 @@ class TestCatalogEntryBuilder:
         )
         entry_name = builder.create_entry_name()
         block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name=source_grid_name)
-        
+
         if resolution == 'r100' and frequency == 'monthly':
             expected_name = f'lra-{resolution}-{frequency}'
         else:
             expected_name = f'{resolution}-{frequency}'
-        
+
         assert entry_name == expected_name
         assert block['driver'] == 'netcdf'
         assert block['parameters'].keys() == {'realization', 'stat', 'region'}
@@ -89,11 +105,14 @@ class TestCatalogEntryBuilder:
             resolution=resolution, frequency=frequency, realization='r2',
             stat=stat, region=region, loglevel=LOGLEVEL
         )
-        newblock = builder2.create_entry_details(basedir=drop_arguments["outdir"], catblock=block, source_grid_name=source_grid_name)
+        newblock = builder2.create_entry_details(
+            basedir=drop_arguments["outdir"],
+            catblock=block,
+            source_grid_name=source_grid_name,
+        )
         assert newblock['args']['urlpath'] == block['args']['urlpath']
         assert newblock['parameters']['realization']['allowed'] == [realization,'r2']
         assert newblock['args']['chunks'] == chunks
-
 
 
 class TestDROP:
@@ -123,7 +142,12 @@ class TestDROP:
         test.data = test.data.sel(time="2020-01")
         test.drop_generator()
 
-        file_path = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc")
+        file_path = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
+        )
         test.check_integrity(varname=drop_arguments["var"])
         assert os.path.isfile(file_path)
 
@@ -146,7 +170,12 @@ class TestDROP:
         test.data = test.data.sel(time="2020-01-20")
         test.drop_generator()
 
-        file_path = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH_DAILY, "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc")
+        file_path = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH_DAILY,
+            "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc",
+        )
         assert os.path.isfile(file_path), "File not found: {}".format(file_path)
 
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
@@ -200,8 +229,12 @@ class TestDROP:
         test.retrieve()
         test.drop_generator()
 
-        missing_file = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc")
-        existing_file = os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc")
+        missing_file = os.path.join(
+            os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
+        )
+        existing_file = os.path.join(
+            os.getcwd(), drop_arguments["outdir"], DROP_PATH, "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc",
+        )
 
         assert not os.path.exists(missing_file)
         assert os.path.exists(existing_file)
@@ -258,3 +291,21 @@ class TestDROP:
 
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_unknown_statistic(self, drop_arguments, tmp_path):
+        """Test DROP with an unknown statistic."""
+        error = f'Please specify a valid statistic: {available_stats}.'
+        with pytest.raises(ValueError, match=re.escape(error)):
+            Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
+                 resolution='r100', frequency='monthly', stat='unknown_stat',
+                 loglevel=LOGLEVEL)
+
+    def test_wrong_stat_kwargs(self, drop_arguments, tmp_path):
+        """Test DROP with histogram stat but wrong stat_kwargs."""
+        error = 'stat_kwargs must be a dictionary.'
+        with pytest.raises(TypeError, match=re.escape(error)):
+            test = Drop(catalog='ci', **drop_arguments, tmpdir=str(tmp_path),
+                        frequency='monthly', stat='histogram', stat_kwargs=512,  # This should be a dict, not an int
+                        loglevel=LOGLEVEL)
+            test.retrieve()
+            test.drop_generator()

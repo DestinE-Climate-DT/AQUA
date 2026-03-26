@@ -1,0 +1,6 @@
+grids:
+  cnrm-cm6-1-hr-atm:
+    path: '{{ grids }}/CNRM/cnrm-cm6-1-hr_atm.nc'
+    space_coord:
+    - lon
+    - lat

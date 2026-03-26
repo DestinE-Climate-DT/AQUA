@@ -1,7 +1,8 @@
 """Test fixer functionality for Reader"""
 
-import pytest
 import numpy as np
+import pytest
+
 from aqua import Reader
 from aqua.core.fixer import EvaluateFormula
 
@@ -15,20 +16,20 @@ def reader_ifs_tco79_long(ifs_tco79_long_reader):
 def data_ifs_tco79_long(ifs_tco79_long_data):
     return ifs_tco79_long_data
 
-@pytest.fixture(scope='module')
-def reader_ifs_tco79_long_fixFalse(ifs_tco79_long_fixFalse_reader):
-    return ifs_tco79_long_fixFalse_reader
+@pytest.fixture(scope="module")
+def reader_ifs_tco79_long_fixfalse(ifs_tco79_long_fixfalse_reader):
+    return ifs_tco79_long_fixfalse_reader
 
-@pytest.fixture(scope='module')
-def data_ifs_tco79_long_fixFalse(ifs_tco79_long_fixFalse_data):
-    return ifs_tco79_long_fixFalse_data
+@pytest.fixture(scope="module")
+def data_ifs_tco79_long_fixfalse(ifs_tco79_long_fixfalse_data):
+    return ifs_tco79_long_fixfalse_data
 
 @pytest.mark.aqua
-def test_fixer_ifs_long(data_ifs_tco79_long, data_ifs_tco79_long_fixFalse):
+def test_fixer_ifs_long(data_ifs_tco79_long, data_ifs_tco79_long_fixfalse):
     """Test basic fixing"""
 
     ntime = [10, 20, 1000]  # points in time to be checked (includes 1 month jump)
-    data0 = data_ifs_tco79_long_fixFalse  # Retrieve not fixed data
+    data0 = data_ifs_tco79_long_fixfalse  # Retrieve not fixed data
     ttr0 = data0.ttr[ntime, 0, 0]
     tas0 = data0['2t'][ntime, 5, 5]
 
@@ -133,7 +134,7 @@ def test_fixer_ifs_coords():
 def test_fixer_fesom_coords():
     """Check with fixer_name and coords block"""
 
-    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", loglevel=LOGLEVEL)
+    reader = Reader(model="FESOM", exp="test-pi", source="original_3d_coord_fix", datamodel=False, loglevel=LOGLEVEL)
     data = reader.retrieve()
     assert 'level' in data.coords
     assert 'a lot of water' in data.level.attrs['units']
@@ -150,7 +151,7 @@ def test_fixer_fesom_names():
 @pytest.mark.aqua
 def test_fixer_deltat():
     """Check that output for deltat read from metadata and from fixes are the same"""
-    
+
     reader1 = Reader(model='IFS', exp='test-tco79', source='long-deltat', loglevel=LOGLEVEL)
     data_metadata = reader1.retrieve(var='tnlwrf').isel(time=5)
     reader2 = Reader(model='IFS', exp='test-tco79', source='long', loglevel=LOGLEVEL)
@@ -206,7 +207,7 @@ class TestEvaluateFormula:
             units='K',
             short_name="magnitude_2t",
             long_name='Magnitude of 2t vector').evaluate()
-        
+
         assert convert.attrs['short_name'] == 'magnitude_2t'
         assert convert.attrs['long_name'] == 'Magnitude of 2t vector'
         assert convert.attrs['units'] == 'K'

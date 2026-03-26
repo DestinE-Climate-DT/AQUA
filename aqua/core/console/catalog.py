@@ -5,16 +5,16 @@ AQUA catalog operations mixin
 '''
 
 import os
-import sys
 import shutil
+import sys
 from urllib.error import HTTPError
 
 import fsspec
 
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import load_yaml, dump_yaml
-from aqua.core.util.util import to_list, HiddenPrints
 from aqua.core.reader.catalog import show_catalog_content as print_catalog
+from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.util.util import HiddenPrints, to_list
 
 # folder used for reading/storing catalogs
 CATPATH = 'catalogs'
@@ -38,7 +38,6 @@ class CatalogMixin:
             self.logger.error('%s catalog is not installed!', args.catalog)
             sys.exit(1)
 
-
     def add(self, args):
         """Add a catalog and set it as a default in config-aqua.yaml
 
@@ -48,19 +47,34 @@ class CatalogMixin:
         print('Adding the AQUA catalog', args.catalog)
         self._check(silent=True)
 
-        if args.editable is not None:
-            self._add_catalog_editable(args.catalog, args.editable)
-        else:
-            self._add_catalog_github(args.catalog, args.repository)
+        cdir = f'{self.configpath}/{CATPATH}/{args.catalog}'
+        is_new_catalog_dir = not os.path.exists(cdir)
 
-        # verify that the new catalog is compatible with AQUA, loading it with catalog()
         try:
+            if args.editable is not None:
+                self._add_catalog_editable(args.catalog, args.editable)
+            else:
+                self._add_catalog_github(args.catalog, args.repository)
+
             with HiddenPrints():
                 print_catalog()
-        except Exception as e:
-            self.remove(args)
-            self.logger.error('Current catalog is not compatible with AQUA, removing it for safety!')
-            self.logger.error(e)
+
+            self._set_catalog(args.catalog)
+
+        except (Exception, SystemExit) as e:
+
+            if is_new_catalog_dir and os.path.exists(cdir):
+                if os.path.islink(cdir):
+                    os.unlink(cdir)
+                else:
+                    shutil.rmtree(cdir)
+
+            if isinstance(e, SystemExit):
+                raise
+
+            self.logger.error(
+                'Current catalog %s is not compatible with AQUA, removing it for safety! Error: %s', args.catalog, e
+            )
             sys.exit(1)
 
     def _add_catalog_editable(self, catalog, editable):
@@ -77,10 +91,10 @@ class CatalogMixin:
             else:
                 os.symlink(editable, cdir)
         else:
-            self.logger.error('Catalog %s cannot be found in %s', catalog, editable)
+            self.logger.error('Catalog in editable mode %s cannot be found at %s. '
+                              'Using the Climate-DT catalog repository, likely need a path like: '
+                              '/full/path/to/Climate-DT-catalog/catalogs/%s', catalog, editable, catalog)
             sys.exit(1)
-
-        self._set_catalog(catalog)
 
     def _github_explore(self, repository=None):
         """
@@ -114,8 +128,10 @@ class CatalogMixin:
                 self.logger.info("Using authenticated access to GitHub API.")
             else:
                 auth_kwargs = {}
-                self.logger.warning("Running without authentication. Rate limits may apply.")
-                self.logger.warning("Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access.")
+                self.logger.info("Running without authentication. Rate limits may apply.")
+                self.logger.info(
+                    "Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access."
+                )
 
             fs = fsspec.filesystem(
                 "github",
@@ -166,9 +182,10 @@ class CatalogMixin:
             source_dir = f"{CATPATH}/{catalog}"
             self.logger.info('Fetching remote catalog %s from github to %s', catalog, cdir)
             os.makedirs(cdir, exist_ok=True)
-            self._fsspec_get_recursive(fs, source_dir, cdir)
+
+            # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
+            self._fsspec_get_single_call(fs, source_dir, cdir)
             self.logger.info('Download complete!')
-            self._set_catalog(catalog)
         else:
             self.logger.error("Catalog %s already installed in %s, please consider `aqua update`.",
                               catalog, cdir)
@@ -188,6 +205,7 @@ class CatalogMixin:
             self.logger.info('Removing %s from %s', catalog, cdir)
             shutil.rmtree(cdir)
             self._add_catalog_github(catalog)
+            self._set_catalog(catalog)
         else:
             self.logger.error('%s does not appear to be installed, please consider `aqua add`', catalog)
             sys.exit(1)
@@ -254,13 +272,15 @@ class CatalogMixin:
                 cfg['catalog'] = None
             else:
                 cfg['catalog'].remove(catalog)
+                if not cfg['catalog']:
+                    cfg['catalog'] = None
             self.logger.info('Catalog %s removed, catalogs %s are available', catalog, cfg['catalog'])
             dump_yaml(self.configfile, cfg)
 
-    @staticmethod
-    def _fsspec_get_recursive(fs, src_dir, dest_dir):
+    def _fsspec_get_single_call(self, fs, src_dir, dest_dir):
         """
-        Recursive function to download from a fsspec object
+        Optimized function to download entire directory with minimal API calls
+        Uses fs.find() to get all files in ONE call, then batch downloads them
 
         Args:
             fs: fsspec filesystem object, as github instance
@@ -270,18 +290,25 @@ class CatalogMixin:
         Returns:
             Remotely copy data from source to dest directory
         """
-        data = fs.ls(src_dir)
-        for item in data:
-            relative_path = os.path.relpath(item, src_dir)
-            dest_path = os.path.join(dest_dir, relative_path)
+        api_calls = 0
 
-            if fs.isdir(item):
-                # Create the directory in the destination
-                os.makedirs(dest_path, exist_ok=True)
-                # Recursively copy the contents of the directory
-                CatalogMixin._fsspec_get_recursive(fs, item, dest_path)
-            else:
-                # Ensure the directory exists before copying the file
-                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-                # Copy the file
-                fs.get(item, dest_path)
+        # Get all file paths recursively in one GitHub API call
+        all_files = fs.find(src_dir, withdirs=False, detail=False)
+        api_calls += 1
+
+        if not all_files:
+            self.logger.debug("No files found, completed with %d API call", api_calls)
+            return
+
+        # Prepare destination paths and create directory structure
+        dest_paths = []
+        for src_path in all_files:
+            relative_path = os.path.relpath(src_path, src_dir)
+            dest_path = os.path.join(dest_dir, relative_path)
+            dest_paths.append(dest_path)
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+        # Batch Download
+        fs.get(all_files, dest_paths)
+        api_calls += 1
+        self.logger.debug("Download completed with %d API calls (1 find + 1 batch get)", api_calls)

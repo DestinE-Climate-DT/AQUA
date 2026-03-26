@@ -7,7 +7,7 @@ fixer_name:
         source: time_counter
       plev:
         source: pressure_levels
-    delete: 
+    delete:
       - time_centered
       - time_centered_bounds
       - time_counter_bounds
@@ -77,9 +77,9 @@ fixer_name:
     delete:
       - time_centered
     vars:
-      sivol: 
+      sivol:
         source: sivolu
-      sithick: 
+      sithick:
         source: sithic
 
   ec-earth4-nemo:

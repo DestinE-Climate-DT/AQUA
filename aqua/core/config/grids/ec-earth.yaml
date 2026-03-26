@@ -5,8 +5,8 @@ grids:
     path: '{{ grids }}/IFS/tl159_grid.nc'
   tl63:
     path: '{{ grids }}/IFS/tl63_grid.nc'
-  
-  # EC-EARTH4 grids
+
+    # EC-EARTH4 grids
   ORCA2-ece:
     path:
         2d: '{{ grids }}/EC-EARTH4/ORCA2_mesh_sfc_grid_T.nc'

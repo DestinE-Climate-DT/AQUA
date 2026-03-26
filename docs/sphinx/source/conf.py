@@ -2,8 +2,9 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-import sys
 import os
+import sys
+
 from aqua import __version__ as project_version
 
 # -- Project information -----------------------------------------------------

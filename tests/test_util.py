@@ -1,15 +1,24 @@
 """Test for some of the utils"""
 
-import pytest
-import xarray as xr
 import numpy as np
 import pandas as pd
-from aqua import Reader
-from aqua.core.util import extract_literal_and_numeric, file_is_complete, to_list, convert_data_units
-from aqua.core.util import format_realization, extract_attrs, time_to_string
-from aqua.core.util.string import strlist_to_phrase, lat_to_phrase
-from aqua.core.util.units import multiply_units
+import pytest
+import xarray as xr
 from conftest import LOGLEVEL
+
+from aqua import Reader
+from aqua.core.util import (
+    convert_data_units,
+    extract_attrs,
+    extract_literal_and_numeric,
+    file_is_complete,
+    format_realization,
+    to_list,
+)
+from aqua.core.util.string import lat_to_phrase, strlist_to_phrase
+from aqua.core.util.time import frequency_string_to_pandas
+from aqua.core.util.units import multiply_units
+
 
 @pytest.fixture
 def test_text():
@@ -67,7 +76,7 @@ class TestFileIsComplete:
         dataset = xr.Dataset({"sample_data": data})
         dataset.to_netcdf(filename)
         return filename
-    
+
     def test_file_is_complete_existing_file(self, sample_netcdf):
         result = file_is_complete(sample_netcdf)
         assert result is True
@@ -85,7 +94,7 @@ class TestFileIsComplete:
         dataset.to_netcdf(filename)
         result = file_is_complete(filename, loglevel='info')
         assert result == expected_result
-    
+
     @pytest.mark.parametrize("mindate,expected_result", [("2023-12-31", False), ("2024-02-01", True)])
     def test_file_is_complete_partial_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
@@ -172,7 +181,7 @@ def test_extract_attrs():
     ds_without_attr = xr.Dataset()
     assert extract_attrs(ds_with_attr, "attr") == "value1" # Single dataset with attribute
     assert extract_attrs(ds_without_attr, "attr") is None # Single dataset without attribute
-    result = extract_attrs([ds_with_attr, ds_without_attr], "attr") 
+    result = extract_attrs([ds_with_attr, ds_without_attr], "attr")
     assert result == ["value1", None] # List of datasets
 
 @pytest.mark.aqua
@@ -202,7 +211,7 @@ def test_lat_to_phrase():
     assert lat_to_phrase(-1) == "1°S"
     # Test 0 latitude
     assert lat_to_phrase(0) == "0°N"
-    
+
 # Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
 # def test_flip_time():
 #     """Test the flip_time function"""
@@ -238,3 +247,44 @@ def test_multiply_units_no_normalization():
     """Test multiply_units without normalization"""
     result = multiply_units("m", "m", normalise_units=False)
     assert result == "meter ** 2"
+
+@pytest.mark.aqua
+def test_cftime_365cal():
+    """Test cftime with 365-day calendar"""
+    reader = Reader(catalog='ci', model='CMCC', exp='cftime_365cal', source='monthly-atm', areas=False, loglevel=loglevel)
+    data = reader.retrieve()
+
+    # Assert that the calendar was correctly translated to datetime64[us]
+    assert np.issubdtype(data.time.dtype, np.datetime64)
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("input_freq, expected_output", [
+    # No numerical prefix (regular frequencies)
+    ("hourly", "h"),
+    ("daily", "D"),
+    ("weekly", "W"),
+    ("monthly", "MS"),
+    ("annual", "YS"),
+    ("yearly", "YS"),
+    ("hour", "h"),
+    ("day", "D"),
+    ("week", "W"),
+    ("month", "MS"),
+    ("pentads", "5D"),
+    ("seasonal", "QS-DEC"),
+    # With numerical prefix (generalized frequencies)
+    ("3hourly", "3h"),
+    ("5daily", "5D"),
+    ("2weekly", "2W"),
+    ("6months", "6MS"),
+    # Already pandas format (should pass through)
+    ("3h", "3h"),
+    ("6D", "6D"),
+    ("MS", "MS"),
+    # None as input (should return None)
+    (None, None),
+])
+def test_frequency_string_to_pandas(input_freq, expected_output):
+    """Test the frequency_string_to_pandas function with and without numerical prefixes"""
+    result = frequency_string_to_pandas(input_freq)
+    assert result == expected_output

@@ -1,12 +1,20 @@
 """Helpers to resolve AQUA configuration directories and files."""
 import os
 
+
 class ConfigLocator:
     """
     Helper to resolve AQUA configuration directories/files.
     """
 
     def __init__(self, filename='config-aqua.yaml', configdir=None, logger=None):
+        """
+        Initialize the ConfigLocator instance.
+        Args:
+            filename (str): The name of the configuration file. Defaults to 'config-aqua.yaml'.
+            configdir (str | None): The directory where the configuration file is located.
+            logger (Logger | None): The logger to use. Defaults to None.
+        """
         self.filename = filename
         self._configdir = configdir
         self.logger = logger
@@ -42,4 +50,3 @@ class ConfigLocator:
                 return configdir
 
         raise FileNotFoundError(f"No config file {self.filename} found in {configdirs}")
-

@@ -2,14 +2,18 @@
 
 import os
 import shutil
-import sys
 import subprocess
+import sys
+import tempfile
+
 import pytest
+
+from aqua import __path__ as pypath
+from aqua import __version__ as version
+from aqua.core.console import catalog
 from aqua.core.console.main import AquaConsole
 from aqua.core.console.util import query_yes_no
-from aqua.core.util import dump_yaml, load_yaml
-from aqua import __version__ as version
-from aqua import __path__ as pypath
+from aqua.core.util import dump_yaml, load_yaml, to_list
 
 TESTFILE = 'testfile.txt'
 MACHINE = 'github'
@@ -18,6 +22,7 @@ pytestmark = [
     pytest.mark.aqua,
     pytest.mark.console
 ]
+
 
 def set_args(args):
     """Helper function to simulate command line arguments"""
@@ -93,17 +98,17 @@ def run_aqua():
 @pytest.fixture(scope="class")
 def shared_aqua_install(tmpdir, set_home, run_aqua, run_aqua_console_with_input):
     """Shared AQUA installation for multiple tests in a class
-    
+
     This fixture installs AQUA once and provides cleanup after all tests in the class.
     """
     mydir = str(tmpdir)
     set_home(mydir)
-    
+
     # Install AQUA once for all tests in class
     run_aqua(['install', MACHINE])
-    
+
     yield mydir
-    
+
     # Cleanup after all tests in class
     if os.path.exists(os.path.join(mydir, '.aqua')):
         run_aqua_console_with_input(['uninstall'], 'yes')
@@ -170,7 +175,9 @@ class TestAquaConsole():
             assert excinfo.value.code == 1
 
         # create a test for DROP
-        with pytest.raises(FileNotFoundError, match="ERROR: drop_config.yaml not found: you need to have this configuration file!"):
+        with pytest.raises(
+            FileNotFoundError, match=("ERROR: drop_config.yaml not found: you need to have this configuration file!"),
+        ):
             run_aqua(['drop'])
 
         # create a test for catgen
@@ -187,7 +194,7 @@ class TestAquaConsole():
         run_aqua_console_with_input(['uninstall'], 'yes')
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
-    def test_console_drop(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input): 
+    def test_console_drop(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
         """Test for running DROP via the console"""
 
         mydir = str(tmpdir)
@@ -215,7 +222,7 @@ class TestAquaConsole():
                 'data': {
                     'IFS': {
                         'test-tco79': {
-                            'long': {'vars': '2t'} 
+                            'long': {'vars': '2t'}
                         }
                     }
                 }
@@ -223,7 +230,10 @@ class TestAquaConsole():
         )
 
         # run DROP and verify that at least one file exist
-        run_aqua(['drop', '--config', drop_test, '-w', '1', '-d', '--rebuild', '--startdate', '2020-01-01', '--enddate', '2020-03-31'])
+        run_aqua([
+            'drop', '--config', drop_test, '-w', '1', '-d', '--rebuild',
+            '--startdate', '2020-01-01', '--enddate', '2020-03-31',
+        ])
         path = os.path.join(os.path.join(mydir, 'drop_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/mean/global/2t_ci_IFS_test-tco79_r1_r200_monthly_mean_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
@@ -233,7 +243,7 @@ class TestAquaConsole():
         path = os.path.join(os.path.join(mydir, 'drop_test'),
                             "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.nc")
         assert os.path.isfile(path), f"File not found: {path}"
-        
+
         # remove aqua
         run_aqua_console_with_input(['uninstall'], 'yes')
 
@@ -241,7 +251,7 @@ class TestAquaConsole():
         (['install', MACHINE, '--core'], False),
         (['install', MACHINE, '--diagnostics'], True),
     ])
-    def test_console_selective_install(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input, 
+    def test_console_selective_install(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input,
                                        install_args, should_fail):
         """Test for running selective install via the console (parametrized)"""
 
@@ -287,28 +297,28 @@ class TestAquaConsole():
     #     # run the analysis and verify that at least one file exist
     #     run_aqua(['analysis', '--config', config_path, '-m', model, '-e', experiment,
     #             '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
-        
+
     #     output_path = os.path.join(output_dir, catalog, model, experiment, 'r1')
-        
+
     #     assert os.path.exists(os.path.join(output_path, 'experiment.yaml')), \
     #         "experiment.yaml not found"
-        
+
     #     log_file = os.path.join(output_path, 'dummy-dummy_tool.log')
     #     assert os.path.exists(log_file), \
-    #         f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) if os.path.exists(output_path) else 'directory does not exist'}"
-        
+    #         f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) "
+    #         f"if os.path.exists(output_path) else 'directory does not exist'}"
+
     #     # Check if "This is a dummy CLI script that does nothing." is in the log
     #     with open(log_file, 'r', encoding='utf-8') as f:
     #         content = f.read()
     #     assert "This is a dummy CLI script that does nothing." in content, \
     #         "Expected content not found in dummy-dummy_tool.log"
-        
+
     #     assert os.path.exists(os.path.join(output_path, 'setup_checker.log')), \
     #         "setup_checker.log not found"
 
     #     # remove aqua
     #     run_aqua_console_with_input(['uninstall'], 'yes')
-
 
     def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,
@@ -355,7 +365,6 @@ class TestAquaConsole():
         # remove existing catalog from link
         run_aqua(['remove', 'ci'])
         assert not os.path.exists(os.path.join(mydir, '.aqua/catalogs/ci'))
-
 
     def test_console_with_links(self, tmpdir, set_home, run_aqua_console_with_input):
         """Advanced tests for installation from path with symlinks"""
@@ -434,7 +443,6 @@ class TestAquaConsole():
 
         assert not os.path.exists(os.path.join(mydir, '.aqua'))
 
-
     def test_console_without_home(self, delete_home, run_aqua, tmpdir, run_aqua_console_with_input):
         """Basic tests without HOME environment variable"""
 
@@ -467,11 +475,11 @@ class TestAquaConsoleShared():
         mydir = shared_aqua_install
 
         # add two catalogs
-        for catalog in ['ci', 'levante']:
-            run_aqua(['add', catalog])
-            assert os.path.isdir(os.path.join(mydir, '.aqua/catalogs', catalog))
-            config_file = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
-            assert catalog in config_file['catalog']
+        for catalog_name in ["ci", "levante"]:
+            run_aqua(["add", catalog_name])
+            assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs", catalog_name))
+            config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+            assert catalog_name  in config_file["catalog"]
 
         # set catalog
         run_aqua(['set', 'ci'])
@@ -584,7 +592,6 @@ class TestAquaConsoleShared():
         """Basic tests for list command"""
 
         # getting fixture
-        mydir = shared_aqua_install
 
         run_aqua(['add', 'ci'])
         run_aqua(['add', 'ciccio', '-e', 'AQUA_tests/catalog_copy'])
@@ -601,12 +608,101 @@ class TestAquaConsoleShared():
         out, _ = capfd.readouterr()
 
         assert 'climatedt-phase1' in out
-        assert 'lumi-phase1' in out
+        assert 'nextgems4' in out
 
         run_aqua(['-v', 'update', '-c', 'all'])
 
         out, _ = capfd.readouterr()
         assert '.aqua/catalogs/ci ..' in out
+
+    @pytest.mark.parametrize("is_editable", [False, True])
+    def test_add_catalog_cleanup_on_failure(self, shared_aqua_install, run_aqua, monkeypatch, is_editable):
+        """Test that failed catalog additions are properly cleaned up"""
+        mydir = shared_aqua_install
+        catalog_name = f'cleanup_test_{"editable" if is_editable else "standard"}'
+        catalog_path = os.path.join(mydir, '.aqua/catalogs', catalog_name)
+
+        if is_editable:
+            # For editable, mock a write failure
+            with tempfile.TemporaryDirectory() as src_dir:
+                # Create minimal valid catalog
+                with open(os.path.join(src_dir, 'catalog.yaml'), 'w') as f:
+                    f.write("sources: {}")
+
+                # define a mock failing dump_yaml function to fail during _set_catalog
+                def failing_dump_yaml(filepath, data):
+                    if 'config-aqua.yaml' in filepath:
+                        raise PermissionError("Simulated write failure")
+                    return dump_yaml(filepath, data)
+
+                # replace the dump_yaml function with the mock failing function
+                monkeypatch.setattr(catalog, 'dump_yaml', failing_dump_yaml)
+
+                with pytest.raises(SystemExit) as excinfo:
+                    run_aqua(['-v', 'add', catalog_name, '-e', src_dir])
+        else:
+            # For standard, adding a non-existent catalog must fail
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(['-v', 'add', catalog_name])
+
+        # both must fail
+        assert excinfo.value.code == 1
+
+        # Verify cleanup
+        assert not os.path.exists(catalog_path), "Catalog path should be cleaned up"
+        if is_editable:
+            assert not os.path.islink(catalog_path), "Symlink should be removed"
+
+        # Verify config
+        config = load_yaml(os.path.join(mydir, '.aqua', 'config-aqua.yaml'))
+        assert catalog_name not in to_list(config.get('catalog'))
+
+    def test_update_nonexistent_catalog(self, shared_aqua_install, run_aqua):
+        """Test updating a catalog that doesn't exist"""
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['update', '-c', 'non_existent_catalog'])
+        assert excinfo.value.code == 1
+
+    # def test_console_without_github_api(self, shared_aqua_install, run_aqua, capfd):
+    #     """Test catalog operations without GITHUB API credentials (token/user)"""
+
+    #     # Save current GitHub credentials if they exist
+    #     saved_token = os.environ.get('GITHUB_TOKEN')
+    #     saved_user = os.environ.get('GITHUB_USER')
+    #     saved_actions = os.environ.get('GITHUB_ACTIONS')
+
+    #     try:
+    #         # Remove GitHub credentials
+    #         if 'GITHUB_TOKEN' in os.environ:
+    #             del os.environ['GITHUB_TOKEN']
+    #         if 'GITHUB_USER' in os.environ:
+    #             del os.environ['GITHUB_USER']
+    #         if 'GITHUB_ACTIONS' in os.environ:
+    #             del os.environ['GITHUB_ACTIONS']
+
+    #         # Try to list available catalogs without authentication
+    #         run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
+    #         out, _ = capfd.readouterr()
+
+    #         # Should work but with unauthenticated access warning
+    #         assert 'climatedt-phase1' in out or 'lumi-phase1' in out or 'ci' in out
+
+    #     finally:
+    #         # Restore GitHub credentials
+    #         if saved_token is not None:
+    #             os.environ['GITHUB_TOKEN'] = saved_token
+    #         if saved_user is not None:
+    #             os.environ['GITHUB_USER'] = saved_user
+    #         if saved_actions is not None:
+    #             os.environ['GITHUB_ACTIONS'] = saved_actions
+
+    def test_console_nonexistent_catalog_from_existing_repo(self, shared_aqua_install, run_aqua):
+        """Test adding a non-existing catalog from an existing GitHub repository"""
+
+        # Try to add a catalog that doesn't exist in the repository
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(['add', 'nonexistent-catalog-test-xyz', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
+        assert excinfo.value.code == 1
 
 
 class TestAquaConsoleGridBuilder():

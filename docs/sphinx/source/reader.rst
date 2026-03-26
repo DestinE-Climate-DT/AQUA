@@ -9,7 +9,7 @@ The Reader
 ^^^^^^^^^^
 
 The ``Reader`` class provides AQUA access to data, developed to offer a centralized common data access point.
-AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogs, 
+AQUA ``Reader`` can, in fact, access different file formats and data from the FDB or intake catalogs,
 and delivers xarray objects.
 On top of data access, the ``Reader`` is also able to perform multiple operations on the data:
 interpolation and regridding (see :ref:`regrid`), spatial and temporal averaging and metadata correction (see :ref:`fixer`).
@@ -61,7 +61,7 @@ You can also filter by specific catalog(s), model, experiment, or source:
 
     # Scan specific catalog(s)
     results = show_catalog_content(catalog=['ci','obs'])
-    
+
     # Filter by model
     results = show_catalog_content(model='IFS-NEMO')
 
@@ -77,9 +77,9 @@ from the catalog entry, providing additional information:
 .. note::
     The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigPath`` initialization internally.
     If you need more control over the configuration, you can still use the method directly from the ``ConfigPath`` class:
-    
+
     .. code-block:: python
-    
+
         from aqua.core.configurer import ConfigPath
         config = ConfigPath(loglevel='info')
         results = config.show_catalog_content()
@@ -98,6 +98,7 @@ The basic call to the ``Reader`` is:
 
 This will return a ``Reader`` object that can be used to access the data.
 The ``retrieve()`` method will return an ``xarray.Dataset`` to be used for further processing.
+
 The ``catalog``, differently from the ``model``, ``exp`` and ``source`` arguments, is optional.
 However, if the triplet is not unique across catalogs, the ``Reader`` will guess the correct catalog,
 so it is suggested to always specify it when possible.
@@ -107,9 +108,39 @@ To have a complete overview of the available options, please check the :doc:`api
 
 If some information about the data is needed, it is possible to use the ``info()`` method of the ``Reader`` class.
 
+The ``retrieve()`` method accepts further arguments to select only specific variables or vertical levels as in this example:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly")
+    data = reader.retrieve(var=["t", "2t"], level=[50000, 70000])
+
 .. warning::
     Every ``Reader`` instance carries information about the grids and fixes of the retrieved data.
     If you're retrieving data from many sources, please instantiate a new ``Reader`` for each source.
+
+.. note::
+    The ``Reader`` class will try to convert the time coordinate to a Gregorian calendar if time is present,
+    keeping the time units to microsecond precision in order to keep the axis as ``datetime64[us]``.
+
+Reader and Intake parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sources can have additional parameters defined in the intake catalog.
+For example the same experiment could have multiple ensemble members.
+A parameter ``realization`` could be then defined in the catalog to distinguish between different ensemble members.
+
+To pass these additional parameters to the ``Reader``, you can use the ``**kwargs`` functionality.
+For example, to select a specific ensemble member, you can do:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(catalog='ci', model='CMCC', exp='historical', source='monthly-atm', realization=1)
+    data = reader.retrieve()
+
+See `Intake documentation <https://intake.readthedocs.io/en/stable/catalog.html#source-parameters>`_ for more details about Intake source parameters.
 
 Dask and streaming capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -121,7 +152,7 @@ capabilities are used to retrieve the data.
 
 This allows to fully process also large datasets using dask lazy and parallel processing capabilities.
 However, for specific testing or development needs,
-the ``Reader`` class is also able to allow a streaming of data, 
+the ``Reader`` class is also able to allow a streaming of data,
 where the data are loaded in chunks and processed step by step.
 Please check the :ref:`streaming` section for more details.
 

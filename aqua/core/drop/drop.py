@@ -7,37 +7,36 @@ It handles multiple file formats and uses Dask for parallel processing of large 
 
 Main features:
 - Regridding to arbitrary resolutions
-- Temporal resampling with various statistics (mean, std, max, min)
+- Temporal resampling with various statistics (mean, std, max, min, sum)
 - Regional data extraction
 - Automatic catalog entry generation
 - Parallel processing with Dask
 - Memory-efficient chunked processing
 """
-import os
-from time import time
-import subprocess
 import glob
+import os
 import shutil
+import subprocess
+from time import time
+
 import dask
-import xarray as xr
 import numpy as np
 import pandas as pd
-
-from dask.distributed import Client, LocalCluster, progress, performance_report
+import xarray as xr
 from dask.diagnostics import ProgressBar
+from dask.distributed import Client, LocalCluster, performance_report, progress
 from dask.distributed.diagnostics import MemorySampler
 
+from aqua.core.configurer import ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
+from aqua.core.util import create_zarr_reference, dump_yaml, load_yaml, replace_intake_vars
 from aqua.core.util.io_util import create_folder, file_is_complete
-from aqua.core.util import dump_yaml, load_yaml
-from aqua.core.configurer import ConfigPath
-from aqua.core.util import create_zarr_reference, replace_intake_vars
 from aqua.core.util.string import generate_random_string
-from .drop_util import move_tmp_files, list_drop_files_complete
-from .catalog_entry_builder import CatalogEntryBuilder
 
+from .catalog_entry_builder import CatalogEntryBuilder
+from .drop_util import list_drop_files_complete, move_tmp_files
 
 TIME_ENCODING = {
     'units': 'days since 1850-01-01 00:00:00',
@@ -50,6 +49,8 @@ VAR_ENCODING = {
     'complevel': 1,
     '_FillValue': np.nan
 }
+
+available_stats = ['mean', 'std', 'max', 'min', 'sum', 'histogram']
 
 
 class Drop():
@@ -75,8 +76,10 @@ class Drop():
                  rebuild=False,
                  exclude_incomplete=False,
                  stat="mean",
+                 stat_kwargs={},
                  compact="xarray",
                  cdo_options=["-f", "nc4", "-z", "zip_1"],
+                 engine='fdb',
                  **kwargs):
         """
         Initialize the DROP class
@@ -119,10 +122,14 @@ class Drop():
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
-            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min'.
+            stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min', 'sum' or 'histogram'.
+                Default is 'mean'.
+            stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram.
+                Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
+            engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -134,6 +141,7 @@ class Drop():
         self.var = self._require_param(var, "variable string or list.")
 
         # General settings
+        self.engine = engine
         self.logger = log_configure(loglevel, 'DROP')
         self.loglevel = loglevel
 
@@ -155,8 +163,11 @@ class Drop():
 
         # configure statistics
         self.stat = stat
-        if self.stat not in ['mean', 'std', 'max', 'min']:
-            raise KeyError('Please specify a valid statistic: mean, std, max or min.')
+        if self.stat not in available_stats:
+            raise ValueError(f'Please specify a valid statistic: {available_stats}.')
+        if not isinstance(stat_kwargs, dict):
+            raise TypeError('stat_kwargs must be a dictionary.')
+        self.stat_kwargs = stat_kwargs
 
         # configure regional selection
         self._configure_region(region, drop)
@@ -233,13 +244,13 @@ class Drop():
     @staticmethod
     def _validate_date(startdate, enddate):
         """Validate date format for startdate and enddate"""
-        
+
         if startdate is not None:
             try:
                 pd.to_datetime(startdate)
             except (ValueError, TypeError):
                 raise ValueError('startdate must be a valid date string (YYYY-MM-DD or YYYYMMDD)')
-        
+
         if enddate is not None:
             try:
                 pd.to_datetime(enddate)
@@ -279,6 +290,8 @@ class Drop():
         self.logger.info('Fixing data: %s', self.fix)
         self.logger.info('Resolution: %s', self.resolution)
         self.logger.info('Statistic to be computed: %s', self.stat)
+        if self.stat_kwargs is not None and self.stat_kwargs != {}:
+            self.logger.info('Additional kwargs for the statistic: %s', self.stat_kwargs)
         self.logger.info('Domain selection: %s', self.region_name)
 
     def _configure_region(self, region, drop):
@@ -306,13 +319,14 @@ class Drop():
         # Initialize the reader
         self.reader = Reader(model=self.model, exp=self.exp,
                              source=self.source,
-                             regrid=self.resolution,
+                             regrid=self.resolution if self.resolution != 'native' else None,
                              catalog=self.catalog,
                              loglevel=self.loglevel,
                              rebuild=self.rebuild,
                              startdate=self.startdate,
                              enddate=self.enddate,
-                             fix=self.fix, **self.kwargs)
+                             fix=self.fix,
+                             engine=self.engine, **self.kwargs)
 
         self.logger.info('Accessing catalog for %s-%s-%s...',
                          self.model, self.exp, self.source)
@@ -374,7 +388,7 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        
+
         with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
             cat_file = load_yaml(catalogfile)
 
@@ -388,7 +402,7 @@ class Drop():
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, 
+                basedir=self.basedir, catblock=catblock,
                 source_grid_name=sgn
             )
 
@@ -438,7 +452,7 @@ class Drop():
         # find the catalog of my experiment and load it
         catalogfile = os.path.join(self.configdir, 'catalogs', self.catalog,
                                    'catalog', self.model, self.exp + '.yaml')
-        
+
         with SafeFileLock(catalogfile + '.lock', loglevel=self.loglevel):
             cat_file = load_yaml(catalogfile)
 
@@ -522,11 +536,11 @@ class Drop():
             self.logger.info('Creating a single file for %s, year %s...', var, str(year))
             outfile = self.get_filename(var, year)
             tmp_outfile = self.get_filename(var, year, tmp=True)
-            
+
             # Move monthly files to tmp for safety
             for monthly_file in monthly_files:
                 shutil.move(monthly_file, self.tmpdir)
-            
+
             # Clean any existing output files
             for f in [tmp_outfile, outfile]:
                 if os.path.exists(f):
@@ -618,16 +632,19 @@ class Drop():
         temp_data = self.data[var]
 
         if self.frequency:
+            # The stat_kwargs are used only if the statistic function is a callable that accepts kwargs,
+            # like histogram. For other statistics, they will be ignored.
             temp_data = self.reader.timstat(temp_data, self.stat, freq=self.frequency,
-                                            exclude_incomplete=self.exclude_incomplete)
+                                            exclude_incomplete=self.exclude_incomplete,
+                                            func_kwargs=self.stat_kwargs)
 
         # temp_data could be empty after time statistics if everything was excluded
         if 'time' in temp_data.coords and len(temp_data.time) == 0:
             self.logger.warning('No data available for variable %s after time statistics, skipping...', var)
             return
-        
+
         # regrid
-        if self.resolution:
+        if self.resolution and self.resolution != 'native':
             temp_data = self.reader.regrid(temp_data)
             temp_data = self._remove_regridded(temp_data)
 
@@ -695,15 +712,15 @@ class Drop():
     def append_history(self, data):
         """
         Append comprehensive processing history to the data attributes
-               
+
         Args:
             data: xarray Dataset or DataArray to append history to
-            
+
         Returns:
             data: Input data with updated history attribute
         """
         history_list = ["DROP"]
-        
+
         # Add regridding information
         if self.resolution:
             history_list.append(f"regridded from {self.reader.src_grid_name} to {self.resolution}")
@@ -714,7 +731,7 @@ class Drop():
         if self.region and self.region_name:
             region_info = f"regional selection applied ({self.region_name})"
             history_list.append(region_info)
-        
+
         # Build the complete sentence
         if len(history_list) == 1:
             history = history_list[0]

@@ -1,12 +1,19 @@
 """Timmean mixin for the Reader class"""
+from functools import partial
+
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
-from functools import partial
-from aqua.core.util import check_chunk_completeness, check_seasonal_chunk_completeness, frequency_string_to_pandas
-from aqua.core.util import extract_literal_and_numeric
-from aqua.core.logger import log_history, log_configure
+
 from aqua.core.histogram import histogram
+from aqua.core.logger import log_configure, log_history
+from aqua.core.util import (
+    check_chunk_completeness,
+    check_seasonal_chunk_completeness,
+    extract_literal_and_numeric,
+    fix_calendar,
+    frequency_string_to_pandas,
+)
 
 
 class TimStat():
@@ -14,29 +21,32 @@ class TimStat():
     Time statistic AQUA module
     """
 
-
     def __init__(self, loglevel='WARNING'):
         self.loglevel = loglevel
         self.orig_freq = None
         self.logger = log_configure(loglevel, 'TimStat')
 
     @property
-    def AVAILABLE_STATS(self):
+    def available_stats(self):
         """Return the list of available statistics."""
-        return ['mean', 'std', 'max', 'min', 'sum', 'histogram']
+        return ['mean', 'std', 'max', 'min', 'sum', 'first', 'last', 'histogram']
 
     def timstat(self, data, stat='mean', freq=None, exclude_incomplete=False,
                 time_bounds=False, center_time=False, func_kwargs={}, **kwargs):
         """
-        Compute a time statistic on the input data. The statistic is computed over a time window defined by the frequency
-        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object. The statistic can be
-        'mean', 'std', 'max', 'min' or 'histogram'. The output is a new xarray dataset with the time dimension resampled to the desired
-        frequency and the statistic computed over the time window.
+        Compute a time statistic on the input data.
+        The statistic is computed over a time window defined by the frequency
+        parameter. The frequency can be a string (e.g. '1D', '1M', '1Y', 'QS-DEC') or a pandas frequency object.
+        The statistic can be 'mean', 'std', 'max', 'min', 'sum', 'first', 'last' or 'histogram'.
+        The output is a new xarray dataset with the time dimension
+        resampled to the desired frequency and the statistic computed over the time window.
 
-        Args: 
+        Args:
             data (xarray.Dataset): Input data to compute the statistic on.
-            stat (str, func): Statistic to compute. Can be a string in ['mean', 'std', 'max', 'min', 'histogram'] or a custom function.
-            freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y') or a pandas frequency object.
+            stat (str, func): Statistic to compute. Can be a string
+                in ['mean', 'std', 'max', 'min', 'sum', 'first', 'last', 'histogram'] or a custom function.
+            freq (str): Frequency to resample the data to. Can be a string (e.g. '1D', '1M', '1Y')
+                or a pandas frequency object.
             exclude_incomplete (bool): If True, exclude incomplete chunks from the output.
             time_bounds (bool): If True, add time bounds to the output data.
             center_time (bool): If True, center the time axis of the output data.
@@ -47,15 +57,21 @@ class TimStat():
             xarray.Dataset: Output data with the required statistic computed at the desired frequency.
         """
 
-        if isinstance(stat, str) and stat not in self.AVAILABLE_STATS:
+        if isinstance(stat, str) and stat not in self.available_stats:
             raise KeyError(f'{stat} is not a statistic supported by AQUA')
 
         if not isinstance(stat, str) and not callable(stat):
             raise TypeError('stat must be a string or a callable function')
-        
+
+        # Align calendar to Gregorian if needed
+        data = fix_calendar(data, loglevel=self.loglevel)
+
         if stat == 'histogram':  # convert to callable function
             stat = histogram
-        
+
+        if stat in ['first', 'last'] and not freq:
+            raise ValueError('Frequency must be specified when using first or last statistic')
+
         resample_freq = frequency_string_to_pandas(freq)
 
         # disabling all options if total averaging is selected
@@ -87,8 +103,10 @@ class TimStat():
                 # Resample to the desired frequency
                 resample_data = data.resample(time=resample_freq)
             except ValueError as exc:
-                raise ValueError(f'Cant find a frequency to resample, using resample_freq={resample_freq} not work, aborting!') from exc
-            
+                raise ValueError(
+                    f'Cannot find a frequency to resample, using resample_freq={resample_freq} not work, aborting!'
+                    ) from exc
+
         # if frequency is undefined, meaning that we operate on the entire set
         else:
             resample_data = data
@@ -99,8 +117,14 @@ class TimStat():
             # use the kwargs to feed the time dimension to define the method and its options
             extra_kwargs = {} if resample_freq is not None else {'dim': 'time'}
             out = getattr(resample_data, stat)(**extra_kwargs)
+
+            # This is needed because first and last resample the data but label them with the group label
+            if stat in ['first', 'last']:
+                resampled_times = getattr(data.time.resample(time=resample_freq), stat)(**extra_kwargs)
+                out = out.assign_coords(time=resampled_times)
+
         else:  # we can safely assume that it is a callable function now
-            self.logger.info(f'Resampling to %s frequency and computing custom function...', str(resample_freq))
+            self.logger.info('Resampling to %s frequency and computing custom function...', str(resample_freq))
             if resample_freq is not None:
                 out = resample_data.map(partial(stat, **func_kwargs, **kwargs))
             else:
@@ -143,7 +167,7 @@ class TimStat():
             log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
-    
+
     # this is not yet a great solution, but is more general than the previous one
     def center_time_axis(self, avg_data: xr.Dataset, resample_freq: str) -> xr.Dataset:
         """
@@ -160,15 +184,17 @@ class TimStat():
         literal, numeric = extract_literal_and_numeric(resample_freq)
         self.logger.debug('Frequency is %s with numeric part %s', literal, numeric)
 
-        if literal in ["M", "Y", "ME", "YE"]:
-            raise ValueError(f"Centering not implemented for frequency '{resample_freq}'")
+        start = pd.to_datetime(avg_data['time'])
+        if literal in ["M", "ME", "MS"]:
+            offset = pd.DateOffset(months=numeric)
+        elif literal in ["Y", "YE", "YS"]:
+            offset = pd.DateOffset(years=numeric)
+        else:
+            offset = pd.tseries.frequencies.to_offset(resample_freq)
 
-        def average_datetimeindex(idx1: pd.DatetimeIndex, idx2: pd.DatetimeIndex) -> pd.DatetimeIndex:
-            return pd.to_datetime((idx1.view("int64") + idx2.view("int64")) // 2)
-        
-        offset = pd.tseries.frequencies.to_offset(resample_freq)
+        end = start + offset
 
-        avg_data['time'] = average_datetimeindex(pd.to_datetime(avg_data['time']),
-                              pd.to_datetime(avg_data['time']) + offset)
-        
+        # Calculate midpoint for each period (works for variable durations like months)
+        avg_data['time'] = start + (end - start) / 2
+
         return avg_data

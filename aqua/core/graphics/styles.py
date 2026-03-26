@@ -1,8 +1,10 @@
 """Class to load the choosen style for graphical utilities."""
 import os
+
 import matplotlib.pyplot as plt
-from aqua.core.logger import log_configure
+
 from aqua.core.configurer import ConfigPath
+from aqua.core.logger import log_configure
 from aqua.core.util import load_yaml
 
 

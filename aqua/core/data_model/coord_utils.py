@@ -1,9 +1,11 @@
 """Utility functions for coordinate handling and data model loading."""
 
-from functools import cache
 import os
+from functools import cache
+
 from metpy.units import units
 from pint.errors import DimensionalityError, UndefinedUnitError
+
 from aqua.core.configurer import ConfigPath
 from aqua.core.util import load_yaml
 
@@ -21,7 +23,7 @@ DEFAULT_COORD_NAMES = {
         "lat",
     ],
     "longitude": [
-        "longitude", 
+        "longitude",
         "lon"
     ],
     "time": ["time", "time_counter"],
@@ -100,12 +102,12 @@ def units_conversion_factor(from_unit_str, to_unit_str):
     try:
         from_unit = units(from_unit_str)
         to_unit = units(to_unit_str)
-    except UndefinedUnitError:
+    except (UndefinedUnitError, AttributeError):
         return None
-    
+
     try:
         return from_unit.to(to_unit).magnitude
-    except DimensionalityError:
+    except (DimensionalityError, AttributeError):
         return None
 
 
@@ -113,7 +115,7 @@ def is_pressure(unit):
     """Check if a unit is a pressure unit."""
     try:
         return units(unit).dimensionality == pressure_dim
-    except UndefinedUnitError:
+    except (UndefinedUnitError, AttributeError):
         return False
 
 
@@ -121,5 +123,5 @@ def is_meter(unit):
     """Check if a unit is a length unit (depth)."""
     try:
         return units(unit).dimensionality == meter_dim
-    except UndefinedUnitError:
+    except (UndefinedUnitError, AttributeError):
         return False

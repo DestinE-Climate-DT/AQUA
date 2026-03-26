@@ -2,10 +2,12 @@
 Module to identify the nature of coordinates of an Xarray object.
 """
 
-import xarray as xr
 import numpy as np
+import xarray as xr
+
 from aqua.core.logger import log_configure
-from .coord_utils import get_coord_defaults, is_pressure, is_meter
+
+from .coord_utils import get_coord_defaults, is_meter, is_pressure
 
 
 class CoordIdentifier:
@@ -152,7 +154,7 @@ class CoordIdentifier:
         """
         name_groups = {}
         for key, value in self.coord_dict.items():
-            if isinstance(value, dict) and value.get("name") is not None:                
+            if isinstance(value, dict) and value.get("name") is not None:
                 name = value["name"]
                 if name not in name_groups:
                     name_groups[name] = []
@@ -164,16 +166,31 @@ class CoordIdentifier:
             if len(entries) > 1:
                 # Sort by confidence_score (highest first)
                 entries.sort(key=lambda x: x[1], reverse=True)
-                self.logger.info(
-                    "Coordinate '%s' assigned to multiple types: %s. Selecting '%s' with highest score %s.",
-                    name,
-                    [key for key, _ in entries],
-                    entries[0][0],
-                    entries[0][1],
-                )
-                # Keep the best, remove the rest
-                for key, _ in entries[1:]:
-                    self.coord_dict[key] = None
+
+                # Check if multiple entries have the same highest score
+                max_score_entries = [entry for entry in entries if entry[1] == entries[0][1]]
+
+                if len(max_score_entries) > 1:
+                    # Multiple coordinates with same highest score - disable all
+                    self.logger.warning(
+                        "Coordinate '%s' assigned to multiple types with identical scores: %s. "
+                        "Disabling data model check for this coordinate.",
+                        name,
+                        [(key, score) for key, score in max_score_entries],
+                    )
+                    for key, _ in entries:
+                        self.coord_dict[key] = None
+                else:
+                    # Clear winner - keep the best, remove the rest
+                    self.logger.info(
+                        "Coordinate '%s' assigned to multiple types: %s. Selecting '%s' with highest score %s.",
+                        name,
+                        [key for key, _ in entries],
+                        entries[0][0],
+                        entries[0][1],
+                    )
+                    for key, _ in entries[1:]:
+                        self.coord_dict[key] = None
 
         return self.coord_dict
 
@@ -215,7 +232,8 @@ class CoordIdentifier:
                 # Multiple coordinates with same highest score - disable
                 else:
                     self.logger.warning(
-                        "Multiple %s coordinates found with identical scores: %s. Disabling data model check for this coordinate.",
+                        "Multiple %s coordinates found with identical scores: %s. "
+                        "Disabling data model check for this coordinate.",
                         key,
                         [(x["name"], x.get("confidence_score", "N/A")) for x in value],
                     )
@@ -486,7 +504,7 @@ class CoordIdentifier:
             score += self.SCORE_WEIGHTS["axis"]  # Use axis weight for substring match
             matched.append("axis")
         if is_meter(coord.attrs.get("units")):
-            score += self.SCORE_WEIGHTS["units"]
+            score += self.SCORE_WEIGHTS["units"]*0.9  # HACK - if units are m this could also be depth, which is more likely
             matched.append("units")
         if "height" in coord.attrs.get("long_name", ""):
             score += self.SCORE_WEIGHTS["long_name"]

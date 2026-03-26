@@ -1,96 +1,96 @@
 grids:
   # Generic Healpix
-  hpz0-nested: 
+  hpz0-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz0_nested_atm.nc'
-  hpz1-nested: 
+  hpz1-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz1_nested_atm.nc'
-  hpz2-nested: 
+  hpz2-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz2_nested_atm.nc'
-  hpz3-nested: 
+  hpz3-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
-  hpz4-nested: 
+  hpz4-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz4_nested_atm.nc'
-  hpz5-nested: 
+  hpz5-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz5_nested_atm.nc'
-  hpz6-nested: 
+  hpz6-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz6_nested_atm.nc'
-  hpz7-nested: 
+  hpz7-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz7_nested_atm.nc'
-  hpz8-nested: 
+  hpz8-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
-  hpz8-nested-nextgems4: 
+  hpz8-nested-nextgems4:
     space_coord: ["cell"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
-  hpz9-nested: 
+  hpz9-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz9_nested_atm.nc'
-  hpz10-nested: 
+  hpz10-nested:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz10_nested_atm.nc'
 
 
-  hpz0-ring: 
+  hpz0-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz0_ring_atm.nc'
-  hpz1-ring: 
+  hpz1-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz1_ring_atm.nc'
-  hpz2-ring: 
+  hpz2-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz2_ring_atm.nc'
-  hpz3-ring: 
+  hpz3-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz3_ring_atm.nc'
-  hpz4-ring: 
+  hpz4-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz4_ring_atm.nc'
-  hpz5-ring: 
+  hpz5-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz5_ring_atm.nc'
-  hpz6-ring: 
+  hpz6-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz6_ring_atm.nc'
-  hpz7-ring: 
+  hpz7-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz7_ring_atm.nc'
-  hpz8-ring: 
+  hpz8-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz8_ring_atm.nc'
-  hpz9-ring: 
+  hpz9-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz9_ring_atm.nc'
-  hpz10-ring: 
+  hpz10-ring:
     space_coord: ["ncells"]
     cdo_options: "--force"
     path: '{{ grids }}/HealPix/hpz10_ring_atm.nc'

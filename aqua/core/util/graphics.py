@@ -1,19 +1,21 @@
 """Graphics utilities for Aqua."""
 import math
 
-import xarray as xr
-import cartopy.util as cutil
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
-import numpy as np
+import cartopy.util as cutil
 import healpy as hp
-from scipy.interpolate import griddata
-import matplotlib.pyplot as plt
-import matplotlib.path as mpath
 import matplotlib.patches as mpatches
+import matplotlib.path as mpath
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+from scipy.interpolate import griddata
 
 from aqua.core.logger import log_configure
+
 from .sci_util import check_coordinates
+from .string import unit_to_latex
 
 
 def add_cyclic_lon(da: xr.DataArray):
@@ -153,7 +155,7 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None,
         units = getattr(data, 'units', None)
 
         if units:
-            cbar_label = f"{cbar_label} [{units}]"
+            cbar_label = f"{cbar_label} [{unit_to_latex(units)}]"
             logger.debug("Adding units to colorbar label")
 
     if cbar_label is None:
@@ -189,7 +191,7 @@ def set_map_title(data: xr.DataArray, title: str = None,
     if title:
         logger.debug("Explicit title provided: %s", title)
         return title
-    
+
     title = ""
     varname = None
 
@@ -215,7 +217,7 @@ def set_map_title(data: xr.DataArray, title: str = None,
     if varname and not skip_varname:
         title += varname
         if units and put_units:
-            title += f" [{units}]"
+            title += f" [{unit_to_latex(units)}]"
     if put_model_name and model:
             title += f" {model}"
     if put_exp_name and exp:
@@ -227,7 +229,7 @@ def set_map_title(data: xr.DataArray, title: str = None,
         logger.warning("No title found, please specify one with the title argument.")
         title = None
     else:
-        logger.debug(f"Using {title} as map title") 
+        logger.debug(f"Using {title} as map title")
     return title
 
 
@@ -239,24 +241,24 @@ def coord_names(data: xr.DataArray):
         data (xarray.DataArray): Input data array.
 
     Returns:
-        tuple: (lon_name, lat_name) - Names of longitude and latitude coordinates, 
+        tuple: (lon_name, lat_name) - Names of longitude and latitude coordinates,
                or (None, None) if not found.
     """
     lon_name = None
     lat_name = None
-    
+
     # Find longitude coordinate
     for lon_candidate in ['lon', 'longitude']:
         if lon_candidate in data.coords:
             lon_name = lon_candidate
             break
-    
-    # Find latitude coordinate  
+
+    # Find latitude coordinate
     for lat_candidate in ['lat', 'latitude']:
         if lat_candidate in data.coords:
             lat_name = lat_candidate
             break
-    
+
     return lon_name, lat_name
 
 
@@ -445,25 +447,25 @@ def get_nside(data):
 
     Args:
         data (numpy.ndarray or xarray.DataArray): HEALPix map.
-    
+
     Returns:
         int: nside of the HEALPix map.
-    
+
     Raises:
         ValueError: If the input data is not a valid HEALPix map.
     """
     # Check if the input is a numpy array or xarray DataArray
-    if not isinstance(data, (np.ndarray, xr.DataArray)): 
+    if not isinstance(data, (np.ndarray, xr.DataArray)):
         raise ValueError("Input data must be a numpy array or xarray DataArray")
 
     if data.size == 0:  # Check for empty data
         raise ValueError("Invalid HEALPix map: data array is empty")
-    
+
     npix = data.size
     if not hp.isnpixok(npix):
         raise ValueError(f"Invalid HEALPix map: npix={npix}")
     return hp.npix2nside(npix)
-    
+
 def get_npix(data):
     """
     Get the number of pixels in a HEALPix map based on the map data.
@@ -475,7 +477,7 @@ def get_npix(data):
         int: Number of pixels in the HEALPix map.
     """
     return hp.nside2npix(get_nside(data))
-    
+
 def healpix_resample(
         var,
         xlims=None,

@@ -15,7 +15,7 @@ and have requested "upgraded access" to the data (follow the link "Access policy
 
 Once the upgraded access has been granted, you can create the key to access the data.
 Follow the instructions in the `Polytope documentation <https://github.com/destination-earth-digital-twins/polytope-examples>`_
-and the username and password which you defined for the Destine Service Platform to download the credentials into this file. 
+and the username and password which you defined for the Destine Service Platform to download the credentials into this file.
 
 Once the key is generated, you can create the file ``~/.polytopeapirc`` in your home directory.
 
@@ -41,7 +41,14 @@ the argument ``engine: polytope`` as an additional argument in the intake catalo
 
 This allows accessing ClimateDT data on the Databridge also remotely from other machines.
 
-.. warning::
+Lumi Databridge and MN5 Databridge endpoints are supported.
+Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge endpoint by adding the argument
+``machine='mn5'`` in the catalog source entry in the corresponding `main.yaml` file, under `metadata:`.
 
-    At the moment only the Lumi Databridge endpoint is supported.
-    It will be soon possible to access the MN5 Databridge endpoint as well.
+.. code-block:: yaml
+
+    metadata:
+      expid: "0001"
+      forcing: historical
+      start: '1990'
+      machine: mn5

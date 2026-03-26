@@ -1,6 +1,8 @@
-import xarray as xr
 import matplotlib.pyplot as plt
+import xarray as xr
+
 from aqua.core.logger import log_configure
+
 from .styles import ConfigStyle
 
 
@@ -92,7 +94,7 @@ def indexes_plot(indexes: list, thresh: float = 0,
         fig, axs: Figure and Axes objects
     """
     figsize = (8.5, 5.5 * len(indexes)) if figsize is None else figsize
-    ConfigStyle(style=style, loglevel=loglevel) 
+    ConfigStyle(style=style, loglevel=loglevel)
 
     fig, axs = plt.subplots(nrows=len(indexes), ncols=1, figsize=figsize, sharex=False)
 

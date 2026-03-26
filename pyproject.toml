@@ -35,38 +35,40 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "boto3",
-    "cartopy==0.24.1",
-    "cfgrib",
-    "dask",
+    # binaries
     "eccodes==2.41.0",
+    "netcdf4",
+    "h5py>=3.12.1",
+    # shared with conda
+    "boto3",
+    "cartopy>=0.24.1",
+    "cfgrib", #enable support for GRIB files
+    "dask[distributed]",
+    "fastparquet", #enable support for parquet files
     "filelock",
-    "gcsfs", # Google Cloud Storage File System
-    "pandas",
+    "gcsfs", # Google Cloud Storage File System: required by ARCO
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-esm",
     "intake-xarray",
     "jinja2",
+    "kerchunk",
     "matplotlib",
     "metpy",
     "numpy",
-    "pydantic<2.13.0",
+    "pandas>=3.0.0", # pandas3 required for new time unit handling
     "pypdf",
     "pyYAML",
     "regionmask",
     "ruamel.yaml",
     "scipy",
     "seaborn",
-    "smmregrid==0.1.3",
-    #"smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",
+    "smmregrid>=0.1.4",
+    # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
-    "xarray>=2025.01.2,<2025.09.1", # Version 2025.01.2 is the first version introducing the CFDatetimeCoder
-    "kerchunk",
-    "h5py>=3.12.1", #specific github pin to avoid installation of binaries
-    "fastparquet",
-    "pyfdb==0.1.2",
-    "gsv-interface==2.13.1",
-    "zarr"
+    "xarray>=2025.12.0",
+    "zarr<=3.1.5",
+    # not available on conda
+    "pyfdb", #to be pinned when doing operational release
+    "gsv-interface==2.13.1"
 ]
 
 [project.optional-dependencies]
@@ -81,6 +83,7 @@ notebooks = [
 tests = [
     "pytest",
     "pytest-cov",
+    "pytest-timeout",
     "pytest-xdist",
     "coverage",
     "cdo"
@@ -116,7 +119,7 @@ version = {attr = "aqua.core.version.__version__"}
 
 [tool.pytest.ini_options]
 # verbose to have full test, run coverage on src folder and use pyproject as a configuration file
-addopts = "--durations=10 -v --cov=aqua" 
+addopts = "--durations=10 -v --cov=aqua"
 testpaths = [
     "tests"
 ]
@@ -135,7 +138,6 @@ branch = true
 command_line = '-m pytest tests'
 source = ["aqua/core"]
 omit = [
-    "tests/*", 
+    "tests/*",
     "**/__init__.py",
     ]
-

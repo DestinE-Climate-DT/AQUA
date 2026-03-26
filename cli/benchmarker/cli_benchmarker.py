@@ -7,8 +7,10 @@ AQUA tool to evalute speedo of some methods
 import argparse
 import sys
 from timeit import timeit
+
 import dask
 from dask.distributed import Client, LocalCluster
+
 from aqua import Reader
 from aqua import __version__ as version
 from aqua.core.logger import log_configure
@@ -105,7 +107,7 @@ class Benchmarker():
         self.logger.info('Benchmarking reader')
         single = timeit(lambda: Reader(self.model, self.exp, self.source), number=self.nrepeat)
         return round(single / self.nrepeat, 1)
-    
+
     def benchmark_fldmean(self, tsteps=100):
         """
         Benchmark the fldmean method.
@@ -138,7 +140,7 @@ if __name__ == '__main__':
     # create benchmarker object
     Bench = Benchmarker(model = model, exp = exp, source = source,
                         nproc = int(args.workers), loglevel = args.loglevel)
-    
+
     # create a list of methods and their names
     methods = [(Bench.benchmark_reader, 'Reader initialization'),
                (Bench.benchmark_fldmean, 'Fldmean'),
@@ -152,4 +154,3 @@ if __name__ == '__main__':
         print(f"{name} took on average {time} seconds over {Bench.nrepeat} runs")
 
     print('All benchmarks done')
-

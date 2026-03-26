@@ -31,7 +31,7 @@ convention_name:
           - 235165 # avg_10u
           - 10u
           - m10u # legacy eccodes
-          - avg_10u 
+          - avg_10u
           - U10M # AQUA ERA5
           - u10 # cds
           - uas # cmor
@@ -191,7 +191,8 @@ convention_name:
         source:
           - 164 # original GRIB2 code
           - 228006 # meantcc in 0-1 GRIB2 code
-          - 228164 # avg_tcc in %
+          - 228164 # tcc in %
+          - 235288 # avg_tcc in %
           - 131164 # ICON used this at some point
           - tcc
           - meantcc #legacy eccodes name
@@ -257,12 +258,12 @@ convention_name:
           - z
           - avg_z
         grib: 129
-      
+
       #### FLUX VARIABLES ####
       cpr: # convective precipitation rate
         source:
           - 260033 # cpr - original GRIB2 code (cpr)
-          - 143 
+          - 143
           - 160143 # cprea
           - 172143 # cprate
           - 235030 # avg_cpr
@@ -320,7 +321,7 @@ convention_name:
           - hfss # cmor
         grib: 231
       lsprate: # large scale precipitation rate
-        source: 
+        source:
           - 142
           - 260050
           - lsp
@@ -652,7 +653,7 @@ convention_name:
           - snvol
           - avg_snvol
         grib: 262009
-    
+
     #### OROGRAPHY and LAND SEA MASK ####
     lsm: # Land-sea mask for the atmosphere
       source:
@@ -667,4 +668,3 @@ convention_name:
         - orography
         - orog # cmor
       grib: 228002
-

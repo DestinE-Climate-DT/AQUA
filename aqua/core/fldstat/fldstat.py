@@ -1,8 +1,7 @@
 """AQUA class for field statitics"""
-import xarray as xr
 import numpy as np
 import regionmask
-
+import xarray as xr
 from smmregrid import GridInspector
 
 from aqua.core.logger import log_configure, log_history
@@ -52,7 +51,7 @@ class FldStat():
         self.area_selection = AreaSelection(loglevel=loglevel)
 
     @property
-    def AVAILABLE_FLDSTATS(self):
+    def available_fldstats(self):
         """Return available field statistics."""
         return {"custom":   ['integral', 'areasum'],
                 "standard": ['mean', 'std', 'max', 'min', 'sum']}
@@ -66,8 +65,11 @@ class FldStat():
                 dims: list | None = None,
                 **kwargs):
         """
-        Perform a weighted global average.
-        If a subset of the data is provided, the average is performed only on the subset.
+        Compute a spatial statistic on the input field, optionally area-weighted.
+        The statistic can be computed globally or over a sub-region selected either
+        by longitude/latitude bounds or via a ``regionmask.Regions`` definition.
+        If an ``area`` dataset is provided at initialization, supported statistics
+        are performed with area-weighting where applicable.
 
         Args:
             data (xr.DataArray or xarray.DataDataset):  the input data
@@ -78,19 +80,16 @@ class FldStat():
             lon_limits (list, optional):  the longitude limits of the subset
             lat_limits (list, optional):  the latitude limits of the subset
             dims (list, optional):  the dimensions to average over, if not provided, horizontal_dims are used
-            **kwargs: additional arguments passed to fldstat
-
-        Kwargs:
-            - box_brd (bool,opt): choose if coordinates are comprised or not in area selection.
-                                  Default is True
-
+            **kwargs: Additional keyword arguments forwarded to ``AreaSelection.select_area()``; for example:
+                - box_brd (bool, optional): if coordinates are comprised or not in area selection, default is True.
+                - to_180 (bool, optional): if longitude coordinates are converted to [-180, 180] range, default is True.
         Returns:
-            The value of the averaged field
+            xr.DataArray or xr.Dataset: Result of the requested spatial statistic.
         """
 
-        if stat not in [s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]:
+        if stat not in [s for stats in self.available_fldstats.values() for s in stats]:
             raise ValueError(f"Statistic {stat} not supported by AQUA FldStat(), only "
-                             f"{[s for stats in self.AVAILABLE_FLDSTATS.values() for s in stats]} are supported.")
+                             f"{[s for stats in self.available_fldstats.values() for s in stats]} are supported.")
 
         if not isinstance(data, (xr.DataArray, xr.Dataset)):
             raise ValueError("Data must be an xarray DataArray or Dataset.")
@@ -119,7 +118,7 @@ class FldStat():
         if self.area is None:
             self.logger.warning("No area provided, no area-weighted stat can be provided.")
             # compact call, equivalent of "out = data.mean()"
-            if stat in self.AVAILABLE_FLDSTATS["standard"]:
+            if stat in self.available_fldstats["standard"]:
                 self.logger.info("Computing unweighted %s on %s dimensions", stat, self.horizontal_dims)
                 log_history(data, f"Unweighted {stat} computed on {self.horizontal_dims} dimensions")
                 return getattr(data, stat)(dim=self.horizontal_dims)
@@ -129,7 +128,7 @@ class FldStat():
 
         # align coordinates values of area to match data
         self.area = self.align_area_coordinates(data)
-    
+
         if lon_limits is not None or lat_limits is not None or region is not None:
             self.logger.debug("Selecting area for field stat calculation.")
             data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
@@ -167,8 +166,7 @@ class FldStat():
                     region: regionmask.Regions | None = None,
                     region_sel: str | int | list | None = None,
                     mask_kwargs: dict = {},
-                    default_coords: dict = {"lat_min": -90, "lat_max": 90,
-                                            "lon_min": 0, "lon_max": 360},
+                    default_coords: dict | None = None,
                     to_180: bool = True) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
@@ -219,8 +217,8 @@ class FldStat():
         return area_weighted_integral
 
     def sum_area(self,
-                 data: xr.Dataset | xr.DataArray, 
-                 areacell: xr.DataArray, 
+                 data: xr.Dataset | xr.DataArray,
+                 areacell: xr.DataArray,
                  dims: list):
         """
         Compute the sum of area cells where masked data is not null.
@@ -273,7 +271,10 @@ class FldStat():
         self.logger.warning("Area %s and data %s have different horizontal dimensions! Renaming them!",
                             area_horizontal_dims, self.horizontal_dims)
         # create a dictionary for renaming matching dimensions have the same length
-        matching_dims = {a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims) if self.area.sizes[a] == data.sizes[d]}
+        matching_dims = {
+            a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims)
+            if self.area.sizes[a] == data.sizes[d]
+        }
         self.logger.info("Area dimensions has been renamed with %s",  matching_dims)
         return self.area.rename(matching_dims)
 
@@ -307,7 +308,7 @@ class FldStat():
                 # Fast check for reversed coordinates: use slicing
                 if np.array_equal(area_coord[::-1], data_coord):
                     self.logger.warning("Reversing coordinate '%s' for alignment.", coord)
-                    self.area = self.area.isel({coord: slice(None, None, -1)})
+                    self.area = self.area.reindex({coord: area_coord[::-1]})
                     continue
 
                 # Try alignment by rounding to specified decimals
