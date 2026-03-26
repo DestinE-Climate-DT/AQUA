@@ -1,7 +1,9 @@
 """Module to transform coordinates of an Xarray object."""
 
 import xarray as xr
+
 from aqua.core.logger import log_configure, log_history
+
 from .coord_utils import get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
@@ -204,7 +206,8 @@ class CoordTransformer:
                 data[tgt_coord["name"]].attrs["flipped"] = 1
                 log_history(
                     data,
-                    f"Flipped coordinate {tgt_coord['name']} from {src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel",
+                    (f"Flipped coordinate {tgt_coord['name']} from ",
+                    f"{src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel"),
                 )
             else:
                 self.logger.info(
@@ -270,7 +273,8 @@ class CoordTransformer:
                 data = self._convert_bounds(data, src_coord, tgt_coord, factor)
                 log_history(
                     data,
-                    f"Converted units of coordinate {src_coord['name']} from {src_coord['units']} to {tgt_coord['units']} by datamodel",
+                    f"Converted units of coordinate {src_coord['name']} from {src_coord['units']} to "
+                    f"{tgt_coord['units']} by datamodel",
                 )
             data[tgt_coord["name"]].attrs["units"] = tgt_coord["units"]
         return data
@@ -304,7 +308,7 @@ class CoordTransformer:
                     )
                     data.coords[tgt_coord["name"]].attrs[key] = value
         return data
-    
+
 def counter_reverse_coordinate(data):
     """
     Flip back latitude if necessary

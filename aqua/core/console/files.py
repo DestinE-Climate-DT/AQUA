@@ -5,11 +5,11 @@ AQUA files operations mixin
 '''
 
 import os
-import sys
 import shutil
+import sys
 
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import load_yaml, dump_yaml, load_multi_yaml
+from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml
 
 
 class FilesMixin:

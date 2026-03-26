@@ -1,10 +1,10 @@
-import pytest
-import xarray
 import numpy as np
 import pandas as pd
+import pytest
+import xarray
+from conftest import LOGLEVEL
 
 from aqua import Reader
-from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 
@@ -41,7 +41,7 @@ class TestPreproc():
 
         reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
         data = reader.retrieve()
-        
+
         reader_preproc = Reader(model=model, exp=exp, source=source,
                                 preproc=double, loglevel=loglevel)
         data_preproc = reader_preproc.retrieve()
@@ -56,7 +56,7 @@ class TestPreproc():
 
         reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
         data = reader.retrieve()
-        
+
         reader_preproc = Reader(model=model, exp=exp, source=source,
                                 preproc=shift_time, loglevel=loglevel)
         data_preproc = reader_preproc.retrieve()

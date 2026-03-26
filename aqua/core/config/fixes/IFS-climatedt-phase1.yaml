@@ -30,7 +30,7 @@ fixer_name:
             tnlwrf:
                 nanfirst: True
             tdswrf:
-                nanfirst: True      
+                nanfirst: True
             iews:
                 nanfirst: True
             inss:
@@ -75,7 +75,7 @@ fixer_name:
         convention: eccodes
         nanfirst_startdate: 1990-01-01
         nanfirst_enddate: 2020-01-01
-    
+
     ifs-ecmwf_reduced-v1:
         deltat: 3600
         delete: [tp]

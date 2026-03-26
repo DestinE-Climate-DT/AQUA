@@ -2,7 +2,7 @@
 This module provides utilities for working with ecCodes, specifically
 to retrieve attributes of GRIB parameters by their short names or param IDs.
 It operates with caching to improve performance and handles preferentially GRIB2 format.
-A tentative is done to access also GRIB1 format in case of errors with GRIB2, but it 
+A tentative is done to access also GRIB1 format in case of errors with GRIB2, but it
 should be noted that GRIB1 is deprecated and not recommended for use.
 """
 #import os
@@ -10,10 +10,11 @@ should be noted that GRIB1 is deprecated and not recommended for use.
 #from packaging import version
 
 import functools
-from eccodes import codes_grib_new_from_samples, codes_set, codes_get, codes_release
-from eccodes import CodesInternalError
-from aqua.core.logger import log_configure
+
+from eccodes import CodesInternalError, codes_get, codes_grib_new_from_samples, codes_release, codes_set
+
 from aqua.core.exceptions import NoEcCodesShortNameError
+from aqua.core.logger import log_configure
 
 # some eccodes shortnames are not unique: we need a manual mapping
 #NOT_UNIQUE_SHORTNAMES = {
@@ -33,18 +34,20 @@ def _get_attrs_from_shortname(sn, grib_version="GRIB2", table=0):
     """
 
     gid = codes_grib_new_from_samples(grib_version)
-    #if sn in NOT_UNIQUE_SHORTNAMES:
-    #    # If the short name is special, we need to handle it differently
-    #    # by using the first paramId in the list of not unique ones
-    #    pid = NOT_UNIQUE_SHORTNAMES[sn][0]
-    #    codes_set(gid, "paramId", pid)
-    #else:
-    #    codes_set(gid, "shortName", sn)
-    #    pid = codes_get(gid, "paramId", ktype=str)
 
     # setting cetre to 0 bring the WMO table on top of everything
     codes_set(gid, "centre", table)
-    codes_set(gid, "shortName", sn)
+    # HACK: if the sn is not defined in the WMO table, first set the GRIB2 template
+    # handler to use Destine local parameters definitions (12)
+    try:
+        codes_set(gid, "shortName", sn)
+    except CodesInternalError:
+        logger = log_configure(log_level='WARNING', log_name='eccodes')
+        logger.warning(
+            "shortName %s not found in default WMO definitions, " \
+            "switching to destine local parameters", sn)
+        codes_set(gid, 'productionStatusOfProcessedData', 12)
+        codes_set(gid, "shortName", sn)
     pid = codes_get(gid, "paramId", ktype=str)
     nm = codes_get(gid, "name")
     un = codes_get(gid, "units")
@@ -77,7 +80,9 @@ def _get_shortname_from_paramid(pid):
         codes_set(gid, "paramId", pid)
     except CodesInternalError:
         logger = log_configure(log_level='WARNING', log_name='eccodes')
-        logger.warning("paramId %s not found in default WMO definitions, switching to destine local parameters",pid)
+        logger.warning(
+            "paramId %s not found in default WMO definitions," \
+            "switching to destine local parameters", pid)
         codes_set(gid, 'productionStatusOfProcessedData', 12)
         codes_set(gid, "paramId", pid)
     sn = codes_get(gid, "shortName")

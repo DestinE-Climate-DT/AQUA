@@ -11,7 +11,7 @@ The AQUA console is a command line interface that has two main purposes:
 - A central access to install and to manage where the configuration (also fixes and grids) and catalog files are stored has been added.
 - A tool for more complex operations:
 
-    - DROP (see :ref:`aqua-drop` and :ref:`drop`) 
+    - DROP (see :ref:`aqua-drop` and :ref:`drop`)
     - FDB catalog generator (see :ref:`catalog_generator`).
     - Diagnostics wrapper for a complete experiment analysis (see :ref:`aqua_analysis`).
 
@@ -72,12 +72,12 @@ aqua install
 ------------
 
 With this command the configuration file and the default data models, grids and fixes are copied to the destination folder.
-If the ``aqua-diagnostics`` package is found in the current environment, 
+If the ``aqua-diagnostics`` package is found in the current environment,
 also the configuration files for the diagnostics are copied (see aqua-diagnostics `documentation <https://aqua-diagnostics.readthedocs.io/en/latest/>`_).
 
 By default, the destination folder will be ``$HOME/.aqua``.
 It is possible to specify from where to copy and where to store.
-It is also possible to ask for an editable installation, so that only links are created, ideal for developers, 
+It is also possible to ask for an editable installation, so that only links are created, ideal for developers,
 which can keep their catalogs or fixes files under version control.
 
 .. note::
@@ -203,7 +203,7 @@ aqua set <catalog>
 ------------------
 
 This command sets the default main catalog to be used.
-Since it is possible to have multiple catalogs installed and accessible at the same time, 
+Since it is possible to have multiple catalogs installed and accessible at the same time,
 if more than one catalog is present it will move the selected catalog to the top of the list.
 The ``Reader`` behaviour will be then, if multiple triplets of ``model``, ``exp``, ``source`` are found in multiple
 catalogs, to use the first one found in the selected catalog.
@@ -358,7 +358,7 @@ The following options are available for ``aqua grids build``:
 
 .. option:: --modelname <name>
 
-    Alternative name for the model for grid naming. Useful for coupled models sources. 
+    Alternative name for the model for grid naming. Useful for coupled models sources.
 
 .. option:: --gridname <name>
 
@@ -380,7 +380,7 @@ The following options are available for ``aqua grids build``:
 .. option:: --yaml
 
     Create the grid entry in the grid file after building. This has to be added to catalog `source_grid_name` manually to be used by the Reader.
-    Please keep in mind that this is not verified yet. 
+    Please keep in mind that this is not verified yet.
 
 .. option:: --force_unstructured
 
