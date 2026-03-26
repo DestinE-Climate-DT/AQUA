@@ -53,8 +53,8 @@ diagnostics:
       t:
         vmin: -8
         vmax: 8
-        vmin_v: -20
-        vmax_v: 20
+        vmin_v: -12
+        vmax_v: 12
         cmap: 'RdBu_r'
       u:
         vmin: -10
