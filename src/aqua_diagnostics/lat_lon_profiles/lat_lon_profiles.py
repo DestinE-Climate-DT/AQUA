@@ -17,7 +17,7 @@ class LatLonProfiles(Diagnostic):
 				 std_startdate: str = None, std_enddate: str = None,
 				 region: str = None, lon_limits: list = None, lat_limits: list = None,
 				 regions_file_path: str = None,
-				 mean_type: str = 'zonal', diagnostic_name: str = 'latlonprofile',
+				 mean_type: str = 'zonal', diagnostic_name: str = 'lat_lon_profiles',
 				 loglevel: str = 'WARNING'):
 		"""
 		Initialize the LatLonProfiles class.
