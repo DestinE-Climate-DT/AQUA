@@ -19,8 +19,8 @@ references:
     source: monthly-netcdf
     regrid: r100  # EN4 is on 1x1 grid different from r100
     reader_kwargs: {chunks: {"time": 1, "depth": 42}}  # it can be a dictionary with reader kwargs
-    # startdate: 1990-01
-    # enddate: 1990-12
+    startdate: 2000-01-01
+    enddate: 2024-12-31
 
 output:
   outputdir: "./"
