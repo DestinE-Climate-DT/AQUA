@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     startdate = config_dict["datasets"][0].get("startdate", None)
     enddate = config_dict["datasets"][0].get("enddate", None)
-
+    
     if config_dict["references"]:
         references = config_dict["references"]
         logger.info(f"References found: {references}")
@@ -77,6 +77,9 @@ if __name__ == "__main__":
         exp_ref = references[0].get("exp", None)
         source_ref = references[0].get("source", None)
         regrid_ref = references[0].get("regrid", None)
+        obs_startdate = references[0].get("startdate", None)
+        obs_enddate = references[0].get("enddate", None)
+
         # realization_ref = references[0].get('realization', None)
         # if realization_ref:
         #     reader_kwargs_ref = {'realization': realization_ref}
@@ -145,6 +148,8 @@ if __name__ == "__main__":
                                 source=source_ref,
                                 regrid=regrid_ref,
                                 loglevel=loglevel,
+                                startdate=obs_startdate,
+                                enddate=obs_enddate,
                             )
                             obs_stratification.run(
                                 region=region,
@@ -224,6 +229,8 @@ if __name__ == "__main__":
                                 exp=exp_ref,
                                 source=source_ref,
                                 regrid=regrid_ref,
+                                startdate=obs_startdate,
+                                enddate=obs_enddate,
                                 loglevel=loglevel,
                             )
                             obs_stratification.run(
