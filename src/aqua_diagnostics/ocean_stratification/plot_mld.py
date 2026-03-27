@@ -296,15 +296,19 @@ class PlotMLD:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
-        self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for the {self.model} {self.exp} experiment"
+        model_startdate = self.data.attrs.get("startdate", None)
+        model_enddate = self.data.attrs.get("enddate", None)    
+        self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for {self.model} {self.exp}"
+        if model_startdate and model_enddate:
+            self.description += f" (from {model_startdate} to {model_enddate})"
         if self.obs:
             obs_startdate = self.obs.attrs.get("startdate", None)
             obs_enddate = self.obs.attrs.get("enddate", None)
-            self.description += f" and reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']}."
+            self.description += f" with reference {self.obs.attrs['model']} {self.obs.attrs['exp']}"
             if obs_startdate and obs_enddate:
-                self.description += f" (Ref. Period: {obs_startdate} to {obs_enddate})"
-        else:
-            self.description += "."
+                self.description += f" (from {obs_startdate} to {obs_enddate})"
+        
+        self.description += "."
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

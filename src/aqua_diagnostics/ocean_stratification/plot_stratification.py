@@ -181,13 +181,19 @@ class PlotStratification:
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self, ):
-        self.description = f"Vertical profiles of temperature, salinity and density of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.model} {self.exp} experiment (solid)"
+        model_startdate = self.data.attrs.get("startdate", None)
+        model_enddate = self.data.attrs.get("enddate", None)
+        self.description = f"Vertical profiles of temperature, salinity and density for the spatially averaged {self.region} region, {self.clim_time} climatology for {self.model} {self.exp} (solid)"
+        if model_startdate and model_enddate:
+            self.description += f" (from {model_startdate} to {model_enddate})"
         if self.obs:
             obs_startdate = self.obs.attrs.get("startdate", None)
             obs_enddate = self.obs.attrs.get("enddate", None)
-            self.description = self.description + (f" with the reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed).")
+            self.description = self.description + (f" with reference {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed)")
             if obs_startdate and obs_enddate:
-                self.description += f" (Ref. Period: {obs_startdate} to {obs_enddate})"
+                self.description += f" (from {obs_startdate} to {obs_enddate})"
+        self.description += "."
+
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,
                   dpi: int = 300, format: str = 'png', metadata: dict = None):
