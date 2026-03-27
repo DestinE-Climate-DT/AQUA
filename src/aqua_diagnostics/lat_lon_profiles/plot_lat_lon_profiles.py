@@ -50,7 +50,6 @@ class PlotLatLonProfiles():
             self.ref_data = ref_data  # Store seasonal ref data directly
         else:
             raise ValueError(f"data_type must be 'longterm' or 'seasonal', got '{data_type}'")
-
         self.ref_std_data = ref_std_data
         self.diagnostic_name = diagnostic_name
 
@@ -81,7 +80,6 @@ class PlotLatLonProfiles():
             ref_label (str): Reference label for the plot.
         """
         ref_label = None
-        
         if self.ref_data is not None:
             model = self.ref_data.attrs.get('AQUA_model', 'Unknown')
             exp = self.ref_data.attrs.get('AQUA_exp', 'Unknown')
@@ -284,7 +282,10 @@ class PlotLatLonProfiles():
         Returns:
             title (str): Title for the plot.
         """
-        title = f"{self.mean_type.capitalize()} profile "
+        if self.data_type == 'seasonal':
+            title = f"Seasonal {self.mean_type.capitalize()} profile "
+        else:
+            title = f"{self.mean_type.capitalize()} profile "
 
 
         for name in [self.long_name, self.standard_name, self.short_name]:
@@ -297,8 +298,14 @@ class PlotLatLonProfiles():
         if self.region is not None:
             title += f'[{self.region}] '
 
-        if self.len_data == 1:
-            title += f'for {self.models[0]} {self.exps[0]} '
+        # Add dataset info when a single line is plotted
+        if self.models and self.exps:
+            unique_datasets = list(dict.fromkeys(zip(self.models, self.exps)))
+            if len(unique_datasets) == 1:
+                model, exp = unique_datasets[0]
+                title += f'for {model} {exp} '
+            elif self.len_data == 1:
+                title += f'for {self.models[0]} {self.exps[0]} '
 
         self.logger.debug('Title: %s', title)
         return title
