@@ -303,9 +303,9 @@ class PlotLatLonProfiles():
             unique_datasets = list(dict.fromkeys(zip(self.models, self.exps)))
             if len(unique_datasets) == 1:
                 model, exp = unique_datasets[0]
-                title += f'for {model} {exp} '
+                title += f'\nfor {model} {exp} '
             elif self.len_data == 1:
-                title += f'for {self.models[0]} {self.exps[0]} '
+                title += f'\nfor {self.models[0]} {self.exps[0]} '
 
         self.logger.debug('Title: %s', title)
         return title
