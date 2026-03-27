@@ -212,4 +212,4 @@ class PlotENSO(PlotBaseMixin):
         Returns:
             str: Description of the maps.
         """
-        return super().set_map_description(maps=maps, ref_maps=ref_maps, statistic=statistic, telecname='Niño 3.4 index')
+        return super().set_map_description(maps=maps, ref_maps=ref_maps, statistic=statistic, telecname='Niño 3.4')
