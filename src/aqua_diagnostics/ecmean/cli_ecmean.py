@@ -194,7 +194,7 @@ def set_description(diagnostic, model, exp, year1, year2, config):
                        f"{regions_phrase}. Values smaller than one imply better results than the CMIP6 multi-model mean.")
     elif diagnostic == 'global_mean':
         description = (f"Global mean differences with respect to observational references "
-                       f"(normalized to obsevational interannual variability) "
+                       f"(normalized to observational interannual variability) "
                        f" for different regions and seasons {model_time} "
                        f"{regions_phrase}. Darker colors imply larger differences.")
     else:
