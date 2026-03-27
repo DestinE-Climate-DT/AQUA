@@ -56,24 +56,24 @@ def replace_urlpath_jinja(block: dict, value: str, name: str, default: str | Non
 
     # this loop is a bit tricky but is made to ensure that the right value is replaced
     # it works on multiple urlpath (list) or single urlpath (str)
-    urlpath = to_list(block['args']['urlpath'])
+    urlpath = to_list(block["args"]["urlpath"])
     for i, _ in enumerate(urlpath):
-        for character in ['_', '/', '.']:
+        for character in ["_", "/", "."]:
             urlpath[i] = urlpath[i].replace(character + value + character, character + "{{" + name + "}}" + character)
-    block['args']['urlpath'] = urlpath if len(urlpath) > 1 else urlpath[0]
+    block["args"]["urlpath"] = urlpath if len(urlpath) > 1 else urlpath[0]
 
     # add the parameter to the parameters block
-    if 'parameters' not in block:
-        block['parameters'] = {}
-    if name not in block['parameters']:
-        block['parameters'][name] = {}
-        block['parameters'][name]['description'] = f"Parameter {name}"
-        block['parameters'][name]['default'] = value
-        block['parameters'][name]['type'] = 'str'
-        block['parameters'][name]['allowed'] = [value]
+    if "parameters" not in block:
+        block["parameters"] = {}
+    if name not in block["parameters"]:
+        block["parameters"][name] = {}
+        block["parameters"][name]["description"] = f"Parameter {name}"
+        block["parameters"][name]["default"] = value
+        block["parameters"][name]["type"] = "str"
+        block["parameters"][name]["allowed"] = [value]
     else:
-        if value not in block['parameters'][name]['allowed']:
-            block['parameters'][name]['allowed'].append(value)
+        if value not in block["parameters"][name]["allowed"]:
+            block["parameters"][name]["allowed"].append(value)
 
     return block
 
@@ -93,8 +93,7 @@ def replace_urlpath_wildcard(block: dict, value: str) -> dict:
         return block
 
     # this loop is a bit tricky but is made to ensure that the right value is replaced
-    for character in ['_', '/', '.']:
-        block['args']['urlpath'] = block['args']['urlpath'].replace(
-            character + value + character, character + "*" + character)
+    for character in ["_", "/", "."]:
+        block["args"]["urlpath"] = block["args"]["urlpath"].replace(character + value + character, character + "*" + character)
 
     return block

@@ -1,4 +1,5 @@
 """AQUA class for field statitics"""
+
 import numpy as np
 import regionmask
 import xarray as xr
@@ -13,14 +14,16 @@ from .area_selection import AreaSelection
 xr.set_options(keep_attrs=True)
 
 
-class FldStat():
+class FldStat:
     """AQUA class for field statitics"""
 
-    def __init__(self,
-                 area: xr.Dataset | xr.DataArray | None = None,
-                 horizontal_dims: list[str] | None = None,
-                 grid_name: str | None = None,
-                 loglevel: str = 'WARNING'):
+    def __init__(
+        self,
+        area: xr.Dataset | xr.DataArray | None = None,
+        horizontal_dims: list[str] | None = None,
+        grid_name: str | None = None,
+        loglevel: str = "WARNING",
+    ):
         """
         Initialize the FldStat.
 
@@ -31,7 +34,7 @@ class FldStat():
             loglevel (str, optional): The logging level.
         """
         self.loglevel = loglevel
-        self.logger = log_configure(log_level=loglevel, log_name='FldStat')
+        self.logger = log_configure(log_level=loglevel, log_name="FldStat")
         self.area = area
         if horizontal_dims is None:
             self.logger.warning("No horizontal dimensions provided, will try to guess from data when provided!")
@@ -53,17 +56,20 @@ class FldStat():
     @property
     def available_fldstats(self):
         """Return available field statistics."""
-        return {"custom":   ['integral', 'areasum'],
-                "standard": ['mean', 'std', 'max', 'min', 'sum']}
+        return {"custom": ["integral", "areasum"], "standard": ["mean", "std", "max", "min", "sum"]}
 
-    def fldstat(self, data: xr.DataArray | xr.Dataset,
-                stat: str = "mean",
-                region: regionmask.Regions | None = None,
-                region_sel: str | int | list | None = None,
-                mask_kwargs: dict = {},
-                lon_limits: list | None = None, lat_limits: list | None = None,
-                dims: list | None = None,
-                **kwargs):
+    def fldstat(
+        self,
+        data: xr.DataArray | xr.Dataset,
+        stat: str = "mean",
+        region: regionmask.Regions | None = None,
+        region_sel: str | int | list | None = None,
+        mask_kwargs: dict = {},
+        lon_limits: list | None = None,
+        lat_limits: list | None = None,
+        dims: list | None = None,
+        **kwargs,
+    ):
         """
         Compute a spatial statistic on the input field, optionally area-weighted.
         The statistic can be computed globally or over a sub-region selected either
@@ -88,8 +94,10 @@ class FldStat():
         """
 
         if stat not in [s for stats in self.available_fldstats.values() for s in stats]:
-            raise ValueError(f"Statistic {stat} not supported by AQUA FldStat(), only "
-                             f"{[s for stats in self.available_fldstats.values() for s in stats]} are supported.")
+            raise ValueError(
+                f"Statistic {stat} not supported by AQUA FldStat(), only "
+                f"{[s for stats in self.available_fldstats.values() for s in stats]} are supported."
+            )
 
         if not isinstance(data, (xr.DataArray, xr.Dataset)):
             raise ValueError("Data must be an xarray DataArray or Dataset.")
@@ -101,7 +109,7 @@ class FldStat():
             if len(data_gridtype) > 1:
                 raise ValueError("Multiple grid types found in the data, please provide horizontal_dims!")
             self.horizontal_dims = data_gridtype[0].horizontal_dims
-            self.logger.debug('Horizontal dimensions guessed from data are %s', self.horizontal_dims)
+            self.logger.debug("Horizontal dimensions guessed from data are %s", self.horizontal_dims)
 
         # Determine which dims to average over based on mean_type
         if not dims:
@@ -131,10 +139,16 @@ class FldStat():
 
         if lon_limits is not None or lat_limits is not None or region is not None:
             self.logger.debug("Selecting area for field stat calculation.")
-            data = self.area_selection.select_area(data, lon=lon_limits, lat=lat_limits,
-                                                   region=region, region_sel=region_sel,
-                                                   mask_kwargs=mask_kwargs,
-                                                   to_180=False, **kwargs)
+            data = self.area_selection.select_area(
+                data,
+                lon=lon_limits,
+                lat=lat_limits,
+                region=region,
+                region_sel=region_sel,
+                mask_kwargs=mask_kwargs,
+                to_180=False,
+                **kwargs,
+            )
 
         # cleaning coordinates which have "multiple" coordinates in their own definition
         # grid_area = self._clean_spourious_coords(grid_area, name = "area")
@@ -143,11 +157,11 @@ class FldStat():
         # compact call, equivalent of "out = weighted_data.mean()""
         self.logger.info("Computing area-weighted %s on %s dimensions", stat, dims)
 
-        if stat == 'integral':
+        if stat == "integral":
             out = self.integrate_over_area(data, self.area, dims)
-        elif stat == 'areasum':
+        elif stat == "areasum":
             out = self.sum_area(data, self.area, dims)
-        elif stat in ['max', 'min']:
+        elif stat in ["max", "min"]:
             # max/min are not supported by weighted arrays, use unweighted calculation
             out = getattr(data, stat)(dim=dims)
         else:
@@ -159,15 +173,21 @@ class FldStat():
 
         return out
 
-    def select_area(self, data: xr.Dataset | xr.DataArray,
-                    lon: list | None = None, lat: list | None = None,
-                    box_brd: bool = True, drop: bool = False,
-                    lat_name: str = "lat", lon_name: str = "lon",
-                    region: regionmask.Regions | None = None,
-                    region_sel: str | int | list | None = None,
-                    mask_kwargs: dict = {},
-                    default_coords: dict | None = None,
-                    to_180: bool = True) -> xr.Dataset | xr.DataArray:
+    def select_area(
+        self,
+        data: xr.Dataset | xr.DataArray,
+        lon: list | None = None,
+        lat: list | None = None,
+        box_brd: bool = True,
+        drop: bool = False,
+        lat_name: str = "lat",
+        lon_name: str = "lon",
+        region: regionmask.Regions | None = None,
+        region_sel: str | int | list | None = None,
+        mask_kwargs: dict = {},
+        default_coords: dict | None = None,
+        to_180: bool = True,
+    ) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
         Wrapper for AreaSelection.select_area method.
@@ -175,16 +195,22 @@ class FldStat():
         # TODO: The lat_name and lon_name are at the actual stage in the
         # select_area method arguments. However it is possible to foresee
         # that we may want to automatically detect the names
-        return self.area_selection.select_area(data, lon=lon, lat=lat,
-                                               box_brd=box_brd, drop=drop,
-                                               lat_name=lat_name, lon_name=lon_name,
-                                               region=region, region_sel=region_sel,
-                                               mask_kwargs=mask_kwargs,
-                                               default_coords=default_coords, to_180=to_180)
+        return self.area_selection.select_area(
+            data,
+            lon=lon,
+            lat=lat,
+            box_brd=box_brd,
+            drop=drop,
+            lat_name=lat_name,
+            lon_name=lon_name,
+            region=region,
+            region_sel=region_sel,
+            mask_kwargs=mask_kwargs,
+            default_coords=default_coords,
+            to_180=to_180,
+        )
 
-    def integrate_over_area(self, data: xr.Dataset | xr.DataArray,
-                            areacell: xr.DataArray,
-                            dims: list):
+    def integrate_over_area(self, data: xr.Dataset | xr.DataArray, areacell: xr.DataArray, dims: list):
         """
         Compute the integral of the data over the area.
 
@@ -201,14 +227,16 @@ class FldStat():
         # preserve attrs (e.g. AQUA_region) from areacell due to multiplication above, which has priority if keys overlap
         merged_attrs = {**data.attrs, **areacell.attrs}
 
-        if 'units' in data.attrs and 'units' in areacell.attrs:
-            merged_attrs['units'] = multiply_units(data.attrs['units'], areacell.attrs['units'])
+        if "units" in data.attrs and "units" in areacell.attrs:
+            merged_attrs["units"] = multiply_units(data.attrs["units"], areacell.attrs["units"])
         else:
-            self.logger.warning(f"Data units: {data.attrs.get('units', 'None')}; "
-                                f"Area units: {areacell.attrs.get('units', 'None')}, cannot multiply units using Metpy.")
+            self.logger.warning(
+                f"Data units: {data.attrs.get('units', 'None')}; "
+                f"Area units: {areacell.attrs.get('units', 'None')}, cannot multiply units using Metpy."
+            )
 
-        if 'long_name' in data.attrs:
-            merged_attrs['long_name'] = f"Integrated {data.attrs['long_name']}"
+        if "long_name" in data.attrs:
+            merged_attrs["long_name"] = f"Integrated {data.attrs['long_name']}"
 
         area_weighted_data.attrs.update(merged_attrs)
 
@@ -216,10 +244,7 @@ class FldStat():
 
         return area_weighted_integral
 
-    def sum_area(self,
-                 data: xr.Dataset | xr.DataArray,
-                 areacell: xr.DataArray,
-                 dims: list):
+    def sum_area(self, data: xr.Dataset | xr.DataArray, areacell: xr.DataArray, dims: list):
         """
         Compute the sum of area cells where masked data is not null.
 
@@ -268,14 +293,16 @@ class FldStat():
             raise ValueError("Area and data have different number of horizontal dimensions!")
 
         # check if area and data have the same horizontal dimensions
-        self.logger.warning("Area %s and data %s have different horizontal dimensions! Renaming them!",
-                            area_horizontal_dims, self.horizontal_dims)
+        self.logger.warning(
+            "Area %s and data %s have different horizontal dimensions! Renaming them!",
+            area_horizontal_dims,
+            self.horizontal_dims,
+        )
         # create a dictionary for renaming matching dimensions have the same length
         matching_dims = {
-            a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims)
-            if self.area.sizes[a] == data.sizes[d]
+            a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims) if self.area.sizes[a] == data.sizes[d]
         }
-        self.logger.info("Area dimensions has been renamed with %s",  matching_dims)
+        self.logger.info("Area dimensions has been renamed with %s", matching_dims)
         return self.area.rename(matching_dims)
 
     def align_area_coordinates(self, data: xr.Dataset | xr.DataArray, decimals: int = 5):

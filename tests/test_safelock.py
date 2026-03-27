@@ -73,7 +73,7 @@ class TestSafeFileLock:
     def test_stale_lock_cleanup(self, lock_file):
         """Test that stale locks are cleaned up."""
         # Create a stale lock file
-        with open(lock_file, 'w') as f:
+        with open(lock_file, "w") as f:
             f.write(f"pid=99999 time={time.time() - 200}\n")
 
         # Set mtime to old value
@@ -109,7 +109,7 @@ class TestSafeFileLock:
 
         lock.acquire()
 
-        with open(lock_file, 'r') as f:
+        with open(lock_file, "r") as f:
             content = f.read()
 
         assert f"pid={os.getpid()}" in content
@@ -120,18 +120,19 @@ class TestSafeFileLock:
     @pytest.mark.aqua
     def test_sequential_access(self, lock_file, shared_file):
         """Test that multiple locks access file sequentially."""
+
         def increment_file(lock_path, file_path, iterations=5):
             """Increment counter in file under lock."""
             lock = SafeFileLock(lock_path, timeout=30)
             for _ in range(iterations):
                 with lock:
-                    with open(file_path, 'r') as f:
+                    with open(file_path, "r") as f:
                         value = int(f.read().strip())
 
                     # Simulate some work
                     time.sleep(0.05)
 
-                    with open(file_path, 'w') as f:
+                    with open(file_path, "w") as f:
                         f.write(f"{value + 1}\n")
 
         # Run two threads
@@ -145,7 +146,7 @@ class TestSafeFileLock:
             t.join()
 
         # Final value should be 10 (2 threads * 5 increments)
-        with open(shared_file, 'r') as f:
+        with open(shared_file, "r") as f:
             final_value = int(f.read().strip())
 
         assert final_value == 10
@@ -153,22 +154,23 @@ class TestSafeFileLock:
     @pytest.mark.aqua
     def test_concurrent_write_protection(self, lock_file, shared_file):
         """Test that lock prevents concurrent writes from corrupting data."""
+
         def write_pattern(lock_path, file_path, pattern, count=10):
             """Write a pattern to file multiple times under lock."""
             lock = SafeFileLock(lock_path, timeout=60)
             for _ in range(count):
                 with lock:
-                    with open(file_path, 'a') as f:
+                    with open(file_path, "a") as f:
                         f.write(f"{pattern}\n")
                     time.sleep(0.001)
 
         # Clear file
-        with open(shared_file, 'w') as f:
+        with open(shared_file, "w") as f:
             f.write("")
 
         # Run multiple threads with different patterns
         threads = []
-        patterns = ['AAA', 'BBB', 'CCC']
+        patterns = ["AAA", "BBB", "CCC"]
         for pattern in patterns:
             t = threading.Thread(target=write_pattern, args=(lock_file, shared_file, pattern, 10))
             threads.append(t)
@@ -178,7 +180,7 @@ class TestSafeFileLock:
             t.join()
 
         # Verify all lines are complete (no interleaved writes)
-        with open(shared_file, 'r') as f:
+        with open(shared_file, "r") as f:
             lines = f.readlines()
 
         assert len(lines) == 30  # 3 threads * 10 writes each
@@ -205,10 +207,10 @@ class TestSafeFileLock:
         """Test multiple context manager entries/exits."""
         for i in range(5):
             with SafeFileLock(lock_file, timeout=5):
-                with open(shared_file, 'w') as f:
+                with open(shared_file, "w") as f:
                     f.write(f"{i}\n")
 
-        with open(shared_file, 'r') as f:
+        with open(shared_file, "r") as f:
             value = int(f.read().strip())
 
         assert value == 4
@@ -271,7 +273,7 @@ def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
     with SafeFileLock(str(init_lock_file), timeout=60):
         if not shared_file.exists():
             try:
-                with open(shared_file, 'w') as f:
+                with open(shared_file, "w") as f:
                     f.write("0\n")
             except FileExistsError:
                 pass  # Another worker created it
@@ -284,12 +286,12 @@ def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
             time.sleep(0.01 * (i % 3))
 
         with SafeFileLock(str(lock_file), timeout=120):
-            with open(shared_file, 'r') as f:
+            with open(shared_file, "r") as f:
                 value = int(f.read().strip())
 
             time.sleep(0.001)  # Simulate some work
 
-            with open(shared_file, 'w') as f:
+            with open(shared_file, "w") as f:
                 f.write(f"{value + 1}\n")
 
     # Note: We can't assert the final value here because we don't know
@@ -300,10 +302,10 @@ def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
 @pytest.mark.aqua
 def test_logging_levels(lock_file):
     """Test that logging works at different levels."""
-    lock = SafeFileLock(lock_file, timeout=5, loglevel='DEBUG')
+    lock = SafeFileLock(lock_file, timeout=5, loglevel="DEBUG")
 
     # Use patch to spy on the logger's debug method
-    with patch.object(lock.logger, 'debug') as mock_debug:
+    with patch.object(lock.logger, "debug") as mock_debug:
         lock.acquire()
         lock.release()
 

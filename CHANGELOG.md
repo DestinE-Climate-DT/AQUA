@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - Graphics: improve titles and labels formatting in Boxplots and Hovmoller (#2777)
+- Apply ruff formatting to the codebase (#2791)
 - Add pre-commit hooks and ruff linting (#2786)
 - Fix area selection, `default_coords` are deduced from the dataset (#2768)
 - Attributes guessing for eccodes works also with local destine table (#2759)
