@@ -313,7 +313,7 @@ class PlotBaseMixin():
             var = maps.long_name if hasattr(maps, 'long_name') else maps.shortName
             description += f"{var} "
             description += f"for {maps.AQUA_model} {maps.AQUA_exp}"
-            description += f" evaluated from {self.startdate[0].strftime('%Y-%m')} to {self.enddate[0].strftime('%Y-%m')}"
+            description += f" (from {self.startdate[0].strftime('%Y-%m')} to {self.enddate[0].strftime('%Y-%m')})"
             if hasattr(maps, 'AQUA_season'):
                 description += f" ({maps.AQUA_season})"
         elif isinstance(maps, list):
@@ -321,20 +321,20 @@ class PlotBaseMixin():
             description += f"({var}) "
             for map in maps:
                 description += f"{map.AQUA_model} {map.AQUA_exp} "
-                description += f"evaluated from {pd.to_datetime(map.time[0].values).strftime('%Y-%m')} to {pd.to_datetime(map.time[-1].values).strftime('%Y-%m')}, "
+                description += f" (from {pd.to_datetime(map.time[0].values).strftime('%Y-%m')} to {pd.to_datetime(map.time[-1].values).strftime('%Y-%m')}), "
             description = description[:-2]
             if hasattr(maps[0], 'AQUA_season'):
                 description += f" ({maps[0].AQUA_season})"
         if isinstance(ref_maps, xr.DataArray):
             var = ref_maps.shortName if hasattr(ref_maps, 'shortName') else ref_maps.long_name
             description += f" compared to {ref_maps.AQUA_model} {ref_maps.AQUA_exp}"
-            description += f" evaluated from {self.ref_startdate[0].strftime('%Y-%m')} to {self.ref_enddate[0].strftime('%Y-%m')}"
+            description += f" (from {self.ref_startdate[0].strftime('%Y-%m')} to {self.ref_enddate[0].strftime('%Y-%m')})"
         elif isinstance(ref_maps, list):
             var = ref_maps[0].shortName if hasattr(ref_maps[0], 'shortName') else ref_maps[0].long_name
             description += f" compared to {ref_maps[0].AQUA_model} {ref_maps[0].AQUA_exp}"
             for map in ref_maps:
                 description += f"{map.AQUA_model} {map.AQUA_exp} "
-                description += f"evaluated from {pd.to_datetime(map.time[0].values).strftime('%Y-%m')} to {pd.to_datetime(map.time[-1].values).strftime('%Y-%m')}, "
+                description += f" (from {pd.to_datetime(map.time[0].values).strftime('%Y-%m')} to {pd.to_datetime(map.time[-1].values).strftime('%Y-%m')}), "
             description = description[:-2]
         description += "."
         if ref_maps is not None:
