@@ -183,8 +183,11 @@ class PlotStratification:
     def set_description(self, ):
         self.description = f"Vertical profiles of temperature, salinity and density of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.model} {self.exp} experiment (solid)"
         if self.obs:
+            obs_startdate = self.obs.attrs.get("startdate", None)
+            obs_enddate = self.obs.attrs.get("enddate", None)
             self.description = self.description + (f" with the reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed).")
-
+            if obs_startdate and obs_enddate:
+                self.description += f" (Ref. Period: {obs_startdate} to {obs_enddate})"
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,
                   dpi: int = 300, format: str = 'png', metadata: dict = None):

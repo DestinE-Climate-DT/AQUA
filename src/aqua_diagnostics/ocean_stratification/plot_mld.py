@@ -298,7 +298,11 @@ class PlotMLD:
     def set_description(self):
         self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for the {self.model} {self.exp} experiment"
         if self.obs:
+            obs_startdate = self.obs.attrs.get("startdate", None)
+            obs_enddate = self.obs.attrs.get("enddate", None)
             self.description += f" and reference data from {self.obs.attrs['model']} {self.obs.attrs['exp']}."
+            if obs_startdate and obs_enddate:
+                self.description += f" (Ref. Period: {obs_startdate} to {obs_enddate})"
         else:
             self.description += "."
 
