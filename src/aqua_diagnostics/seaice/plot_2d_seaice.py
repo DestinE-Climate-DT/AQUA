@@ -208,7 +208,7 @@ class Plot2DSeaIce:
 
         if self.save_pdf or self.save_png:
             description = (
-                f"Climatology and difference against the reference dataset for sea ice {monmod.attrs.get('AQUA_method', '')} "
+                f"Climatology and differences against the reference dataset for sea ice {monmod.attrs.get('AQUA_method', '')} "
                 f"in the {monmod.attrs.get('AQUA_region', 'geographic')} region. "
                 f"Model data is {monmod.attrs.get('AQUA_model')}, experiment {monmod.attrs.get('AQUA_exp')} "
                 f"from {time_to_string(monmod.attrs.get('AQUA_startdate', ''), format="%Y-%m")} to {time_to_string(monmod.attrs.get('AQUA_enddate', ''), format="%Y-%m")}. "
