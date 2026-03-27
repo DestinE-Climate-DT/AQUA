@@ -308,7 +308,7 @@ class PlotSeaIce:
                     model_startdate_list.extend([f"{label} (from {stdate} to {endate})" for label in unique_labels])
 
             # build the model data string
-            self.model_labels_str = f"{', '.join(model_startdate_list)} "
+            self.model_labels_str = f"{', '.join(model_startdate_list)}. "
         else:
             self.model_labels_str = ''
 
