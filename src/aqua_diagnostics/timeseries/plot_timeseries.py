@@ -123,6 +123,10 @@ class PlotTimeseries(PlotBaseMixin):
                 self.startdate = [d.time[0].values for d in data]
                 self.enddate = [d.time[-1].values for d in data]
                 break
+
+        if self.region == 'global':  # if global, we don't want to give it a name. Needed because storyline runs have AQUA:region set
+            self.region = None
+
         self.realizations = get_realizations(self.monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')

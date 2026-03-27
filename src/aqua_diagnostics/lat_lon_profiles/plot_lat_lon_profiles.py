@@ -146,6 +146,9 @@ class PlotLatLonProfiles():
                 if self.enddate is None and hasattr(data_item, 'AQUA_enddate'):
                     self.enddate = data_item.AQUA_enddate
 
+        if self.region == 'global':  # if global, we don't want to give it a name. Needed because storyline runs have AQUA:region set
+            self.region = None
+
         # Set mean_type from first data item if not already set
         first_data = data_items[0] if data_items else None
         if first_data is not None and hasattr(first_data, 'AQUA_mean_type'):

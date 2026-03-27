@@ -82,6 +82,10 @@ class PlotSeasonalCycles(PlotBaseMixin):
             self.startdate = [d.AQUA_startdate if hasattr(d, 'AQUA_startdate') else None for d in self.monthly_data]
             self.enddate = [d.AQUA_enddate if hasattr(d, 'AQUA_enddate') else None for d in self.monthly_data]
             self.realizations = get_realizations(self.monthly_data)
+
+        if self.region == 'global':  # if global, we don't want to give it a name. Needed because storyline runs have AQUA:region set
+            self.region = None
+
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
         self.logger.debug(f'Experiments: {self.exps}')
