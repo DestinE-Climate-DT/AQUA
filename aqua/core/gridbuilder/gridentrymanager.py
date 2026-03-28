@@ -4,14 +4,15 @@ It is used to create the grid entry name, block, and write the grid entry to the
 It also control the filename of the grid file.
 """
 
-import os
 import glob
+import os
 import re
-from typing import Optional, Any, Dict
-from aqua.core.util import load_yaml, dump_yaml
+from typing import Any, Dict, Optional
+
 from aqua.core.configurer import ConfigPath
-from aqua.core.logger import log_configure
 from aqua.core.lock.safelock import SafeFileLock
+from aqua.core.logger import log_configure
+from aqua.core.util import dump_yaml, load_yaml
 
 
 class GridEntryManager:
@@ -26,7 +27,7 @@ class GridEntryManager:
         model_name: Optional[str] = None,
         grid_name: Optional[str] = None,
         original_resolution: Optional[str] = None,
-        loglevel: str = 'warning'
+        loglevel: str = "warning",
     ) -> None:
         """
         Initialize the GridEntryManager.
@@ -40,7 +41,7 @@ class GridEntryManager:
         # get useful paths
         conf = ConfigPath()
         self.configpath = conf.get_config_dir()
-        self.gridpath = os.path.join(self.configpath, 'grids')
+        self.gridpath = os.path.join(self.configpath, "grids")
 
         # try to keep model and grid names as lowercase
         self.model_name = model_name.lower() if model_name else None
@@ -49,14 +50,10 @@ class GridEntryManager:
 
         # set log level and logger
         self.loglevel = loglevel
-        self.logger = log_configure(log_level=loglevel, log_name='GridEntryManager')
+        self.logger = log_configure(log_level=loglevel, log_name="GridEntryManager")
 
     def get_basename(
-        self,
-        aquagrid: str,
-        cdogrid: Optional[str] = None,
-        masked: Optional[str] = None,
-        vert_coord: Optional[str] = None
+        self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None
     ) -> str:
         """
         Get the basename for the grid type based on the context and aquagrid name.
@@ -89,11 +86,7 @@ class GridEntryManager:
         return basename
 
     def create_grid_entry_name(
-        self,
-        aquagrid: str,
-        cdogrid: Optional[str] = None,
-        masked: Optional[str] = None,
-        vert_coord: Optional[str] = None
+        self, aquagrid: str, cdogrid: Optional[str] = None, masked: Optional[str] = None, vert_coord: Optional[str] = None
     ) -> str:
         """
         Create a grid entry name based on the grid type and vertical coordinate.
@@ -106,7 +99,7 @@ class GridEntryManager:
         Returns:
             str: The grid entry name.
         """
-        return self.get_basename(aquagrid, cdogrid, masked, vert_coord).replace('_', '-')
+        return self.get_basename(aquagrid, cdogrid, masked, vert_coord).replace("_", "-")
 
     def create_grid_entry_block(
         self,
@@ -114,7 +107,7 @@ class GridEntryManager:
         horizontal_dims: Optional[str] = None,
         cdo_options: Optional[str] = None,
         remap_method: Optional[str] = None,
-        vert_coord: Optional[str] = None
+        vert_coord: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Create a grid entry block for the gridtype, with only cdo_options and remap_method.
@@ -129,17 +122,17 @@ class GridEntryManager:
             Dict[str, Any]: The grid entry block.
         """
         grid_block = {
-            'path': f"{path}",
+            "path": f"{path}",
         }
         if horizontal_dims:
-            grid_block['space_coord'] = horizontal_dims
+            grid_block["space_coord"] = horizontal_dims
         if vert_coord:
-            grid_block['vert_coord'] = vert_coord
-            grid_block['path'] = {vert_coord: f"{path}"}
+            grid_block["vert_coord"] = vert_coord
+            grid_block["path"] = {vert_coord: f"{path}"}
         if cdo_options:
-            grid_block['cdo_options'] = cdo_options
-        if remap_method and remap_method != 'con':
-            grid_block['remap_method'] = remap_method
+            grid_block["cdo_options"] = cdo_options
+        if remap_method and remap_method != "con":
+            grid_block["remap_method"] = remap_method
         return grid_block
 
     def get_gridfilename(self, cdogrid: Optional[str], gridkind: str) -> str:
@@ -153,9 +146,9 @@ class GridEntryManager:
             str: The grid filename.
         """
         if cdogrid:
-            gridfilename = f'{gridkind.lower()}.yaml'
+            gridfilename = f"{gridkind.lower()}.yaml"
         else:
-            gridfilename = f'{self.model_name}-{gridkind.lower()}.yaml'
+            gridfilename = f"{self.model_name}-{gridkind.lower()}.yaml"
         return os.path.join(self.gridpath, gridfilename)
 
     def get_versioned_basepath(self, outdir: str, basename: str, version: Optional[int] = None) -> str:
@@ -182,8 +175,9 @@ class GridEntryManager:
             basepath = f"{basepath}_v{version}"
         return basepath
 
-    def create_grid_entry(self, gridfile: str, grid_entry_name: str,
-                          grid_block: Dict[str, Any], rebuild: bool = False) -> None:
+    def create_grid_entry(
+        self, gridfile: str, grid_entry_name: str, grid_block: Dict[str, Any], rebuild: bool = False
+    ) -> None:
         """
         Create or update a grid entry in the grid YAML file.
         Use file locking to prevent race conditions when parallel
@@ -204,16 +198,16 @@ class GridEntryManager:
         if not os.path.exists(gridfile):
             if self.logger:
                 self.logger.info("Grid file %s does not exist, creating it", gridfile)
-            final_block = {'grids': {grid_entry_name: grid_block}}
+            final_block = {"grids": {grid_entry_name: grid_block}}
             dump_yaml(gridfile, final_block)
         else:
-            lock_path = gridfile + '.lock'
+            lock_path = gridfile + ".lock"
             with SafeFileLock(lock_path, loglevel=self.loglevel):
                 if self.logger:
                     self.logger.info("Grid file %s exists, adding the grid entry %s", gridfile, grid_entry_name)
                 final_block = load_yaml(gridfile)
-                if grid_entry_name in final_block.get('grids', {}) and not rebuild:
+                if grid_entry_name in final_block.get("grids", {}) and not rebuild:
                     self.logger.warning("Grid entry %s already exists in %s, skipping", grid_entry_name, gridfile)
                     return
-                final_block['grids'][grid_entry_name] = grid_block
+                final_block["grids"][grid_entry_name] = grid_block
                 dump_yaml(gridfile, final_block)

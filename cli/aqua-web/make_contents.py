@@ -2,17 +2,18 @@
 
 # This script creates content.yaml and content.json files for each experiment in the content/png directory.
 
+import argparse
+import json
+import logging
 import os
 import sys
-import yaml
-import json
-import argparse
-import logging
 from fnmatch import fnmatch
+
+import yaml
 from pypdf import PdfReader
 
 # Get a logger instance
-logger = logging.getLogger('make_contents')
+logger = logging.getLogger("make_contents")
 
 
 def deep_merge_dicts(d1, d2):
@@ -48,7 +49,7 @@ def convert_to_new_structure(data):
             for model, experiments in models.items():
                 if isinstance(experiments, list):
                     # Old structure found: {model: [exp1, exp2]}
-                    new_experiments_dict = {exp: ['r1'] for exp in experiments}
+                    new_experiments_dict = {exp: ["r1"] for exp in experiments}
                     # Replace the list with the new dictionary
                     models[model] = new_experiments_dict
     return data
@@ -83,7 +84,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             experiments = yaml.safe_load(file)
 
         if realization:
-            add = {catalog: {model: {exp: [realization]}}}           
+            add = {catalog: {model: {exp: [realization]}}}
             experiments = convert_to_new_structure(experiments)  # Convert to new structure if necessary
         else:
             add = {catalog: {model: [exp]}}
@@ -100,9 +101,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
     if realization:
         path += f"/{realization}"
 
-    if (not os.path.exists(f"{path}/content.yaml") or 
-        not os.path.exists(f"{path}/content.json") or force):
-        
+    if not os.path.exists(f"{path}/content.yaml") or not os.path.exists(f"{path}/content.json") or force:
         logger.debug(f"Generating content files for {path} (force={force})")
 
         if os.path.exists(f"{path}/experiment.yaml"):
@@ -126,7 +125,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                     experiment["title"] = experiment["menu"]
                 else:
                     experiment["title"] = exp
-                
+
                 info_parts = []
                 if has_valid_key(experiment, "resolution_id"):
                     info_parts.append(experiment["resolution_id"])
@@ -134,7 +133,8 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                     info_parts.append(experiment["expid"])
                 if info_parts:
                     experiment["title"] += f" ({','.join(info_parts)})"
-                if not has_valid_key(experiment, "realization"):  # if realization already spoecified in experiment.yaml use that one
+                # If realization is already specified in experiment.yaml, keep it.
+                if not has_valid_key(experiment, "realization"):
                     experiment["realization"] = realization if realization else "r1"
 
         else:
@@ -142,12 +142,13 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             logger.warning(f"No experiment.yaml found for {path}. Using legacy info from config.")
             exp_metadata = config_experiments.get(f"{catalog}_{model}_{exp}")
             experiment = {"catalog": catalog, "model": model, "experiment": exp}
-            experiment["realization"] = realization if realization else "r1"  # Default realization if not specified, does not harm
+            # Default realization if not specified, does not harm
+            experiment["realization"] = realization if realization else "r1"
 
             if exp_metadata:
-                experiment['title'] = exp_metadata.get("title", f"{exp}")      
-                experiment['description'] = exp_metadata.get("description", "")
-                experiment['note'] = exp_metadata.get("note", "")
+                experiment["title"] = exp_metadata.get("title", f"{exp}")
+                experiment["description"] = exp_metadata.get("description", "")
+                experiment["note"] = exp_metadata.get("note", "")
 
         if "title" in experiment:  # Duplicate to future proof (ultimately we want to switch to 'label')
             experiment["label"] = experiment["title"]
@@ -156,13 +157,13 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         infile = f"../pdf/{path}/last_update.txt"
         if os.path.exists(infile):
             with open(infile, "r") as file:
-                experiment['last_update'] = file.read().strip()     
+                experiment["last_update"] = file.read().strip()
         else:
             logger.debug(f"last_update.txt not found at {infile}")
 
         content = {}
-        content['experiment'] = experiment
-        
+        content["experiment"] = experiment
+
         filename_list = []
         properties = {}
 
@@ -202,18 +203,18 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         if other_group:
             grouping["Other diagnostics"] = other_group
 
-        content['files'] = {}
-        content['diagnostics'] = []
+        content["files"] = {}
+        content["diagnostics"] = []
         for key, val in grouping.items():
             if val:
-                content['diagnostics'].append(key)
+                content["diagnostics"].append(key)
             for v in val:
-                content['files'][v] = {'grouping': str(key)}
+                content["files"][v] = {"grouping": str(key)}
                 prop = properties.get(v, {})
                 if prop:
                     for kk, vv in prop.items():
-                        keystr = str(kk).lstrip('/').lower()
-                        content['files'][v][keystr] = str(vv)
+                        keystr = str(kk).lstrip("/").lower()
+                        content["files"][v][keystr] = str(vv)
 
         with open(f"{path}/content.yaml", "w") as file:
             yaml.dump(content, file, default_style='"')
@@ -242,14 +243,14 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
         configfile (str): Alternate confg file path (default "config.yaml" - used by aqua-web)
         loglevel (str): The logging level to use (e.g., 'INFO', 'DEBUG').
     """
-    
+
     # Configure logging
     logger.setLevel(loglevel.upper())
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('%(asctime)s :: %(name)s :: %(levelname)s -> %(message)s')
+    formatter = logging.Formatter("%(asctime)s :: %(name)s :: %(levelname)s -> %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-        
+
     logger.info(f"Starting content generation with log level {loglevel}")
     try:
         with open(configfile, "r") as file:
@@ -268,7 +269,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
     if experiment:
         logger.info(f"Processing single experiment: {experiment}")
-        parts = experiment.split('/')
+        parts = experiment.split("/")
 
         if len(parts) == 3:
             catalog, model, exp = parts
@@ -287,49 +288,75 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
         for catalog in os.listdir("."):
             catalog_path = os.path.join(".", catalog)
-            if not os.path.isdir(catalog_path): continue
+            if not os.path.isdir(catalog_path):
+                continue
             logger.debug(f"Scanning catalog: {catalog}")
             for model in os.listdir(catalog_path):
                 model_path = os.path.join(catalog_path, model)
-                if not os.path.isdir(model_path): continue
+                if not os.path.isdir(model_path):
+                    continue
                 logger.debug(f"Scanning model: {model}")
                 for exp in os.listdir(model_path):
                     exp_path = os.path.join(model_path, exp)
-                    if not os.path.isdir(exp_path): continue
+                    if not os.path.isdir(exp_path):
+                        continue
                     logger.debug(f"Scanning experiment: {exp}")
-                    
+
                     if ensemble:  # If new structure, iterate through 4 levels
                         for realization in os.listdir(exp_path):
                             realization_path = os.path.join(exp_path, realization)
-                            if not os.path.isdir(realization_path): continue
+                            if not os.path.isdir(realization_path):
+                                continue
                             logger.debug(f"Processing ensemble member: {catalog}/{model}/{exp}/{realization}")
                             make_content(catalog, model, exp, realization, diagnostics, config_experiments, force)
                     else:
                         logger.debug(f"Processing experiment: {catalog}/{model}/{exp}")
                         make_content(catalog, model, exp, None, diagnostics, config_experiments, force)
-                    
+
 
 def parse_arguments(arguments):
     """
     Parse command line arguments
     """
 
-    parser = argparse.ArgumentParser(description='Create content.yaml and content.json files for each experiment in the content/png directory.')
+    parser = argparse.ArgumentParser(
+        description="Create content.yaml and content.json files for each experiment in the content/png directory."
+    )
 
-    parser.add_argument('-n', '--no-ensemble', action="store_false",
-                        dest='ensemble',
-                        help='When processing all subdirectories, revert to old structure with 3 levels (catalog/model/experiment) instead of default 4 levels (catalog/model/experiment/realization).')
-    parser.add_argument('-f', '--force', action="store_true",
-                        help='Create content.yaml and content.json even if they exist already')
-    parser.add_argument('-e', '--experiment', type=str,
-                        help='Specific experiment for which to create content in format $catalog/$model/$experiment/$realization. Realization is optional.')
-    parser.add_argument('-c', '--config', type=str, default="config.yaml",
-                        help='Alternate config file')
-    parser.add_argument('-l', '--loglevel', type=str, default='INFO',
-                        help='Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.')
-    
+    parser.add_argument(
+        "-n",
+        "--no-ensemble",
+        action="store_false",
+        dest="ensemble",
+        help=(
+            "When processing all subdirectories, revert to old structure with 3 levels "
+            "(catalog/model/experiment) instead of default 4 levels "
+            "(catalog/model/experiment/realization)."
+        ),
+    )
+    parser.add_argument(
+        "-f", "--force", action="store_true", help="Create content.yaml and content.json even if they exist already"
+    )
+    parser.add_argument(
+        "-e",
+        "--experiment",
+        type=str,
+        help=(
+            "Specific experiment for which to create content in "
+            "format $catalog/$model/$experiment/$realization. Realization is optional."
+        ),
+    )
+    parser.add_argument("-c", "--config", type=str, default="config.yaml", help="Alternate config file")
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        type=str,
+        default="INFO",
+        help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.",
+    )
+
     return parser.parse_args(arguments)
-    
+
 
 if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])

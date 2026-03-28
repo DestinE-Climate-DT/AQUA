@@ -1,8 +1,10 @@
-""" Utility to parse a yaml file from bash """
+"""Utility to parse a yaml file from bash"""
 
-import sys
-import yaml
 import os
+import sys
+
+import yaml
+
 
 def get_nested(data, keys):
     """
@@ -23,16 +25,18 @@ def get_nested(data, keys):
             return None
     return data
 
+
 def parse_yaml(query, file_path):
     # Load the YAML file
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         data = yaml.safe_load(file)
 
     # Split the query into keys
-    keys = query.strip('.').split('.')
+    keys = query.strip(".").split(".")
 
     # Get the nested value
     return get_nested(data, keys)
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -52,7 +56,7 @@ if __name__ == "__main__":
             print(yaml.dump(result, default_flow_style=False))
         elif isinstance(result, list):
             for item in result:
-                print(item, end=' ')
+                print(item, end=" ")
 
         else:
             print(result)

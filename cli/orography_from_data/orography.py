@@ -2,9 +2,9 @@
 """Script to calculate orography from data."""
 
 import xarray as xr
+
 from aqua import Reader
-from aqua.core.util import log_configure
-from aqua.core.util import create_folder
+from aqua.core.util import create_folder, log_configure
 
 xr.set_options(keep_attrs=True)
 
@@ -19,10 +19,9 @@ outputdir = "./output"
 
 
 def main():
-    logger = log_configure(loglevel, 'Orography')
+    logger = log_configure(loglevel, "Orography")
 
-    reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                    regrid=res, loglevel=loglevel)
+    reader = Reader(catalog=catalog, model=model, exp=exp, source=source, regrid=res, loglevel=loglevel)
 
     data = reader.retrieve(var=var)
 
@@ -38,5 +37,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

@@ -1,12 +1,14 @@
 """Strategies for fixing issues in the code."""
 
 from datetime import timedelta
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from aqua.core.logger import log_history, log_configure
-from aqua.core.util import to_list, normalize_units
+from aqua.core.logger import log_configure, log_history
+from aqua.core.util import normalize_units, to_list
+
 
 class FixerOperator:
     """
@@ -24,7 +26,7 @@ class FixerOperator:
 
         self.fixes = fixes
         self.loglevel = loglevel
-        self.logger = log_configure(log_level = loglevel, log_name="FixerOperator")
+        self.logger = log_configure(log_level=loglevel, log_name="FixerOperator")
 
     def apply_unit_fix(self, data, time_correction=False):
         """
@@ -35,8 +37,7 @@ class FixerOperator:
         """
         tgt_units = data.attrs.get("tgt_units", None)
         org_units = data.attrs.get("units", None)
-        self.logger.debug("%s: org_units is %s, tgt_units is %s",
-                        data.name, org_units, tgt_units)
+        self.logger.debug("%s: org_units is %s, tgt_units is %s", data.name, org_units, tgt_units)
 
         # if units are not already updated and if a tgt_units exist
         if tgt_units and org_units != tgt_units:
@@ -52,11 +53,11 @@ class FixerOperator:
                 data *= factor
                 # if a special dpm correction has been defined, apply it
                 if time_conversion_flag and time_correction is not False:
-                    data /=  time_correction
+                    data /= time_correction
             if offset != 0:
                 data += offset
             log_history(data, f"Units changed to {tgt_units} by fixer")
-            data.attrs.pop('tgt_units', None)
+            data.attrs.pop("tgt_units", None)
 
     def delete_variables(self, data):
         """
@@ -81,24 +82,24 @@ class FixerOperator:
         - xr.Dataset: The dataset with the 'time' coordinate shifted based on the specified timeshift
                       which is retrieved from the fixes dictionary.
         """
-        timeshift = self.fixes.get('timeshift', None)
+        timeshift = self.fixes.get("timeshift", None)
 
         if timeshift is None:
             return data
 
-        if 'time' not in data:
+        if "time" not in data:
             raise KeyError("'time' coordinate not found in the dataset.")
 
         field = data.copy()
         if isinstance(timeshift, int):
-            self.logger.info('Shifting the time axis by %s timesteps.', timeshift)
+            self.logger.info("Shifting the time axis by %s timesteps.", timeshift)
             time_interval = timeshift * data.time.diff("time").isel(time=0).values
             field = field.assign_coords(time=data.time + time_interval)
         elif isinstance(timeshift, str):
-            self.logger.info('Shifting time axis by %s following pandas timedelta.', timeshift)
-            field['time'] = field['time'] + pd.Timedelta(timeshift)
+            self.logger.info("Shifting time axis by %s following pandas timedelta.", timeshift)
+            field["time"] = field["time"] + pd.Timedelta(timeshift)
         else:
-            raise TypeError('timeshift should be either a integer (timesteps) or a pandas Timedelta!')
+            raise TypeError("timeshift should be either a integer (timesteps) or a pandas Timedelta!")
 
         return field
 
@@ -124,14 +125,11 @@ class FixerOperator:
                 if varname in data.variables:
                     self.logger.debug("Starting decumulation for variable %s", varname)
                     keep_first = variables[var].get("keep_first", True)
-                    data[varname] = self.simple_decumulate(data[varname],
-                                                           deltat=deltat,
-                                                           jump=jump,
-                                                           keep_first=keep_first)
+                    data[varname] = self.simple_decumulate(data[varname], deltat=deltat, jump=jump, keep_first=keep_first)
                     log_history(data[varname], f"Variable {varname} decumulated by fixer")
 
         return data
-    
+
     def simple_decumulate(self, data, deltat=3600, jump=None, keep_first=True):
         """
         Remove cumulative effect on IFS fluxes.
@@ -147,7 +145,7 @@ class FixerOperator:
         """
 
         # get the derivatives
-        deltas = data.diff(dim='time')
+        deltas = data.diff(dim="time")
 
         # add a first timestep empty to align the original and derived fields
 
@@ -156,7 +154,7 @@ class FixerOperator:
         else:
             zeros = xr.zeros_like(data.isel(time=0))
 
-        deltas = xr.concat([zeros, deltas], dim='time', coords='different', compat='equals').transpose('time', ...)
+        deltas = xr.concat([zeros, deltas], dim="time", coords="different", compat="equals").transpose("time", ...)
 
         if jump:
             # universal mask based on the change of month (shifted by one timestep)
@@ -164,13 +162,13 @@ class FixerOperator:
             data1 = data.assign_coords(time=data.time - dt)
             data2 = data.assign_coords(time=data1.time - dt)
             # Mask of dates where month changed in the previous timestep
-            mask = data1[f'time.{jump}'].assign_coords(time=data.time) == data2[f'time.{jump}'].assign_coords(time=data.time)
+            mask = data1[f"time.{jump}"].assign_coords(time=data.time) == data2[f"time.{jump}"].assign_coords(time=data.time)
 
             # kaboom: exploit where
             deltas = deltas.where(mask, data)
 
         # add an attribute that can be later used to infer about decumulation
-        deltas.attrs['decumulated'] = 1
+        deltas.attrs["decumulated"] = 1
 
         return deltas
 
@@ -195,8 +193,12 @@ class FixerOperator:
             if fix:
                 varname = varlist[var]
                 if varname in data.variables:
-                    self.logger.debug("Setting first step of months before %s and after %s to NaN for variable %s",
-                                      enddate, startdate, varname)
+                    self.logger.debug(
+                        "Setting first step of months before %s and after %s to NaN for variable %s",
+                        enddate,
+                        startdate,
+                        varname,
+                    )
                     log_history(data[varname], f"Fixer set first step of months before {enddate} and after {startdate} to NaN")
                     data[varname] = self.nanfirst(data[varname], startdate=startdate, enddate=enddate)
 
@@ -215,7 +217,7 @@ class FixerOperator:
             DataArray in with data on first step of each month is set to NaN
         """
 
-        first = data.time.groupby(data['time.year']*100+data['time.month']).first()
+        first = data.time.groupby(data["time.year"] * 100 + data["time.month"]).first()
         if enddate:
             first = first.where(first < np.datetime64(str(enddate)), drop=True)
         if startdate:

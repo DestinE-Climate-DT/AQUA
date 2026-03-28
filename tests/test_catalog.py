@@ -2,50 +2,60 @@
 
 import pytest
 import xarray
-from aqua import Reader
-from aqua.core.reader import show_catalog_content as catalog
 from conftest import LOGLEVEL
 
+from aqua import Reader
+from aqua.core.reader import show_catalog_content as catalog
 
-@pytest.fixture(params=[(model, exp, source)
-                        for model in catalog(catalog_name="ci", verbose=False)['ci']
-                        for exp in catalog(catalog_name="ci", verbose=False)['ci'][model]
-                        for source in catalog(catalog_name="ci", verbose=False)['ci'][model][exp]])
+
+@pytest.fixture(
+    params=[
+        (model, exp, source)
+        for model in catalog(catalog_name="ci", verbose=False)["ci"]
+        for exp in catalog(catalog_name="ci", verbose=False)["ci"][model]
+        for source in catalog(catalog_name="ci", verbose=False)["ci"][model][exp]
+    ]
+)
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
-    if source == 'intake-esm-test': # temporary skip of intake esm sources
+    if source == "intake-esm-test":  # temporary skip of intake esm sources
         pytest.skip("Skipping intake-esm-test for now, not supported for now")
-    myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=False,
-                    fix=False, loglevel=LOGLEVEL)
+    myread = Reader(catalog="ci", model=model, exp=exp, source=source, areas=False, fix=False, loglevel=LOGLEVEL)
     data = myread.retrieve()
     return myread, data
+
 
 @pytest.mark.gsv
 def test_catalog_gsv():
     """
     Checking that both reader and Dataset are retrived in reasonable shape
     """
-    sources = ['fdb', 'fdb-levels', 'fdb-nolevels']
+    sources = ["fdb", "fdb-levels", "fdb-nolevels"]
 
     for source in sources:
-        reader_gsv = Reader(model='IFS', exp='test-fdb', source=source,
-                            loglevel=LOGLEVEL)
+        reader_gsv = Reader(model="IFS", exp="test-fdb", source=source, loglevel=LOGLEVEL)
         data = reader_gsv.retrieve()
 
         assert isinstance(reader_gsv, Reader)
         assert isinstance(data, xarray.Dataset)
 
-@pytest.fixture(params=[(model, exp, source)
-                        for model in catalog(catalog_name="ci", verbose=False)['ci']
-                        for exp in catalog(catalog_name="ci")['ci'][model]
-                        for source in catalog(catalog_name="ci")['ci'][model][exp]])
+
+@pytest.fixture(
+    params=[
+        (model, exp, source)
+        for model in catalog(catalog_name="ci", verbose=False)["ci"]
+        for exp in catalog(catalog_name="ci")["ci"][model]
+        for source in catalog(catalog_name="ci")["ci"][model][exp]
+    ]
+)
 def reader_regrid(request):
     """Reader instance fixture"""
     model, exp, source = request.param
     print([model, exp, source])
-    myread = Reader(catalog='ci', model=model, exp=exp, source=source, areas=True, regrid='r200',
-                    loglevel=LOGLEVEL, rebuild=False)
+    myread = Reader(
+        catalog="ci", model=model, exp=exp, source=source, areas=True, regrid="r200", loglevel=LOGLEVEL, rebuild=False
+    )
     data = myread.retrieve()
 
     return myread, data
@@ -72,6 +82,7 @@ def test_catalog_reader(reader_regrid):
     rgd = read.regrid(select)
     assert len(rgd.lon) == 180
     assert len(rgd.lat) == 90
+
 
 # @pytest.mark.aqua
 # @pytest.mark.parametrize(

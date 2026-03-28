@@ -1,6 +1,7 @@
 """Module containing general utility functions for AQUA"""
 
 from __future__ import annotations
+
 import os
 import sys
 
@@ -68,16 +69,17 @@ def username():
     """
     Retrieves the current user's username from the 'USER' environment variable.
     """
-    user = os.getenv('USER')
+    user = os.getenv("USER")
     if user is None:
         raise EnvironmentError("The 'USER' environment variable is not set.")
     return user
+
 
 class HiddenPrints:
     # from stackoverflow https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print#:~:text=If%20you%20don't%20want,the%20top%20of%20the%20file. # noqa
     def __enter__(self):
         self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
+        sys.stdout = open(os.devnull, "w")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout.close()
@@ -85,15 +87,15 @@ class HiddenPrints:
 
 
 def expand_env_vars(obj):
-  """
-  Recursively apply os.path.expandvars to all strings in a nested structure.
-  Works for dicts, lists, and strings.
-  """
-  if isinstance(obj, dict):
-    return {k: expand_env_vars(v) for k, v in obj.items()}
-  elif isinstance(obj, list):
-    return [expand_env_vars(v) for v in obj]
-  elif isinstance(obj, str):
-    return os.path.expandvars(obj)
-  else:
-    return obj
+    """
+    Recursively apply os.path.expandvars to all strings in a nested structure.
+    Works for dicts, lists, and strings.
+    """
+    if isinstance(obj, dict):
+        return {k: expand_env_vars(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [expand_env_vars(v) for v in obj]
+    elif isinstance(obj, str):
+        return os.path.expandvars(obj)
+    else:
+        return obj

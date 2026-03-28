@@ -1,19 +1,22 @@
 import os
+
 import xarray as xr
 from metpy.units import units
-from aqua.core.logger import log_configure, log_history
+
 from aqua.core.configurer import ConfigPath
+from aqua.core.logger import log_configure, log_history
+
 from .yaml import load_yaml
 
 
-def normalize_units(src, loglevel='WARNING'):
+def normalize_units(src, loglevel="WARNING"):
     """
     Get rid of stange grib units based on the default.yaml fix file
 
     Arguments:
         src (str): input unit to be fixed
     """
-    logger = log_configure(loglevel, 'normalize_units')
+    logger = log_configure(loglevel, "normalize_units")
     src = str(src)
 
     config_folder = ConfigPath().get_config_dir()
@@ -24,18 +27,18 @@ def normalize_units(src, loglevel='WARNING'):
         raise FileNotFoundError(f"Cannot find default.yaml in {config_folder}")
 
     default_dict = load_yaml(default_file)
-    fix_units = default_dict['defaults']['units']['fix']
+    fix_units = default_dict["defaults"]["units"]["fix"]
     for key in fix_units:
         if key == src:
             # return fixed
-            logger.info('Replacing non-metpy unit %s with %s', key, fix_units[key])
+            logger.info("Replacing non-metpy unit %s with %s", key, fix_units[key])
             return src.replace(key, fix_units[key])
 
     # return original
     return src
 
 
-def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
+def convert_units(src, dst, deltat=None, var="input var", loglevel="WARNING"):
     """
     Converts source to destination units using metpy.
     Returns a dictionary with conversion factors and offsets.
@@ -51,7 +54,7 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
         dict: A dictionary with keys `factor`, `offset`, and possible extra flags
               (e.g., `time_conversion_flag`).
     """
-    logger = log_configure(loglevel, 'convert_units')
+    logger = log_configure(loglevel, "convert_units")
     src = normalize_units(src, loglevel)
     dst = normalize_units(dst, loglevel)
     factor = units(src).to_base_units() / units(dst).to_base_units()
@@ -61,12 +64,12 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
 
     # Flag for time-dependent conversions
     if "second" in str(factor.units) and deltat is not None:
-        conversion['time_conversion_flag'] = 1
-        conversion['deltat'] = str(deltat)
+        conversion["time_conversion_flag"] = 1
+        conversion["deltat"] = str(deltat)
     elif "second" in str(factor.units) and deltat is None:
         logger.warning("Time-dependent conversion factor detected, but no accumulation time provided")
 
-    if factor.units == units('dimensionless'):
+    if factor.units == units("dimensionless"):
         offset = (0 * units(src)).to(units(dst)) - (0 * units(dst))
     else:
         if factor.units == "meter ** 3 / kilogram":
@@ -88,20 +91,19 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel='WARNING'):
                 logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
         else:
             if logger:
-                logger.debug("%s: incommensurate units converting %s to %s --> %s",
-                             var, src, dst, factor.units)
+                logger.debug("%s: incommensurate units converting %s to %s --> %s", var, src, dst, factor.units)
         offset = 0 * units(dst)
 
     # Store non-default conversion factors and offsets
     if offset.magnitude != 0:
-        conversion['offset'] = offset.magnitude
+        conversion["offset"] = offset.magnitude
     elif factor.magnitude != 1:
-        conversion['factor'] = factor.magnitude
+        conversion["factor"] = factor.magnitude
 
     return conversion
 
 
-def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
+def convert_data_units(data, var: str, units: str, loglevel: str = "WARNING"):
     """
     Converts in-place the units of a variable in an xarray Dataset or DataArray.
 
@@ -110,7 +112,7 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
         var (str): The variable to be checked.
         units (str): The units to be checked.
     """
-    logger = log_configure(log_name='check_data', log_level=loglevel)
+    logger = log_configure(log_name="check_data", log_level=loglevel)
 
     data_to_fix = data[var] if isinstance(data, xr.Dataset) else data
     final_units = units
@@ -118,17 +120,16 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
 
     conversion = convert_units(initial_units, final_units)
 
-    factor = conversion.get('factor', 1)
-    offset = conversion.get('offset', 0)
+    factor = conversion.get("factor", 1)
+    offset = conversion.get("offset", 0)
 
     if factor != 1 or offset != 0:
-        logger.debug('Converting %s from %s to %s',
-                     var, initial_units, final_units)
+        logger.debug("Converting %s from %s to %s", var, initial_units, final_units)
         data_to_fix = data_to_fix * factor + offset
-        data_to_fix.attrs['units'] = final_units
+        data_to_fix.attrs["units"] = final_units
         log_history(data_to_fix, f"Converting units of {var}: from {initial_units} to {final_units}")
     else:
-        logger.debug('Units of %s are already in %s', var, final_units)
+        logger.debug("Units of %s are already in %s", var, final_units)
         return data
 
     if isinstance(data, xr.Dataset):
@@ -140,33 +141,32 @@ def convert_data_units(data, var: str, units: str, loglevel: str = 'WARNING'):
     return data_fixed
 
 
-def multiply_units(unit1: str, unit2: str, normalise_units=True, 
-                   to_base_units=True, loglevel: str = 'WARNING') -> str:
+def multiply_units(unit1: str, unit2: str, normalise_units=True, to_base_units=True, loglevel: str = "WARNING") -> str:
     """
     Multiply two unit strings together using metpy.
-    
-    This is useful when combining physical quantities. For example, integrating 
-    a field in meters (e.g. sea ice thickness) over an area in m**2 (e.g. areacello), 
+
+    This is useful when combining physical quantities. For example, integrating
+    a field in meters (e.g. sea ice thickness) over an area in m**2 (e.g. areacello),
     resulting in m**3 (e.g. sea ice volume)).
-    
+
     Args:
         unit1 (str): First unit string (e.g., 'm')
         unit2 (str): Second unit string (e.g., 'm2')
         normalise_units (bool): If True, normalize the units. Default is True.
         to_base_units (bool): If True, convert the units to base units. Default is True.
         loglevel (str): Log level for the logger. Default is 'WARNING'.
-    
+
     Returns:
         str: The multiplied unit string (e.g., 'm**3')
-        
+
     Example:
-        >>> multiply_units('m', 'm2')
+        >>> multiply_units("m", "m2")
         'm**3'
     """
     unit1 = normalize_units(unit1, loglevel) if normalise_units else unit1
     unit2 = normalize_units(unit2, loglevel) if normalise_units else unit2
-    
+
     result = units(unit1) * units(unit2)
-    
+
     result = result.to_base_units() if to_base_units else result
     return str(result.units)

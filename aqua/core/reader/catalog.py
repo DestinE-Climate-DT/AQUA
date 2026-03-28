@@ -1,9 +1,19 @@
 """Simple catalog utility"""
+
 from aqua.core.configurer import ConfigPath
 
 
-def show_catalog_content(catalog=None, model=None, exp=None, source=None, configdir=None, catalog_name=None,
-                         loglevel='WARNING', verbose=True, show_descriptions=False):
+def show_catalog_content(
+    catalog=None,
+    model=None,
+    exp=None,
+    source=None,
+    configdir=None,
+    catalog_name=None,
+    loglevel="WARNING",
+    verbose=True,
+    show_descriptions=False,
+):
     """
     Display the catalog content structure (model/exp/source) without requiring
     manual ConfigPath instantiation.
@@ -16,7 +26,8 @@ def show_catalog_content(catalog=None, model=None, exp=None, source=None, config
         model (str | None): Optional model filter. If provided, only shows entries for this model.
         exp (str | None): Optional experiment filter. If provided, only shows entries for this exp.
         source (str | None): Optional source filter. If provided, only shows entries for this source.
-        configdir (str, optional): The directory containing the configuration files. If not provided, ConfigPath will determine it automatically.
+        configdir (str, optional): The directory containing the configuration files. If not provided,
+            ConfigPath will determine it automatically.
         catalog_name (str, optional): Override the catalog name. If not provided, uses the default catalog.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         verbose (bool): If True, prints the formatted catalog structure. Defaults to True.
@@ -27,5 +38,6 @@ def show_catalog_content(catalog=None, model=None, exp=None, source=None, config
               as values.
     """
     config = ConfigPath(configdir=configdir, catalog=catalog_name, loglevel=loglevel)
-    return config.show_catalog_content(catalog=catalog, model=model, exp=exp, source=source, verbose=verbose,
-                                       show_descriptions=show_descriptions)
+    return config.show_catalog_content(
+        catalog=catalog, model=model, exp=exp, source=source, verbose=verbose, show_descriptions=show_descriptions
+    )

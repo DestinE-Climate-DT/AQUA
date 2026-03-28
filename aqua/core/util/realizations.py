@@ -1,8 +1,9 @@
 """utilities for formatting realizations."""
-from typing import Optional, Union
-import xarray as xr
 
-DEFAULT_REALIZATION = 'r1'  # Default realization if not specified
+from typing import Optional, Union
+
+DEFAULT_REALIZATION = "r1"  # Default realization if not specified
+
 
 def format_realization(realization: Optional[str | int | list | None] = None) -> Union[str, list]:
     """
@@ -24,10 +25,10 @@ def format_realization(realization: Optional[str | int | list | None] = None) ->
             if r is None:
                 realization[i] = DEFAULT_REALIZATION
             else:
-                realization[i] = f'r{r}' if str(r).isdigit() else str(r)
+                realization[i] = f"r{r}" if str(r).isdigit() else str(r)
         return realization
     if isinstance(realization, (int, str)):
-        return f'r{realization}' if str(realization).isdigit() else str(realization)
+        return f"r{realization}" if str(realization).isdigit() else str(realization)
 
 
 def get_realizations(datasets):

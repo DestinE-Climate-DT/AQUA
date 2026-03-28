@@ -4,23 +4,34 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package ``aqua-core``.
-AQUA is developed and tested with Python 3.12 and it supports Python 3.10 or later (with the exclusions of 3.13).
+AQUA is developed and tested with Python 3.12 and it supports Python>=3.10,<3.13 or later.
 
 .. note ::
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
 
 .. _installation-pip:
 
-Pip installation
-----------------
+Conda/Mamba installation with pip
+---------------------------------
 
-Since v0.21.0, AQUA is also available on the Python Package Index (PyPI) repository and can be installed with pip.
-However, some dependencies are not available in the PyPI repository, so you may need to install them manually.
-The extra dependencies are listed in the ``environment.yml`` file in the repository and are:
+Prerequisites
+^^^^^^^^^^^^^
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process.
 
-- ``cdo>=2.5.0``
-- ``eccodes==2.41.0``
-- ``pip``
+Installation with Miniforge
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+AQUA-core is available on the Python Package Index (PyPI) repository and can be installed with pip.
+However, some dependencies are not available on PyPI, so you may need to install them manually:
+recommended way to do this is to use Mamba/Conda package manager for the installation process of the dependencies, and then use pip to install AQUA-core itself.
+This can be achieved with:
+
+.. code-block:: bash
+    mamba create -n aquarium -c conda-forge python=3.12 cdo netcdf4 eccodes=2.41.0
+    mamba activate aquarium
+    pip install aqua-core
+
+The same environment is available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
 
 .. note ::
     If you need to access data written in a local FDB database (not polytope), you need to install the FDB5 library.
@@ -67,7 +78,7 @@ Prerequisites
 Before installing AQUA, ensure that you have the following software installed:
 
 - `Git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_: AQUA is hosted on GitHub, and you will need Git to clone the repository.
-- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process. 
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process.
 
 Installation with Miniforge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -196,7 +207,7 @@ Use the following configuration, replacing ``<port_number>`` with a unique port 
     Host mn5
         RemoteForward <port_number>
 
-After logging into MN5, export the following proxy environment variables to direct traffic through the SSH tunnel. 
+After logging into MN5, export the following proxy environment variables to direct traffic through the SSH tunnel.
 Replace ``<port_number>`` with the same port number used in your SSH configuration:
 
 .. code-block:: bash
@@ -247,14 +258,14 @@ Installation on ECMWF HPC2020
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HPC2020 is moving to a more container-based approach, so the suggested installation process uses a technology similar to the one used on LUMI.
-In fact, using directly conda or mamba on lustre filesystems (``$PERM`` and ``$HPCPERM``) is not recommended 
+In fact, using directly conda or mamba on lustre filesystems (``$PERM`` and ``$HPCPERM``) is not recommended
 and has been verified to lead to severe performance issues.
 
 The recommended approach is to use the `tykky module <https://docs.csc.fi/computing/containers/tykky/>`_ developed by CSC, and available on HPC2020, which provides
-the same container wrapper technology used for an install on LUMI. 
+the same container wrapper technology used for an install on LUMI.
 This process is also described in the relevant HPC2020 `documentation pages <https://confluence.ecmwf.int/display/UDOC/Moving+away+from+Anaconda+and+Miniconda>`_.
 
-While basically you could follow the instructions in the ECMWF docs on how to create a tykky environment, a small bug in one of the AQUA dependencies requires a slightly 
+While basically you could follow the instructions in the ECMWF docs on how to create a tykky environment, a small bug in one of the AQUA dependencies requires a slightly
 more complex procedure, so that, as for LUMI, a convenience installation script has been created.
 
 First, clone the AQUA repository from GitHub as described in the previous section.
@@ -293,7 +304,7 @@ Please note that adding AQUA to your PATH will make you use the aqua environment
 Instead, the recommended way to use AQUA is by loading the environment with a conda-like syntax:
 
 .. code-block:: bash
-    
+
     module load tykky
     tykky activate aqua
 

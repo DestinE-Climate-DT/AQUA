@@ -4,12 +4,12 @@ AQUA analysis module for running diagnostics and handling configurations.
 """
 
 import os
-import sys
 import subprocess
+import sys
 from importlib import resources as pypath
 
-from aqua.core.util import create_folder, to_list
 from aqua.core.configurer import ConfigPath
+from aqua.core.util import create_folder, to_list
 
 
 def run_command(cmd: str, log_file: str, logger=None) -> int:
@@ -29,10 +29,8 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
         log_dir = os.path.dirname(log_file)
         create_folder(log_dir)
 
-        with open(log_file, 'w', encoding='utf-8') as log:
-            process = subprocess.run(
-                cmd, shell=True, stdout=log, stderr=log, text=True, check=False
-            )
+        with open(log_file, "w", encoding="utf-8") as log:
+            process = subprocess.run(cmd, shell=True, stdout=log, stderr=log, text=True, check=False)
             return process.returncode
     except (OSError, subprocess.SubprocessError) as e:
         if logger:
@@ -40,8 +38,9 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
         raise
 
 
-def run_diagnostic(diagnostic: str, script_path: str, extra_args: str,
-                   loglevel: str = 'INFO', logger=None, logfile: str = 'diagnostic.log'):
+def run_diagnostic(
+    diagnostic: str, script_path: str, extra_args: str, loglevel: str = "INFO", logger=None, logfile: str = "diagnostic.log"
+):
     """
     Run the diagnostic script with specified arguments.
 
@@ -62,9 +61,7 @@ def run_diagnostic(diagnostic: str, script_path: str, extra_args: str,
         logger.info(f"Running diagnostic {diagnostic}")
         logger.debug(f"Command: {cmd}")
 
-        process = subprocess.run(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False
-        )
+        process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
 
         if process.returncode != 0:
             logger.error(f"Error running diagnostic {diagnostic}: {process.stderr}")
@@ -83,13 +80,25 @@ def _build_extra_args(**kwargs):
     return args
 
 
-def run_diagnostic_func(diagnostic: str, parallel: bool = False,
-                        regrid: str = None, cli: dict = {},
-                        diag_config=None, catalog=None, model='default_model', exp='default_exp',
-                        source='default_source', source_oce=None,
-                        startdate=None, enddate=None, realization=None,
-                        output_dir='./output', loglevel='INFO',
-                        logger=None, cluster=None):
+def run_diagnostic_func(
+    diagnostic: str,
+    parallel: bool = False,
+    regrid: str = None,
+    cli: dict = {},
+    diag_config=None,
+    catalog=None,
+    model="default_model",
+    exp="default_exp",
+    source="default_source",
+    source_oce=None,
+    startdate=None,
+    enddate=None,
+    realization=None,
+    output_dir="./output",
+    loglevel="INFO",
+    logger=None,
+    cluster=None,
+):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
 
@@ -122,46 +131,41 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
 
     # run individual tools in serial mode
     for tool, tool_config in diag_config.items():
-
         logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
-        
+
         cli_path = cli.get(tool)
         if cli_path is None:
             logger.error("CLI path for tool '%s' not found, skipping.", tool)
             continue
- 
+
         if not os.path.exists(cli_path):
             logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
             continue
 
         outname = f"{output_dir}/{tool_config.get('outname', diagnostic)}"
-        extra_args = tool_config.get('extra', "")
+        extra_args = tool_config.get("extra", "")
 
         # Build conditional arguments
         if regrid:
             extra_args += f" --regrid {regrid}"
 
         if parallel:
-            nworkers = tool_config.get('nworkers')
+            nworkers = tool_config.get("nworkers")
             if nworkers is not None:
                 extra_args += f" --nworkers {nworkers}"
 
         # This is needed for ECmean which uses multiprocessing
-        if cluster and not tool_config.get('nocluster', False):
+        if cluster and not tool_config.get("nocluster", False):
             extra_args += f" --cluster {cluster}"
 
         # Add standard arguments using helper function
-        extra_args += _build_extra_args(
-            catalog=catalog,
-            realization=realization,
-            startdate=startdate,
-            enddate=enddate
-        )
+        extra_args += _build_extra_args(catalog=catalog, realization=realization, startdate=startdate, enddate=enddate)
 
-        if tool_config.get('source_oce', False) and source_oce:  # pass source_oce only if allowed by the diagnostic config file
+        # pass source_oce only if allowed by the diagnostic config file
+        if tool_config.get("source_oce", False) and source_oce:
             extra_args += f" --source_oce {source_oce}"
 
-        cfgs = to_list(tool_config.get('config'))
+        cfgs = to_list(tool_config.get("config"))
         if not cfgs:
             logger.error(f"Config for tool '{tool}' not found, skipping.")
             continue
@@ -174,13 +178,9 @@ def run_diagnostic_func(diagnostic: str, parallel: bool = False,
                 logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
 
             run_diagnostic(
-                diagnostic=diagnostic,
-                script_path=cli_path,
-                extra_args=args,
-                loglevel=loglevel,
-                logger=logger,
-                logfile=logfile
+                diagnostic=diagnostic, script_path=cli_path, extra_args=args, loglevel=loglevel, logger=logger, logfile=logfile
             )
+
 
 def get_aqua_paths(*, args, logger):
     """
@@ -193,8 +193,8 @@ def get_aqua_paths(*, args, logger):
     Returns:
         tuple: AQUA path and configuration path.
     """
-    aqua_core_path = str(pypath.files('aqua.core'))
-    aqua_diagnostics_path = str(pypath.files('aqua.diagnostics'))
+    aqua_core_path = str(pypath.files("aqua.core"))
+    aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
 
     logger.debug(f"AQUA core path: {aqua_core_path}")
     logger.debug(f"AQUA diagnostics path: {aqua_diagnostics_path}")
@@ -202,7 +202,11 @@ def get_aqua_paths(*, args, logger):
     aqua_configdir = ConfigPath().configdir
     logger.debug(f"AQUA config dir: {aqua_configdir}")
 
-    aqua_analysis_config_path = os.path.expandvars(args.config) if args.config and args.config.strip() else os.path.join(aqua_configdir, "analysis/config.aqua-analysis.yaml")
+    aqua_analysis_config_path = (
+        os.path.expandvars(args.config)
+        if args.config and args.config.strip()
+        else os.path.join(aqua_configdir, "analysis/config.aqua-analysis.yaml")
+    )
     if not os.path.exists(aqua_analysis_config_path):
         logger.error(f"Config file {aqua_analysis_config_path} not found.")
         sys.exit(1)

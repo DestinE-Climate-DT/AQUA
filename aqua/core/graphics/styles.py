@@ -1,18 +1,20 @@
 """Class to load the choosen style for graphical utilities."""
+
 import os
+
 import matplotlib.pyplot as plt
-from aqua.core.logger import log_configure
+
 from aqua.core.configurer import ConfigPath
+from aqua.core.logger import log_configure
 from aqua.core.util import load_yaml
 
 
 class ConfigStyle(ConfigPath):
     """Class to load the choosen style for graphical utilities."""
-    def __init__(self,
-                 style: str = None,
-                 filename: str = 'config-aqua.yaml',
-                 configdir: str = None,
-                 loglevel: str = 'WARNING'):
+
+    def __init__(
+        self, style: str = None, filename: str = "config-aqua.yaml", configdir: str = None, loglevel: str = "WARNING"
+    ):
         """Initialize the class.
 
         Args:
@@ -32,13 +34,13 @@ class ConfigStyle(ConfigPath):
             self.style = style
         else:  # Read the style from the configuration file
             configfile = load_yaml(self.config_file)
-            if 'options' in configfile:
-                self.style = configfile['options'].get('style', 'aqua')
+            if "options" in configfile:
+                self.style = configfile["options"].get("style", "aqua")
             else:
-                self.style = 'aqua'
+                self.style = "aqua"
 
-        style_dir = os.path.join(self.configdir, 'styles')
-        filename = self.style + '.mplstyle'
+        style_dir = os.path.join(self.configdir, "styles")
+        filename = self.style + ".mplstyle"
         self.style_file = os.path.join(style_dir, filename)
         self.logger.debug("Style file: %s", self.style_file)
         self.load_style()

@@ -1,22 +1,30 @@
-from matplotlib import rcParams
 import matplotlib.pyplot as plt
 import xarray as xr
+from matplotlib import rcParams
+
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, to_list, unit_to_latex
+from aqua.core.util import evaluate_colorbar_limits, to_list
+
 from .styles import ConfigStyle
 
 
-def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
-                         t2m_monthly_ref: xr.DataArray = None,
-                         net_toa_monthly_ref: xr.DataArray = None,
-                         fig: plt.Figure = None, ax: plt.Axes = None,
-                         set_axis_limits: bool = True,
-                         labels: list = None, ref_label: str = None,
-                         xlabel: str = None,
-                         ylabel: str = None,
-                         title: str = 'Monthly Mean',
-                         style: str = None, loglevel: str = 'WARNING'):
-    """"
+def plot_gregory_monthly(
+    t2m_monthly_data,
+    net_toa_monthly_data,
+    t2m_monthly_ref: xr.DataArray = None,
+    net_toa_monthly_ref: xr.DataArray = None,
+    fig: plt.Figure = None,
+    ax: plt.Axes = None,
+    set_axis_limits: bool = True,
+    labels: list = None,
+    ref_label: str = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    title: str = "Monthly Mean",
+    style: str = None,
+    loglevel: str = "WARNING",
+):
+    """ "
     Plot a Gregory plot for monthly data.
 
     Args:
@@ -36,9 +44,9 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
     Returns:
         tuple: Figure and Axes objects.
     """
-    logger = log_configure(loglevel, 'plot_gregory_monthly')
+    logger = log_configure(loglevel, "plot_gregory_monthly")
     ConfigStyle(style=style, loglevel=loglevel)
-    rcParams['text.usetex'] = False  # Disable LaTeX rendering for speed
+    rcParams["text.usetex"] = False  # Disable LaTeX rendering for speed
 
     # We load the data for speed
     t2m_monthly_data = to_list(t2m_monthly_data)
@@ -55,7 +63,7 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
         fig, ax = plt.subplots(1, 1, figsize=(6, 6))
 
     if xlabel is None:
-        xlabel = '2 m Temperature [°C]'
+        xlabel = "2 m Temperature [°C]"
     if ylabel is None:
         ylabel = r"Net radiation TOA [W m$^{-2}$]"
 
@@ -69,11 +77,11 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
 
     # Create a cycle that is the average of the available ref data
     if ref:
-        t2m_ref = t2m_monthly_ref.groupby('time.month').mean(dim='time')
-        net_toa_ref = net_toa_monthly_ref.groupby('time.month').mean(dim='time')
+        t2m_ref = t2m_monthly_ref.groupby("time.month").mean(dim="time")
+        net_toa_ref = net_toa_monthly_ref.groupby("time.month").mean(dim="time")
         # Add an extra point same as the first one to close the loop
-        t2m_ref = xr.concat([t2m_ref, t2m_ref.isel(month=0)], dim='month', coords='different', compat='equals')
-        net_toa_ref = xr.concat([net_toa_ref, net_toa_ref.isel(month=0)], dim='month', coords='different', compat='equals')
+        t2m_ref = xr.concat([t2m_ref, t2m_ref.isel(month=0)], dim="month", coords="different", compat="equals")
+        net_toa_ref = xr.concat([net_toa_ref, net_toa_ref.isel(month=0)], dim="month", coords="different", compat="equals")
 
     if set_axis_limits:
         # We set a fixed x and y range but then we expand it if data
@@ -105,31 +113,35 @@ def plot_gregory_monthly(t2m_monthly_data, net_toa_monthly_data,
         logger.debug(f"Monthly y-axis limits: {toa_min} to {toa_max}")
 
     for i, (t2m_monthly, net_toa_monthly) in enumerate(zip(t2m_monthly_data, net_toa_monthly_data)):
-        ax.plot(t2m_monthly, net_toa_monthly, label=labels[i], marker='o')
+        ax.plot(t2m_monthly, net_toa_monthly, label=labels[i], marker="o")
     if ref:
-        ax.plot(t2m_ref, net_toa_ref, label=ref_label, marker='o', color='black', zorder=3)
-        ax.scatter(t2m_ref, net_toa_ref, color='black', s=150, zorder=3)
+        ax.plot(t2m_ref, net_toa_ref, label=ref_label, marker="o", color="black", zorder=3)
+        ax.scatter(t2m_ref, net_toa_ref, color="black", s=150, zorder=3)
 
         # Optimized text rendering
         for m, x, y in zip(range(1, 13), t2m_ref.values[:-1], net_toa_ref.values[:-1]):
-            ax.annotate(str(m), (x, y), color='white', fontsize=8, ha='center',
-                        va='center', fontweight='bold', zorder=4)
+            ax.annotate(str(m), (x, y), color="white", fontsize=8, ha="center", va="center", fontweight="bold", zorder=4)
 
     return fig, ax
 
 
-def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
-                        t2m_annual_ref: xr.DataArray = None,
-                        net_toa_annual_ref: xr.DataArray = None,
-                        t2m_std: xr.DataArray = None,
-                        net_toa_std: xr.DataArray = None,
-                        fig: plt.Figure = None, ax: plt.Axes = None,
-                        set_axis_limits: bool = True,
-                        labels: list = None,
-                        xlabel: str = None,
-                        ylabel: str = None,
-                        title: str = 'Annual Mean',
-                        style: str = None, loglevel: str = 'WARNING'):
+def plot_gregory_annual(
+    t2m_annual_data,
+    net_toa_annual_data,
+    t2m_annual_ref: xr.DataArray = None,
+    net_toa_annual_ref: xr.DataArray = None,
+    t2m_std: xr.DataArray = None,
+    net_toa_std: xr.DataArray = None,
+    fig: plt.Figure = None,
+    ax: plt.Axes = None,
+    set_axis_limits: bool = True,
+    labels: list = None,
+    xlabel: str = None,
+    ylabel: str = None,
+    title: str = "Annual Mean",
+    style: str = None,
+    loglevel: str = "WARNING",
+):
     """
     Plot a Gregory plot for annual data.
 
@@ -154,7 +166,7 @@ def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
     Returns:
         tuple: Figure and Axes objects.
     """
-    logger = log_configure(loglevel, 'plot_gregory_annual')
+    logger = log_configure(loglevel, "plot_gregory_annual")
     ConfigStyle(style=style, loglevel=loglevel)
 
     labels = to_list(labels) if labels else [None for _ in range(len(t2m_annual_data))]
@@ -174,7 +186,7 @@ def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
         fig, ax = plt.subplots(1, 1, figsize=(6, 6))
 
     if xlabel is None:
-        xlabel = '2 m Temperature [°C]'
+        xlabel = "2 m Temperature [°C]"
     if ylabel is None:
         ylabel = r"Net radiation TOA [W m$^{-2}$]"
 
@@ -210,21 +222,19 @@ def plot_gregory_annual(t2m_annual_data, net_toa_annual_data,
         logger.debug(f"Annual y-axis limits: {toa_min} to {toa_max}")
 
     for i, (t2m_annual, net_toa_annual) in enumerate(zip(t2m_annual_data, net_toa_annual_data)):
-        ax.plot(t2m_annual, net_toa_annual, label=labels[i], marker='o')
+        ax.plot(t2m_annual, net_toa_annual, label=labels[i], marker="o")
 
         # We plot the first and last points with different markers
         ax.plot(t2m_annual[0], net_toa_annual[0], marker=">", color="tab:green")
         ax.plot(t2m_annual[-1], net_toa_annual[-1], marker="<", color="tab:red")
-        ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]),
-                    fontsize=8, ha='right')
-        ax.annotate(str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]),
-                    fontsize=8, ha='right')
+        ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize=8, ha="right")
+        ax.annotate(str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize=8, ha="right")
     if ref:
-        t2m_mean = t2m_annual_ref.mean(dim='time')
-        net_toa_mean = net_toa_annual_ref.mean(dim='time')
-        ax.axhspan(net_toa_mean - net_toa_std, net_toa_mean + net_toa_std,
-                   color="lightgreen", alpha=0.3, label=r"1 $\sigma$ band")
-        ax.axvspan(t2m_mean - t2m_std, t2m_mean + t2m_std,
-                   color="lightgreen", alpha=0.3)
+        t2m_mean = t2m_annual_ref.mean(dim="time")
+        net_toa_mean = net_toa_annual_ref.mean(dim="time")
+        ax.axhspan(
+            net_toa_mean - net_toa_std, net_toa_mean + net_toa_std, color="lightgreen", alpha=0.3, label=r"1 $\sigma$ band"
+        )
+        ax.axvspan(t2m_mean - t2m_std, t2m_mean + t2m_std, color="lightgreen", alpha=0.3)
 
     return fig, ax

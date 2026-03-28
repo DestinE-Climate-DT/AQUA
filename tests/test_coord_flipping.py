@@ -1,9 +1,10 @@
+import numpy as np
 import pytest
 import xarray as xr
-import numpy as np
+from conftest import LOGLEVEL
+
 from aqua import Reader
 from aqua.core.data_model import CoordTransformer
-from conftest import LOGLEVEL
 
 loglevel = LOGLEVEL
 pytestmark = pytest.mark.aqua

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
 AQUA files operations mixin
-'''
+"""
 
 import os
-import sys
 import shutil
+import sys
 
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import load_yaml, dump_yaml, load_multi_yaml
+from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml
 
 
 class FilesMixin:
@@ -21,9 +21,9 @@ class FilesMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        compatible = self._check_file(kind='fixes', file=args.file)
+        compatible = self._check_file(kind="fixes", file=args.file)
         if compatible:
-            self._file_add(kind='fixes', file=args.file, link=args.editable)
+            self._file_add(kind="fixes", file=args.file, link=args.editable)
 
     def grids_add(self, args):
         """Add a grid file
@@ -31,9 +31,9 @@ class FilesMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        compatible = self._check_file(kind='grids', file=args.file)
+        compatible = self._check_file(kind="grids", file=args.file)
         if compatible:
-            self._file_add(kind='grids', file=args.file, link=args.editable)
+            self._file_add(kind="grids", file=args.file, link=args.editable)
 
     def grids_set(self, args):
         """
@@ -44,37 +44,32 @@ class FilesMixin:
             args (argparse.Namespace): arguments from the command line
         """
         self._check()
-        grids_path = args.path + '/grids'
-        areas_path = args.path + '/areas'
-        weights_path = args.path + '/weights'
+        grids_path = args.path + "/grids"
+        areas_path = args.path + "/areas"
+        weights_path = args.path + "/weights"
 
-        self.logger.info('Setting grids path to %s, weights path to %s and areas path to %s',
-                         grids_path, weights_path, areas_path)
+        self.logger.info(
+            "Setting grids path to %s, weights path to %s and areas path to %s", grids_path, weights_path, areas_path
+        )
 
         # Check if the paths exist and if not create them
         for path in [grids_path, areas_path, weights_path]:
             if not os.path.exists(path):
-                self.logger.info('Creating path %s', path)
+                self.logger.info("Creating path %s", path)
                 os.makedirs(path, exist_ok=True)
 
         filename = os.path.join(self.configpath, self.configfile)
-        with SafeFileLock(filename + '.lock', loglevel=self.loglevel):
+        with SafeFileLock(filename + ".lock", loglevel=self.loglevel):
             cfg = load_yaml(filename)
-            path_dict = {
-                'paths': {
-                    'grids': grids_path,
-                    'areas': areas_path,
-                    'weights': weights_path
-                }
-            }
+            path_dict = {"paths": {"grids": grids_path, "areas": areas_path, "weights": weights_path}}
 
             # If the paths already exist, we just update them
-            if 'paths' in cfg:
-                self.logger.info('Updating existing paths in %s', self.configfile)
-                cfg['paths'].update(path_dict['paths'])
+            if "paths" in cfg:
+                self.logger.info("Updating existing paths in %s", self.configfile)
+                cfg["paths"].update(path_dict["paths"])
             else:
-                self.logger.info('Adding new paths to %s', self.configfile)
-                cfg['paths'] = path_dict['paths']
+                self.logger.info("Adding new paths to %s", self.configfile)
+                cfg["paths"] = path_dict["paths"]
 
             dump_yaml(filename, cfg)
 
@@ -90,16 +85,16 @@ class FilesMixin:
         file = os.path.abspath(file)
         self._check()
         basefile = os.path.basename(file)
-        pathfile = f'{self.configpath}/{kind}/{basefile}'
+        pathfile = f"{self.configpath}/{kind}/{basefile}"
         if not os.path.exists(pathfile):
             if link:
-                self.logger.info('Linking %s to %s', file, pathfile)
+                self.logger.info("Linking %s to %s", file, pathfile)
                 os.symlink(file, pathfile)
             else:
-                self.logger.info('Installing %s to %s', file, pathfile)
+                self.logger.info("Installing %s to %s", file, pathfile)
                 shutil.copy(file, pathfile)
         else:
-            self.logger.error('%s for file %s already installed, or a file with the same name exists', kind, file)
+            self.logger.error("%s for file %s already installed, or a file with the same name exists", kind, file)
             sys.exit(1)
 
     def remove_file(self, args):
@@ -113,16 +108,15 @@ class FilesMixin:
         self._check()
         kind = args.command
         file = os.path.basename(args.file)
-        pathfile = f'{self.configpath}/{kind}/{file}'
+        pathfile = f"{self.configpath}/{kind}/{file}"
         if os.path.exists(pathfile):
-            self.logger.info('Removing %s', pathfile)
+            self.logger.info("Removing %s", pathfile)
             if os.path.islink(pathfile):
                 os.unlink(pathfile)
             else:
                 os.remove(pathfile)
         else:
-            self.logger.error('%s file %s is not installed in AQUA, cannot remove it',
-                              kind, file)
+            self.logger.error("%s file %s is not installed in AQUA, cannot remove it", kind, file)
             sys.exit(1)
 
     def _check_file(self, kind, file=None):
@@ -134,22 +128,25 @@ class FilesMixin:
             kind (str): the kind of file to be added, either 'fixes' or 'grids'
             file (str): the file to be added
         """
-        if kind not in ['fixes', 'grids']:
-            raise ValueError('Kind must be either fixes or grids')
+        if kind not in ["fixes", "grids"]:
+            raise ValueError("Kind must be either fixes or grids")
 
         self._check()
         try:
-            _ = load_multi_yaml(folder_path=f'{self.configpath}/{kind}',
-                            filenames=[file]) if file is not None else load_multi_yaml(folder_path=f'{self.configpath}/{kind}')
+            _ = (
+                load_multi_yaml(folder_path=f"{self.configpath}/{kind}", filenames=[file])
+                if file is not None
+                else load_multi_yaml(folder_path=f"{self.configpath}/{kind}")
+            )
 
             if file is not None:
-                self.logger.debug('File %s is compatible with the existing files in %s', file, kind)
+                self.logger.debug("File %s is compatible with the existing files in %s", file, kind)
 
             return True
         except Exception as e:
             if file is not None:
                 if not os.path.exists(file):
-                    self.logger.error('%s is not a valid file!', file)
+                    self.logger.error("%s is not a valid file!", file)
                 else:
                     self.logger.error("It is not possible to add the file %s to the %s folder", file, kind)
             else:

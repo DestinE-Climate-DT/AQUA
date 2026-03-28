@@ -1,147 +1,192 @@
 import pytest
 import xarray as xr
-
-from dask.distributed import LocalCluster, Client
-
-from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
-from aqua.core.configurer import ConfigPath
-from aqua import Reader
 from conftest import LOGLEVEL
+from dask.distributed import Client, LocalCluster
+
+from aqua import Reader
+from aqua.core.configurer import ConfigPath
+from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
 
 if not gsv_available:
-    pytest.skip('Skipping GSV tests: FDB5 libraries not available', allow_module_level=True)
+    pytest.skip("Skipping GSV tests: FDB5 libraries not available", allow_module_level=True)
 
 # pytestmark groups tests that run sequentially on the same worker to avoid conflicts
-pytestmark = [
-    pytest.mark.gsv,
-    pytest.mark.xdist_group(name="dask_operations")
-]
+pytestmark = [pytest.mark.gsv, pytest.mark.xdist_group(name="dask_operations")]
 
 """Tests for GSV in AQUA. Requires FDB library installed and an FDB repository."""
 
 # Used to create the ``GSVSource`` if no request provided.
 DEFAULT_GSV_PARAMS = {
-    'request': {
-        'domain': 'g',
-        'stream': 'oper',
-        'class': 'ea',
-        'type': 'an',
-        'expver': '0001',
-        'param': '130',
-        'levtype': 'pl',
-        'levelist': ['1000'],
-        'date': '20080101',
-        'time': '1200',
-        'step': '0'
+    "request": {
+        "domain": "g",
+        "stream": "oper",
+        "class": "ea",
+        "type": "an",
+        "expver": "0001",
+        "param": "130",
+        "levtype": "pl",
+        "levelist": ["1000"],
+        "date": "20080101",
+        "time": "1200",
+        "step": "0",
     },
-    'data_start_date': '20080101T1200', 
-    'data_end_date': '20080101T1200', 
-    'timestep': 'h', 
-    'timestyle': 'date'
+    "data_start_date": "20080101T1200",
+    "data_end_date": "20080101T1200",
+    "timestep": "h",
+    "timestyle": "date",
 }
 
 loglevel = LOGLEVEL
-FDB_HOME = '/app'
+FDB_HOME = "/app"
 
 # to enable for local testing on Lumi
-if ConfigPath().machine == 'lumi':
-    FDB_HOME = '/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST'
+if ConfigPath().machine == "lumi":
+    FDB_HOME = "/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST"
 
 
 @pytest.fixture()
 def gsv(request) -> GSVSource:
     """A fixture to create an instance of ``GSVSource``."""
-    if not hasattr(request, 'param'):
+    if not hasattr(request, "param"):
         request = DEFAULT_GSV_PARAMS
     else:
         request = request.param
-    return GSVSource(**request, metadata={'fdb_home': FDB_HOME})
+    return GSVSource(**request, metadata={"fdb_home": FDB_HOME})
 
 
-class TestGsv():
+class TestGsv:
     """Pytest marked class to test GSV."""
 
     # Low-level tests
     def test_gsv_constructor(self) -> None:
         """Simplest test, to check that we can create it correctly."""
-        print(DEFAULT_GSV_PARAMS['request'])
-        source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167', metadata={'fdb_home': FDB_HOME}, engine='fdb')
+        print(DEFAULT_GSV_PARAMS["request"])
+        source = GSVSource(
+            DEFAULT_GSV_PARAMS["request"],
+            "20080101",
+            "20080101",
+            timestep="h",
+            chunks="S",
+            var="167",
+            metadata={"fdb_home": FDB_HOME},
+            engine="fdb",
+        )
         assert source is not None
 
     def test_gsv_constructor_bridge(self) -> None:
         """Test bridge"""
-        print(DEFAULT_GSV_PARAMS['request'])
-        source = GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                           chunks="S", var='167', bridge_end_date='complete',
-                           metadata={'fdb_home_bridge': FDB_HOME}, engine='fdb')
+        print(DEFAULT_GSV_PARAMS["request"])
+        source = GSVSource(
+            DEFAULT_GSV_PARAMS["request"],
+            "20080101",
+            "20080101",
+            timestep="h",
+            chunks="S",
+            var="167",
+            bridge_end_date="complete",
+            metadata={"fdb_home_bridge": FDB_HOME},
+            engine="fdb",
+        )
         assert source is not None
 
     def test_gsv_constructor_raise(self) -> None:
         """Test raise for missing fdbhome"""
-        print(DEFAULT_GSV_PARAMS['request'])
+        print(DEFAULT_GSV_PARAMS["request"])
         with pytest.raises(ValueError):
-            GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                      chunks="S", var='167', engine='fdb')
+            GSVSource(DEFAULT_GSV_PARAMS["request"], "20080101", "20080101", timestep="h", chunks="S", var="167", engine="fdb")
 
     def test_gsv_constructor_raise_bridge(self) -> None:
         """Test raise for missing fdbhome"""
-        print(DEFAULT_GSV_PARAMS['request'])
+        print(DEFAULT_GSV_PARAMS["request"])
         with pytest.raises(ValueError):
-            GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                      chunks="S", var='167', bridge_end_date='complete', engine='fdb')
+            GSVSource(
+                DEFAULT_GSV_PARAMS["request"],
+                "20080101",
+                "20080101",
+                timestep="h",
+                chunks="S",
+                var="167",
+                bridge_end_date="complete",
+                engine="fdb",
+            )
 
     def test_gsv_constructor_raise_path_not_exists(self) -> None:
         """Test raise when fdbhome path is specified but does not exist"""
-        print(DEFAULT_GSV_PARAMS['request'])
+        print(DEFAULT_GSV_PARAMS["request"])
         with pytest.raises(FileNotFoundError, match="fdbhome path .* does not exist"):
-            GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                    chunks="S", var='167', engine='fdb',
-                    metadata={'fdb_home': '/path/that/does/not/exist'})
+            GSVSource(
+                DEFAULT_GSV_PARAMS["request"],
+                "20080101",
+                "20080101",
+                timestep="h",
+                chunks="S",
+                var="167",
+                engine="fdb",
+                metadata={"fdb_home": "/path/that/does/not/exist"},
+            )
 
     def test_gsv_constructor_raise_bridge_path_not_exists(self) -> None:
         """Test raise when bridge path is specified but does not exist"""
-        print(DEFAULT_GSV_PARAMS['request'])
+        print(DEFAULT_GSV_PARAMS["request"])
         with pytest.raises(FileNotFoundError, match="fdbhome_bridge path .* does not exist"):
-            GSVSource(DEFAULT_GSV_PARAMS['request'], "20080101", "20080101", timestep="h",
-                    chunks="S", var='167', bridge_end_date='complete', engine='fdb',
-                    metadata={'fdb_home_bridge': '/path/that/does/not/exist'})
+            GSVSource(
+                DEFAULT_GSV_PARAMS["request"],
+                "20080101",
+                "20080101",
+                timestep="h",
+                chunks="S",
+                var="167",
+                bridge_end_date="complete",
+                engine="fdb",
+                metadata={"fdb_home_bridge": "/path/that/does/not/exist"},
+            )
 
-    @pytest.mark.parametrize('gsv', [{'request': {
-        'domain': 'g',
-        'stream': 'oper',
-        'class': 'ea',
-        'type': 'an',
-        'expver': '0001',
-        'param': '130',
-        'levtype': 'pl',
-        'levelist': ['1000'],
-        'date': '20080101',
-        'time': '1200',
-        'step': '0'
-        },
-        'data_start_date': '20080101T1200', 'data_end_date': '20080101T1200',
-        'timestep': 'h', 'timestyle': 'date', 'var': 130}], indirect=True)
+    @pytest.mark.parametrize(
+        "gsv",
+        [
+            {
+                "request": {
+                    "domain": "g",
+                    "stream": "oper",
+                    "class": "ea",
+                    "type": "an",
+                    "expver": "0001",
+                    "param": "130",
+                    "levtype": "pl",
+                    "levelist": ["1000"],
+                    "date": "20080101",
+                    "time": "1200",
+                    "step": "0",
+                },
+                "data_start_date": "20080101T1200",
+                "data_end_date": "20080101T1200",
+                "timestep": "h",
+                "timestyle": "date",
+                "var": 130,
+            }
+        ],
+        indirect=True,
+    )
     def test_gsv_read_chunked(self, gsv: GSVSource) -> None:
         """Test that the ``GSVSource`` is able to read data from FDB."""
         data = gsv.read_chunked()
         dd = next(data)
-        assert len(dd) > 0, 'GSVSource could not load data'
+        assert len(dd) > 0, "GSVSource could not load data"
 
     # High-level, integrated test
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
         reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
-        data = reader.retrieve(startdate='20080101T1200', enddate='20080101T1200', var='t')
-        assert data.t.GRIB_paramId == 130, 'Wrong GRIB param in data'
+        data = reader.retrieve(startdate="20080101T1200", enddate="20080101T1200", var="t")
+        assert data.t.GRIB_paramId == 130, "Wrong GRIB param in data"
 
     def test_reader_novar(self) -> None:
         """Simple test, to check that catalog access works and reads correctly, no var"""
 
         reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
         data = reader.retrieve()
-        assert data.t.GRIB_paramId == 130, 'Wrong GRIB param in data'
+        assert data.t.GRIB_paramId == 130, "Wrong GRIB param in data"
 
     def test_reader_xarray(self) -> None:
         """Reading directly into xarray"""
@@ -157,7 +202,7 @@ class TestGsv():
         """
 
         reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
-        data = reader.retrieve(var='130')
+        data = reader.retrieve(var="130")
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
         data = reader.retrieve(var=130)  # test numeric argument
@@ -169,7 +214,7 @@ class TestGsv():
         reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels", loglevel=loglevel)
         data = reader.retrieve()
         # coordinates read from levels key
-        assert all(data.t.coords["plev"].data == [99999., 89999., 79999.]), "Wrong coordinates from levels metadata key"
+        assert all(data.t.coords["plev"].data == [99999.0, 89999.0, 79999.0]), "Wrong coordinates from levels metadata key"
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
@@ -229,55 +274,91 @@ class TestGsv():
         Reading from a remote databridge using polytope
         """
 
-        reader = Reader(catalog='climatedt-phase1', model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d",
-                        startdate="20210101T0000", enddate="20210101T2300", loglevel="debug", engine="polytope",
-                        chunks='h')
-        data = reader.retrieve(var='2t')
-        assert data.isel(time=1)['2t'].mean().values == pytest.approx(285.8661045)
+        reader = Reader(
+            catalog="climatedt-phase1",
+            model="IFS-NEMO",
+            exp="ssp370",
+            source="hourly-hpz7-atm2d",
+            startdate="20210101T0000",
+            enddate="20210101T2300",
+            loglevel="debug",
+            engine="polytope",
+            chunks="h",
+        )
+        data = reader.retrieve(var="2t")
+        assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.8661045)
 
     def test_reader_stac_polytope(self) -> None:
         """
         Reading from a remote databridge using polytope
         """
-        reader = Reader(catalog='climatedt-phase1', model="IFS-FESOM", exp="story-2017-control", source="hourly-hpz7-atm2d",
-                       loglevel="debug", engine="polytope", areas=False)
-        data = reader.retrieve(var='2t')
-        assert data.isel(time=20)['2t'].mean().values == pytest.approx(285.52128)
-    
+        reader = Reader(
+            catalog="climatedt-phase1",
+            model="IFS-FESOM",
+            exp="story-2017-control",
+            source="hourly-hpz7-atm2d",
+            loglevel="debug",
+            engine="polytope",
+            areas=False,
+        )
+        data = reader.retrieve(var="2t")
+        assert data.isel(time=20)["2t"].mean().values == pytest.approx(285.52128)
+
     def test_reader_polytope_mn5(self) -> None:
         """
         Reading from mn5 databridge using polytope
         """
-        reader = Reader(catalog='climatedt-o25.1', model='IFS-NEMO', exp='historical-1990', source='hourly-hpz7-atm2d',
-                        startdate="19900101T0000", enddate="19910101T0025", loglevel="debug", engine="polytope", areas=False)
-        data = reader.retrieve(var='2t')
-        assert 'databridge' in reader.kwargs
-        assert reader.kwargs['databridge'] == 'mn5'
-        assert data.isel(time=20)['2t'].values[0] == pytest.approx(301.0878448486328)
-        
+        reader = Reader(
+            catalog="climatedt-o25.1",
+            model="IFS-NEMO",
+            exp="historical-1990",
+            source="hourly-hpz7-atm2d",
+            startdate="19900101T0000",
+            enddate="19910101T0025",
+            loglevel="debug",
+            engine="polytope",
+            areas=False,
+        )
+        data = reader.retrieve(var="2t")
+        assert "databridge" in reader.kwargs
+        assert reader.kwargs["databridge"] == "mn5"
+        assert data.isel(time=20)["2t"].values[0] == pytest.approx(301.0878448486328)
+
     def test_fdb_from_file(self) -> None:
         """
         Reading fdb dates from a file.
         First test with a file that contains both data and bridge dates.
         Second test with a file that contains only data dates.
         """
-        source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
-                           metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
-                                     'fdb_info_file': 'tests/catgen/fdb_info_file.yaml'}, 
-                                     engine='fdb', loglevel=loglevel)
+        source = GSVSource(
+            DEFAULT_GSV_PARAMS["request"],
+            "20080101",
+            "20080101",
+            metadata={"fdb_home": FDB_HOME, "fdb_home_bridge": FDB_HOME, "fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
+            engine="fdb",
+            loglevel=loglevel,
+        )
 
-        assert source.data_start_date == '19900101T0000'
-        assert source.data_end_date == '19900103T2300'
-        assert source.bridge_start_date == '19900101T0000'
-        assert source.bridge_end_date == '19900102T2300'
+        assert source.data_start_date == "19900101T0000"
+        assert source.data_end_date == "19900103T2300"
+        assert source.bridge_start_date == "19900101T0000"
+        assert source.bridge_end_date == "19900102T2300"
 
-        source = GSVSource(DEFAULT_GSV_PARAMS['request'],  "20080101", "20080101",
-                           metadata={'fdb_home': FDB_HOME, 'fdb_home_bridge': FDB_HOME,
-                                     'fdb_info_file': 'tests/catgen/fdb_info_hpc-only.yaml'},
-                           engine='fdb', loglevel=loglevel)
+        source = GSVSource(
+            DEFAULT_GSV_PARAMS["request"],
+            "20080101",
+            "20080101",
+            metadata={
+                "fdb_home": FDB_HOME,
+                "fdb_home_bridge": FDB_HOME,
+                "fdb_info_file": "tests/catgen/fdb_info_hpc-only.yaml",
+            },
+            engine="fdb",
+            loglevel=loglevel,
+        )
 
-        assert source.data_start_date == '19900101T0000'
-        assert source.data_end_date == '19900103T2300'
+        assert source.data_start_date == "19900101T0000"
+        assert source.data_end_date == "19900103T2300"
 
     def test_reader_dask(self) -> None:
         """
@@ -285,7 +366,7 @@ class TestGsv():
         LocalCluster is created with dashboard_address=None to avoid dashboard port conflicts under pytest-xdist
         """
         with LocalCluster(threads_per_worker=1, n_workers=2, dashboard_address=None) as cluster:
-            with Client(cluster) as client:
+            with Client(cluster):
                 reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
                 data = reader.retrieve()
                 # Test if the correct dates have been found
@@ -299,13 +380,15 @@ class TestGsv():
 # Additional tests for the GSVSource class
 def test_fdb_home_bridge_logs(capsys):
     # Prepare test metadata ensuring we have fdbhome_bridge
-    metadata = {
-        'fdb_home_bridge': FDB_HOME,
-        'fdb_home': FDB_HOME
-    }
+    metadata = {"fdb_home_bridge": FDB_HOME, "fdb_home": FDB_HOME}
 
-    source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
-                       metadata=metadata, loglevel=loglevel)
+    source = GSVSource(
+        DEFAULT_GSV_PARAMS["request"],
+        data_start_date="20080101T1200",
+        data_end_date="20080101T1200",
+        metadata=metadata,
+        loglevel=loglevel,
+    )
 
     # No assert in the following because we cannot check the stderr logs. This is just for coverage.
 
@@ -315,12 +398,14 @@ def test_fdb_home_bridge_logs(capsys):
     source.chk_type = [0]
     source._get_partition(ii=0)
 
-    metadata = {
-        'fdb_path_bridge': FDB_HOME+'/etc/fdb/config.yaml',
-        'fdb_path': FDB_HOME+'/etc/fdb/config.yaml'
-    }
-    source = GSVSource(DEFAULT_GSV_PARAMS['request'], data_start_date='20080101T1200', data_end_date='20080101T1200',
-                       metadata=metadata, loglevel=loglevel)
+    metadata = {"fdb_path_bridge": FDB_HOME + "/etc/fdb/config.yaml", "fdb_path": FDB_HOME + "/etc/fdb/config.yaml"}
+    source = GSVSource(
+        DEFAULT_GSV_PARAMS["request"],
+        data_start_date="20080101T1200",
+        data_end_date="20080101T1200",
+        metadata=metadata,
+        loglevel=loglevel,
+    )
 
     source.chk_type = [1]
     source._get_partition(ii=0)

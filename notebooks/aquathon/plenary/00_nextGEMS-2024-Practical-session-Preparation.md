@@ -12,7 +12,7 @@
 * [Slides Storms, Eddies and Science seminar](https://docs.google.com/presentation/d/1e__TJTn3j2anphe8SrQXjQq6LaHaHVq9/edit?usp=sharing&ouid=108099315407763926629&rtpof=true&sd=true)
 :::
 
-## :muscle:  Hands-on modules 
+## :muscle:  Hands-on modules
 
 Today's introduction to AQUA has the purpose to give you the possibility to set up this new tool and check the access to the nextGEMS data in a hands-on session in which we want to have as much interaction with you as possible.
 
@@ -28,7 +28,7 @@ Some material is available for these topics:
 
 ##  :beers: Icebreaker
 
-Leave an x on your answer in the following questions. :x: 
+Leave an x on your answer in the following questions. :x:
 In which machine do you usually work?
 
 - Lumi
@@ -183,7 +183,7 @@ Then you can copy and open the URL on your browser.
 :fire: **Congratulations!** You're now set!
 :::
 
-### :interrobang: Issues 
+### :interrobang: Issues
 
 Feel free to modify the following red paragraph with possible questions you have about the preparation procedure:
 

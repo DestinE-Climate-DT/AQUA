@@ -1,24 +1,22 @@
+import numpy as np
 import pytest
 import regionmask
 import xarray as xr
-import numpy as np
-from typeguard import TypeCheckError
-from aqua.core.fldstat import AreaSelection
-from aqua.core.util import select_season
-from aqua.core.util.sci_util import generate_quarter_months
-from aqua.core.util import check_seasonal_chunk_completeness
-
 from conftest import LOGLEVEL
+from typeguard import TypeCheckError
+
+from aqua.core.fldstat import AreaSelection
+from aqua.core.util import check_seasonal_chunk_completeness, select_season
+from aqua.core.util.sci_util import generate_quarter_months
 
 loglevel = LOGLEVEL
+
 
 @pytest.fixture(scope="module")
 def sample_data():
     """Create a sample DataArray for testing"""
     data = xr.DataArray(
-        np.random.rand(6, 6),
-        coords={'lat': [10, 20, 30, 40, 50, 60], 'lon': [40, 50, 60, 70, 80, 90]},
-        dims=['lat', 'lon']
+        np.random.rand(6, 6), coords={"lat": [10, 20, 30, 40, 50, 60], "lon": [40, 50, 60, 70, 80, 90]}, dims=["lat", "lon"]
     )
     return data
 
@@ -28,9 +26,8 @@ def sample_data_180():
     """Create a sample DataArray with lon in [-180, 180] convention."""
     return xr.DataArray(
         np.random.rand(4, 8),
-        coords={'lat': [-45, -15, 15, 45],
-                'lon': [-135, -45, -30, 0, 30, 45, 90, 135]},
-        dims=['lat', 'lon']
+        coords={"lat": [-45, -15, 15, 45], "lon": [-135, -45, -30, 0, 30, 45, 90, 135]},
+        dims=["lat", "lon"],
     )
 
 
@@ -39,9 +36,8 @@ def sample_data_360():
     """Create a sample DataArray with lon in [0, 360] convention."""
     return xr.DataArray(
         np.random.rand(4, 8),
-        coords={'lat': [-45, -15, 15, 45],
-                'lon': [0, 30, 45, 90, 135, 180, 225, 270]},
-        dims=['lat', 'lon']
+        coords={"lat": [-45, -15, 15, 45], "lon": [0, 30, 45, 90, 135, 180, 225, 270]},
+        dims=["lat", "lon"],
     )
 
 
@@ -50,9 +46,7 @@ def test_valid_selection_no_brd(sample_data):
     """Test with valid latitude and longitude ranges, no box_brd"""
     lat_range = [10, 30]
     lon_range = [45, 55]
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data,
-                                                          lat=lat_range, lon=lon_range,
-                                                          box_brd=False)
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=False)
 
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
@@ -64,12 +58,9 @@ def test_selection_regionmask(sample_data):
     """Test selection using regionmask"""
     # Define a simple regionmask region
     region = regionmask.defined_regions.natural_earth_v5_0_0.countries_110
-    region_sel = ['United States of America', 'Russia']
+    region_sel = ["United States of America", "Russia"]
 
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data,
-                                                          region=region,
-                                                          region_sel=region_sel,
-                                                          box_brd=True)
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data, region=region, region_sel=region_sel, box_brd=True)
 
     assert result is not None
     # Check that values outside the selected regions are NaN
@@ -83,9 +74,7 @@ def test_valid_selection(sample_data):
     """Test with valid latitude and longitude ranges"""
     lat_range = [15, 25]
     lon_range = [45, 55]
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data,
-                                                          lat=lat_range, lon=lon_range,
-                                                          box_brd=True)
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=True)
 
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
@@ -103,12 +92,8 @@ def test_missing_lat_lon(sample_data):
 @pytest.mark.aqua
 def test_missing_lat_lon_coords():
     """Test with missing lat or lon coordinates, should raise an KeyError"""
-    data_missing_lat = xr.DataArray(np.random.rand(3, 3),
-                                    coords={'lon': [40, 50, 60]},
-                                    dims=['lat', 'lon'])
-    data_missing_lon = xr.DataArray(np.random.rand(3, 3),
-                                    coords={'lat': [10, 20, 30]},
-                                    dims=['lat', 'lon'])
+    data_missing_lat = xr.DataArray(np.random.rand(3, 3), coords={"lon": [40, 50, 60]}, dims=["lat", "lon"])
+    data_missing_lon = xr.DataArray(np.random.rand(3, 3), coords={"lat": [10, 20, 30]}, dims=["lat", "lon"])
 
     with pytest.raises(KeyError):
         AreaSelection(loglevel=loglevel).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55], box_brd=True)
@@ -122,9 +107,9 @@ def test_missing_data():
     """Test with missing data or wrong type"""
     with pytest.raises(TypeError):
         AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
-        
+
     with pytest.raises(TypeCheckError):
-        AreaSelection(loglevel=loglevel).select_area('invalid_data', lat=[15, 25], lon=[45, 55], box_brd=True)
+        AreaSelection(loglevel=loglevel).select_area("invalid_data", lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
@@ -153,21 +138,21 @@ def test_select_season():
 @pytest.mark.aqua
 def test_generate_quarter_months():
     """Test the generate_quarter_months function with various anchor months."""
-    result = generate_quarter_months('DEC')
-    assert result == {'DEC': {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], 'Q3': [6, 7, 8], 'Q4': [9, 10, 11]}}
+    result = generate_quarter_months("DEC")
+    assert result == {"DEC": {"Q1": [12, 1, 2], "Q2": [3, 4, 5], "Q3": [6, 7, 8], "Q4": [9, 10, 11]}}
 
-    result = generate_quarter_months('MAR')
-    assert result == {'MAR': {'Q1': [3, 4, 5], 'Q2': [6, 7, 8], 'Q3': [9, 10, 11], 'Q4': [12, 1, 2]}}
+    result = generate_quarter_months("MAR")
+    assert result == {"MAR": {"Q1": [3, 4, 5], "Q2": [6, 7, 8], "Q3": [9, 10, 11], "Q4": [12, 1, 2]}}
     with pytest.raises(ValueError):
-        generate_quarter_months('XXX')
+        generate_quarter_months("XXX")
 
 
 @pytest.mark.aqua
 def test_check_seasonal_chunk_completeness():
     # Daily data:
-    t_dec = xr.date_range("2000-12-01", "2000-12-31", freq="D") # 2000-12 (present)
-    t_feb = xr.date_range("2001-02-01", "2001-02-28", freq="D") # 2001-01 (missing); DJF incomplete
-    t_mam = xr.date_range("2001-03-01", "2001-05-31", freq="D") # 2001-03..2001-05; MAM complete
+    t_dec = xr.date_range("2000-12-01", "2000-12-31", freq="D")  # 2000-12 (present)
+    t_feb = xr.date_range("2001-02-01", "2001-02-28", freq="D")  # 2001-01 (missing); DJF incomplete
+    t_mam = xr.date_range("2001-03-01", "2001-05-31", freq="D")  # 2001-03..2001-05; MAM complete
     time = t_dec.append(t_feb).append(t_mam)
 
     da = xr.DataArray(np.ones(time.size), coords={"time": time}, dims=["time"])
@@ -184,13 +169,15 @@ def test_check_seasonal_chunk_completeness():
 
 
 @pytest.mark.aqua
-@pytest.mark.parametrize("data_fixture, lon_limits",
-[
-    ("sample_data_180", [-180, 180]),
-    ("sample_data_180", [0, 360]),
-    ("sample_data_360", [-180, 180]),
-    ("sample_data_360", [0, 360])
-])
+@pytest.mark.parametrize(
+    "data_fixture, lon_limits",
+    [
+        ("sample_data_180", [-180, 180]),
+        ("sample_data_180", [0, 360]),
+        ("sample_data_360", [-180, 180]),
+        ("sample_data_360", [0, 360]),
+    ],
+)
 def test_full_globe_selection(data_fixture, lon_limits, request):
     """Full-globe lon requests must select all data regardless of the grid convention."""
     data = request.getfixturevalue(data_fixture)
@@ -200,13 +187,15 @@ def test_full_globe_selection(data_fixture, lon_limits, request):
 
 
 @pytest.mark.aqua
-@pytest.mark.parametrize("data_fixture, lon_limits, expected_in, expected_out", 
-[
-    ("sample_data_180", [-100, 100], [-45, 0, 45, 90], [-135, 135]),
-    ("sample_data_180", [-40, -20], [-30], [-45, 0, 90, 135]),
-    ("sample_data_180", [-20, 45], [0, 30, 45], [-30, 90, 135]),
-    ("sample_data_360", [30, 150], [30, 45, 90, 135], [0, 180, 225]),
-])
+@pytest.mark.parametrize(
+    "data_fixture, lon_limits, expected_in, expected_out",
+    [
+        ("sample_data_180", [-100, 100], [-45, 0, 45, 90], [-135, 135]),
+        ("sample_data_180", [-40, -20], [-30], [-45, 0, 90, 135]),
+        ("sample_data_180", [-20, 45], [0, 30, 45], [-30, 90, 135]),
+        ("sample_data_360", [30, 150], [30, 45, 90, 135], [0, 180, 225]),
+    ],
+)
 def test_partial_lon_selection(data_fixture, lon_limits, expected_in, expected_out, request):
     """Partial lon selection must include and exclude the correct grid points.
 

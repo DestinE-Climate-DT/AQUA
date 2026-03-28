@@ -1,15 +1,15 @@
 "Module defining a new aqua accessor to extend xarray"
 
 import xarray as xr
-from .reader import Reader
+
 from .graphics import plot_single_map
+from .reader import Reader
 
 
 # For now not distinguishing between dataarray and dataset methods
 @xr.register_dataset_accessor("aqua")
 @xr.register_dataarray_accessor("aqua")
 class AquaAccessor:
-
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self.instance = Reader.instance  # by default use the latest available instance of the Reader class
@@ -43,27 +43,27 @@ class AquaAccessor:
     def timmean(self, **kwargs):
         """Perform time averaging."""
         return self.instance.timmean(self._obj, **kwargs)
-    
+
     def timmax(self, **kwargs):
         """Perform time maximum."""
         return self.instance.timmax(self._obj, **kwargs)
-    
+
     def timmin(self, **kwargs):
         """Perform time minimum."""
         return self.instance.timmin(self._obj, **kwargs)
-    
+
     def timstd(self, **kwargs):
         """Perform time standard deviation."""
         return self.instance.timstd(self._obj, **kwargs)
-    
+
     def timfirst(self, **kwargs):
         """Perform time first element."""
         return self.instance.timfirst(self._obj, **kwargs)
-    
+
     def timlast(self, **kwargs):
         """Perform time last element."""
         return self.instance.timlast(self._obj, **kwargs)
-    
+
     def timstat(self, **kwargs):
         """Perform time statistics."""
         return self.instance.timstat(self._obj, **kwargs)

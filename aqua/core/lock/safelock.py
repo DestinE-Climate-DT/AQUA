@@ -1,9 +1,11 @@
 import os
-import time
 import threading
+import time
+
 from filelock import SoftFileLock, Timeout
 
 from aqua.core.logger import log_configure
+
 
 class SafeFileLock:
     """
@@ -13,8 +15,7 @@ class SafeFileLock:
       - Stale lock cleanup
     """
 
-    def __init__(self, lock_path, timeout=60, stale_timeout=120,
-                 heartbeat_interval=10, loglevel: str = 'WARNING'):
+    def __init__(self, lock_path, timeout=60, stale_timeout=120, heartbeat_interval=10, loglevel: str = "WARNING"):
         """
         :param lock_path: Path to the .lock file (must be on shared filesystem)
         :param timeout: Seconds to wait to acquire lock before raising Timeout
@@ -27,7 +28,7 @@ class SafeFileLock:
         self.stale_timeout = stale_timeout
         self.heartbeat_interval = heartbeat_interval
 
-        self.logger = log_configure(log_level=loglevel, log_name='FileLock')
+        self.logger = log_configure(log_level=loglevel, log_name="FileLock")
 
         self.lock = SoftFileLock(lock_path, timeout=timeout)
         self._stop_event = threading.Event()
@@ -81,9 +82,7 @@ class SafeFileLock:
 
         # Start heartbeat thread
         self._stop_event.clear()
-        self._heartbeat_thread = threading.Thread(
-            target=self._heartbeat, daemon=True
-        )
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat, daemon=True)
         self._heartbeat_thread.start()
 
     def release(self):

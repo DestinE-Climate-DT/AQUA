@@ -3,6 +3,7 @@
 import os
 import shutil
 from glob import glob
+
 # from aqua.core.util import dump_yaml, load_yaml
 # from aqua.core.util import ConfigPath
 # from aqua.core.logger import log_configure
@@ -38,10 +39,10 @@ from glob import glob
 #     logger.info('Creating catalog entry %s %s %s', model, exp, entry_name)
 
 #     # load the catalog experiment file
-#     Configurer = ConfigPath()
-#     configdir = Configurer.configdir
+#     configurer = ConfigPath()
+#     configdir = configurer.configdir
 #     if catalog is None:
-#         catalog = Configurer.catalog
+#         catalog = configurer.catalog
 
 #     # find the catalog of my experiment
 #     catalogfile = os.path.join(configdir, 'catalogs', catalog,
@@ -103,8 +104,8 @@ def list_drop_files_complete(path):
     yearly_dict = {}
     monthly_dict = {}
     searchpath = "*"
-    yearly_dict['files'] = sorted(glob(os.path.join(path, searchpath) + '_????.nc'))
-    monthly_dict['files'] = sorted(glob(os.path.join(path, searchpath) + '_??????.nc'))
+    yearly_dict["files"] = sorted(glob(os.path.join(path, searchpath) + "_????.nc"))
+    monthly_dict["files"] = sorted(glob(os.path.join(path, searchpath) + "_??????.nc"))
 
     # path = os.path.join(path, model, exp, reso, freq)
     return yearly_dict, monthly_dict
@@ -131,6 +132,7 @@ def list_drop_files_complete(path):
 #         monthly_dict[var] = sorted(glob(os.path.join(path, var) + '_??????.nc'))
 
 #     return yearly_dict, monthly_dict
+
 
 def move_tmp_files(tmp_directory, output_directory):
     """
