@@ -183,7 +183,7 @@ jobs:
         run: |
           cd AQUA
           pre-commit run --all-files
-      
+
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
       # ========================================
