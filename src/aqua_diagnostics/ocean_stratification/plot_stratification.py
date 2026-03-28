@@ -2,7 +2,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import cartopy.crs as ccrs
-from aqua.util import cbar_get_label, get_realizations
+from aqua.util import cbar_get_label, get_realizations, time_to_string
 import math
 
 from .mld_profiles import plot_maps
@@ -180,18 +180,18 @@ class PlotStratification:
                 #     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
-    def set_description(self, ):
+    def set_description(self):
         model_startdate = self.data.attrs.get("startdate", None)
         model_enddate = self.data.attrs.get("enddate", None)
         self.description = f"Vertical profiles of temperature, salinity and density for the spatially averaged {self.region} region, {self.clim_time} climatology for {self.model} {self.exp} (solid)"
         if model_startdate and model_enddate:
-            self.description += f" (from {model_startdate} to {model_enddate})"
+            self.description += f" (from {time_to_string(model_startdate, format='%Y-%m')} to {time_to_string(model_enddate, format='%Y-%m')})"
         if self.obs:
             obs_startdate = self.obs.attrs.get("startdate", None)
             obs_enddate = self.obs.attrs.get("enddate", None)
             self.description = self.description + (f" with reference {self.obs.attrs['model']} {self.obs.attrs['exp']} (dashed)")
             if obs_startdate and obs_enddate:
-                self.description += f" (from {obs_startdate} to {obs_enddate})"
+                self.description += f" (from {time_to_string(obs_startdate, format='%Y-%m')} to {time_to_string(obs_enddate, format='%Y-%m')})"
         self.description += "."
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,

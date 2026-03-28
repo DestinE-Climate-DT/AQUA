@@ -2,7 +2,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import cartopy.crs as ccrs
-from aqua.util import cbar_get_label
+from aqua.util import cbar_get_label, time_to_string
 import math
 
 from .mld_profiles import plot_maps
@@ -300,13 +300,13 @@ class PlotMLD:
         model_enddate = self.data.attrs.get("enddate", None)    
         self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for {self.model} {self.exp}"
         if model_startdate and model_enddate:
-            self.description += f" (from {model_startdate} to {model_enddate})"
+            self.description += f" (from {time_to_string(model_startdate, format='%Y-%m')} to {time_to_string(model_enddate, format='%Y-%m')})"
         if self.obs:
             obs_startdate = self.obs.attrs.get("startdate", None)
             obs_enddate = self.obs.attrs.get("enddate", None)
             self.description += f" with reference {self.obs.attrs['model']} {self.obs.attrs['exp']}"
             if obs_startdate and obs_enddate:
-                self.description += f" (from {obs_startdate} to {obs_enddate})"
+                self.description += f" (from {time_to_string(obs_startdate, format='%Y-%m')} to {time_to_string(obs_enddate, format='%Y-%m')})"
         
         self.description += "."
 
