@@ -120,8 +120,8 @@ diagnostics:
     run: true
     methods: ["extent", "volume"]
     regions: ['arctic','antarctic']
-    startdate: '2000-01-01'
-    enddate: '2024-12-31'
+    startdate: '1990-01-01'
+    enddate: '2014-12-31'
     calc_ref_std: true
     ref_std_freq: 'monthly' # set to 'monthly' 'annual'
     varname:
@@ -162,8 +162,8 @@ diagnostics:
     run: true
     methods: ["fraction", "thickness"]
     regions: ['arctic','antarctic']
-    startdate: '2000-01-01'
-    enddate: '2024-12-31'
+    startdate: '1990-01-01'
+    enddate: '2014-12-31'
     # List of months to plot (e.g., [3, 9] for March and September)
     months: [3, 9]
     # List of projections to use
