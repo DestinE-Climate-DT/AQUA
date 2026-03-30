@@ -30,9 +30,11 @@ diagnostics:
     Teleconnections, NAO: [teleconnections.nao, teleconnections.NAO, nao.]
     Teleconnections, ENSO: [teleconnections.enso, teleconnections.ENSO, enso.]
 
-    Ocean 2D, Time series: ocean2d.timeseries, ocean.timeseries
+    Ocean 2D, Time series: [ocean2d.timeseries, ocean.timeseries]
+    Ocean 2D, Seasonal cycles: ocean2d.seasonalcycles
     Ocean 2D, Annual differences: ocean2d.bias
     Ocean 2D, Seasonal differences: ocean2d.seasonal_bias
+    Ocean 2D, Zonal profiles: [ocean2d.zonal_profile,  ocean2d.seasonal_zonal_profile]
 
     Ocean 3D, Time series: [ocean3d.timeseries, monthly_time_series_, Ocean_time_series, ea_time_series, _time_series_arctic_ocean, _time_series_atlantic_ocean, _time_series_global_ocean, _time_series_indian_ocean, _time_series_pacific_ocean, _time_series_southern_ocean]
     Ocean 3D, Hovmöller plots: [ocean3d.hovmoller, _hovmoller_plot]
