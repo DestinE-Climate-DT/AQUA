@@ -9,8 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
-- Apply ruff formatting to the codebase (#2791)
-- Add pre-commit hooks and ruff linting (#2786)
+- Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791)
 - Fix area selection, `default_coords` are deduced from the dataset (#2768)
 - Attributes guessing for eccodes works also with local destine table (#2759)
 - Expose fldstat methods through `AquaAccessor` (#2770)
@@ -25,7 +24,6 @@ Main changes:
 - Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
 
 Complete list:
-- Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791)
 - Remove metadata embedding functions for figures to centralise them in the `OutputSaver` (#2750)
 - Remove necessity of FDB paths if engine is polytope (#2656)
 - Fix null catalog entry (#2725)
