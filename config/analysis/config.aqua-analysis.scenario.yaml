@@ -61,8 +61,8 @@ cli:
   tropical_rainfall: "../../diagnostics/tropical_rainfall/cli/cli_tropical_rainfall.py"
 
 run: 
-    - ["teleconnections", "climate_metrics", "ocean2d"] # very fast ones first, a few min
-    - ["atmosphere2d", "atmosphere3d", "radiation-surface", "ocean3d-part1",  "ocean3d-part2", "seaice", "radiation-toa", "water_cycle"]
+    - ["teleconnections", "climate_metrics"] # very fast ones first, a few min
+    - ["ocean2d", "atmosphere2d", "atmosphere3d", "radiation-surface", "ocean3d-part1",  "ocean3d-part2", "seaice", "radiation-toa", "water_cycle"]
 
   # List of diagnostics
 
@@ -100,6 +100,10 @@ diagnostics:
 
   ocean2d:
     biases:
+      config: "${AQUA_CONFIG}/diagnostics/scenario/ocean2d/config-ocean2d-esacci.yaml"
+    timeseries:
+      config: "${AQUA_CONFIG}/diagnostics/scenario/ocean2d/config-ocean2d-esacci.yaml"
+    lat_lon_profiles:
       config: "${AQUA_CONFIG}/diagnostics/scenario/ocean2d/config-ocean2d-esacci.yaml"
 
   ocean3d-part1:
