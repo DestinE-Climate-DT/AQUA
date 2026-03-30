@@ -62,7 +62,7 @@ cli:
 
 run: 
     - ["teleconnections", "climate_metrics"] # very fast ones first, a few min
-    - ["ocean2d", "atmosphere2d", "atmosphere3d", "radiation-surface", "ocean3d-part1",  "ocean3d-part2", "seaice", "radiation-toa", "water_cycle"]
+    - ["atmosphere2d", "atmosphere3d", "radiation-surface", "seaice", "radiation-toa", "water_cycle"]  # storyline has no ocean diags
 
   # List of diagnostics
 
