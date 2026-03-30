@@ -25,7 +25,7 @@ Main changes:
 - Several adjustments in the reader and regridding functionalities, including support for non gregorian calendars and better grid handling
 
 Complete list:
-- Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748)
+- Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791)
 - Remove metadata embedding functions for figures to centralise them in the `OutputSaver` (#2750)
 - Remove necessity of FDB paths if engine is polytope (#2656)
 - Fix null catalog entry (#2725)
