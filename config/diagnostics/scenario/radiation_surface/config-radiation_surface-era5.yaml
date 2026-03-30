@@ -23,8 +23,8 @@ references:
     model: 'ERA5'
     exp: 'era5'
     source: 'monthly'
-    startdate: '2000-01-01'
-    enddate: '2024-12-31'
+    startdate: '1990-01-01'
+    enddate: '2014-12-31'
 
 output:
   outputdir: "./"
@@ -62,8 +62,8 @@ diagnostics:
         vertical: false     # Vertical profile if variable 3d
         startdate_data: null
         enddate_data: null
-        startdate_ref: "2000-01-01"
-        enddate_ref: "2024-12-31"
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2014-12-31"
     plot_params: 
       default: 
         projection: 'robinson'

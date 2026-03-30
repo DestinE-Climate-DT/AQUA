@@ -49,8 +49,8 @@ diagnostics:
         #TODO: to remove
         startdate_data: null
         enddate_data: null
-        startdate_ref: "2000-01-01"
-        enddate_ref: "2024-12-31"
+        startdate_ref: "1990-01-01"
+        enddate_ref: "2014-12-31"
     plot_params:
       default: 
         projection: 'robinson'
@@ -84,8 +84,8 @@ diagnostics:
     center_time: true
     params:
       default:
-        std_startdate: '20000101'
-        std_enddate: '20241231'
+        std_startdate: '19900101'
+        std_enddate: '20141231'
       tos:
         regions: ['nh', 'sh']
 
@@ -98,6 +98,12 @@ diagnostics:
     box_brd: true
     seasonal: true
     longterm: true
+    params:
+      default:
+        startdate: '19900101'
+        enddate: '20141231'
+        std_startdate: '19900101'
+        std_enddate: '20141231'
     variables:
       - name: 'tos'
         regions: [null]  # global
