@@ -22,3 +22,4 @@ Please apply the "run tests" label if you want to trigger CI tests.
  - [ ] Notebooks which requires changes are updated.
  - [ ] Run Cross check tests for AQUA-diagnostics [AQUA-diagnostics cross-check workflow](https://github.com/DestinE-Climate-DT/AQUA-diagnostics/actions/workflows/aqua-diagnostics-cross-check.yml)
  - [ ] environment.yml and pyproject.toml are updated if needed, together with the lumi installation tool. Installation instructions are updated if new conda dependencies are added.
+ - [ ] Check `ruff` and `pre-commit` commands: `ruff check . --no-cache`, `pre-commit run --all-files` and `ruff format --check . --no-cache` are successful.
