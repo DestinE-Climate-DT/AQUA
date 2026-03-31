@@ -147,7 +147,7 @@ jobs:
       # ========================================
       - name: Set up Micromamba (local mode)
         if: ${{ inputs.install-mode == 'local' }}
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/environment.yml
@@ -162,7 +162,7 @@ jobs:
 
       - name: Set up Micromamba (PyPI mode)
         if: ${{ inputs.install-mode == 'pypi' }}
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/environment-pypi.yml
