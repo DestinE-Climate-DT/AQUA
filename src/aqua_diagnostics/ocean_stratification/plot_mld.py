@@ -101,6 +101,7 @@ class PlotMLD:
             vmin=self.vmin,
             nlevels=self.nlevels,
             sym=False,
+            loglevel=self.loglevel,
         )
 
         formats = []
@@ -275,7 +276,7 @@ class PlotMLD:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.model} {self.exp}"
+        self.suptitle = f"MLD in {self.region.capitalize()} - {self.clim_time} climatology - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
