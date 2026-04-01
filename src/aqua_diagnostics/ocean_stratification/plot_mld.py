@@ -251,7 +251,7 @@ class PlotMLD:
     def set_cbar_limits(self):
         self.vmin = 0.0
         if self.region=='antarctic':
-            self.vmax = 800
+            self.vmax = 900    # HACK 800 causes problems in plot due to contourf bug 
         else:
             self.vmax = 2000
 
