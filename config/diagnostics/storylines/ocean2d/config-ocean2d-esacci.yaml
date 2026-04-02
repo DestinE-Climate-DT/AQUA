@@ -98,6 +98,12 @@ diagnostics:
     box_brd: true
     seasonal: true
     longterm: true
+    params:
+      default:
+        startdate: '2017-01-01'
+        enddate: '2024-12-31'
+        std_startdate: '2000-01-01'
+        std_enddate: '2024-12-31'
     variables:
       - name: 'tos'
         regions: [null]  # global
