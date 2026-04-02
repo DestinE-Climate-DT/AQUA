@@ -1,3 +1,4 @@
+from astropy.table.table import descr
 import os
 import xarray as xr
 from aqua.fixer import EvaluateFormula
@@ -402,9 +403,7 @@ class PlotBaseMixin():
         if self.len_ref > 0:
             description += f' with reference'
             for i in range(self.len_ref):
-                if self.ref_models[i] == 'ERA5' or self.ref_models == 'ERA5':
-                    description += f' ERA5'
-                elif isinstance(self.ref_models, list):
+                if isinstance(self.ref_models, list):
                     description += f' {self.ref_models[i]} {self.ref_exps[i]}'
                     if self.ref_startdate is not None and self.ref_enddate is not None:
                         description += f" (from {time_to_string(self.ref_startdate[i], format='%Y-%m')} to {time_to_string(self.ref_enddate[i], format='%Y-%m')})"
@@ -412,6 +411,8 @@ class PlotBaseMixin():
                     description += f' {self.ref_models} {self.ref_exps}'
                     if self.ref_startdate is not None and self.ref_enddate is not None:
                         description += f" (from {time_to_string(self.ref_startdate, format='%Y-%m')} to {time_to_string(self.ref_enddate, format='%Y-%m')})"
+                if "ERA5 era5" in description:
+                    description = description.replace("ERA5 era5", "ERA5")
         description += '. '
 
         # TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
