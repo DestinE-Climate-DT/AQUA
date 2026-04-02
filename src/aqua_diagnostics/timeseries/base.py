@@ -1,4 +1,3 @@
-from astropy.table.table import descr
 import os
 import xarray as xr
 from aqua.fixer import EvaluateFormula
