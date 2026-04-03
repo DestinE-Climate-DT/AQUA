@@ -92,13 +92,13 @@ def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     assert "realization: '{{ realization }}'"
 
     # check number of vertical levels in the atmosphere
-    assert len(sources['sources'][f'monthly-hpz5-atm3d']['metadata']['levels']) == 19
+    assert len(sources['sources'][f'monthly-hpz5-pl']['metadata']['levels']) == 19
 
     # check number of vertical levels in the ocean
-    assert len(sources['sources'][f'monthly-hpz5-oce3d']['metadata']['levels']) == nocelevels
+    assert len(sources['sources'][f'monthly-hpz5-o3d']['metadata']['levels']) == nocelevels
 
     # check ensembles are correctly produced
-    assert sources['sources'][f'monthly-hpz5-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
+    assert sources['sources'][f'monthly-hpz5-pl']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
@@ -127,13 +127,13 @@ def test_catgen_reduced(tmp_path, model, nsources, nocelevels):
     #   grid, freq = 'hpz7', 'daily'
     else:
         raise ValueError(f'{model} not supported!')
-    assert len(sources['sources'][f'monthly-{grid}-atm3d']['metadata']['levels']) == 19
+    assert len(sources['sources'][f'monthly-{grid}-pl']['metadata']['levels']) == 19
 
     # check number of vertical levels in the atmosphere
-    assert len(sources['sources'][f'{freq}-{grid}-oce3d']['metadata']['levels']) == nocelevels
+    assert len(sources['sources'][f'{freq}-{grid}-o3d']['metadata']['levels']) == nocelevels
 
     # check ensembles are correctly produced
-    assert sources['sources'][f'monthly-{grid}-atm3d']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
+    assert sources['sources'][f'monthly-{grid}-pl']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
@@ -150,10 +150,10 @@ def test_catgen_full(tmp_path, model, nsources, nocelevels):
     assert len(sources['sources']) == nsources
 
     # check number of vertical levels in the atmosphere
-    assert len(sources['sources']['hourly-hpz10-atm3d']['metadata']['levels']) == 19
+    assert len(sources['sources']['hourly-hpz10-pl']['metadata']['levels']) == 19
 
     # check number of vertical levels in the atmosphere
-    assert len(sources['sources']['daily-hpz10-oce3d']['metadata']['levels']) == nocelevels
+    assert len(sources['sources']['daily-hpz10-o3d']['metadata']['levels']) == nocelevels
 
 
 MANDATORY_KEYS_TO_TEST = [

@@ -36,9 +36,12 @@ class PlotNAO(PlotBaseMixin):
                                 ylabel='NAO index', labels=labels, loglevel=self.loglevel)
 
         return fig, axs
-
+        
     def set_index_description(self):
-        return super().set_index_description(index_name='NAO')
+        description = super().set_index_description(index_name='NAO')
+        months_window = self.indexes[0].attrs['months_window']
+        description += f" The index is computed as a {months_window}-month running mean."
+        return description
 
     def plot_maps(self, maps=None, ref_maps=None, statistic: str = None, vmin: float = None, vmax: float = None,
                   vmin_diff: float = None, vmax_diff: float = None, **kwargs):
@@ -89,7 +92,7 @@ class PlotNAO(PlotBaseMixin):
 
             # Case 1a: single map
             if isinstance(maps, xr.DataArray):
-                title = f"NAO {maps.AQUA_model} {maps.AQUA_exp} {statistic} map ({var})"
+                title = f"NAO - {maps.AQUA_model} {maps.AQUA_exp} {statistic} map ({var})"
                 if hasattr(maps, 'AQUA_season'):
                     title += f" ({maps.AQUA_season})"
                 fig, ax = plot_single_map(data=maps, fig=fig, ax=ax,

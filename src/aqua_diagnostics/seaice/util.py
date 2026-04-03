@@ -74,12 +74,12 @@ def ensure_istype(obj, expected_types, logger=None):
 def extract_dates(data):
     """
     Extracts start and end dates from data attributes.
-    If the date is a datetime object, it is formatted as 'YYYY-MM-DD'.
+    If the date is a datetime object, it is formatted as 'YYYY-MM'.
     If the date is a string, it is returned as is.
     """
     def fmt_dt(attr_name):
         dt = data.attrs.get(attr_name, f'No {attr_name} found')
-        if hasattr(dt, 'strftime'): return dt.strftime('%Y-%m-%d')
+        if hasattr(dt, 'strftime'): return dt.strftime('%Y-%m')
         if isinstance(dt, str) and 'T' in dt: return dt.split('T')[0]
         return dt
     return fmt_dt('AQUA_startdate'), fmt_dt('AQUA_enddate')

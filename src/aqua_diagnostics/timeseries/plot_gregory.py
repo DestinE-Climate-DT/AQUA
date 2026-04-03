@@ -36,9 +36,9 @@ class PlotGregory(PlotBaseMixin):
         self.annual_ref = {'t2m': t2m_annual_ref, 'net_toa': net_toa_annual_ref}
         self.annual_std = {'t2m': t2m_annual_std, 'net_toa': net_toa_annual_std}
 
-        self.data_dict = {'monthly': self.monthly_data, 'annual': self.annual_data}
-        self.ref_dict = {'monthly': self.monthly_ref, 'annual': self.annual_ref}
-        self.std_dict = {'monthly': None, 'annual': self.annual_std}
+        self.data_dict = {'annual': self.annual_data, 'monthly': self.monthly_data}
+        self.ref_dict = {'annual': self.annual_ref, 'monthly': self.monthly_ref}
+        self.std_dict = {'annual': self.annual_std, 'monthly': None}
 
         self.len_data = self._check_data_length()
         self.logger.debug(f'Number of dataset: {self.len_data}')
@@ -120,7 +120,7 @@ class PlotGregory(PlotBaseMixin):
 
     def set_title(self):
         """Set the title for the plot"""
-        title = 'Gregory Plot '
+        title = 'Gregory Plot of '
 
         for i, model in enumerate(self.models):
             title += f'{model}'
@@ -141,26 +141,28 @@ class PlotGregory(PlotBaseMixin):
  
     def set_description(self):
         """Set the description for the plot"""
-        description = 'Gregory plot of'
+        description = 'Gregory plot, showing net top-of-atmosphere radiation vs. 2m temperature, of'
         for i, model in enumerate(self.models):
             description += f' {model}'
             description += f' {self.exps[i]}'
+            description += f' (from {self.startdate[i]} to {self.enddate[i]})'
         if self.ref_catalogs['t2m'] is None and self.ref_catalogs['net_toa'] is None:
             description += '.'
         if self.ref_models['t2m'] is not None or self.ref_models['net_toa'] is not None:
             description += ' using as a reference'
         if self.ref_models['t2m'] is not None:
-            description += f' {self.ref_models["t2m"]} {self.ref_exps["t2m"]} (2 m temperature)'
+            description += f' {self.ref_models["t2m"]} {self.ref_exps["t2m"]} (2m temperature)'
+        if self.ref_std_startdate['t2m'] is not None and self.ref_std_enddate['t2m'] is not None:
+            description += f' (from {self.ref_std_startdate["t2m"]} to {self.ref_std_enddate["t2m"]})'
         if self.ref_models['t2m'] is not None and self.ref_models['net_toa'] is not None:
             description += ' and'
         if self.ref_models['net_toa'] is not None:
-            description += f' {self.ref_models["net_toa"]} {self.ref_exps["net_toa"]} (net TOA).'
-        for i, model in enumerate(self.models):
-            description += f' The model data are from {self.startdate[i]} to {self.enddate[i]}.'
-        if self.ref_std_startdate['t2m'] is not None and self.ref_std_enddate['t2m'] is not None:
-            description += f' The reference 2 m temperature data are from {self.ref_std_startdate["t2m"]} to {self.ref_std_enddate["t2m"]}.'
+            description += f' {self.ref_models["net_toa"]} {self.ref_exps["net_toa"]} (net TOA)'
         if self.ref_std_startdate['net_toa'] is not None and self.ref_std_enddate['net_toa'] is not None:
-            description += f' The reference net TOA data are from {self.ref_std_startdate["net_toa"]} to {self.ref_std_enddate["net_toa"]}.'
+            description += f' (from {self.ref_std_startdate["net_toa"]} to {self.ref_std_enddate["net_toa"]})'
+        description += '. '
+        description += 'On the left, monthly model data and climatological seasonal cycle for the reference data. '
+        description += 'On the right, annual model data and the reference ±1σ uncertainty bands around the climatological mean (shading).'
         return description
 
     def plot_monthly(self, fig: plt.Figure, ax: plt.Axes,
@@ -231,11 +233,11 @@ class PlotGregory(PlotBaseMixin):
                     self.models = [d.AQUA_model for d in valid_data]
                     self.exps = [d.AQUA_exp for d in valid_data]
                     self.startdate = [
-                        time_to_string(d.time.values[0])
+                        time_to_string(d.time.values[0], format='%Y-%m')
                         for d in valid_data
                     ]
                     self.enddate = [
-                        time_to_string(d.time.values[-1])
+                        time_to_string(d.time.values[-1], format='%Y-%m')
                         for d in valid_data
                     ]
                     self.realizations = get_realizations(valid_data)
@@ -246,14 +248,14 @@ class PlotGregory(PlotBaseMixin):
             t2m_catalog = self.ref_dict['monthly']['t2m'].AQUA_catalog
             t2m_model = self.ref_dict['monthly']['t2m'].AQUA_model
             t2m_exp = self.ref_dict['monthly']['t2m'].AQUA_exp
-            t2m_std_startdate = time_to_string(self.ref_dict['monthly']['t2m'].time.values[0])
-            t2m_std_enddate = time_to_string(self.ref_dict['monthly']['t2m'].time.values[-1])
+            t2m_std_startdate = time_to_string(self.ref_dict['monthly']['t2m'].time.values[0], format='%Y-%m')
+            t2m_std_enddate = time_to_string(self.ref_dict['monthly']['t2m'].time.values[-1], format='%Y-%m')
         elif self.ref_dict['annual']['t2m'] is not None:
             t2m_catalog = self.ref_dict['annual']['t2m'].AQUA_catalog
             t2m_model = self.ref_dict['annual']['t2m'].AQUA_model
             t2m_exp = self.ref_dict['annual']['t2m'].AQUA_exp
-            t2m_std_startdate = time_to_string(self.ref_dict['annual']['t2m'].time.values[0])
-            t2m_std_enddate = time_to_string(self.ref_dict['annual']['t2m'].time.values[-1])
+            t2m_std_startdate = time_to_string(self.ref_dict['annual']['t2m'].time.values[0], format='%Y-%m')
+            t2m_std_enddate = time_to_string(self.ref_dict['annual']['t2m'].time.values[-1], format='%Y-%m')
         else:
             t2m_catalog = None
             t2m_model = None
@@ -265,14 +267,14 @@ class PlotGregory(PlotBaseMixin):
             net_toa_catalog = self.ref_dict['monthly']['net_toa'].AQUA_catalog
             net_toa_model = self.ref_dict['monthly']['net_toa'].AQUA_model
             net_toa_exp = self.ref_dict['monthly']['net_toa'].AQUA_exp
-            net_toa_std_startdate = time_to_string(self.ref_dict['monthly']['net_toa'].time.values[0])
-            net_toa_std_enddate = time_to_string(self.ref_dict['monthly']['net_toa'].time.values[-1])
+            net_toa_std_startdate = time_to_string(self.ref_dict['monthly']['net_toa'].time.values[0], format='%Y-%m')
+            net_toa_std_enddate = time_to_string(self.ref_dict['monthly']['net_toa'].time.values[-1], format='%Y-%m')
         elif self.ref_dict['annual']['net_toa'] is not None:
             net_toa_catalog = self.ref_dict['annual']['net_toa'].AQUA_catalog
             net_toa_model = self.ref_dict['annual']['net_toa'].AQUA_model
             net_toa_exp = self.ref_dict['annual']['net_toa'].AQUA_exp
-            net_toa_std_startdate = time_to_string(self.ref_dict['annual']['net_toa'].time.values[0])
-            net_toa_std_enddate = time_to_string(self.ref_dict['annual']['net_toa'].time.values[-1])
+            net_toa_std_startdate = time_to_string(self.ref_dict['annual']['net_toa'].time.values[0], format='%Y-%m')
+            net_toa_std_enddate = time_to_string(self.ref_dict['annual']['net_toa'].time.values[-1], format='%Y-%m')
         else:
             net_toa_catalog = None
             net_toa_model = None

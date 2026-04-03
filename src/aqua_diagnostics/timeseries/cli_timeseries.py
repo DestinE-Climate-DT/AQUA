@@ -90,7 +90,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': False, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time}
+                                    'center_time': center_time, 'exclude_incomplete': exclude_incomplete, 'extend': extend}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -114,11 +114,21 @@ if __name__ == '__main__':
                             ts_ref = [None] * len(config_dict['references'])
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
+                                std_startdate = var_config.get('std_startdate')
+                                std_enddate = var_config.get('std_enddate')
+
+                                # HACK: If the std_startdate and std_enddate are totally out of the range of the dataset,
+                                # we skip the reference dataset and log a warning.
+                                # This is because some reference datasets have a fixed time range (e.g. observations)
+                                # that may not cover the full time range of the model datasets.
+                                if std_startdate and std_enddate and (pd.Timestamp(std_enddate) < startdate or pd.Timestamp(std_startdate) > enddate):
+                                    logger.warning(f"Reference dataset {reference['catalog']} {reference['model']} {reference['exp']} {reference['source']} has a std period from {std_startdate} to {std_enddate} that is out of the range of the model datasets from {startdate} to {enddate}. Skipping this reference dataset.") # noqa
+                                    continue
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                                 'exp': reference['exp'], 'source': reference['source'],
                                                 'startdate': startdate, 'enddate': enddate,
-                                                'std_startdate': var_config.get('std_startdate'),
-                                                'std_enddate': var_config.get('std_enddate'),
+                                                'std_startdate': std_startdate,
+                                                'std_enddate': std_enddate,
                                                 'regrid': regrid} # if regrid is not None else reference.get('regrid', None)}
                                 logger.info(f"Reference args: {reference_args}")
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
@@ -128,12 +138,26 @@ if __name__ == '__main__':
                         # Plot the timeseries
                         if save_pdf or save_png:
                             logger.info(f"Plotting Timeseries diagnostic for variable {var} in region {region if region else 'global'}") # noqa
+                            # HACK: we populate the ref_monthly_data, ref_annual_data, std_monthly_data and std_annual_data with None 
+                            # if any of the reference datasets were not successfully processed to avoid errors in the plotting function. 
+                            # The plotting function should be able to handle None values for these arguments and simply not plot the reference data if they are None.
+                            if ts_ref and any(t is None for t in ts_ref):
+                                logger.warning(f"No reference datasets were successfully processed for variable {var} in region {region if region else 'global'}.")
+                                ref_monthly_data = None
+                                ref_annual_data = None
+                                std_monthly_data = None
+                                std_annual_data = None
+                            else:
+                                ref_monthly_data = [ts_ref[i].monthly for i in range(len(ts_ref))]
+                                ref_annual_data = [ts_ref[i].annual for i in range(len(ts_ref))]
+                                std_monthly_data = [ts_ref[i].std_monthly for i in range(len(ts_ref))]
+                                std_annual_data = [ts_ref[i].std_annual for i in range(len(ts_ref))]
                             plot_args = {'monthly_data': [ts[i].monthly for i in range(len(ts))],
                                         'annual_data': [ts[i].annual for i in range(len(ts))],
-                                        'ref_monthly_data': [ts_ref[i].monthly for i in range(len(ts_ref))],
-                                        'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
-                                        'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
-                                        'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                                        'ref_monthly_data': ref_monthly_data,
+                                        'ref_annual_data': ref_annual_data,
+                                        'std_monthly_data': std_monthly_data,
+                                        'std_annual_data': std_annual_data,
                                         'diagnostic_name': diagnostic_name,
                                         'loglevel': loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
@@ -169,7 +193,7 @@ if __name__ == '__main__':
                         run_args = {'var': var, 'formula': True, 'long_name': var_config.get('long_name'),
                                     'units': var_config.get('units'), 'short_name': var_config.get('short_name'),
                                     'freq': var_config.get('freq'), 'outputdir': outputdir, 'rebuild': rebuild,
-                                    'center_time': center_time}
+                                    'center_time': center_time, 'exclude_incomplete': exclude_incomplete, 'extend': extend}
 
                         # Initialize a list of len from the number of datasets
                         ts = [None] * len(config_dict['datasets'])
@@ -191,11 +215,21 @@ if __name__ == '__main__':
                             ts_ref = [None] * len(config_dict['references'])
                             for i, reference in enumerate(config_dict['references']):
                                 logger.info(f'Running reference: {reference}, variable: {var}')
+                                std_startdate = var_config.get('std_startdate')
+                                std_enddate = var_config.get('std_enddate')
+
+                                # HACK: If the std_startdate and std_enddate are totally out of the range of the dataset,
+                                # we skip the reference dataset and log a warning.
+                                # This is because some reference datasets have a fixed time range (e.g. observations)
+                                # that may not cover the full time range of the model datasets.
+                                if std_startdate and std_enddate and (pd.Timestamp(std_enddate) < startdate or pd.Timestamp(std_startdate) > enddate):
+                                    logger.warning(f"Reference dataset {reference['catalog']} {reference['model']} {reference['exp']} {reference['source']} has a std period from {std_startdate} to {std_enddate} that is out of the range of the model datasets from {startdate} to {enddate}. Skipping this reference dataset.") # noqa
+                                    continue
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                                 'exp': reference['exp'], 'source': reference['source'],
                                                 'startdate': startdate, 'enddate': enddate,
-                                                'std_startdate': var_config.get('std_startdate'),
-                                                'std_enddate': var_config.get('std_enddate'),
+                                                'std_startdate': std_startdate,
+                                                'std_enddate': std_enddate,
                                                 'regrid': regrid} # if regrid is not None else reference.get('regrid', None)}
                                 ts_ref[i] = Timeseries(**init_args, **reference_args)
                                 ts_ref[i].run(**run_args, std=True, create_catalog_entry=False,
@@ -204,12 +238,26 @@ if __name__ == '__main__':
                         # Plot the timeseries
                         if save_pdf or save_png:
                             logger.info(f"Plotting Timeseries diagnostic for variable {var} in region {region if region else 'global'}") # noqa
+                            # HACK: we populate the ref_monthly_data, ref_annual_data, std_monthly_data and std_annual_data with None 
+                            # if any of the reference datasets were not successfully processed to avoid errors in the plotting function. 
+                            # The plotting function should be able to handle None values for these arguments and simply not plot the reference data if they are None.
+                            if ts_ref and any(t is None for t in ts_ref):
+                                logger.warning(f"No reference datasets were successfully processed for variable {var} in region {region if region else 'global'}.")
+                                ref_monthly_data = None
+                                ref_annual_data = None
+                                std_monthly_data = None
+                                std_annual_data = None
+                            else:
+                                ref_monthly_data = [ts_ref[i].monthly for i in range(len(ts_ref))]
+                                ref_annual_data = [ts_ref[i].annual for i in range(len(ts_ref))]
+                                std_monthly_data = [ts_ref[i].std_monthly for i in range(len(ts_ref))]
+                                std_annual_data = [ts_ref[i].std_annual for i in range(len(ts_ref))]
                             plot_args = {'monthly_data': [ts[i].monthly for i in range(len(ts))],
                                         'annual_data': [ts[i].annual for i in range(len(ts))],
-                                        'ref_monthly_data': [ts_ref[i].monthly for i in range(len(ts_ref))],
-                                        'ref_annual_data': [ts_ref[i].annual for i in range(len(ts_ref))],
-                                        'std_monthly_data': [ts_ref[i].std_monthly for i in range(len(ts_ref))],
-                                        'std_annual_data': [ts_ref[i].std_annual for i in range(len(ts_ref))],
+                                        'ref_monthly_data': ref_monthly_data,
+                                        'ref_annual_data': ref_annual_data,
+                                        'std_monthly_data': std_monthly_data,
+                                        'std_annual_data': std_annual_data,
                                         'diagnostic_name': diagnostic_name,
                                         'loglevel': loglevel}
                             plot_ts = PlotTimeseries(**plot_args)
@@ -261,10 +309,6 @@ if __name__ == '__main__':
                             sc[i].run(**run_args, create_catalog_entry=create_catalog_entry,
                                       reader_kwargs=dataset.get('reader_kwargs') or reader_kwargs)
 
-                        # Reference datasets are evaluated on the maximum time range of the datasets
-                        startdate = pd.Timestamp(min(t.plt_startdate for t in ts))
-                        enddate = pd.Timestamp(max(t.plt_enddate for t in ts))
-
                         # Initialize a list of len from the number of references
                         if 'references' in config_dict:
                             sc_ref = [None] * len(config_dict['references'])
@@ -272,7 +316,9 @@ if __name__ == '__main__':
                                 logger.info(f'Running reference: {reference}, variable: {var}')
                                 reference_args = {'catalog': reference['catalog'], 'model': reference['model'],
                                                 'exp': reference['exp'], 'source': reference['source'],
-                                                'startdate': startdate, 'enddate': enddate,
+                                                # Startdate and enddate are set to be the same as the period for the std
+                                                'startdate': var_config.get('std_startdate'),
+                                                'enddate': var_config.get('std_enddate'),
                                                 'std_startdate': var_config.get('std_startdate'),
                                                 'std_enddate': var_config.get('std_enddate'),
                                                 'regrid': regrid} # if regrid is not None else reference.get('regrid', None)}

@@ -1,8 +1,9 @@
 import os
 import xarray as xr
+import pandas as pd
 from aqua.logger import log_configure
 from aqua.util import ConfigPath, load_yaml, select_season
-from aqua.util import to_list, convert_data_units, get_realizations
+from aqua.util import to_list, convert_data_units, get_realizations, time_to_string
 from aqua.diagnostics.core import Diagnostic, OutputSaver
 
 xr.set_options(keep_attrs=True)
@@ -42,6 +43,7 @@ class BaseMixin(Diagnostic):
                                                telecname=telecname)
         # Initialize the possible results
         self.index = None
+        self.telecname = telecname
 
     def compute_regression(self, var: str = None,
                            dim: str = 'time', season: str = None):
@@ -58,6 +60,8 @@ class BaseMixin(Diagnostic):
         """
         data, index = self._prepare_statistic(var=var, season=season)
         reg = xr.cov(index, data, dim=dim)/index.var(dim=dim, skipna=True).values
+        reg.attrs['long_name'] = f'Linear regression of {data.long_name.lower()} with {index.long_name}'
+        reg.attrs['shortName'] = f'linear_regression'
         return reg
 
     def compute_correlation(self, var: str = None,
@@ -77,7 +81,7 @@ class BaseMixin(Diagnostic):
         corr = xr.corr(index, data, dim=dim)
 
         # Modify the attributes to match the correlation
-        corr.attrs['long_name'] = f'Correlation of {data.long_name} with index evaluated with {index.long_name}'
+        corr.attrs['long_name'] = f'Correlation of {data.long_name.lower()} with {index.long_name}'
         corr.attrs['shortName'] = f'Pearson_correlation'
         corr.attrs['units'] = '1'
 
@@ -187,6 +191,8 @@ class PlotBaseMixin():
             self.catalogs = [d.AQUA_catalog for d in self.indexes]
             self.models = [d.AQUA_model for d in self.indexes]
             self.exps = [d.AQUA_exp for d in self.indexes]
+            self.startdate = [pd.to_datetime(d.time[0].values) for d in self.indexes]
+            self.enddate = [pd.to_datetime(d.time[-1].values) for d in self.indexes]
             self.realizations = get_realizations(self.indexes)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
@@ -196,6 +202,8 @@ class PlotBaseMixin():
             self.ref_catalogs = [d.AQUA_catalog for d in self.ref_indexes]
             self.ref_models = [d.AQUA_model for d in self.ref_indexes]
             self.ref_exps = [d.AQUA_exp for d in self.ref_indexes]
+            self.ref_startdate = [pd.to_datetime(d.time[0].values) for d in self.ref_indexes]
+            self.ref_enddate = [pd.to_datetime(d.time[-1].values) for d in self.ref_indexes]
             self.logger.debug(f'Ref Catalogs: {self.ref_catalogs}')
             self.logger.debug(f'Ref Models: {self.ref_models}')
             self.logger.debug(f'Ref Exps: {self.ref_exps}')
@@ -243,10 +251,10 @@ class PlotBaseMixin():
         Returns:
             str: The caption of the figure.
         """
-        description = f"{index_name} index for"
+        description = f"{index_name} index time series for"
 
-        dataset = [f"{self.models[i]} {self.exps[i]}" for i in range(self.len_data)]
-        refs = [f"{self.ref_models[i]} {self.ref_exps[i]}" for i in range(self.len_ref)]
+        dataset = [f"{self.models[i]} {self.exps[i]} (from {time_to_string(self.startdate[i], format='%Y-%m')} to {time_to_string(self.enddate[i], format='%Y-%m')})" for i in range(self.len_data)]
+        refs = [f"{self.ref_models[i]} {self.ref_exps[i]} (from {time_to_string(self.ref_startdate[i], format='%Y-%m')} to {time_to_string(self.ref_enddate[i], format='%Y-%m')})" for i in range(self.len_ref)]
 
         if self.len_data > 0:
             description += f" {', '.join(dataset)}"
@@ -254,7 +262,11 @@ class PlotBaseMixin():
             description += " using reference data from"
             description += f" {', '.join(refs)}"
         description += "."
+        if index_name in ['ENSO', 'Niño 3.4 index']:
+            description += f" El Niño and La Niña events are defined when exceeding a 0.5 °C threshold."
 
+        description = description.replace("ERA5 era5", "ERA5")  # HACK - not necessarily to be ported to main
+        
         self.logger.debug(f'Index description: {description}')
         return description
 
@@ -295,39 +307,42 @@ class PlotBaseMixin():
         Returns:
             str: Description of the maps.
         """
-        description = f"{telecname} {statistic} map "
+        description = ""
 
         maps, ref_maps = _homogeneize_maps(maps=maps, ref_maps=ref_maps)
 
         if isinstance(maps, xr.DataArray):
-            if statistic == 'correlation':
-                var = maps.long_name if hasattr(maps, 'long_name') else maps.shortName
-            else:
-                var = maps.shortName if hasattr(maps, 'shortName') else maps.long_name
-            description += f"({var}) "
-            description += f"{maps.AQUA_model} {maps.AQUA_exp}"
+            var = maps.long_name if hasattr(maps, 'long_name') else maps.shortName
+            description += f"{var} "
+            description += f"for {maps.AQUA_model} {maps.AQUA_exp}"
+            description += f" (from {self.startdate[0].strftime('%Y-%m')} to {self.enddate[0].strftime('%Y-%m')})"
             if hasattr(maps, 'AQUA_season'):
                 description += f" ({maps.AQUA_season})"
         elif isinstance(maps, list):
             var = maps[0].shortName if hasattr(maps[0], 'shortName') else maps[0].long_name
             description += f"({var}) "
             for map in maps:
-                description += f"{map.AQUA_model} {map.AQUA_exp}, "
+                description += f"{map.AQUA_model} {map.AQUA_exp} "
+                description += f" (from {pd.to_datetime(map.time[0].values).strftime('%Y-%m')} to {pd.to_datetime(map.time[-1].values).strftime('%Y-%m')}), "
             description = description[:-2]
             if hasattr(maps[0], 'AQUA_season'):
                 description += f" ({maps[0].AQUA_season})"
         if isinstance(ref_maps, xr.DataArray):
             var = ref_maps.shortName if hasattr(ref_maps, 'shortName') else ref_maps.long_name
             description += f" compared to {ref_maps.AQUA_model} {ref_maps.AQUA_exp}"
+            description += f" (from {self.ref_startdate[0].strftime('%Y-%m')} to {self.ref_enddate[0].strftime('%Y-%m')})"
         elif isinstance(ref_maps, list):
             var = ref_maps[0].shortName if hasattr(ref_maps[0], 'shortName') else ref_maps[0].long_name
             description += f" compared to {ref_maps[0].AQUA_model} {ref_maps[0].AQUA_exp}"
             for map in ref_maps:
-                description += f"{map.AQUA_model} {map.AQUA_exp}, "
+                description += f"{map.AQUA_model} {map.AQUA_exp} "
+                description += f" (from {pd.to_datetime(map.time[0].values).strftime('%Y-%m')} to {pd.to_datetime(map.time[-1].values).strftime('%Y-%m')}), "
             description = description[:-2]
         description += "."
         if ref_maps is not None:
-            description += f" The contour lines are the model regression map and the filled contour map is the difference between the model and the reference {statistic} map."
+            description += f" Contours represent the model {statistic}, while shading is the difference between the model and the reference."
+        description = description.replace("ERA5 era5", "ERA5")  # HACK - not necessarily to be ported to main
+
         self.logger.debug(f'Map description: {description}')
 
         return description
@@ -342,7 +357,7 @@ def _homogeneize_maps(maps, ref_maps=None, var=None):
     Args:
         maps (list or xarray.DataArray): The list of maps or a single map.
         ref_maps (list or xarray.DataArray): The list of reference maps or a single map.
-        var (str, optional): The variable name to pass to the unit conversion. 
+        var (str, optional): The variable name to pass to the unit conversion.
                              If None, inferred from each DataArray.
 
     Returns:

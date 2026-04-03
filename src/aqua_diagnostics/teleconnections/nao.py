@@ -116,6 +116,9 @@ class NAO(BaseMixin):
         # Drop NaNs
         indx = indx.dropna(dim='time')
 
+        indx.attrs['long_name'] = f'{self.telecname} index'
+        indx.attrs['months_window'] = months_window 
+
         self.logger.debug('Index evaluated')
         
         # Save the index in the class

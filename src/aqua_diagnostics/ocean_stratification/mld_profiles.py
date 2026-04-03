@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.path as mpath
 import xarray as xr
 from aqua.logger import log_configure
 from aqua.util import (
@@ -115,6 +116,12 @@ def plot_maps(
     for i in range(len(maps)):
         if cbar_number == "separate":
             vmin, vmax = evaluate_colorbar_limits(maps=maps[i], sym=sym)
+        if not extent:
+            lon_min = float(maps[i].lon.min())
+            lon_max = float(maps[i].lon.max())
+            lat_min = float(maps[i].lat.min())
+            lat_max = float(maps[i].lat.max())
+            extent = [lon_min, lon_max, lat_min, lat_max]
 
         logger.debug("Plotting map %d", i)
         fig, ax = plot_single_map(
@@ -135,11 +142,60 @@ def plot_maps(
             fig=fig,
             loglevel=loglevel,
             ax_pos=(nrows, ncols, i + 1),
-            ticks_rounding=0,
+            gridlines=False,
             **kwargs,
         )
-        ax.set_facecolor("lightgray")
 
+
+        if proj.__class__ == ccrs.Orthographic:
+            theta = np.linspace(0, 2 * np.pi, 100)
+            verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+            circle = mpath.Path(verts * 0.5 + 0.5)
+            ax.set_boundary(circle, transform=ax.transAxes)
+
+            # gl = ax.gridlines(draw_labels=False, linewidth=0.5, color='gray', alpha=0.3)
+            # gl.xlabel_style = {'color': 'gray'}
+            # gl.ylabel_style = {'color': 'gray'}
+
+            # lon_min, lon_max, lat_min, lat_max = extent
+
+            # lat_ticks = np.arange(np.ceil(lat_min/10)*10, lat_max, 10)
+            # lon_ticks = np.arange(np.ceil(lon_min/30)*30, lon_max, 30)
+
+            # for lat in lat_ticks:
+            #     ax.text(lon_min, lat, f"{lat:.0f}°",
+            #             transform=ccrs.PlateCarree(),
+            #             fontsize=8, color='gray', ha='left', va='bottom', zorder=10)
+
+            # is_antarctic = lat_min <= -80  # or however you detect it
+            # is_arctic = lat_max >= 80
+            # for lon in lon_ticks:
+            #     if is_antarctic:
+            #         label_lat = lat_max + 2
+            #     elif is_arctic:
+            #         label_lat = lat_min - 2  # ← place near the outer ring, not below
+            #     else:
+            #         label_lat = lat_min + 2
+            #     ax.text(lon, label_lat, f"{lon:.0f}°",
+            #             transform=ccrs.PlateCarree(),
+            #             fontsize=8, color='gray', ha='center',# va='bottom',
+            #             zorder=10)
+                
+        else:
+            gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.3)
+            gl.xlabel_style = {'color': 'gray'}
+            gl.ylabel_style = {'color': 'gray'}
+
+            gl.top_labels = False
+            gl.right_labels = False
+            if i != 0:
+                gl.left_labels = False
+            else:
+                gl.left_labels = True
+            gl.bottom_labels = True
+
+        
+        ax.set_facecolor("lightgray")
         if ytext:
             logger.debug("Adding text in the plot: %s", ytext[i])
             ax.text(
@@ -205,7 +261,7 @@ def plot_maps(
                 sym=sym,
                 nlevels=nlevels,
                 ticks_rounding=cbar_ticks_rounding,
-                max_ticks=10,
+                max_ticks=5,
                 loglevel=loglevel,
             )
             # cbar.set_ticks([vmin, vmax])
@@ -218,12 +274,12 @@ def plot_maps(
         # else:
         #     cbar.set_ticks(np.linspace(vmin, vmax, nlevels + 1))
 
-        cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
+        # cbar.ax.ticklabel_format(style="sci", axis="x", scilimits=(-3, 3))
 
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 15, y=1.05)
+        fig.suptitle(title, fontsize=ncols * 6, y=1.1)
 
     if return_fig:
         return fig

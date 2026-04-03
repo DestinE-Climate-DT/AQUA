@@ -120,7 +120,13 @@ class PlotTimeseries(PlotBaseMixin):
                 self.short_name = data[0].short_name if hasattr(data[0], 'short_name') else None
                 self.long_name = data[0].long_name if hasattr(data[0], 'long_name') else None
                 self.units = data[0].units if hasattr(data[0], 'units') else None
+                self.startdate = [d.time[0].values for d in data]
+                self.enddate = [d.time[-1].values for d in data]
                 break
+
+        if self.region == 'global':  # if global, we don't want to give it a name. Needed because storyline runs have AQUA:region set
+            self.region = None
+
         self.realizations = get_realizations(self.monthly_data)
         self.logger.debug(f'Catalogs: {self.catalogs}')
         self.logger.debug(f'Models: {self.models}')
@@ -133,6 +139,8 @@ class PlotTimeseries(PlotBaseMixin):
                 self.ref_catalogs = ref.AQUA_catalog
                 self.ref_models = ref.AQUA_model
                 self.ref_exps = ref.AQUA_exp
+                self.ref_startdate = ref.time[0].values
+                self.ref_enddate = ref.time[-1].values
                 self.logger.debug(f'Reference: {self.ref_catalogs} {self.ref_models} {self.ref_exps}')
                 break
 
@@ -162,7 +170,10 @@ class PlotTimeseries(PlotBaseMixin):
         Returns:
             description (str): Caption for the plot.
         """
-        return super().set_description(diagnostic='Time series')
+        description = super().set_description(diagnostic='Time series')
+        #TODO: info on yearly and montlhly data should be controlled if the data are actually plotted
+        description += ' Dashed lines represent yearly data, solid lines represent monthly data.'
+        return description
 
     def plot_timeseries(self, data_labels=None, ref_label=None, title=None):
         """

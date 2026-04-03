@@ -76,7 +76,7 @@ def plot_multivars_vertical_profile(
     # try to make a square figure with a reasonable aspect ratio
     if not nrows and not ncols:
         nrows, ncols = plot_box(len(maps))
-    figsize = figsize if figsize is not None else (ncols * 6, nrows * 5 + 1)
+    figsize = figsize if figsize is not None else (ncols * 6 + 1, nrows * 5 + 1)
     logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
 
     fig = plt.figure(figsize=figsize)
@@ -133,7 +133,7 @@ def plot_multivars_vertical_profile(
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=ncols * 12, y=1.1)
+        fig.suptitle(title, fontsize=ncols * 9, y=1.1)
 
     if return_fig:
         return fig
