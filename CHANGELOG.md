@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.19.11]
 
 AQUA core complete list:
 - Attributes guessing for eccodes works also with local destine table (#2785)
@@ -1267,7 +1272,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.10
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.11
+[v0.19.11]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.10...v0.19.11
 [v0.19.10]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.9...v0.19.10
 [v0.19.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.8...v0.19.9
 [v0.19.8]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.7...v0.19.8
