@@ -131,7 +131,7 @@ class PlotHovmoller:
         self.set_data_for_levels()
         self.set_suptitle(content="Time series")
         self.set_title()
-        self.set_description(content="Time series of temperature (left column) and salinity (right column) at multiple depths spatially averaged")
+        self.set_description(content="Time series of temperature (left column) and salinity (right column) at multiple depths, spatially averaged")
         self.set_data_type()
         self.set_texts()
         self.set_vmax_vmin()
