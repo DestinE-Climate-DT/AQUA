@@ -265,6 +265,8 @@ class PlotBaseMixin():
         if index_name in ['ENSO', 'Niño 3.4 index']:
             description += f" El Niño and La Niña events are defined when exceeding a 0.5 °C threshold."
 
+        description = description.replace("ERA5 era5", "ERA5")  # HACK - not necessarily to be ported to main
+        
         self.logger.debug(f'Index description: {description}')
         return description
 
@@ -339,6 +341,9 @@ class PlotBaseMixin():
         description += "."
         if ref_maps is not None:
             description += f" Contour is the model {statistic}, while shading is the difference between the model and the reference."
+
+        description = description.replace("ERA5 era5", "ERA5")  # HACK - not necessarily to be ported to main
+
         self.logger.debug(f'Map description: {description}')
 
         return description

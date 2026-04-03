@@ -92,6 +92,8 @@ class PlotBoxplots:
                 "and the number indicates the absolute mean value."
             )
 
+        description = description.replace("ERA5 era5", "ERA5")  # HACK for DESP - not necessarily to be ported to main
+
         metadata = {"Description": description}
         extra_keys = {'var': '_'.join(var) if isinstance(var, list) else var}
 
