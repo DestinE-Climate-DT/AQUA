@@ -42,7 +42,7 @@ dependencies:
   - seaborn<=0.13.2
   - smmregrid==0.1.5
   - typeguard<=4.5.1
-  - xarray>=2025.12.0,<=2026.1.0
+  - xarray>=2025.12.0,<=2026.2.0
   - pip
   - pip:
     # pip install -e of AQUA itself
