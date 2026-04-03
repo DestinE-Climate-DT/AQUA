@@ -340,8 +340,7 @@ class PlotBaseMixin():
             description = description[:-2]
         description += "."
         if ref_maps is not None:
-            description += f" Contour is the model {statistic}, while shading is the difference between the model and the reference."
-
+            description += f" Contours represent the model {statistic}, while shading is the difference between the model and the reference."
         description = description.replace("ERA5 era5", "ERA5")  # HACK - not necessarily to be ported to main
 
         self.logger.debug(f'Map description: {description}')
