@@ -381,6 +381,27 @@ class TestDROP:
         assert not os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
+    @pytest.mark.parametrize("create_invalid_file", [False, True])
+    def test_verify_monthly_file_invalid_cases(self, drop_arguments, tmp_path, create_invalid_file):
+        """Test monthly verification fails for missing file and invalid `time` coord."""
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            loglevel=LOGLEVEL,
+        )
+
+        filename = test.get_filename(drop_arguments["var"], 2022, month="01")
+        if create_invalid_file:
+            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["x"], coords={"x": [0]})})
+            ds.to_netcdf(filename)
+
+        is_valid_monthly_file = test._verify_monthly_file(filename, expected_year=2022, expected_month=1)
+        assert is_valid_monthly_file is False
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
     def test_unknown_statistic(self, drop_arguments, tmp_path):
         """Test DROP with an unknown statistic."""
         error = f"Please specify a valid statistic: {available_stats}."
