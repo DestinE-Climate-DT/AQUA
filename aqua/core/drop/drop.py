@@ -536,48 +536,96 @@ class Drop:
         self.logger.info("Removing temporary directory %s", self.tmpdir)
         shutil.rmtree(self.tmpdir)
 
+    def _verify_monthly_file(self, filepath, expected_year, expected_month):
+        """
+        Verify that a single monthly file is complete and has the time
+        coordinate of the expected year and month.
+
+        Args:
+            filepath (str): Path to the monthly NetCDF file.
+            expected_year (int): Year the file should cover.
+            expected_month (int): Month (1-12) the file should cover.
+
+        Returns:
+            bool: True if all checks pass, False otherwise.
+        """
+        if not file_is_complete(filepath, loglevel=self.loglevel):
+            return False
+
+        try:
+            with xr.open_dataset(filepath) as ds:
+                if "time" not in ds.coords or ds.time.size == 0:
+                    raise ValueError("Missing or empty `time` coordinate")
+
+                time_years = ds.time.dt.year.values
+                time_months = ds.time.dt.month.values
+
+                if not (np.all(time_years == expected_year) and np.all(time_months == expected_month)):
+                    raise ValueError(
+                        f"expected {expected_year}-{expected_month:02d}, "
+                        f"found years={np.unique(time_years)}, months={np.unique(time_months)}"
+                    )
+        except Exception as e:
+            self.logger.error("Monthly file %s failed time verification: %s", filepath, e)
+            return False
+
+        return True
+
     def _concat_var_year(self, var, year):
         """
-        To reduce the amount of files concatenate together all the files
-        from the same year
+        To reduce the amount of files, concatenate together all the monthly files
+        from the same year into a single yearly file.
+
+        Args:
+            var (str): variable name
+            year (int): year to concatenate
+        
+        Returns:
+            None: if the concatenation is successful, the function returns None.
         """
+        expected_year = int(year)
+        monthly_files = [self.get_filename(var, year, month=f"{m:02d}") for m in range(1, 13)]
 
-        infiles_pattern = self.get_filename(var, year, month="??")
-        monthly_files = sorted(glob.glob(infiles_pattern))
+        invalid = [f for m, f in enumerate(monthly_files, start=1) if not self._verify_monthly_file(f, expected_year, m)]
+        if invalid:
+            self.logger.error(
+                "Skipping yearly concatenation for %s %s: %d/%d monthly files failed verification: %s",
+                var, year, len(invalid), len(monthly_files), invalid,
+            )
+            return
 
-        if len(monthly_files) == 12:
-            self.logger.info("Creating a single file for %s, year %s...", var, str(year))
-            outfile = self.get_filename(var, year)
-            tmp_outfile = self.get_filename(var, year, tmp=True)
+        self.logger.info("Creating a single file for %s, year %s...", var, str(year))
+        outfile = self.get_filename(var, year)
+        tmp_outfile = self.get_filename(var, year, tmp=True)
 
-            # Move monthly files to tmp for safety
-            for monthly_file in monthly_files:
-                shutil.move(monthly_file, self.tmpdir)
+        # Move monthly files to tmp for safety
+        for monthly_file in monthly_files:
+            shutil.move(monthly_file, self.tmpdir)
 
-            # Clean any existing output files
-            for f in [tmp_outfile, outfile]:
-                if os.path.exists(f):
-                    os.remove(f)
+        # Clean any existing output files
+        for f in [tmp_outfile, outfile]:
+            if os.path.exists(f):
+                os.remove(f)
 
-            # Get the moved files in tmpdir - they keep the same basename
-            tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
+        # Get the moved files in tmpdir - they keep the same basename
+        tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
 
-            # Concatenation with CDO or Xarray
-            if self.compact == "cdo":
-                command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_outfile]
-                self.logger.debug("Using CDO command: %s", command)
-                subprocess.check_output(command, stderr=subprocess.STDOUT)
-            else:
-                self.logger.debug("Using xarray to concatenate files")
-                xfield = xr.open_mfdataset(tmp_monthly_files, combine="by_coords", parallel=True)
-                name = list(xfield.data_vars)[0]
-                xfield.to_netcdf(tmp_outfile, encoding={"time": self.time_encoding, name: self.var_encoding})
+        # Concatenation with CDO or Xarray
+        if self.compact == "cdo":
+            command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_outfile]
+            self.logger.debug("Using CDO command: %s", command)
+            subprocess.check_output(command, stderr=subprocess.STDOUT)
+        else:
+            self.logger.debug("Using xarray to concatenate files")
+            xfield = xr.open_mfdataset(tmp_monthly_files, combine="by_coords", parallel=True)
+            name = list(xfield.data_vars)[0]
+            xfield.to_netcdf(tmp_outfile, encoding={"time": self.time_encoding, name: self.var_encoding})
 
-            # Move back the yearly file and cleanup
-            shutil.move(tmp_outfile, outfile)
-            for tmp_file in tmp_monthly_files:
-                self.logger.info("Cleaning %s...", tmp_file)
-                os.remove(tmp_file)
+        # Move back the yearly file and cleanup
+        shutil.move(tmp_outfile, outfile)
+        for tmp_file in tmp_monthly_files:
+            self.logger.info("Cleaning %s...", tmp_file)
+            os.remove(tmp_file)
 
     def get_filename(self, var, year=None, month=None, tmp=False):
         """Create output filenames"""

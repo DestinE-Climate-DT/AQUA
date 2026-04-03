@@ -350,6 +350,37 @@ class TestDROP:
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
+    def test_concat_var_year_rejects_wrong_month_time(self, drop_arguments, tmp_path):
+        """Test concatenation is rejected if a monthly file has wrong time coordinate."""
+        resolution = "r100"
+        frequency = "monthly"
+        year = 2022
+
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution=resolution,
+            frequency=frequency,
+            loglevel=LOGLEVEL,
+        )
+
+        for month in range(1, 13):
+            mm = f"{month:02d}"
+            filename = test.get_filename(drop_arguments["var"], year, month=mm)
+            # Introduce a mismatch for March: store April's timestamp in the March file.
+            ts = pd.Timestamp(f"{year}-{mm}-01")
+            if month == 3:
+                ts = pd.Timestamp(f"{year}-04-01")
+            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [ts]})})
+            ds.to_netcdf(filename)
+
+        test._concat_var_year(drop_arguments["var"], year)
+        outfile = test.get_filename(drop_arguments["var"], year)
+
+        assert not os.path.exists(outfile)
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
     def test_unknown_statistic(self, drop_arguments, tmp_path):
         """Test DROP with an unknown statistic."""
         error = f"Please specify a valid statistic: {available_stats}."
