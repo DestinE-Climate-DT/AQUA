@@ -96,6 +96,7 @@ class ENSO(BaseMixin):
         data_an = data.groupby('time.month') - data.groupby('time.month').mean(dim='time')
         field_mean_an = data_an.rolling(time=months_window, center=True).mean(skipna=True)
         field_mean_an = field_mean_an.rename('index')
+        field_mean_an.attrs['long_name'] = 'Niño 3.4 index'
 
         self.logger.debug('Index evaluated')
 

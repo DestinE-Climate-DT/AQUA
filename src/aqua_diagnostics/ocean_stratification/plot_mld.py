@@ -2,7 +2,7 @@ import xarray as xr
 from aqua.logger import log_configure
 from aqua.diagnostics.core import OutputSaver
 import cartopy.crs as ccrs
-from aqua.util import cbar_get_label
+from aqua.util import cbar_get_label, time_to_string
 import math
 
 from .mld_profiles import plot_maps
@@ -59,15 +59,22 @@ class PlotMLD:
     def plot_mld(
         self,
         rebuild: bool = True,
+        region: str = None,
+        proj_name: str = "PlateCarree",
+        extent: list = None,
         save_pdf: bool = True,
         save_png: bool = True,
         dpi: int = 300,
     ):
         self.diagnostic_product = "mld"
         self.clim_time = self.data.attrs.get("AQUA_stratification_climatology", "Total")
+        self.region = region if region else self.region
+        self.extent = extent 
         self.data_list = [self.data, self.obs] if self.obs else [self.data]
-        self.set_central_longitude()
+        self.set_central_lat_lon()
+        self.set_proj(proj_name=proj_name)
         self.set_data_map_list()
+        self.set_extent()
         self.set_suptitle()
         self.set_title()
         self.set_description()
@@ -80,7 +87,8 @@ class PlotMLD:
             maps=self.data_map_list,
             nrows=self.nrows,
             ncols=self.ncols,
-            proj=ccrs.PlateCarree(central_longitude=self.central_longitude),
+            proj=self.proj,
+            extent=self.extent,
             title=self.suptitle,
             titles=self.title_list,
             cbar_number="single",
@@ -93,6 +101,7 @@ class PlotMLD:
             vmin=self.vmin,
             nlevels=self.nlevels,
             sym=False,
+            loglevel=self.loglevel,
         )
 
         formats = []
@@ -106,7 +115,7 @@ class PlotMLD:
                            rebuild=rebuild, dpi=dpi, format=format, extra_keys={'region': self.region})
 
     def set_figsize(self):
-        self.figsize = (9 * self.ncols, 8 * self.nrows)
+        self.figsize = (3.5 * self.ncols, 3.5 * self.nrows)
 
         # lon_span = abs(self.data.lon.max() - self.data.lon.min())
         # lat_span = abs(self.data.lat.max() - self.data.lat.min())
@@ -141,10 +150,44 @@ class PlotMLD:
                     else:
                         self.ytext.append(None)
 
-    def set_central_longitude(self):
-        self.central_longitude = self.data.lon.mean().values
-        self.logger.debug(f"Central longitude set to: {self.central_longitude}")
+    def set_extent(self):
+        lonmin = self.data.lon.min().values
+        lonmax = self.data.lon.max().values
 
+        if self.region == "arctic":
+            latmin = 40
+            latmax = 90
+        elif self.region == "antarctic":
+            latmin = -90
+            latmax = -40
+        else:
+            latmin = self.data.lat.min().values
+            latmax = self.data.lat.max().values
+        self.extent = [lonmin, lonmax, latmin, latmax]
+        self.logger.debug(f"Map extent set to: {self.extent}")
+
+    def set_central_lat_lon(self):
+        if self.region == "arctic":
+            self.central_longitude = 0
+            self.central_latitude = 90
+        elif self.region == "antarctic":
+            self.central_longitude = 0
+            self.central_latitude = -90
+        else:
+            self.central_longitude = self.data.lon.mean().values
+            self.central_latitude = self.data.lat.mean().values
+        self.logger.debug(f"Central longitude set to: {self.central_longitude}")
+        self.logger.debug(f"Central latitude set to: {self.central_latitude}")
+
+    def set_proj(self, proj_name: str = "PlateCarree"):
+        if proj_name == "PlateCarree":
+            self.proj = ccrs.PlateCarree(central_longitude=self.central_longitude)
+        elif proj_name == "Orthographic":
+            self.proj = ccrs.Orthographic(central_longitude=self.central_longitude, central_latitude=self.central_latitude)
+        else:
+            raise ValueError(f"Unknown projection name: {proj_name}")
+        self.logger.debug(f"Projection set to: {proj_name}")
+        
     def set_data_map_list(self):
         self.data_map_list = []
         for data in self.data_list:
@@ -207,18 +250,24 @@ class PlotMLD:
 
     def set_cbar_limits(self):
         self.vmin = 0.0
-        if self.obs:
-            self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
+        if self.region=='antarctic':
+            self.vmax = 900    # HACK 800 causes problems in plot due to contourf bug 
         else:
-            self.vmax = self.data["mld"].max()
-        self.vmax = self._round_up(self.vmax)
-        if self.vmax < 200:
-            nlevels = 10
-        elif self.vmax > 1500:
-            nlevels = 100
-        else:
-            nlevels = 50
-        self.nlevels = nlevels
+            self.vmax = 2000
+
+        self.nlevels = 20
+        # if self.obs:
+        #     self.vmax = max(self.obs["mld"].max(), self.obs["mld"].max())
+        # else:
+        #     self.vmax = self.data["mld"].max()
+        # self.vmax = self._round_up(self.vmax)
+        # if self.vmax < 200:
+        #     nlevels = 10
+        # elif self.vmax > 1500:
+        #     nlevels = 100
+        # else:
+        #     nlevels = 50
+        # self.nlevels = nlevels
         self.logger.debug(
             f"Colorbar limits set to vmin: {self.vmin}, vmax: {self.vmax}, nlevels: {self.nlevels}"
         )
@@ -227,7 +276,7 @@ class PlotMLD:
         """Set the title for the MLD plot."""
         if plot_type is None:
             plot_type = ""
-        self.suptitle = f"MLD in {self.region} - {self.clim_time} climatology - {self.catalog} {self.model} {self.exp}"
+        self.suptitle = f"MLD in {self.region.capitalize()} - {self.clim_time} climatology - {self.model} {self.exp}"
         self.logger.debug(f"Suptitle set to: {self.suptitle}")
 
     def set_title(self):
@@ -241,16 +290,26 @@ class PlotMLD:
             for i, var in enumerate(self.vars):
                 # if j == 0:
                 # title = f"{var} ({self.data[var].attrs.get('units')})"
-                title = f"{attrs.get('AQUA_catalog')} {attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
+                title = f"{attrs.get('AQUA_model')} {attrs.get('AQUA_exp')}"
                 self.title_list.append(title)
                 # else:
                 #     self.title_list.append(" ")
         self.logger.debug("Title list set to: %s", self.title_list)
 
     def set_description(self):
-        self.description = f"Mixed layer depth plot of spatially averaged {self.region} region, {self.clim_time} climatology for the {self.catalog} {self.model} {self.exp} experiment"
+        model_startdate = self.data.attrs.get("startdate", None)
+        model_enddate = self.data.attrs.get("enddate", None)    
+        self.description = f"{self.clim_time} climatology of mixed layer depth in the {self.region} region for {self.model} {self.exp}"
+        if model_startdate and model_enddate:
+            self.description += f" (from {time_to_string(model_startdate, format='%Y-%m')} to {time_to_string(model_enddate, format='%Y-%m')})"
         if self.obs:
-            self.description = self.description + (f" with the reference data from {self.obs.attrs['catalog']} {self.obs.attrs['model']} {self.obs.attrs['exp']}")
+            obs_startdate = self.obs.attrs.get("startdate", None)
+            obs_enddate = self.obs.attrs.get("enddate", None)
+            self.description += f" with reference {self.obs.attrs['model']} {self.obs.attrs['exp']}"
+            if obs_startdate and obs_enddate:
+                self.description += f" (from {time_to_string(obs_startdate, format='%Y-%m')} to {time_to_string(obs_enddate, format='%Y-%m')})"
+        
+        self.description += "."
 
     def save_plot(self, fig, diagnostic_product: str = None, extra_keys: dict = None,
                   rebuild: bool = True,

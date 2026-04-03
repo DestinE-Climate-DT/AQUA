@@ -60,7 +60,7 @@ dependencies = [
     "xarray==2025.09.0",
     "kerchunk==0.2.9",
     "fastparquet==2024.11.0",
-    "ECmean4==0.1.15",
+    "ECmean4==0.1.16",
     "pyfdb==0.1.2",
     "gsv-interface==2.13.1",
     "zarr==3.1.3"

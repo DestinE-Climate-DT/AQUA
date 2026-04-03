@@ -19,6 +19,8 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 - ECmean: Enable time selection (#2761)
+- Introduction of different aqua-analysis configuration file to be changed for different simulation type (#2747)
+- Complete refactor of dashboard look by improving description, title and figures (#2747)
 
 ## [v0.19.10]
 

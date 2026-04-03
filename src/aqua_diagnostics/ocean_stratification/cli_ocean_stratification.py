@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     startdate = config_dict["datasets"][0].get("startdate", None)
     enddate = config_dict["datasets"][0].get("enddate", None)
-
+    
     if config_dict["references"]:
         references = config_dict["references"]
         logger.info(f"References found: {references}")
@@ -77,6 +77,9 @@ if __name__ == "__main__":
         exp_ref = references[0].get("exp", None)
         source_ref = references[0].get("source", None)
         regrid_ref = references[0].get("regrid", None)
+        obs_startdate = references[0].get("startdate", None)
+        obs_enddate = references[0].get("enddate", None)
+
         # realization_ref = references[0].get('realization', None)
         # if realization_ref:
         #     reader_kwargs_ref = {'realization': realization_ref}
@@ -125,7 +128,7 @@ if __name__ == "__main__":
                         region=region,
                         var=var,
                         dim_mean=dim_mean,
-                        mld=True,
+                        mld=False,
                         climatology=climatology,
                         outputdir=outputdir,
                         reader_kwargs=reader_kwargs,
@@ -145,6 +148,8 @@ if __name__ == "__main__":
                                 source=source_ref,
                                 regrid=regrid_ref,
                                 loglevel=loglevel,
+                                startdate=obs_startdate,
+                                enddate=obs_enddate,
                             )
                             obs_stratification.run(
                                 region=region,
@@ -172,6 +177,22 @@ if __name__ == "__main__":
                     strat_plot.plot_stratification(
                         save_pdf=save_pdf, save_png=save_png, dpi=dpi
                     )
+    if "mld" in config_dict["diagnostics"]["ocean_stratification"]:
+        mld_config = config_dict["diagnostics"]["ocean_stratification"][
+            "mld"
+        ]
+        logger.info(
+            f"Mixed Layer Depth diagnostic is set to {mld_config['run']}"
+        )
+        if mld_config["run"]:
+            regions = to_list(mld_config.get("regions", None))
+            diagnostic_name = mld_config.get(
+                "diagnostic_name", "ocean_stratification"
+            )
+            climatologies = mld_config.get("climatology", None)
+            for region, climatology in zip(regions, climatologies):
+                    logger.info(f"Processing region: {region}, climatology: {climatology}")
+                    var = mld_config.get("var", None)
                     # Mixed Layer Depth instance
                     # Model data
                     model_stratification = Stratification(
@@ -186,7 +207,7 @@ if __name__ == "__main__":
                         loglevel=loglevel,
                     )
                     model_stratification.run(
-                        region=region,
+                        region='go',
                         var=var,
                         # dim_mean=dim_mean,
                         mld=True,
@@ -208,10 +229,12 @@ if __name__ == "__main__":
                                 exp=exp_ref,
                                 source=source_ref,
                                 regrid=regrid_ref,
+                                startdate=obs_startdate,
+                                enddate=obs_enddate,
                                 loglevel=loglevel,
                             )
                             obs_stratification.run(
-                                region=region,
+                                region='go',
                                 var=var,
                                 # dim_mean=dim_mean,
                                 mld=True,
@@ -233,7 +256,10 @@ if __name__ == "__main__":
                         outputdir=outputdir,
                         loglevel=loglevel,
                     )
-                    mld_plot.plot_mld(save_pdf=save_pdf, save_png=save_png, dpi=dpi)
+                    mld_plot.plot_mld(
+                        region=region,
+                        proj_name="Orthographic",
+                        save_pdf=save_pdf, save_png=save_png, dpi=dpi)
 
         close_cluster(client=client, cluster=cluster, private_cluster=private_cluster, loglevel=loglevel)
 

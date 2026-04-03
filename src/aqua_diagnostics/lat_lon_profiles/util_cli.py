@@ -3,9 +3,10 @@
 from aqua.diagnostics.lat_lon_profiles import LatLonProfiles, PlotLatLonProfiles
 from aqua.logger import log_configure
 
+
 def load_var_config(config_dict, var, diagnostic='lat_lon_profiles'):
     """Load variable configuration from config dictionary.
-    
+
     Args:
         config_dict (dict): Configuration dictionary.
         var (str or dict): Variable name or variable configuration dictionary.
@@ -14,23 +15,32 @@ def load_var_config(config_dict, var, diagnostic='lat_lon_profiles'):
     Returns:
         tuple: Variable configuration dictionary and list of regions.
     """
+    params = config_dict['diagnostics'][diagnostic].get('params', {})
+    default_params = params.get('default', {})
+
     if isinstance(var, dict):
         var_name = var.get('name')
-        var_config = var
+        # Merge precedence: params.default < params.<var_name> < inline var config
+        var_specific = params.get(var_name, {}) if var_name else {}
+        var_config = {**default_params, **var_specific, **var}
     else:
         var_name = var
-        var_config = config_dict['diagnostics'][diagnostic].get('params', {}).get(var_name, {})
-    
+        var_specific = params.get(var_name, {})
+        # Merge precedence: params.default < params.<var_name>
+        var_config = {**default_params, **var_specific}
+        var_config.setdefault('name', var_name)
+
     # Get regions
     regions = var_config.get('regions', [None])
-    
+
     return var_config, regions
 
+
 def _create_profile(catalog, model, exp, source, regrid, startdate, enddate,
-                   region, mean_type, diagnostic_name, loglevel):
+                    std_startdate, std_enddate, region, mean_type,
+                    diagnostic_name, loglevel):
     """
     Internal helper to create a LatLonProfiles object.
-    
     This consolidates the initialization logic used by both regular datasets
     and reference datasets.
     """
@@ -42,6 +52,8 @@ def _create_profile(catalog, model, exp, source, regrid, startdate, enddate,
         'regrid': regrid,
         'startdate': startdate,
         'enddate': enddate,
+        'std_startdate': std_startdate,
+        'std_enddate': std_enddate,
         'region': region,
         'mean_type': mean_type,
         'diagnostic_name': diagnostic_name,
@@ -50,14 +62,11 @@ def _create_profile(catalog, model, exp, source, regrid, startdate, enddate,
     return LatLonProfiles(**init_args)
 
 
-
-
-
-
 def process_dataset(dataset, var_name, var_units, var_long_name, var_standard_name,
-                   region, mean_type, diagnostic_name, regrid, freq, compute_std,
-                   exclude_incomplete, center_time, box_brd, outputdir, rebuild,
-                   reader_kwargs, loglevel, formula=False, is_reference=False):
+                    region, mean_type, diagnostic_name, regrid, freq, compute_std,
+                    exclude_incomplete, center_time, box_brd, outputdir, rebuild,
+                    reader_kwargs, loglevel, formula=False, is_reference=False,
+                    std_startdate=None, std_enddate=None):
     """
     Process a single dataset for LatLonProfiles CLI.
 
@@ -82,21 +91,26 @@ def process_dataset(dataset, var_name, var_units, var_long_name, var_standard_na
         loglevel (int): Logging level.
         formula (bool): Whether processing a formula (True) or variable (False).
         is_reference (bool): Whether this is a reference dataset.
-    
+
     Returns:
         LatLonProfiles: The processed profile object.
     """
     logger = log_configure(log_level=loglevel, log_name='LatLonProfiles CLI')
     logger.info(f'Processing {"reference" if is_reference else "dataset"}: {dataset}')
-    
     # Handle reference vs regular dataset startdate/enddate
     if is_reference:
-        startdate = dataset.get('std_startdate')
-        enddate = dataset.get('std_enddate')
+        startdate = dataset.get('std_startdate') or dataset.get('startdate')
+        enddate = dataset.get('std_enddate') or dataset.get('enddate')
     else:
         startdate = dataset.get('startdate')
         enddate = dataset.get('enddate')
-    
+
+    # Resolve std period with precedence: dataset value > variable/default params.
+    # This allows std_startdate/std_enddate defined in diagnostics.params.default
+    # to be propagated even when not repeated under datasets/references.
+    dataset_std_start = dataset.get('std_startdate') or std_startdate
+    dataset_std_end = dataset.get('std_enddate') or std_enddate
+
     # Create profile object
     profile = _create_profile(
         catalog=dataset['catalog'],
@@ -106,12 +120,14 @@ def process_dataset(dataset, var_name, var_units, var_long_name, var_standard_na
         regrid=regrid if regrid is not None else dataset.get('regrid', None),
         startdate=startdate,
         enddate=enddate,
+        std_startdate=dataset_std_start,
+        std_enddate=dataset_std_end,
         region=region,
         mean_type=mean_type,
         diagnostic_name=diagnostic_name,
         loglevel=loglevel
     )
-    
+
     # Run the diagnostic
     run_args = {
         'var': var_name,
@@ -128,16 +144,17 @@ def process_dataset(dataset, var_name, var_units, var_long_name, var_standard_na
         'rebuild': rebuild,
         'reader_kwargs': dataset.get('reader_kwargs') or reader_kwargs
     }
-    
+
     profile.run(**run_args)
     return profile
-    
-def _create_single_plot(plot_type, data_list, ref_data, ref_std_data, 
-                       save_pdf, save_png, outputdir, rebuild, dpi, 
-                       diagnostic_name, loglevel):
+
+
+def _create_single_plot(plot_type, data_list, ref_data, ref_std_data,
+                        save_pdf, save_png, outputdir, rebuild, dpi,
+                        diagnostic_name, loglevel):
     """
     Internal helper to create and save a single plot.
-    
+
     Args:
         plot_type (str): Either 'longterm' or 'seasonal'
         data_list (list or list of lists): Data to plot
@@ -159,9 +176,8 @@ def _create_single_plot(plot_type, data_list, ref_data, ref_std_data,
         'diagnostic_name': diagnostic_name,
         'loglevel': loglevel
     }
-    
+
     plot_obj = PlotLatLonProfiles(**plot_args)
-    
     if save_pdf:
         plot_obj.run(outputdir=outputdir, rebuild=rebuild, dpi=dpi, format='pdf', style=None)
     if save_png:
@@ -169,11 +185,11 @@ def _create_single_plot(plot_type, data_list, ref_data, ref_std_data,
 
 
 def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, compute_seasonal,
-                         save_pdf, save_png, outputdir, rebuild, dpi, 
-                         diagnostic_name, loglevel):
+                          save_pdf, save_png, outputdir, rebuild, dpi,
+                          diagnostic_name, loglevel):
     """
     Create and save plots for LatLonProfiles CLI.
-    
+
     Args:
         profiles (list): List of LatLonProfiles objects
         profile_ref (LatLonProfiles or None): Reference profile object
@@ -190,13 +206,10 @@ def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, com
     """
     logger = log_configure(log_level=loglevel, log_name='LatLonProfiles CLI')
     logger.info(f"Plotting LatLonProfiles diagnostic for {var_name}")
-    
     # Plot longterm (annual mean) if enabled and computed
     if compute_longterm and hasattr(profiles[0], 'longterm'):
         logger.info("Creating longterm (annual) plot")
-        
         longterm_data = [profile.longterm for profile in profiles]
-        
         _create_single_plot(
             plot_type='longterm',
             data_list=longterm_data,
@@ -214,20 +227,17 @@ def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, com
     # Plot seasonal (4-panel) if enabled and computed
     if compute_seasonal and hasattr(profiles[0], 'seasonal'):
         logger.info("Creating seasonal (4-panel) plot")
-        
         # Prepare seasonal data for all 4 seasons
         combined_seasonal_data = []
         combined_ref_data = []
         combined_ref_std_data = []
-        
         for season_idx in range(4):  # DJF, MAM, JJA, SON
             season_data = [profile.seasonal[season_idx] for profile in profiles]
             combined_seasonal_data.append(season_data)
-            
             if profile_ref:
                 combined_ref_data.append(profile_ref.seasonal[season_idx])
                 combined_ref_std_data.append(profile_ref.std_seasonal[season_idx])
-        
+
         _create_single_plot(
             plot_type='seasonal',
             data_list=combined_seasonal_data,
@@ -242,30 +252,30 @@ def create_and_save_plots(profiles, profile_ref, var_name, compute_longterm, com
             loglevel=loglevel
         )
 
-def process_variable_or_formula(config_dict, var_config, regions, datasets, 
-                                mean_type, diagnostic_name, regrid, freq, 
-                                compute_std, exclude_incomplete, center_time, 
-                                box_brd, outputdir, rebuild, reader_kwargs, 
-                                save_pdf, save_png, dpi, compute_longterm, 
+
+def process_variable_or_formula(config_dict, var_config, regions, datasets,
+                                mean_type, diagnostic_name, regrid, freq,
+                                compute_std, exclude_incomplete, center_time,
+                                box_brd, outputdir, rebuild, reader_kwargs,
+                                save_pdf, save_png, dpi, compute_longterm,
                                 compute_seasonal, loglevel, formula=False):
     """
-    Process a variable or formula for all datasets and regions.
-    
-    This is the main orchestrator function that:
+    Process a variable or formula for all datasets and regions. This function:
     1. Processes all datasets
     2. Processes reference data (if available)
     3. Creates and saves plots
     """
     logger = log_configure(log_level=loglevel, log_name='LatLonProfiles CLI')
-    
+
     var_name = var_config.get('name')
     var_units = var_config.get('units', None)
     var_long_name = var_config.get('long_name', None)
     var_standard_name = var_config.get('standard_name', None)
+    std_startdate = var_config.get('std_startdate', None)
+    std_enddate = var_config.get('std_enddate', None)
     var_type = 'formula' if formula else 'variable'
-    
     logger.info(f"Running LatLonProfiles diagnostic for {var_type} '{var_name}' with mean_type={mean_type}")
-    
+
     for region in regions:
         try:
             logger.info(f"Running in region {region if region else 'global'}")
@@ -292,7 +302,9 @@ def process_variable_or_formula(config_dict, var_config, regions, datasets,
                     reader_kwargs=reader_kwargs,
                     loglevel=loglevel,
                     formula=formula,
-                    is_reference=False
+                    is_reference=False,
+                    std_startdate=std_startdate,
+                    std_enddate=std_enddate
                 )
                 for dataset in datasets
             ]
@@ -320,7 +332,9 @@ def process_variable_or_formula(config_dict, var_config, regions, datasets,
                     reader_kwargs={},
                     loglevel=loglevel,
                     formula=False,  # Reference is always a variable
-                    is_reference=True
+                    is_reference=True,
+                    std_startdate=std_startdate,
+                    std_enddate=std_enddate
                 )
 
             # Create plots
