@@ -17,7 +17,7 @@ dependencies:
   - cartopy_offlinedata # this is needed for MN5 HPC
   - netcdf4<=1.7.2
   - hdf5<=1.14.6
-  - h5py>=3.12.1,<=3.15.1
+  - h5py>=3.12.1,<=3.16.0
   - imagemagick
   # python
   - boto3<=1.42.63
