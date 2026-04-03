@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- push_analysis deal with missing experiments.yaml file (#2792)
 - Apply ruff formatting to the codebase (#2791)
 - Add pre-commit hooks and ruff linting (#2786)
 - Fix area selection, `default_coords` are deduced from the dataset (#2768)
