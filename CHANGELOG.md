@@ -18,6 +18,7 @@ AQUA core complete list:
 - Add specifc v019 weights name to avoid conflicts with more recent smmregrid version (#2755)
 
 AQUA diagnostics complete list:
+- Seaice: validate potential missing months in input data to be plotted in bias maps (#2696)
 - ECmean: Enable time selection (#2761)
 - Introduction of different aqua-analysis configuration file to be changed for different simulation type (#2747)
 - Complete refactor of dashboard look by improving description, title and figures (#2747)

@@ -4,6 +4,7 @@ import xarray as xr
 import cartopy.crs as ccrs
 import matplotlib.colors as mcolors
 from matplotlib import pyplot as plt
+from aqua.core.exceptions import NotEnoughDataError
 from aqua.diagnostics.core import OutputSaver
 from aqua.graphics import plot_single_map, plot_single_map_diff, plot_maps
 from aqua.logger import log_configure, log_history
@@ -123,6 +124,11 @@ class Plot2DSeaIce:
 
         reg_ref = self.reg_ref[0]
         reg_models = [da for da in self.reg_models if da is not None]
+
+        # Ensure all requested months are present in reference and model data
+        self._check_months_available(reg_ref, "reference data")
+        for reg_mod in reg_models:
+            self._check_months_available(reg_mod, "model data")
 
         self.proj = get_projection(self.projname, **self._set_projpars())
 
@@ -248,6 +254,9 @@ class Plot2DSeaIce:
             **kwargs: Additional plotting arguments
         """
         self.logger.info(f"Processing {data_type} data: {datarr.name}")
+
+        # Ensure all requested months are present in the dataset
+        self._check_months_available(datarr, f"{data_type} data")
 
         nrows, ncols = plot_box(num_plots=len(self.months))
         fig = plt.figure(figsize=(ncols * 4.5, nrows * 4))
@@ -469,6 +478,20 @@ class Plot2DSeaIce:
         elif self.method == 'fraction':
             mask = (lat >= -45) & (lat <= 40)
             return datarr.where(~mask, 0) # overwrite NaNs
+
+    def _check_months_available(self, datarr, data_label: str):
+        """
+        Ensure all requested months are present in the given DataArray.
+
+        Raises a NotEnoughDataError if any requested month is missing.
+        """
+        if 'month' not in datarr.coords:
+            raise NotEnoughDataError(f"'month' coordinate missing in {data_label}.")
+
+        available = set(int(m) for m in datarr.coords['month'].values)
+        missing = [m for m in self.months if m not in available]
+        if missing:
+            raise NotEnoughDataError(f"Months {missing} missing in {data_label}. Available months: {sorted(available)}")
 
     def _handle_data(self, datain) -> list | None:
         """
