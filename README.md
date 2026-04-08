@@ -1,9 +1,10 @@
 ![maintenance-status](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
-[![PyPI](https://img.shields.io/pypi/v/aqua-core?style=flat)](https://pypi.org/project/aqua-core/)
 [![Tests](https://github.com/DestinE-Climate-DT/AQUA/actions/workflows/aqua.yml/badge.svg)](https://github.com/DestinE-Climate-DT/AQUA/actions/workflows/aqua.yml)
-[![Documentation](https://readthedocs.org/projects/aqua/badge/?version=latest)](https://aqua.readthedocs.io/en/latest/)
 [![Coverage](https://codecov.io/gh/DestinE-Climate-DT/AQUA/graph/badge.svg?token=E9D0A8SWIU)](https://codecov.io/gh/DestinE-Climate-DT/AQUA)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
+[![Documentation](https://readthedocs.org/projects/aqua/badge/?version=latest)](https://aqua.readthedocs.io/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/aqua-core?style=flat)](https://pypi.org/project/aqua-core/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14906075.svg)](https://doi.org/10.5281/zenodo.14906075)
 
 
