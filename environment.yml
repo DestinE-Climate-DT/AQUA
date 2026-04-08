@@ -10,7 +10,7 @@ channels:
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   # binaries
-  - python>=3.10,<3.13
+  - python>=3.10,<3.15.0
   - cdo>=2.5.0 #for smmregrid compatibility
   - eccodes==2.41.0
   - cartopy>=0.24.1,<=0.25.0
