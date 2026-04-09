@@ -3,6 +3,7 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
+        exclude: '(\.md$|^Makefile$)'
     -   id: end-of-file-fixer
     -   id: check-yaml
 -   repo: https://github.com/astral-sh/ruff-pre-commit

@@ -87,7 +87,7 @@ tests = [
     "pytest-xdist",
     "coverage",
     "cdo",
-    "ruff"
+    "ruff==0.15.6"
 ]
 precommit = [
     "pre-commit"
@@ -153,12 +153,12 @@ target-version = "py310"
 exclude = ["**/__init__.py"]
 
 [tool.ruff.lint]
-# Imports sorted (I), standard PEP8 (E, F, W, N) only. No "Q".
+# Imports sorted (I), standard PEP8 (E, F, W, N) only.
 select = ["E", "F", "I", "W", "N"]
 # Add specific ignores here
 ignore = [
-    "N816", # Allow var name such as: data_DJF
-    "E741", # Allow ambiguous names such as: l, d, etc.
+    "N816",
+    "E741",
 ]
 [tool.ruff.lint.isort]
 known-first-party = ["aqua"]
