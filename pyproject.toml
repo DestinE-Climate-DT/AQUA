@@ -87,7 +87,7 @@ tests = [
     "pytest-xdist",
     "coverage",
     "cdo",
-    "ruff==0.15.6"
+    "ruff==0.15.10"
 ]
 precommit = [
     "pre-commit"
