@@ -19,12 +19,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Ruff
-        # Pin to the same version used in .pre-commit-config.yaml
-        run: pip install ruff==0.15.6
+      - name: Install pre-commit
+        run: pip install pre-commit
 
-      - name: Run Ruff linter
-        run: ruff check . --no-cache
-
-      - name: Run Ruff formatter check
-        run: ruff format --check . --no-cache
+      - name: Run Ruff hooks from pre-commit config
+        run: |
+          pre-commit run ruff-check --all-files
+          pre-commit run ruff-format --all-files
