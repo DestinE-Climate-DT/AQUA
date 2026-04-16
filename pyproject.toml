@@ -73,7 +73,6 @@ fdb = [
     "pyfdb",
     "gsv-interface==2.13.1"
 ]
-
 docs = [
     "sphinx",
     "sphinx-rtd-theme"

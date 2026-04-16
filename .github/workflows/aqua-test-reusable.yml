@@ -38,6 +38,16 @@ on:
         required: false
         type: string
         default: ''
+      container-image:
+        description: 'Container image to use (empty string = ubuntu-latest, default = FDB container)'
+        required: false
+        type: string
+        default: 'ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container'
+      enable-fdb:
+        description: 'Enable FDB dependencies and setup'
+        required: false
+        type: boolean
+        default: true
     secrets:
       AQUA_GITHUB_PAT:
         required: true
@@ -173,6 +183,15 @@ jobs:
             python=${{ matrix.python-version }}
 
       # ========================================
+      # 3.5 REINSTALL AQUA (local mode without FDB)
+      # ========================================
+      - name: Reinstall AQUA without FDB dependencies (local mode)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+        run: |
+          cd AQUA
+          python -m pip install -e ".[tests]" --force-reinstall --no-deps
+
+      # ========================================
       # 4. LINTING
       # ========================================
       - name: Install pre-commit
@@ -232,6 +251,7 @@ jobs:
       # 7. SETUP FDB
       # ========================================
       - name: Set up FDB
+        if: ${{ inputs.enable-fdb == true }}
         run: |
           # FDB for GSV
           rm -rf /app/

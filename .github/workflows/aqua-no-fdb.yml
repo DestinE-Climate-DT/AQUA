@@ -1,0 +1,66 @@
+name: AQUA tests (without FDB)
+# Quick test pipeline without FDB dependencies
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  # Run tests only when specific conditions are met
+  check-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check if tests should run
+        id: check
+        run: |
+          # Run tests if:
+          # 1) PR has label "run tests" or "ready to merge"
+          # 2) Triggered by Dependabot
+          # 3) Triggered manually (workflow_dispatch)
+          # 4) Triggered by schedule
+          # 5) Pushed to main branch
+          SHOULD_RUN="false"
+
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+             [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            SHOULD_RUN="true"
+          fi
+
+          echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
+
+  # Call the reusable workflow without FDB
+  aqua-no-fdb-tests:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should-run == 'true'
+    uses: ./.github/workflows/aqua-test-reusable.yml
+    with:
+      python-versions: '["3.12"]'
+      pytest-markers: 'aqua or slow or graphics or catgen'
+      enable-parallel: true
+      enable-coverage: true
+      fail-fast: false
+      enable-fdb: false
+    secrets:
+      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
+      BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
