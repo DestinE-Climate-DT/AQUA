@@ -2,10 +2,19 @@ repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+    -   id: check-added-large-files
+        name: No large Files
+        description: Checks that you did not unconsciously upload some enormous file
     -   id: trailing-whitespace
+        name: Trim trailing Whitespaces
+        description: Trailing whitespaces are trimmed
         exclude: '(\.md$|^Makefile$)'
     -   id: end-of-file-fixer
+        name: Fix End of File
+        description: Ensures that files end with a newline
     -   id: check-yaml
+        name: Check YAML
+        description: Checks that YAML files are valid
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.10
     hooks:

@@ -86,16 +86,17 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo",
-    "ruff==0.15.10"
+    "cdo"
 ]
-precommit = [
-    "pre-commit"
+style = [
+    "pre-commit",
+    "ruff==0.15.10"
 ]
 all = [
     "aqua-core[docs]",
     "aqua-core[notebooks]",
-    "aqua-core[tests]"
+    "aqua-core[tests]",
+    "aqua-core[style]"
 ]
 
 [project.scripts]
