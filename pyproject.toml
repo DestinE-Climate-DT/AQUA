@@ -66,12 +66,14 @@ dependencies = [
     "typeguard",
     "xarray>=2025.12.0",
     "zarr<=3.1.5",
-    # not available on conda
-    "pyfdb", #to be pinned when doing operational release
-    "gsv-interface==2.13.1"
 ]
 
 [project.optional-dependencies]
+fdb = [
+    "pyfdb",
+    "gsv-interface==2.13.1"
+]
+
 docs = [
     "sphinx",
     "sphinx-rtd-theme"
@@ -96,7 +98,8 @@ all = [
     "aqua-core[docs]",
     "aqua-core[notebooks]",
     "aqua-core[tests]",
-    "aqua-core[style]"
+    "aqua-core[style]",
+    "aqua-core[fdb]"
 ]
 
 [project.scripts]
