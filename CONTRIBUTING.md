@@ -65,13 +65,23 @@ Do not merge your Pull Request yourself, it will be merged by the AQUA team.
 
 Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository. Please use the `improvements` label for existing features and the `enhancement` label for new features.
 
-### Coding style checks with Ruff and pre-commit in a Pull Request
+### Coding style checks with ruff and pre-commit in a Pull Request
 
-This project uses pre-commit hooks and Ruff as linter and formatter to enforce the coding style.
+This project uses pre-commit hooks and ruff as linter and formatter to enforce the coding style.
 The coding style is defined by the `pyproject.toml` file and the `pre-commit` configuration file in `.pre-commit-config.yaml`.
 
-The pre-commit and Ruff dependencies are installed automatically when setting up
+The pre-commit and ruff dependencies are installed automatically when setting up
 the dev environment through the `environment-dev.yml` file.
+The pre-commit configuration enforces two groups of checks:
+
+- **General file cleaning hooks** from `pre-commit-hooks`: large-file check, trailing whitespace trimming (except `.md` and `Makefile`), end-of-file newline fix, YAML validation, and overall Python syntax validation.
+- **Ruff hooks**: `ruff-check` and `ruff-format`.
+
+Ruff has two complementary roles in this workflow:
+
+- `ruff check` runs linting rules and reports code-quality/style violations; with `--fix` (and optionally `--unsafe-fixes`) it can also auto-fix part of them.
+- `ruff format` only applies formatting (layout/style normalization), similar to a code formatter, without running lint-rule diagnostics.
+
 To check and align code changes introduced in a PR with the coding style, developers can choose between the following options:
 
 1. [Recommended option] Use `pre-commit` hooks to check and align code changes at commit time.
@@ -107,10 +117,10 @@ pre-commit run --files <file_or_folder_to_target>
 
 Side note:
 During the manual run of the pre-commit hooks, some errors can be fixed automatically
-by Ruff. However, in some cases, Ruff may require the extra flag `--unsafe-fixes`.
-This flag allows Ruff to apply fixes that might change the behavior of your code, even when it is not safe to do so.  
+by ruff. However, in some cases, ruff may require the extra flag `--unsafe-fixes`.
+This flag allows ruff to apply fixes that might change the behavior of your code, even when it is not safe to do so.  
 Use it with caution and review the diff!
-To run manually Ruff linter with the `--unsafe-fixes` flag:
+To run manually ruff linter with the `--unsafe-fixes` flag:
 ```bash
 ruff check --fix <file_or_folder_to_target> --no-cache --unsafe-fixes
 ```
