@@ -170,18 +170,20 @@ class CatalogEntryBuilder:
         if driver == "netcdf":
             catblock["args"]["xarray_kwargs"] = {"decode_times": True, "combine": "by_coords"}
 
-            # Jinja parameters to be replaced in the urlpath
-            jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
+        elif driver == "zarr":
+            # Support multi-zarr annual files (mirroring NetCDF)
+            catblock["args"]["xarray_kwargs"] = {
+                "engine": "zarr",
+                "combine": "by_coords",
+                "consolidated": False
+            }
+        
+        # Jinja parameters to be replaced in the urlpath
+        jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
 
-            # Apply replacements
-            for param_name, param_value in jinja_params.items():
-                catblock = replace_urlpath_jinja(catblock, param_value, param_name)
-                self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock["args"]["urlpath"])
-
-            # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
-            # catblock['args']['urlpath'] = (
-            #     catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str)
-            #     else list(set(catblock['args']['urlpath']))
-            # )
+        # Apply replacements
+        for param_name, param_value in jinja_params.items():
+            catblock = replace_urlpath_jinja(catblock, param_value, param_name)
+            self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock["args"]["urlpath"])
 
         return catblock

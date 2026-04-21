@@ -396,12 +396,12 @@ class TestDROP:
         test.data = test.data.sel(time=slice("2020-01", "2020-03"))
         test.drop_generator()
 
-        # Check zarr store exists
+        # Check zarr store exists (yearly pattern)
         zarr_store = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t.zarr",
+            "2t_2020.zarr",
         )
         assert os.path.isdir(zarr_store), f"Zarr store not found: {zarr_store}"
 
@@ -436,7 +436,7 @@ class TestDROP:
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t.zarr",
+            "2t_2020.zarr",
         )
         assert os.path.isdir(zarr_store)
 

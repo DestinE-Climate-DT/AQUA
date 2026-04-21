@@ -478,6 +478,8 @@ class Drop:
                 chunks=self.zarr_chunks,
                 compressor="auto",
                 consolidate=self.zarr_consolidate,
+                dask_client=self.client,
+                performance_reporting=self.performance_reporting,
                 loglevel=self.loglevel,
             )
             self.logger.info("Using Zarr writer (consolidate=%s)", self.zarr_consolidate)

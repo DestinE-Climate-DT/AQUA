@@ -7,6 +7,7 @@ and metadata consolidation. Optimized for large time-series datasets.
 Requires Zarr v3+.
 """
 
+import glob
 import os
 import shutil
 from time import time
@@ -15,7 +16,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
+from dask.diagnostics import ProgressBar
+from dask.distributed import progress
+from dask.distributed.diagnostics import MemorySampler
 
+from aqua.core.drop.drop_util import move_tmp_files
 from aqua.core.logger import log_configure
 
 
@@ -26,7 +31,17 @@ class ZarrWriter:
     Uses atomic two-phase writes and consolidates metadata for efficient reads.
     """
 
-    def __init__(self, tmpdir, outdir, chunks=None, compressor="auto", consolidate=False, loglevel="WARNING"):
+    def __init__(
+        self,
+        tmpdir,
+        outdir,
+        chunks=None,
+        compressor="auto",
+        consolidate=False,
+        dask_client=None,
+        performance_reporting=False,
+        loglevel="WARNING",
+    ):
         """
         Initialize Zarr writer.
 
@@ -36,6 +51,8 @@ class ZarrWriter:
             chunks: Dict of chunk sizes (e.g. {'time': 1, 'lat': None, 'lon': None})
             compressor: 'auto' for Blosc/zstd or custom numcodecs compressor
             consolidate: Whether to consolidate metadata on finalize (default: False)
+            dask_client: Dask client for distributed computing
+            performance_reporting: Enable performance reporting
             loglevel: Logging level
         """
         self.tmpdir = tmpdir
@@ -43,6 +60,8 @@ class ZarrWriter:
         self.chunks = chunks or {"time": 1, "lat": None, "lon": None}
         self.compressor = compressor
         self.consolidate_on_finalize = consolidate
+        self.dask_client = dask_client
+        self.performance_reporting = performance_reporting
         self.logger = log_configure(loglevel, "ZarrWriter")
         self.stores_written = set()  # Track stores for finalization
 
@@ -133,15 +152,91 @@ class ZarrWriter:
 
         return encoding or None
 
+    def write_monthly_chunk(self, data, var, year, month):
+        """
+        Write a single monthly zarr store (mirroring NetCDF monthly files).
+
+        Args:
+            data: xarray Dataset/DataArray for one month
+            var: Variable name
+            year: Year
+            month: Month
+
+        Returns:
+            bool: True if write successful
+        """
+        # Monthly store naming
+        monthly_store_name = f"{var}_{year}{month:02d}_monthly.zarr"
+        monthly_store_path = os.path.join(self.tmpdir, monthly_store_name)
+        
+        # Check if monthly store already exists (recovery scenario)
+        if os.path.exists(monthly_store_path):
+            valid, _ = self.validate(monthly_store_path)
+            if valid:
+                self.logger.info("Monthly store %s already exists and is valid, skipping...", monthly_store_name)
+                return True
+            else:
+                self.logger.warning("Invalid monthly store %s, recreating...", monthly_store_name)
+                shutil.rmtree(monthly_store_path)
+        
+        # Convert DataArray to Dataset if needed
+        if isinstance(data, xr.DataArray):
+            var_name = data.name or "data"
+            data = data.to_dataset(name=var_name)
+
+        # Compute data with performance monitoring
+        if self.dask_client is not None:
+            self.logger.info("Computing data with Dask monitoring...")
+            if self.performance_reporting:
+                job = data.persist()
+                progress(job)
+                data = job.compute()
+            else:
+                ms = MemorySampler()
+                with ms.sample("chunk"):
+                    job = data.persist()
+                    progress(job)
+                    data = job.compute()
+                array_data = np.array(ms.samples["chunk"])
+                avg_mem = np.mean(array_data[:, 1]) / 1e9
+                max_mem = np.max(array_data[:, 1]) / 1e9
+                self.logger.info("Avg memory used: %.2f GiB, Peak memory used: %.2f GiB", avg_mem, max_mem)
+        else:
+            if hasattr(data, "compute"):
+                with ProgressBar():
+                    data = data.compute()
+
+        # Write monthly store atomically
+        tmp_path = monthly_store_path + ".tmp"
+        encoding = self._setup_encoding(data)
+
+        try:
+            data.to_zarr(tmp_path, mode="w", consolidated=False, encoding=encoding)
+            
+            # Validate temp
+            valid, result = self.validate(tmp_path)
+            if not valid:
+                raise ValueError(f"Validation failed: {result}")
+            
+            # Atomic move
+            shutil.move(tmp_path, monthly_store_path)
+            self.logger.info("Successfully wrote monthly zarr store: %s", monthly_store_name)
+            return True
+
+        except Exception as e:
+            self.logger.error("Monthly zarr write failed: %s", e)
+            if os.path.exists(tmp_path):
+                shutil.rmtree(tmp_path)
+            return False
+
     def append_chunk(self, data, store_path):
         """
-        Atomically append data to zarr store.
-
-        Uses two-phase write: temp → validate → atomic replace.
+        Legacy method - kept for backward compatibility.
+        Delegates to write_monthly_chunk with extracted year/month.
 
         Args:
             data: xarray Dataset/DataArray to append
-            store_path: Path to zarr store
+            store_path: Path to final zarr store location (in outdir)
 
         Returns:
             bool: True if write successful
@@ -151,54 +246,93 @@ class ZarrWriter:
             var_name = data.name or "data"
             data = data.to_dataset(name=var_name)
 
-        tmp_path = store_path + ".tmp"
-        encoding = self._setup_encoding(data)
+        # Compute data with performance monitoring (if dask)
+        if self.dask_client is not None:
+            self.logger.info("Computing data with Dask monitoring...")
+            if self.performance_reporting:
+                # Full Dask dashboard support
+                job = data.persist()
+                progress(job)
+                data = job.compute()
+            else:
+                # Memory monitoring
+                ms = MemorySampler()
+                with ms.sample("chunk"):
+                    job = data.persist()
+                    progress(job)
+                    data = job.compute()
+                array_data = np.array(ms.samples["chunk"])
+                avg_mem = np.mean(array_data[:, 1]) / 1e9
+                max_mem = np.max(array_data[:, 1]) / 1e9
+                self.logger.info("Avg memory used: %.2f GiB, Peak memory used: %.2f GiB", avg_mem, max_mem)
+        else:
+            # Local computation with progress bar
+            if hasattr(data, "compute"):
+                with ProgressBar():
+                    data = data.compute()
+
+        # Extract year/month from data for monthly pattern
+        if hasattr(data, 'time') and len(data.time) > 0:
+            year = int(data.time.dt.year.values[0])
+            month = int(data.time.dt.month.values[0])
+            var = list(data.data_vars)[0] if isinstance(data, xr.Dataset) else data.name
+            return self.write_monthly_chunk(data, var, year, month)
+        else:
+            self.logger.error("Cannot determine year/month from data")
+            return False
+
+    def concat_year_stores(self, var, year):
+        """
+        Concatenate monthly zarr stores into a single yearly store (mirroring NetCDF).
+
+        Args:
+            var: Variable name
+            year: Year to concatenate
+
+        Returns:
+            bool: True if successful
+        """
+        # Find monthly stores for this year
+        monthly_pattern = os.path.join(self.tmpdir, f"{var}_{year}??_monthly.zarr")
+        monthly_stores = sorted(glob.glob(monthly_pattern))
+
+        if len(monthly_stores) == 0:
+            self.logger.warning("No monthly stores found for %s year %s", var, year)
+            return False
+
+        self.logger.info("Merging %d monthly zarr stores for %s, year %s...", 
+                        len(monthly_stores), var, year)
 
         try:
-            # Phase 1: Check if we can append
-            if os.path.exists(store_path):
-                valid, result = self.validate(store_path)
-                if not valid:
-                    self.logger.warning("Existing store invalid (%s), recreating", result)
-                    shutil.rmtree(store_path)
-                    data.to_zarr(store_path, mode="w", consolidated=False, encoding=encoding)
-                    self.stores_written.add(store_path)
-                    self.logger.info("Created new zarr store: %s", store_path)
-                    return True
+            # Open all monthly stores and concatenate
+            ds = xr.open_mfdataset(monthly_stores, engine='zarr', combine='by_coords')
 
-                ds_existing = result
-                if not self._should_append(ds_existing, data):
-                    return False
+            # Write to yearly store in tmpdir
+            year_store_name = f"{var}_{year}.zarr"
+            year_store_path = os.path.join(self.tmpdir, year_store_name)
+            
+            if os.path.exists(year_store_path):
+                shutil.rmtree(year_store_path)
 
-                # Phase 2: Write to temp (copy + append)
-                self.logger.debug("Copying store to temp for atomic append")
-                shutil.copytree(store_path, tmp_path)
-                data.to_zarr(tmp_path, mode="a", append_dim="time", consolidated=False)
+            encoding = self._setup_encoding(ds)
+            ds.to_zarr(year_store_path, mode='w', consolidated=False, encoding=encoding)
 
-            else:
-                # New store
-                self.logger.debug("Creating new zarr store")
-                data.to_zarr(tmp_path, mode="w", consolidated=False, encoding=encoding)
+            # Consolidate metadata on yearly store
+            if self.consolidate_on_finalize:
+                self.consolidate_metadata(year_store_path)
+                self.logger.info("Consolidated metadata for yearly store %s", year_store_name)
 
-            # Phase 3: Validate temp
-            valid, result = self.validate(tmp_path)
-            if not valid:
-                raise ValueError(f"Validation failed: {result}")
+            # Cleanup monthly stores
+            for monthly_store in monthly_stores:
+                self.logger.info("Cleaning monthly store %s...", os.path.basename(monthly_store))
+                shutil.rmtree(monthly_store)
 
-            # Phase 4: Atomic replace
-            if os.path.exists(store_path):
-                shutil.rmtree(store_path)
-            shutil.move(tmp_path, store_path)
-
-            self.stores_written.add(store_path)
-            self.logger.info("Successfully appended to zarr store: %s", store_path)
+            # Track for final move
+            self.stores_written.add(self.get_filename(var, year=year))
             return True
 
         except Exception as e:
-            self.logger.error("Zarr write failed: %s", e)
-            # Cleanup on failure
-            if os.path.exists(tmp_path):
-                shutil.rmtree(tmp_path)
+            self.logger.error("Failed to concatenate year stores: %s", e)
             return False
 
     def consolidate_metadata(self, store_path):
@@ -235,26 +369,30 @@ class ZarrWriter:
 
     def get_filename(self, var, year=None, month=None, tmp=False):
         """
-        Generate Zarr store path (single store per variable).
+        Generate Zarr store path (yearly stores like NetCDF).
 
         Args:
             var: Variable name
-            year: Ignored for zarr (single store)
-            month: Ignored for zarr (single store)
+            year: Year for yearly stores
+            month: Month (ignored - zarr appends to yearly store)
             tmp: If True, return path in tmpdir
 
         Returns:
             str: Full path to zarr store
         """
-        zarr_filename = f"{var}.zarr"
-        if tmp:
-            return os.path.join(self.tmpdir, zarr_filename)
+        # Multi-zarr annual pattern (mirroring NetCDF)
+        if year is not None:
+            store_name = f"{var}_{year}.zarr"
         else:
-            return os.path.join(self.outdir, zarr_filename)
+            store_name = f"{var}.zarr"
+        
+        if tmp:
+            return os.path.join(self.tmpdir, store_name)
+        return os.path.join(self.outdir, store_name)
 
     def check_integrity(self, var, overwrite=False):
         """
-        Check integrity of Zarr store for a variable.
+        Check integrity of Zarr stores for a variable (yearly stores).
 
         Args:
             var: Variable name
@@ -270,36 +408,46 @@ class ZarrWriter:
         if overwrite:
             return {"complete": False, "last_record": None, "message": "Overwrite mode enabled"}
 
-        store_path = self.get_filename(var)
+        # Check for yearly stores (multi-zarr pattern)
+        year_stores = glob.glob(self.get_filename(var, year="*"))
+        
+        if not year_stores:
+            return {"complete": False, "last_record": None, "message": "No stores found"}
 
-        if not os.path.exists(store_path):
-            return {"complete": False, "last_record": None, "message": "Store does not exist"}
+        # Validate all stores
+        checks = []
+        for store in year_stores:
+            valid, _ = self.validate(store)
+            checks.append(valid)
 
-        valid, result = self.validate(store_path)
+        all_checks_true = all(checks)
 
-        if valid:
-            ds = result
+        if all_checks_true:
             try:
+                # Open all stores to find last record
+                if len(year_stores) == 1:
+                    ds = xr.open_zarr(year_stores[0], consolidated=False)
+                else:
+                    ds = xr.open_mfdataset(year_stores, engine='zarr', combine='by_coords')
                 last_record = ds.time[-1].values
                 last_record_str = pd.to_datetime(last_record).strftime("%Y%m%d")
-                return {
-                    "complete": True,
-                    "last_record": last_record_str,
-                    "message": f"Zarr store complete with {len(ds.time)} timesteps",
-                }
+                return {"complete": True, "last_record": last_record_str, "message": f"All {len(year_stores)} stores complete"}
             except Exception as e:
-                return {"complete": False, "last_record": None, "message": f"Error reading store: {e}"}
+                return {"complete": False, "last_record": None, "message": f"Error reading stores: {e}"}
         else:
-            return {"complete": False, "last_record": None, "message": f"Store validation failed: {result}"}
+            return {"complete": False, "last_record": None, "message": f"{sum(checks)}/{len(checks)} stores complete"}
 
     def write_variable(self, data, var, overwrite=False, definitive=True, performance_reporting=False, history_callback=None):
         """
-        Write complete variable to Zarr store (incremental appends).
+        Write complete variable to yearly Zarr stores (mirroring NetCDF).
+
+        Creates one .zarr store per year, each built month-by-month in tmpdir.
+        Consolidates metadata at the end of each year.
 
         Args:
             data: xarray DataArray with processed data
             var: Variable name
-            overwrite: Overwrite existing store
+            overwrite: Overwrite existing stores
             definitive: Actually write files (vs dry-run)
             performance_reporting: Limit to first month only
             history_callback: Optional function to append history metadata
@@ -307,31 +455,32 @@ class ZarrWriter:
         Returns:
             bool: True if successful
         """
-        store_path = self.get_filename(var)
-
-        # Check if store exists and if we should skip
-        if os.path.exists(store_path) and not overwrite:
-            valid, result = self.validate(store_path)
-            if valid:
-                ds_existing = result
-                # Check if all data is already in store
-                existing_times = set(ds_existing.time.values)
-                new_times = set(data.time.values)
-                if new_times.issubset(existing_times):
-                    self.logger.info("All data already in zarr store, skipping...")
-                    return True
-                self.logger.info("Appending new timesteps to existing zarr store")
-
-        # Process year by year for memory efficiency
+        # Split data into years
         years = sorted(set(data.time.dt.year.values))
         if performance_reporting:
             years = [years[0]]
 
         for year in years:
             self.logger.info("Processing year %s...", str(year))
+            
+            # Yearly store path (final destination in outdir)
+            year_store_path = self.get_filename(var, year=year)
+            
+            # Check if yearly store exists
+            if os.path.exists(year_store_path):
+                valid, result = self.validate(year_store_path)
+                if valid and not overwrite:
+                    self.logger.info("Yearly store %s already exists and is valid, skipping...", 
+                                   year_store_path)
+                    continue
+                if overwrite:
+                    self.logger.warning("Yearly store %s exists, will overwrite...", 
+                                      year_store_path)
+                    shutil.rmtree(year_store_path)
+
             year_data = data.sel(time=data.time.dt.year == year)
 
-            # Process month by month
+            # Process month by month, appending to same yearly store in tmpdir
             months = sorted(set(year_data.time.dt.month.values))
             if performance_reporting:
                 months = [months[0]]
@@ -344,10 +493,10 @@ class ZarrWriter:
                 if history_callback:
                     month_data = history_callback(month_data)
 
-                # Write chunk
+                # Write monthly zarr store (recovery-safe)
                 if definitive:
                     t_start = time()
-                    success = self.append_chunk(month_data, store_path)
+                    success = self.write_monthly_chunk(month_data, var, year, month)
                     t_elapsed = time() - t_start
                     if success:
                         self.logger.info("Chunk execution time: %.2f", t_elapsed)
@@ -357,5 +506,17 @@ class ZarrWriter:
                 del month_data
 
             del year_data
+
+            # Concatenate monthly stores into yearly store
+            if definitive:
+                self.logger.info("Concatenating monthly stores for year %s...", year)
+                concat_success = self.concat_year_stores(var, year)
+                if not concat_success:
+                    self.logger.error("Failed to create yearly store for %s", year)
+
+        # Move all yearly stores from tmpdir to outdir
+        if definitive:
+            self.logger.info("Moving yearly stores from tmpdir to outdir...")
+            move_tmp_files(self.tmpdir, self.outdir)
 
         return True
