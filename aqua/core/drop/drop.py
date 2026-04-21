@@ -84,7 +84,6 @@ class Drop:
         engine="fdb",
         output_format="netcdf",
         zarr_chunks=None,
-        zarr_consolidate=False,
         **kwargs,
     ):
         """
@@ -139,8 +138,7 @@ class Drop:
             output_format (string, opt): Output format: 'netcdf' or 'zarr'. Default is 'netcdf'.
             zarr_chunks (dict, opt): Chunk sizes for zarr (e.g. {'time': 1, 'lat': None, 'lon': None}).
                                      Default is None (uses zarr writer defaults).
-            zarr_consolidate (bool, opt): Consolidate zarr metadata after writing. Default is False.
-                                          Improves read performance but requires finalization step.
+                                     Note: Zarr metadata consolidation is always enabled on yearly archives.
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -215,7 +213,6 @@ class Drop:
                 self.compact = None
 
         self.zarr_chunks = zarr_chunks
-        self.zarr_consolidate = zarr_consolidate
 
         # configure the configdir
         configpath = ConfigPath(configdir=configdir)
@@ -477,12 +474,11 @@ class Drop:
                 outdir=self.outdir,
                 chunks=self.zarr_chunks,
                 compressor="auto",
-                consolidate=self.zarr_consolidate,
                 dask_client=self.client,
                 performance_reporting=self.performance_reporting,
                 loglevel=self.loglevel,
             )
-            self.logger.info("Using Zarr writer (consolidate=%s)", self.zarr_consolidate)
+            self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
 
     def _set_dask(self):
         """
@@ -531,15 +527,6 @@ class Drop:
         else:
             self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
 
-    def _write_var(self, var):
-        """Call write var for generator or catalog access"""
-        t_beg = time()
-
-        self._write_var_catalog(var)
-
-        t_end = time()
-        self.logger.info("Process took %.4f seconds", t_end - t_beg)
-
     def _remove_regridded(self, data):
 
         # remove regridded attribute to avoid issues with Reader
@@ -549,13 +536,14 @@ class Drop:
             del data.attrs["AQUA_regridded"]
         return data
 
-    def _write_var_catalog(self, var):
+    def _write_var(self, var):
         """
         Write variable to file
 
         Args:
             var (str): variable name
         """
+        t_beg = time()
 
         self.logger.info("Processing variable %s...", var)
         temp_data = self.data[var]
@@ -598,6 +586,9 @@ class Drop:
         )
 
         del temp_data
+
+        t_end = time()
+        self.logger.info("Process took %.4f seconds", t_end - t_beg)
 
     def append_history(self, data):
         """

@@ -415,7 +415,7 @@ class TestDROP:
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_zarr_consolidate(self, drop_arguments, tmp_path):
-        """Test DROP with Zarr output and metadata consolidation."""
+        """Test DROP with Zarr output and metadata consolidation (always enabled)."""
         test = Drop(
             catalog="ci",
             **drop_arguments,
@@ -423,7 +423,6 @@ class TestDROP:
             resolution="r100",
             frequency="monthly",
             output_format="zarr",
-            zarr_consolidate=True,
             definitive=True,
             loglevel=LOGLEVEL,
         )

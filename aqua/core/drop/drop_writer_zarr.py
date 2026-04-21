@@ -37,7 +37,6 @@ class ZarrWriter:
         outdir,
         chunks=None,
         compressor="auto",
-        consolidate=False,
         dask_client=None,
         performance_reporting=False,
         loglevel="WARNING",
@@ -50,16 +49,17 @@ class ZarrWriter:
             outdir: Output directory for zarr stores
             chunks: Dict of chunk sizes (e.g. {'time': 1, 'lat': None, 'lon': None})
             compressor: 'auto' for Blosc/zstd or custom numcodecs compressor
-            consolidate: Whether to consolidate metadata on finalize (default: False)
             dask_client: Dask client for distributed computing
             performance_reporting: Enable performance reporting
             loglevel: Logging level
+
+        Note:
+            Metadata consolidation is always enabled on yearly archives for optimal read performance.
         """
         self.tmpdir = tmpdir
         self.outdir = outdir
         self.chunks = chunks or {"time": 1, "lat": None, "lon": None}
         self.compressor = compressor
-        self.consolidate_on_finalize = consolidate
         self.dask_client = dask_client
         self.performance_reporting = performance_reporting
         self.logger = log_configure(loglevel, "ZarrWriter")
@@ -316,10 +316,9 @@ class ZarrWriter:
             encoding = self._setup_encoding(ds)
             ds.to_zarr(year_store_path, mode="w", consolidated=False, encoding=encoding)
 
-            # Consolidate metadata on yearly store
-            if self.consolidate_on_finalize:
-                self.consolidate_metadata(year_store_path)
-                self.logger.info("Consolidated metadata for yearly store %s", year_store_name)
+            # Always consolidate metadata on yearly store for optimal read performance
+            self.consolidate_metadata(year_store_path)
+            self.logger.info("Consolidated metadata for yearly store %s", year_store_name)
 
             # Cleanup monthly stores
             for monthly_store in monthly_stores:
@@ -345,7 +344,7 @@ class ZarrWriter:
             bool: True if successful
         """
         try:
-            zarr.convenience.consolidate_metadata(store_path)
+            zarr.consolidate_metadata(store_path)
             self.logger.info("Metadata consolidated: %s", store_path)
             return True
         except Exception as e:
@@ -354,17 +353,11 @@ class ZarrWriter:
 
     def finalize(self):
         """
-        Finalize all zarr stores (optionally consolidating metadata).
+        Finalize zarr writer.
 
-        Should be called after all writes are complete.
+        Note: Metadata consolidation is already performed on yearly stores during concat_year_stores().
         """
-        if self.consolidate_on_finalize:
-            self.logger.info("Finalizing %d zarr stores with metadata consolidation...", len(self.stores_written))
-            for store_path in self.stores_written:
-                self.consolidate_metadata(store_path)
-            self.logger.info("Zarr writer finalization complete (metadata consolidated)")
-        else:
-            self.logger.info("Zarr writer finalization complete (%d stores, consolidation disabled)", len(self.stores_written))
+        self.logger.info("Zarr writer finalization complete (%d stores, metadata consolidated)", len(self.stores_written))
 
     def get_filename(self, var, year=None, month=None, tmp=False):
         """
