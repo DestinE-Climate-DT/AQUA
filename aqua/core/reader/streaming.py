@@ -3,14 +3,14 @@
 import numpy as np
 import pandas as pd
 
-#from aqua.core.logger import log_configure
+# from aqua.core.logger import log_configure
 from aqua.core.util import extract_literal_and_numeric, frequency_string_to_pandas
 
 
-class Streaming():
+class Streaming:
     """Streaming class to be used in Reader and elsewhere"""
 
-    def __init__(self, aggregation='S', startdate=None, enddate=None, loglevel=None):
+    def __init__(self, aggregation="S", startdate=None, enddate=None, loglevel=None):
         """
         The Streaming constructor.
         The streamer  is used to stream data by either a specific time interval
@@ -79,16 +79,15 @@ class Streaming():
 
         literal, numeric = extract_literal_and_numeric(aggregation)
 
-        if literal == 'S':
-            #nsteps = np.maximum(int('0' + numeric), 1)  # this allows also "S" for "1S"
+        if literal == "S":
+            # nsteps = np.maximum(int('0' + numeric), 1)  # this allows also "S" for "1S"
             timr = pd.Series(tim).groupby(by=(np.arange(0, len(tim)) // numeric))
         else:
             timr = tim.resample(time=aggregation)
 
         return timr
 
-    def stream(self, data, startdate=None, enddate=None, aggregation=None,
-               timechunks=None, reset=False):
+    def stream(self, data, startdate=None, enddate=None, aggregation=None, timechunks=None, reset=False):
         """
         Stream a chunk of a dataset using startdate, enddate and aggregation defined by the constructor.
 
@@ -116,7 +115,7 @@ class Streaming():
             date1 = timechunks.first()[self.idx]
             date2 = timechunks.last()[self.idx]
             self.idx += 1
-            return (data.sel(time=slice(date1, date2)))
+            return data.sel(time=slice(date1, date2))
 
     def reset(self):
         """

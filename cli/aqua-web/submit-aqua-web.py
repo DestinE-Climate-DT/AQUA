@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
 AQUA cli tool to submit parallel aqua-web slurm jobs
-'''
+"""
 
 import argparse
 import os
@@ -20,14 +20,23 @@ from aqua.core.logger import log_configure
 from aqua.core.util import get_arg
 
 
-class Submitter():
+class Submitter:
     """
     Class to submit AQUA jobs to the slurm queue with logging
     """
 
-    def __init__(self, loglevel='INFO', config='config.aqua-web.yaml',
-                 template='aqua-web.job.j2', dryrun=False, parallel=True, ensemble=True,
-                 native=False, fresh=False, jobname=None):
+    def __init__(
+        self,
+        loglevel="INFO",
+        config="config.aqua-web.yaml",
+        template="aqua-web.job.j2",
+        dryrun=False,
+        parallel=True,
+        ensemble=True,
+        native=False,
+        fresh=False,
+        jobname=None,
+    ):
         """
         Initialize the Submitter class
 
@@ -44,9 +53,9 @@ class Submitter():
         """
 
         if dryrun:
-            loglevel="debug"
+            loglevel = "debug"
 
-        self.logger = log_configure(log_level=loglevel, log_name='aqua-web')
+        self.logger = log_configure(log_level=loglevel, log_name="aqua-web")
 
         self.config, self.template = self.find_config_files(config, template)
 
@@ -63,9 +72,8 @@ class Submitter():
     def is_job_running(self, job_name, username):
         """verify that a job name is not already submitted in the slurm queue"""
         # Run the squeue command to get the list of jobs
-        output = subprocess.run(['squeue', '-u', username, '--format', '%j'],
-                                capture_output=True, check=True)
-        output = output.stdout.decode('utf-8').splitlines()[1:]
+        output = subprocess.run(["squeue", "-u", username, "--format", "%j"], capture_output=True, check=True)
+        output = output.stdout.decode("utf-8").splitlines()[1:]
 
         # Parse the output to check if the job name is in the list
         return job_name in output
@@ -86,93 +94,92 @@ class Submitter():
             jobid
         """
 
-        yaml = YAML(typ='rt')
-        with open(self.config, 'r', encoding='utf-8') as file:
+        yaml = YAML(typ="rt")
+        with open(self.config, "r", encoding="utf-8") as file:
             definitions = yaml.load(file)
 
         if realization:
-            definitions['realization'] = realization
+            definitions["realization"] = realization
         else:
-            realization = definitions.get('realization', 'r1')
+            realization = definitions.get("realization", "r1")
         if catalog:
-            definitions['catalog'] = catalog
+            definitions["catalog"] = catalog
         else:
-            catalog = definitions['catalog']
+            catalog = definitions["catalog"]
         if model:
-            definitions['model'] = model
+            definitions["model"] = model
         else:
-            model = definitions['model']
+            model = definitions["model"]
         if exp:
-            definitions['exp'] = exp
+            definitions["exp"] = exp
         else:
-            exp = definitions['exp']
+            exp = definitions["exp"]
         if source:
-            definitions['source'] = source
+            definitions["source"] = source
         else:
-            source = definitions['source']
+            source = definitions["source"]
         if self.parallel:
-            definitions['parallel'] = '-p'
+            definitions["parallel"] = "-p"
         else:
-            definitions['parallel'] = ''
+            definitions["parallel"] = ""
         if self.native:
-            definitions['nativeaqua'] = 'true'
+            definitions["nativeaqua"] = "true"
         else:
-            definitions['nativeaqua'] = 'false'
+            definitions["nativeaqua"] = "false"
         if self.ensemble:
-            definitions['ensemble'] = 'true'
+            definitions["ensemble"] = "true"
         else:
-            definitions['ensemble'] = 'false'
+            definitions["ensemble"] = "false"
 
-        definitions['fresh'] = self.fresh
+        definitions["fresh"] = self.fresh
 
-        username = definitions['username']
+        username = definitions["username"]
         if self.jobname:
             jobname = self.jobname
         else:
-            jobname = definitions.get('jobname', 'aqua-web')
+            jobname = definitions.get("jobname", "aqua-web")
         # create identifier for each model-exp-source-var tuple
-        full_job_name = jobname + '_' + "_".join([catalog, model, exp, source])
-        definitions['job_name'] = full_job_name
+        full_job_name = jobname + "_" + "_".join([catalog, model, exp, source])
+        definitions["job_name"] = full_job_name
 
-        definitions['output'] = full_job_name + '_%j.out'
-        definitions['error'] = full_job_name + '_%j.err'
+        definitions["output"] = full_job_name + "_%j.out"
+        definitions["error"] = full_job_name + "_%j.err"
 
-        definitions['push'] = "false"
+        definitions["push"] = "false"
 
-        with open(self.template, 'r', encoding='utf-8') as file:
-            rendered_job  = Template(file.read()).render(definitions)
+        with open(self.template, "r", encoding="utf-8") as file:
+            rendered_job = Template(file.read()).render(definitions)
 
-        with NamedTemporaryFile('w', delete=False) as tempfile:
+        with NamedTemporaryFile("w", delete=False) as tempfile:
             tempfile.write(rendered_job)
             job_temp_path = tempfile.name
 
         if self.dryrun:
             self.logger.debug("SLURM job:\n %s", rendered_job)
 
-        sbatch_cmd = [ 'sbatch' ]
+        sbatch_cmd = ["sbatch"]
 
         if dependency is not None:
-            sbatch_cmd.append('--dependency=afterany:'+ str(dependency))
+            sbatch_cmd.append("--dependency=afterany:" + str(dependency))
 
         sbatch_cmd.append(job_temp_path)
         self.logger.debug("sbatch command: %s", sbatch_cmd)
 
         if not self.dryrun and self.is_job_running(full_job_name, username):
-            self.logger.info('The job %s is already running, will not resubmit', full_job_name)
-            return '0'
+            self.logger.info("The job %s is already running, will not resubmit", full_job_name)
+            return "0"
 
         if not self.dryrun:
             if self.ensemble:
-                self.logger.info('Submitting %s %s %s %s', model, exp, source, realization)
+                self.logger.info("Submitting %s %s %s %s", model, exp, source, realization)
             else:
-                self.logger.info('Submitting %s %s %s', model, exp, source)
-            result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
-            jobid = re.findall(r'\b\d+\b', result)[-1]
+                self.logger.info("Submitting %s %s %s", model, exp, source)
+            result = subprocess.run(sbatch_cmd, capture_output=True, check=True).stdout.decode("utf-8")
+            jobid = re.findall(r"\b\d+\b", result)[-1]
             return jobid
         else:
-            self.logger.debug('SLURM job name: %s', full_job_name)
-            return '0'
-
+            self.logger.debug("SLURM job name: %s", full_job_name)
+            return "0"
 
     def submit_push(self, jobid_list, listfile):
         """
@@ -183,62 +190,61 @@ class Submitter():
             listfile: file with list of experiments or "$model$/$exp" string
         """
 
-        self.logger.info('Creating push job %s', listfile)
+        self.logger.info("Creating push job %s", listfile)
 
-        yaml = YAML(typ='rt')
-        with open(self.config, 'r', encoding='utf-8') as file:
+        yaml = YAML(typ="rt")
+        with open(self.config, "r", encoding="utf-8") as file:
             definitions = yaml.load(file)
 
-        username = definitions['username']
-        full_job_name = definitions.get('jobname', 'push-aqua-web')
+        username = definitions["username"]
+        full_job_name = definitions.get("jobname", "push-aqua-web")
 
-        definitions['job_name'] = full_job_name
-        definitions['output'] = full_job_name + '_%j.out'
-        definitions['error'] = full_job_name + '_%j.err'
+        definitions["job_name"] = full_job_name
+        definitions["output"] = full_job_name + "_%j.out"
+        definitions["error"] = full_job_name + "_%j.err"
 
-        definitions['push'] = "true"
-        definitions['explist'] = listfile
+        definitions["push"] = "true"
+        definitions["explist"] = listfile
         if self.native:
-            definitions['nativeaqua'] = 'true'
+            definitions["nativeaqua"] = "true"
         else:
-            definitions['nativeaqua'] = 'false'
+            definitions["nativeaqua"] = "false"
         if self.ensemble:
-            definitions['ensemble'] = 'true'
+            definitions["ensemble"] = "true"
         else:
-            definitions['ensemble'] = 'false'
+            definitions["ensemble"] = "false"
 
-        definitions['fresh'] = self.fresh
+        definitions["fresh"] = self.fresh
 
-        with open(self.template, 'r', encoding='utf-8') as file:
-            rendered_job  = Template(file.read()).render(definitions)
+        with open(self.template, "r", encoding="utf-8") as file:
+            rendered_job = Template(file.read()).render(definitions)
 
-        with NamedTemporaryFile('w', delete=False) as tempfile:
+        with NamedTemporaryFile("w", delete=False) as tempfile:
             tempfile.write(rendered_job)
             job_temp_path = tempfile.name
 
         if self.dryrun:
             self.logger.debug("SLURM job:\n %s", rendered_job)
 
-        sbatch_cmd = [ 'sbatch' ]
+        sbatch_cmd = ["sbatch"]
 
-        sbatch_cmd.append('--dependency=afterany:' + ":".join(jobid_list))
+        sbatch_cmd.append("--dependency=afterany:" + ":".join(jobid_list))
 
         sbatch_cmd.append(job_temp_path)
         self.logger.debug("sbatch command: %s", sbatch_cmd)
 
         if not self.dryrun and self.is_job_running(full_job_name, username):
-            self.logger.info('The job is %s is already running, will not resubmit', full_job_name)
-            return '0'
+            self.logger.info("The job is %s is already running, will not resubmit", full_job_name)
+            return "0"
 
         if not self.dryrun:
-            self.logger.info('Submitting push job')
-            result = subprocess.run(sbatch_cmd, capture_output = True, check=True).stdout.decode('utf-8')
-            jobid = re.findall(r'\b\d+\b', result)[-1]
+            self.logger.info("Submitting push job")
+            result = subprocess.run(sbatch_cmd, capture_output=True, check=True).stdout.decode("utf-8")
+            jobid = re.findall(r"\b\d+\b", result)[-1]
             return jobid
         else:
-            self.logger.debug('SLURM job name: %s', full_job_name)
-            return '0'
-
+            self.logger.debug("SLURM job name: %s", full_job_name)
+            return "0"
 
     def find_config_files(self, config, template):
         """
@@ -249,7 +255,7 @@ class Submitter():
         configurer = ConfigPath()
 
         script_location = os.path.dirname(os.path.abspath(__file__))
-        search_paths = [configurer.configdir, '.', script_location]
+        search_paths = [configurer.configdir, ".", script_location]
 
         # If the config file does not exists find it either in the AQUA config dir, the location of the script or here
         if not os.path.isfile(config):
@@ -284,82 +290,81 @@ def parse_arguments(arguments):
     Parse command line arguments
     """
 
-    parser = argparse.ArgumentParser(description='AQUA aqua-web CLI tool to submit parallel diagnostic jobs')
+    parser = argparse.ArgumentParser(description="AQUA aqua-web CLI tool to submit parallel diagnostic jobs")
 
-    parser.add_argument('-c', '--config', type=str,
-                        help='yaml configuration file')
-    parser.add_argument('-m', '--model', type=str,
-                        help='model to be processed')
-    parser.add_argument('-k', '--catalog', type=str,
-                        help='catalog for experiment')
-    parser.add_argument('-e', '--exp', type=str,
-                        help='experiment to be processed')
-    parser.add_argument('--realization', type=str,
-                        help='realization to be processed. Specifying it assumes ensemble usage.')
-    parser.add_argument('--no-ensemble', action="store_false", dest='ensemble',
-                        help='Assume old 3-level folder structure. NB: If realization not chosen set it to r1 by default')
-    parser.add_argument('-s', '--source', type=str,
-                        help='source to be processed')
-    parser.add_argument('-r', '--serial', action="store_true",
-                        help='run in serial mode (only one core)')
-    parser.add_argument('-x', '--max', type=int,
-                        help='max number of jobs to submit without dependency')
-    parser.add_argument('-t', '--template', type=str,
-                        help='template jinja file for slurm job')
-    parser.add_argument('-d', '--dry', action="store_true",
-                        help='perform a dry run (no job submission)')
-    parser.add_argument('-l', '--loglevel', type=str,
-                        help='logging level')
-    parser.add_argument('-p', '--push', action="store_true",
-                        help='flag to push to aqua-web')
-    parser.add_argument('-j', '--jobname', type=str,
-                        help='alternative prefix for job name')
-    parser.add_argument('-n', '--native', action="store_true",
-                        help='use the native (native) AQUA version (default is the container version)')
-    parser.add_argument('-f', '--fresh', action="store_true",
-                        help='use a fresh (new) output directory, do not recycle original one')
+    parser.add_argument("-c", "--config", type=str, help="yaml configuration file")
+    parser.add_argument("-m", "--model", type=str, help="model to be processed")
+    parser.add_argument("-k", "--catalog", type=str, help="catalog for experiment")
+    parser.add_argument("-e", "--exp", type=str, help="experiment to be processed")
+    parser.add_argument("--realization", type=str, help="realization to be processed. Specifying it assumes ensemble usage.")
+    parser.add_argument(
+        "--no-ensemble",
+        action="store_false",
+        dest="ensemble",
+        help="Assume old 3-level folder structure. NB: If realization not chosen set it to r1 by default",
+    )
+    parser.add_argument("-s", "--source", type=str, help="source to be processed")
+    parser.add_argument("-r", "--serial", action="store_true", help="run in serial mode (only one core)")
+    parser.add_argument("-x", "--max", type=int, help="max number of jobs to submit without dependency")
+    parser.add_argument("-t", "--template", type=str, help="template jinja file for slurm job")
+    parser.add_argument("-d", "--dry", action="store_true", help="perform a dry run (no job submission)")
+    parser.add_argument("-l", "--loglevel", type=str, help="logging level")
+    parser.add_argument("-p", "--push", action="store_true", help="flag to push to aqua-web")
+    parser.add_argument("-j", "--jobname", type=str, help="alternative prefix for job name")
+    parser.add_argument(
+        "-n", "--native", action="store_true", help="use the native (native) AQUA version (default is the container version)"
+    )
+    parser.add_argument(
+        "-f", "--fresh", action="store_true", help="use a fresh (new) output directory, do not recycle original one"
+    )
 
     # List of experiments is a positional argument
-    parser.add_argument('list', nargs='?', type=str,
-                        help='list of experiments in format: model, exp, source')
+    parser.add_argument("list", nargs="?", type=str, help="list of experiments in format: model, exp, source")
 
     return parser.parse_args(arguments)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
 
-    catalog = get_arg(args, 'catalog', None)
-    model = get_arg(args, 'model', None)
-    exp = get_arg(args, 'exp', None)
-    source = get_arg(args, 'source', None)
-    config = get_arg(args, 'config', 'config.aqua-web.yaml')
-    serial = get_arg(args, 'serial', False)
-    listfile = get_arg(args, 'list', None)
-    dependency = get_arg(args, 'max', None)
-    dryrun = get_arg(args, 'dry', False)
-    loglevel = get_arg(args, 'loglevel', 'info')
-    push = get_arg(args, 'push', False)
-    native = get_arg(args, 'native', False)
-    fresh = get_arg(args, 'fresh', False)
-    jobname = get_arg(args, 'jobname', None)
+    catalog = get_arg(args, "catalog", None)
+    model = get_arg(args, "model", None)
+    exp = get_arg(args, "exp", None)
+    source = get_arg(args, "source", None)
+    config = get_arg(args, "config", "config.aqua-web.yaml")
+    serial = get_arg(args, "serial", False)
+    listfile = get_arg(args, "list", None)
+    dependency = get_arg(args, "max", None)
+    dryrun = get_arg(args, "dry", False)
+    loglevel = get_arg(args, "loglevel", "info")
+    push = get_arg(args, "push", False)
+    native = get_arg(args, "native", False)
+    fresh = get_arg(args, "fresh", False)
+    jobname = get_arg(args, "jobname", None)
 
-    ensemble = get_arg(args, 'ensemble', True)
-    realization = get_arg(args, 'realization', None)
+    ensemble = get_arg(args, "ensemble", True)
+    realization = get_arg(args, "realization", None)
     if realization:
         ensemble = True  # Specifying a realization implies ensemble mode
     elif ensemble and not realization:
-        realization = 'r1' # Default realization for ensemble mode
+        realization = "r1"  # Default realization for ensemble mode
 
-    template = get_arg(args, 'template', 'aqua-web.job.j2')
+    template = get_arg(args, "template", "aqua-web.job.j2")
 
-    submitter = Submitter(config=config, template=template, dryrun=dryrun,
-                          parallel=not serial, native=native, ensemble=ensemble,
-                          fresh=fresh, loglevel=loglevel, jobname=jobname)
+    submitter = Submitter(
+        config=config,
+        template=template,
+        dryrun=dryrun,
+        parallel=not serial,
+        native=native,
+        ensemble=ensemble,
+        fresh=fresh,
+        loglevel=loglevel,
+        jobname=jobname,
+    )
 
     if ensemble:
-        submitter.logger.debug('Running in ensemble mode')
+        submitter.logger.debug("Running in ensemble mode")
 
     count = 0
     parent_job = None
@@ -368,17 +373,16 @@ if __name__ == '__main__':
     jobid_list = []
 
     if listfile:
-        with open(listfile, 'r') as file:
+        with open(listfile, "r") as file:
             for line in file:
-
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
 
                 if ensemble:
-                    catalog, model, exp, realization, *source = re.split(r',|\s+|\t+', line.strip())
+                    catalog, model, exp, realization, *source = re.split(r",|\s+|\t+", line.strip())
                 else:
-                    catalog, model, exp, *source = re.split(r',|\s+|\t+', line.strip())  # split by comma, space, tab
+                    catalog, model, exp, *source = re.split(r",|\s+|\t+", line.strip())  # split by comma, space, tab
 
                 # Convert source list to string or None
                 if len(source) == 0:
@@ -389,8 +393,8 @@ if __name__ == '__main__':
                     source = "_".join(source)  # Join multiple sources with underscore
 
                 if dependency and (count % dependency == 0) and count != 0:
-                            submitter.logger.info('Updating parent job to %s', str(jobid))
-                            parent_job = str(jobid)
+                    submitter.logger.info("Updating parent job to %s", str(jobid))
+                    parent_job = str(jobid)
 
                 count = count + 1
 
@@ -403,4 +407,4 @@ if __name__ == '__main__':
     else:
         jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
         if push:
-            submitter.submit_push([jobid], f'{model}/{exp}')
+            submitter.submit_push([jobid], f"{model}/{exp}")

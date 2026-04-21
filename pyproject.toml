@@ -65,7 +65,7 @@ dependencies = [
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
     "xarray>=2025.12.0",
-    "zarr<=3.1.5",
+    "zarr",
     # not available on conda
     "pyfdb", #to be pinned when doing operational release
     "gsv-interface==2.13.1"
@@ -88,10 +88,15 @@ tests = [
     "coverage",
     "cdo"
 ]
+style = [
+    "pre-commit",
+    "ruff==0.15.11"
+]
 all = [
     "aqua-core[docs]",
     "aqua-core[notebooks]",
-    "aqua-core[tests]"
+    "aqua-core[tests]",
+    "aqua-core[style]"
 ]
 
 [project.scripts]
@@ -141,3 +146,25 @@ omit = [
     "tests/*",
     "**/__init__.py",
     ]
+
+[tool.ruff]
+# --- Global Settings ---
+line-length = 127
+target-version = "py310"
+exclude = ["**/__init__.py"]
+
+[tool.ruff.lint]
+# Imports sorted (I), standard PEP8 (E, F, W, N) only.
+select = ["E", "F", "I", "W", "N"]
+# Add specific ignores here
+ignore = [
+    "N816",
+    "E741",
+]
+[tool.ruff.lint.isort]
+known-first-party = ["aqua"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
