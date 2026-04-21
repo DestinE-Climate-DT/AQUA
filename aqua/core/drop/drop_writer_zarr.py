@@ -168,7 +168,7 @@ class ZarrWriter:
         # Monthly store naming
         monthly_store_name = f"{var}_{year}{month:02d}_monthly.zarr"
         monthly_store_path = os.path.join(self.tmpdir, monthly_store_name)
-        
+
         # Check if monthly store already exists (recovery scenario)
         if os.path.exists(monthly_store_path):
             valid, _ = self.validate(monthly_store_path)
@@ -178,7 +178,7 @@ class ZarrWriter:
             else:
                 self.logger.warning("Invalid monthly store %s, recreating...", monthly_store_name)
                 shutil.rmtree(monthly_store_path)
-        
+
         # Convert DataArray to Dataset if needed
         if isinstance(data, xr.DataArray):
             var_name = data.name or "data"
@@ -212,12 +212,12 @@ class ZarrWriter:
 
         try:
             data.to_zarr(tmp_path, mode="w", consolidated=False, encoding=encoding)
-            
+
             # Validate temp
             valid, result = self.validate(tmp_path)
             if not valid:
                 raise ValueError(f"Validation failed: {result}")
-            
+
             # Atomic move
             shutil.move(tmp_path, monthly_store_path)
             self.logger.info("Successfully wrote monthly zarr store: %s", monthly_store_name)
@@ -272,7 +272,7 @@ class ZarrWriter:
                     data = data.compute()
 
         # Extract year/month from data for monthly pattern
-        if hasattr(data, 'time') and len(data.time) > 0:
+        if hasattr(data, "time") and len(data.time) > 0:
             year = int(data.time.dt.year.values[0])
             month = int(data.time.dt.month.values[0])
             var = list(data.data_vars)[0] if isinstance(data, xr.Dataset) else data.name
@@ -300,22 +300,21 @@ class ZarrWriter:
             self.logger.warning("No monthly stores found for %s year %s", var, year)
             return False
 
-        self.logger.info("Merging %d monthly zarr stores for %s, year %s...", 
-                        len(monthly_stores), var, year)
+        self.logger.info("Merging %d monthly zarr stores for %s, year %s...", len(monthly_stores), var, year)
 
         try:
             # Open all monthly stores and concatenate
-            ds = xr.open_mfdataset(monthly_stores, engine='zarr', combine='by_coords')
+            ds = xr.open_mfdataset(monthly_stores, engine="zarr", combine="by_coords")
 
             # Write to yearly store in tmpdir
             year_store_name = f"{var}_{year}.zarr"
             year_store_path = os.path.join(self.tmpdir, year_store_name)
-            
+
             if os.path.exists(year_store_path):
                 shutil.rmtree(year_store_path)
 
             encoding = self._setup_encoding(ds)
-            ds.to_zarr(year_store_path, mode='w', consolidated=False, encoding=encoding)
+            ds.to_zarr(year_store_path, mode="w", consolidated=False, encoding=encoding)
 
             # Consolidate metadata on yearly store
             if self.consolidate_on_finalize:
@@ -385,7 +384,7 @@ class ZarrWriter:
             store_name = f"{var}_{year}.zarr"
         else:
             store_name = f"{var}.zarr"
-        
+
         if tmp:
             return os.path.join(self.tmpdir, store_name)
         return os.path.join(self.outdir, store_name)
@@ -410,7 +409,7 @@ class ZarrWriter:
 
         # Check for yearly stores (multi-zarr pattern)
         year_stores = glob.glob(self.get_filename(var, year="*"))
-        
+
         if not year_stores:
             return {"complete": False, "last_record": None, "message": "No stores found"}
 
@@ -428,7 +427,7 @@ class ZarrWriter:
                 if len(year_stores) == 1:
                     ds = xr.open_zarr(year_stores[0], consolidated=False)
                 else:
-                    ds = xr.open_mfdataset(year_stores, engine='zarr', combine='by_coords')
+                    ds = xr.open_mfdataset(year_stores, engine="zarr", combine="by_coords")
                 last_record = ds.time[-1].values
                 last_record_str = pd.to_datetime(last_record).strftime("%Y%m%d")
                 return {"complete": True, "last_record": last_record_str, "message": f"All {len(year_stores)} stores complete"}
@@ -462,20 +461,18 @@ class ZarrWriter:
 
         for year in years:
             self.logger.info("Processing year %s...", str(year))
-            
+
             # Yearly store path (final destination in outdir)
             year_store_path = self.get_filename(var, year=year)
-            
+
             # Check if yearly store exists
             if os.path.exists(year_store_path):
                 valid, result = self.validate(year_store_path)
                 if valid and not overwrite:
-                    self.logger.info("Yearly store %s already exists and is valid, skipping...", 
-                                   year_store_path)
+                    self.logger.info("Yearly store %s already exists and is valid, skipping...", year_store_path)
                     continue
                 if overwrite:
-                    self.logger.warning("Yearly store %s exists, will overwrite...", 
-                                      year_store_path)
+                    self.logger.warning("Yearly store %s exists, will overwrite...", year_store_path)
                     shutil.rmtree(year_store_path)
 
             year_data = data.sel(time=data.time.dt.year == year)

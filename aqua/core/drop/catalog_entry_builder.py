@@ -172,12 +172,8 @@ class CatalogEntryBuilder:
 
         elif driver == "zarr":
             # Support multi-zarr annual files (mirroring NetCDF)
-            catblock["args"]["xarray_kwargs"] = {
-                "engine": "zarr",
-                "combine": "by_coords",
-                "consolidated": False
-            }
-        
+            catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords", "consolidated": False}
+
         # Jinja parameters to be replaced in the urlpath
         jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
 

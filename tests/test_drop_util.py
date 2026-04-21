@@ -70,25 +70,25 @@ def test_move_tmp_files_zarr(tmpdir):
     # Create separate tmp and output directories
     tmp_directory = str(tmpdir.mkdir("tmp"))
     output_directory = str(tmpdir.mkdir("output"))
-    
+
     # Create a zarr store directory structure
     zarr_store1 = os.path.join(tmp_directory, "var1.zarr")
     zarr_store2 = os.path.join(tmp_directory, "var2.zarr")
     os.makedirs(zarr_store1)
     os.makedirs(zarr_store2)
-    
+
     # Create some dummy zarr metadata files
     with open(os.path.join(zarr_store1, ".zarray"), "w") as f:
         f.write('{"shape": [10, 20]}')
     with open(os.path.join(zarr_store2, ".zarray"), "w") as f:
         f.write('{"shape": [5, 10]}')
-    
+
     # Expected output locations
     output_zarr1 = os.path.join(output_directory, "var1.zarr")
     output_zarr2 = os.path.join(output_directory, "var2.zarr")
-    
+
     drop_util.move_tmp_files(tmp_directory, output_directory)
-    
+
     # Verify stores were moved
     assert os.path.exists(output_zarr1)
     assert os.path.exists(output_zarr2)
