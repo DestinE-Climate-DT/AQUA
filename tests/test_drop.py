@@ -10,6 +10,8 @@ from conftest import LOGLEVEL
 from aqua import Drop, Reader
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
+from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
+from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 
 DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
@@ -214,34 +216,6 @@ class TestDROP:
         assert xfield.lat.max() < 70
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_zarr_entry(self, drop_arguments, tmp_path):
-        """Test DROP with Zarr archive creation."""
-        test = Drop(
-            catalog="ci",
-            **drop_arguments,
-            tmpdir=str(tmp_path),
-            resolution="r100",
-            frequency="monthly",
-            nproc=1,
-            loglevel=LOGLEVEL,
-            definitive=True,
-            startdate="2020-01-01",
-            enddate="2020-05-31",
-        )
-
-        test.retrieve()
-        test.drop_generator()
-        test.create_catalog_entry()
-        test.create_zarr_entry()
-
-        reader1 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source="lra-r100-monthly")
-        reader2 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source="r100-monthly-zarr")
-
-        data1 = reader1.retrieve()
-        data2 = reader2.retrieve()
-        assert data1.equals(data2)
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
-
     def test_dask_overwrite(self, drop_arguments, tmp_path):
         """Test DROP with overwrite=True and Dask initialization."""
         test = Drop(
@@ -308,15 +282,28 @@ class TestDROP:
             catalog="ci", **drop_arguments, tmpdir=str(tmp_path), resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )
 
+        # Use NetCDFWriter with filename builder for consistent naming
+        writer = NetCDFWriter(
+            tmpdir=str(tmp_path),
+            outdir=os.path.join(os.getcwd(), drop_arguments["outdir"]),
+            time_encoding=test.time_encoding,
+            var_encoding=test.var_encoding,
+            compact="xarray",
+            cdo_options=[],
+            dask_client=None,
+            filename_builder=test.outbuilder,
+            loglevel=LOGLEVEL
+        )
+
         for month in range(1, 13):
             mm = f"{month:02d}"
-            filename = test.get_filename(drop_arguments["var"], year, month=mm)
+            filename = writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
             ds.to_netcdf(filename)
 
-        test._concat_var_year(drop_arguments["var"], year)
-        outfile = test.get_filename(drop_arguments["var"], year)
+        writer.concat_year_files(drop_arguments["var"], year, writer.get_filename)
+        outfile = writer.get_filename(drop_arguments["var"], year)
 
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
@@ -337,15 +324,28 @@ class TestDROP:
             loglevel=LOGLEVEL,
         )
 
+        # Use NetCDFWriter with CDO compact method and filename builder
+        writer = NetCDFWriter(
+            tmpdir=str(tmp_path),
+            outdir=os.path.join(os.getcwd(), drop_arguments["outdir"]),
+            time_encoding=test.time_encoding,
+            var_encoding=test.var_encoding,
+            compact="cdo",
+            cdo_options=[],
+            dask_client=None,
+            filename_builder=test.outbuilder,
+            loglevel=LOGLEVEL
+        )
+
         for month in range(1, 13):
             mm = f"{month:02d}"
-            filename = test.get_filename(drop_arguments["var"], year, month=mm)
+            filename = writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
             ds.to_netcdf(filename)
 
-        test._concat_var_year(drop_arguments["var"], year)
-        outfile = test.get_filename(drop_arguments["var"], year)
+        writer.concat_year_files(drop_arguments["var"], year, writer.get_filename)
+        outfile = writer.get_filename(drop_arguments["var"], year)
 
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
@@ -379,3 +379,75 @@ class TestDROP:
             )
             test.retrieve()
             test.drop_generator()
+
+    def test_zarr_output(self, drop_arguments, tmp_path):
+        """Test DROP with Zarr output format."""
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            output_format="zarr",
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+
+        test.retrieve()
+        test.data = test.data.sel(time=slice("2020-01", "2020-03"))
+        test.drop_generator()
+
+        # Check zarr store exists
+        zarr_store = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t.zarr",
+        )
+        assert os.path.isdir(zarr_store), f"Zarr store not found: {zarr_store}"
+
+        # Validate zarr content
+        ds = xr.open_zarr(zarr_store)
+        assert len(ds.time) == 3
+        assert "2t" in ds.data_vars
+        # Use .values to handle dask arrays
+        assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 248.0704
+        
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_zarr_consolidate(self, drop_arguments, tmp_path):
+        """Test DROP with Zarr output and metadata consolidation."""
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            output_format="zarr",
+            zarr_consolidate=True,
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+
+        test.retrieve()
+        test.data = test.data.sel(time=slice("2020-01", "2020-02"))
+        test.drop_generator()
+
+        zarr_store = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t.zarr",
+        )
+        assert os.path.isdir(zarr_store)
+        
+        # Zarr v3: verify consolidation by reading the store
+        # v3 uses zarr.json consolidation instead of .zmetadata
+        ds = xr.open_zarr(zarr_store)
+        assert len(ds.time) == 2
+        
+        # Verify zarr.json exists (zarr v3 metadata format)
+        zarr_json = os.path.join(zarr_store, "zarr.json")
+        assert os.path.isfile(zarr_json), "Zarr v3 metadata (zarr.json) not found"
+        
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
