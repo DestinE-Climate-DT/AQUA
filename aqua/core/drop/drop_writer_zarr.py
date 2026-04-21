@@ -39,6 +39,7 @@ class ZarrWriter:
         compressor="auto",
         dask_client=None,
         performance_reporting=False,
+        filename_builder=None,
         loglevel="WARNING",
     ):
         """
@@ -62,6 +63,7 @@ class ZarrWriter:
         self.compressor = compressor
         self.dask_client = dask_client
         self.performance_reporting = performance_reporting
+        self.filename_builder = filename_builder
         self.logger = log_configure(loglevel, "ZarrWriter")
         self.stores_written = set()  # Track stores for finalization
 
@@ -281,7 +283,7 @@ class ZarrWriter:
             self.logger.error("Cannot determine year/month from data")
             return False
 
-    def concat_year_stores(self, var, year):
+    def concat_year_stores(self, var, year, get_filename_fn):
         """
         Concatenate monthly zarr stores into a single yearly store (mirroring NetCDF).
 
@@ -292,13 +294,12 @@ class ZarrWriter:
         Returns:
             bool: True if successful
         """
-        # Find monthly stores for this year
-        monthly_pattern = os.path.join(self.tmpdir, f"{var}_{year}??_monthly.zarr")
-        monthly_stores = sorted(glob.glob(monthly_pattern))
+        infiles_pattern = get_filename_fn(var, year, month="??")
+        monthly_stores = sorted(glob.glob(infiles_pattern))
 
-        if len(monthly_stores) == 0:
-            self.logger.warning("No monthly stores found for %s year %s", var, year)
-            return False
+        if len(monthly_stores) != 12:
+            self.logger.debug("Found %d monthly files for %s year %s, skipping concatenation", len(monthly_stores), var, year)
+            return
 
         self.logger.info("Merging %d monthly zarr stores for %s, year %s...", len(monthly_stores), var, year)
 
@@ -307,7 +308,7 @@ class ZarrWriter:
             ds = xr.open_mfdataset(monthly_stores, engine="zarr", combine="by_coords", consolidated=False)
 
             # Write to yearly store in tmpdir
-            year_store_name = f"{var}_{year}.zarr"
+            year_store_name = get_filename_fn(var, year)
             year_store_path = os.path.join(self.tmpdir, year_store_name)
 
             if os.path.exists(year_store_path):
@@ -492,7 +493,7 @@ class ZarrWriter:
             # Concatenate monthly stores into yearly store
             if definitive:
                 self.logger.info("Concatenating monthly stores for year %s...", year)
-                concat_success = self.concat_year_stores(var, year)
+                concat_success = self.concat_year_stores(var, year, self.get_filename)
                 if not concat_success:
                     self.logger.error("Failed to create yearly store for %s", year)
 

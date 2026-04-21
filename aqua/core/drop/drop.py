@@ -431,7 +431,7 @@ class Drop:
             cat_file = load_yaml(catalogfile)
 
             # define the entry name
-            entry_name = self.catbuilder.create_entry_name()
+            entry_name = self.catbuilder.create_entry_name(output_format=self.output_format)
             sgn = self._define_source_grid_name()
 
             if entry_name in cat_file["sources"]:
@@ -475,6 +475,7 @@ class Drop:
                 dask_client=self.client,
                 performance_reporting=self.performance_reporting,
                 loglevel=self.loglevel,
+                filename_builder=self.outbuilder,
             )
             self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
 

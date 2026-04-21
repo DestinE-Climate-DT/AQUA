@@ -73,7 +73,7 @@ class CatalogEntryBuilder:
         self.logger = log_configure(log_level=loglevel, log_name="CatalogEntryBuilder")
         self.loglevel = loglevel
 
-    def create_entry_name(self):
+    def create_entry_name(self, output_format="netcdf"):
         """
         Create an entry name for the DROP outputs
         """
@@ -83,6 +83,9 @@ class CatalogEntryBuilder:
         else:
             # All other entries drop the 'lra-' prefix
             entry_name = f"{self.resolution}-{self.frequency}"
+
+        if output_format == "zarr":
+            entry_name += "-zarr"
 
         return entry_name
 
@@ -139,7 +142,7 @@ class CatalogEntryBuilder:
             dict: The catalog block with the updated urlpath and metadata.
         """
 
-        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*")
+        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*", output_format=driver)
         self.logger.info("Fully expanded urlpath %s", urlpath)
 
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -168,11 +171,13 @@ class CatalogEntryBuilder:
             self.logger.info("Updated urlpath in existing catalog entry to %s", catblock["args"]["urlpath"])
 
         if driver == "netcdf":
+            self.logger.warning("Setting xarray_kwargs for NetCDF driver")
             catblock["args"]["xarray_kwargs"] = {"decode_times": True, "combine": "by_coords"}
 
         elif driver == "zarr":
             # Support multi-zarr annual files (mirroring NetCDF)
-            catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords", "consolidated": False}
+            catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords"}
+            self.logger.warning("Setting xarray_kwargs for Zarr driver")
 
         # Jinja parameters to be replaced in the urlpath
         jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
