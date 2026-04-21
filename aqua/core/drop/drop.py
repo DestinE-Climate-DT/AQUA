@@ -14,30 +14,25 @@ Main features:
 - Memory-efficient chunked processing
 """
 
-import glob
 import os
 import shutil
-import subprocess
 from time import time
 
 import dask
 import numpy as np
 import pandas as pd
-import xarray as xr
-from dask.diagnostics import ProgressBar
-from dask.distributed import Client, LocalCluster, performance_report, progress
-from dask.distributed.diagnostics import MemorySampler
+from dask.distributed import Client, LocalCluster
 
 from aqua.core.configurer import ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
-from aqua.core.util import create_zarr_reference, dump_yaml, load_yaml, replace_intake_vars
-from aqua.core.util.io_util import create_folder, file_is_complete
+from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
 
 from .catalog_entry_builder import CatalogEntryBuilder
-from .drop_util import list_drop_files_complete, move_tmp_files
+from .drop_util import move_tmp_files
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
 
@@ -207,18 +202,18 @@ class Drop:
         self.cdo_options = cdo_options
         if not isinstance(self.cdo_options, list):
             raise TypeError("cdo_options must be a list.")
-        
+
         # configure output format and writer
         self.output_format = output_format
-        if self.output_format not in ['netcdf', 'zarr']:
+        if self.output_format not in ["netcdf", "zarr"]:
             raise ValueError("output_format must be 'netcdf' or 'zarr'")
-        
+
         # Zarr-specific validation
-        if self.output_format == 'zarr':
+        if self.output_format == "zarr":
             if self.compact is not None:
                 self.logger.warning("compact option ignored for zarr output (zarr appends directly)")
                 self.compact = None
-        
+
         self.zarr_chunks = zarr_chunks
         self.zarr_consolidate = zarr_consolidate
 
@@ -392,7 +387,7 @@ class Drop:
 
         # Set up dask cluster
         self._set_dask()
-        
+
         # Initialize writer after dask is set up
         self._set_writer()
 
@@ -410,7 +405,7 @@ class Drop:
         # Finalize writer (consolidate zarr metadata, etc)
         if self.writer:
             self.writer.finalize()
-        
+
         # Cleaning
         self.data.close()
         self._close_dask()
@@ -462,7 +457,7 @@ class Drop:
         """
         Initialize the appropriate writer based on output_format
         """
-        if self.output_format == 'netcdf':
+        if self.output_format == "netcdf":
             self.writer = NetCDFWriter(
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
@@ -473,20 +468,20 @@ class Drop:
                 dask_client=self.client,
                 performance_reporting=self.performance_reporting,
                 filename_builder=self.outbuilder,
-                loglevel=self.loglevel
+                loglevel=self.loglevel,
             )
             self.logger.info("Using NetCDF writer")
-        elif self.output_format == 'zarr':
+        elif self.output_format == "zarr":
             self.writer = ZarrWriter(
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
                 chunks=self.zarr_chunks,
-                compressor='auto',
+                compressor="auto",
                 consolidate=self.zarr_consolidate,
-                loglevel=self.loglevel
+                loglevel=self.loglevel,
             )
             self.logger.info("Using Zarr writer (consolidate=%s)", self.zarr_consolidate)
-    
+
     def _set_dask(self):
         """
         Set up dask cluster
@@ -524,15 +519,15 @@ class Drop:
     def check_integrity(self, varname):
         """To check if the DROP entry is fine before running (delegates to writer)"""
         result = self.writer.check_integrity(varname, overwrite=self.overwrite)
-        self.check = result['complete']
-        self.last_record = result['last_record']
-        
+        self.check = result["complete"]
+        self.last_record = result["last_record"]
+
         if self.check:
             self.logger.info("Data complete for var %s...", varname)
             if self.last_record:
                 self.logger.info("Last record archived is %s...", self.last_record)
         else:
-            self.logger.warning("Still need to run for var %s: %s", varname, result['message'])
+            self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
 
     def _write_var(self, var):
         """Call write var for generator or catalog access"""
@@ -590,18 +585,17 @@ class Drop:
         # Delegate to writer with history callback
         def append_history_callback(data):
             return self.append_history(data)
-        
+
         self.writer.write_variable(
             data=temp_data,
             var=var,
             overwrite=self.overwrite,
             definitive=self.definitive,
             performance_reporting=self.performance_reporting,
-            history_callback=append_history_callback
+            history_callback=append_history_callback,
         )
-        
-        del temp_data
 
+        del temp_data
 
     def append_history(self, data):
         """

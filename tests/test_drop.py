@@ -7,11 +7,10 @@ import pytest
 import xarray as xr
 from conftest import LOGLEVEL
 
-from aqua import Drop, Reader
+from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
-from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 
 DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
@@ -292,7 +291,7 @@ class TestDROP:
             cdo_options=[],
             dask_client=None,
             filename_builder=test.outbuilder,
-            loglevel=LOGLEVEL
+            loglevel=LOGLEVEL,
         )
 
         for month in range(1, 13):
@@ -334,7 +333,7 @@ class TestDROP:
             cdo_options=[],
             dask_client=None,
             filename_builder=test.outbuilder,
-            loglevel=LOGLEVEL
+            loglevel=LOGLEVEL,
         )
 
         for month in range(1, 13):
@@ -412,7 +411,7 @@ class TestDROP:
         assert "2t" in ds.data_vars
         # Use .values to handle dask arrays
         assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 248.0704
-        
+
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_zarr_consolidate(self, drop_arguments, tmp_path):
@@ -440,14 +439,14 @@ class TestDROP:
             "2t.zarr",
         )
         assert os.path.isdir(zarr_store)
-        
+
         # Zarr v3: verify consolidation by reading the store
         # v3 uses zarr.json consolidation instead of .zmetadata
         ds = xr.open_zarr(zarr_store)
         assert len(ds.time) == 2
-        
+
         # Verify zarr.json exists (zarr v3 metadata format)
         zarr_json = os.path.join(zarr_store, "zarr.json")
         assert os.path.isfile(zarr_json), "Zarr v3 metadata (zarr.json) not found"
-        
+
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
