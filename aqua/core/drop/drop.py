@@ -399,10 +399,6 @@ class Drop:
         # Move temporary files to output directory
         move_tmp_files(self.tmpdir, self.outdir)
 
-        # Finalize writer (consolidate zarr metadata, etc)
-        if self.writer:
-            self.writer.finalize()
-
         # Cleaning
         self.data.close()
         self._close_dask()
@@ -443,7 +439,9 @@ class Drop:
             else:
                 catblock = None
 
-            block = self.catbuilder.create_entry_details(basedir=self.basedir, catblock=catblock, source_grid_name=sgn)
+            block = self.catbuilder.create_entry_details(
+                basedir=self.basedir, catblock=catblock, driver=self.output_format, source_grid_name=sgn
+            )
 
             cat_file["sources"][entry_name] = block
 

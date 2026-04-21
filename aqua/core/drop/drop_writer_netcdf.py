@@ -181,10 +181,6 @@ class NetCDFWriter:
             self.logger.info("Cleaning %s...", tmp_file)
             os.remove(tmp_file)
 
-    def finalize(self):
-        """Finalization step (no-op for NetCDF)."""
-        self.logger.debug("NetCDF writer finalization complete (no action needed)")
-
     def get_filename(self, var, year=None, month=None, tmp=False):
         """
         Generate NetCDF filename (monthly or yearly).

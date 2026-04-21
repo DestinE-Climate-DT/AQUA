@@ -304,7 +304,7 @@ class ZarrWriter:
 
         try:
             # Open all monthly stores and concatenate
-            ds = xr.open_mfdataset(monthly_stores, engine="zarr", combine="by_coords")
+            ds = xr.open_mfdataset(monthly_stores, engine="zarr", combine="by_coords", consolidated=False)
 
             # Write to yearly store in tmpdir
             year_store_name = f"{var}_{year}.zarr"
@@ -350,14 +350,6 @@ class ZarrWriter:
         except Exception as e:
             self.logger.error("Consolidation failed for %s: %s", store_path, e)
             return False
-
-    def finalize(self):
-        """
-        Finalize zarr writer.
-
-        Note: Metadata consolidation is already performed on yearly stores during concat_year_stores().
-        """
-        self.logger.info("Zarr writer finalization complete (%d stores, metadata consolidated)", len(self.stores_written))
 
     def get_filename(self, var, year=None, month=None, tmp=False):
         """
