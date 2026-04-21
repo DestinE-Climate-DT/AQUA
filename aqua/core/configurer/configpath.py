@@ -486,7 +486,7 @@ class ConfigPath:
         lines.append(f"{'=' * 80}\n")
         return "\n".join(lines)
 
-    def get_data_model(self, data_model: str = 'aqua'):
+    def get_data_model(self, data_model: str = "aqua"):
         """
         Extract the data model information from the data_model folder.
         Populate the `self.data_model` attribute with the loaded data model dictionary.
@@ -494,17 +494,19 @@ class ConfigPath:
         Args:
             data_model (str): the data model to be used. Defaults to 'aqua'.
         """
-        data_model_folder = os.path.join(self.configdir, 'data_model')
-        filename = f'{data_model}.yaml'
+        data_model_folder = os.path.join(self.configdir, "data_model")
+        filename = f"{data_model}.yaml"
 
         if os.path.exists(data_model_folder):
             data_model_dict = load_yaml(os.path.join(data_model_folder, filename))
-            self.logger.debug(f'Found data model {data_model} version {data_model_dict.get("version", "unknown")} in {data_model_folder}')
+            self.logger.debug(
+                f"Found data model {data_model} version {data_model_dict.get('version', 'unknown')} in {data_model_folder}"
+            )
             self.data_model = data_model_dict
         else:
-            raise FileNotFoundError(f'Cannot find the data model {data_model} in {data_model_folder}!')
+            raise FileNotFoundError(f"Cannot find the data model {data_model} in {data_model_folder}!")
 
-    def get_coordinate_name(self, coordinate: str, data_model: str = 'aqua'):
+    def get_coordinate_name(self, coordinate: str, data_model: str = "aqua"):
         """
         Given a coordinate name, return its definition from the data model.
 
@@ -518,7 +520,10 @@ class ConfigPath:
         if self.data_model is None:
             self.get_data_model(data_model=data_model)
 
-        if coordinate not in self.data_model['data_model']:
-            raise KeyError(f'No coordinate {coordinate} found in the data model! Available coordinates are {list(self.data_model["data_model"].keys())}')
+        if coordinate not in self.data_model["data_model"]:
+            raise KeyError(
+                f"No coordinate {coordinate} found in the data model! "
+                f"Available coordinates are {list(self.data_model['data_model'].keys())}"
+            )
         else:
-            return self.data_model['data_model'][coordinate]['name']
+            return self.data_model["data_model"][coordinate]["name"]
