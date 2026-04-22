@@ -133,3 +133,7 @@ ruff format <file_or_folder_to_target> --no-cache
 ```
 
 This manual run will also format the code according to the formatting rules defined by the `pyproject.toml` file.
+
+## 🤖 AI Contribution Guidelines
+
+If you are an AI agent, please read AGENTS.md in the root directory
