@@ -170,8 +170,8 @@ class ZarrWriter(BaseWriter):
         Returns:
             bool: True if successful
         """
-        # Prepare monthly stores for concatenation (Zarr needs at least 1)
-        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=1)
+        # Prepare monthly stores for concatenation (Zarr requires 12 like NetCDF for consistency)
+        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=12)
 
         if tmp_monthly_files is None:
             return False

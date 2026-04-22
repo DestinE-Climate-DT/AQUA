@@ -391,8 +391,9 @@ class TestDROP:
         test.data = test.data.sel(time=slice("2020-01", "2020-03"))
         test.drop_generator()
 
-        # Check zarr store exists (yearly pattern) - use filename builder
-        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020)
+        # With only 3 months, concatenation should NOT happen (requires 12 months)
+        # Monthly stores should exist (check February as example)
+        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020, month="02")
         zarr_filename = os.path.splitext(zarr_filename)[0] + ".zarr"  # Replace .nc with .zarr
         zarr_store = os.path.join(
             os.getcwd(),
@@ -400,14 +401,14 @@ class TestDROP:
             DROP_PATH,
             zarr_filename,
         )
-        assert os.path.isdir(zarr_store), f"Zarr store not found: {zarr_store}"
+        assert os.path.isdir(zarr_store), f"Monthly Zarr store not found: {zarr_store}"
 
-        # Validate zarr content
-        ds = xr.open_zarr(zarr_store)
-        assert len(ds.time) == 3
+        # Validate zarr content (monthly stores don't have consolidated metadata)
+        ds = xr.open_zarr(zarr_store, consolidated=False)
+        assert len(ds.time) == 1  # Only February data
         assert "2t" in ds.data_vars
         # Use .values to handle dask arrays
-        assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 248.0704
+        assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 240.32689
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
@@ -428,8 +429,9 @@ class TestDROP:
         test.data = test.data.sel(time=slice("2020-01", "2020-02"))
         test.drop_generator()
 
-        # Use filename builder to get correct zarr store name
-        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020)
+        # With only 2 months, concatenation should NOT happen (requires 12 months)
+        # Monthly stores should exist (check January as example)
+        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020, month="01")
         zarr_filename = os.path.splitext(zarr_filename)[0] + ".zarr"  # Replace .nc with .zarr
         zarr_store = os.path.join(
             os.getcwd(),
@@ -437,15 +439,14 @@ class TestDROP:
             DROP_PATH,
             zarr_filename,
         )
-        assert os.path.isdir(zarr_store)
+        assert os.path.isdir(zarr_store), f"Monthly Zarr store not found: {zarr_store}"
 
-        # Zarr v3: verify consolidation by reading the store
-        # v3 uses zarr.json consolidation instead of .zmetadata
-        ds = xr.open_zarr(zarr_store)
-        assert len(ds.time) == 2
+        # Monthly stores do not have consolidated metadata
+        # Only yearly stores (created by concatenation) have it
+        ds = xr.open_zarr(zarr_store, consolidated=False)
+        assert len(ds.time) == 1  # Only January data
 
-        # Verify zarr.json exists (zarr v3 metadata format)
-        zarr_json = os.path.join(zarr_store, "zarr.json")
-        assert os.path.isfile(zarr_json), "Zarr v3 metadata (zarr.json) not found"
+        # Verify that the store can be read successfully
+        assert "2t" in ds.data_vars
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))

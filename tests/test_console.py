@@ -228,6 +228,7 @@ class TestAquaConsole:
                 "--rebuild",
                 "--startdate", "2020-01-01",
                 "--enddate", "2020-03-31",
+                "--driver", "netcdf",
             ]
         )
         # fmt: on
@@ -238,12 +239,32 @@ class TestAquaConsole:
         assert os.path.isfile(path), f"File not found: {path}"
 
         # run DROP with a different stat and verify that at least one file exist
-        run_aqua(["drop", "--config", drop_test, "-w", "1", "-d", "--rebuild", "--stat", "min"])
-        path = os.path.join(
-            os.path.join(mydir, "drop_test"),
-            "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.nc",
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-03-31",
+                "--rebuild",
+                "--stat",
+                "min",
+                "--driver",
+                "zarr",
+            ]
         )
-        assert os.path.isfile(path), f"File not found: {path}"
+
+        monthly_path = os.path.join(
+            os.path.join(mydir, "drop_test"),
+            "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.zarr",
+        )
+        # Zarr stores are directories, not files
+        assert os.path.exists(monthly_path), f"Monthly Zarr store not found: {monthly_path}"
 
         # remove aqua
         run_aqua_console_with_input(["uninstall"], "yes")
