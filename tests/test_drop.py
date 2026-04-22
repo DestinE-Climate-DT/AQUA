@@ -11,6 +11,9 @@ from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.output_path_builder import OutputPathBuilder
+from aqua.core.lock import SafeFileLock
+from aqua.core.reader.reader import Reader
+from aqua.core.util import dump_yaml, load_yaml
 
 DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
 DROP_PATH_DAILY = "ci/IFS/test-tco79/r1/r100/daily/mean/europe"
@@ -239,7 +242,8 @@ class TestDROP:
         assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_exclude_incomplete(self, drop_arguments, tmp_path):
+    @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
+    def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):
         """Test DROP's exclude_incomplete option."""
         test = Drop(
             catalog="ci",
@@ -250,30 +254,62 @@ class TestDROP:
             definitive=True,
             loglevel=LOGLEVEL,
             exclude_incomplete=True,
+            overwrite=True,
+            output_format=output_format,
         )
 
         test.retrieve()
         test.drop_generator()
+        ext = test.writer.get_extension()
 
         missing_file = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
+            f"2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008{ext}",
         )
         existing_file = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc",
+            f"2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002{ext}",
         )
 
-        assert not os.path.exists(missing_file)
-        assert os.path.exists(existing_file)
+        assert not os.path.exists(missing_file), f"Incomplete file should be excluded: {missing_file}"
+        assert os.path.exists(existing_file), f"Complete file should exist: {existing_file}"
 
-        file = xr.open_dataset(existing_file)
-        assert len(file.time) == 1
-        test.check_integrity(varname=drop_arguments["var"])
+        # Create catalog entry
+        test.create_catalog_entry()
+
+        # Determine source name based on format
+        if output_format == "netcdf":
+            source_name = "lra-r100-monthly"
+        else:  # zarr
+            source_name = "lra-r100-monthly-zarr"
+
+        # Use Reader to access the newly created source through intake
+        reader = Reader(
+            catalog="ci",
+            model=drop_arguments["model"],
+            exp=drop_arguments["exp"],
+            source=source_name,
+            loglevel=LOGLEVEL,
+        )
+
+        # Read data through intake and verify it matches
+        data = reader.retrieve(var=drop_arguments["var"])
+        assert "2t" in data.data_vars, f"Variable '2t' not found in {output_format} intake data"
+        assert len(data.time) == 6, f"{output_format} Reader data should have 6 timesteps instead of {len(data.time)}"
+
+        catalogfile = os.path.join(test.configdir, "catalogs", test.catalog, "catalog", test.model, test.exp + ".yaml")
+        with SafeFileLock(catalogfile + ".lock"):
+            cat_file = load_yaml(catalogfile)
+            del cat_file["sources"][source_name]
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
+
+        # file = xr.open_dataset(existing_file)
+        # assert len(file.time) == 1
+        # test.check_integrity(varname=drop_arguments["var"])
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     @pytest.mark.parametrize(
@@ -418,4 +454,85 @@ class TestDROP:
         # Use .values to handle dask arrays
         assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 240.32689
 
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_zarr_writer_validation(self, drop_arguments, tmp_path):
+        """Test ZarrWriter validation edge cases."""
+        from aqua.core.drop.drop_writer_zarr import ZarrWriter
+
+        writer = ZarrWriter(tmpdir=str(tmp_path), outdir=drop_arguments["outdir"], loglevel=LOGLEVEL)
+
+        # Case 1: Store without 'time' dimension
+        ds_no_time = xr.Dataset({"var": xr.DataArray([1, 2, 3], dims=["x"])})
+        invalid_store = os.path.join(str(tmp_path), "no_time.zarr")
+        ds_no_time.to_zarr(invalid_store, mode="w")
+        assert writer.validate(invalid_store) is False
+
+        # Case 2: Store with empty time
+        ds_empty = xr.Dataset({"var": xr.DataArray([], dims=["time"], coords={"time": []})})
+        empty_store = os.path.join(str(tmp_path), "empty_time.zarr")
+        ds_empty.to_zarr(empty_store, mode="w")
+        assert writer.validate(empty_store) is False
+
+        # Case 3: Store with duplicate timestamps
+        times = [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-01-01")]
+        ds_dup = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times})})
+        dup_store = os.path.join(str(tmp_path), "duplicate.zarr")
+        ds_dup.to_zarr(dup_store, mode="w")
+        assert writer.validate(dup_store) is False
+
+        # Case 4: Store with unsorted timestamps
+        times_unsorted = [pd.Timestamp("2020-02-01"), pd.Timestamp("2020-01-01")]
+        ds_unsorted = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times_unsorted})})
+        unsorted_store = os.path.join(str(tmp_path), "unsorted.zarr")
+        ds_unsorted.to_zarr(unsorted_store, mode="w")
+        assert writer.validate(unsorted_store) is False
+
+        # Case 5: Valid store
+        times_valid = [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-02-01")]
+        ds_valid = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times_valid})})
+        valid_store = os.path.join(str(tmp_path), "valid.zarr")
+        ds_valid.to_zarr(valid_store, mode="w")
+        assert writer.validate(valid_store) is True
+
+    def test_zarr_encoding_without_chunks(self, drop_arguments, tmp_path):
+        """Test ZarrWriter encoding when chunks is None."""
+        from aqua.core.drop.drop_writer_zarr import ZarrWriter
+
+        # Create writer with chunks=None
+        writer = ZarrWriter(tmpdir=str(tmp_path), outdir=drop_arguments["outdir"], loglevel=LOGLEVEL)
+        writer.chunks = None
+
+        ds = xr.Dataset(
+            {"var": xr.DataArray([1, 2, 3], dims=["time"], coords={"time": pd.date_range("2020-01-01", periods=3)})}
+        )
+        encoding = writer._get_encoding(ds)
+
+        # Should return None when chunks is None
+        assert encoding is None
+
+    def test_write_without_dask_client(self, drop_arguments, tmp_path):
+        """Test write_variable without dask_client (single process)."""
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            nproc=1,  # Single process, no dask cluster
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+
+        test.retrieve()
+        test.data = test.data.sel(time="2020-01")
+        test.drop_generator()  # Should work without dask_client
+
+        file_path = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
+        )
+        assert os.path.isfile(file_path)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))

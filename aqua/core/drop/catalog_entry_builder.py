@@ -142,7 +142,8 @@ class CatalogEntryBuilder:
             dict: The catalog block with the updated urlpath and metadata.
         """
 
-        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*", output_format=output_format)
+        file_extension = {"netcdf": ".nc", "zarr": ".zarr"}.get(output_format, output_format)
+        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*", output_format=file_extension)
         self.logger.info("Fully expanded urlpath %s", urlpath)
 
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -171,13 +172,13 @@ class CatalogEntryBuilder:
             self.logger.info("Updated urlpath in existing catalog entry to %s", catblock["args"]["urlpath"])
 
         if output_format == "netcdf":
-            self.logger.warning("Setting xarray_kwargs for NetCDF driver")
+            #    self.logger.warning("Setting xarray_kwargs for NetCDF driver")
             catblock["args"]["xarray_kwargs"] = {"decode_times": True, "combine": "by_coords"}
 
-        elif output_format == "zarr":
-            # Support multi-zarr annual files (mirroring NetCDF)
-            catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords"}
-            self.logger.warning("Setting xarray_kwargs for Zarr driver")
+        # elif output_format == "zarr":
+        #    # Support multi-zarr annual files (mirroring NetCDF)
+        # catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords"}
+        #    self.logger.warning("Setting xarray_kwargs for Zarr driver")
 
         # Jinja parameters to be replaced in the urlpath
         jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
