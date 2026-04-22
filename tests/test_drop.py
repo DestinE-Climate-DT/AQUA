@@ -189,6 +189,14 @@ class TestDROP:
         file = xr.open_dataset(file_path)
         assert len(file.time) == 1
         assert pytest.approx(file["2t"][0, 1, 1].item()) == 248.0704
+
+        # verify history
+        if "history" in file.attrs:
+            history = file.attrs["history"]
+            assert "DROP" in history, "DROP not found in history"
+            assert "regridded" in history, "Regridding information not found in history"
+            assert "resampled" in history, "Frequency resampling information not found in history"
+
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_regional_subset(self, drop_arguments, tmp_path):

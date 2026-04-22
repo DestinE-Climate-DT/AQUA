@@ -213,10 +213,14 @@ class BaseWriter(ABC):
 
         self.logger.info("Computing to write file %s...", tmpfile)
 
-        # Convert DataArray to Dataset if needed
+        # Convert DataArray to Dataset if needed, preserving attributes
         if isinstance(data, xr.DataArray):
             var_name = data.name or var or "data"
+            # Preserve DataArray attributes before conversion
+            attrs = data.attrs.copy()
             data = data.to_dataset(name=var_name)
+            # Apply attributes to Dataset level
+            data.attrs.update(attrs)
 
         # Compute data
         data = self._compute_data(data, dask=dask, performance_reporting=performance_reporting)
@@ -422,7 +426,6 @@ class BaseWriter(ABC):
         definitive=True,
         dask=False,
         performance_reporting=False,
-        history_callback=None,
     ):
         """
         Write complete variable with all year/month logic.
@@ -434,7 +437,6 @@ class BaseWriter(ABC):
            - Split into months
            - For each month:
              * Check if monthly file exists
-             * Apply history callback
              * Write monthly chunk
              * Validate tmpfile
              * Move tmpfile to outdir (IMMEDIATELY)
@@ -442,17 +444,19 @@ class BaseWriter(ABC):
         3. Return success status
 
         Args:
-            data: xarray DataArray with processed data
+            data: xarray DataArray with processed data (history already applied)
             var: Variable name
             overwrite: Overwrite existing files
             definitive: Actually write files (vs dry-run)
             dask: If True, use Dask for distributed computing
             performance_reporting: Limit to first month only
-            history_callback: Optional function to append history metadata
 
         Returns:
             bool: True if successful
         """
+        # Preserve original attributes for re-application after slicing
+        original_attrs = data.attrs.copy()
+
         # Split data into years
         years = sorted(set(data.time.dt.year.values))
         if performance_reporting:
@@ -470,6 +474,8 @@ class BaseWriter(ABC):
                 self.logger.warning("Yearly file %s already exists, overwriting...", yearfile)
 
             year_data = data.sel(time=data.time.dt.year == year)
+            # Preserve attributes after slicing
+            year_data.attrs.update(original_attrs)
 
             # Split into months
             months = sorted(set(year_data.time.dt.month.values))
@@ -488,10 +494,8 @@ class BaseWriter(ABC):
                     self.logger.warning("Monthly file %s already exists, overwriting...", outfile)
 
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
-
-                # Apply history if callback provided
-                if history_callback:
-                    month_data = history_callback(month_data)
+                # Preserve attributes after slicing
+                month_data.attrs.update(original_attrs)
 
                 # Write file
                 if definitive:

@@ -564,9 +564,8 @@ class Drop:
         if self.region:
             temp_data = self.reader.select_area(temp_data, lon=self.region["lon"], lat=self.region["lat"], drop=self.drop)
 
-        # Delegate to writer with history callback
-        def append_history_callback(data):
-            return self.append_history(data)
+        # Apply history once to the dataset (xarray preserves it during slicing)
+        temp_data = self.append_history(temp_data)
 
         self.writer.write_variable(
             data=temp_data,
@@ -575,7 +574,6 @@ class Drop:
             definitive=self.definitive,
             dask=self.dask,
             performance_reporting=self.performance_reporting,
-            history_callback=append_history_callback,
         )
 
         del temp_data
