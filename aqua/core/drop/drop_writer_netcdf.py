@@ -108,12 +108,8 @@ class NetCDFWriter(BaseWriter):
         """Check if concatenation is enabled."""
         return self.compact is not None
 
-    def _open_single_file(self, filepath):
-        """Open a single NetCDF file."""
-        return xr.open_dataset(filepath)
-
-    def _open_multiple_files(self, filepaths):
-        """Open multiple NetCDF files."""
+    def _open_files(self, filepaths):
+        """Open one or more NetCDF files."""
         return xr.open_mfdataset(filepaths, combine="by_coords", parallel=True)
 
     def _concat_year_files(self, var, year):
@@ -161,8 +157,8 @@ class NetCDFWriter(BaseWriter):
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
             else:
                 self.logger.debug("Using xarray for concatenation")
-                # Reuse class method for opening multiple files
-                ds = self._open_multiple_files(tmp_monthly_files)
+                # Reuse class method for opening files
+                ds = self._open_files(tmp_monthly_files)
                 var_name = list(ds.data_vars)[0]
                 ds.to_netcdf(
                     tmp_year_file,

@@ -155,12 +155,8 @@ class ZarrWriter(BaseWriter):
         """Zarr always concatenates monthly stores into yearly."""
         return True
 
-    def _open_single_file(self, filepath):
-        """Open a single Zarr store."""
-        return xr.open_zarr(filepath, consolidated=False)
-
-    def _open_multiple_files(self, filepaths):
-        """Open multiple Zarr stores."""
+    def _open_files(self, filepaths):
+        """Open one or more Zarr stores."""
         return xr.open_mfdataset(filepaths, engine="zarr", combine="by_coords", consolidated=False)
 
     def _concat_year_files(self, var, year, minimum_required=12):
@@ -182,7 +178,7 @@ class ZarrWriter(BaseWriter):
 
         try:
             # Open all monthly stores using class method
-            ds = self._open_multiple_files(tmp_monthly_files)
+            ds = self._open_files(tmp_monthly_files)
 
             # Write to yearly store in tmpdir
             encoding = self._get_encoding(ds)

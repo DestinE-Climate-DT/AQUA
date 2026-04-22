@@ -107,6 +107,10 @@ class TestCatalogEntryBuilder:
         )
         entry_name = builder.create_entry_name()
         block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name=source_grid_name)
+        entry_name_zarr = builder.create_entry_name(output_format="zarr")
+        block_zarr = builder.create_entry_details(
+            basedir=drop_arguments["outdir"], source_grid_name=source_grid_name, output_format="zarr"
+        )
 
         if resolution == "r100" and frequency == "monthly":
             expected_name = f"lra-{resolution}-{frequency}"
@@ -114,8 +118,10 @@ class TestCatalogEntryBuilder:
             expected_name = f"{resolution}-{frequency}"
 
         assert entry_name == expected_name
+        assert entry_name_zarr == expected_name + "-zarr"
         assert block["driver"] == "netcdf"
         assert block["parameters"].keys() == {"realization", "stat", "region"}
+        assert block_zarr["driver"] == "zarr"
 
         builder2 = CatalogEntryBuilder(
             catalog="ci",
@@ -294,8 +300,16 @@ class TestDROP:
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_concat_var_year_cdo(self, drop_arguments, tmp_path):
-        """Test concatenation of monthly files into a single yearly file using cdo."""
+    @pytest.mark.parametrize(
+        "output_format,compact_method",
+        [
+            ("netcdf", "cdo"),
+            ("netcdf", "xarray"),
+            ("zarr", "xarray"),
+        ],
+    )
+    def test_concat_var_year_methods(self, drop_arguments, tmp_path, output_format, compact_method):
+        """Test concatenation of monthly files using CDO/xarray for NetCDF and xarray for Zarr."""
         resolution = "r100"
         frequency = "monthly"
         year = 2022
@@ -304,24 +318,30 @@ class TestDROP:
             catalog="ci",
             **drop_arguments,
             tmpdir=str(tmp_path),
-            compact="cdo",
+            compact=compact_method,
             resolution=resolution,
             frequency=frequency,
+            output_format=output_format,
             loglevel=LOGLEVEL,
         )
 
-        # Use the writer already initialized in Drop.__init__() (configured with compact="cdo")
+        # Create monthly files in the appropriate format
         for month in range(1, 13):
             mm = f"{month:02d}"
             filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
-            ds.to_netcdf(filename)
 
+            if output_format == "netcdf":
+                ds.to_netcdf(filename)
+            else:  # zarr
+                ds.to_zarr(filename, mode="w")
+
+        # Test concatenation with the specified method
         test.writer.concat_year_files(drop_arguments["var"], year)
         outfile = test.writer.get_filename(drop_arguments["var"], year)
 
-        assert os.path.exists(outfile)
+        assert os.path.exists(outfile), f"Yearly {output_format} file not created with {compact_method} method"
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_unknown_statistic(self, drop_arguments, tmp_path):

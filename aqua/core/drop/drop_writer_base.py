@@ -128,25 +128,15 @@ class BaseWriter(ABC):
         pass
 
     @abstractmethod
-    def _open_single_file(self, filepath):
+    def _open_files(self, filepaths):
         """
-        Open a single file/store.
+        Open one or more files/stores.
+
+        xarray.open_mfdataset handles both single and multiple files,
+        so no need for separate methods.
 
         Args:
-            filepath: Path to file/store
-
-        Returns:
-            xarray.Dataset: Opened dataset
-        """
-        pass
-
-    @abstractmethod
-    def _open_multiple_files(self, filepaths):
-        """
-        Open multiple files/stores.
-
-        Args:
-            filepaths: List of paths to files/stores
+            filepaths: Path or list of paths to files/stores
 
         Returns:
             xarray.Dataset: Opened dataset
@@ -257,19 +247,10 @@ class BaseWriter(ABC):
         """
         ext = self.get_extension()
 
-        if self.filename_builder:
-            filename = self.filename_builder.build_filename(var=var, year=year, month=month)
-            # Replace extension if needed
-            if not filename.endswith(ext):
-                filename = os.path.splitext(filename)[0] + ext
-        else:
-            # Fallback simple naming
-            if month:
-                filename = f"{var}_{year}{month:02d}{ext}"
-            elif year:
-                filename = f"{var}_{year}{ext}"
-            else:
-                filename = f"{var}{ext}"
+        filename = self.filename_builder.build_filename(var=var, year=year, month=month)
+        # Replace extension if needed
+        if not filename.endswith(ext):
+            filename = os.path.splitext(filename)[0] + ext
 
         if tmp:
             return os.path.join(self.tmpdir, os.path.basename(filename))
@@ -323,7 +304,6 @@ class BaseWriter(ABC):
                 shutil.rmtree(monthly_file)
             else:
                 self.logger.info("Cleaning monthly file %s...", basename)
-                os.remove(monthly_file)
 
     def _prepare_concat_monthly_files(self, var, year, minimum_required):
         """
@@ -416,10 +396,8 @@ class BaseWriter(ABC):
 
         if all_checks_true:
             try:
-                if len(yearfiles) == 1:
-                    ds = self._open_single_file(yearfiles[0])
-                else:
-                    ds = self._open_multiple_files(yearfiles)
+                # xr.open_mfdataset works with both single and multiple files
+                ds = self._open_files(yearfiles)
                 last_record = ds.time[-1].values
                 last_record_str = pd.to_datetime(last_record).strftime("%Y%m%d")
                 return {
