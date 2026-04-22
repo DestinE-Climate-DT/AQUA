@@ -2,6 +2,7 @@
 Class for supplementary coordinate and dimension fixes beyond base data model.
 Works BEFORE base data model transformation (DataModel/CoordTransformer).
 """
+
 import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
@@ -25,9 +26,9 @@ class FixerDataModel:
 
     """
 
-    def __init__(self, fixes=None, loglevel='WARNING'):
+    def __init__(self, fixes=None, loglevel="WARNING"):
         self.fixes = fixes
-        self.logger = log_configure(log_level=loglevel, log_name='FixerDataModel')
+        self.logger = log_configure(log_level=loglevel, log_name="FixerDataModel")
         self.loglevel = loglevel
 
     def apply(self, data: xr.Dataset) -> xr.Dataset:
@@ -88,7 +89,7 @@ class FixerDataModel:
                 if coord in data.coords:
                     self.logger.debug("Coordinate %s units overridden to %s", coord, tgt_units)
                     self.logger.warning("Units override applied - no conversion performed")
-                    data[coord].attrs['units'] = tgt_units
+                    data[coord].attrs["units"] = tgt_units
                     log_history(data[coord], f"Coordinate {coord} units set to {tgt_units} by FixerDataModel")
                 else:
                     self.logger.warning("Coordinate %s not found", coord)

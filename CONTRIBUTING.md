@@ -65,12 +65,71 @@ Do not merge your Pull Request yourself, it will be merged by the AQUA team.
 
 Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository. Please use the `improvements` label for existing features and the `enhancement` label for new features.
 
-### Coding style
+### Coding style checks with ruff and pre-commit in a Pull Request
 
-Please follow the [PEP8](https://www.python.org/dev/peps/pep-0008/) coding style.
-We use Flake8 to check the coding style, with a length limit of 127 characters per line.
-We run the Flake8 check with the following command:
+This project uses pre-commit hooks and ruff as linter and formatter to enforce the coding style.
+The coding style is defined by the `pyproject.toml` file and the `pre-commit` configuration file in `.pre-commit-config.yaml`.
+
+The pre-commit and ruff dependencies are installed automatically when setting up
+the dev environment through the `environment-dev.yml` file.
+The pre-commit configuration enforces two groups of checks:
+
+- **General file cleaning hooks** from `pre-commit-hooks`: large-file check, trailing whitespace trimming (except `.md` and `Makefile`), end-of-file newline fix, YAML validation, and overall Python syntax validation.
+- **Ruff hooks**: `ruff-check` and `ruff-format`.
+
+Ruff has two complementary roles in this workflow:
+
+- `ruff check` runs linting rules and reports code-quality/style violations; with `--fix` (and optionally `--unsafe-fixes`) it can also auto-fix part of them.
+- `ruff format` only applies formatting (layout/style normalization), similar to a code formatter, without running lint-rule diagnostics.
+
+To check and align code changes introduced in a PR with the coding style, developers can choose between the following options:
+
+1. [Recommended option] Use `pre-commit` hooks to check and align code changes at commit time.
+
+
+This requires installing the `pre-commit` hooks first. From the root folder of the repository, run:
 
 ```bash
-flake8 . --count --select=E9,F63,F7,F82
+pre-commit install
 ```
+
+From this moment on, every time a commit is made, the `pre-commit` hooks will be run automatically to check and align
+the code changes with the coding style. If the code changes are not aligned, the commit will be rejected, and the
+proposed changes will appear as unstaged changes in the developer’s local repository.
+The developer can then review the changes, stage them again, and commit successfully.
+
+If, for any reason, the developer wants to disable the `pre-commit` hooks, they can run:
+```bash
+pre-commit uninstall
+```
+
+2. Alternatively, developers can manually run the `pre-commit` hooks to check the coding style of the code changes.
+To trigger all the pre-commit hooks manually, from the root folder of the repository, run:
+
+```bash
+pre-commit run -a
+```
+
+If the developer wants to run the pre-commit hooks only for specific file(s) or folder(s), they can run:
+```bash
+pre-commit run --files <file_or_folder_to_target>
+```
+
+Side note:
+During the manual run of the pre-commit hooks, some errors can be fixed automatically
+by ruff. However, in some cases, ruff may require the extra flag `--unsafe-fixes`.
+This flag allows ruff to apply fixes that might change the behavior of your code, even when it is not safe to do so.  
+Use it with caution and review the diff!
+To run manually ruff linter with the `--unsafe-fixes` flag:
+```bash
+ruff check --fix <file_or_folder_to_target> --no-cache --unsafe-fixes
+```
+(to run over all files, set "." as the target, from the root folder of the repository)
+
+Then, to run the formatter manually:
+
+```bash
+ruff format <file_or_folder_to_target> --no-cache
+```
+
+This manual run will also format the code according to the formatting rules defined by the `pyproject.toml` file.

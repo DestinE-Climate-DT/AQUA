@@ -10,7 +10,6 @@ from .reader import Reader
 @xr.register_dataset_accessor("aqua")
 @xr.register_dataarray_accessor("aqua")
 class AquaAccessor:
-
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self.instance = Reader.instance  # by default use the latest available instance of the Reader class

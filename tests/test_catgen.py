@@ -13,6 +13,7 @@ from aqua.core.util import dump_yaml, load_yaml
 
 loglevel = LOGLEVEL
 
+
 def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
     """
     Load configuration, execute catgen, and return generated catalog sources.
@@ -36,7 +37,7 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
         AssertionError: If generated catalog files are not found
     """
     tmp_path = Path(tmp_path)
-    config_template = Path('tests/catgen/config-test-catgen.j2')
+    config_template = Path("tests/catgen/config-test-catgen.j2")
 
     # Prepare configuration
     config = _prepare_config(config_template, model, kind, reso, num_of_realizations, tmp_path)
@@ -54,41 +55,41 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
 def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_path):
     """Prepare configuration from template with test-specific values."""
     definitions = {
-        'model': model,
-        'kind': kind,
-        'resolution': reso,
-        'num_of_realizations': num_of_realizations,
-        'expid': 'test'
+        "model": model,
+        "kind": kind,
+        "resolution": reso,
+        "num_of_realizations": num_of_realizations,
+        "expid": "test",
     }
     config = load_yaml(str(template_path), definitions)
 
     # Use tmp_path for catalog directory to ensure test isolation
-    catalog_base = tmp_path / 'Climate-DT-catalog'
-    config['repos']['Climate-DT-catalog_path'] = str(catalog_base)
+    catalog_base = tmp_path / "Climate-DT-catalog"
+    config["repos"]["Climate-DT-catalog_path"] = str(catalog_base)
 
     return config
 
 
 def _setup_catalog_directory(config, tmp_path):
     """Create isolated catalog directory structure and required files."""
-    catalog_base = Path(config['repos']['Climate-DT-catalog_path'])
-    catalog_dir = config['catalog_dir']
-    catalog_yaml_path = catalog_base / 'catalogs' / catalog_dir / 'catalog.yaml'
+    catalog_base = Path(config["repos"]["Climate-DT-catalog_path"])
+    catalog_dir = config["catalog_dir"]
+    catalog_yaml_path = catalog_base / "catalogs" / catalog_dir / "catalog.yaml"
 
     # Create directory structure
     catalog_yaml_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Create initial catalog.yaml if it doesn't exist (required by catgen)
     if not catalog_yaml_path.exists():
-        dump_yaml(str(catalog_yaml_path), {'sources': {}})
+        dump_yaml(str(catalog_yaml_path), {"sources": {}})
 
 
 def _run_catgen(config, kind, tmp_path):
     """Execute the catgen command via subprocess."""
-    config_path = tmp_path / 'test.yaml'
+    config_path = tmp_path / "test.yaml"
     dump_yaml(str(config_path), config)
 
-    command = ["aqua", "catgen", '-p', kind, '-c', str(config_path), '-l', loglevel]
+    command = ["aqua", "catgen", "-p", kind, "-c", str(config_path), "-l", loglevel]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -105,14 +106,14 @@ def _run_catgen(config, kind, tmp_path):
 
 def _load_generated_sources(config):
     """Load and validate the generated catalog sources."""
-    catalog_path = Path(config['repos']['Climate-DT-catalog_path'])
-    catalog_dir = config['catalog_dir']
-    model = config['model']
-    exp = config['exp']
+    catalog_path = Path(config["repos"]["Climate-DT-catalog_path"])
+    catalog_dir = config["catalog_dir"]
+    model = config["model"]
+    exp = config["exp"]
 
-    catalog_entry_dir = catalog_path / 'catalogs' / catalog_dir / 'catalog' / model.upper()
-    entry_file = catalog_entry_dir / f'{exp}.yaml'
-    main_yaml_file = catalog_entry_dir / 'main.yaml'
+    catalog_entry_dir = catalog_path / "catalogs" / catalog_dir / "catalog" / model.upper()
+    entry_file = catalog_entry_dir / f"{exp}.yaml"
+    main_yaml_file = catalog_entry_dir / "main.yaml"
 
     # Validate that required files were generated
     assert main_yaml_file.exists(), f"main.yaml not found at {main_yaml_file}"
@@ -120,20 +121,18 @@ def _load_generated_sources(config):
 
     return load_yaml(str(entry_file))
 
-@pytest.mark.parametrize(('model,nsources,nocelevels'),
-                        [('IFS-NEMO', 4, 75)])
+
+@pytest.mark.parametrize(("model,nsources,nocelevels"), [("IFS-NEMO", 4, 75)])
 @pytest.mark.catgen
 def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     """test for minimal portfolio"""
 
     ensemble = 5
 
-    sources = load_and_prepare(tmp_path=tmp_path, model=model,
-                               kind='minimal', reso='lowres',
-                               num_of_realizations=ensemble)
+    sources = load_and_prepare(tmp_path=tmp_path, model=model, kind="minimal", reso="lowres", num_of_realizations=ensemble)
 
     # check how many sources
-    assert len(sources['sources']) == nsources
+    assert len(sources["sources"]) == nsources
 
     # check if realization is correctly formatted
     assert "realization: '{{ realization }}'"
@@ -148,29 +147,28 @@ def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
     assert sources['sources']['monthly-hpz5-pl']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 
-@pytest.mark.parametrize(('model,nsources,nocelevels'),
-                        [('IFS-NEMO', 9, 75)])
-                        # ('IFS-FESOM', 5, 47)])
+@pytest.mark.parametrize(("model,nsources,nocelevels"), [("IFS-NEMO", 9, 75)])
+# ('IFS-FESOM', 5, 47)])
 @pytest.mark.catgen
 def test_catgen_reduced(tmp_path, model, nsources, nocelevels):
     """test for reduced portfolio"""
 
     ensemble = 5
 
-    sources = load_and_prepare(tmp_path=tmp_path, model=model,
-                               kind='reduced', reso='intermediate',
-                               num_of_realizations=ensemble)
+    sources = load_and_prepare(
+        tmp_path=tmp_path, model=model, kind="reduced", reso="intermediate", num_of_realizations=ensemble
+    )
 
     # check how many sources
-    assert len(sources['sources']) == nsources
+    assert len(sources["sources"]) == nsources
 
     # check if realization is correctly formatted
     assert "realization: '{{ realization }}'"
 
     # check number of vertical levels in the atmosphere
-    if model == 'IFS-NEMO':
-        grid, freq = 'hpz7', 'monthly'
-    #elif model == 'IFS-FESOM':
+    if model == "IFS-NEMO":
+        grid, freq = "hpz7", "monthly"
+    # elif model == 'IFS-FESOM':
     #   grid, freq = 'hpz7', 'daily'
     else:
         raise ValueError(f'{model} not supported!')
@@ -183,18 +181,15 @@ def test_catgen_reduced(tmp_path, model, nsources, nocelevels):
     assert sources['sources'][f'monthly-{grid}-pl']['parameters']['realization']['allowed'] == [*range(1, ensemble+1)]
 
 
-@pytest.mark.parametrize(('model,nsources,nocelevels'),
-                        [('IFS-NEMO', 28, 75),
-                         ('IFS-FESOM', 31, 69),
-                         ('ICON', 27, 72)])
+@pytest.mark.parametrize(("model,nsources,nocelevels"), [("IFS-NEMO", 28, 75), ("IFS-FESOM", 31, 69), ("ICON", 27, 72)])
 @pytest.mark.catgen
 def test_catgen_full(tmp_path, model, nsources, nocelevels):
     """test for full portfolio"""
 
-    sources = load_and_prepare(tmp_path, model, 'full', 'production')
+    sources = load_and_prepare(tmp_path, model, "full", "production")
 
     # check how many sources
-    assert len(sources['sources']) == nsources
+    assert len(sources["sources"]) == nsources
 
     # check number of vertical levels in the atmosphere
     assert len(sources['sources']['hourly-hpz10-pl']['metadata']['levels']) == 19
@@ -208,14 +203,15 @@ MANDATORY_KEYS_TO_TEST = [
     "model",
     "repos.data-portfolio_path",
 ]
-@pytest.mark.parametrize("missing_key", MANDATORY_KEYS_TO_TEST)
 
+
+@pytest.mark.parametrize("missing_key", MANDATORY_KEYS_TO_TEST)
 @pytest.mark.catgen
 def test_catgen_missing_key(tmp_path, missing_key):
     """
     Ensure that a ValueError is raised when a required configuration key is missing.
     """
-    config_path = 'tests/catgen/config-test-catgen.j2'
+    config_path = "tests/catgen/config-test-catgen.j2"
     config = load_yaml(config_path)
 
     if missing_key.startswith("repos."):
