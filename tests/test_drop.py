@@ -276,40 +276,19 @@ class TestDROP:
         test.check_integrity(varname=drop_arguments["var"])
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_concat_var_year(self, drop_arguments, tmp_path):
-        """Test concatenation of monthly files into a single yearly file."""
-        resolution = "r100"
-        frequency = "monthly"
-        year = 2022
-
-        test = Drop(
-            catalog="ci", **drop_arguments, tmpdir=str(tmp_path), resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
-        )
-
-        # Use the writer already initialized in Drop.__init__()
-        for month in range(1, 13):
-            mm = f"{month:02d}"
-            filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
-            timeobj = pd.Timestamp(f"{year}-{mm}-01")
-            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
-            ds.to_netcdf(filename)
-
-        test.writer.concat_year_files(drop_arguments["var"], year)
-        outfile = test.writer.get_filename(drop_arguments["var"], year)
-
-        assert os.path.exists(outfile)
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
-
     @pytest.mark.parametrize(
-        "output_format,compact_method",
+        "output_format,compact_method,num_months,should_concat",
         [
-            ("netcdf", "cdo"),
-            ("netcdf", "xarray"),
-            ("zarr", "xarray"),
+            ("netcdf", "cdo", 3, False),  # <12 months: monthly files remain
+            ("netcdf", "cdo", 12, True),  # 12 months: yearly file created
+            ("netcdf", "xarray", 3, False),  # <12 months: monthly files remain
+            ("netcdf", "xarray", 12, True),  # 12 months: yearly file created
+            ("zarr", "xarray", 3, False),  # <12 months: monthly stores remain
+            ("zarr", "xarray", 12, True),  # 12 months: yearly store created
         ],
     )
-    def test_concat_var_year_methods(self, drop_arguments, tmp_path, output_format, compact_method):
-        """Test concatenation of monthly files using CDO/xarray for NetCDF and xarray for Zarr."""
+    def test_concat_threshold(self, drop_arguments, tmp_path, output_format, compact_method, num_months, should_concat):
+        """Test concatenation threshold: requires exactly 12 months for both NetCDF and Zarr."""
         resolution = "r100"
         frequency = "monthly"
         year = 2022
@@ -325,23 +304,52 @@ class TestDROP:
             loglevel=LOGLEVEL,
         )
 
-        # Create monthly files in the appropriate format
-        for month in range(1, 13):
+        # Create monthly files/stores in the appropriate format
+        for month in range(1, num_months + 1):
             mm = f"{month:02d}"
             filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
-            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
+            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([month], dims=["time"], coords={"time": [timeobj]})})
 
             if output_format == "netcdf":
                 ds.to_netcdf(filename)
             else:  # zarr
                 ds.to_zarr(filename, mode="w")
 
-        # Test concatenation with the specified method
-        test.writer.concat_year_files(drop_arguments["var"], year)
-        outfile = test.writer.get_filename(drop_arguments["var"], year)
+        # Attempt concatenation
+        result = test.writer.concat_year_files(drop_arguments["var"], year)
+        yearly_file = test.writer.get_filename(drop_arguments["var"], year)
 
-        assert os.path.exists(outfile), f"Yearly {output_format} file not created with {compact_method} method"
+        if should_concat:
+            # With 12 months: yearly file/store should be created, monthly ones removed
+            assert result is True, f"Concatenation should succeed with {num_months} months"
+            assert os.path.exists(yearly_file), f"Yearly {output_format} file/store not found"
+
+            # Verify monthly files/stores are removed
+            for month in range(1, 13):
+                mm = f"{month:02d}"
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                assert not os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should be removed"
+
+            # Verify yearly file/store content
+            if output_format == "netcdf":
+                ds_yearly = xr.open_dataset(yearly_file)
+            else:  # zarr
+                ds_yearly = xr.open_zarr(yearly_file, consolidated=True)
+
+            assert len(ds_yearly.time) == 12, "Yearly file should have 12 timesteps"
+            ds_yearly.close()
+        else:
+            # With <12 months: concatenation should not happen, monthly files/stores remain
+            assert result is False, f"Concatenation should not happen with {num_months} months"
+            assert not os.path.exists(yearly_file), f"Yearly {output_format} file/store should not exist"
+
+            # Verify monthly files/stores still exist
+            for month in range(1, num_months + 1):
+                mm = f"{month:02d}"
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                assert os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should exist"
+
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_unknown_statistic(self, drop_arguments, tmp_path):
@@ -409,44 +417,5 @@ class TestDROP:
         assert "2t" in ds.data_vars
         # Use .values to handle dask arrays
         assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 240.32689
-
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
-
-    def test_zarr_consolidate(self, drop_arguments, tmp_path):
-        """Test DROP with Zarr output and metadata consolidation (always enabled)."""
-        test = Drop(
-            catalog="ci",
-            **drop_arguments,
-            tmpdir=str(tmp_path),
-            resolution="r100",
-            frequency="monthly",
-            output_format="zarr",
-            definitive=True,
-            loglevel=LOGLEVEL,
-        )
-
-        test.retrieve()
-        test.data = test.data.sel(time=slice("2020-01", "2020-02"))
-        test.drop_generator()
-
-        # With only 2 months, concatenation should NOT happen (requires 12 months)
-        # Monthly stores should exist (check January as example)
-        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020, month="01")
-        zarr_filename = os.path.splitext(zarr_filename)[0] + ".zarr"  # Replace .nc with .zarr
-        zarr_store = os.path.join(
-            os.getcwd(),
-            drop_arguments["outdir"],
-            DROP_PATH,
-            zarr_filename,
-        )
-        assert os.path.isdir(zarr_store), f"Monthly Zarr store not found: {zarr_store}"
-
-        # Monthly stores do not have consolidated metadata
-        # Only yearly stores (created by concatenation) have it
-        ds = xr.open_zarr(zarr_store, consolidated=False)
-        assert len(ds.time) == 1  # Only January data
-
-        # Verify that the store can be read successfully
-        assert "2t" in ds.data_vars
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
