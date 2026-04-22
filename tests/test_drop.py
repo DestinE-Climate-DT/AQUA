@@ -10,7 +10,6 @@ from conftest import LOGLEVEL
 from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
-from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 
 DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
@@ -281,27 +280,16 @@ class TestDROP:
             catalog="ci", **drop_arguments, tmpdir=str(tmp_path), resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
         )
 
-        # Use NetCDFWriter with filename builder for consistent naming
-        writer = NetCDFWriter(
-            tmpdir=str(tmp_path),
-            outdir=os.path.join(os.getcwd(), drop_arguments["outdir"]),
-            time_encoding=test.time_encoding,
-            var_encoding=test.var_encoding,
-            compact="xarray",
-            cdo_options=[],
-            filename_builder=test.outbuilder,
-            loglevel=LOGLEVEL,
-        )
-
+        # Use the writer already initialized in Drop.__init__()
         for month in range(1, 13):
             mm = f"{month:02d}"
-            filename = writer.get_filename(drop_arguments["var"], year, month=mm)
+            filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
             ds.to_netcdf(filename)
 
-        writer.concat_year_files(drop_arguments["var"], year, writer.get_filename)
-        outfile = writer.get_filename(drop_arguments["var"], year)
+        test.writer.concat_year_files(drop_arguments["var"], year)
+        outfile = test.writer.get_filename(drop_arguments["var"], year)
 
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
@@ -322,27 +310,16 @@ class TestDROP:
             loglevel=LOGLEVEL,
         )
 
-        # Use NetCDFWriter with CDO compact method and filename builder
-        writer = NetCDFWriter(
-            tmpdir=str(tmp_path),
-            outdir=os.path.join(os.getcwd(), drop_arguments["outdir"]),
-            time_encoding=test.time_encoding,
-            var_encoding=test.var_encoding,
-            compact="cdo",
-            cdo_options=[],
-            filename_builder=test.outbuilder,
-            loglevel=LOGLEVEL,
-        )
-
+        # Use the writer already initialized in Drop.__init__() (configured with compact="cdo")
         for month in range(1, 13):
             mm = f"{month:02d}"
-            filename = writer.get_filename(drop_arguments["var"], year, month=mm)
+            filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
             ds.to_netcdf(filename)
 
-        writer.concat_year_files(drop_arguments["var"], year, writer.get_filename)
-        outfile = writer.get_filename(drop_arguments["var"], year)
+        test.writer.concat_year_files(drop_arguments["var"], year)
+        outfile = test.writer.get_filename(drop_arguments["var"], year)
 
         assert os.path.exists(outfile)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))

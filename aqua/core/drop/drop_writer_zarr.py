@@ -7,7 +7,6 @@ and metadata consolidation. Optimized for large time-series datasets.
 Requires Zarr v3+.
 """
 
-import glob
 import os
 import shutil
 
@@ -16,6 +15,9 @@ import xarray as xr
 import zarr
 
 from aqua.core.drop.drop_writer_base import BaseWriter
+
+# zarr chunking defaults
+ZARR_CHUNKS = {"time": 1, "lat": None, "lon": None}
 
 
 class ZarrWriter(BaseWriter):
@@ -29,8 +31,6 @@ class ZarrWriter(BaseWriter):
         self,
         tmpdir,
         outdir,
-        chunks=None,
-        compressor="auto",
         **kwargs,
     ):
         """
@@ -39,16 +39,13 @@ class ZarrWriter(BaseWriter):
         Args:
             tmpdir: Temporary directory for atomic writes
             outdir: Output directory for zarr stores
-            chunks: Dict of chunk sizes (e.g. {'time': 1, 'lat': None, 'lon': None})
-            compressor: 'auto' for Blosc/zstd or custom numcodecs compressor
             **kwargs: Additional arguments passed to BaseWriter
 
         Note:
             Metadata consolidation is always enabled on yearly archives for optimal read performance.
         """
         super().__init__(tmpdir, outdir, **kwargs)
-        self.chunks = chunks or {"time": 1, "lat": None, "lon": None}
-        self.compressor = compressor
+        self.chunks = ZARR_CHUNKS
 
     def get_extension(self):
         """Return file extension for this format."""
@@ -166,7 +163,7 @@ class ZarrWriter(BaseWriter):
         """Open multiple Zarr stores."""
         return xr.open_mfdataset(filepaths, engine="zarr", combine="by_coords", consolidated=False)
 
-    def _concat_year_files(self, var, year):
+    def _concat_year_files(self, var, year, minimum_required=12):
         """
         Concatenate monthly zarr stores into a single yearly store.
 
@@ -177,49 +174,32 @@ class ZarrWriter(BaseWriter):
         Returns:
             bool: True if successful
         """
-        infiles_pattern = self.get_filename(var, year, month="??")
-        monthly_stores = sorted(glob.glob(infiles_pattern))
+        # Prepare monthly stores for concatenation (Zarr needs at least 1)
+        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=1)
 
-        if len(monthly_stores) == 0:
-            self.logger.debug("No monthly stores found for %s year %s", var, year)
+        if tmp_monthly_files is None:
             return False
 
-        if len(monthly_stores) < 12:
-            self.logger.warning(
-                "Found only %d monthly stores for %s year %s (expected 12), concatenating anyway",
-                len(monthly_stores),
-                var,
-                year,
-            )
-
-        self.logger.info("Merging %d monthly zarr stores for %s, year %s...", len(monthly_stores), var, year)
-
         try:
-            # Open all monthly stores and concatenate
-            ds = xr.open_mfdataset(monthly_stores, engine="zarr", combine="by_coords", consolidated=False)
+            # Open all monthly stores using class method
+            ds = self._open_multiple_files(tmp_monthly_files)
 
-            # Write to yearly store in outdir
-            year_store_path = self.get_filename(var, year)
-
-            if os.path.exists(year_store_path):
-                shutil.rmtree(year_store_path)
-
+            # Write to yearly store in tmpdir
             encoding = self._get_encoding(ds)
-            ds.to_zarr(year_store_path, mode="w", consolidated=False, encoding=encoding)
+            ds.to_zarr(tmp_year_file, mode="w", consolidated=False, encoding=encoding)
 
-            # Always consolidate metadata on yearly store for optimal read performance
-            self.consolidate_metadata(year_store_path)
-            self.logger.info("Consolidated metadata for yearly store %s", os.path.basename(year_store_path))
+            # Always consolidate metadata for optimal read performance
+            self.consolidate_metadata(tmp_year_file)
+            self.logger.info("Consolidated metadata for %s", os.path.basename(tmp_year_file))
 
-            # Cleanup monthly stores
-            for monthly_store in monthly_stores:
-                self.logger.info("Cleaning monthly store %s...", os.path.basename(monthly_store))
-                shutil.rmtree(monthly_store)
+            # Move yearly store to output and cleanup monthly stores
+            shutil.move(tmp_year_file, year_file)
+            self._cleanup_monthly_files(tmp_monthly_files)
 
             return True
 
         except Exception as e:
-            self.logger.error("Failed to concatenate year stores: %s", e)
+            self.logger.error("Failed to concatenate monthly stores: %s", e)
             return False
 
     def consolidate_metadata(self, store_path):

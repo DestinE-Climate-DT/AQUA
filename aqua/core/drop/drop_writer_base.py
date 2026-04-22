@@ -153,19 +153,19 @@ class BaseWriter(ABC):
         """
         pass
 
-    def _compute_data(self, data, dask_client=None, performance_reporting=False):
+    def _compute_data(self, data, dask=False, performance_reporting=False):
         """
         Compute data with Dask monitoring and performance reporting.
 
         Args:
             data: xarray Dataset/DataArray (possibly lazy/dask)
-            dask_client: Dask client for distributed computing
+            dask: If True, use Dask for distributed computing
             performance_reporting: Enable performance reporting
 
         Returns:
             xarray Dataset/DataArray: Computed data
         """
-        if dask_client is not None:
+        if dask:
             self.logger.info("Computing data with Dask monitoring...")
             if performance_reporting:
                 job = data.persist()
@@ -191,7 +191,7 @@ class BaseWriter(ABC):
                     data = data.compute()
         return data
 
-    def _write_monthly_chunk(self, data, var, year, month, dask_client=None, performance_reporting=False):
+    def _write_monthly_chunk(self, data, var, year, month, dask=False, performance_reporting=False):
         """
         Write a single monthly chunk.
 
@@ -205,7 +205,7 @@ class BaseWriter(ABC):
             var: Variable name
             year: Year
             month: Month
-            dask_client: Dask client for distributed computing
+            dask: If True, use Dask for distributed computing
             performance_reporting: Enable performance reporting
 
         Returns:
@@ -229,7 +229,7 @@ class BaseWriter(ABC):
             data = data.to_dataset(name=var_name)
 
         # Compute data
-        data = self._compute_data(data, dask_client=dask_client, performance_reporting=performance_reporting)
+        data = self._compute_data(data, dask=dask, performance_reporting=performance_reporting)
 
         # Get encoding
         encoding = self._get_encoding(data, var)
@@ -275,6 +275,102 @@ class BaseWriter(ABC):
             return os.path.join(self.tmpdir, os.path.basename(filename))
         else:
             return os.path.join(self.outdir, filename) if not os.path.isabs(filename) else filename
+
+    def _get_and_validate_monthly_files(self, var, year, minimum_required):
+        """
+        Get and validate monthly files/stores for concatenation.
+
+        Args:
+            var: Variable name
+            year: Year
+            minimum_required: Minimum number of files required
+
+        Returns:
+            tuple: (monthly_files: list, is_valid: bool, message: str)
+        """
+        monthly_pattern = self.get_filename(var, year, month="??")
+        monthly_files = sorted(glob.glob(monthly_pattern))
+        count = len(monthly_files)
+
+        if count == 0:
+            self.logger.warning("No monthly files found for %s year %s", var, year)
+            return [], False
+
+        if count < minimum_required:
+            self.logger.warning(
+                "Found only %d monthly files for %s year %s, expected at least %d",
+                count,
+                var,
+                year,
+                minimum_required,
+            )
+            return monthly_files, False
+
+        self.logger.debug("Found %d monthly files for %s year %s", count, var, year)
+        return monthly_files, True
+
+    def _cleanup_monthly_files(self, monthly_files):
+        """
+        Remove monthly files/stores after successful concatenation.
+
+        Args:
+            monthly_files: List of paths to remove
+        """
+        for monthly_file in monthly_files:
+            basename = os.path.basename(monthly_file)
+            if os.path.isdir(monthly_file):
+                self.logger.info("Cleaning monthly store %s...", basename)
+                shutil.rmtree(monthly_file)
+            else:
+                self.logger.info("Cleaning monthly file %s...", basename)
+                os.remove(monthly_file)
+
+    def _prepare_concat_monthly_files(self, var, year, minimum_required):
+        """
+        Prepare monthly files for concatenation into yearly file.
+
+        Common logic for both NetCDF and Zarr:
+        1. Get and validate monthly files
+        2. Move them to tmpdir for safety
+        3. Clean any existing yearly files
+        4. Return paths for concatenation
+
+        Args:
+            var: Variable name
+            year: Year to concatenate
+            minimum_required: Minimum number of monthly files required
+
+        Returns:
+            tuple: (tmp_monthly_files, year_file, tmp_year_file) or (None, None, None) if invalid
+        """
+        # Get and validate monthly files
+        monthly_files, is_valid = self._get_and_validate_monthly_files(var, year, minimum_required=minimum_required)
+
+        if not is_valid:
+            return None, None, None
+
+        self.logger.info("Creating yearly file for %s, year %s from %d monthly files...", var, year, len(monthly_files))
+
+        # Get output paths
+        year_file = self.get_filename(var, year)
+        tmp_year_file = os.path.join(self.tmpdir, os.path.basename(year_file))
+
+        # Move monthly files to tmpdir for safety
+        for monthly_file in monthly_files:
+            shutil.move(monthly_file, self.tmpdir)
+
+        # Clean any existing output files
+        for f in [tmp_year_file, year_file]:
+            if os.path.exists(f):
+                if os.path.isdir(f):
+                    shutil.rmtree(f)
+                else:
+                    os.remove(f)
+
+        # Get the moved files in tmpdir - they keep the same basename
+        tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
+
+        return tmp_monthly_files, year_file, tmp_year_file
 
     def concat_year_files(self, var, year, get_filename_fn=None):
         """
@@ -346,7 +442,7 @@ class BaseWriter(ABC):
         var,
         overwrite=False,
         definitive=True,
-        dask_client=None,
+        dask=False,
         performance_reporting=False,
         history_callback=None,
     ):
@@ -372,7 +468,7 @@ class BaseWriter(ABC):
             var: Variable name
             overwrite: Overwrite existing files
             definitive: Actually write files (vs dry-run)
-            dask_client: Dask client for distributed computing
+            dask: If True, use Dask for distributed computing
             performance_reporting: Limit to first month only
             history_callback: Optional function to append history metadata
 
@@ -424,7 +520,7 @@ class BaseWriter(ABC):
                     tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
                     t_start = time()
                     success = self._write_monthly_chunk(
-                        month_data, var, year, month, dask_client=dask_client, performance_reporting=performance_reporting
+                        month_data, var, year, month, dask=dask, performance_reporting=performance_reporting
                     )
                     t_elapsed = time() - t_start
                     self.logger.info("Chunk execution time: %.2f", t_elapsed)

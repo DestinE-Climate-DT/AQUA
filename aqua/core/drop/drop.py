@@ -2,7 +2,7 @@
 DROP (Data Reduction OPerator) class
 
 This class provides comprehensive data processing capabilities for climate datasets,
-including regridding, temporal averaging, regional extraction, and archiving.
+including regridding, temporal averaging, regional extraction.
 It handles multiple file formats and uses Dask for parallel processing of large datasets.
 
 Main features:
@@ -19,7 +19,6 @@ import shutil
 from time import time
 
 import dask
-import numpy as np
 import pandas as pd
 from dask.distributed import Client, LocalCluster
 
@@ -36,10 +35,7 @@ from .drop_util import move_tmp_files
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
 
-TIME_ENCODING = {"units": "days since 1850-01-01 00:00:00", "calendar": "standard", "dtype": "float64"}
-
-VAR_ENCODING = {"dtype": "float64", "zlib": True, "complevel": 1, "_FillValue": np.nan}
-
+# available statistics
 available_stats = ["mean", "std", "max", "min", "sum", "histogram"]
 
 
@@ -80,7 +76,6 @@ class Drop:
         stat="mean",
         stat_kwargs={},
         compact="xarray",
-        cdo_options=["-f", "nc4", "-z", "zip_1"],
         engine="fdb",
         output_format="netcdf",
         zarr_chunks=None,
@@ -133,12 +128,8 @@ class Drop:
                 Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
-            cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
             engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
             output_format (string, opt): Output format: 'netcdf' or 'zarr'. Default is 'netcdf'.
-            zarr_chunks (dict, opt): Chunk sizes for zarr (e.g. {'time': 1, 'lat': None, 'lon': None}).
-                                     Default is None (uses zarr writer defaults).
-                                     Note: Zarr metadata consolidation is always enabled on yearly archives.
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -181,38 +172,24 @@ class Drop:
         # configure regional selection
         self._configure_region(region, drop)
 
+        # Validate and set outdir early (needed by other validations)
+        if outdir is None:
+            raise KeyError("Please specify outdir.")
+        self.basedir = outdir
+
+        # configure output format and compacting
+        self.output_format = output_format
+        self.compact = compact
+        self.zarr_chunks = zarr_chunks
+
+        # validate parameters and raise errors if needed
+        self._issue_info_raise()
+
         # print some info about the settings
         self._issue_info_warning()
 
-        # define the tmpdir
-        if tmpdir is None:
-            self.logger.warning("No tmpdir specifield, will use outdir")
-            self.tmpdir = os.path.join(outdir, "tmp")
-        else:
-            self.tmpdir = tmpdir
-        self.tmpdir = os.path.join(self.tmpdir, f"DROP_{generate_random_string(10)}")
-
-        # set up compacting method for concatenation
-        self.compact = compact
-        if self.compact not in ["xarray", "cdo", None]:
-            raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
-
-        self.cdo_options = cdo_options
-        if not isinstance(self.cdo_options, list):
-            raise TypeError("cdo_options must be a list.")
-
-        # configure output format and writer
-        self.output_format = output_format
-        if self.output_format not in ["netcdf", "zarr"]:
-            raise ValueError("output_format must be 'netcdf' or 'zarr'")
-
-        # Zarr-specific validation
-        if self.output_format == "zarr":
-            if self.compact is not None:
-                self.logger.warning("compact option ignored for zarr output (zarr appends directly)")
-                self.compact = None
-
-        self.zarr_chunks = zarr_chunks
+        # configure tmpdir
+        self.tmpdir = self._configure_tmpdir(tmpdir, self.basedir)
 
         # configure the configdir
         configpath = ConfigPath(configdir=configdir)
@@ -222,17 +199,10 @@ class Drop:
         _, grids_path = configpath.get_reader_filenames()
         self.default_grids = load_yaml(os.path.join(grids_path, "default.yaml"))
 
-        # option for encoding, defined once for all
-        self.time_encoding = TIME_ENCODING
-        self.var_encoding = VAR_ENCODING
-
         # add the performance report
         self.performance_reporting = performance_reporting
 
         # Create output folders
-        if outdir is None:
-            raise KeyError("Please specify outdir.")
-
         self.catbuilder = CatalogEntryBuilder(
             catalog=self.catalog,
             model=self.model,
@@ -246,8 +216,6 @@ class Drop:
         )
         # Create output path builder from the catalog entry builder
         self.outbuilder = self.catbuilder.opt
-
-        self.basedir = outdir
         self.outdir = os.path.join(self.basedir, self.outbuilder.build_directory())
 
         create_folder(self.outdir, loglevel=self.loglevel)
@@ -324,6 +292,42 @@ class Drop:
         if self.stat_kwargs is not None and self.stat_kwargs != {}:
             self.logger.info("Additional kwargs for the statistic: %s", self.stat_kwargs)
         self.logger.info("Domain selection: %s", self.region_name)
+
+    def _issue_info_raise(self):
+        """
+        Validate parameters and raise errors if invalid
+        """
+        # Validate compact method
+        if self.compact not in ["xarray", "cdo", None]:
+            raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
+
+        # Validate output format
+        if self.output_format not in ["netcdf", "zarr"]:
+            raise ValueError("output_format must be 'netcdf' or 'zarr'")
+
+        # Zarr-specific validation
+        if self.output_format == "zarr":
+            if self.compact is not None:
+                self.logger.warning("compact option ignored for zarr output (zarr appends directly)")
+                self.compact = None
+
+    def _configure_tmpdir(self, tmpdir, outdir):
+        """
+        Configure temporary directory for intermediate files
+
+        Args:
+            tmpdir: User-specified tmpdir or None
+            outdir: Output directory
+
+        Returns:
+            str: Configured tmpdir path with random suffix
+        """
+        if tmpdir is None:
+            self.logger.warning("No tmpdir specified, will use outdir/tmp")
+            tmpdir = os.path.join(outdir, "tmp")
+
+        # Add random suffix to avoid conflicts
+        return os.path.join(tmpdir, f"DROP_{generate_random_string(10)}")
 
     def _configure_region(self, region, drop):
         """Configure the region for regional selection, and the drop option"""
@@ -455,10 +459,7 @@ class Drop:
             self.writer = NetCDFWriter(
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
-                time_encoding=self.time_encoding,
-                var_encoding=self.var_encoding,
                 compact=self.compact,
-                cdo_options=self.cdo_options,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
             )
@@ -467,8 +468,6 @@ class Drop:
             self.writer = ZarrWriter(
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
-                chunks=self.zarr_chunks,
-                compressor="auto",
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
             )
@@ -522,9 +521,8 @@ class Drop:
             self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
 
     def _remove_regridded(self, data):
+        """Remove regridded attribute to avoid issues with Reader"""
 
-        # remove regridded attribute to avoid issues with Reader
-        # https://github.com/oloapinivad/AQUA/issues/147
         if "AQUA_regridded" in data.attrs:
             self.logger.debug("Removing regridding attribute...")
             del data.attrs["AQUA_regridded"]
@@ -575,7 +573,7 @@ class Drop:
             var=var,
             overwrite=self.overwrite,
             definitive=self.definitive,
-            dask_client=self.client,
+            dask=self.dask,
             performance_reporting=self.performance_reporting,
             history_callback=append_history_callback,
         )

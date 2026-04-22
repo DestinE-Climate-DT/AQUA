@@ -5,15 +5,22 @@ Handles writing climate data chunks to NetCDF files with optional concatenation
 into yearly files. Supports both xarray and CDO for file concatenation.
 """
 
-import glob
 import os
 import shutil
 import subprocess
 
+import numpy as np
 import xarray as xr
 
 from aqua.core.drop.drop_writer_base import BaseWriter
 from aqua.core.util.io_util import file_is_complete
+
+# default encoding for netCDF files
+TIME_ENCODING = {"units": "days since 1850-01-01 00:00:00", "calendar": "standard", "dtype": "float64"}
+VAR_ENCODING = {"dtype": "float64", "zlib": True, "complevel": 1, "_FillValue": np.nan}
+
+# default CDO options for concatenation
+CDO_OPTIONS = ["-f", "nc4", "-z", "zip_1"]  # default CDO options for NetCDF output
 
 
 class NetCDFWriter(BaseWriter):
@@ -27,10 +34,7 @@ class NetCDFWriter(BaseWriter):
         self,
         tmpdir,
         outdir,
-        time_encoding,
-        var_encoding,
         compact="xarray",
-        cdo_options=None,
         **kwargs,
     ):
         """
@@ -39,17 +43,14 @@ class NetCDFWriter(BaseWriter):
         Args:
             tmpdir: Temporary directory for intermediate files
             outdir: Output directory for final files
-            time_encoding: Encoding dict for time coordinate
-            var_encoding: Encoding dict for data variables
             compact: Concatenation method ('xarray', 'cdo', or None)
-            cdo_options: List of CDO options for concatenation
             **kwargs: Additional arguments passed to BaseWriter
         """
         super().__init__(tmpdir, outdir, **kwargs)
-        self.time_encoding = time_encoding
-        self.var_encoding = var_encoding
+        self.time_encoding = TIME_ENCODING
+        self.var_encoding = VAR_ENCODING
         self.compact = compact
-        self.cdo_options = cdo_options or ["-f", "nc4", "-z", "zip_1"]
+        self.cdo_options = CDO_OPTIONS
 
     def get_extension(self):
         """Return file extension for this format."""
@@ -119,6 +120,8 @@ class NetCDFWriter(BaseWriter):
         """
         Concatenate monthly files into a single yearly file.
 
+        NetCDF requires exactly 12 monthly files for concatenation.
+
         Args:
             var: Variable name
             year: Year to concatenate
@@ -126,60 +129,51 @@ class NetCDFWriter(BaseWriter):
         Returns:
             bool: True if successful
         """
-        infiles_pattern = self.get_filename(var, year, month="??")
-        monthly_files = sorted(glob.glob(infiles_pattern))
+        # Get and validate monthly files (NetCDF requires exactly 12)
+        monthly_files, is_valid = self._get_and_validate_monthly_files(var, year, minimum_required=12)
 
-        if len(monthly_files) == 0:
-            self.logger.debug("No monthly files found for %s year %s", var, year)
+        if not is_valid:
             return False
 
-        if len(monthly_files) != 12:
-            self.logger.debug(
-                "Found %d monthly files for %s year %s (expected 12), skipping concatenation",
-                len(monthly_files),
-                var,
-                year,
-            )
-            return False
+        self.logger.info("Creating yearly file for %s, year %s from %d monthly files...", var, year, len(monthly_files))
 
-        self.logger.info("Creating a single file for %s, year %s...", var, str(year))
-        outfile = self.get_filename(var, year)
-        tmp_outfile = os.path.join(self.tmpdir, os.path.basename(outfile))
+        # Get output paths
+        year_file = self.get_filename(var, year)
+        tmp_year_file = os.path.join(self.tmpdir, os.path.basename(year_file))
 
-        # Move monthly files to tmp for safety
+        # Move monthly files to tmpdir for safety
         for monthly_file in monthly_files:
             shutil.move(monthly_file, self.tmpdir)
 
         # Clean any existing output files
-        for f in [tmp_outfile, outfile]:
+        for f in [tmp_year_file, year_file]:
             if os.path.exists(f):
                 os.remove(f)
 
         # Get the moved files in tmpdir - they keep the same basename
         tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
 
-        # Concatenation with CDO or Xarray
+        # Concatenate using CDO or xarray
         try:
             if self.compact == "cdo":
-                command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_outfile]
-                self.logger.debug("Using CDO command: %s", command)
+                command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_year_file]
+                self.logger.debug("Using CDO: %s", " ".join(command[:4]) + " ...")
                 subprocess.check_output(command, stderr=subprocess.STDOUT)
             else:
-                self.logger.debug("Using xarray to concatenate files")
-                xfield = xr.open_mfdataset(tmp_monthly_files, combine="by_coords", parallel=True)
-                name = list(xfield.data_vars)[0]
-                xfield.to_netcdf(
-                    tmp_outfile,
-                    encoding={"time": self.time_encoding, name: self.var_encoding},
+                self.logger.debug("Using xarray for concatenation")
+                # Reuse class method for opening multiple files
+                ds = self._open_multiple_files(tmp_monthly_files)
+                var_name = list(ds.data_vars)[0]
+                ds.to_netcdf(
+                    tmp_year_file,
+                    encoding={"time": self.time_encoding, var_name: self.var_encoding},
                 )
 
-            # Move back the yearly file and cleanup
-            shutil.move(tmp_outfile, outfile)
-            for tmp_file in tmp_monthly_files:
-                self.logger.info("Cleaning %s...", tmp_file)
-                os.remove(tmp_file)
+            # Move yearly file to output and cleanup monthly files
+            shutil.move(tmp_year_file, year_file)
+            self._cleanup_monthly_files(tmp_monthly_files)
             return True
 
         except Exception as e:
-            self.logger.error("Failed to concatenate year files: %s", e)
+            self.logger.error("Failed to concatenate monthly files: %s", e)
             return False
