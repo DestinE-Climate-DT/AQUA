@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Refactor for writing capabilities of Drop now allowing also for zarr store (#2824)
 - Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791, #2815)
 - Fix race condition during parallel tests (#2805)
 - Fix area selection, `default_coords` are deduced from the dataset (#2768)

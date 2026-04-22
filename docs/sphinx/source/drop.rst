@@ -36,7 +36,7 @@ DROP's architecture enables various data processing tasks:
 **Data Management:**
 
 - Automatic catalog entry generation for DROP-generated outputs
-- Zarr reference creation for faster access
+- Output in both NetCDF and Zarr formats for flexible access
 - Parallel processing with configurable workers
 - Memory-efficient chunked processing
 
@@ -49,6 +49,9 @@ DROP's architecture enables various data processing tasks:
 
 DROP can be explored in the `DROP notebook <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/drop/drop.ipynb>`_.
 
+.. note ::
+    DROP is designed to be flexible and can be used for a wide range of data reduction tasks beyond the specific use cases mentioned above. T
+    However, the processing window and output file are always based on monthly chunks.
 
 The Low Resolution Archive (LRA) Context
 ----------------------------------------
@@ -156,7 +159,7 @@ You can access data using Zarr reference files for improved performance, when av
     running DROP. See the "Source Naming Convention" section above for details.
 
 .. warning ::
-    Zarr reference access is experimental and may not work with all experiment configurations.
+    Zarr storage generation access is experimental and may not work with all experiment configurations.
 
 Using DROP to process data
 --------------------------
@@ -291,13 +294,11 @@ Controls processing behavior and performance settings:
     options:
       engine: fdb
       loglevel: INFO
-      zarr: False
-      verify_zarr: False
+      output_format: netcdf
       overwrite: False
       exclude_incomplete: False
       rebuild: False
       compact: xarray
-      cdo_options: ["-f", "nc4", "-z", "zip_1"]
       performance_reporting: False
 
 - **engine** (string, optional): Data retrieval engine. Default: ``fdb``
@@ -310,16 +311,12 @@ Controls processing behavior and performance settings:
 
   - Available levels: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``
 
-- **zarr** (bool, optional): Create Zarr reference files for faster subsequent access. Default: ``False``
+- **output_format** (string, optional): Format for the output files. Default: ``netcdf``
 
-  - ``True``: Generate Zarr references after processing
-  - ``False``: Only create NetCDF files, default behavior
-
-- **verify_zarr** (bool, optional): Verify Zarr references after creation. Default: ``False``
-
-  - ``True``: Test Zarr references by loading data
-  - ``False``: Skip verification
-  - Only relevant when ``zarr: True``
+  - ``netcdf``: Create NetCDF files.
+  Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
+  - ``zarr``: Create Zarr datasets files for faster subsequent access. Test feature under development, use with caution.
+  Monthly files are created and then concatenated into yearly consolidate files, and monthly files are removed. This is suboptimal but provides safety against incomplete or corrupted files.
 
 - **overwrite** (bool, optional): Overwrite existing output files. Default: ``False``
 
@@ -338,17 +335,11 @@ Controls processing behavior and performance settings:
   - ``False``: Use cached weights if available
   - Set to ``True`` if you suspect weights are outdated (e.g., after a major update to CDO or AQUA)
 
-- **compact** (string, optional): Method for concatenating monthly files into yearly files. Default: ``xarray``
+- **compact** (string, optional): Method for concatenating monthly files into yearly files. Only relevant when ``output_format: netcdf``. Default: ``xarray``
 
   - ``xarray``: Use xarray for concatenation
   - ``cdo``: Use Climate Data Operators
   - ``null`` or omit: No compacting, keep monthly files
-
-- **cdo_options** (list, optional): Options passed to CDO when ``compact: cdo``. Default: ``["-f", "nc4", "-z", "zip_1"]``
-
-  - ``-f nc4``: NetCDF4 format
-  - ``-z zip_1``: Compression level 1
-  - Add additional CDO flags as list elements
 
 - **performance_reporting** (bool, optional): Generate Dask performance HTML report. Default: ``False``
 
