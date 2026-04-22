@@ -205,7 +205,6 @@ def method(self, arg1, arg2=None):
 
 ## Integration Checklist
 
-- [ ] `xr.set_options(keep_attrs=True)` set at module level
 - [ ] `DataModel.apply()` used for coordinate transformations
 - [ ] Semantic data transforms call `log_history()` and preserve `AQUA_*` attrs
 - [ ] xarray outputs for AQUA chaining call `data.aqua.set_default(self)`
