@@ -511,21 +511,20 @@ class TestDROP:
         # Should return None when chunks is None
         assert encoding is None
 
-    def test_write_without_dask_client(self, drop_arguments, tmp_path):
-        """Test write_variable without dask_client (single process)."""
+    def test_performance_reporting(self, drop_arguments, tmp_path):
+        """Test write_variable performance reporting."""
         test = Drop(
             catalog="ci",
             **drop_arguments,
             tmpdir=str(tmp_path),
             resolution="r100",
             frequency="monthly",
-            nproc=1,  # Single process, no dask cluster
+            performance_reporting=True,
             definitive=True,
             loglevel=LOGLEVEL,
         )
 
         test.retrieve()
-        test.data = test.data.sel(time="2020-01")
         test.drop_generator()  # Should work without dask_client
 
         file_path = os.path.join(
@@ -535,4 +534,11 @@ class TestDROP:
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
         )
         assert os.path.isfile(file_path)
+        file_missing = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
+        )
+        assert not os.path.exists(file_missing), "Incomplete file should not be created: {}".format(file_missing)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
