@@ -194,10 +194,10 @@ class AquaFDBGenerator:
         return result
 
     @staticmethod
-    def get_forcing(experiment: str) -> str:
+    def get_forcing(experiment: str, prefix_map: dict) -> str:
         """Get the forcing string based on the experiment name."""
         normalized = re.sub(r"[^a-z0-9]", "", experiment.lower())
-        for key, prefix in AquaFDBGenerator.PREFIX_MAP.items():
+        for key, prefix in prefix_map.items():
             if experiment.startswith(key):
                 return f"{prefix}-{normalized}"
         return normalized
@@ -347,7 +347,7 @@ class AquaFDBGenerator:
 
             forcing = self.config.get("forcing")
             if not forcing:
-                forcing = get_forcing(self.config["experiment"])
+                forcing = self.get_forcing(self.config["experiment"], prefix_map)
 
             main_yaml["sources"][self.config["exp"]] = {
                 "description": self.description,
