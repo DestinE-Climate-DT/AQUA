@@ -258,7 +258,9 @@ class Drop:
         self.cluster = None
         self.client = None
         self.reader = None
-        self.writer = None  # Will be initialized in _set_writer()
+
+        # Initialize writer (dask_client will be set later if needed)
+        self._set_writer()
 
         # for data reading from FDB
         self.last_record = None
@@ -385,9 +387,6 @@ class Drop:
         # Set up dask cluster
         self._set_dask()
 
-        # Initialize writer after dask is set up
-        self._set_writer()
-
         if isinstance(self.var, list):
             for var in self.var:
                 self._write_var(var)
@@ -450,7 +449,7 @@ class Drop:
 
     def _set_writer(self):
         """
-        Initialize the appropriate writer based on output_format
+        Initialize the appropriate writer based on output_format.
         """
         if self.output_format == "netcdf":
             self.writer = NetCDFWriter(
@@ -460,8 +459,6 @@ class Drop:
                 var_encoding=self.var_encoding,
                 compact=self.compact,
                 cdo_options=self.cdo_options,
-                dask_client=self.client,
-                performance_reporting=self.performance_reporting,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
             )
@@ -472,10 +469,8 @@ class Drop:
                 outdir=self.outdir,
                 chunks=self.zarr_chunks,
                 compressor="auto",
-                dask_client=self.client,
-                performance_reporting=self.performance_reporting,
-                loglevel=self.loglevel,
                 filename_builder=self.outbuilder,
+                loglevel=self.loglevel,
             )
             self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
 
@@ -580,6 +575,7 @@ class Drop:
             var=var,
             overwrite=self.overwrite,
             definitive=self.definitive,
+            dask_client=self.client,
             performance_reporting=self.performance_reporting,
             history_callback=append_history_callback,
         )

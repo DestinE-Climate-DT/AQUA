@@ -289,7 +289,6 @@ class TestDROP:
             var_encoding=test.var_encoding,
             compact="xarray",
             cdo_options=[],
-            dask_client=None,
             filename_builder=test.outbuilder,
             loglevel=LOGLEVEL,
         )
@@ -331,7 +330,6 @@ class TestDROP:
             var_encoding=test.var_encoding,
             compact="cdo",
             cdo_options=[],
-            dask_client=None,
             filename_builder=test.outbuilder,
             loglevel=LOGLEVEL,
         )
@@ -396,12 +394,14 @@ class TestDROP:
         test.data = test.data.sel(time=slice("2020-01", "2020-03"))
         test.drop_generator()
 
-        # Check zarr store exists (yearly pattern)
+        # Check zarr store exists (yearly pattern) - use filename builder
+        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020)
+        zarr_filename = os.path.splitext(zarr_filename)[0] + ".zarr"  # Replace .nc with .zarr
         zarr_store = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t_2020.zarr",
+            zarr_filename,
         )
         assert os.path.isdir(zarr_store), f"Zarr store not found: {zarr_store}"
 
@@ -431,11 +431,14 @@ class TestDROP:
         test.data = test.data.sel(time=slice("2020-01", "2020-02"))
         test.drop_generator()
 
+        # Use filename builder to get correct zarr store name
+        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020)
+        zarr_filename = os.path.splitext(zarr_filename)[0] + ".zarr"  # Replace .nc with .zarr
         zarr_store = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t_2020.zarr",
+            zarr_filename,
         )
         assert os.path.isdir(zarr_store)
 
