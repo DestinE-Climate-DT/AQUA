@@ -229,11 +229,15 @@ class AquaFDBGenerator:
         aqua_grid = self.matching_grids[grid]
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
         levtype_str = (
-            'o3d' if profile["levtype"] == 'o3d' and 'full' in profile['vertical'] else
-            'o3d-half' if profile["levtype"] == 'o3d' and 'half' in profile['vertical'] else
-            'sol4' if profile["levtype"] == 'sol' and profile['vertical'] in {'IFS-sol4', 'ICON-sol4'} else
-            'sol5' if profile["levtype"] == 'sol' and profile['vertical'] in {'IFS-sol5', 'ICON-sol5'} else
-            profile["levtype"]
+            "o3d"
+            if profile["levtype"] == "o3d" and "full" in profile["vertical"]
+            else "o3d-half"
+            if profile["levtype"] == "o3d" and "half" in profile["vertical"]
+            else "sol4"
+            if profile["levtype"] == "sol" and profile["vertical"] in {"IFS-sol4", "ICON-sol4"}
+            else "sol5"
+            if profile["levtype"] == "sol" and profile["vertical"] in {"IFS-sol5", "ICON-sol5"}
+            else profile["levtype"]
         )
 
         if not self.ocean_grid:
@@ -328,10 +332,10 @@ class AquaFDBGenerator:
             resolution_id = self.get_value_from_map(self.config["resolution"], resolution_map, "resolution")
 
             forcing_map = {
-                'hist': 'baseline-hist',
-                'cont': 'baseline-cont',
-                'SSP3-7.0': 'projections-ssp370',
-                'Tplus2.0K': 'tplus2K'
+                "hist": "baseline-hist",
+                "cont": "baseline-cont",
+                "SSP3-7.0": "projections-ssp370",
+                "Tplus2.0K": "tplus2K",
             }
 
             forcing = self.config.get("forcing")
