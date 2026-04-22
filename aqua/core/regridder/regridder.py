@@ -378,6 +378,9 @@ class Regridder:
             # load the weights
             weights[mask_dim] = xr.open_dataset(weights_filename)
 
+        # automatically initialize the regridders with the loaded weights
+        self.initialize(weights)
+
         return weights
 
     def initialize(self, weights):
