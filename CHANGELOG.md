@@ -9,7 +9,11 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+<<<<<<< porting_catgen
 - Catalog generator: adapt to new sources names (#2777)
+=======
+- Adding LLM directives in `AGENTS.md` (#2820)
+>>>>>>> main
 - Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791, #2815)
 - Fix race condition during parallel tests (#2805)
 - Fix area selection, `default_coords` are deduced from the dataset (#2768)
