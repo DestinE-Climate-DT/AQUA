@@ -201,7 +201,7 @@ def plot_hovmoller(
         logger.debug("Adding text in the plot: %s", text)
         ax.text(-0.3, 0.33, text, fontsize=15, color="dimgray", rotation=90, transform=ax.transAxes, ha="center")
 
-    if title:    
+    if title:
         ax.set_title(title, fontsize=14)
 
     if return_fig:
