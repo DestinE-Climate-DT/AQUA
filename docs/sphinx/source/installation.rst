@@ -115,6 +115,8 @@ At this point, you should have successfully installed the AQUA package and its d
 .. note ::
 
     By default, the environment file installs the cloned version of AQUA in editable mode with ``pip install -e .[all]``.
+    For development workflows, switch that line in ``environment.yml`` to ``pip install -e .[precommit,all]`` and then
+    run ``pre-commit install`` once in the repository.
 
 Update of the environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^
