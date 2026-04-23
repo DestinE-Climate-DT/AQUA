@@ -16,7 +16,7 @@ repos:
         name: Check YAML
         description: Checks that YAML files are valid
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.10
+    rev: v0.15.11
     hooks:
     -   id: ruff-check
     -   id: ruff-format
