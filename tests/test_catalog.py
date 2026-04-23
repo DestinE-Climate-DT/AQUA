@@ -5,6 +5,7 @@ import xarray
 from conftest import LOGLEVEL
 
 from aqua import Reader
+from aqua.core.gsv.intake_gsv import gsv_available
 from aqua.core.reader import show_catalog_content as catalog
 
 
@@ -21,6 +22,8 @@ def reader(request):
     model, exp, source = request.param
     if source == "intake-esm-test":  # temporary skip of intake esm sources
         pytest.skip("Skipping intake-esm-test for now, not supported for now")
+    if not gsv_available and source in ["fdb", "fdb-levels", "fdb-nolevels"]:
+        pytest.skip(f"Skipping {model} {exp} {source} because GSV is not available")
     myread = Reader(catalog="ci", model=model, exp=exp, source=source, areas=False, fix=False, loglevel=LOGLEVEL)
     data = myread.retrieve()
     return myread, data
