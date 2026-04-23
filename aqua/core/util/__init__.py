@@ -45,6 +45,6 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'load_yaml', 'dump_yaml', 'load_multi_yaml',
            'check_chunk_completeness', 'frequency_string_to_pandas', 'pandas_freq_to_string',
            'time_to_string', 'int_month_name',  'xarray_to_pandas_freq', 'check_seasonal_chunk_completeness',
-           'fix_calendar', 'default_time_unit', 'estimate_time_chunk_size',
+           'fix_calendar', 'default_time_unit',
            'create_zarr_reference',
            ]

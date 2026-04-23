@@ -25,6 +25,7 @@ import os
 import time
 
 import icechunk
+import icechunk.xarray
 import numpy as np
 import pandas as pd
 import xarray as xr
