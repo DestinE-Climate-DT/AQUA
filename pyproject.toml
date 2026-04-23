@@ -47,6 +47,7 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
+    "healpy",
     "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-xarray",
     "jinja2",
@@ -77,8 +78,7 @@ docs = [
     "sphinx-rtd-theme"
 ]
 notebooks = [
-    "ipykernel",
-    "healpy"
+    "ipykernel"
 ]
 tests = [
     "pytest",
