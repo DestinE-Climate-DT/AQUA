@@ -31,7 +31,8 @@ from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
 
 from .catalog_entry_builder import CatalogEntryBuilder
-from .drop_util import move_tmp_files
+from .drop_util import estimate_time_chunk_size, move_tmp_files
+from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
 
@@ -190,8 +191,6 @@ class Drop:
 
         # configure tmpdir
         self.tmpdir = self._configure_tmpdir(tmpdir, self.basedir)
-
-        # configure the configdir
         configpath = ConfigPath(configdir=configdir)
         self.configdir = configpath.configdir
 
@@ -302,13 +301,13 @@ class Drop:
             raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
 
         # Validate output format
-        if self.output_format not in ["netcdf", "zarr"]:
-            raise ValueError("output_format must be 'netcdf' or 'zarr'")
+        if self.output_format not in ["netcdf", "zarr", "icechunk"]:
+            raise ValueError("output_format must be 'netcdf', 'zarr' or 'icechunk'")
 
-        # Zarr-specific validation
-        if self.output_format == "zarr":
+        # Zarr/icechunk do not support post-write compact (they write in-place)
+        if self.output_format in ("zarr", "icechunk"):
             if self.compact is not None:
-                self.logger.warning("compact option ignored for zarr output (zarr appends directly)")
+                self.logger.warning("compact option ignored for %s output", self.output_format)
                 self.compact = None
 
     def _configure_tmpdir(self, tmpdir, outdir):
@@ -379,6 +378,12 @@ class Drop:
 
         self.logger.info("Retrieving data...")
         self.data = self.reader.retrieve(var=self.var)
+
+        # Set time chunk size for icechunk writer if needed
+        if self.output_format == "icechunk":
+            freq = self.reader.timemodule.orig_freq
+            self.writer.time_chunk_size = estimate_time_chunk_size(freq)
+            self.logger.info("Precomputed time_chunk_size: %d for frequency %s", self.writer.time_chunk_size, freq)
 
         self.logger.debug(self.data)
 
@@ -472,6 +477,14 @@ class Drop:
                 loglevel=self.loglevel,
             )
             self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
+        elif self.output_format == "icechunk":
+            self.writer = IcechunkWriter(
+                tmpdir=self.tmpdir,
+                outdir=self.outdir,
+                filename_builder=self.outbuilder,
+                loglevel=self.loglevel,
+            )
+            self.logger.info("Using IcechunkWriter (git-like versioning, single-store zarr)")
 
     def _set_dask(self):
         """

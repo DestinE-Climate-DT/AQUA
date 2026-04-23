@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 
+import icechunk
 import pandas as pd
 import pytest
 import xarray as xr
@@ -231,8 +232,9 @@ class TestDROP:
         assert xfield.lat.max() < 70
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_dask_overwrite(self, drop_arguments, tmp_path):
-        """Test DROP with overwrite=True and Dask initialization."""
+    @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
+    def test_dask_overwrite(self, drop_arguments, tmp_path, output_format):
+        """Test DROP with overwrite=True and Dask initialization across all output formats."""
         test = Drop(
             catalog="ci",
             **drop_arguments,
@@ -243,6 +245,7 @@ class TestDROP:
             loglevel=LOGLEVEL,
             definitive=True,
             overwrite=True,
+            output_format=output_format,
         )
 
         test.retrieve()
@@ -426,15 +429,20 @@ class TestDROP:
             test.retrieve()
             test.drop_generator()
 
-    def test_zarr_output(self, drop_arguments, tmp_path):
-        """Test DROP with Zarr output format."""
+    @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
+    def test_write_output(self, drop_arguments, tmp_path, output_format):
+        """Test DROP writes readable output for netcdf, zarr and icechunk formats.
+
+        With only 3 months of data, no concatenation occurs (requires 12 months),
+        so monthly files/stores remain. For icechunk, all months share one repo.
+        """
         test = Drop(
             catalog="ci",
             **drop_arguments,
             tmpdir=str(tmp_path),
             resolution="r100",
             frequency="monthly",
-            output_format="zarr",
+            output_format=output_format,
             definitive=True,
             loglevel=LOGLEVEL,
         )
@@ -443,24 +451,27 @@ class TestDROP:
         test.data = test.data.sel(time=slice("2020-01", "2020-03"))
         test.drop_generator()
 
-        # With only 3 months, concatenation should NOT happen (requires 12 months)
-        # Monthly stores should exist (check February as example)
-        zarr_filename = test.outbuilder.build_filename(var="2t", year=2020, month="02")
-        zarr_filename = os.path.splitext(zarr_filename)[0] + ".zarr"  # Replace .nc with .zarr
-        zarr_store = os.path.join(
-            os.getcwd(),
-            drop_arguments["outdir"],
-            DROP_PATH,
-            zarr_filename,
-        )
-        assert os.path.isdir(zarr_store), f"Monthly Zarr store not found: {zarr_store}"
+        # get_filename returns the correct output path for each format
+        feb_path = test.writer.get_filename(drop_arguments["var"], year=2020, month="02")
 
-        # Validate zarr content (monthly stores don't have consolidated metadata)
-        ds = xr.open_zarr(zarr_store, consolidated=False)
+        if output_format == "icechunk":
+            assert os.path.isdir(feb_path), f"Icechunk repo not found: {feb_path}"
+            storage = icechunk.local_filesystem_storage(feb_path)
+            repo = icechunk.Repository.open(storage)
+            session = repo.readonly_session("main")
+            ds = xr.open_zarr(session.store, consolidated=False)
+            assert len(ds.time) == 3, "Icechunk single store should hold all 3 months"
+            assert drop_arguments["var"] in ds.data_vars
+            ds = ds.sel(time=slice("2020-02", "2020-02"))
+        elif output_format == "zarr":
+            assert os.path.isdir(feb_path), f"Monthly Zarr store not found: {feb_path}"
+            ds = xr.open_zarr(feb_path, consolidated=False)
+        else:  # netcdf
+            assert os.path.isfile(feb_path), f"Monthly NetCDF file not found: {feb_path}"
+            ds = xr.open_dataset(feb_path)
         assert len(ds.time) == 1  # Only February data
-        assert "2t" in ds.data_vars
-        # Use .values to handle dask arrays
-        assert pytest.approx(float(ds["2t"][0, 1, 1].values)) == 240.32689
+        assert drop_arguments["var"] in ds.data_vars
+        assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
