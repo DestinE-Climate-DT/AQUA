@@ -49,6 +49,7 @@ dependencies = [
     "gcsfs", # Google Cloud Storage File System: required by ARCO
     "intake==0.7.0", # Version 2 is a major refactor still in development
     "intake-xarray",
+    "healpy",
     "jinja2",
     "kerchunk",
     "matplotlib",
@@ -79,7 +80,6 @@ docs = [
 ]
 notebooks = [
     "ipykernel",
-    "healpy"
 ]
 tests = [
     "pytest",
