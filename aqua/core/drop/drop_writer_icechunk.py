@@ -389,6 +389,7 @@ class IcechunkWriter(BaseWriter):
                             month_data, self.main_session, mode=mode, append_dim=append_dim
                         ):
                             self.logger.error("Failed to write month %s-%02d; skipping", year, month)
+                            self.main_session = self.repo.writable_session("main")
                             continue
 
                         # Commit per month (atomic unit)
@@ -401,10 +402,31 @@ class IcechunkWriter(BaseWriter):
 
                         except Exception as e:
                             self.logger.error("Commit failed for month %s-%02d: %s", year, month, e)
+                            self.main_session = self.repo.writable_session("main")
                             continue
+
+                        # Post-commit integrity check: verify committed snapshot is readable
+                        # and the last timestamp matches what was just written.
+                        expected_last = pd.Timestamp(month_data.time.values[-1]).strftime("%Y%m%d")
+                        integrity = self.check_integrity(var)
+                        if not integrity["complete"] or integrity["last_record"] != expected_last:
+                            self.logger.error(
+                                "Post-commit integrity check failed for %s-%02d: %s",
+                                year,
+                                month,
+                                integrity["message"],
+                            )
+                            continue
+                        self.logger.debug(
+                            "Post-commit check passed for %s-%02d (last_record=%s)",
+                            year,
+                            month,
+                            integrity["last_record"],
+                        )
 
                     except Exception as e:
                         self.logger.error("Write failed for month %s-%02d: %s", year, month, e)
+                        self.main_session = self.repo.writable_session("main")
                         continue
 
                     t_elapsed = time.time() - t_start

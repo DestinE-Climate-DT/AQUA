@@ -36,7 +36,7 @@ DROP's architecture enables various data processing tasks:
 **Data Management:**
 
 - Automatic catalog entry generation for DROP-generated outputs
-- Output in both NetCDF and Zarr formats for flexible access
+- Output in NetCDF, Zarr, and icechunk formats for flexible access
 - Parallel processing with configurable workers
 - Memory-efficient chunked processing
 
@@ -317,6 +317,17 @@ Controls processing behavior and performance settings:
   Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
   - ``zarr``: Create Zarr datasets files for faster subsequent access. Test feature under development, use with caution.
   Monthly files are created and then concatenated into yearly consolidate files, and monthly files are removed. This is suboptimal but provides safety against incomplete or corrupted files.
+  - ``icechunk``: Write all data into a single git-like versioned Zarr repository using `icechunk <https://icechunk.io>`_.
+  Every month is committed as an atomic snapshot; failed writes are automatically rolled back to the last clean commit.
+  A post-commit integrity check is performed after each month.
+
+  .. warning::
+
+      **Experimental feature.** ``icechunk`` output is experimental and **not compatible with AQUA catalog integration**.
+      Running ``aqua drop`` with ``--driver icechunk`` (or ``output_format: icechunk`` in the config file) will
+      skip the automatic ``create_catalog_entry`` step, meaning the output **cannot be accessed via** ``Reader``
+      using a catalog source name. Direct access via ``icechunk.Repository.open`` and ``xr.open_zarr`` is required.
+      Do not use in production pipelines until this limitation is resolved.
 
 - **overwrite** (bool, optional): Overwrite existing output files. Default: ``False``
 

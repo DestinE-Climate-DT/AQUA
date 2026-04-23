@@ -67,8 +67,9 @@ def drop_parser(parser=None):
                         help="End date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--engine', type=str,
                         help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
-    parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr'], default='netcdf',
-                        help='Output format for DROP files. Can be netcdf or zarr.')
+    parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'], default='netcdf',
+                        help='Output format for DROP files. Can be netcdf, zarr or icechunk '
+                             '(icechunk is preliminary and does not support catalog integration).')
     # fmt: on
     return parser
 
@@ -285,8 +286,11 @@ def drop_cli(
                             drop.retrieve()
                             drop.drop_generator()
 
-            # create the catalog once the loop is over
-            drop.create_catalog_entry()
+            # create the catalog once the loop is over (not supported for icechunk)
+            if driver != "icechunk":
+                drop.create_catalog_entry()
+            else:
+                print("Skipping catalog entry creation: not supported for icechunk output format.")
 
     print("CLI DROP run completed. Have yourself a tasty pint of beer!")
 
