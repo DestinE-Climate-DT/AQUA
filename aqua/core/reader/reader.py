@@ -195,7 +195,7 @@ class Reader:
             if not files_exist(self.esmcat.urlpath):
                 raise NoDataError(
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
-                    f"please check the urlpath: {self.esmcat.urlpath}"
+                    + f"please check the urlpath: {self.esmcat.urlpath}"
                 )
 
         # extend the unit registry
