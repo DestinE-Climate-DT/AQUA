@@ -138,6 +138,7 @@ markers = [
     "gsv: mark test that requires ECMWF FDB libraries",
     "catgen: mark test for catalog generator",
     "console: mark test for console",
+    "polytope: mark test that uses polytope"
 ]
 
 [tool.coverage.run]
