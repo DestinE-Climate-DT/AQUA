@@ -44,7 +44,7 @@ dependencies:
   - typeguard<=4.5.1
   - xarray>=2025.12.0,<=2026.4.0
   - zarr>=3.0,<=3.1.5,
-  - icechunk<=2.0.3
+  - icechunk<=2.0.3,
   - pip
   - pip:
     # pip install -e of AQUA itself
