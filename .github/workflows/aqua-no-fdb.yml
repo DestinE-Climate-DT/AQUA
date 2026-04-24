@@ -53,7 +53,7 @@ jobs:
       python-versions: '["3.12"]'
       pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true
-      enable-coverage: true
+      enable-coverage: false
       fail-fast: false
       enable-fdb: false
       container-image: ''

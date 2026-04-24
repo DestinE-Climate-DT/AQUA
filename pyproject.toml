@@ -48,7 +48,7 @@ dependencies = [
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray",
+    "intake-xarray<=0.7.0", # Version 2 is a major refactor still in development
     "healpy",
     "jinja2",
     "kerchunk",
