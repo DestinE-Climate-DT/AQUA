@@ -21,6 +21,7 @@ jobs:
       enable-coverage: false
       fail-fast: false
       install-mode: 'pypi'
+      container-image: ''
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}

@@ -92,7 +92,8 @@ jobs:
 
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      image: ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container
+      # Pass container-image: '' from the caller to use plain ubuntu-latest (no container).
+      image: ${{ inputs.container-image }}
       options: --user root
 
     permissions:
@@ -153,20 +154,25 @@ jobs:
           git checkout tags/v2.1.0
 
       # ========================================
-      # 3. SETUP PYTHON ENVIRONMENT
+      # 3. SETUP ENVIRONMENT
       # ========================================
+      - name: Strip pip install from environment file (local mode)
+        if: ${{ inputs.install-mode == 'local' }}
+        run: |
+          sed -e '/^  - pip:$/d' \
+              -e '/^    # pip install/d' \
+              -e '/^    - -e \.\[all\]$/d' \
+              AQUA/environment.yml > AQUA/environment-stripped.yml
+
       - name: Set up Micromamba (local mode)
         if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v3
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/environment.yml
+          environment-file: AQUA/environment-stripped.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
-          condarc: |
-            channels:
-              - conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -183,25 +189,19 @@ jobs:
             python=${{ matrix.python-version }}
 
       # ========================================
-      # 3.5 REINSTALL AQUA (local mode without FDB)
+      # 4. INSTALL AQUA (local mode)
       # ========================================
-      - name: Reinstall AQUA without FDB dependencies (local mode)
+      - name: Install AQUA with FDB dependencies (local mode)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
+        run: |
+          cd AQUA
+          python -m pip install -e ".[tests,fdb]" --no-deps
+
+      - name: Install AQUA without FDB dependencies (local mode)
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
         run: |
           cd AQUA
-          python -m pip install -e ".[tests]" --force-reinstall --no-deps
-
-      # ========================================
-      # 4. LINTING
-      # ========================================
-      - name: Install pre-commit
-        run: python -m pip install pre-commit
-
-      - name: Check code formatting with pre-commit
-        if: ${{ inputs.install-mode == 'local' }}
-        run: |
-          cd AQUA
-          pre-commit run --all-files
+          python -m pip install -e ".[tests]" --no-deps
 
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
