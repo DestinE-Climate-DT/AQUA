@@ -197,13 +197,13 @@ jobs:
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
         run: |
           cd AQUA
-          python -m pip install -e ".[tests,fdb]" --no-deps
+          python -m pip install -e ".[tests,fdb]"
 
       - name: Install AQUA without FDB dependencies (local mode)
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
         run: |
           cd AQUA
-          python -m pip install -e ".[tests]" --no-deps
+          python -m pip install -e ".[tests]"
 
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
