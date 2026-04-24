@@ -72,6 +72,7 @@ dependencies = [
 [project.optional-dependencies]
 fdb = [
     "pyfdb",
+    "polytope-client",
     "gsv-interface==2.13.1"
 ]
 docs = [
