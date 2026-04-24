@@ -140,9 +140,11 @@ jobs:
       # ========================================
       - name: Install GH Actions dependencies
         run: |
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
           # Ubuntu dependencies (Git, curl, gpg...)
-          apt-get update && \
-            apt-get install -y \
+          $SUDO apt-get update && \
+            $SUDO apt-get install -y \
               curl \
               git \
               gpg
