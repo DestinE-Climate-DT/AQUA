@@ -205,6 +205,15 @@ class AquaFDBGenerator:
         if not result:
             raise ValueError(f"Unexpected {value_type}: {value}")
         return result
+    
+    @staticmethod
+    def get_forcing(experiment: str, prefix_map: dict) -> str:
+        """Get the forcing string based on the experiment name."""
+        normalized = re.sub(r"[^a-z0-9]", "", experiment.lower())
+        for key, prefix in prefix_map.items():
+            if experiment.startswith(key):
+                return f"{prefix}-{normalized}"
+        return normalized
 
 
     def load_jinja_template(self, template_file):
@@ -344,17 +353,15 @@ class AquaFDBGenerator:
             
             resolution_id = self.get_value_from_map(self.config['resolution'], resolution_map, 'resolution')
 
-            forcing_map = {
-                'hist': 'baseline-hist',
-                'cont': 'baseline-cont',
-                'SSP3-7.0': 'projections-ssp370',
-                'Tplus2.0K': 'tplus2K'
+            prefix_map = {
+                "hist": "baseline",
+                "cont": "baseline",
+                "SSP": "projections",
             }
 
             forcing = self.config.get('forcing')
             if not forcing:
-                experiment = self.config['experiment']
-                forcing = forcing_map.get(experiment, re.sub(r'[^a-z0-9]', '', experiment.lower()))
+                forcing = self.get_forcing(self.config["experiment"], prefix_map)
             
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
