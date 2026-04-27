@@ -4,12 +4,14 @@ AQUA analysis module for running diagnostics and handling configurations.
 """
 
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from importlib import resources as pypath
 
 from aqua.core.configurer import ConfigPath
-from aqua.core.util import create_folder, to_list
+from aqua.core.util import create_folder, dump_yaml, load_yaml, to_list
 
 
 def run_command(cmd: str, log_file: str, logger=None) -> int:
@@ -98,6 +100,7 @@ def run_diagnostic_func(
     loglevel="INFO",
     logger=None,
     cluster=None,
+    exp_kind_dict=None,
 ):
     """
     Run the diagnostic and log the output, handling parallel processing if required.
@@ -120,6 +123,7 @@ def run_diagnostic_func(
         loglevel (str): Log level for the diagnostic.
         logger: Logger instance for logging messages.
         cluster: Dask cluster scheduler address.
+        exp_kind_dict: Dictionary containing experiment kind configurations, if applicable.
     """
 
     # Internal naming scheme:
@@ -170,6 +174,10 @@ def run_diagnostic_func(
             logger.error(f"Config for tool '{tool}' not found, skipping.")
             continue
 
+        if exp_kind_dict:
+            cfgs = configure_template_configs(cfgs, exp_kind_dict, logger)
+            temp_cfg_dir = os.path.dirname(cfgs[0]) if cfgs else None
+
         for i, cfg in enumerate(cfgs, start=1):
             args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
             if len(cfgs) == 1:
@@ -180,6 +188,55 @@ def run_diagnostic_func(
             run_diagnostic(
                 diagnostic=diagnostic, script_path=cli_path, extra_args=args, loglevel=loglevel, logger=logger, logfile=logfile
             )
+
+        if temp_cfg_dir:
+            shutil.rmtree(temp_cfg_dir, ignore_errors=True)
+            logger.debug("Removed temporary config directory: %s", temp_cfg_dir)
+
+
+def configure_experiment_kind(exp_kind, exp_kind_file, logger):
+    """ "
+    Configure the experiment kind based on the provided kind and configuration file.
+    """
+    if exp_kind is None:
+        return None
+
+    if not os.path.exists(exp_kind_file):
+        raise FileNotFoundError(f"Experiment kind config file '{exp_kind_file}' not found.")
+
+    logger.info(f"Configuring experiment kind: {exp_kind} using config file: {exp_kind_file}")
+    complete_dictionary = load_yaml(exp_kind_file)
+
+    if exp_kind not in complete_dictionary:
+        logger.warning(f"Experiment kind '{exp_kind}' not found in config file '{exp_kind_file}'. Default selected")
+    return complete_dictionary.get(exp_kind, "default")
+
+
+def configure_template_configs(cfgs, exp_kind_dict, logger):
+    """
+    Run jinja templating on the config files based on the experiment kind dictionary.
+    Then dump them into a temporary folder and return the list of new config paths.
+
+    Args:
+        cfgs (list): List of config file paths to render.
+        exp_kind_dict (dict): Dictionary of template variables for Jinja rendering.
+        logger: Logger instance for logging messages.
+
+    Returns:
+        list: List of paths to the rendered config files in a temporary directory.
+    """
+    temp_dir = tempfile.mkdtemp(prefix="aqua_analysis_configs_")
+    logger.debug("Temporary config directory: %s", temp_dir)
+
+    new_cfg_paths = []
+    for cfg in cfgs:
+        rendered_cfg = load_yaml(cfg, definitions=exp_kind_dict)
+        new_cfg_path = os.path.join(temp_dir, os.path.basename(cfg))
+        dump_yaml(new_cfg_path, rendered_cfg)
+        logger.info("Rendered config saved to: %s", new_cfg_path)
+        new_cfg_paths.append(new_cfg_path)
+
+    return new_cfg_paths
 
 
 def get_aqua_paths(*, args, logger):

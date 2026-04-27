@@ -9,7 +9,7 @@ from importlib import resources as pypath
 
 from dask.distributed import LocalCluster
 
-from aqua.core.analysis import get_aqua_paths, run_command, run_diagnostic_func
+from aqua.core.analysis import configure_experiment_kind, get_aqua_paths, run_command, run_diagnostic_func
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
@@ -38,6 +38,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
     parser.add_argument("-f", "--config", type=str, help="Configuration file")
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
+    parser.add_argument("-k", "--kind", type=str, help="Kind of experiment to be run (e.g. historical, scenario, etc.)")
     parser.add_argument("--regrid", type=str, default="False",
                         help="Regrid option (Target grid/False). If False, no regridding will be performed.")
     parser.add_argument("--local_clusters", action="store_true",
@@ -137,6 +138,11 @@ def analysis_execute(args):
     # expand the environment variables in the entire config
     config = expand_env_vars(config)
 
+    # read the experiment kind
+    exp_kind_file = config.get("job", {}).get("experiment_kind")
+    exp_kind = args.kind
+    exp_kind_dict = configure_experiment_kind(exp_kind_file, exp_kind, logger)
+
     run_checker = config.get("job", {}).get("run_checker", False)
     if run_checker:
         logger.info("Running setup checker")
@@ -196,7 +202,7 @@ def analysis_execute(args):
             cli[diag] = os.path.join(script_dir, cli[diag])
 
     # Internal naming scheme:
-    # diagnostic: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
+    # diagnostic: the name of the wrapper collection, e.g. atmosphere2d, climate_metrics, etc.
     # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
     for diag_group in run:
         with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
@@ -228,6 +234,7 @@ def analysis_execute(args):
                         loglevel=loglevel,
                         logger=logger,
                         cluster=cluster_address,
+                        exp_kind_dict=exp_kind_dict,
                     )
                 )
 
