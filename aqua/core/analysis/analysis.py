@@ -41,7 +41,13 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
 
 
 def run_diagnostic(
-    diagnostic: str, tool: str, script_path: str, extra_args: str, loglevel: str = "INFO", logger=None, logfile: str = "diagnostic.log"
+    diagnostic: str,
+    tool: str,
+    script_path: str,
+    extra_args: str,
+    loglevel: str = "INFO",
+    logger=None,
+    logfile: str = "diagnostic.log",
 ):
     """
     Run the diagnostic script with specified arguments.
@@ -177,7 +183,6 @@ def run_diagnostic_func(
 
         if exp_kind_dict:
             cfgs = configure_template_configs(cfgs, exp_kind_dict, logger)
-            
 
         for i, cfg in enumerate(cfgs, start=1):
             args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
@@ -187,7 +192,13 @@ def run_diagnostic_func(
                 logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
 
             run_diagnostic(
-                diagnostic=diagnostic, tool=tool, script_path=cli_path, extra_args=args, loglevel=loglevel, logger=logger, logfile=logfile
+                diagnostic=diagnostic,
+                tool=tool,
+                script_path=cli_path,
+                extra_args=args,
+                loglevel=loglevel,
+                logger=logger,
+                logfile=logfile,
             )
 
         if exp_kind_dict:
