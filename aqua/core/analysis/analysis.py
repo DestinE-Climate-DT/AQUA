@@ -41,13 +41,14 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
 
 
 def run_diagnostic(
-    diagnostic: str, script_path: str, extra_args: str, loglevel: str = "INFO", logger=None, logfile: str = "diagnostic.log"
+    diagnostic: str, tool: str, script_path: str, extra_args: str, loglevel: str = "INFO", logger=None, logfile: str = "diagnostic.log"
 ):
     """
     Run the diagnostic script with specified arguments.
 
     Args:
         diagnostic (str): Name of the diagnostic.
+        tool (str): Name of the tool to use.
         script_path (str): Path to the diagnostic script.
         extra_args (str): Additional arguments for the script.
         loglevel (str): Log level to use.
@@ -60,17 +61,17 @@ def run_diagnostic(
         create_folder(os.path.dirname(logfile))
 
         cmd = f"python {script_path} {extra_args} -l {loglevel} > {logfile} 2>&1"
-        logger.info(f"Running diagnostic {diagnostic}")
+        logger.info(f"Running tool {tool} for diagnostic collection {diagnostic}")
         logger.debug(f"Command: {cmd}")
 
         process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
 
         if process.returncode != 0:
-            logger.error(f"Error running diagnostic {diagnostic}: {process.stderr}")
+            logger.error(f"Error running tool {tool} for diagnostic collection {diagnostic}: {process.stderr}")
         else:
-            logger.info(f"Diagnostic {diagnostic} completed successfully.")
+            logger.info(f"Tool {tool} for diagnostic collection {diagnostic} completed successfully.")
     except (OSError, subprocess.SubprocessError) as e:
-        logger.error(f"Failed to run diagnostic {diagnostic}: {e}")
+        logger.error(f"Failed to run tool {tool} for diagnostic collection {diagnostic}: {e}")
 
 
 def _build_extra_args(**kwargs):
@@ -135,7 +136,7 @@ def run_diagnostic_func(
 
     # run individual tools in serial mode
     for tool, tool_config in diag_config.items():
-        logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
+        logger.info(f"Configuring tool {tool} for diagnostic collection {diagnostic}")
 
         cli_path = cli.get(tool)
         if cli_path is None:
@@ -176,7 +177,7 @@ def run_diagnostic_func(
 
         if exp_kind_dict:
             cfgs = configure_template_configs(cfgs, exp_kind_dict, logger)
-            temp_cfg_dir = os.path.dirname(cfgs[0]) if cfgs else None
+            
 
         for i, cfg in enumerate(cfgs, start=1):
             args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
@@ -186,10 +187,11 @@ def run_diagnostic_func(
                 logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
 
             run_diagnostic(
-                diagnostic=diagnostic, script_path=cli_path, extra_args=args, loglevel=loglevel, logger=logger, logfile=logfile
+                diagnostic=diagnostic, tool=tool, script_path=cli_path, extra_args=args, loglevel=loglevel, logger=logger, logfile=logfile
             )
 
-        if temp_cfg_dir:
+        if exp_kind_dict:
+            temp_cfg_dir = os.path.dirname(cfgs[0])
             shutil.rmtree(temp_cfg_dir, ignore_errors=True)
             logger.debug("Removed temporary config directory: %s", temp_cfg_dir)
 

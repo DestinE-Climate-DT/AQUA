@@ -43,7 +43,7 @@ def analysis_parser(parser=None):
                         help="Regrid option (Target grid/False). If False, no regridding will be performed.")
     parser.add_argument("--local_clusters", action="store_true",
                         help="Use separate local clusters instead of single global one")
-    parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostics in parallel with a cluster")
+    parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostic collections in parallel with a cluster")
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
     parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
     parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
@@ -141,7 +141,7 @@ def analysis_execute(args):
     # read the experiment kind
     exp_kind_file = config.get("job", {}).get("experiment_kind")
     exp_kind = args.kind
-    exp_kind_dict = configure_experiment_kind(exp_kind_file, exp_kind, logger)
+    exp_kind_dict = configure_experiment_kind(exp_kind, exp_kind_file, logger)
 
     run_checker = config.get("job", {}).get("run_checker", False)
     if run_checker:
@@ -175,7 +175,7 @@ def analysis_execute(args):
 
     if args.parallel:
         if args.local_clusters:
-            logger.info("Running diagnostics in parallel with separate local clusters.")
+            logger.info("Running diagnostic collections in parallel with separate local clusters.")
             cluster = None
             cluster_address = None
         else:
@@ -190,7 +190,7 @@ def analysis_execute(args):
             cluster_address = cluster.scheduler_address
             logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
     else:
-        logger.info("Running diagnostics without a dask cluster.")
+        logger.info("Running diagnostic collections without a dask cluster.")
         cluster = None
         cluster_address = None
 
@@ -208,10 +208,10 @@ def analysis_execute(args):
         with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
             futures = []
             for diagnostic in diag_group:
-                logger.info("Starting diagnostic: %s", diagnostic)
+                logger.info("Starting diagnostic collection: %s", diagnostic)
                 diag_config = config.get("diagnostics", {}).get(diagnostic)
                 if diag_config is None:
-                    logger.error("Diagnostic '%s' not found in the configuration, skipping.", diagnostic)
+                    logger.error("Diagnostic collection '%s' not found in the configuration, skipping.", diagnostic)
                     continue
 
                 futures.append(
@@ -242,13 +242,13 @@ def analysis_execute(args):
                 try:
                     result = future.result()
                 except Exception as e:
-                    logger.error("Diagnostic raised an exception: %s", e)
+                    logger.error("Diagnostic collection raised an exception: %s", e)
 
     if cluster:
         cluster.close()
         logger.info("Dask cluster closed.")
 
-    logger.info("All diagnostics finished.")
+    logger.info("All diagnostic collections finished.")
 
 
 if __name__ == "__main__":
