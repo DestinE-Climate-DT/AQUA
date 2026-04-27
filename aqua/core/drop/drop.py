@@ -2,7 +2,7 @@
 DROP (Data Reduction OPerator) class
 
 This class provides comprehensive data processing capabilities for climate datasets,
-including regridding, temporal averaging, regional extraction, and archiving.
+including regridding, temporal averaging, regional extraction.
 It handles multiple file formats and uses Dask for parallel processing of large datasets.
 
 Main features:
@@ -14,35 +14,29 @@ Main features:
 - Memory-efficient chunked processing
 """
 
-import glob
 import os
 import shutil
-import subprocess
 from time import time
 
 import dask
-import numpy as np
 import pandas as pd
-import xarray as xr
-from dask.diagnostics import ProgressBar
-from dask.distributed import Client, LocalCluster, performance_report, progress
-from dask.distributed.diagnostics import MemorySampler
+from dask.distributed import Client, LocalCluster
 
 from aqua.core.configurer import ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
-from aqua.core.util import create_zarr_reference, dump_yaml, load_yaml, replace_intake_vars
-from aqua.core.util.io_util import create_folder, file_is_complete
+from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
 
 from .catalog_entry_builder import CatalogEntryBuilder
-from .drop_util import list_drop_files_complete, move_tmp_files
+from .drop_util import estimate_time_chunk_size, move_tmp_files
+from .drop_writer_icechunk import IcechunkWriter
+from .drop_writer_netcdf import NetCDFWriter
+from .drop_writer_zarr import ZarrWriter
 
-TIME_ENCODING = {"units": "days since 1850-01-01 00:00:00", "calendar": "standard", "dtype": "float64"}
-
-VAR_ENCODING = {"dtype": "float64", "zlib": True, "complevel": 1, "_FillValue": np.nan}
-
+# available statistics
 available_stats = ["mean", "std", "max", "min", "sum", "histogram"]
 
 
@@ -83,8 +77,9 @@ class Drop:
         stat="mean",
         stat_kwargs={},
         compact="xarray",
-        cdo_options=["-f", "nc4", "-z", "zip_1"],
         engine="fdb",
+        output_format="netcdf",
+        zarr_chunks=None,
         **kwargs,
     ):
         """
@@ -134,8 +129,8 @@ class Drop:
                 Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
-            cdo_options (list, opt): List of options to be passed to cdo, default is ["-f", "nc4", "-z", "zip_1"]
             engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
+            output_format (string, opt): Output format: 'netcdf' or 'zarr'. Default is 'netcdf'.
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -178,27 +173,24 @@ class Drop:
         # configure regional selection
         self._configure_region(region, drop)
 
+        # Validate and set outdir early (needed by other validations)
+        if outdir is None:
+            raise KeyError("Please specify outdir.")
+        self.basedir = outdir
+
+        # configure output format and compacting
+        self.output_format = output_format
+        self.compact = compact
+        self.zarr_chunks = zarr_chunks
+
+        # validate parameters and raise errors if needed
+        self._issue_info_raise()
+
         # print some info about the settings
         self._issue_info_warning()
 
-        # define the tmpdir
-        if tmpdir is None:
-            self.logger.warning("No tmpdir specifield, will use outdir")
-            self.tmpdir = os.path.join(outdir, "tmp")
-        else:
-            self.tmpdir = tmpdir
-        self.tmpdir = os.path.join(self.tmpdir, f"DROP_{generate_random_string(10)}")
-
-        # set up compacting method for concatenation
-        self.compact = compact
-        if self.compact not in ["xarray", "cdo", None]:
-            raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
-
-        self.cdo_options = cdo_options
-        if not isinstance(self.cdo_options, list):
-            raise TypeError("cdo_options must be a list.")
-
-        # configure the configdir
+        # configure tmpdir
+        self.tmpdir = self._configure_tmpdir(tmpdir, self.basedir)
         configpath = ConfigPath(configdir=configdir)
         self.configdir = configpath.configdir
 
@@ -206,17 +198,10 @@ class Drop:
         _, grids_path = configpath.get_reader_filenames()
         self.default_grids = load_yaml(os.path.join(grids_path, "default.yaml"))
 
-        # option for encoding, defined once for all
-        self.time_encoding = TIME_ENCODING
-        self.var_encoding = VAR_ENCODING
-
         # add the performance report
         self.performance_reporting = performance_reporting
 
         # Create output folders
-        if outdir is None:
-            raise KeyError("Please specify outdir.")
-
         self.catbuilder = CatalogEntryBuilder(
             catalog=self.catalog,
             model=self.model,
@@ -230,8 +215,6 @@ class Drop:
         )
         # Create output path builder from the catalog entry builder
         self.outbuilder = self.catbuilder.opt
-
-        self.basedir = outdir
         self.outdir = os.path.join(self.basedir, self.outbuilder.build_directory())
 
         create_folder(self.outdir, loglevel=self.loglevel)
@@ -242,6 +225,9 @@ class Drop:
         self.cluster = None
         self.client = None
         self.reader = None
+
+        # Initialize writer (dask_client will be set later if needed)
+        self._set_writer()
 
         # for data reading from FDB
         self.last_record = None
@@ -306,6 +292,42 @@ class Drop:
             self.logger.info("Additional kwargs for the statistic: %s", self.stat_kwargs)
         self.logger.info("Domain selection: %s", self.region_name)
 
+    def _issue_info_raise(self):
+        """
+        Validate parameters and raise errors if invalid
+        """
+        # Validate compact method
+        if self.compact not in ["xarray", "cdo", None]:
+            raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
+
+        # Validate output format
+        if self.output_format not in ["netcdf", "zarr", "icechunk"]:
+            raise ValueError("output_format must be 'netcdf', 'zarr' or 'icechunk'")
+
+        # Zarr/icechunk do not support post-write compact (they write in-place)
+        if self.output_format in ("zarr", "icechunk"):
+            if self.compact is not None:
+                self.logger.warning("compact option ignored for %s output", self.output_format)
+                self.compact = None
+
+    def _configure_tmpdir(self, tmpdir, outdir):
+        """
+        Configure temporary directory for intermediate files
+
+        Args:
+            tmpdir: User-specified tmpdir or None
+            outdir: Output directory
+
+        Returns:
+            str: Configured tmpdir path with random suffix
+        """
+        if tmpdir is None:
+            self.logger.warning("No tmpdir specified, will use outdir/tmp")
+            tmpdir = os.path.join(outdir, "tmp")
+
+        # Add random suffix to avoid conflicts
+        return os.path.join(tmpdir, f"DROP_{generate_random_string(10)}")
+
     def _configure_region(self, region, drop):
         """Configure the region for regional selection, and the drop option"""
 
@@ -356,6 +378,12 @@ class Drop:
 
         self.logger.info("Retrieving data...")
         self.data = self.reader.retrieve(var=self.var)
+
+        # Set time chunk size for icechunk writer if needed
+        if self.output_format == "icechunk":
+            freq = self.reader.timemodule.orig_freq
+            self.writer.time_chunk_size = estimate_time_chunk_size(freq)
+            self.logger.info("Precomputed time_chunk_size: %d for frequency %s", self.writer.time_chunk_size, freq)
 
         self.logger.debug(self.data)
 
@@ -411,69 +439,7 @@ class Drop:
             cat_file = load_yaml(catalogfile)
 
             # define the entry name
-            entry_name = self.catbuilder.create_entry_name()
-            sgn = self._define_source_grid_name()
-
-            if entry_name in cat_file["sources"]:
-                catblock = cat_file["sources"][entry_name]
-            else:
-                catblock = None
-
-            block = self.catbuilder.create_entry_details(basedir=self.basedir, catblock=catblock, source_grid_name=sgn)
-
-            cat_file["sources"][entry_name] = block
-
-            # dump the update file
-            dump_yaml(outfile=catalogfile, cfg=cat_file)
-
-    def create_zarr_entry(self, verify=True):
-        """
-        Create a Zarr entry in the catalog for DROP
-
-        Args:
-            verify: open the DROP source and verify it can be read by the reader
-        """
-        full_dict, partial_dict = list_drop_files_complete(self.outdir)
-
-        # extra zarr only directory
-        zarrdir = os.path.join(self.outdir, "zarr")
-        create_folder(zarrdir)
-
-        # this dictionary based structure is an overkill but guarantee flexibility
-        urlpath = []
-        for key, value in full_dict.items():
-            jsonfile = os.path.join(zarrdir, f"drop-yearly-{key}.json")
-            self.logger.debug("Creating zarr files for full files %s", key)
-            if value:
-                jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
-                if jsonfile is not None:
-                    urlpath = urlpath + [f"reference::{jsonfile}"]
-
-        for key, value in partial_dict.items():
-            jsonfile = os.path.join(zarrdir, f"drop-monthly-{key}.json")
-            self.logger.debug("Creating zarr files for partial files %s", key)
-            if value:
-                jsonfile = create_zarr_reference(value, jsonfile, loglevel=self.loglevel)
-                if jsonfile is not None:
-                    urlpath = urlpath + [f"reference::{jsonfile}"]
-
-        if not urlpath:
-            raise FileNotFoundError("No files found to create zarr reference")
-
-        # apply intake replacement: works on string need to loop on the list
-        for index, value in enumerate(urlpath):
-            urlpath[index] = replace_intake_vars(catalog=self.catalog, path=value)
-
-        # find the catalog of my experiment and load it
-        catalogfile = os.path.join(self.configdir, "catalogs", self.catalog, "catalog", self.model, self.exp + ".yaml")
-
-        with SafeFileLock(catalogfile + ".lock", loglevel=self.loglevel):
-            cat_file = load_yaml(catalogfile)
-
-            # define the entry name - zarr entries never have lra- prefix
-            base_name = f"{self.catbuilder.resolution}-{self.catbuilder.frequency}"
-            entry_name = base_name + "-zarr"
-            self.logger.info("Creating zarr files for %s %s %s", self.model, self.exp, entry_name)
+            entry_name = self.catbuilder.create_entry_name(output_format=self.output_format)
             sgn = self._define_source_grid_name()
 
             if entry_name in cat_file["sources"]:
@@ -482,29 +448,43 @@ class Drop:
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, source_grid_name=sgn, driver="zarr"
+                basedir=self.basedir, catblock=catblock, output_format=self.output_format, source_grid_name=sgn
             )
-            block["args"]["urlpath"] = urlpath
+
             cat_file["sources"][entry_name] = block
 
+            # dump the update file
             dump_yaml(outfile=catalogfile, cfg=cat_file)
 
-        # verify the zarr entry makes sense
-        if verify:
-            self.logger.info("Verifying that zarr entry can be loaded...")
-            try:
-                reader = Reader(model=self.model, exp=self.exp, source=entry_name)
-                _ = reader.retrieve()
-                self.logger.info("Zarr entry successfully created!!!")
-            except (KeyError, ValueError) as e:
-                self.logger.error("Cannot load zarr DROP with error --> %s", e)
-                self.logger.error("Zarr source is not accessible by the Reader likely due to irregular amount of NetCDF file")
-                self.logger.error("To avoid issues in the catalog, the entry will be removed")
-                self.logger.error("In case you want to keep it, please run with verify=False")
-                with SafeFileLock(catalogfile + ".lock", loglevel=self.loglevel):
-                    cat_file = load_yaml(catalogfile)
-                    del cat_file["sources"][entry_name]
-                    dump_yaml(outfile=catalogfile, cfg=cat_file)
+    def _set_writer(self):
+        """
+        Initialize the appropriate writer based on output_format.
+        """
+        if self.output_format == "netcdf":
+            self.writer = NetCDFWriter(
+                tmpdir=self.tmpdir,
+                outdir=self.outdir,
+                compact=self.compact,
+                filename_builder=self.outbuilder,
+                loglevel=self.loglevel,
+            )
+            self.logger.info("Using NetCDF writer")
+        elif self.output_format == "zarr":
+            self.writer = ZarrWriter(
+                tmpdir=self.tmpdir,
+                outdir=self.outdir,
+                filename_builder=self.outbuilder,
+                loglevel=self.loglevel,
+            )
+            self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
+        elif self.output_format == "icechunk":
+            self.writer = IcechunkWriter(
+                tmpdir=self.tmpdir,
+                outdir=self.outdir,
+                filename_builder=self.outbuilder,
+                loglevel=self.loglevel,
+            )
+            self.logger.info("Using IcechunkWriter (git-like versioning, single-store zarr)")
 
     def _set_dask(self):
         """
@@ -536,103 +516,39 @@ class Drop:
         self.logger.info("Removing temporary directory %s", self.tmpdir)
         shutil.rmtree(self.tmpdir)
 
-    def _concat_var_year(self, var, year):
-        """
-        To reduce the amount of files concatenate together all the files
-        from the same year
-        """
-
-        infiles_pattern = self.get_filename(var, year, month="??")
-        monthly_files = sorted(glob.glob(infiles_pattern))
-
-        if len(monthly_files) == 12:
-            self.logger.info("Creating a single file for %s, year %s...", var, str(year))
-            outfile = self.get_filename(var, year)
-            tmp_outfile = self.get_filename(var, year, tmp=True)
-
-            # Move monthly files to tmp for safety
-            for monthly_file in monthly_files:
-                shutil.move(monthly_file, self.tmpdir)
-
-            # Clean any existing output files
-            for f in [tmp_outfile, outfile]:
-                if os.path.exists(f):
-                    os.remove(f)
-
-            # Get the moved files in tmpdir - they keep the same basename
-            tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
-
-            # Concatenation with CDO or Xarray
-            if self.compact == "cdo":
-                command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_outfile]
-                self.logger.debug("Using CDO command: %s", command)
-                subprocess.check_output(command, stderr=subprocess.STDOUT)
-            else:
-                self.logger.debug("Using xarray to concatenate files")
-                xfield = xr.open_mfdataset(tmp_monthly_files, combine="by_coords", parallel=True)
-                name = list(xfield.data_vars)[0]
-                xfield.to_netcdf(tmp_outfile, encoding={"time": self.time_encoding, name: self.var_encoding})
-
-            # Move back the yearly file and cleanup
-            shutil.move(tmp_outfile, outfile)
-            for tmp_file in tmp_monthly_files:
-                self.logger.info("Cleaning %s...", tmp_file)
-                os.remove(tmp_file)
-
     def get_filename(self, var, year=None, month=None, tmp=False):
-        """Create output filenames"""
-
-        filename = self.outbuilder.build_filename(var=var, year=year, month=month)
-
-        if tmp:
-            filename = os.path.join(self.tmpdir, filename)
-        else:
-            filename = os.path.join(self.outdir, filename)
-
-        return filename
+        """Create output filenames (delegates to writer)"""
+        return self.writer.get_filename(var, year=year, month=month, tmp=tmp)
 
     def check_integrity(self, varname):
-        """To check if the DROP entry is fine before running"""
+        """To check if the DROP entry is fine before running (delegates to writer)"""
+        result = self.writer.check_integrity(varname, overwrite=self.overwrite)
+        self.check = result["complete"]
+        self.last_record = result["last_record"]
 
-        yearfiles = self.get_filename(varname)
-        yearfiles = glob.glob(yearfiles)
-        checks = [file_is_complete(yearfile, loglevel=self.loglevel) for yearfile in yearfiles]
-        all_checks_true = all(checks) and len(checks) > 0
-        if all_checks_true and not self.overwrite:
-            self.logger.info("All the data produced seems complete for var %s...", varname)
-            last_record = xr.open_mfdataset(self.get_filename(varname)).time[-1].values
-            self.last_record = pd.to_datetime(last_record).strftime("%Y%m%d")
-            self.check = True
-            self.logger.info("Last record archived is %s...", self.last_record)
+        if self.check:
+            self.logger.info("Data complete for var %s...", varname)
+            if self.last_record:
+                self.logger.info("Last record archived is %s...", self.last_record)
         else:
-            self.check = False
-            self.logger.warning("Still need to run for var %s...", varname)
-
-    def _write_var(self, var):
-        """Call write var for generator or catalog access"""
-        t_beg = time()
-
-        self._write_var_catalog(var)
-
-        t_end = time()
-        self.logger.info("Process took %.4f seconds", t_end - t_beg)
+            self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
 
     def _remove_regridded(self, data):
+        """Remove regridded attribute to avoid issues with Reader"""
 
-        # remove regridded attribute to avoid issues with Reader
-        # https://github.com/oloapinivad/AQUA/issues/147
         if "AQUA_regridded" in data.attrs:
             self.logger.debug("Removing regridding attribute...")
             del data.attrs["AQUA_regridded"]
         return data
 
-    def _write_var_catalog(self, var):
+    def _write_var(self, var):
         """
         Write variable to file
 
         Args:
             var (str): variable name
         """
+        t_beg = time()
 
         self.logger.info("Processing variable %s...", var)
         temp_data = self.data[var]
@@ -661,62 +577,22 @@ class Drop:
         if self.region:
             temp_data = self.reader.select_area(temp_data, lon=self.region["lon"], lat=self.region["lat"], drop=self.drop)
 
-        # Splitting data into yearly files
-        years = sorted(set(temp_data.time.dt.year.values))
-        if self.performance_reporting:
-            years = [years[0]]
-        for year in years:
-            self.logger.info("Processing year %s...", str(year))
-            yearfile = self.get_filename(var, year=year)
+        # Apply history once to the dataset (xarray preserves it during slicing)
+        temp_data = self.append_history(temp_data)
 
-            # checking if file is there and is complete
-            filecheck = file_is_complete(yearfile, loglevel=self.loglevel)
-            if filecheck:
-                if not self.overwrite:
-                    self.logger.info("Yearly file %s already exists, skipping...", yearfile)
-                    continue
-                self.logger.warning("Yearly file %s already exists, overwriting as requested...", yearfile)
-            year_data = temp_data.sel(time=temp_data.time.dt.year == year)
+        self.writer.write_variable(
+            data=temp_data,
+            var=var,
+            overwrite=self.overwrite,
+            definitive=self.definitive,
+            dask=self.dask,
+            performance_reporting=self.performance_reporting,
+        )
 
-            # Splitting data into monthly files
-            months = sorted(set(year_data.time.dt.month.values))
-            if self.performance_reporting:
-                months = [months[0]]
-            for month in months:
-                self.logger.info("Processing month %s...", str(month))
-                outfile = self.get_filename(var, year=year, month=month)
-
-                # checking if file is there and is complete
-                filecheck = file_is_complete(outfile, loglevel=self.loglevel)
-                if filecheck:
-                    if not self.overwrite:
-                        self.logger.info("Monthly file %s already exists, skipping...", outfile)
-                        continue
-                    self.logger.warning("Monthly file %s already exists, overwriting as requested...", outfile)
-
-                month_data = year_data.sel(time=year_data.time.dt.month == month)
-
-                # real writing
-                if self.definitive:
-                    tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
-                    schunk = time()
-                    self.write_chunk(month_data, tmpfile)
-                    tchunk = time() - schunk
-                    self.logger.info("Chunk execution time: %.2f", tchunk)
-
-                    # check everything is correct
-                    filecheck = file_is_complete(tmpfile, loglevel=self.loglevel)
-                    # we can later add a retry
-                    if not filecheck:
-                        self.logger.error("Something has gone wrong in %s!", tmpfile)
-                    self.logger.info("Moving temporary file %s to %s", tmpfile, outfile)
-
-                    move_tmp_files(self.tmpdir, self.outdir)
-                del month_data
-            del year_data
-            if self.definitive and self.compact:
-                self._concat_var_year(var, year)
         del temp_data
+
+        t_end = time()
+        self.logger.info("Process took %.4f seconds", t_end - t_beg)
 
     def append_history(self, data):
         """
@@ -750,48 +626,3 @@ class Drop:
         log_history(data, history)
 
         return data
-
-    def write_chunk(self, data, outfile):
-        """Write a single chunk of data - Xarray Dataset - to a specific file
-        using dask if required and monitoring the progress"""
-
-        data = self.append_history(data)
-
-        # File to be written
-        if os.path.exists(outfile):
-            os.remove(outfile)
-            self.logger.warning("Overwriting file %s...", outfile)
-
-        self.logger.info("Computing to write file %s...", outfile)
-
-        # Compute + progress monitoring
-        if self.dask:
-            if self.performance_reporting:
-                # Full Dask dashboard to HTML
-                filename = f"dask-{self.model}-{self.exp}-{self.source}-{self.nproc}.html"
-                with performance_report(filename=filename):
-                    job = data.persist()
-                    progress(job)
-                    job = job.compute()
-            else:
-                # Memory monitoring always on
-                ms = MemorySampler()
-                with ms.sample("chunk"):
-                    job = data.persist()
-                    progress(job)
-                    job = job.compute()
-                array_data = np.array(ms.samples["chunk"])
-                avg_mem = np.mean(array_data[:, 1]) / 1e9
-                max_mem = np.max(array_data[:, 1]) / 1e9
-                self.logger.info("Avg memory used: %.2f GiB, Peak memory used: %.2f GiB", avg_mem, max_mem)
-        else:
-            with ProgressBar():
-                job = data.compute()
-
-        # Final safe NetCDF write (serial, no dask)
-        job.to_netcdf(
-            outfile,
-            encoding={"time": self.time_encoding, data.name: self.var_encoding},
-        )
-        del job
-        self.logger.info("Writing file %s successful!", outfile)

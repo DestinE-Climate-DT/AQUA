@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
 - Small fix to wrong number of arguments of exception call (#2829)
 - Adding LLM directives in `AGENTS.md` (#2820)
 - Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791, #2815)

@@ -73,7 +73,7 @@ class CatalogEntryBuilder:
         self.logger = log_configure(log_level=loglevel, log_name="CatalogEntryBuilder")
         self.loglevel = loglevel
 
-    def create_entry_name(self):
+    def create_entry_name(self, output_format="netcdf"):
         """
         Create an entry name for the DROP outputs
         """
@@ -83,6 +83,9 @@ class CatalogEntryBuilder:
         else:
             # All other entries drop the 'lra-' prefix
             entry_name = f"{self.resolution}-{self.frequency}"
+
+        if output_format == "zarr":
+            entry_name += "-zarr"
 
         return entry_name
 
@@ -124,14 +127,14 @@ class CatalogEntryBuilder:
 
         return chunks
 
-    def create_entry_details(self, basedir=None, catblock=None, driver="netcdf", source_grid_name=DEFAULT_DROP_GRID):
+    def create_entry_details(self, basedir=None, catblock=None, output_format="netcdf", source_grid_name=DEFAULT_DROP_GRID):
         """
         Create an entry in the catalog for DROP
 
         Args:
             basedir (str): Base directory for the output files.
             catblock (dict, optional): Existing catalog block to update. Defaults to None if not existing.
-            driver (str): Driver type for the catalog entry. Defaults to 'netcdf', alternative is 'zarr'.
+            output_format (str): Output format for the catalog entry. Defaults to 'netcdf', alternative is 'zarr'.
             source_grid_name (str): Name of the source grid. Defaults to 'lon-lat'.
                 Can be AQUA grid, or 'False' if not applicable.
 
@@ -139,7 +142,8 @@ class CatalogEntryBuilder:
             dict: The catalog block with the updated urlpath and metadata.
         """
 
-        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*")
+        file_extension = {"netcdf": ".nc", "zarr": ".zarr"}.get(output_format, output_format)
+        urlpath = self.opt.build_path(basedir=basedir, var="*", year="*", output_format=file_extension)
         self.logger.info("Fully expanded urlpath %s", urlpath)
 
         urlpath = replace_intake_vars(catalog=self.catalog, path=urlpath)
@@ -151,8 +155,8 @@ class CatalogEntryBuilder:
         if catblock is None:
             # if the entry is not there, define the block to be uploaded into the catalog
             catblock = {
-                "driver": driver,
-                "description": f"AQUA {driver} DROP-generated data {self.frequency} at {self.resolution}",
+                "driver": output_format,
+                "description": f"AQUA {output_format} DROP-generated data {self.frequency} at {self.resolution}",
                 "args": {
                     "urlpath": urlpath,
                     "chunks": chunks,
@@ -167,21 +171,21 @@ class CatalogEntryBuilder:
             catblock["args"]["urlpath"] = urlpath
             self.logger.info("Updated urlpath in existing catalog entry to %s", catblock["args"]["urlpath"])
 
-        if driver == "netcdf":
+        if output_format == "netcdf":
+            #    self.logger.warning("Setting xarray_kwargs for NetCDF driver")
             catblock["args"]["xarray_kwargs"] = {"decode_times": True, "combine": "by_coords"}
 
-            # Jinja parameters to be replaced in the urlpath
-            jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
+        # elif output_format == "zarr":
+        #    # Support multi-zarr annual files (mirroring NetCDF)
+        # catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords"}
+        #    self.logger.warning("Setting xarray_kwargs for Zarr driver")
 
-            # Apply replacements
-            for param_name, param_value in jinja_params.items():
-                catblock = replace_urlpath_jinja(catblock, param_value, param_name)
-                self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock["args"]["urlpath"])
+        # Jinja parameters to be replaced in the urlpath
+        jinja_params = {"realization": self.realization, "region": self.region, "stat": self.stat}
 
-            # ugly safecheck to ensure that urlpath is a list of unique entries if multiple
-            # catblock['args']['urlpath'] = (
-            #     catblock['args']['urlpath'] if isinstance(catblock['args']['urlpath'], str)
-            #     else list(set(catblock['args']['urlpath']))
-            # )
+        # Apply replacements
+        for param_name, param_value in jinja_params.items():
+            catblock = replace_urlpath_jinja(catblock, param_value, param_name)
+            self.logger.debug("Urlpath after replacing %s: %s", param_name, catblock["args"]["urlpath"])
 
         return catblock

@@ -64,6 +64,40 @@ def test_move_tmp_files(tmp_directory, output_directory):
     assert os.path.exists(output_file2)
 
 
+@pytest.mark.aqua
+def test_move_tmp_files_zarr(tmpdir):
+    """Test that move_tmp_files handles zarr stores correctly"""
+    # Create separate tmp and output directories
+    tmp_directory = str(tmpdir.mkdir("tmp"))
+    output_directory = str(tmpdir.mkdir("output"))
+
+    # Create a zarr store directory structure
+    zarr_store1 = os.path.join(tmp_directory, "var1.zarr")
+    zarr_store2 = os.path.join(tmp_directory, "var2.zarr")
+    os.makedirs(zarr_store1)
+    os.makedirs(zarr_store2)
+
+    # Create some dummy zarr metadata files
+    with open(os.path.join(zarr_store1, ".zarray"), "w") as f:
+        f.write('{"shape": [10, 20]}')
+    with open(os.path.join(zarr_store2, ".zarray"), "w") as f:
+        f.write('{"shape": [5, 10]}')
+
+    # Expected output locations
+    output_zarr1 = os.path.join(output_directory, "var1.zarr")
+    output_zarr2 = os.path.join(output_directory, "var2.zarr")
+
+    drop_util.move_tmp_files(tmp_directory, output_directory)
+
+    # Verify stores were moved
+    assert os.path.exists(output_zarr1)
+    assert os.path.exists(output_zarr2)
+    assert os.path.isdir(output_zarr1)
+    assert os.path.isdir(output_zarr2)
+    assert os.path.exists(os.path.join(output_zarr1, ".zarray"))
+    assert os.path.exists(os.path.join(output_zarr2, ".zarray"))
+
+
 # Test replace_intake_vars
 @pytest.mark.aqua
 def test_replace_intake_vars():

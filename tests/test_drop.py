@@ -2,15 +2,19 @@ import os
 import re
 import shutil
 
+import icechunk
 import pandas as pd
 import pytest
 import xarray as xr
 from conftest import LOGLEVEL
 
-from aqua import Drop, Reader
+from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.output_path_builder import OutputPathBuilder
+from aqua.core.lock import SafeFileLock
+from aqua.core.reader.reader import Reader
+from aqua.core.util import dump_yaml, load_yaml
 
 DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
 DROP_PATH_DAILY = "ci/IFS/test-tco79/r1/r100/daily/mean/europe"
@@ -107,6 +111,10 @@ class TestCatalogEntryBuilder:
         )
         entry_name = builder.create_entry_name()
         block = builder.create_entry_details(basedir=drop_arguments["outdir"], source_grid_name=source_grid_name)
+        entry_name_zarr = builder.create_entry_name(output_format="zarr")
+        block_zarr = builder.create_entry_details(
+            basedir=drop_arguments["outdir"], source_grid_name=source_grid_name, output_format="zarr"
+        )
 
         if resolution == "r100" and frequency == "monthly":
             expected_name = f"lra-{resolution}-{frequency}"
@@ -114,8 +122,10 @@ class TestCatalogEntryBuilder:
             expected_name = f"{resolution}-{frequency}"
 
         assert entry_name == expected_name
+        assert entry_name_zarr == expected_name + "-zarr"
         assert block["driver"] == "netcdf"
         assert block["parameters"].keys() == {"realization", "stat", "region"}
+        assert block_zarr["driver"] == "zarr"
 
         builder2 = CatalogEntryBuilder(
             catalog="ci",
@@ -180,6 +190,14 @@ class TestDROP:
         file = xr.open_dataset(file_path)
         assert len(file.time) == 1
         assert pytest.approx(file["2t"][0, 1, 1].item()) == 248.0704
+
+        # verify history
+        if "history" in file.attrs:
+            history = file.attrs["history"]
+            assert "DROP" in history, "DROP not found in history"
+            assert "regridded" in history, "Regridding information not found in history"
+            assert "resampled" in history, "Frequency resampling information not found in history"
+
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_regional_subset(self, drop_arguments, tmp_path):
@@ -214,36 +232,9 @@ class TestDROP:
         assert xfield.lat.max() < 70
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_zarr_entry(self, drop_arguments, tmp_path):
-        """Test DROP with Zarr archive creation."""
-        test = Drop(
-            catalog="ci",
-            **drop_arguments,
-            tmpdir=str(tmp_path),
-            resolution="r100",
-            frequency="monthly",
-            nproc=1,
-            loglevel=LOGLEVEL,
-            definitive=True,
-            startdate="2020-01-01",
-            enddate="2020-05-31",
-        )
-
-        test.retrieve()
-        test.drop_generator()
-        test.create_catalog_entry()
-        test.create_zarr_entry()
-
-        reader1 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source="lra-r100-monthly")
-        reader2 = Reader(model=drop_arguments["model"], exp=drop_arguments["exp"], source="r100-monthly-zarr")
-
-        data1 = reader1.retrieve()
-        data2 = reader2.retrieve()
-        assert data1.equals(data2)
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
-
-    def test_dask_overwrite(self, drop_arguments, tmp_path):
-        """Test DROP with overwrite=True and Dask initialization."""
+    @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
+    def test_dask_overwrite(self, drop_arguments, tmp_path, output_format):
+        """Test DROP with overwrite=True and Dask initialization across all output formats."""
         test = Drop(
             catalog="ci",
             **drop_arguments,
@@ -254,6 +245,7 @@ class TestDROP:
             loglevel=LOGLEVEL,
             definitive=True,
             overwrite=True,
+            output_format=output_format,
         )
 
         test.retrieve()
@@ -261,7 +253,8 @@ class TestDROP:
         assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_exclude_incomplete(self, drop_arguments, tmp_path):
+    @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
+    def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):
         """Test DROP's exclude_incomplete option."""
         test = Drop(
             catalog="ci",
@@ -272,57 +265,77 @@ class TestDROP:
             definitive=True,
             loglevel=LOGLEVEL,
             exclude_incomplete=True,
+            overwrite=True,
+            output_format=output_format,
         )
 
         test.retrieve()
         test.drop_generator()
+        ext = test.writer.get_extension()
 
         missing_file = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
+            f"2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008{ext}",
         )
         existing_file = os.path.join(
             os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
-            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc",
+            f"2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002{ext}",
         )
 
-        assert not os.path.exists(missing_file)
-        assert os.path.exists(existing_file)
+        assert not os.path.exists(missing_file), f"Incomplete file should be excluded: {missing_file}"
+        assert os.path.exists(existing_file), f"Complete file should exist: {existing_file}"
 
-        file = xr.open_dataset(existing_file)
-        assert len(file.time) == 1
-        test.check_integrity(varname=drop_arguments["var"])
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+        # Create catalog entry
+        test.create_catalog_entry()
 
-    def test_concat_var_year(self, drop_arguments, tmp_path):
-        """Test concatenation of monthly files into a single yearly file."""
-        resolution = "r100"
-        frequency = "monthly"
-        year = 2022
+        # Determine source name based on format
+        if output_format == "netcdf":
+            source_name = "lra-r100-monthly"
+        else:  # zarr
+            source_name = "lra-r100-monthly-zarr"
 
-        test = Drop(
-            catalog="ci", **drop_arguments, tmpdir=str(tmp_path), resolution=resolution, frequency=frequency, loglevel=LOGLEVEL
+        # Use Reader to access the newly created source through intake
+        reader = Reader(
+            catalog="ci",
+            model=drop_arguments["model"],
+            exp=drop_arguments["exp"],
+            source=source_name,
+            loglevel=LOGLEVEL,
         )
 
-        for month in range(1, 13):
-            mm = f"{month:02d}"
-            filename = test.get_filename(drop_arguments["var"], year, month=mm)
-            timeobj = pd.Timestamp(f"{year}-{mm}-01")
-            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
-            ds.to_netcdf(filename)
+        # Read data through intake and verify it matches
+        data = reader.retrieve(var=drop_arguments["var"])
+        assert "2t" in data.data_vars, f"Variable '2t' not found in {output_format} intake data"
+        assert len(data.time) == 6, f"{output_format} Reader data should have 6 timesteps instead of {len(data.time)}"
 
-        test._concat_var_year(drop_arguments["var"], year)
-        outfile = test.get_filename(drop_arguments["var"], year)
+        catalogfile = os.path.join(test.configdir, "catalogs", test.catalog, "catalog", test.model, test.exp + ".yaml")
+        with SafeFileLock(catalogfile + ".lock"):
+            cat_file = load_yaml(catalogfile)
+            del cat_file["sources"][source_name]
+            dump_yaml(outfile=catalogfile, cfg=cat_file)
 
-        assert os.path.exists(outfile)
+        # file = xr.open_dataset(existing_file)
+        # assert len(file.time) == 1
+        # test.check_integrity(varname=drop_arguments["var"])
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_concat_var_year_cdo(self, drop_arguments, tmp_path):
-        """Test concatenation of monthly files into a single yearly file using cdo."""
+    @pytest.mark.parametrize(
+        "output_format,compact_method,num_months,should_concat",
+        [
+            ("netcdf", "cdo", 3, False),  # <12 months: monthly files remain
+            ("netcdf", "cdo", 12, True),  # 12 months: yearly file created
+            ("netcdf", "xarray", 3, False),  # <12 months: monthly files remain
+            ("netcdf", "xarray", 12, True),  # 12 months: yearly file created
+            ("zarr", "xarray", 3, False),  # <12 months: monthly stores remain
+            ("zarr", "xarray", 12, True),  # 12 months: yearly store created
+        ],
+    )
+    def test_concat_threshold(self, drop_arguments, tmp_path, output_format, compact_method, num_months, should_concat):
+        """Test concatenation threshold: requires exactly 12 months for both NetCDF and Zarr."""
         resolution = "r100"
         frequency = "monthly"
         year = 2022
@@ -331,23 +344,59 @@ class TestDROP:
             catalog="ci",
             **drop_arguments,
             tmpdir=str(tmp_path),
-            compact="cdo",
+            compact=compact_method,
             resolution=resolution,
             frequency=frequency,
+            output_format=output_format,
             loglevel=LOGLEVEL,
         )
 
-        for month in range(1, 13):
+        # Create monthly files/stores in the appropriate format
+        for month in range(1, num_months + 1):
             mm = f"{month:02d}"
-            filename = test.get_filename(drop_arguments["var"], year, month=mm)
+            filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
-            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([0], dims=["time"], coords={"time": [timeobj]})})
-            ds.to_netcdf(filename)
+            ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([month], dims=["time"], coords={"time": [timeobj]})})
 
-        test._concat_var_year(drop_arguments["var"], year)
-        outfile = test.get_filename(drop_arguments["var"], year)
+            if output_format == "netcdf":
+                ds.to_netcdf(filename)
+            else:  # zarr
+                ds.to_zarr(filename, mode="w")
 
-        assert os.path.exists(outfile)
+        # Attempt concatenation
+        result = test.writer.concat_year_files(drop_arguments["var"], year)
+        yearly_file = test.writer.get_filename(drop_arguments["var"], year)
+
+        if should_concat:
+            # With 12 months: yearly file/store should be created, monthly ones removed
+            assert result is True, f"Concatenation should succeed with {num_months} months"
+            assert os.path.exists(yearly_file), f"Yearly {output_format} file/store not found"
+
+            # Verify monthly files/stores are removed
+            for month in range(1, 13):
+                mm = f"{month:02d}"
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                assert not os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should be removed"
+
+            # Verify yearly file/store content
+            if output_format == "netcdf":
+                ds_yearly = xr.open_dataset(yearly_file)
+            else:  # zarr
+                ds_yearly = xr.open_zarr(yearly_file, consolidated=True)
+
+            assert len(ds_yearly.time) == 12, "Yearly file should have 12 timesteps"
+            ds_yearly.close()
+        else:
+            # With <12 months: concatenation should not happen, monthly files/stores remain
+            assert result is False, f"Concatenation should not happen with {num_months} months"
+            assert not os.path.exists(yearly_file), f"Yearly {output_format} file/store should not exist"
+
+            # Verify monthly files/stores still exist
+            for month in range(1, num_months + 1):
+                mm = f"{month:02d}"
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                assert os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should exist"
+
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_unknown_statistic(self, drop_arguments, tmp_path):
@@ -379,3 +428,136 @@ class TestDROP:
             )
             test.retrieve()
             test.drop_generator()
+
+    @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
+    def test_write_output(self, drop_arguments, tmp_path, output_format):
+        """Test DROP writes readable output for netcdf, zarr and icechunk formats.
+
+        With only 3 months of data, no concatenation occurs (requires 12 months),
+        so monthly files/stores remain. For icechunk, all months share one repo.
+        """
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            output_format=output_format,
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+
+        test.retrieve()
+        test.data = test.data.sel(time=slice("2020-01", "2020-03"))
+        test.drop_generator()
+
+        # get_filename returns the correct output path for each format
+        feb_path = test.writer.get_filename(drop_arguments["var"], year=2020, month="02")
+
+        if output_format == "icechunk":
+            assert os.path.isdir(feb_path), f"Icechunk repo not found: {feb_path}"
+            storage = icechunk.local_filesystem_storage(feb_path)
+            repo = icechunk.Repository.open(storage)
+            session = repo.readonly_session("main")
+            ds = xr.open_zarr(session.store, consolidated=False)
+            assert len(ds.time) == 3, "Icechunk single store should hold all 3 months"
+            assert drop_arguments["var"] in ds.data_vars
+            ds = ds.sel(time=slice("2020-02", "2020-02"))
+        elif output_format == "zarr":
+            assert os.path.isdir(feb_path), f"Monthly Zarr store not found: {feb_path}"
+            ds = xr.open_zarr(feb_path, consolidated=False)
+        else:  # netcdf
+            assert os.path.isfile(feb_path), f"Monthly NetCDF file not found: {feb_path}"
+            ds = xr.open_dataset(feb_path)
+        assert len(ds.time) == 1  # Only February data
+        assert drop_arguments["var"] in ds.data_vars
+        assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
+
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_zarr_writer_validation(self, drop_arguments, tmp_path):
+        """Test ZarrWriter validation edge cases."""
+        from aqua.core.drop.drop_writer_zarr import ZarrWriter
+
+        writer = ZarrWriter(tmpdir=str(tmp_path), outdir=drop_arguments["outdir"], loglevel=LOGLEVEL)
+
+        # Case 1: Store without 'time' dimension
+        ds_no_time = xr.Dataset({"var": xr.DataArray([1, 2, 3], dims=["x"])})
+        invalid_store = os.path.join(str(tmp_path), "no_time.zarr")
+        ds_no_time.to_zarr(invalid_store, mode="w")
+        assert writer.validate(invalid_store) is False
+
+        # Case 2: Store with empty time
+        ds_empty = xr.Dataset({"var": xr.DataArray([], dims=["time"], coords={"time": []})})
+        empty_store = os.path.join(str(tmp_path), "empty_time.zarr")
+        ds_empty.to_zarr(empty_store, mode="w")
+        assert writer.validate(empty_store) is False
+
+        # Case 3: Store with duplicate timestamps
+        times = [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-01-01")]
+        ds_dup = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times})})
+        dup_store = os.path.join(str(tmp_path), "duplicate.zarr")
+        ds_dup.to_zarr(dup_store, mode="w")
+        assert writer.validate(dup_store) is False
+
+        # Case 4: Store with unsorted timestamps
+        times_unsorted = [pd.Timestamp("2020-02-01"), pd.Timestamp("2020-01-01")]
+        ds_unsorted = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times_unsorted})})
+        unsorted_store = os.path.join(str(tmp_path), "unsorted.zarr")
+        ds_unsorted.to_zarr(unsorted_store, mode="w")
+        assert writer.validate(unsorted_store) is False
+
+        # Case 5: Valid store
+        times_valid = [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-02-01")]
+        ds_valid = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times_valid})})
+        valid_store = os.path.join(str(tmp_path), "valid.zarr")
+        ds_valid.to_zarr(valid_store, mode="w")
+        assert writer.validate(valid_store) is True
+
+    def test_zarr_encoding_without_chunks(self, drop_arguments, tmp_path):
+        """Test ZarrWriter encoding when chunks is None."""
+        from aqua.core.drop.drop_writer_zarr import ZarrWriter
+
+        # Create writer with chunks=None
+        writer = ZarrWriter(tmpdir=str(tmp_path), outdir=drop_arguments["outdir"], loglevel=LOGLEVEL)
+        writer.chunks = None
+
+        ds = xr.Dataset(
+            {"var": xr.DataArray([1, 2, 3], dims=["time"], coords={"time": pd.date_range("2020-01-01", periods=3)})}
+        )
+        encoding = writer._get_encoding(ds)
+
+        # Should return None when chunks is None
+        assert encoding is None
+
+    def test_performance_reporting(self, drop_arguments, tmp_path):
+        """Test write_variable performance reporting."""
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            performance_reporting=True,
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+
+        test.retrieve()
+        test.drop_generator()  # Should work without dask_client
+
+        file_path = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
+        )
+        assert os.path.isfile(file_path)
+        file_missing = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
+        )
+        assert not os.path.exists(file_missing), "Incomplete file should not be created: {}".format(file_missing)
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))

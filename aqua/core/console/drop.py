@@ -67,10 +67,9 @@ def drop_parser(parser=None):
                         help="End date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--engine', type=str,
                         help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
-    parser.add_argument('--zarr', action="store_true",
-                        help='Create zarr')
-    parser.add_argument('--verify-zarr', action="store_true",
-                        help='Verify the created zarr')
+    parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'], default='netcdf',
+                        help='Output format for DROP files. Can be netcdf, zarr or icechunk '
+                             '(icechunk is preliminary and does not support catalog integration).')
     # fmt: on
     return parser
 
@@ -124,8 +123,7 @@ def drop_execute(args):
 
     loglevel = get_arg(args, "loglevel", config["options"].get("loglevel", "WARNING"))
     compact = config["options"].get("compact", "cdo")
-    do_zarr = get_arg(args, "zarr", config["options"].get("zarr", False))
-    verify_zarr = get_arg(args, "verify_zarr", config["options"].get("verify_zarr", False))
+    driver = get_arg(args, "driver", config["options"].get("driver", "netcdf"))
 
     # Other options, only from command line
     definitive = get_arg(args, "definitive", False)
@@ -161,9 +159,8 @@ def drop_execute(args):
         default_workers=default_workers,
         engine=engine,
         monitoring=monitoring,
-        do_zarr=do_zarr,
-        verify_zarr=verify_zarr,
         only_catalog=only_catalog,
+        driver=driver,
     )
 
 
@@ -188,8 +185,7 @@ def drop_cli(
     monitoring=False,
     engine="fdb",
     default_workers=1,
-    do_zarr=False,
-    verify_zarr=False,
+    driver="netcdf",
     compact="cdo",
     only_catalog=False,
 ):
@@ -216,8 +212,7 @@ def drop_cli(
         rebuild: bool flag to rebuild the areas and weights
         default_workers: default number of workers
         monitoring: bool flag to enable the dask monitoring
-        do_zarr: bool flag to create zarr
-        verify_zarr: bool flag to verify zarr
+        driver: output format driver
         compact: compaction method
         only_catalog: bool flag to only update the catalog
     """
@@ -278,6 +273,7 @@ def drop_cli(
                             compact=compact,
                             performance_reporting=monitoring,
                             exclude_incomplete=True,
+                            output_format=driver,
                             engine=engine,
                             **extra_args,
                         )
@@ -290,10 +286,11 @@ def drop_cli(
                             drop.retrieve()
                             drop.drop_generator()
 
-            # create the catalog once the loop is over
-            drop.create_catalog_entry()
-            if do_zarr:
-                drop.create_zarr_entry(verify=verify_zarr)
+            # create the catalog once the loop is over (not supported for icechunk)
+            if driver != "icechunk":
+                drop.create_catalog_entry()
+            else:
+                print("Skipping catalog entry creation: not supported for icechunk output format.")
 
     print("CLI DROP run completed. Have yourself a tasty pint of beer!")
 

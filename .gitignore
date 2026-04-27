@@ -26,6 +26,7 @@ docs/sphinx/build/*
 *.nc
 *.png
 *.pdf
+*.zarr
 
 # tests
 AQUA_tests/
