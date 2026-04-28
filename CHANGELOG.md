@@ -10,6 +10,9 @@ Main changes:
 
 Complete list:
 - AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
+- Graphics: improve titles and labels formatting in Boxplots and Hovmoller (#2777)
+- Apply ruff formatting to the codebase (#2791)
+- Add pre-commit hooks and ruff linting (#2786)
 - Small fix to wrong number of arguments of exception call (#2829)
 - Adding LLM directives in `AGENTS.md` (#2820)
 - Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791, #2815)
