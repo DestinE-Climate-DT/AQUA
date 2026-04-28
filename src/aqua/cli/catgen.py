@@ -344,6 +344,7 @@ class AquaFDBGenerator:
             
             forcing = self.config.get("forcing")
             activity = self.config.get("activity")
+            experiment = self.config['experiment']
 
             if not forcing:
                 exp_clean = re.sub(r"[^a-z0-9]+", "-", experiment.lower()).strip("-")
