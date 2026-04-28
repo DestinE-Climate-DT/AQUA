@@ -40,22 +40,22 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
         raise
 
 
-def run_diagnostic(
-    diagnostic: str,
+def run_diagnostic_tool(
+    collection: str,
     tool: str,
     script_path: str,
     extra_args: str,
     loglevel: str = "INFO",
     logger=None,
-    logfile: str = "diagnostic.log",
+    logfile: str = "aqua-diagnostic-tool.log",
 ):
     """
-    Run the diagnostic script with specified arguments.
+    Run the diagnostic tool script with specified arguments.
 
     Args:
-        diagnostic (str): Name of the diagnostic.
-        tool (str): Name of the tool to use.
-        script_path (str): Path to the diagnostic script.
+        collection (str): Name of the diagnostic collection.
+        tool (str): Name of the diagnostic tool to use.
+        script_path (str): Path to the diagnostic tool script.
         extra_args (str): Additional arguments for the script.
         loglevel (str): Log level to use.
         logger: Logger instance for logging messages.
@@ -67,17 +67,17 @@ def run_diagnostic(
         create_folder(os.path.dirname(logfile))
 
         cmd = f"python {script_path} {extra_args} -l {loglevel} > {logfile} 2>&1"
-        logger.info(f"Running tool {tool} for diagnostic collection {diagnostic}")
+        logger.info(f"Running tool {tool} for diagnostic collection {collection}")
         logger.debug(f"Command: {cmd}")
 
         process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
 
         if process.returncode != 0:
-            logger.error(f"Error running tool {tool} for diagnostic collection {diagnostic}: {process.stderr}")
+            logger.error(f"Error running tool {tool} for diagnostic collection {collection}: {process.stderr}")
         else:
-            logger.info(f"Tool {tool} for diagnostic collection {diagnostic} completed successfully.")
+            logger.info(f"Tool {tool} for diagnostic collection {collection} completed successfully.")
     except (OSError, subprocess.SubprocessError) as e:
-        logger.error(f"Failed to run tool {tool} for diagnostic collection {diagnostic}: {e}")
+        logger.error(f"Failed to run tool {tool} for diagnostic collection {collection}: {e}")
 
 
 def _build_extra_args(**kwargs):
@@ -89,8 +89,8 @@ def _build_extra_args(**kwargs):
     return args
 
 
-def run_diagnostic_func(
-    diagnostic: str,
+def run_diagnostic_collection(
+    collection: str,
     parallel: bool = False,
     regrid: str = None,
     cli: dict = {},
@@ -110,10 +110,10 @@ def run_diagnostic_func(
     exp_kind_dict=None,
 ):
     """
-    Run the diagnostic and log the output, handling parallel processing if required.
+    Run the diagnostic collection and log the output, handling parallel processing if required.
 
     Args:
-        diagnostic (str): Name of the diagnostic to run.
+        collection (str): Name of the diagnostic collection.
         parallel (bool): Whether to run in parallel mode.
         regrid (str): Regrid option.
         cli (dict): CLI definitions for the tools.
@@ -127,14 +127,14 @@ def run_diagnostic_func(
         enddate (str): End date (YYYY-MM-DD). Defaults to None.
         realization (str): Realization name. Defaults to None.
         output_dir (str): Directory to save output.
-        loglevel (str): Log level for the diagnostic.
+        loglevel (str): Log level for the tool.
         logger: Logger instance for logging messages.
         cluster: Dask cluster scheduler address.
         exp_kind_dict: Dictionary containing experiment kind configurations, if applicable.
     """
 
     # Internal naming scheme:
-    # diagnostic: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
+    # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
     # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
 
     output_dir = os.path.expandvars(output_dir)
@@ -142,7 +142,7 @@ def run_diagnostic_func(
 
     # run individual tools in serial mode
     for tool, tool_config in diag_config.items():
-        logger.info(f"Configuring tool {tool} for diagnostic collection {diagnostic}")
+        logger.info(f"Configuring tool {tool} for diagnostic collection {collection}")
 
         cli_path = cli.get(tool)
         if cli_path is None:
@@ -153,7 +153,7 @@ def run_diagnostic_func(
             logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
             continue
 
-        outname = f"{output_dir}/{tool_config.get('outname', diagnostic)}"
+        outname = f"{output_dir}/{tool_config.get('outname', collection)}"
         extra_args = tool_config.get("extra", "")
 
         # Build conditional arguments
@@ -187,12 +187,12 @@ def run_diagnostic_func(
         for i, cfg in enumerate(cfgs, start=1):
             args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
             if len(cfgs) == 1:
-                logfile = f"{output_dir}/{diagnostic}-{tool}.log"
+                logfile = f"{output_dir}/{collection}-{tool}.log"
             else:
-                logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
+                logfile = f"{output_dir}/{collection}-{tool}-{i}.log"
 
-            run_diagnostic(
-                diagnostic=diagnostic,
+            run_diagnostic_tool(
+                collection=collection,
                 tool=tool,
                 script_path=cli_path,
                 extra_args=args,
