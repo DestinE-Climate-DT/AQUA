@@ -9,6 +9,7 @@ from conftest import DPI, LOGLEVEL
 
 from aqua import Reader
 from aqua.core.graphics import (
+    boxplot,
     plot_histogram,
     plot_hovmoller,
     plot_lat_lon_profiles,
@@ -792,4 +793,82 @@ class TestHistogram:
         pdf_no_units.center_of_bin.attrs = {}
         fig, ax = plot_histogram(data=pdf_no_units, loglevel=loglevel)
         assert ax.get_ylabel() == "Probability Density"
+        plt.close(fig)
+
+
+@pytest.mark.graphics
+class TestBoxplot:
+    """Basic tests for the boxplot function."""
+
+    @staticmethod
+    def _make_fldmean_dataset(tas_values, pr_values=None):
+        data_vars = {
+            "tas": xr.DataArray(np.array(tas_values), dims=["time"], attrs={"units": "K"}),
+        }
+        if pr_values is not None:
+            data_vars["pr"] = xr.DataArray(np.array(pr_values), dims=["time"], attrs={"units": "mm/day"})
+        return xr.Dataset(data_vars=data_vars)
+
+    def test_boxplot_builds_figure_and_mean_lines(self, tmp_path):
+        """Test figure creation and dashed mean lines."""
+        fldmeans = [
+            self._make_fldmean_dataset([280.0, 282.0, 281.0]),
+            self._make_fldmean_dataset([279.0, 283.0, 280.0]),
+        ]
+        model_names = ["model_a", "model_b"]
+
+        fig_no_mean, ax_no_mean = boxplot(
+            fldmeans=fldmeans,
+            model_names=model_names,
+            variables=["tas"],
+            variable_names=["Temperature"],
+            add_mean_line=False,
+            title="Boxplot test",
+            loglevel=loglevel,
+        )
+        base_collections = len(ax_no_mean.collections)
+        plt.close(fig_no_mean)
+
+        fig, ax = boxplot(
+            fldmeans=fldmeans,
+            model_names=model_names,
+            variables=["tas"],
+            variable_names=["Temperature"],
+            add_mean_line=True,
+            title="Boxplot test",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+        assert ax.get_xlabel() == "Variables"
+        assert ax.get_title() == "Boxplot test"
+        assert len(ax.collections) >= base_collections + len(model_names)
+
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_labels = [text.get_text() for text in legend.get_texts()]
+        assert legend_labels == model_names
+
+        fig.savefig(tmp_path / "test_boxplot_basic.png", dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / "test_boxplot_basic.png")
+
+    def test_boxplot_sets_mixed_units_ylabel(self):
+        """Test fallback y-label for mixed units."""
+        fldmeans = [
+            self._make_fldmean_dataset([280.0, 282.0, 281.0], pr_values=[2.0, 3.0, 4.0]),
+            self._make_fldmean_dataset([279.0, 283.0, 280.0], pr_values=[1.0, 2.0, 3.0]),
+        ]
+
+        fig, ax = boxplot(
+            fldmeans=fldmeans,
+            model_names=["model_a", "model_b"],
+            variables=["tas", "pr"],
+            variable_names=["Temperature", "Precipitation"],
+            add_mean_line=False,
+            loglevel=loglevel,
+        )
+
+        assert ax.get_ylabel() == "Values (various units)"
         plt.close(fig)
