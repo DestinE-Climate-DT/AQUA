@@ -29,24 +29,33 @@ def analysis_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Run AQUA diagnostics.")
     # fmt: off
+    # sources
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
     parser.add_argument("--source_oce", type=str,
         help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
-    parser.add_argument("-r", "--realization", type=str, help="Realization (default: None)")
+    parser.add_argument("--realization", type=str, help="Realization (default: None)")
+
+    # default options for diagnostics
+    parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
+    parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
+    parser.add_argument("--regrid", type=str, default="False",
+                        help="Regrid option (Target grid/False). If False, no regridding will be performed.")
+
+    # configuration
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
     parser.add_argument("-f", "--config", type=str, help="Configuration file")
     parser.add_argument("-k", "--kind", type=str, help="Kind of experiment to be run (e.g. historical, scenario, etc.)")
-    parser.add_argument("--regrid", type=str, default="False",
-                        help="Regrid option (Target grid/False). If False, no regridding will be performed.")
+
+    # computation
     parser.add_argument("--local_clusters", action="store_true",
                         help="Use separate local clusters instead of single global one")
     parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostic collections in parallel with a cluster")
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
-    parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
-    parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
+
+    # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                         default="INFO", help="Log level")
