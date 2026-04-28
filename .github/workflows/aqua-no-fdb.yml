@@ -1,5 +1,5 @@
-name: AQUA tests
-# This workflow uses pytest-xdist to run tests in parallel across 4 cores
+name: AQUA tests (without FDB)
+# Quick test pipeline without FDB dependencies
 
 on:
   push:
@@ -44,18 +44,19 @@ jobs:
 
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
-  # Call the reusable workflow
-  aqua-tests:
+  # Call the reusable workflow without FDB
+  aqua-no-fdb-tests:
     needs: check-trigger
     if: needs.check-trigger.outputs.should-run == 'true'
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.12"]'
-      pytest-markers: 'aqua or slow or polytope or gsv or graphics or catgen'
+      pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true
-      enable-coverage: true
+      enable-coverage: false
       fail-fast: false
-      pr-number: ${{ github.event.pull_request.number || '' }}
+      enable-fdb: false
+      container-image: ''
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}

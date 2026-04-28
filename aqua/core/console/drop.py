@@ -79,15 +79,6 @@ def drop_execute(args):
     """
     Executing the DROP by parsing the arguments and configuring the machinery
     """
-    # to check if GSV is available and return the version
-    try:
-        import gsv
-
-        print("GSV version is: " + gsv.__version__)
-    except RuntimeError:
-        print("GSV not available. FDB5 binary library not present on system.")
-    except KeyError:
-        print("GSV not available. Environment variables not correctly set.")
 
     print("AQUA version is: " + version)
 

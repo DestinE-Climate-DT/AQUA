@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
+- Base AQUA is now shipped without FDB/GSV/polytope dependencies, available with [fdb] optional installation argument (#2818)
 - Graphics: improve titles and labels formatting in Boxplots and Hovmoller (#2777)
 - Apply ruff formatting to the codebase (#2791)
 - Add pre-commit hooks and ruff linting (#2786)
