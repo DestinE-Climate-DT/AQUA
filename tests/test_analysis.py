@@ -7,7 +7,7 @@ in tests/test_console.py
 
 import pytest
 
-from aqua.core.analysis import run_command, run_diagnostic_func
+from aqua.core.analysis import run_command, run_diagnostic_collection
 from aqua.core.analysis.analysis import _build_extra_args
 from aqua.core.logger import log_configure
 
@@ -25,10 +25,10 @@ def test_run_command():
         _ = run_command(command, logger=logger)
 
 
-def test_run_diagnostic_func(tmp_path):
-    """Test the run_diagnostic_func function."""
+def test_run_diagnostic_collection():
+    """Test the run_diagnostic_collection function."""
 
-    res = run_diagnostic_func(diagnostic="pluto", diag_config={}, logger=logger)
+    res = run_diagnostic_collection(collection="pluto", diag_config={}, logger=logger)
     assert res is None, "Expected None return value for empty config"
 
     config = {
@@ -40,13 +40,13 @@ def test_run_diagnostic_func(tmp_path):
         }
     }
 
-    # Go through run_diagnostic_func and fail
+    # Go through run_diagnostic_collection and fail
     # at the final run_diagnostic call.
     # The fail is a return code != 0 so there is no
     # raise Exception, we just check that the function
     # completes without errors.
-    run_diagnostic_func(
-        diagnostic="pluto",
+    run_diagnostic_collection(
+        collection="pluto",
         parallel=True,
         regrid="r100",
         logger=logger,
@@ -56,7 +56,7 @@ def test_run_diagnostic_func(tmp_path):
         realization="r2",
     )
 
-    assert True, "run_diagnostic_func should complete without errors"
+    assert True, "run_diagnostic_collection should complete without errors"
 
 
 def test_build_extra_args_with_dates():
