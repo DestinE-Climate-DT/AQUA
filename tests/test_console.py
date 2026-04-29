@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from unittest.mock import patch
 
 import pytest
 
@@ -594,8 +595,7 @@ class TestAquaConsoleShared:
             "weights": os.path.join(mydir, "pluto", "weights"),
         }
 
-        # base set of tests for list
-
+    # base set of tests for list
     def test_console_list(self, shared_aqua_install, run_aqua, capfd):
         """Basic tests for list command"""
 
@@ -671,38 +671,64 @@ class TestAquaConsoleShared:
             run_aqua(["update", "-c", "non_existent_catalog"])
         assert excinfo.value.code == 1
 
-    # def test_console_without_github_api(self, shared_aqua_install, run_aqua, capfd):
-    #     """Test catalog operations without GITHUB API credentials (token/user)"""
+    def test_console_analysis_minimal(self, shared_aqua_install, run_aqua, tmp_path):
+        """Minimal smoke test: verifies aqua analysis routes through the config without
+        running real subprocesses."""
+        # Dummy CLI script — must exist on disk to pass os.path.exists check
+        dummy_script = tmp_path / "cli_dummy.py"
+        dummy_script.touch()
 
-    #     # Save current GitHub credentials if they exist
-    #     saved_token = os.environ.get('GITHUB_TOKEN')
-    #     saved_user = os.environ.get('GITHUB_USER')
-    #     saved_actions = os.environ.get('GITHUB_ACTIONS')
+        # Minimal diagnostic config consumed by the tool
+        diag_cfg = tmp_path / "diag_config.yaml"
+        dump_yaml(str(diag_cfg), {"key": "value"})
 
-    #     try:
-    #         # Remove GitHub credentials
-    #         if 'GITHUB_TOKEN' in os.environ:
-    #             del os.environ['GITHUB_TOKEN']
-    #         if 'GITHUB_USER' in os.environ:
-    #             del os.environ['GITHUB_USER']
-    #         if 'GITHUB_ACTIONS' in os.environ:
-    #             del os.environ['GITHUB_ACTIONS']
+        # Minimal aqua-analysis config
+        analysis_cfg = tmp_path / "config.aqua-analysis-test.yaml"
+        dump_yaml(
+            str(analysis_cfg),
+            {
+                "job": {
+                    "run_checker": False,
+                    "loglevel": "WARNING",
+                    "outputdir": str(tmp_path / "output"),
+                    "model": "IFS",
+                    "exp": "test-tco79",
+                    "source": "lra-r100-monthly",
+                    "catalog": "ci",
+                },
+                "cli": {"dummy_tool": str(dummy_script)},
+                "run": [["dummy"]],
+                "diagnostics": {
+                    "dummy": {
+                        "dummy_tool": {"config": str(diag_cfg)},
+                    }
+                },
+            },
+        )
 
-    #         # Try to list available catalogs without authentication
-    #         run_aqua(['avail', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
-    #         out, _ = capfd.readouterr()
+        with patch("aqua.core.analysis.analysis.run_diagnostic_tool") as mock_tool:
+            run_aqua(
+                [
+                    "analysis",
+                    "--config",
+                    str(analysis_cfg),
+                    "-m",
+                    "IFS",
+                    "-e",
+                    "test-tco79",
+                    "-s",
+                    "lra-r100-monthly",
+                    "-l",
+                    "WARNING",
+                ]
+            )
 
-    #         # Should work but with unauthenticated access warning
-    #         assert 'climatedt-phase1' in out or 'lumi-phase1' in out or 'ci' in out
+        # Output directory should be created by the routing logic
+        output_dir = tmp_path / "output" / "ci" / "IFS" / "test-tco79" / "r1"
+        assert output_dir.exists(), f"Output directory not created: {output_dir}"
 
-    #     finally:
-    #         # Restore GitHub credentials
-    #         if saved_token is not None:
-    #             os.environ['GITHUB_TOKEN'] = saved_token
-    #         if saved_user is not None:
-    #             os.environ['GITHUB_USER'] = saved_user
-    #         if saved_actions is not None:
-    #             os.environ['GITHUB_ACTIONS'] = saved_actions
+        # The dummy tool should have been invoked once
+        mock_tool.assert_called_once()
 
     def test_console_nonexistent_catalog_from_existing_repo(self, shared_aqua_install, run_aqua):
         """Test adding a non-existing catalog from an existing GitHub repository"""

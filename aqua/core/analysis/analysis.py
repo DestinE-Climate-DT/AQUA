@@ -4,12 +4,14 @@ AQUA analysis module for running diagnostics and handling configurations.
 """
 
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from importlib import resources as pypath
 
 from aqua.core.configurer import ConfigPath
-from aqua.core.util import create_folder, to_list
+from aqua.core.util import create_folder, dump_yaml, load_yaml, to_list
 
 
 def run_command(cmd: str, log_file: str, logger=None) -> int:
@@ -38,15 +40,22 @@ def run_command(cmd: str, log_file: str, logger=None) -> int:
         raise
 
 
-def run_diagnostic(
-    diagnostic: str, script_path: str, extra_args: str, loglevel: str = "INFO", logger=None, logfile: str = "diagnostic.log"
+def run_diagnostic_tool(
+    collection: str,
+    tool: str,
+    script_path: str,
+    extra_args: str,
+    loglevel: str = "INFO",
+    logger=None,
+    logfile: str = "aqua-diagnostic-tool.log",
 ):
     """
-    Run the diagnostic script with specified arguments.
+    Run the diagnostic tool script with specified arguments.
 
     Args:
-        diagnostic (str): Name of the diagnostic.
-        script_path (str): Path to the diagnostic script.
+        collection (str): Name of the diagnostic collection.
+        tool (str): Name of the diagnostic tool to use.
+        script_path (str): Path to the diagnostic tool script.
         extra_args (str): Additional arguments for the script.
         loglevel (str): Log level to use.
         logger: Logger instance for logging messages.
@@ -58,17 +67,17 @@ def run_diagnostic(
         create_folder(os.path.dirname(logfile))
 
         cmd = f"python {script_path} {extra_args} -l {loglevel} > {logfile} 2>&1"
-        logger.info(f"Running diagnostic {diagnostic}")
+        logger.info(f"Running tool {tool} for diagnostic collection {collection}")
         logger.debug(f"Command: {cmd}")
 
         process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
 
         if process.returncode != 0:
-            logger.error(f"Error running diagnostic {diagnostic}: {process.stderr}")
+            logger.error(f"Error running tool {tool} for diagnostic collection {collection}: {process.stderr}")
         else:
-            logger.info(f"Diagnostic {diagnostic} completed successfully.")
+            logger.info(f"Tool {tool} for diagnostic collection {collection} completed successfully.")
     except (OSError, subprocess.SubprocessError) as e:
-        logger.error(f"Failed to run diagnostic {diagnostic}: {e}")
+        logger.error(f"Failed to run tool {tool} for diagnostic collection {collection}: {e}")
 
 
 def _build_extra_args(**kwargs):
@@ -80,8 +89,8 @@ def _build_extra_args(**kwargs):
     return args
 
 
-def run_diagnostic_func(
-    diagnostic: str,
+def run_diagnostic_collection(
+    collection: str,
     parallel: bool = False,
     regrid: str = None,
     cli: dict = {},
@@ -98,12 +107,13 @@ def run_diagnostic_func(
     loglevel="INFO",
     logger=None,
     cluster=None,
+    exp_kind_dict=None,
 ):
     """
-    Run the diagnostic and log the output, handling parallel processing if required.
+    Run the diagnostic collection and log the output, handling parallel processing if required.
 
     Args:
-        diagnostic (str): Name of the diagnostic to run.
+        collection (str): Name of the diagnostic collection.
         parallel (bool): Whether to run in parallel mode.
         regrid (str): Regrid option.
         cli (dict): CLI definitions for the tools.
@@ -117,13 +127,14 @@ def run_diagnostic_func(
         enddate (str): End date (YYYY-MM-DD). Defaults to None.
         realization (str): Realization name. Defaults to None.
         output_dir (str): Directory to save output.
-        loglevel (str): Log level for the diagnostic.
+        loglevel (str): Log level for the tool.
         logger: Logger instance for logging messages.
         cluster: Dask cluster scheduler address.
+        exp_kind_dict: Dictionary containing experiment kind configurations, if applicable.
     """
 
     # Internal naming scheme:
-    # diagnostic: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
+    # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
     # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
 
     output_dir = os.path.expandvars(output_dir)
@@ -131,7 +142,7 @@ def run_diagnostic_func(
 
     # run individual tools in serial mode
     for tool, tool_config in diag_config.items():
-        logger.info(f"Running tool: {tool} for diagnostic: {diagnostic}")
+        logger.info(f"Configuring tool {tool} for diagnostic collection {collection}")
 
         cli_path = cli.get(tool)
         if cli_path is None:
@@ -142,7 +153,7 @@ def run_diagnostic_func(
             logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
             continue
 
-        outname = f"{output_dir}/{tool_config.get('outname', diagnostic)}"
+        outname = f"{output_dir}/{tool_config.get('outname', collection)}"
         extra_args = tool_config.get("extra", "")
 
         # Build conditional arguments
@@ -170,16 +181,75 @@ def run_diagnostic_func(
             logger.error(f"Config for tool '{tool}' not found, skipping.")
             continue
 
+        if exp_kind_dict:
+            cfgs = configure_template_configs(cfgs, exp_kind_dict, logger)
+
         for i, cfg in enumerate(cfgs, start=1):
             args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
             if len(cfgs) == 1:
-                logfile = f"{output_dir}/{diagnostic}-{tool}.log"
+                logfile = f"{output_dir}/{collection}-{tool}.log"
             else:
-                logfile = f"{output_dir}/{diagnostic}-{tool}-{i}.log"
+                logfile = f"{output_dir}/{collection}-{tool}-{i}.log"
 
-            run_diagnostic(
-                diagnostic=diagnostic, script_path=cli_path, extra_args=args, loglevel=loglevel, logger=logger, logfile=logfile
+            run_diagnostic_tool(
+                collection=collection,
+                tool=tool,
+                script_path=cli_path,
+                extra_args=args,
+                loglevel=loglevel,
+                logger=logger,
+                logfile=logfile,
             )
+
+        if exp_kind_dict:
+            temp_cfg_dir = os.path.dirname(cfgs[0])
+            shutil.rmtree(temp_cfg_dir, ignore_errors=True)
+            logger.debug("Removed temporary config directory: %s", temp_cfg_dir)
+
+
+def configure_experiment_kind(exp_kind, exp_kind_file, logger):
+    """ "
+    Configure the experiment kind based on the provided kind and configuration file.
+    """
+    if exp_kind is None:
+        return None
+
+    if not os.path.exists(exp_kind_file):
+        raise FileNotFoundError(f"Experiment kind config file '{exp_kind_file}' not found.")
+
+    logger.info(f"Configuring experiment kind: {exp_kind} using config file: {exp_kind_file}")
+    complete_dictionary = load_yaml(exp_kind_file)
+
+    if exp_kind not in complete_dictionary:
+        logger.warning(f"Experiment kind '{exp_kind}' not found in config file '{exp_kind_file}'. Default selected")
+    return complete_dictionary.get(exp_kind, "default")
+
+
+def configure_template_configs(cfgs, exp_kind_dict, logger):
+    """
+    Run jinja templating on the config files based on the experiment kind dictionary.
+    Then dump them into a temporary folder and return the list of new config paths.
+
+    Args:
+        cfgs (list): List of config file paths to render.
+        exp_kind_dict (dict): Dictionary of template variables for Jinja rendering.
+        logger: Logger instance for logging messages.
+
+    Returns:
+        list: List of paths to the rendered config files in a temporary directory.
+    """
+    temp_dir = tempfile.mkdtemp(prefix="aqua_analysis_configs_")
+    logger.debug("Temporary config directory: %s", temp_dir)
+
+    new_cfg_paths = []
+    for cfg in cfgs:
+        rendered_cfg = load_yaml(cfg, definitions=exp_kind_dict)
+        new_cfg_path = os.path.join(temp_dir, os.path.basename(cfg))
+        dump_yaml(new_cfg_path, rendered_cfg)
+        logger.info("Rendered config saved to: %s", new_cfg_path)
+        new_cfg_paths.append(new_cfg_path)
+
+    return new_cfg_paths
 
 
 def get_aqua_paths(*, args, logger):
@@ -194,7 +264,11 @@ def get_aqua_paths(*, args, logger):
         tuple: AQUA path and configuration path.
     """
     aqua_core_path = str(pypath.files("aqua.core"))
-    aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
+    try:
+        aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
+    except ModuleNotFoundError:
+        aqua_diagnostics_path = ""
+        logger.error("aqua.diagnostics package not found; AQUA_DIAGNOSTICS will be empty.")
 
     logger.debug(f"AQUA core path: {aqua_core_path}")
     logger.debug(f"AQUA diagnostics path: {aqua_diagnostics_path}")
