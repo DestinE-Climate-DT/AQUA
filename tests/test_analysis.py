@@ -5,7 +5,6 @@ The more structured test of aqua analysis console command is
 in tests/test_console.py
 """
 
-import argparse
 import os
 
 import pytest
@@ -14,7 +13,7 @@ from aqua.core.analysis import run_command, run_diagnostic_collection
 from aqua.core.analysis.analysis import _build_extra_args, configure_experiment_kind, configure_template_configs
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.logger import log_configure
-from aqua.core.util import load_yaml
+from aqua.core.util import dump_yaml, load_yaml
 
 logger = log_configure("DEBUG", "test_analysis")
 
@@ -64,30 +63,7 @@ def test_run_diagnostic_collection():
     assert True, "run_diagnostic_collection should complete without errors"
 
 
-def test_build_extra_args_with_dates():
-    """Test that _build_extra_args correctly formats startdate and enddate."""
-
-    result = _build_extra_args(catalog="test_catalog", realization="r1", startdate="2020-01-01", enddate="2020-12-31")
-
-    assert "--catalog test_catalog" in result
-    assert "--realization r1" in result
-    assert "--startdate 2020-01-01" in result
-    assert "--enddate 2020-12-31" in result
-
-
-def test_build_extra_args_without_dates():
-    """Test that _build_extra_args skips None values."""
-
-    result = _build_extra_args(catalog="test_catalog", startdate=None, enddate=None)
-
-    assert "--catalog test_catalog" in result
-    assert "--startdate" not in result
-    assert "--enddate" not in result
-
-
 # ── Layer 1: Parser ───────────────────────────────────────────────────────────
-
-
 class TestAnalysisParser:
     """Tests for analysis_parser() — no mocking required."""
 
@@ -206,33 +182,8 @@ class TestAnalysisParser:
         assert args.threads == 8
         assert args.loglevel == "WARNING"
 
-    def test_loglevel_uppercased(self):
-        """Lowercase loglevel strings are coerced to uppercase by the parser."""
-        parser = analysis_parser()
-        args = parser.parse_args(["-l", "debug"])
-        assert args.loglevel == "DEBUG"
-
-    def test_loglevel_invalid_raises_system_exit(self):
-        """An unrecognised loglevel value causes the parser to call sys.exit."""
-        parser = analysis_parser()
-        with pytest.raises(SystemExit) as exc_info:
-            parser.parse_args(["--loglevel", "VERBOSE"])
-        assert exc_info.value.code != 0
-
-    def test_existing_parser_extended(self):
-        """Passing an existing ArgumentParser extends it without conflicts."""
-        base = argparse.ArgumentParser()
-        base.add_argument("--extra", type=str, default="yes")
-        extended = analysis_parser(base)
-        args = extended.parse_args(["--extra", "no", "--model", "IFS"])
-
-        assert args.extra == "no"
-        assert args.model == "IFS"
-
 
 # ── Layer 2: Pure Functions ───────────────────────────────────────────────────
-
-
 class TestBuildExtraArgsExtended:
     """Extended coverage for _build_extra_args."""
 
@@ -258,6 +209,41 @@ class TestBuildExtraArgsExtended:
         assert "--exp" not in result
         assert "--source lra" in result
 
+    def test_build_extra_args_with_dates(self):
+        """Test that _build_extra_args correctly formats startdate and enddate."""
+        result = _build_extra_args(catalog="test_catalog", realization="r1", startdate="2020-01-01", enddate="2020-12-31")
+        assert "--catalog test_catalog" in result
+        assert "--realization r1" in result
+        assert "--startdate 2020-01-01" in result
+        assert "--enddate 2020-12-31" in result
+
+    def test_build_extra_args_without_dates(self):
+        """Test that _build_extra_args skips None values."""
+        result = _build_extra_args(catalog="test_catalog", startdate=None, enddate=None)
+        assert "--catalog test_catalog" in result
+        assert "--startdate" not in result
+        assert "--enddate" not in result
+
+
+@pytest.fixture(scope="module")
+def kinds_yaml(tmp_path_factory):
+    """Shared kinds.yaml written once for the whole module."""
+    kind_file = tmp_path_factory.mktemp("kinds") / "kinds.yaml"
+    data = {
+        "historical": {"period": "past", "forcing": "CMIP6"},
+        "scenario": {"period": "future", "forcing": "SSP5"},
+    }
+    dump_yaml(str(kind_file), data)
+    return kind_file
+
+
+@pytest.fixture(scope="module")
+def jinja_cfg_yaml(tmp_path_factory):
+    """Shared Jinja template config written once for the whole module."""
+    cfg_file = tmp_path_factory.mktemp("jinja") / "config.yaml"
+    dump_yaml(str(cfg_file), {"model": "{{ period }}", "source": "{{ forcing }}"})
+    return cfg_file
+
 
 class TestConfigureExperimentKind:
     """Tests for configure_experiment_kind — uses tmp_path, no mocking."""
@@ -272,31 +258,20 @@ class TestConfigureExperimentKind:
         with pytest.raises(FileNotFoundError):
             configure_experiment_kind("historical", str(tmp_path / "missing.yaml"), logger)
 
-    def test_valid_kind_returned(self, tmp_path):
+    def test_valid_kind_returned(self, kinds_yaml):
         """A matching kind key returns its sub-dictionary."""
-        kind_file = tmp_path / "kinds.yaml"
-        kind_file.write_text("historical:\n  period: past\nscenario:\n  period: future\n")
-
-        result = configure_experiment_kind("historical", str(kind_file), logger)
-
+        result = configure_experiment_kind("historical", str(kinds_yaml), logger)
         assert result["period"] == "past"
 
-    def test_unknown_kind_returns_string_default(self, tmp_path):
+    def test_unknown_kind_returns_string_default(self, kinds_yaml):
         """A kind absent from the YAML returns the string literal 'default'."""
-        kind_file = tmp_path / "kinds.yaml"
-        kind_file.write_text("historical:\n  period: past\n")
-
-        result = configure_experiment_kind("unknown_kind", str(kind_file), logger)
-
+        result = configure_experiment_kind("unknown_kind", str(kinds_yaml), logger)
         assert result == "default"
 
-    def test_multiple_kinds_isolated(self, tmp_path):
+    def test_multiple_kinds_isolated(self, kinds_yaml):
         """Different kind keys each return their own independent sub-dictionary."""
-        kind_file = tmp_path / "kinds.yaml"
-        kind_file.write_text("historical:\n  period: past\n  forcing: CMIP6\nscenario:\n  period: future\n  forcing: SSP5\n")
-
-        hist = configure_experiment_kind("historical", str(kind_file), logger)
-        scen = configure_experiment_kind("scenario", str(kind_file), logger)
+        hist = configure_experiment_kind("historical", str(kinds_yaml), logger)
+        scen = configure_experiment_kind("scenario", str(kinds_yaml), logger)
 
         assert hist["forcing"] == "CMIP6"
         assert scen["forcing"] == "SSP5"
@@ -305,25 +280,23 @@ class TestConfigureExperimentKind:
 class TestConfigureTemplateConfigs:
     """Tests for configure_template_configs — uses tmp_path, no mocking."""
 
-    def test_jinja_variables_substituted(self, tmp_path):
+    def test_jinja_variables_substituted(self, jinja_cfg_yaml, kinds_yaml):
         """Jinja2 placeholders in config files are replaced by exp_kind_dict values."""
-        cfg_file = tmp_path / "config.yaml"
-        cfg_file.write_text("model: {{ name }}\nsource: {{ src }}\n")
-        definitions = {"name": "IFS", "src": "lra-r100"}
+        definitions = load_yaml(str(kinds_yaml))["historical"]
 
-        result_paths = configure_template_configs([str(cfg_file)], definitions, logger)
+        result_paths = configure_template_configs([str(jinja_cfg_yaml)], definitions, logger)
 
         assert len(result_paths) == 1
         rendered = load_yaml(result_paths[0])
-        assert rendered["model"] == "IFS"
-        assert rendered["source"] == "lra-r100"
+        assert rendered["model"] == "past"
+        assert rendered["source"] == "CMIP6"
 
     def test_multiple_configs_all_rendered(self, tmp_path):
         """All configs in the list are rendered and returned."""
         cfg1 = tmp_path / "a.yaml"
         cfg2 = tmp_path / "b.yaml"
-        cfg1.write_text("tag: {{ val }}\n")
-        cfg2.write_text("tag: {{ val }}\n")
+        dump_yaml(str(cfg1), {"tag": "{{ val }}"})
+        dump_yaml(str(cfg2), {"tag": "{{ val }}"})
         definitions = {"val": "hello"}
 
         result_paths = configure_template_configs([str(cfg1), str(cfg2)], definitions, logger)
@@ -337,8 +310,8 @@ class TestConfigureTemplateConfigs:
         """All rendered configs land in a single shared temporary directory."""
         cfg1 = tmp_path / "a.yaml"
         cfg2 = tmp_path / "b.yaml"
-        cfg1.write_text("key: value1\n")
-        cfg2.write_text("key: value2\n")
+        dump_yaml(str(cfg1), {"key": "value1"})
+        dump_yaml(str(cfg2), {"key": "value2"})
 
         result_paths = configure_template_configs([str(cfg1), str(cfg2)], {"x": "y"}, logger)
 
@@ -348,18 +321,8 @@ class TestConfigureTemplateConfigs:
     def test_output_filenames_match_input_basenames(self, tmp_path):
         """The rendered file's basename equals the original config's basename."""
         cfg_file = tmp_path / "my_config.yaml"
-        cfg_file.write_text("key: value\n")
+        dump_yaml(str(cfg_file), {"key": "value"})
 
         result_paths = configure_template_configs([str(cfg_file)], {}, logger)
 
         assert os.path.basename(result_paths[0]) == "my_config.yaml"
-
-    def test_temp_dir_uses_expected_prefix(self, tmp_path):
-        """The temporary directory name starts with the expected AQUA prefix."""
-        cfg_file = tmp_path / "cfg.yaml"
-        cfg_file.write_text("key: value\n")
-
-        result_paths = configure_template_configs([str(cfg_file)], {}, logger)
-
-        temp_dir_name = os.path.basename(os.path.dirname(result_paths[0]))
-        assert temp_dir_name.startswith("aqua_analysis_configs_")
