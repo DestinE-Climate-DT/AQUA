@@ -6,11 +6,16 @@ in tests/test_console.py
 """
 
 import os
+from unittest.mock import patch
 
 import pytest
 
 from aqua.core.analysis import run_command, run_diagnostic_collection
-from aqua.core.analysis.analysis import _build_extra_args, configure_experiment_kind, configure_template_configs
+from aqua.core.analysis.analysis import (
+    _build_extra_args,
+    configure_experiment_kind,
+    configure_template_configs,
+)
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.logger import log_configure
 from aqua.core.util import dump_yaml, load_yaml
@@ -61,6 +66,221 @@ def test_run_diagnostic_collection():
     )
 
     assert True, "run_diagnostic_collection should complete without errors"
+
+
+# ── Layer 2b: run_diagnostic_collection (mocked subprocess boundary) ─────────
+@pytest.fixture(scope="module")
+def tool_env(tmp_path_factory):
+    """Minimal filesystem for run_diagnostic_collection tests: a dummy script and config."""
+    base = tmp_path_factory.mktemp("tool_env")
+    script = base / "biases.py"
+    script.touch()
+    cfg = base / "config.yaml"
+    dump_yaml(str(cfg), {"key": "value"})
+    outdir = base / "output"
+    return {
+        "script": str(script),
+        "cfg": str(cfg),
+        "outdir": str(outdir),
+        "cli": {"biases": str(script)},
+    }
+
+
+# this calss patches the run_diagnostic_tool function,
+# which is the last step in run_diagnostic_collection before subprocess calls.
+# By patching here, we can test all the logic in run_diagnostic_collection without actually invoking any subprocesses.
+# Each test can then assert how run_diagnostic_tool was called (or not called) based on different inputs and configurations.
+PATCH_TOOL = "aqua.core.analysis.analysis.run_diagnostic_tool"
+
+
+class TestRunDiagnosticCollection:
+    """Tests for run_diagnostic_collection — run_diagnostic_tool is always mocked."""
+
+    def _base_config(self, tool_env):
+        return {"biases": {"config": tool_env["cfg"]}}
+
+    def test_empty_diag_config_no_calls(self, tool_env):
+        """An empty diag_config triggers no tool invocations."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config={},
+                cli=tool_env["cli"],
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        mock_tool.assert_not_called()
+
+    def test_missing_cli_path_skips_tool(self, tool_env):
+        """A tool absent from cli dict is skipped silently."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli={},
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        mock_tool.assert_not_called()
+
+    def test_missing_script_file_skips_tool(self, tool_env):
+        """A cli path pointing to a non-existent file is skipped."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli={"biases": "/nonexistent/script.py"},
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        mock_tool.assert_not_called()
+
+    def test_happy_path_calls_run_diagnostic_tool(self, tool_env):
+        """Happy path: run_diagnostic_tool called once with correct core args."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli=tool_env["cli"],
+                model="IFS",
+                exp="test-tco79",
+                source="lra-r100",
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        mock_tool.assert_called_once()
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--model IFS" in extra_args
+        assert "--exp test-tco79" in extra_args
+        assert "--source lra-r100" in extra_args
+        assert f"--config {tool_env['cfg']}" in extra_args
+
+    def test_regrid_flag_added(self, tool_env):
+        """regrid='r100' appends --regrid r100 to extra_args."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli=tool_env["cli"],
+                regrid="r100",
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--regrid r100" in extra_args
+
+    def test_parallel_adds_nworkers(self, tool_env):
+        """parallel=True with nworkers in config appends --nworkers."""
+        config = {"biases": {"config": tool_env["cfg"], "nworkers": 4}}
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=config,
+                cli=tool_env["cli"],
+                parallel=True,
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--nworkers 4" in extra_args
+
+    def test_cluster_flag_added(self, tool_env):
+        """cluster address is forwarded as --cluster when nocluster is not set."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli=tool_env["cli"],
+                cluster="tcp://scheduler:8786",
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--cluster tcp://scheduler:8786" in extra_args
+
+    def test_nocluster_suppresses_cluster_flag(self, tool_env):
+        """nocluster=True in tool config prevents --cluster from being added."""
+        config = {"biases": {"config": tool_env["cfg"], "nocluster": True}}
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=config,
+                cli=tool_env["cli"],
+                cluster="tcp://scheduler:8786",
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--cluster" not in extra_args
+
+    def test_source_oce_added_when_allowed(self, tool_env):
+        """source_oce is forwarded when source_oce=True is set in tool config."""
+        config = {"biases": {"config": tool_env["cfg"], "source_oce": True}}
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=config,
+                cli=tool_env["cli"],
+                source_oce="lra-r100-oce",
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--source_oce lra-r100-oce" in extra_args
+
+    def test_source_oce_skipped_when_not_allowed(self, tool_env):
+        """source_oce is NOT forwarded when source_oce is absent from tool config."""
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli=tool_env["cli"],
+                source_oce="lra-r100-oce",
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert "--source_oce" not in extra_args
+
+    def test_multiple_configs_indexed_logfiles(self, tool_env, tmp_path):
+        """Two configs produce two calls; logfiles are suffixed with -1 and -2."""
+        cfg2 = tmp_path / "config2.yaml"
+        dump_yaml(str(cfg2), {"key": "value2"})
+        config = {"biases": {"config": [tool_env["cfg"], str(cfg2)]}}
+        with patch(PATCH_TOOL) as mock_tool:
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=config,
+                cli=tool_env["cli"],
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        assert mock_tool.call_count == 2
+        logfiles = [c.kwargs["logfile"] for c in mock_tool.call_args_list]
+        assert logfiles[0].endswith("-1.log")
+        assert logfiles[1].endswith("-2.log")
+
+    def test_exp_kind_dict_renders_and_cleans_up(self, tool_env):
+        """exp_kind_dict triggers template rendering; temp dir is removed afterwards."""
+        rendered_cfg = tool_env["cfg"]
+        with (
+            patch(PATCH_TOOL),
+            patch(
+                "aqua.core.analysis.analysis.configure_template_configs",
+                return_value=[rendered_cfg],
+            ) as mock_render,
+            patch("aqua.core.analysis.analysis.shutil.rmtree") as mock_rm,
+        ):
+            run_diagnostic_collection(
+                collection="atm",
+                diag_config=self._base_config(tool_env),
+                cli=tool_env["cli"],
+                exp_kind_dict={"period": "past"},
+                output_dir=tool_env["outdir"],
+                logger=logger,
+            )
+        mock_render.assert_called_once()
+        mock_rm.assert_called_once()
 
 
 # ── Layer 1: Parser ───────────────────────────────────────────────────────────
