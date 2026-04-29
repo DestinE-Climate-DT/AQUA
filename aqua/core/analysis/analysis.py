@@ -264,7 +264,11 @@ def get_aqua_paths(*, args, logger):
         tuple: AQUA path and configuration path.
     """
     aqua_core_path = str(pypath.files("aqua.core"))
-    aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
+    try:
+        aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
+    except ModuleNotFoundError:
+        aqua_diagnostics_path = ""
+        logger.error("aqua.diagnostics package not found; AQUA_DIAGNOSTICS will be empty.")
 
     logger.debug(f"AQUA core path: {aqua_core_path}")
     logger.debug(f"AQUA diagnostics path: {aqua_diagnostics_path}")
