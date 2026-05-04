@@ -10,6 +10,8 @@ from conftest import DPI, LOGLEVEL
 from aqua import Reader
 from aqua.core.graphics import (
     boxplot,
+    plot_gregory_annual,
+    plot_gregory_monthly,
     plot_histogram,
     plot_hovmoller,
     plot_lat_lon_profiles,
@@ -452,7 +454,7 @@ class TestHovmoller:
 
         with pytest.raises(TypeError):
             plot_hovmoller(data="test")
-            
+
     def test_plot_hovmoller_no_dim(self, tmp_path):
         """Test plot_hovmoller with dim=None"""
         fig, ax = plot_hovmoller(
@@ -920,3 +922,93 @@ class TestBoxplot:
 
         assert ax.get_ylabel() == "Values (various units)"
         plt.close(fig)
+
+
+@pytest.mark.graphics
+class TestGregory:
+    """Basic tests for the Gregory plot functions"""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, data_ifs_tc):
+        """Setup method to retrieve data for testing"""
+        # Use spatial mean to get time series
+        self.t2m = data_ifs_tc["skt"].mean(dim=["lat", "lon"])
+        # Use a modified version as proxy for TOA radiation
+        self.net_toa = self.t2m * 0.5 - 7.0
+
+    def test_plot_gregory_monthly(self, tmp_path):
+        """Test plot_gregory_monthly function"""
+        fig, ax = plot_gregory_monthly(
+            t2m_monthly_data=self.t2m,
+            net_toa_monthly_data=self.net_toa,
+            title="Monthly Gregory Plot",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_monthly.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_monthly.png")
+
+    def test_plot_gregory_monthly_with_ref(self, tmp_path):
+        """Test plot_gregory_monthly with reference data"""
+        fig, ax = plot_gregory_monthly(
+            t2m_monthly_data=self.t2m,
+            net_toa_monthly_data=self.net_toa,
+            t2m_monthly_ref=self.t2m * 0.98,
+            net_toa_monthly_ref=self.net_toa * 1.02,
+            labels=["Model"],
+            ref_label="Reference",
+            title="Monthly Gregory Plot with Reference",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_monthly_ref.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_monthly_ref.png")
+
+    def test_plot_gregory_annual(self, tmp_path):
+        """Test plot_gregory_annual function"""
+        t2m_annual = self.t2m.resample(time="YS").mean()
+        net_toa_annual = self.net_toa.resample(time="YS").mean()
+
+        fig, ax = plot_gregory_annual(
+            t2m_annual_data=t2m_annual,
+            net_toa_annual_data=net_toa_annual,
+            title="Annual Gregory Plot",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_annual.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_annual.png")
+
+    def test_plot_gregory_annual_with_ref(self, tmp_path):
+        """Test plot_gregory_annual with reference data"""
+        t2m_annual = self.t2m.resample(time="YS").mean()
+        net_toa_annual = self.net_toa.resample(time="YS").mean()
+        t2m_std = t2m_annual.std()
+        net_toa_std = net_toa_annual.std()
+
+        fig, ax = plot_gregory_annual(
+            t2m_annual_data=t2m_annual,
+            net_toa_annual_data=net_toa_annual,
+            t2m_annual_ref=t2m_annual * 0.99,
+            net_toa_annual_ref=net_toa_annual * 1.01,
+            t2m_std=t2m_std,
+            net_toa_std=net_toa_std,
+            labels=["Model"],
+            title="Annual Gregory Plot with Reference",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_annual_ref.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_annual_ref.png")
