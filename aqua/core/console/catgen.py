@@ -340,12 +340,13 @@ class AquaFDBGenerator:
 
             resolution_id = self.get_value_from_map(self.config["resolution"], resolution_map, "resolution")
 
-            forcing_map = {"hist": "historical", "cont": "control", "SSP3-7.0": "ssp370", "Tplus2.0K": "tplus2K"}
-
             forcing = self.config.get("forcing")
+            activity = self.config.get("activity")
+            experiment = self.config["experiment"]
+
             if not forcing:
-                experiment = self.config["experiment"]
-                forcing = forcing_map.get(experiment, re.sub(r"[^a-z0-9]", "", experiment.lower()))
+                exp_clean = re.sub(r"[^a-z0-9]+", "-", experiment.lower()).strip("-")
+                forcing = f"{activity}-{exp_clean}"
 
             main_yaml["sources"][self.config["exp"]] = {
                 "description": self.description,
