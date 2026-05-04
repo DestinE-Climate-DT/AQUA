@@ -47,8 +47,10 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
+    "healpy",
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray",
+    "intake-xarray<=0.7.0", # Version 2 is a major refactor still in development
+    "healpy",
     "jinja2",
     "kerchunk",
     "matplotlib",
@@ -65,20 +67,21 @@ dependencies = [
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
     "xarray>=2025.12.0",
-    "zarr",
-    # not available on conda
-    "pyfdb", #to be pinned when doing operational release
-    "gsv-interface==2.13.1"
+    "zarr<=3.1.5"
 ]
 
 [project.optional-dependencies]
+fdb = [
+    "pyfdb",
+    "polytope-client",
+    "gsv-interface==2.13.1"
+]
 docs = [
     "sphinx",
     "sphinx-rtd-theme"
 ]
 notebooks = [
-    "ipykernel",
-    "healpy"
+    "ipykernel"
 ]
 tests = [
     "pytest",
@@ -90,13 +93,14 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.15.11"
+    "ruff==0.15.12"
 ]
 all = [
     "aqua-core[docs]",
     "aqua-core[notebooks]",
     "aqua-core[tests]",
-    "aqua-core[style]"
+    "aqua-core[style]",
+    "aqua-core[fdb]"
 ]
 
 [project.scripts]
@@ -136,6 +140,7 @@ markers = [
     "gsv: mark test that requires ECMWF FDB libraries",
     "catgen: mark test for catalog generator",
     "console: mark test for console",
+    "polytope: mark test that uses polytope"
 ]
 
 [tool.coverage.run]
