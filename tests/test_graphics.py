@@ -10,6 +10,8 @@ from conftest import DPI, LOGLEVEL
 from aqua import Reader
 from aqua.core.graphics import (
     boxplot,
+    index_plot,
+    indexes_plot,
     plot_gregory_annual,
     plot_gregory_monthly,
     plot_histogram,
@@ -1012,3 +1014,69 @@ class TestGregory:
 
         fig.savefig(tmp_path / "test_gregory_annual_ref.png", dpi=DPI)
         assert os.path.exists(tmp_path / "test_gregory_annual_ref.png")
+
+
+@pytest.mark.graphics
+class TestIndexPlot:
+    """Basic tests for the index plot functions"""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, data_ifs_tc):
+        """Setup method to retrieve data for testing"""
+        # Use spatial mean to get time series as index
+        self.index = data_ifs_tc["skt"].mean(dim=["lat", "lon"])
+
+    def test_index_plot(self, tmp_path):
+        """Test index_plot function"""
+        fig, ax = index_plot(
+            index=self.index,
+            thresh=0.5,
+            title="Index Plot Test",
+            ylabel="Temperature Index",
+            label="SKT Index",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_index_plot.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_index_plot.png")
+
+    def test_index_plot_with_ylim(self, tmp_path):
+        """Test index_plot with custom ylim"""
+        fig, ax = index_plot(
+            index=self.index,
+            ylim=(-2, 2),
+            title="Index Plot with ylim",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+        assert ax.get_ylim() == (-2, 2)
+
+        fig.savefig(tmp_path / "test_index_plot_ylim.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_index_plot_ylim.png")
+
+    def test_indexes_plot(self, tmp_path):
+        """Test indexes_plot function"""
+        index2 = self.index * 0.9
+
+        fig, axs = indexes_plot(
+            indexes=[self.index, index2],
+            thresh=0.3,
+            titles=["Index 1", "Index 2"],
+            labels=["SKT", "SKT scaled"],
+            suptitle="Multiple Indexes",
+            ylabel="Index Value",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert axs is not None
+        assert len(axs) == 2
+
+        fig.savefig(tmp_path / "test_indexes_plot.png", dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / "test_indexes_plot.png")
