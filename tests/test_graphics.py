@@ -459,8 +459,11 @@ class TestHovmoller:
 
     def test_plot_hovmoller_no_dim(self, tmp_path):
         """Test plot_hovmoller with dim=None"""
+        # Reduce to 2D data (time, lat) for dim=None
+        data_2d = self.data.isel(lon=0)
+        
         fig, ax = plot_hovmoller(
-            data=self.data,
+            data=data_2d,
             return_fig=True,
             dim=None,
             loglevel=loglevel,
