@@ -452,6 +452,54 @@ class TestHovmoller:
 
         with pytest.raises(TypeError):
             plot_hovmoller(data="test")
+            
+    def test_plot_hovmoller_no_dim(self, tmp_path):
+        """Test plot_hovmoller with dim=None"""
+        fig, ax = plot_hovmoller(
+            data=self.data,
+            return_fig=True,
+            dim=None,
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_hovmoller_no_dim.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_hovmoller_no_dim.png")
+
+    def test_plot_hovmoller_no_cbar(self, tmp_path):
+        """Test plot_hovmoller with colorbar disabled"""
+        fig, ax = plot_hovmoller(
+            data=self.data,
+            return_fig=True,
+            cbar=False,
+            cbar_label="explicit label",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_hovmoller_no_cbar.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_hovmoller_no_cbar.png")
+
+    def test_plot_hovmoller_vmin_vmax_sym(self, tmp_path):
+        """Test plot_hovmoller with explicit vmin/vmax and sym=True"""
+        fig, ax = plot_hovmoller(
+            data=self.data,
+            return_fig=True,
+            vmin=-10.0,
+            vmax=10.0,
+            sym=True,
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_hovmoller_sym.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_hovmoller_sym.png")
 
 
 @pytest.mark.graphics
