@@ -228,24 +228,15 @@ class AquaFDBGenerator:
 
         aqua_grid = self.matching_grids[grid]
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
-
         levtype_str = (
-            "atm2d"
-            if profile["levtype"] == "sfc"
-            else "atm3d"
-            if profile["levtype"] == "pl"
-            else "oce2d"
-            if profile["levtype"] == "o2d"
-            else "oce3d"
+            "o3d"
             if profile["levtype"] == "o3d" and "full" in profile["vertical"]
-            else "oce3d-half"
+            else "o3d-half"
             if profile["levtype"] == "o3d" and "half" in profile["vertical"]
             else "sol4"
-            if profile["levtype"] == "sol" and profile["vertical"] == "IFS-sol4" or profile["vertical"] == "ICON-sol4"
-            # noqa: E501
+            if profile["levtype"] == "sol" and profile["vertical"] in {"IFS-sol4", "ICON-sol4"}
             else "sol5"
-            if profile["levtype"] == "sol" and profile["vertical"] == "IFS-sol5" or profile["vertical"] == "ICON-sol5"
-            # noqa: E501
+            if profile["levtype"] == "sol" and profile["vertical"] in {"IFS-sol5", "ICON-sol5"}
             else profile["levtype"]
         )
 
@@ -340,12 +331,13 @@ class AquaFDBGenerator:
 
             resolution_id = self.get_value_from_map(self.config["resolution"], resolution_map, "resolution")
 
-            forcing_map = {"hist": "historical", "cont": "control", "SSP3-7.0": "ssp370", "Tplus2.0K": "tplus2K"}
-
             forcing = self.config.get("forcing")
+            activity = self.config.get("activity")
+            experiment = self.config["experiment"]
+
             if not forcing:
-                experiment = self.config["experiment"]
-                forcing = forcing_map.get(experiment, re.sub(r"[^a-z0-9]", "", experiment.lower()))
+                exp_clean = re.sub(r"[^a-z0-9]+", "-", experiment.lower()).strip("-")
+                forcing = f"{activity}-{exp_clean}"
 
             main_yaml["sources"][self.config["exp"]] = {
                 "description": self.description,
