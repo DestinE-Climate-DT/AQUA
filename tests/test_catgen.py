@@ -1,16 +1,16 @@
 """Testing for the catalog generator"""
 
+import argparse
 import logging
 import os
 import subprocess
 from pathlib import Path
-import argparse
+
 import pytest
 from conftest import LOGLEVEL
 
-from aqua.core.console.catgen import AquaFDBGenerator, get_nested, catgen_execute
+from aqua.core.console.catgen import AquaFDBGenerator, catgen_execute, get_nested
 from aqua.core.util import dump_yaml, load_yaml
-
 
 loglevel = LOGLEVEL
 
