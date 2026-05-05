@@ -2,7 +2,6 @@
 
 import argparse
 import logging
-import os
 import subprocess
 from pathlib import Path
 
@@ -13,6 +12,31 @@ from aqua.core.console.catgen import AquaFDBGenerator, catgen_execute, get_neste
 from aqua.core.util import dump_yaml, load_yaml
 
 loglevel = LOGLEVEL
+
+# Constants for vertical levels
+ATMOS_PRESSURE_LEVELS = 19
+NEMO_OCEAN_LEVELS = 75
+FESOM_OCEAN_LEVELS = 69
+ICON_OCEAN_LEVELS = 72
+
+
+def _assert_source_levels(sources, source_key, expected_levels):
+    """Helper to check vertical levels in a source."""
+    assert len(sources["sources"][source_key]["metadata"]["levels"]) == expected_levels
+
+
+@pytest.fixture
+def catgen_sources(tmp_path):
+    """Fixture factory for catalog generation."""
+
+    def _generate(model, kind, reso, num_of_realizations=1):
+        config_template = Path("tests/catgen/config-test-catgen.j2")
+        config = _prepare_config(config_template, model, kind, reso, num_of_realizations, tmp_path)
+        _setup_catalog_directory(config, tmp_path)
+        _run_catgen(config, kind, tmp_path)
+        return _load_generated_sources(config)
+
+    return _generate
 
 
 def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
@@ -123,80 +147,41 @@ def _load_generated_sources(config):
     return load_yaml(str(entry_file))
 
 
-@pytest.mark.parametrize(("model,nsources,nocelevels"), [("IFS-NEMO", 4, 75)])
+@pytest.mark.parametrize(
+    ("model,kind,reso,nsources,nocelevels,ensemble"),
+    [
+        ("IFS-NEMO", "minimal", "lowres", 4, NEMO_OCEAN_LEVELS, 5),
+        ("IFS-NEMO", "reduced", "intermediate", 9, NEMO_OCEAN_LEVELS, 5),
+        ("IFS-NEMO", "full", "production", 28, NEMO_OCEAN_LEVELS, 1),
+        ("IFS-FESOM", "full", "production", 31, FESOM_OCEAN_LEVELS, 1),
+        ("ICON", "full", "production", 27, ICON_OCEAN_LEVELS, 1),
+    ],
+)
 @pytest.mark.catgen
-def test_catgen_minimal(tmp_path, model, nsources, nocelevels):
-    """test for minimal portfolio"""
+def test_catgen_portfolios(tmp_path, model, kind, reso, nsources, nocelevels, ensemble):
+    """Test catalog generation for different portfolios and models."""
+    sources = load_and_prepare(tmp_path=tmp_path, model=model, kind=kind, reso=reso, num_of_realizations=ensemble)
 
-    ensemble = 5
-
-    sources = load_and_prepare(tmp_path=tmp_path, model=model, kind="minimal", reso="lowres", num_of_realizations=ensemble)
-
-    # check how many sources
+    # Check number of sources
     assert len(sources["sources"]) == nsources
 
-    # check if realization is correctly formatted
-    assert "realization: '{{ realization }}'"
+    # Check vertical levels based on portfolio and model
+    if kind == "minimal":
+        _assert_source_levels(sources, "monthly-hpz5-pl", ATMOS_PRESSURE_LEVELS)
+        _assert_source_levels(sources, "monthly-hpz5-o3d", nocelevels)
+        # Check ensemble production for minimal
+        assert sources["sources"]["monthly-hpz5-pl"]["parameters"]["realization"]["allowed"] == [*range(1, ensemble + 1)]
 
-    # check number of vertical levels in the atmosphere
-    assert len(sources["sources"]["monthly-hpz5-pl"]["metadata"]["levels"]) == 19
+    elif kind == "reduced":
+        grid = "hpz7"
+        _assert_source_levels(sources, f"monthly-{grid}-pl", ATMOS_PRESSURE_LEVELS)
+        _assert_source_levels(sources, f"monthly-{grid}-o3d", nocelevels)
+        # Check ensemble production for reduced
+        assert sources["sources"][f"monthly-{grid}-pl"]["parameters"]["realization"]["allowed"] == [*range(1, ensemble + 1)]
 
-    # check number of vertical levels in the ocean
-    assert len(sources["sources"]["monthly-hpz5-o3d"]["metadata"]["levels"]) == nocelevels
-
-    # check ensembles are correctly produced
-    assert sources["sources"]["monthly-hpz5-pl"]["parameters"]["realization"]["allowed"] == [*range(1, ensemble + 1)]
-
-
-@pytest.mark.parametrize(("model,nsources,nocelevels"), [("IFS-NEMO", 9, 75)])
-# ('IFS-FESOM', 5, 47)])
-@pytest.mark.catgen
-def test_catgen_reduced(tmp_path, model, nsources, nocelevels):
-    """test for reduced portfolio"""
-
-    ensemble = 5
-
-    sources = load_and_prepare(
-        tmp_path=tmp_path, model=model, kind="reduced", reso="intermediate", num_of_realizations=ensemble
-    )
-
-    # check how many sources
-    assert len(sources["sources"]) == nsources
-
-    # check if realization is correctly formatted
-    assert "realization: '{{ realization }}'"
-
-    # check number of vertical levels in the atmosphere
-    if model == "IFS-NEMO":
-        grid, freq = "hpz7", "monthly"
-    # elif model == 'IFS-FESOM':
-    #   grid, freq = 'hpz7', 'daily'
-    else:
-        raise ValueError(f"{model} not supported!")
-    assert len(sources["sources"][f"monthly-{grid}-pl"]["metadata"]["levels"]) == 19
-
-    # check number of vertical levels in the atmosphere
-    assert len(sources["sources"][f"{freq}-{grid}-o3d"]["metadata"]["levels"]) == nocelevels
-
-    # check ensembles are correctly produced
-    assert sources["sources"][f"monthly-{grid}-pl"]["parameters"]["realization"]["allowed"] == [*range(1, ensemble + 1)]
-
-
-@pytest.mark.parametrize(("model,nsources,nocelevels"), [("IFS-NEMO", 28, 75), ("IFS-FESOM", 31, 69), ("ICON", 27, 72)])
-@pytest.mark.catgen
-def test_catgen_full(tmp_path, model, nsources, nocelevels):
-    """test for full portfolio"""
-
-    sources = load_and_prepare(tmp_path, model, "full", "production")
-
-    # check how many sources
-    assert len(sources["sources"]) == nsources
-
-    # check number of vertical levels in the atmosphere
-    assert len(sources["sources"]["hourly-hpz10-pl"]["metadata"]["levels"]) == 19
-
-    # check number of vertical levels in the atmosphere
-    assert len(sources["sources"]["daily-hpz10-o3d"]["metadata"]["levels"]) == nocelevels
+    elif kind == "full":
+        _assert_source_levels(sources, "hourly-hpz10-pl", ATMOS_PRESSURE_LEVELS)
+        _assert_source_levels(sources, "daily-hpz10-o3d", nocelevels)
 
 
 MANDATORY_KEYS_TO_TEST = [
@@ -222,8 +207,8 @@ def test_catgen_missing_key(tmp_path, missing_key):
     else:
         config.pop(missing_key, None)
 
-    dump_path = os.path.join(tmp_path, "test.yaml")
-    dump_yaml(dump_path, config)
+    dump_path = tmp_path / "test.yaml"
+    dump_yaml(str(dump_path), config)
 
     with pytest.raises(ValueError, match="Missing required configuration keys"):
         AquaFDBGenerator(config_path=dump_path, data_portfolio="minimal")
@@ -231,22 +216,15 @@ def test_catgen_missing_key(tmp_path, missing_key):
 
 # Test cases for get_nested function
 @pytest.mark.catgen
-def test_get_nested_flat():
+def test_get_nested():
+    """Test get_nested function with various dictionary structures."""
+    # Flat dictionary
     assert get_nested({"a": 1}, "a") == 1
-
-
-@pytest.mark.catgen
-def test_get_nested_flat_missing():
     assert get_nested({}, "z") is None
 
-
-@pytest.mark.catgen
-def test_get_nested_tuple():
-    assert get_nested({"repos": {"path": "/data"}}, ("repos", "path")) == "/data"
-
-
-@pytest.mark.catgen
-def test_get_nested_tuple_missing_intermediate():
+    # Nested dictionary with tuple path
+    data = {"repos": {"path": "/data"}}
+    assert get_nested(data, ("repos", "path")) == "/data"
     assert get_nested({"repos": {}}, ("repos", "path")) is None
 
 
@@ -262,25 +240,26 @@ def test_get_nested_tuple_missing_intermediate():
         ("monthly", "pl", "MS"),
     ],
 )
-@pytest.mark.catgen
 def test_get_time(freq, levtype, expected_chunks):
+    """Test get_time static method for different frequencies."""
     assert AquaFDBGenerator.get_time(freq, levtype)["chunks"] == expected_chunks
 
 
 @pytest.mark.catgen
 def test_get_time_unknown_raises():
+    """Verify that unknown frequency raises KeyError."""
     with pytest.raises(KeyError):
         AquaFDBGenerator.get_time("yearly", "pl")
 
 
 @pytest.mark.catgen
-def test_get_levelist_no_vertical():
+def test_get_levelist():
+    """Test get_levelist static method with and without vertical profiles."""
+    # Without vertical
     lev, vals = AquaFDBGenerator.get_levelist({"levtype": "sfc"}, {}, {})
     assert lev is None and vals is None
 
-
-@pytest.mark.catgen
-def test_get_levelist_with_vertical():
+    # With vertical profile
     profile = {"vertical": "pl-19"}
     grids = {"vertical-pl-19": "lev_pl19"}
     levels = {"lev_pl19": {"levelist": [1, 2], "levels": [100, 200]}}
@@ -289,19 +268,16 @@ def test_get_levelist_with_vertical():
 
 
 @pytest.mark.catgen
-def test_get_value_from_map_found():
-    assert AquaFDBGenerator.get_value_from_map("production", {"production": "HR"}, "resolution") == "HR"
+def test_get_value_from_map():
+    """Test get_value_from_map static method."""
+    mapping = {"production": "HR"}
+    assert AquaFDBGenerator.get_value_from_map("production", mapping, "resolution") == "HR"
 
-
-@pytest.mark.catgen
-def test_get_value_from_map_missing():
     with pytest.raises(ValueError, match="Unexpected resolution"):
-        AquaFDBGenerator.get_value_from_map("unknown", {"production": "HR"}, "resolution")
+        AquaFDBGenerator.get_value_from_map("unknown", mapping, "resolution")
 
 
-# ── load_jinja_template ──────────────────────────────────────────────────────
-
-
+# load_jinja_template
 @pytest.mark.catgen
 def test_load_jinja_template_missing(tmp_path):
     """Verify FileNotFoundError is raised when the Jinja template file is missing."""
@@ -311,15 +287,16 @@ def test_load_jinja_template_missing(tmp_path):
         gen.load_jinja_template("/nonexistent/template.j2")
 
 
-# ── generate_catalog — edge cases ────────────────────────────────────────────
-
-
+# generate_catalog — edge cases
 @pytest.mark.catgen
 def test_generate_catalog_no_resolutions(tmp_path, caplog):
     """If local_grids is empty, generate an empty file and log the error."""
     config_path = tmp_path / "test.yaml"
-    config = load_yaml(str(config_path))
+    config_template = Path("tests/catgen/config-test-catgen.j2")
+    definitions = {"model": "IFS-NEMO", "kind": "minimal", "resolution": "lowres", "expid": "test"}
+    config = load_yaml(str(config_template), definitions)
     config["repos"]["Climate-DT-catalog_path"] = str(tmp_path / "Climate-DT-catalog")
+    dump_yaml(str(config_path), config)
 
     gen = AquaFDBGenerator(data_portfolio="minimal", config_path=str(config_path))
     gen.local_grids = {}
@@ -328,13 +305,10 @@ def test_generate_catalog_no_resolutions(tmp_path, caplog):
     assert "No resolutions found" in caplog.text
 
 
-# ── catgen_execute ────────────────────────────────────────────────────────────
-
-
+# catgen_execute
 @pytest.mark.catgen
 def test_catgen_execute(tmp_path):
     load_and_prepare(tmp_path, "IFS-NEMO", "minimal", "lowres")
     config_path = tmp_path / "test.yaml"
-
     args = argparse.Namespace(portfolio="minimal", config=str(config_path), loglevel="WARNING")
     catgen_execute(args)
