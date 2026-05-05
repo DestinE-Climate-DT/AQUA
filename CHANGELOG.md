@@ -12,6 +12,7 @@ AQUA diagnostics complete list:
 ## [v0.19.11]
 
 AQUA core complete list:
+- CatGen: more flexible handling of forcing string (#2832)
 - Attributes guessing for eccodes works also with local destine table (#2785)
 - Fix area selection, `default_coords` are deduced from the dataset (#2771)
 - Netcdf4 and h5py in env instead of pip (#2739)

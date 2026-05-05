@@ -205,8 +205,6 @@ class AquaFDBGenerator:
         if not result:
             raise ValueError(f"Unexpected {value_type}: {value}")
         return result
-
-
     def load_jinja_template(self, template_file):
         """
         Load a Jinja2 template.
@@ -343,19 +341,15 @@ class AquaFDBGenerator:
             }
             
             resolution_id = self.get_value_from_map(self.config['resolution'], resolution_map, 'resolution')
-
-            forcing_map = {
-                'hist': 'baseline-hist',
-                'cont': 'baseline-cont',
-                'SSP3-7.0': 'projections-ssp370',
-                'Tplus2.0K': 'tplus2K'
-            }
-
-            forcing = self.config.get('forcing')
-            if not forcing:
-                experiment = self.config['experiment']
-                forcing = forcing_map.get(experiment, re.sub(r'[^a-z0-9]', '', experiment.lower()))
             
+            forcing = self.config.get("forcing")
+            activity = self.config.get("activity")
+            experiment = self.config['experiment']
+
+            if not forcing:
+                exp_clean = re.sub(r"[^a-z0-9]+", "-", experiment.lower()).strip("-")
+                forcing = f"{activity}-{exp_clean}"
+                        
             main_yaml['sources'][self.config['exp']] = {
                 'description': self.description,
                 'metadata': {
