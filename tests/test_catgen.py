@@ -4,12 +4,13 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-
+import argparse
 import pytest
 from conftest import LOGLEVEL
 
-from aqua.core.console.catgen import AquaFDBGenerator
+from aqua.core.console.catgen import AquaFDBGenerator, get_nested, catgen_execute
 from aqua.core.util import dump_yaml, load_yaml
+
 
 loglevel = LOGLEVEL
 
@@ -226,3 +227,114 @@ def test_catgen_missing_key(tmp_path, missing_key):
 
     with pytest.raises(ValueError, match="Missing required configuration keys"):
         AquaFDBGenerator(config_path=dump_path, data_portfolio="minimal")
+
+
+# Test cases for get_nested function
+@pytest.mark.catgen
+def test_get_nested_flat():
+    assert get_nested({"a": 1}, "a") == 1
+
+
+@pytest.mark.catgen
+def test_get_nested_flat_missing():
+    assert get_nested({}, "z") is None
+
+
+@pytest.mark.catgen
+def test_get_nested_tuple():
+    assert get_nested({"repos": {"path": "/data"}}, ("repos", "path")) == "/data"
+
+
+@pytest.mark.catgen
+def test_get_nested_tuple_missing_intermediate():
+    assert get_nested({"repos": {}}, ("repos", "path")) is None
+
+
+# ── static methods ───────────────────────────────────────────────────────────
+@pytest.mark.catgen
+@pytest.mark.parametrize(
+    "freq,levtype,expected_chunks",
+    [
+        ("hourly", "pl", "6h"),
+        ("hourly", "sfc", "D"),
+        ("6-hourly", "pl", "6h"),
+        ("daily", "pl", "D"),
+        ("monthly", "pl", "MS"),
+    ],
+)
+@pytest.mark.catgen
+def test_get_time(freq, levtype, expected_chunks):
+    assert AquaFDBGenerator.get_time(freq, levtype)["chunks"] == expected_chunks
+
+
+@pytest.mark.catgen
+def test_get_time_unknown_raises():
+    with pytest.raises(KeyError):
+        AquaFDBGenerator.get_time("yearly", "pl")
+
+
+@pytest.mark.catgen
+def test_get_levelist_no_vertical():
+    lev, vals = AquaFDBGenerator.get_levelist({"levtype": "sfc"}, {}, {})
+    assert lev is None and vals is None
+
+
+@pytest.mark.catgen
+def test_get_levelist_with_vertical():
+    profile = {"vertical": "pl-19"}
+    grids = {"vertical-pl-19": "lev_pl19"}
+    levels = {"lev_pl19": {"levelist": [1, 2], "levels": [100, 200]}}
+    lev, vals = AquaFDBGenerator.get_levelist(profile, grids, levels)
+    assert lev == [1, 2]
+
+
+@pytest.mark.catgen
+def test_get_value_from_map_found():
+    assert AquaFDBGenerator.get_value_from_map("production", {"production": "HR"}, "resolution") == "HR"
+
+
+@pytest.mark.catgen
+def test_get_value_from_map_missing():
+    with pytest.raises(ValueError, match="Unexpected resolution"):
+        AquaFDBGenerator.get_value_from_map("unknown", {"production": "HR"}, "resolution")
+
+
+# ── load_jinja_template ──────────────────────────────────────────────────────
+
+
+@pytest.mark.catgen
+def test_load_jinja_template_missing(tmp_path):
+    """Verify FileNotFoundError is raised when the Jinja template file is missing."""
+    gen = AquaFDBGenerator.__new__(AquaFDBGenerator)
+    gen.logger = __import__("logging").getLogger("test")
+    with pytest.raises(FileNotFoundError):
+        gen.load_jinja_template("/nonexistent/template.j2")
+
+
+# ── generate_catalog — edge cases ────────────────────────────────────────────
+
+
+@pytest.mark.catgen
+def test_generate_catalog_no_resolutions(tmp_path, caplog):
+    """If local_grids is empty, generate an empty file and log the error."""
+    config_path = tmp_path / "test.yaml"
+    config = load_yaml(str(config_path))
+    config["repos"]["Climate-DT-catalog_path"] = str(tmp_path / "Climate-DT-catalog")
+
+    gen = AquaFDBGenerator(data_portfolio="minimal", config_path=str(config_path))
+    gen.local_grids = {}
+    with caplog.at_level(logging.ERROR):
+        gen.generate_catalog()
+    assert "No resolutions found" in caplog.text
+
+
+# ── catgen_execute ────────────────────────────────────────────────────────────
+
+
+@pytest.mark.catgen
+def test_catgen_execute(tmp_path):
+    load_and_prepare(tmp_path, "IFS-NEMO", "minimal", "lowres")
+    config_path = tmp_path / "test.yaml"
+
+    args = argparse.Namespace(portfolio="minimal", config=str(config_path), loglevel="WARNING")
+    catgen_execute(args)
