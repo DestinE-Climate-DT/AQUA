@@ -5,12 +5,12 @@ import math
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 import cartopy.util as cutil
-import healpy as hp
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from astropy_healpix import healpy as hp
 from scipy.interpolate import griddata
 
 from aqua.core.logger import log_configure
@@ -453,6 +453,27 @@ https://github.com/mpimet/easygems/blob/main/easygems/healpix/__init__.py
 """
 
 
+def isnpixok(npix):
+    """
+    Check if npix is a valid HEALPix pixel count (12 * nside**2 where nside is a power of 2).
+
+    Args:
+        npix (int): Number of pixels.
+
+    Returns:
+        bool: True if npix is valid, False otherwise.
+    """
+    if npix < 12 or npix % 12 != 0:
+        return False
+    nside_sq = npix // 12
+    nside = int(np.sqrt(nside_sq))
+    if nside**2 != nside_sq:
+        return False
+    if (nside & (nside - 1)) != 0:
+        return False
+    return True
+
+
 def get_nside(data):
     """
     Get the nside of a HEALPix map.
@@ -474,7 +495,7 @@ def get_nside(data):
         raise ValueError("Invalid HEALPix map: data array is empty")
 
     npix = data.size
-    if not hp.isnpixok(npix):
+    if not isnpixok(npix):
         raise ValueError(f"Invalid HEALPix map: npix={npix}")
     return hp.npix2nside(npix)
 

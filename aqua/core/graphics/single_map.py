@@ -13,10 +13,10 @@ from typing import Optional
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import healpy as hp
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from astropy_healpix import healpy as hp
 
 from aqua.core.logger import log_configure
 from aqua.core.util import (
@@ -29,6 +29,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
+from aqua.core.util.graphics import isnpixok
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -112,7 +113,7 @@ def plot_single_map(
 
     # Check if the data is in HEALPix format
     npix = data.size  # Number of cells in the data
-    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+    nside = hp.npix2nside(npix) if isnpixok(npix) else None
 
     if nside is not None and nside > 0:
         logger.debug(f"Data has {npix} cells, nside={nside}")
@@ -321,7 +322,7 @@ def plot_single_map_diff(
 
     # Check if the data is in HEALPix format
     npix = data.size  # Number of cells in the data
-    nside = hp.npix2nside(npix) if hp.isnpixok(npix) else None
+    nside = hp.npix2nside(npix) if isnpixok(npix) else None
 
     if nside is not None and nside > 0:
         logger.debug(f"Data has {npix} cells, nside={nside}")
@@ -331,7 +332,7 @@ def plot_single_map_diff(
 
     # Check if the data is in HEALPix format
     npix_ref = data_ref.size  # Number of cells in the data
-    nside_ref = hp.npix2nside(npix_ref) if hp.isnpixok(npix_ref) else None
+    nside_ref = hp.npix2nside(npix_ref) if isnpixok(npix_ref) else None
 
     if nside_ref is not None:
         logger.info(f"Reference data is in HEALPix format with nside={nside_ref}.")
