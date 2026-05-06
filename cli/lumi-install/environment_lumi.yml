@@ -17,4 +17,4 @@ dependencies:
   - netcdf4
   - hdf5 #explicit to avoid issues with pypi
   - imagemagick
-  - healpy
+  - astropy-healpix
