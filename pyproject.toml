@@ -47,10 +47,9 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
-    "healpy",
     "intake", # Version 2 is a major refactor still in development
     "intake-xarray", # Version 2 is a major refactor still in development
-    "healpy",
+    "astropy-healpix",
     "jinja2",
     "kerchunk",
     "matplotlib",

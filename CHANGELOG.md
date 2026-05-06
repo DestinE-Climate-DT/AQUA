@@ -10,6 +10,8 @@ Main changes:
 
 Complete list:
 - Update intake and intake-xarray to >=2.0.0 by unpinning them (#2843)
+- Improve Grahics coverage (#2841)
+- Switch to astropy-healpix due to licensing issues with healpy (#2844)
 - Catalog generator: adapt to new sources names and more flexible handling of forcing string  (#2777)
 - Base AQUA is now shipped without FDB/GSV/polytope dependencies, available with [fdb] optional installation argument (#2818)
 - Graphics: improve titles and labels formatting in Boxplots and Hovmoller (#2777)
