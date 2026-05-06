@@ -453,6 +453,27 @@ https://github.com/mpimet/easygems/blob/main/easygems/healpix/__init__.py
 """
 
 
+def isnpixok(npix):
+    """
+    Check if npix is a valid HEALPix pixel count (12 * nside**2 where nside is a power of 2).
+
+    Args:
+        npix (int): Number of pixels.
+
+    Returns:
+        bool: True if npix is valid, False otherwise.
+    """
+    if npix < 12 or npix % 12 != 0:
+        return False
+    nside_sq = npix // 12
+    nside = int(np.sqrt(nside_sq))
+    if nside**2 != nside_sq:
+        return False
+    if (nside & (nside - 1)) != 0:
+        return False
+    return True
+
+
 def get_nside(data):
     """
     Get the nside of a HEALPix map.
@@ -474,10 +495,9 @@ def get_nside(data):
         raise ValueError("Invalid HEALPix map: data array is empty")
 
     npix = data.size
-    try:
-        return hp.npix2nside(npix)
-    except ValueError:
+    if not isnpixok(npix):
         raise ValueError(f"Invalid HEALPix map: npix={npix}")
+    return hp.npix2nside(npix)
 
 
 def get_npix(data):
