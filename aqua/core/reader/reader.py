@@ -192,6 +192,11 @@ class Reader:
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
+            # HACK to get expanded urlpath and metadata for netcdf sources
+            _, oa = self.esmcat._entry._create_open_args(self.kwargs)
+            self.esmcat.urlpath = oa["urlpath"]
+            self.esmcat.metadata = oa["metadata"]
+
             if not files_exist(self.esmcat.urlpath):
                 raise NoDataError(
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
@@ -1087,7 +1092,7 @@ class Reader:
         """
 
         # list available files in folder
-        files = sorted([f for x in esmcat.urlpath for f in glob(x)])
+        files = sorted([f for x in esmcat._entry._open_args["urlpath"] for f in glob(x)])
         self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename
@@ -1103,12 +1108,17 @@ class Reader:
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
         # replace the urlpath with the filtered one searching the regex
-        esmcat.urlpath = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        esmcat._entry._open_args["urlpath"] = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
 
-        if len(esmcat.urlpath) == 0:
+        if len(esmcat._entry._open_args["urlpath"]) == 0:
             raise NoDataError("No files found after filtering the catalog!")
 
-        self.logger.debug("Selected: %s files from %s to %s", len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
+        self.logger.debug(
+            "Selected: %s files from %s to %s",
+            len(esmcat._entry._open_args["urlpath"]),
+            esmcat._entry._open_args["urlpath"][0],
+            esmcat._entry._open_args["urlpath"][-1],
+        )
 
         return esmcat
 
