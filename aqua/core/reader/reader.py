@@ -192,6 +192,11 @@ class Reader:
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
+            # HACK to get expanded urlpath and metadata for netcdf sources
+            _, oa = self.esmcat._entry._create_open_args(self.kwargs)
+            self.esmcat.urlpath = oa["urlpath"]
+            self.esmcat.metadata = oa["metadata"]
+
             if not files_exist(self.esmcat.urlpath):
                 raise NoDataError(
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
@@ -723,7 +728,8 @@ class Reader:
     def intake_user_parameters(self):
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
         if not hasattr(self, "_intake_user_parameters"):
-            self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
+            # self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
+            self._intake_user_parameters = [v.describe() for v in self.esmcat.cat.user_parameters.values()]  # intake2 change
         return self._intake_user_parameters
 
     def _filter_kwargs(self, kwargs: dict = {}, engine: str = "fdb", intake_vars: dict = {}, databridge: str = None) -> dict:
@@ -927,7 +933,8 @@ class Reader:
         # attribute. I would not add it since it is a deprecated feature
         if fdb_var is None:
             self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
-            fdb_var = esmcat.describe()["args"]["request"]["param"]
+            # fdb_var = esmcat.describe()["args"]["request"]["param"]
+            fdb_var = esmcat._entry._open_args["request"]["param"]  # This does work with intake2
             fdb_var = to_list(fdb_var)
 
         # We avoid the following loop if the user didn't specify any variable
@@ -1085,7 +1092,7 @@ class Reader:
         """
 
         # list available files in folder
-        files = sorted([f for x in esmcat.urlpath for f in glob(x)])
+        files = sorted([f for x in esmcat._entry._open_args["urlpath"] for f in glob(x)])
         self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename
@@ -1101,12 +1108,17 @@ class Reader:
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
         # replace the urlpath with the filtered one searching the regex
-        esmcat.urlpath = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        esmcat._entry._open_args["urlpath"] = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
 
-        if len(esmcat.urlpath) == 0:
+        if len(esmcat._entry._open_args["urlpath"]) == 0:
             raise NoDataError("No files found after filtering the catalog!")
 
-        self.logger.debug("Selected: %s files from %s to %s", len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
+        self.logger.debug(
+            "Selected: %s files from %s to %s",
+            len(esmcat._entry._open_args["urlpath"]),
+            esmcat._entry._open_args["urlpath"][0],
+            esmcat._entry._open_args["urlpath"][-1],
+        )
 
         return esmcat
 
