@@ -49,7 +49,7 @@ dependencies = [
     "gcsfs", # Google Cloud Storage File System: required by ARCO
     "astropy-healpix",
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray<=0.7.0", # Version 2 is a major refactor still in development
+    "intake-xarray<=2.0.0", # Version 2 is a major refactor still in development
     "jinja2",
     "kerchunk",
     "matplotlib",
