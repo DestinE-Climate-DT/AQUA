@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - Added preprint DOI to references and acknowledgments (#2845)
+- Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
 - Catalog generator: adapt to new sources names and more flexible handling of forcing string  (#2777)
 - Base AQUA is now shipped without FDB/GSV/polytope dependencies, available with [fdb] optional installation argument (#2818)

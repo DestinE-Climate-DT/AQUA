@@ -83,6 +83,9 @@ def plot_hovmoller(
     if not isinstance(data, xr.DataArray):
         raise TypeError("Data is not a DataArray")
 
+    dim_min = None
+    dim_max = None
+
     if dim:
         # Evaluate the mean over the dimension to be averaged over
         logger.info("Averaging over dimension: {}".format(dim))
@@ -185,7 +188,7 @@ def plot_hovmoller(
 
         fig.colorbar(im, cax=cbar_ax, orientation=cbar_orientation, label=cbar_label)
 
-    if box_text:
+    if box_text and dim is not None and dim_min is not None and dim_max is not None:
         # Add min and max values of the dim on the top right corner
         ax.text(
             0.99,
