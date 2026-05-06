@@ -723,7 +723,8 @@ class Reader:
     def intake_user_parameters(self):
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
         if not hasattr(self, "_intake_user_parameters"):
-            self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
+            # self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
+            self._intake_user_parameters = [v.describe() for v in self.esmcat.cat.user_parameters.values()]  # intake2 change
         return self._intake_user_parameters
 
     def _filter_kwargs(self, kwargs: dict = {}, engine: str = "fdb", intake_vars: dict = {}, databridge: str = None) -> dict:
@@ -927,7 +928,8 @@ class Reader:
         # attribute. I would not add it since it is a deprecated feature
         if fdb_var is None:
             self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
-            fdb_var = esmcat.describe()["args"]["request"]["param"]
+            # fdb_var = esmcat.describe()["args"]["request"]["param"]
+            fdb_var = esmcat._entry._open_args["request"]["param"]  # This does work with intake2
             fdb_var = to_list(fdb_var)
 
         # We avoid the following loop if the user didn't specify any variable
