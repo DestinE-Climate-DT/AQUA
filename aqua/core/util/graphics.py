@@ -5,12 +5,12 @@ import math
 import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 import cartopy.util as cutil
-import healpy as hp
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from astropy_healpix import healpy as hp
 from scipy.interpolate import griddata
 
 from aqua.core.logger import log_configure
@@ -474,9 +474,10 @@ def get_nside(data):
         raise ValueError("Invalid HEALPix map: data array is empty")
 
     npix = data.size
-    if not hp.isnpixok(npix):
+    try:
+        return hp.npix2nside(npix)
+    except ValueError:
         raise ValueError(f"Invalid HEALPix map: npix={npix}")
-    return hp.npix2nside(npix)
 
 
 def get_npix(data):
