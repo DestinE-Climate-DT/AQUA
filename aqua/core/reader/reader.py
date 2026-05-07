@@ -196,6 +196,7 @@ class Reader:
             # HACK to get expanded urlpath and metadata for netcdf sources for intake2
             self.esmcat.urlpath = self.esmcat.reader.kwargs["args"][0].url
             self.esmcat.metadata = self.esmcat.reader.metadata
+            self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs["args"].get("xarray_kwargs", {})
 
             # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
             if not files_exist(self.esmcat.urlpath):
@@ -1155,14 +1156,17 @@ class Reader:
 
             esmcat.xarray_kwargs.update({"decode_times": coder})
 
-        kw = {}
-        if "xarray_kwargs" not in esmcat._entry._captured_init_kwargs["args"]:  # HACK to force to netcdf4 engine in intake2
-            kw.update(engine="netcdf4")
+        # kw = {}
+        # if "xarray_kwargs" not in esmcat._entry._captured_init_kwargs["args"]:  # HACK to force to netcdf4 engine in intake2
+        #     kw.update(engine="netcdf4")
 
-        if self.chunks:
-            kw.update(chunks=self.chunks)
+        # data = esmcat.reader.read(**kw)
 
-        data = esmcat.reader.read(**kw)
+        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
+        if "xarray_kwargs" not in esmcat._entry._captured_init_kwargs["args"]:
+            read_kwargs.setdefault("engine", "netcdf4")
+            self.logger.debug("Forcing netcdf4 engine for Intake 2 source")
+        data = esmcat.reader.read(**read_kwargs)
 
         if loadvar:
             loadvar = to_list(loadvar)
