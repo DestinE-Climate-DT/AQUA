@@ -728,7 +728,8 @@ class Reader:
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
         if not hasattr(self, "_intake_user_parameters"):
             # self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
-            self._intake_user_parameters = [v.describe() for v in self.esmcat.cat.user_parameters.values()]  # intake2 change
+            self._intake_user_parameters = [v.describe() for v in self.esmcat._entry._user_parameters]  # intake2 change
+            self.logger.debug("Intake user parameters: %s", self._intake_user_parameters)
         return self._intake_user_parameters
 
     def _filter_kwargs(self, kwargs: dict = {}, engine: str = "fdb", intake_vars: dict = {}, databridge: str = None) -> dict:
