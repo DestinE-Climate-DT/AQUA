@@ -190,13 +190,13 @@ class Reader:
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
         self.esmcat = self.expcat[self.source](**self.kwargs)
 
-        # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             # HACK to get expanded urlpath and metadata for netcdf sources
             _, oa = self.esmcat._entry._create_open_args(self.kwargs)
             self.esmcat.urlpath = oa["urlpath"]
             self.esmcat.metadata = oa["metadata"]
 
+            # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
             if not files_exist(self.esmcat.urlpath):
                 raise NoDataError(
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
@@ -1153,7 +1153,11 @@ class Reader:
 
             esmcat.xarray_kwargs.update({"decode_times": coder})
 
-        data = esmcat.to_dask()
+        if "xarray_kwargs" in esmcat._entry._captured_init_kwargs["args"]:  # HACK to force to netcdf4 engine in intake2
+            data = esmcat.to_dask()
+        else:
+            self.logger.info("Reading data using netcdf4 engine")
+            data = esmcat.reader.read(engine="netcdf4")
 
         if loadvar:
             loadvar = to_list(loadvar)
