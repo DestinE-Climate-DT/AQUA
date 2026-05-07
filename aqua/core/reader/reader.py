@@ -191,12 +191,9 @@ class Reader:
         self.esmcat = self.expcat[self.source](**self.kwargs)
 
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            # HACK to get expanded urlpath and metadata for netcdf sources
+            # HACK to get expanded urlpath and metadata for netcdf sources for intake2
             self.esmcat.urlpath = self.esmcat.reader.kwargs["args"][0].url
             self.esmcat.metadata = self.esmcat.reader.metadata
-            # _, oa = self.esmcat._entry._create_open_args(self.kwargs)
-            # self.esmcat.urlpath = oa["urlpath"]
-            # self.esmcat.metadata = oa["metadata"]
 
             # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
             if not files_exist(self.esmcat.urlpath):
