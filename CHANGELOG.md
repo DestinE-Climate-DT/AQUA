@@ -9,7 +9,14 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+<<<<<<< specific-config
 - AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
+=======
+- Added preprint DOI to references and acknowledgments (#2845)
+- Improve Grahics coverage (#2841)
+- Switch to astropy-healpix due to licensing issues with healpy (#2844)
+- Catalog generator: adapt to new sources names and more flexible handling of forcing string  (#2777)
+>>>>>>> main
 - Base AQUA is now shipped without FDB/GSV/polytope dependencies, available with [fdb] optional installation argument (#2818)
 - Graphics: improve titles and labels formatting in Boxplots and Hovmoller (#2777)
 - Apply ruff formatting to the codebase (#2791)
