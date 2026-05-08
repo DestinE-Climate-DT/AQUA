@@ -198,11 +198,13 @@ class Reader:
             # this provides direct access to the intake netcdf data object
             self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
 
-            # HACK because xarray_intake does not understand single url with glob pattern if wrapped in a list
-            url = self.esmcat.data.url
-            if isinstance(url, list) and len(url) == 1:
-                url = url[0]
-                self.esmcat.data.url = url
+            # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
+            # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
+            url_input = to_list(self.esmcat.data.url)
+            expanded_urls = sorted([f for x in url_input for f in glob(x)])
+
+            self.esmcat.data.url = expanded_urls
+            self.esmcat.urlpath = expanded_urls  # Sync standard attribute
 
             self.esmcat.metadata = self.esmcat.reader.metadata
 
@@ -1097,7 +1099,7 @@ class Reader:
 
     def _filter_netcdf_files(self, esmcat, filter_key="year"):
         """
-        Filter the esmcat to include only netcdf files based on specfici filter_key
+        Filter the esmcat to include only netcdf files based on specific filter_key
         Args:
             esmcat (intake.catalog.Catalog): your catalog
             filter_key (str): type of filter to apply (default is "year")
@@ -1106,27 +1108,29 @@ class Reader:
             intake.catalog.Catalog: filtered catalog
         """
 
-        # list available files in folder
-        files = sorted([f for x in esmcat.data.url for f in glob(x)])
-        self.logger.debug("Total files before filtering: %s", len(files))
+        # list available files in folder. Use to_list to avoid iterating over string characters.
+        files = sorted([f for x in to_list(esmcat.data.url) for f in glob(x)])
+        self.logger.debug("Total files expanded from globs: %s", len(files))
 
         # this will consider only files that have "year" in their filename
         # within the startdate and enddate range
         if filter_key == "year":
-            if not (self.startdate and self.enddate):
-                return esmcat
-            keys = list(range(pd.Timestamp(self.startdate).year, pd.Timestamp(self.enddate).year + 1))
-            # create regex pattern for each year: only yyyy will be detected
-            pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
-
+            if self.startdate and self.enddate:
+                keys = list(range(pd.Timestamp(self.startdate).year, pd.Timestamp(self.enddate).year + 1))
+                # create regex pattern for each year: only yyyy will be detected
+                pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
+                files = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
         else:
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
-        # replace the urlpath with the filtered one searching the regex
-        esmcat.data.url = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        # replace the url with the expanded/filtered list
+        esmcat.data.url = files
+
+        self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
+        self.logger.debug("Files after filtering: %s", esmcat.data.url)
 
         if len(esmcat.data.url) == 0:
-            raise NoDataError("No files found after filtering the catalog!")
+            raise NoDataError("No files found after expansion/filtering!")
 
         self.logger.debug(
             "Selected: %s files from %s to %s",
@@ -1155,7 +1159,9 @@ class Reader:
         # speed up for catalogs with many small files
         if "filter_key" in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get("filter_key"))
+            self.logger.info("url before filter %s", esmcat.data.url)
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata["filter_key"])
+            self.logger.info("url after filter %s", esmcat.data.url)
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs
