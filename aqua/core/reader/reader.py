@@ -193,16 +193,29 @@ class Reader:
         )  # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
 
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            # HACK to get expanded urlpath and metadata for netcdf sources for intake2
-            self.esmcat.urlpath = self.esmcat.reader.kwargs["args"][0].url
+            # HACK convenience to get expanded url and metadata for netcdf sources for intake2
+
+            self.esmcat.data = self.esmcat.reader.kwargs["args"][
+                0
+            ]  # this provides direct access to the intake netcdf data object
+
+            # HACK because xarray_intake does not understand single url with glob pattern if wrapped in a list
+            url = self.esmcat.data.url
+            if isinstance(url, list) and len(url) == 1:
+                url = url[0]
+                self.esmcat.data.url = url
+
             self.esmcat.metadata = self.esmcat.reader.metadata
-            self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs["args"].get("xarray_kwargs", {})
+
+            # HACK to get xarray_kwargs for intake2
+            init_args = self.esmcat._entry._captured_init_kwargs.get("args", {})
+            self.esmcat.xarray_kwargs = init_args.get("xarray_kwargs", {})
 
             # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
-            if not files_exist(self.esmcat.urlpath):
+            if not files_exist(self.esmcat.data.url):
                 raise NoDataError(
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
-                    + f"please check the urlpath: {self.esmcat.urlpath}"
+                    + f"please check the url: {self.esmcat.data.url}"
                 )
 
         # extend the unit registry
@@ -1095,7 +1108,7 @@ class Reader:
         """
 
         # list available files in folder
-        files = sorted([f for x in esmcat._entry._open_args["urlpath"] for f in glob(x)])
+        files = sorted([f for x in esmcat.data.url for f in glob(x)])
         self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename
@@ -1111,16 +1124,16 @@ class Reader:
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
         # replace the urlpath with the filtered one searching the regex
-        esmcat._entry._open_args["urlpath"] = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        esmcat.data.url = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
 
-        if len(esmcat._entry._open_args["urlpath"]) == 0:
+        if len(esmcat.data.url) == 0:
             raise NoDataError("No files found after filtering the catalog!")
 
         self.logger.debug(
             "Selected: %s files from %s to %s",
-            len(esmcat._entry._open_args["urlpath"]),
-            esmcat._entry._open_args["urlpath"][0],
-            esmcat._entry._open_args["urlpath"][-1],
+            len(esmcat.data.url),
+            esmcat.data.url[0],
+            esmcat.data.url[-1],
         )
 
         return esmcat
