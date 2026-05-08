@@ -6,7 +6,7 @@ References and Acknowledgments
 Citing AQUA
 -----------
 
-If you use AQUA in your research or publications, please cite the package using the following format
+If you use AQUA in your research or publications, please cite the package and the preprint using the following format
 and please include also the following acknowledgements:
 
 .. code-block:: bibtex
@@ -19,6 +19,18 @@ and please include also the following acknowledgements:
   publisher = {Zenodo},
   year = {2025},
   copyright = {Apache License 2.0}
+  }
+
+.. code-block:: bibtex
+
+  @article{Nurisso2026,
+  title = {AQUA v1: The Application for QUality Assessment for the Climate Change Adaptation Digital Twin},
+  url = {http://dx.doi.org/10.5194/egusphere-2026-1115},
+  DOI = {10.5194/egusphere-2026-1115},
+  publisher = {Copernicus GmbH},
+  author = {Nurisso,  Matteo and von Hardenberg,  Jost and Cadau,  Marco and Caprioli,  Silvia and Ghinassi,  Paolo and Ghosh,  Supriyo and Koldunov,  Nikolay and Nazarova,  Natalia and Rajput,  Maqsood Mubarak and Tovazzi,  Emanuele and Davini,  Paolo},
+  year = {2026},
+  month = May 
   }
 
 Acknowledgments

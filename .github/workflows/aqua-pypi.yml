@@ -16,11 +16,12 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.12"]'
-      pytest-markers: 'aqua or slow or gsv or graphics or catgen'
+      pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true
       enable-coverage: false
       fail-fast: false
       install-mode: 'pypi'
+      container-image: ''
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}

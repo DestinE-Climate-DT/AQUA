@@ -10,6 +10,14 @@ Main changes:
 
 Complete list:
 - Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
+- Added preprint DOI to references and acknowledgments (#2845)
+- Improve Grahics coverage (#2841)
+- Switch to astropy-healpix due to licensing issues with healpy (#2844)
+- Catalog generator: adapt to new sources names and more flexible handling of forcing string  (#2777)
+- Base AQUA is now shipped without FDB/GSV/polytope dependencies, available with [fdb] optional installation argument (#2818)
+- Graphics: improve titles and labels formatting in Boxplots and Hovmoller (#2777)
+- Apply ruff formatting to the codebase (#2791)
+- Add pre-commit hooks and ruff linting (#2786)
 - Small fix to wrong number of arguments of exception call (#2829)
 - Adding LLM directives in `AGENTS.md` (#2820)
 - Add `Ruff` linter and formatter to CI and add `pre-commit` implementation (#2748, #2786, #2791, #2815)

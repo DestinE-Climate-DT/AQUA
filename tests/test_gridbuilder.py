@@ -9,11 +9,13 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
 from aqua.core.util import load_yaml
 
-pytestmark = [pytest.mark.aqua, pytest.mark.xdist_group(name="grid_builder")]
+pytestmark = [pytest.mark.xdist_group(name="grid_builder")]
 
 
-class TestGridBuilder:
+class TestPolytopeGridBuilder:
     """Test the GridBuilder class."""
+
+    pytestmark = [pytest.mark.polytope]
 
     grid_dir = f"{ConfigPath().configdir}/grids"
 
@@ -44,6 +46,14 @@ class TestGridBuilder:
         data = reader.retrieve(var="tos")
         grid_builder = GridBuilder(outdir=tmp_path, model_name="FESOM", original_resolution="ng5")
         grid_builder.build(data, verify=True, create_yaml=False)
+
+
+class TestBasicGridBuilder:
+    """Test the GridBuilder class."""
+
+    pytestmark = [pytest.mark.aqua]
+
+    grid_dir = f"{ConfigPath().configdir}/grids"
 
     @pytest.mark.parametrize("rebuild", [False, True])
     def test_grid_regular(self, tmp_path, rebuild):
@@ -83,6 +93,8 @@ class TestGridBuilder:
 
 class TestGridEntryManager:
     """Test the GridEntryManager class."""
+
+    pytestmark = [pytest.mark.aqua]
 
     @pytest.mark.parametrize(
         "model,aquagrid,cdogrid,original,kind",

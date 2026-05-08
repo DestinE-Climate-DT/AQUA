@@ -34,6 +34,9 @@ This can be achieved with:
 The same environment is available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
 
 .. note ::
+    If you want to access ClimateDT data, you will need to run `pip install aqua-core[fdb]`
+
+.. note ::
     If you need to access data written in a local FDB database (not polytope), you need to install the FDB5 library.
     The FDB5 library is not available in the conda-forge repository, so you need to install it manually.
     If you are working on a supported HPC, you can check the corresponding section for more information in the :ref:`HPC installation <installation-hpc>` section.
@@ -56,6 +59,8 @@ You can install them with the following command:
     pip install aqua-core[docs]
     pip install aqua-core[notebooks]
     pip install aqua-core[tests]
+    pip install aqua-core[style]
+    pip install aqua-core[fdb]
 
 Or to install all the extra dependencies:
 
@@ -115,8 +120,6 @@ At this point, you should have successfully installed the AQUA package and its d
 .. note ::
 
     By default, the environment file installs the cloned version of AQUA in editable mode with ``pip install -e .[all]``.
-    For development workflows, switch that line in ``environment.yml`` to ``pip install -e .[precommit,all]`` and then
-    run ``pre-commit install`` once in the repository.
 
 Update of the environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^
