@@ -195,9 +195,8 @@ class Reader:
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             # HACK convenience to get expanded url and metadata for netcdf sources for intake2
 
-            self.esmcat.data = self.esmcat.reader.kwargs["args"][
-                0
-            ]  # this provides direct access to the intake netcdf data object
+            # this provides direct access to the intake netcdf data object
+            self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
 
             # HACK because xarray_intake does not understand single url with glob pattern if wrapped in a list
             url = self.esmcat.data.url
