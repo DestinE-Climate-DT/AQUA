@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
+- Added preprint DOI to references and acknowledgments (#2845)
 - Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
 - Catalog generator: adapt to new sources names and more flexible handling of forcing string  (#2777)
