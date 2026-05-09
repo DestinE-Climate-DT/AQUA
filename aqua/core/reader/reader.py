@@ -193,22 +193,24 @@ class Reader:
             **self.kwargs
         )  # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
 
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            # HACK convenience to get expanded url and metadata for netcdf sources for intake2
+        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) or isinstance(
+            self.esmcat, intake_xarray.xzarr.ZarrSource
+        ):
+            # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2
 
             # this provides direct access to the intake netcdf data object
             self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
 
+            self.esmcat.metadata = self.esmcat.reader.metadata
+            init_args = self.esmcat._entry._captured_init_kwargs.get("args", {})
+            self.esmcat.xarray_kwargs = init_args.get("xarray_kwargs", {})
+
+        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
             # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
             url_input = to_list(self.esmcat.data.url)
             self.esmcat.data.url = sorted([f for x in url_input for f in glob(x)])
             self.logger.debug("Using url: %s", self.esmcat.data.url)
-            self.esmcat.metadata = self.esmcat.reader.metadata
-
-            # HACK to get xarray_kwargs for intake2
-            init_args = self.esmcat._entry._captured_init_kwargs.get("args", {})
-            self.esmcat.xarray_kwargs = init_args.get("xarray_kwargs", {})
 
             # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
             if not files_exist(self.esmcat.data.url):
@@ -216,15 +218,6 @@ class Reader:
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
                     + f"please check the url: {self.esmcat.data.url}"
                 )
-
-        self.logger.debug("Using catalog entry: %s", self.esmcat)
-        if isinstance(self.esmcat, intake_xarray.xzarr.ZarrSource):
-            # HACK convenience to get metadata for zarr sources for intake2
-            self.esmcat.metadata = self.esmcat.reader.metadata
-
-            # HACK to get xarray_kwargs for intake2
-            init_args = self.esmcat._entry._captured_init_kwargs.get("args", {})
-            self.esmcat.xarray_kwargs = init_args.get("xarray_kwargs", {})
 
         # extend the unit registry
         units_extra_definition()
