@@ -1171,16 +1171,11 @@ class Reader:
 
             esmcat.xarray_kwargs.update({"decode_times": coder})
 
-        # kw = {}
-        # if "xarray_kwargs" not in esmcat._entry._captured_init_kwargs["args"]:  # HACK to force to netcdf4 engine in intake2
-        #     kw.update(engine="netcdf4")
-
-        # data = esmcat.reader.read(**kw)
-
         read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
-        if "xarray_kwargs" not in esmcat._entry._captured_init_kwargs["args"]:
+        if "engine" not in read_kwargs:  # HACK:forcing to netcdf4 for intake2
             read_kwargs.setdefault("engine", "netcdf4")
-            self.logger.debug("Forcing netcdf4 engine for Intake 2 source")
+            self.logger.debug("Forcing netcdf4 engine")
+
         data = esmcat.reader.read(**read_kwargs)
 
         if loadvar:
