@@ -7,6 +7,7 @@ from glob import glob
 
 # import intake_esm
 import intake_xarray
+import intake_xarray.xzarr
 import pandas as pd
 import xarray as xr
 from metpy.units import units
@@ -216,6 +217,7 @@ class Reader:
                     + f"please check the url: {self.esmcat.data.url}"
                 )
 
+        self.logger.debug("Using catalog entry: %s", self.esmcat)
         if isinstance(self.esmcat, intake_xarray.xzarr.ZarrSource):
             # HACK convenience to get metadata for zarr sources for intake2
             self.esmcat.metadata = self.esmcat.reader.metadata
