@@ -9,7 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
-- Update intake and intake-xarray to >=2.0.0 by unpinning them (#2843)
+- Update intake and intake-xarray to >=2.0.0 (#2843)
 - Added preprint DOI to references and acknowledgments (#2845)
 - Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
