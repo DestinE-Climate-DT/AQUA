@@ -1127,7 +1127,7 @@ class Reader:
         self.logger.debug("Files after filtering: %s", esmcat.data.url)
 
         if len(esmcat.data.url) == 0:
-            raise NoDataError("No files found after expansion/filtering!")
+            raise NoDataError("No files found after filtering the catalog!")
 
         self.logger.debug(
             "Selected: %s files from %s to %s",
