@@ -201,11 +201,8 @@ class Reader:
             # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
             # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
             url_input = to_list(self.esmcat.data.url)
-            expanded_urls = sorted([f for x in url_input for f in glob(x)])
-
-            self.esmcat.data.url = expanded_urls
-            self.esmcat.urlpath = expanded_urls  # Sync standard attribute
-
+            self.esmcat.data.url = sorted([f for x in url_input for f in glob(x)])
+            self.logger.debug("Using url: %s", self.esmcat.data.url)
             self.esmcat.metadata = self.esmcat.reader.metadata
 
             # HACK to get xarray_kwargs for intake2
@@ -1108,9 +1105,9 @@ class Reader:
             intake.catalog.Catalog: filtered catalog
         """
 
-        # list available files in folder. Use to_list to avoid iterating over string characters.
-        files = sorted([f for x in to_list(esmcat.data.url) for f in glob(x)])
-        self.logger.debug("Total files expanded from globs: %s", len(files))
+        # list available files in folder.
+        files = to_list(esmcat.data.url)
+        self.logger.debug("Total files in catalog: %s", len(files))
 
         # this will consider only files that have "year" in their filename
         # within the startdate and enddate range
