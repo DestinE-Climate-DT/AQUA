@@ -951,7 +951,6 @@ class Reader:
         # attribute. I would not add it since it is a deprecated feature
         if fdb_var is None:
             self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
-            # fdb_var = esmcat.describe()["args"]["request"]["param"]
             fdb_var = esmcat._entry._open_args["request"]["param"]  # This does work with intake2
             fdb_var = to_list(fdb_var)
 
