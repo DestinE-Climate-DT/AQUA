@@ -202,8 +202,7 @@ class Reader:
             self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
 
             self.esmcat.metadata = self.esmcat.reader.metadata
-            init_args = self.esmcat._entry._captured_init_kwargs.get("args", {})
-            self.esmcat.xarray_kwargs = init_args.get("xarray_kwargs", {})
+            self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
 
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
