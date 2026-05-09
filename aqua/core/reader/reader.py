@@ -216,6 +216,10 @@ class Reader:
                     + f"please check the url: {self.esmcat.data.url}"
                 )
 
+        if isinstance(self.esmcat, intake_xarray.xzarr.ZarrSource):
+            # HACK convenience to get metadata for zarr sources for intake2
+            self.esmcat.metadata = self.esmcat.reader.metadata
+
         # extend the unit registry
         units_extra_definition()
         # Get fixes dictionary and find them
