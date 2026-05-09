@@ -34,6 +34,23 @@ Key Features
 - Modular design for easy expansion and integration of new functionalities
 - Lazy data access and parallel processing for faster execution of processing pipelines, with limited memory usage
 
+Community resources
+-------------------
+
+Additional examples and shared resources from the ClimateDT community are collected in the
+`climatedt-community-resources <https://github.com/DestinE-Climate-DT/climatedt-community-resources>`_
+repository.
+
+In particular, the
+`example_aqua <https://github.com/DestinE-Climate-DT/climatedt-community-resources/tree/main/example_aqua>`_
+folder provides a notebook demonstrating how to open and access ClimateDT data using AQUA core,
+showing the basic usage of the ``Reader`` interface and the ClimateDT data catalog.
+
+.. seealso::
+
+   `ClimateDT external user guide <https://github.com/DestinE-Climate-DT/climatedt-external-user-guide>`_
+   for additional documentation on accessing ClimateDT data.
+
 Contributing
 ------------
 
