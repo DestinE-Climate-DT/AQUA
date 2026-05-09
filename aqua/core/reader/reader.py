@@ -222,6 +222,10 @@ class Reader:
             # HACK convenience to get metadata for zarr sources for intake2
             self.esmcat.metadata = self.esmcat.reader.metadata
 
+            # HACK to get xarray_kwargs for intake2
+            init_args = self.esmcat._entry._captured_init_kwargs.get("args", {})
+            self.esmcat.xarray_kwargs = init_args.get("xarray_kwargs", {})
+
         # extend the unit registry
         units_extra_definition()
         # Get fixes dictionary and find them
@@ -1176,14 +1180,14 @@ class Reader:
 
             esmcat.xarray_kwargs.update({"decode_times": coder})
 
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
-            if "engine" not in read_kwargs:  # HACK:forcing to netcdf4 for intake2
-                read_kwargs.setdefault("engine", "netcdf4")
-                self.logger.debug("Forcing netcdf4 engine")
-            data = esmcat.reader.read(**read_kwargs)
-        else:
-            data = esmcat.to_dask()
+        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
+
+        # HACK: forcing to netcdf4 for intake2
+        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
+            read_kwargs.setdefault("engine", "netcdf4")
+            self.logger.debug("Forcing netcdf4 engine")
+
+        data = esmcat.reader.read(**read_kwargs)
 
         if loadvar:
             loadvar = to_list(loadvar)
