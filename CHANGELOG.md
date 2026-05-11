@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
+- push_analysis deal with missing experiments.yaml file (#2792)
 - Added preprint DOI to references and acknowledgments (#2845)
 - Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
