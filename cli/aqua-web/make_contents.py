@@ -44,14 +44,15 @@ def convert_to_new_structure(data):
     to a 4-level structure (dictionary of experiments with a list of realizations).
     If the structure is already 4-level, it remains unchanged.
     """
-    for catalog, models in data.items():
-        if isinstance(models, dict):
-            for model, experiments in models.items():
-                if isinstance(experiments, list):
-                    # Old structure found: {model: [exp1, exp2]}
-                    new_experiments_dict = {exp: ["r1"] for exp in experiments}
-                    # Replace the list with the new dictionary
-                    models[model] = new_experiments_dict
+    if data:
+        for catalog, models in data.items():
+            if isinstance(models, dict):
+                for model, experiments in models.items():
+                    if isinstance(experiments, list):
+                        # Old structure found: {model: [exp1, exp2]}
+                        new_experiments_dict = {exp: ['r1'] for exp in experiments}
+                        # Replace the list with the new dictionary
+                        models[model] = new_experiments_dict
     return data
 
 

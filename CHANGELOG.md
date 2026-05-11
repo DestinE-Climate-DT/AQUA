@@ -10,6 +10,7 @@ Main changes:
 
 Complete list:
 - Update intake and intake-xarray to >=2.0.0 (#2843)
+- push_analysis deal with missing experiments.yaml file (#2792)
 - Added preprint DOI to references and acknowledgments (#2845)
 - Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
