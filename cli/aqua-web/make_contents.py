@@ -50,7 +50,7 @@ def convert_to_new_structure(data):
                 for model, experiments in models.items():
                     if isinstance(experiments, list):
                         # Old structure found: {model: [exp1, exp2]}
-                        new_experiments_dict = {exp: ['r1'] for exp in experiments}
+                        new_experiments_dict = {exp: ["r1"] for exp in experiments}
                         # Replace the list with the new dictionary
                         models[model] = new_experiments_dict
     return data
