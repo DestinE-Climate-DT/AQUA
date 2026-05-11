@@ -38,10 +38,11 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes==2.41.0",
+    "eccodes>=2.41.0",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
+    "astropy-healpix",
     "boto3",
     "cartopy>=0.24.1",
     "cfgrib", #enable support for GRIB files
@@ -49,9 +50,8 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
-    "intake", # Version 2 is a major refactor still in development
-    "intake-xarray", # Version 2 is a major refactor still in development
-    "astropy-healpix",
+    "intake>=2.0.0", # Version 2 is a major refactor
+    "intake-xarray>=2.0.0", # Version 2 is a major refactor
     "jinja2",
     "kerchunk",
     "matplotlib",

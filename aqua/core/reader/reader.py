@@ -189,16 +189,16 @@ class Reader:
         self.kwargs = self._filter_kwargs(kwargs, engine=engine, intake_vars=intake_vars, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
-        self.esmcat = self.expcat._entries[self.source](
-            **self.kwargs
-        )  # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
+
+        # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
+        self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) or isinstance(
             self.esmcat, intake_xarray.xzarr.ZarrSource
         ):
             # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2
 
-            # this provides direct access to the intake netcdf data object
+            # this provides direct access to the intake data object
             self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
 
             self.esmcat.metadata = self.esmcat.reader.metadata
@@ -743,7 +743,6 @@ class Reader:
     def intake_user_parameters(self):
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
         if not hasattr(self, "_intake_user_parameters"):
-            # self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
             self._intake_user_parameters = [v.describe() for v in self.esmcat._entry._user_parameters]  # intake2 change
             self.logger.debug("Intake user parameters: %s", self._intake_user_parameters)
         return self._intake_user_parameters
@@ -1108,7 +1107,7 @@ class Reader:
 
         # list available files in folder.
         files = to_list(esmcat.data.url)
-        self.logger.debug("Total files in catalog: %s", len(files))
+        self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename
         # within the startdate and enddate range
@@ -1125,7 +1124,6 @@ class Reader:
         esmcat.data.url = files
 
         self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
-        self.logger.debug("Files after filtering: %s", esmcat.data.url)
 
         if len(esmcat.data.url) == 0:
             raise NoDataError("No files found after filtering the catalog!")
