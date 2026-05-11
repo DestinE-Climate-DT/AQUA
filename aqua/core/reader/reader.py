@@ -1155,9 +1155,7 @@ class Reader:
         # speed up for catalogs with many small files
         if "filter_key" in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
             self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get("filter_key"))
-            self.logger.info("url before filter %s", esmcat.data.url)
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata["filter_key"])
-            self.logger.info("url after filter %s", esmcat.data.url)
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs

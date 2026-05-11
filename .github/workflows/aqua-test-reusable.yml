@@ -7,7 +7,7 @@ on:
         description: 'JSON array of Python versions to test'
         required: true
         type: string
-        default: '["3.12"]'
+        default: '["3.14]'
       pytest-markers:
         description: 'Pytest markers to run (e.g., "aqua or slow")'
         required: true
