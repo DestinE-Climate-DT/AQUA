@@ -65,9 +65,9 @@ if [ -z "$model" ]; then
 fi
 
 if [[ $model == "all" ]]; then
-	models=("EC-EARTH4" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
+    models=("EC-EARTH4" "EN4" "ERA5" "FESOM" "HealPix" "ICON" "IFS" "lonlat" "NEMO" "OSI-SAF" "PSC" "WAGHC" "WOA18")
 else
-	models=( "$model" )
+    models=( "$model" )
 fi
 
 log_message INFO "Creating output directory $outputdir"

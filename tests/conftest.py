@@ -50,10 +50,14 @@ def pytest_configure(config):
 
 def pytest_sessionfinish(session, exitstatus):
     """
-    Runs once at the end of the entire test session (controller only with xdist).
-    Uses current configdir if available, otherwise falls back to cached one.
-    This prevents race conditions in parallel test.
+    Runs once at the end of the entire test session.
+    Cleanup only runs on the controller, after all workers
+    have finished, preventing deletion of files that other workers
+    still need.
     """
+    if getattr(session.config, "workerinput", None) is not None:
+        return  # skip cleanup on xdist workers; only controller cleans up
+
     # Get stored configdir from session.config (same object as config in pytest_configure)
     stored_configdir = getattr(session.config, "_stored_configdir", None)
 

@@ -32,7 +32,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
-    parser.add_argument("--source_oce", type=str, 
+    parser.add_argument("--source_oce", type=str,
         help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
     parser.add_argument("--realization", type=str, help="Realization (default: None)")
     parser.add_argument("-d", "--outputdir", type=str, help="Output directory")

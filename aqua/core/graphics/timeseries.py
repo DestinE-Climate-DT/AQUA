@@ -182,7 +182,7 @@ def plot_timeseries(
 
     if title:
         wrapped_title = textwrap.fill(title, width=70)
-        ax.set_title(wrapped_title, fontsize=13, fontweight="bold")
+        ax.set_title(wrapped_title, fontsize=12, fontweight="bold")
     else:
         ax.set_title("")
 
@@ -264,7 +264,7 @@ def plot_seasonalcycle(
 
     if title is not None:
         wrapped_title = textwrap.fill(title, width=60)
-        ax.set_title(wrapped_title, fontsize=13, fontweight="bold")
+        ax.set_title(wrapped_title, fontsize=12, fontweight="bold")
     else:
         ax.set_title("")
 

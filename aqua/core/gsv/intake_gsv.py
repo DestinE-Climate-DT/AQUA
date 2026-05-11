@@ -40,6 +40,12 @@ except RuntimeError:
 except KeyError:
     gsv_available = False
     gsv_error_cause = "Environment variables for gsv, such as GRID_DEFINITION_PATH, not set."
+except ImportError:
+    gsv_available = False
+    gsv_error_cause = (
+        "GSVRetriever cannot be imported. "
+        "Check if the gsv package is installed and if the FDB5 binary library is available and properly set up."
+    )
 
 BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"  # LUMI QUBED STAC API
 

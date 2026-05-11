@@ -1,11 +1,9 @@
 # this is the minimal environment file to install the dependencies of AQUA-diagnostics,
 # it is not meant to be used directly but is used by github actions
 # Create the environment:
-# mamba env create -f min-environment.yml
-# or if you really want to use conda
-# conda env create -f min-environment.yml
+# mamba env create -f environment-pypi.yml
 
-name: aqua-diagnostics
+name: aqua
 channels:
   - conda-forge
   - nodefaults

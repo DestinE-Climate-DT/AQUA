@@ -47,8 +47,9 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
+    "astropy-healpix",
     "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray",
+    "intake-xarray<=0.7.0", # Version 2 is a major refactor still in development
     "jinja2",
     "kerchunk",
     "matplotlib",
@@ -65,20 +66,21 @@ dependencies = [
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
     "xarray>=2025.12.0",
-    "zarr<=3.1.5",
-    # not available on conda
-    "pyfdb", #to be pinned when doing operational release
-    "gsv-interface==2.13.1"
+    "zarr<=3.1.5"
 ]
 
 [project.optional-dependencies]
+fdb = [
+    "pyfdb",
+    "polytope-client",
+    "gsv-interface==2.13.1"
+]
 docs = [
     "sphinx",
     "sphinx-rtd-theme"
 ]
 notebooks = [
-    "ipykernel",
-    "healpy"
+    "ipykernel"
 ]
 tests = [
     "pytest",
@@ -88,10 +90,16 @@ tests = [
     "coverage",
     "cdo"
 ]
+style = [
+    "pre-commit",
+    "ruff==0.15.12"
+]
 all = [
     "aqua-core[docs]",
     "aqua-core[notebooks]",
-    "aqua-core[tests]"
+    "aqua-core[tests]",
+    "aqua-core[style]",
+    "aqua-core[fdb]"
 ]
 
 [project.scripts]
@@ -131,6 +139,7 @@ markers = [
     "gsv: mark test that requires ECMWF FDB libraries",
     "catgen: mark test for catalog generator",
     "console: mark test for console",
+    "polytope: mark test that uses polytope"
 ]
 
 [tool.coverage.run]
@@ -141,3 +150,25 @@ omit = [
     "tests/*",
     "**/__init__.py",
     ]
+
+[tool.ruff]
+# --- Global Settings ---
+line-length = 127
+target-version = "py310"
+exclude = ["**/__init__.py"]
+
+[tool.ruff.lint]
+# Imports sorted (I), standard PEP8 (E, F, W, N) only.
+select = ["E", "F", "I", "W", "N"]
+# Add specific ignores here
+ignore = [
+    "N816",
+    "E741",
+]
+[tool.ruff.lint.isort]
+known-first-party = ["aqua"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

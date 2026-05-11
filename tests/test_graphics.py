@@ -9,6 +9,11 @@ from conftest import DPI, LOGLEVEL
 
 from aqua import Reader
 from aqua.core.graphics import (
+    boxplot,
+    index_plot,
+    indexes_plot,
+    plot_gregory_annual,
+    plot_gregory_monthly,
     plot_histogram,
     plot_hovmoller,
     plot_lat_lon_profiles,
@@ -452,6 +457,57 @@ class TestHovmoller:
         with pytest.raises(TypeError):
             plot_hovmoller(data="test")
 
+    def test_plot_hovmoller_no_dim(self, tmp_path):
+        """Test plot_hovmoller with dim=None"""
+        # Reduce to 2D data (time, lat) for dim=None
+        data_2d = self.data.isel(lon=0)
+
+        fig, ax = plot_hovmoller(
+            data=data_2d,
+            return_fig=True,
+            dim=None,
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_hovmoller_no_dim.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_hovmoller_no_dim.png")
+
+    def test_plot_hovmoller_no_cbar(self, tmp_path):
+        """Test plot_hovmoller with colorbar disabled"""
+        fig, ax = plot_hovmoller(
+            data=self.data,
+            return_fig=True,
+            cbar=False,
+            cbar_label="explicit label",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_hovmoller_no_cbar.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_hovmoller_no_cbar.png")
+
+    def test_plot_hovmoller_vmin_vmax_sym(self, tmp_path):
+        """Test plot_hovmoller with explicit vmin/vmax and sym=True"""
+        fig, ax = plot_hovmoller(
+            data=self.data,
+            return_fig=True,
+            vmin=-10.0,
+            vmax=10.0,
+            sym=True,
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_hovmoller_sym.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_hovmoller_sym.png")
+
 
 @pytest.mark.graphics
 class TestVerticalLines:
@@ -793,3 +849,237 @@ class TestHistogram:
         fig, ax = plot_histogram(data=pdf_no_units, loglevel=loglevel)
         assert ax.get_ylabel() == "Probability Density"
         plt.close(fig)
+
+
+@pytest.mark.graphics
+class TestBoxplot:
+    """Basic tests for the boxplot function."""
+
+    @staticmethod
+    def _make_fldmean_dataset(tas_values, pr_values=None):
+        data_vars = {
+            "tas": xr.DataArray(np.array(tas_values), dims=["time"], attrs={"units": "K"}),
+        }
+        if pr_values is not None:
+            data_vars["pr"] = xr.DataArray(np.array(pr_values), dims=["time"], attrs={"units": "mm/day"})
+        return xr.Dataset(data_vars=data_vars)
+
+    def test_boxplot_builds_figure_and_mean_lines(self, tmp_path):
+        """Test figure creation and dashed mean lines."""
+        fldmeans = [
+            self._make_fldmean_dataset([280.0, 282.0, 281.0]),
+            self._make_fldmean_dataset([279.0, 283.0, 280.0]),
+        ]
+        model_names = ["model_a", "model_b"]
+
+        fig_no_mean, ax_no_mean = boxplot(
+            fldmeans=fldmeans,
+            model_names=model_names,
+            variables=["tas"],
+            variable_names=["Temperature"],
+            add_mean_line=False,
+            title="Boxplot test",
+            loglevel=loglevel,
+        )
+        base_collections = len(ax_no_mean.collections)
+        plt.close(fig_no_mean)
+
+        fig, ax = boxplot(
+            fldmeans=fldmeans,
+            model_names=model_names,
+            variables=["tas"],
+            variable_names=["Temperature"],
+            add_mean_line=True,
+            title="Boxplot test",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+        assert ax.get_xlabel() == "Variables"
+        assert ax.get_title() == "Boxplot test"
+        assert len(ax.collections) >= base_collections + len(model_names)
+
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_labels = [text.get_text() for text in legend.get_texts()]
+        assert legend_labels == model_names
+
+        fig.savefig(tmp_path / "test_boxplot_basic.png", dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / "test_boxplot_basic.png")
+
+    def test_boxplot_sets_mixed_units_ylabel(self):
+        """Test fallback y-label for mixed units."""
+        fldmeans = [
+            self._make_fldmean_dataset([280.0, 282.0, 281.0], pr_values=[2.0, 3.0, 4.0]),
+            self._make_fldmean_dataset([279.0, 283.0, 280.0], pr_values=[1.0, 2.0, 3.0]),
+        ]
+
+        fig, ax = boxplot(
+            fldmeans=fldmeans,
+            model_names=["model_a", "model_b"],
+            variables=["tas", "pr"],
+            variable_names=["Temperature", "Precipitation"],
+            add_mean_line=False,
+            loglevel=loglevel,
+        )
+
+        assert ax.get_ylabel() == "Values (various units)"
+        plt.close(fig)
+
+
+@pytest.mark.graphics
+class TestGregory:
+    """Basic tests for the Gregory plot functions"""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, data_ifs_tc):
+        """Setup method to retrieve data for testing"""
+        # Use spatial mean to get time series
+        self.t2m = data_ifs_tc["skt"].mean(dim=["lat", "lon"])
+        # Use a modified version as proxy for TOA radiation
+        self.net_toa = self.t2m * 0.5 - 7.0
+
+    def test_plot_gregory_monthly(self, tmp_path):
+        """Test plot_gregory_monthly function"""
+        fig, ax = plot_gregory_monthly(
+            t2m_monthly_data=self.t2m,
+            net_toa_monthly_data=self.net_toa,
+            title="Monthly Gregory Plot",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_monthly.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_monthly.png")
+
+    def test_plot_gregory_monthly_with_ref(self, tmp_path):
+        """Test plot_gregory_monthly with reference data"""
+        fig, ax = plot_gregory_monthly(
+            t2m_monthly_data=self.t2m,
+            net_toa_monthly_data=self.net_toa,
+            t2m_monthly_ref=self.t2m * 0.98,
+            net_toa_monthly_ref=self.net_toa * 1.02,
+            labels=["Model"],
+            ref_label="Reference",
+            title="Monthly Gregory Plot with Reference",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_monthly_ref.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_monthly_ref.png")
+
+    def test_plot_gregory_annual(self, tmp_path):
+        """Test plot_gregory_annual function"""
+        t2m_annual = self.t2m.resample(time="YS").mean()
+        net_toa_annual = self.net_toa.resample(time="YS").mean()
+
+        fig, ax = plot_gregory_annual(
+            t2m_annual_data=t2m_annual,
+            net_toa_annual_data=net_toa_annual,
+            title="Annual Gregory Plot",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_annual.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_annual.png")
+
+    def test_plot_gregory_annual_with_ref(self, tmp_path):
+        """Test plot_gregory_annual with reference data"""
+        t2m_annual = self.t2m.resample(time="YS").mean()
+        net_toa_annual = self.net_toa.resample(time="YS").mean()
+        t2m_std = t2m_annual.std()
+        net_toa_std = net_toa_annual.std()
+
+        fig, ax = plot_gregory_annual(
+            t2m_annual_data=t2m_annual,
+            net_toa_annual_data=net_toa_annual,
+            t2m_annual_ref=t2m_annual * 0.99,
+            net_toa_annual_ref=net_toa_annual * 1.01,
+            t2m_std=t2m_std,
+            net_toa_std=net_toa_std,
+            labels=["Model"],
+            title="Annual Gregory Plot with Reference",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_gregory_annual_ref.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_gregory_annual_ref.png")
+
+
+@pytest.mark.graphics
+class TestIndexPlot:
+    """Basic tests for the index plot functions"""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, data_ifs_tc):
+        """Setup method to retrieve data for testing"""
+        # Use spatial mean to get time series as index
+        self.index = data_ifs_tc["skt"].mean(dim=["lat", "lon"])
+
+    def test_index_plot(self, tmp_path):
+        """Test index_plot function"""
+        fig, ax = index_plot(
+            index=self.index,
+            thresh=0.5,
+            title="Index Plot Test",
+            ylabel="Temperature Index",
+            label="SKT Index",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+
+        fig.savefig(tmp_path / "test_index_plot.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_index_plot.png")
+
+    def test_index_plot_with_ylim(self, tmp_path):
+        """Test index_plot with custom ylim"""
+        fig, ax = index_plot(
+            index=self.index,
+            ylim=(-2, 2),
+            title="Index Plot with ylim",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert ax is not None
+        assert ax.get_ylim() == (-2, 2)
+
+        fig.savefig(tmp_path / "test_index_plot_ylim.png", dpi=DPI)
+        assert os.path.exists(tmp_path / "test_index_plot_ylim.png")
+
+    def test_indexes_plot(self, tmp_path):
+        """Test indexes_plot function"""
+        index2 = self.index * 0.9
+
+        fig, axs = indexes_plot(
+            indexes=[self.index, index2],
+            thresh=0.3,
+            titles=["Index 1", "Index 2"],
+            labels=["SKT", "SKT scaled"],
+            suptitle="Multiple Indexes",
+            ylabel="Index Value",
+            loglevel=loglevel,
+        )
+
+        assert fig is not None
+        assert axs is not None
+        assert len(axs) == 2
+
+        fig.savefig(tmp_path / "test_indexes_plot.png", dpi=DPI)
+        plt.close(fig)
+        assert os.path.exists(tmp_path / "test_indexes_plot.png")
