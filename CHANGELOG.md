@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Update intake and intake-xarray to >=2.0.0 (#2843)
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
 - push_analysis deal with missing experiments.yaml file (#2792)
 - Added preprint DOI to references and acknowledgments (#2845)

@@ -482,7 +482,7 @@ class TestAquaConsoleShared:
         mydir = shared_aqua_install
 
         # add two catalogs
-        for catalog_name in ["ci", "levante"]:
+        for catalog_name in ["ci", "obs"]:
             run_aqua(["add", catalog_name])
             assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs", catalog_name))
             config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
