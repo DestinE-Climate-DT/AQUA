@@ -56,9 +56,8 @@ def analysis_parser(parser=None):
     #TODO: remove "-p" and add "--serial" to disable dask parallel execution, which will be the default in the future
     # potentially add also a "--nworkers" argument to specify the number of workers to use in the cluster, but for now it can
     # be set in the config file
-    parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
-    # TODO: change threads to "--nprocesses" which is the maximum number of processes to use in the ThreadPoolExecutor, and set
-    # it to -1 by default (no limit).
+    parser.add_argument("--nmaxprocesses", type=int, default=-1,
+                        help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
 
     # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
@@ -120,10 +119,10 @@ def analysis_execute(args):
             sys.exit(1)
 
     outputdir = os.path.expandvars(args.outputdir or config.get("job", {}).get("outputdir", "./output"))
-    max_threads = args.threads
+    nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
 
     logger.debug("outputdir: %s", outputdir)
-    logger.debug("max_threads: %d", max_threads)
+    logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
     # Format the realization string by prepending 'r' if it is a digit or setting a default `r1`.
     realization = format_realization(realization)
@@ -219,7 +218,7 @@ def analysis_execute(args):
     # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
     # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
     for collections in run:
-        with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
+        with ThreadPoolExecutor(max_workers=nmaxprocesses) as executor:
             futures = []
             for collection in collections:
                 logger.info("Starting diagnostic collection: %s", collection)
