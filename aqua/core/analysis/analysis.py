@@ -161,9 +161,12 @@ def run_diagnostic_collection(
             extra_args += f" --regrid {regrid}"
 
         if not serial:
-            nworkers = tool_config.get("nworkers")
-            if nworkers is not None:
-                extra_args += f" --nworkers {nworkers}"
+            tool_nworkers = tool_config.get("nworkers")
+            tool_nthreads = tool_config.get("nthreads")
+            if tool_nworkers is not None:
+                extra_args += f" --nworkers {tool_nworkers}"
+            if tool_nthreads is not None:
+                extra_args += f" --nthreads {tool_nthreads}"
 
         # This is needed for ECmean which uses multiprocessing
         if cluster and not tool_config.get("nocluster", False):

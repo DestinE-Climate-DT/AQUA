@@ -201,8 +201,9 @@ def analysis_execute(args):
             cluster_address = None
         else:
             nthreads = args.nthreads if args.nthreads is not None else config.get("cluster", {}).get("threads", 2)
-            nworkers = args.nworkers if args.nworkers is not None else config.get("cluster", {}).get("workers", 64)
+            nworkers = args.nworkers if args.nworkers is not None else config.get("cluster", {}).get("workers", 32)
             mem_limit = config.get("cluster", {}).get("memory_limit", "3.1GiB")
+            logger.debug("Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit)
 
             # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
             cluster = LocalCluster(

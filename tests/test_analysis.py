@@ -56,7 +56,7 @@ def test_run_diagnostic_collection():
     # completes without errors.
     run_diagnostic_collection(
         collection="pluto",
-        parallel=True,
+        serial=False,
         regrid="r100",
         logger=logger,
         diag_config=config,
@@ -170,19 +170,20 @@ class TestRunDiagnosticCollection:
         assert "--regrid r100" in extra_args
 
     def test_parallel_adds_nworkers(self, tool_env):
-        """parallel=True with nworkers in config appends --nworkers."""
-        config = {"biases": {"config": tool_env["cfg"], "nworkers": 4}}
+        """with nworkers and  --nworkers and --nthreads in config"""
+        config = {"biases": {"config": tool_env["cfg"], "nworkers": 4, "nthreads": 2}}
         with patch(PATCH_TOOL) as mock_tool:
             run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=tool_env["cli"],
-                parallel=True,
+                serial=False,
                 output_dir=tool_env["outdir"],
                 logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--nworkers 4" in extra_args
+        assert "--nthreads 2" in extra_args
 
     def test_cluster_flag_added(self, tool_env):
         """cluster address is forwarded as --cluster when nocluster is not set."""
