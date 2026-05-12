@@ -91,7 +91,7 @@ def _build_extra_args(**kwargs):
 
 def run_diagnostic_collection(
     collection: str,
-    parallel: bool = False,
+    serial: bool = False,
     regrid: str = None,
     cli: dict = {},
     diag_config=None,
@@ -114,7 +114,7 @@ def run_diagnostic_collection(
 
     Args:
         collection (str): Name of the diagnostic collection.
-        parallel (bool): Whether to run in parallel mode.
+        serial (bool): Whether to run in serial mode. When False, the dask parallel execution will be used.
         regrid (str): Regrid option.
         cli (dict): CLI definitions for the tools.
         diag_config (dict): Configuration dictionary loaded from YAML.
@@ -160,7 +160,7 @@ def run_diagnostic_collection(
         if regrid:
             extra_args += f" --regrid {regrid}"
 
-        if parallel:
+        if not serial:
             nworkers = tool_config.get("nworkers")
             if nworkers is not None:
                 extra_args += f" --nworkers {nworkers}"

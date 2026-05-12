@@ -52,7 +52,7 @@ def analysis_parser(parser=None):
     # computation
     parser.add_argument("--local_clusters", action="store_true",
                         help="Use separate local clusters instead of single global one (deprecated)")
-    parser.add_argument("--serial", action="store_true", help="Disable parallel execution with a cluster")
+    parser.add_argument("--serial", action="store_true", help="Disable dask parallel execution with a cluster")
     parser.add_argument("--nworkers", type=int, default=None,
                         help="Number of workers to use in the cluster (overrides config file)")
     parser.add_argument("--nthreads", type=int, default=None,
@@ -235,7 +235,7 @@ def analysis_execute(args):
                     executor.submit(
                         run_diagnostic_collection,
                         collection=collection,
-                        parallel=args.parallel,
+                        serial=args.serial,
                         diag_config=diag_config,
                         cli=cli,
                         catalog=catalog,
