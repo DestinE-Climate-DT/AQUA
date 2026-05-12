@@ -45,15 +45,20 @@ def analysis_parser(parser=None):
                         help="Regrid option (Target grid/False). If False, no regridding will be performed.")
 
     # configuration
-    parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
-    parser.add_argument("-f", "--config", type=str, help="Configuration file")
-    parser.add_argument("-k", "--kind", type=str, help="Kind of experiment to be run (e.g. historical, scenario, etc.)")
+    parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
+    parser.add_argument("--config", type=str, help="Configuration file")
+    parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
 
     # computation
     parser.add_argument("--local_clusters", action="store_true",
-                        help="Use separate local clusters instead of single global one")
+                        help="Use separate local clusters instead of single global one (deprecated)")
     parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostic collections in parallel with a cluster")
+    #TODO: remove "-p" and add "--serial" to disable dask parallel execution, which will be the default in the future
+    # potentially add also a "--nworkers" argument to specify the number of workers to use in the cluster, but for now it can
+    # be set in the config file
     parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
+    # TODO: change threads to "--nprocesses" which is the maximum number of processes to use in the ThreadPoolExecutor, and set
+    # it to -1 by default (no limit).
 
     # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
