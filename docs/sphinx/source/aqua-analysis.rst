@@ -50,7 +50,7 @@ so that the script can be used in a batch job or in a workflow. These override c
 
     Additional ocean source to use for diagnostics accepting it (currently only ECmean).
 
-.. option:: -f <config>, --config <source>
+.. option:: --config <config>
 
     The config file to use.
 
@@ -76,31 +76,45 @@ so that the script can be used in a batch job or in a workflow. These override c
     If not specified, all available data until the end will be used.
     Can be specified in the format YYYY-MM-DD.
 
-.. option:: -d <dir>, --outputdir <dir>
+.. option:: -o <dir>, --outputdir <dir>
 
     The output directory to use.
     The default in the config file is ``$AQUA/cli/aqua-analysis/output``.
     Better to use an absolute path.
 
+.. option:: -k <kind>, --kind <kind>
+
+    Experiment kind to run (e.g. ``historical``, ``scenario``, ``storyline``).
+    This works in combination with the jinja template configuration files available in AQUA-diagnostics, and allow
+    for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
+    Overrides the value from the configuration file.
+
+.. option:: --serial
+
+    Disable parallel execution with a Dask cluster. All diagnostic collections will run sequentially.
+
+.. option:: --nworkers <nworkers>
+
+    Number of Dask workers to use in the global cluster. Overrides the ``workers`` key in the cluster section of the config file.
+
+.. option:: --nthreads <nthreads>
+
+    Number of threads per Dask worker. Overrides the ``threads`` key in the cluster section of the config file.
+
+.. option:: --nmaxprocesses <nmaxprocesses>
+
+    Maximum number of processes to use in the ``ThreadPoolExecutor`` for running diagnostic collections.
+    Default is ``-1`` (no limit).
+
 .. option:: -l <loglevel>, --loglevel <loglevel>
 
     The log level to use for the cli and the diagnostics.
-    Default is ``WARNING``.
-
-.. option:: -t <threads>, --threads <threads>
-
-    This is the number of diagnostics running in parallel.
-    Default is ``0``, which means no limit.
-
-.. option:: -p, --parallel
-
-    This flag activates running the diagnostics with multiple dask.distributed workers.
-    By default the script will set up a common dask cluster/scheduler and close it when finished.
+    Default is ``INFO``.
 
 .. option:: --local_clusters
 
-    This is a legacy feature to run the diagnostics with multiple dask.distributed 'local' clusters (not reccomended)
-    In this case predefined number of workers is used for each diagnostic, set in the configuration file `config.aqua-analysis.yaml`.
+    This is a legacy feature to run the diagnostics with multiple dask.distributed 'local' clusters (not recommended).
+    In this case a predefined number of workers is used for each diagnostic, set in the configuration file ``config.aqua-analysis.yaml``.
 
 .. note ::
 
