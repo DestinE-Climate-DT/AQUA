@@ -73,7 +73,8 @@ dependencies = [
 fdb = [
     "pyfdb",
     "polytope-client",
-    "gsv-interface==2.13.1"
+    "gsv-interface==2.13.1",
+    "z3fdb<=5.21.0"
 ]
 docs = [
     "sphinx",

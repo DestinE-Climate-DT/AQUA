@@ -14,6 +14,7 @@ from metpy.units import units
 from smmregrid import GridInspector
 
 import aqua.core.gsv
+import aqua.core.z3fdb
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -171,6 +172,7 @@ class Reader:
         # load the catalog
         # Hack needed to avoid double checking of paths when working via polytope.
         aqua.core.gsv.GSVSource.first_run = True
+        # No equivalent first_run hack is required for Z3FDBSource.
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
 
         # check machine compatibility
@@ -445,6 +447,16 @@ class Reader:
 
                     self.logger.debug("FDB source: loading variables as %s", loadvar)
 
+            elif isinstance(self.esmcat, aqua.core.z3fdb.intake_z3fdb.Z3FDBSource):
+                metadata = self.esmcat.metadata
+                if metadata:
+                    loadvar = metadata.get("variables")
+                    if not isinstance(loadvar, list) and loadvar is not None:
+                        loadvar = [loadvar]
+                    if sample and loadvar:
+                        loadvar = [loadvar[0]]
+                    self.logger.debug("Z3FDB source: loading variables as %s", loadvar)
+
             else:
                 loadvar = None
 
@@ -457,6 +469,9 @@ class Reader:
         if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate, dask=True, level=level)
             ffdb = True  # These data have been read from fdb
+        elif isinstance(self.esmcat, aqua.core.z3fdb.intake_z3fdb.Z3FDBSource):
+            data = self.reader_z3fdb(self.esmcat, loadvar, startdate, enddate, dask=True)
+            ffdb = True  # These data have been read from z3fdb
         else:
             data = self.reader_intake(self.esmcat, var, loadvar)
 
@@ -786,6 +801,8 @@ class Reader:
                 filtered_kwargs["engine"] = engine
                 self.logger.debug("Adding engine=%s to the filtered kwargs", engine)
 
+        # Z3FDBSource does not use the 'engine' kwarg — nothing extra to inject here.
+
         if engine == "polytope" and databridge is not None:
             # If the engine is polytope, we need to add the databridge parameter
             if "databridge" not in filtered_kwargs:
@@ -887,6 +904,53 @@ class Reader:
         final = data.interp({vert_coord: levels}, method=method)
 
         return final
+
+    def reader_z3fdb(self, esmcat, var, startdate, enddate, dask=True):
+        """
+        Read data from a Z3FDBSource catalog entry.
+
+        Unlike ``reader_fdb``, there is no variable matching step here: the
+        variable list is passed directly to the source's constructor
+        (via ``var``), which uses it to restrict the param axis.  The
+        source is responsible for translating param IDs to eccodes short names
+        and assembling the ``xr.Dataset``.
+
+        Args:
+            esmcat (Z3FDBSource): The intake catalog source to read.
+            var (list, optional): Param IDs to retrieve.  ``None`` retrieves
+                all variables declared in ``metadata["variables"]``.
+            startdate (str): Start of the requested date range.
+            enddate (str): End of the requested date range.
+            dask (bool, optional): Return a lazy dask-backed dataset.
+                Defaults to ``True``.
+
+        Returns:
+            xr.Dataset: The retrieved dataset.
+        """
+        # Determine chunking: prefer explicit chunks, fall back to catalog default
+        chunks = self.chunks if self.chunks is not None else esmcat.chunks_freq
+
+        if dask:
+            data = esmcat(
+                startdate=startdate,
+                enddate=enddate,
+                var=var,
+                chunks=chunks,
+                loglevel=self.loglevel,
+            ).to_dask()
+        else:
+            datasets = list(
+                esmcat(
+                    startdate=startdate,
+                    enddate=enddate,
+                    var=var,
+                    chunks=chunks,
+                    loglevel=self.loglevel,
+                ).read_chunked()
+            )
+            data = xr.concat(datasets, dim="time") if len(datasets) > 1 else datasets[0]
+
+        return data
 
     def reader_esm(self, esmcat, var):
         """
