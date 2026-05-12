@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 AQUA core complete list:
 
 AQUA diagnostics complete list:
+- Storyline reference dates updated to 2025 (#2855)
 
 ## [v0.19.11]
 
