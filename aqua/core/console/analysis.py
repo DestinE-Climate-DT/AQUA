@@ -52,10 +52,11 @@ def analysis_parser(parser=None):
     # computation
     parser.add_argument("--local_clusters", action="store_true",
                         help="Use separate local clusters instead of single global one (deprecated)")
-    parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostic collections in parallel with a cluster")
-    #TODO: remove "-p" and add "--serial" to disable dask parallel execution, which will be the default in the future
-    # potentially add also a "--nworkers" argument to specify the number of workers to use in the cluster, but for now it can
-    # be set in the config file
+    parser.add_argument("--serial", action="store_true", help="Disable parallel execution with a cluster")
+    parser.add_argument("--nworkers", type=int, default=None,
+                        help="Number of workers to use in the cluster (overrides config file)")
+    parser.add_argument("--nthreads", type=int, default=None,
+                        help="Number of threads per worker to use in the cluster (overrides config file)")
     parser.add_argument("--nmaxprocesses", type=int, default=-1,
                         help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
 
@@ -186,14 +187,18 @@ def analysis_execute(args):
         logger.error("No run block found in configuration.")
         sys.exit(1)
 
-    if args.parallel:
+    if args.serial:
+        logger.info("Running diagnostic collections without a dask cluster.")
+        cluster = None
+        cluster_address = None
+    else:
         if args.local_clusters:
             logger.info("Running diagnostic collections in parallel with separate local clusters.")
             cluster = None
             cluster_address = None
         else:
-            nthreads = config.get("cluster", {}).get("threads", 2)
-            nworkers = config.get("cluster", {}).get("workers", 64)
+            nthreads = args.nthreads if args.nthreads is not None else config.get("cluster", {}).get("threads", 2)
+            nworkers = args.nworkers if args.nworkers is not None else config.get("cluster", {}).get("workers", 64)
             mem_limit = config.get("cluster", {}).get("memory_limit", "3.1GiB")
 
             # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
@@ -202,10 +207,6 @@ def analysis_execute(args):
             )
             cluster_address = cluster.scheduler_address
             logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
-    else:
-        logger.info("Running diagnostic collections without a dask cluster.")
-        cluster = None
-        cluster_address = None
 
     # read cli definitions and prepend script path
     cli = config.get("cli", {})
