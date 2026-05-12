@@ -188,6 +188,9 @@ def analysis_execute(args):
         sys.exit(1)
 
     if args.serial:
+        if args.local_clusters or args.nworkers or args.nthreads:
+            logger.warning("Serial execution selected, ignoring local cluster and worker/thread settings.")
+
         logger.info("Running diagnostic collections without a dask cluster.")
         cluster = None
         cluster_address = None

@@ -292,11 +292,13 @@ class TestAnalysisParser:
         parser = analysis_parser()
         args = parser.parse_args([])
 
-        assert args.threads == -1
         assert args.regrid == "False"
         assert args.loglevel == "INFO"
-        assert args.parallel is False
+        assert args.serial is False
         assert args.local_clusters is False
+        assert args.nmaxprocesses == -1
+        assert args.nthreads is None
+        assert args.nworkers is None
         assert args.model is None
         assert args.exp is None
         assert args.source is None
@@ -338,9 +340,9 @@ class TestAnalysisParser:
                 "/tmp/config.yaml",
                 "--kind",
                 "historical",
-                "--parallel",
+                "--serial",
                 "--local_clusters",
-                "--threads",
+                "--nmaxprocesses",
                 "4",
                 "--loglevel",
                 "DEBUG",
@@ -359,9 +361,9 @@ class TestAnalysisParser:
         assert args.outputdir == "/tmp/output"
         assert args.config == "/tmp/config.yaml"
         assert args.kind == "historical"
-        assert args.parallel is True
+        assert args.serial is True
         assert args.local_clusters is True
-        assert args.threads == 4
+        assert args.nmaxprocesses == 4
         assert args.loglevel == "DEBUG"
 
     def test_short_flags(self):
@@ -377,15 +379,10 @@ class TestAnalysisParser:
                 "test-tco79",
                 "-s",
                 "lra-r100-monthly",
-                "-d",
+                "-o",
                 "/tmp/output",
-                "-f",
-                "/tmp/config.yaml",
                 "-k",
                 "historical",
-                "-p",
-                "-t",
-                "8",
                 "-l",
                 "WARNING",
             ]
@@ -396,10 +393,9 @@ class TestAnalysisParser:
         assert args.exp == "test-tco79"
         assert args.source == "lra-r100-monthly"
         assert args.outputdir == "/tmp/output"
-        assert args.config == "/tmp/config.yaml"
         assert args.kind == "historical"
-        assert args.parallel is True
-        assert args.threads == 8
+        assert args.serial is False
+        assert args.nmaxprocesses == -1
         assert args.loglevel == "WARNING"
 
 
