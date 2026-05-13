@@ -339,12 +339,20 @@ class TestRegridder:
             dims=("lat", "lon"),
             name="temp",
         )
+        da.lat.attrs.update({"standard_name": "latitude", "units": "degrees_north"})
+        da.lon.attrs.update({"standard_name": "longitude", "units": "degrees_east"})
 
         regridder = Regridder(data=da)
         regridder.logger = MagicMock()  # Mock the logger
-        regridder.weights(tgt_grid_name="r144x72", regrid_method="bil")
+        regridder.weights(tgt_grid_name="r30x15", regrid_method="bil", initialize=False)
         _ = regridder.regrid(da)
-        regridder.logger.error.assert_not_called()
+        regridder.logger.error.assert_called()  # this should fail
+
+        regridder = Regridder(data=da)
+        regridder.logger = MagicMock()  # Mock the logger
+        regridder.weights(tgt_grid_name="r30x15", regrid_method="bil", initialize=True)
+        _ = regridder.regrid(da)
+        regridder.logger.error.assert_not_called()  # this should not fail
 
     def test_regridder_invalid_data_type(self):
         """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""
