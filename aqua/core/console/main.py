@@ -34,6 +34,9 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             self.diagpath = os.path.join(pypath.files("aqua.diagnostics"), "config")
         else:
             self.diagpath = None
+        # The configurer contains the ConfigPath class, while the configpath
+        # will be populated by the configdir path by the _check method
+        self.configurer = None
         self.configpath = None
         self.templatepath = None
         self.configfile = "config-aqua.yaml"
@@ -51,7 +54,11 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             "list": self.list,
             "update": self.update,
             "fixes": {"add": self.fixes_add, "remove": self.remove_file},
-            "grids": {"add": self.grids_add, "remove": self.remove_file, "set": self.grids_set, "build": self.grids_build},
+            "grids": {"add": self.grids_add,
+                      "remove": self.remove_file,
+                      "set": self.grids_set,
+                      "build": self.grids_build,
+                      "deploy": self.grids_deploy},
             "analysis": self.analysis,
             "drop": self.drop,
             "catgen": self.catgen,
