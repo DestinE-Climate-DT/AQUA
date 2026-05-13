@@ -4,14 +4,15 @@
 AQUA files operations mixin
 """
 
-import re
 import os
-import requests
+import re
 import shutil
 import sys
 
+import requests
+
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml, to_list, create_folder
+from aqua.core.util import create_folder, dump_yaml, load_multi_yaml, load_yaml, to_list
 
 
 class FilesMixin:
@@ -80,20 +81,20 @@ class FilesMixin:
         Deploy the grids selected by the user, which can specify a source_grid_name.
 
         Since by default every catalog has is own grids folder,
-        this utility allows to deploy the grids only if the grids_set method has been 
+        this utility allows to deploy the grids only if the grids_set method has been
         used to set the grids path in the config-aqua.yaml file.
 
         Args:
             args (argparse.Namespace): arguments from the command line
         """
         self._check()
-        
+
         # Check if the default grids path is set in the config-aqua.yaml file
         # otherswise we cannot deploy the grids
         filename = os.path.join(self.configpath, self.configfile)
         cfg = load_yaml(filename)
         if "paths" not in cfg or "grids" not in cfg["paths"]:
-            self.logger.error("Default grids path is not set in %s. Please set it with the aqua grids set command before deploying the grids.",
+            self.logger.error("Default grids path is not set in %s. Please set it with the aqua grids set command before deploying the grids.", # noqa E501
                               self.configfile)
             sys.exit(1)
         else:
@@ -120,7 +121,7 @@ class FilesMixin:
                 self._download_grid(grid_dir=grid_dir, grid_name=grid_name, targetdir=grids_path)
         else:
             self.logger.error("No exact match found for grid name %s.", args.source_grid_name)
-            
+
     def _grids_deploy_path(self, single_dict, source_grid_name=None):
         """
         Deploy the grid files to the default grids path set in the config-aqua.yaml file.
@@ -156,11 +157,11 @@ class FilesMixin:
                 self.logger.debug(f"Extracted path for grid {source_grid_name}: {extracted_path}")
                 extracted_paths.append(extracted_path)
             else:
-                self.logger.error(f"Grid {source_grid_name} path format is incorrect: {path}. Expected format is {{ SOME_VARIABLE }}/path/to/grid.")
+                self.logger.error(f"Grid {source_grid_name} path format is incorrect: {path}. Expected format is {{ SOME_VARIABLE }}/path/to/grid.") # noqa E501
                 return []
-        
+
         return extracted_paths
-    
+
     def _download_grid(self,
                        grid_dir: str,
                        grid_name: str,
