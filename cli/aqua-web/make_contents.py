@@ -357,7 +357,7 @@ def parse_arguments(arguments):
         default="INFO",
         help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.",
     )
-    parser.add_argument("--format", type=str, default="png", help="Format of the input data files (e.g. png, pdf)")
+    parser.add_argument("--format", type=str, default="png", help="Format of the input data files on which to work (png, pdf)")
 
     return parser.parse_args(arguments)
 
