@@ -309,7 +309,7 @@ class Regridder:
             loglevel=self.loglevel,
         ).areas(target=bool(grid_name))
 
-    def weights(self, tgt_grid_name, regrid_method=None, nproc=1, rebuild=False, reader_kwargs=None):
+    def weights(self, tgt_grid_name, regrid_method=None, nproc=1, rebuild=False, reader_kwargs=None, initialize=True):
         """
         Load or generate regridding weights by calling smmregrid
 
@@ -320,6 +320,7 @@ class Regridder:
             rebuild (bool): If True, rebuild the weights.
             reader_kwargs (dict): The reader kwargs for filename definition,
                                   including info on model, exp, source, etc.
+            initialize (bool): If True, initialize the regridders with the loaded weights.
 
         Returns:
             dict: The weights dictionary for each vertical coordinate.
@@ -378,8 +379,8 @@ class Regridder:
             # load the weights
             weights[mask_dim] = xr.open_dataset(weights_filename)
 
-        # automatically initialize the regridders with the loaded weights
-        self.initialize(weights)
+        if initialize:
+            self.initialize(weights)
 
         return weights
 
