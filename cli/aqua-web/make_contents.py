@@ -10,7 +10,7 @@ import sys
 from fnmatch import fnmatch
 
 import yaml
-from pypdf import PdfReader
+from PIL import Image
 
 # Get a logger instance
 logger = logging.getLogger("make_contents")
@@ -175,14 +175,9 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                 else:
                     fn_line = f"{catalog}/{model}/{exp}/{fn}"
                 filename_list.append(fn_line)
-                # Read description for capion from the pdf file
-                pdf_path = f"../pdf/{path}/" + os.path.splitext(fn)[0] + ".pdf"
-                if os.path.exists(pdf_path):
-                    pdf_reader = PdfReader(pdf_path)
-                else:
-                    logger.warning(f"Missing corresponding PDF file for {fn} at {pdf_path}")
-                    continue  # If the PDF does not exist, skip this file
-                metadata = pdf_reader.metadata
+
+                with Image.open(fn) as img:
+                    metadata = img.info
                 properties[fn_line] = metadata
 
         grouping = {}
