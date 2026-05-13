@@ -329,6 +329,23 @@ class TestRegridder:
         # Verify logger.error was called
         regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
 
+    def test_regridder_weights(self):
+        """Test regridding using explicitly the Regridder class and the weights method."""
+
+        # Create a simple dataarray
+        da = xr.DataArray(
+            np.random.rand(10, 20),
+            coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
+            dims=("lat", "lon"),
+            name="temp",
+        )
+
+        regridder = Regridder(data=da)
+        regridder.logger = MagicMock()  # Mock the logger
+        regridder.weights(tgt_grid_name="r144x72", regrid_method="bil")
+        _ = regridder.regrid(da)
+        regridder.logger.error.assert_not_called()
+
     def test_regridder_invalid_data_type(self):
         """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""
         regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
