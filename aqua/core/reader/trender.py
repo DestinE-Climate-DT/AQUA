@@ -12,7 +12,7 @@ class Trender:
     A class to handle trend and detrending of xarray objects using polynomial fitting.
     """
 
-    def __init__(self, loglevel: str = 'WARNING'):
+    def __init__(self, loglevel: str = "WARNING"):
         """
         Initialize the Trender class with optional default settings.
 
@@ -22,8 +22,9 @@ class Trender:
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "Trender")
 
-    def trend(self, data: xr.DataArray | xr.Dataset, dim: str = 'time',
-              degree: int = 1, skipna: bool = False) -> xr.DataArray | xr.Dataset:
+    def trend(
+        self, data: xr.DataArray | xr.Dataset, dim: str = "time", degree: int = 1, skipna: bool = False
+    ) -> xr.DataArray | xr.Dataset:
         """
         Estimate the trend of an xarray object using polynomial fitting.
 
@@ -38,8 +39,9 @@ class Trender:
         """
         return self._apply_trend_or_detrend(data, self._trend, dim, degree, skipna)
 
-    def detrend(self, data: xr.DataArray | xr.Dataset, dim: str = 'time',
-                degree: int = 1, skipna: bool = False) -> xr.DataArray | xr.Dataset:
+    def detrend(
+        self, data: xr.DataArray | xr.Dataset, dim: str = "time", degree: int = 1, skipna: bool = False
+    ) -> xr.DataArray | xr.Dataset:
         """
         Remove the trend from an xarray object using polynomial fitting.
 
@@ -54,16 +56,23 @@ class Trender:
         """
         return self._apply_trend_or_detrend(data, self._detrend, dim, degree, skipna)
 
-    def coeffs(self, data: xr.DataArray | xr.Dataset, dim: str = 'time',
-               degree: int = 1, skipna: bool = False, normalize: bool = False) -> xr.DataArray | xr.Dataset:
-        """"
+    def coeffs(
+        self,
+        data: xr.DataArray | xr.Dataset,
+        dim: str = "time",
+        degree: int = 1,
+        skipna: bool = False,
+        normalize: bool = False,
+    ) -> xr.DataArray | xr.Dataset:
+        """ "
         Compute the polynomial coefficients for the trend.
         """
 
         return self._apply_trend_or_detrend(data, self._coeffs, dim, degree, skipna, normalize=normalize)
 
-    def _coeffs(self, data: xr.DataArray | xr.Dataset, dim: str,
-                degree: int, skipna: bool, normalize: bool) -> xr.DataArray | xr.Dataset:
+    def _coeffs(
+        self, data: xr.DataArray | xr.Dataset, dim: str, degree: int, skipna: bool, normalize: bool
+    ) -> xr.DataArray | xr.Dataset:
         """
         Compute the polynomial coefficients for the trend, adjusted to the input data.
 
@@ -86,26 +95,28 @@ class Trender:
 
         # time axis are scaled to nanoseconds, which is not very user-friendly.
         # we try to adjust the coefficients to the input data frequency
-        if dim == 'time' and normalize:
-            self.logger.debug('Normalizing coefficients for time dimension.')
+        if dim == "time" and normalize:
+            self.logger.debug("Normalizing coefficients for time dimension.")
             # get the inferred frequency of the time dimension and convert to pandas offset
             time_values = data[dim].to_index()
             inferred_freq = time_values.inferred_freq
             self.logger.debug("Inferred frequency for 'time' dimension: %s", inferred_freq)
             if inferred_freq is None:
-                raise ValueError("Inferred frequency for 'time' dimension is None. "
-                                 "Ensure that the time dimension has a pandas compatible frequency.")
+                raise ValueError(
+                    "Inferred frequency for 'time' dimension is None. "
+                    "Ensure that the time dimension has a pandas compatible frequency."
+                )
             offset = pd.tseries.frequencies.to_offset(inferred_freq)
             self.logger.debug("Offset for normalization: %s", offset)
 
             # offset cannot be converted to timedelta, so we use the mean of the time values
             delta = ((time_values + offset) - time_values).mean()
-            factor = delta.value # convert to nanoscend
+            factor = delta.value  # convert to nanoscend
 
             self.logger.debug("Time normalization factor: %s", factor)
 
             # create an array of factor for each degree and convert to DataArray
-            factor_scales = np.array([factor**(degree - i) for i in range(degree + 1)])
+            factor_scales = np.array([factor ** (degree - i) for i in range(degree + 1)])
             self.logger.debug("Factor scales for polynomial degrees: %s", factor_scales)
             factor_da = xr.DataArray(factor_scales, dims="degree", coords={"degree": coeffs.coords["degree"]})
 
@@ -118,19 +129,16 @@ class Trender:
         """
         Internal dispatcher for trend/detrend logic.
         """
-        action = func.__name__.capitalize() # Get the action name (Trend or Detrend)
+        action = func.__name__.capitalize()  # Get the action name (Trend or Detrend)
 
-        self.logger.info(
-            "Applying %s with polynomial of order %d along '%s' dimension.", action, degree, dim
-        )
+        self.logger.info("Applying %s with polynomial of order %d along '%s' dimension.", action, degree, dim)
 
         if isinstance(data, xr.DataArray):
             final = func(data=data, dim=dim, degree=degree, skipna=skipna, **kwargs)
 
         elif isinstance(data, xr.Dataset):
             selected_vars = [da for da in data.data_vars if dim in data[da].coords]
-            final = data[selected_vars].map(func, keep_attrs=True,
-                                            dim=dim, degree=degree, skipna=skipna, **kwargs)
+            final = data[selected_vars].map(func, keep_attrs=True, dim=dim, degree=degree, skipna=skipna, **kwargs)
         else:
             raise ValueError("Input must be an xarray DataArray or Dataset.")
 

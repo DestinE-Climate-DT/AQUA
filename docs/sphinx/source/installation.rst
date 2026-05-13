@@ -4,23 +4,37 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package ``aqua-core``.
-AQUA is developed and tested with Python 3.12 and it supports Python 3.10 or later (with the exclusions of 3.13).
+AQUA is developed and tested with Python 3.14 and it supports Python>=3.10,<3.15.
 
 .. note ::
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
 
 .. _installation-pip:
 
-Pip installation
-----------------
+Conda/Mamba installation with pip
+---------------------------------
 
-Since v0.21.0, AQUA is also available on the Python Package Index (PyPI) repository and can be installed with pip.
-However, some dependencies are not available in the PyPI repository, so you may need to install them manually.
-The extra dependencies are listed in the ``environment.yml`` file in the repository and are:
+Prerequisites
+^^^^^^^^^^^^^
+- `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process.
 
-- ``cdo>=2.5.0``
-- ``eccodes==2.41.0``
-- ``pip``
+Installation with Miniforge
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+AQUA-core is available on the Python Package Index (PyPI) repository and can be installed with pip.
+However, some dependencies are not available on PyPI, so you may need to install them manually:
+recommended way to do this is to use Mamba/Conda package manager for the installation process of the dependencies, and then use pip to install AQUA-core itself.
+This can be achieved with:
+
+.. code-block:: bash
+    mamba create -n aquarium -c conda-forge python=3.14 cdo netcdf4 eccodes
+    mamba activate aquarium
+    pip install aqua-core
+
+The same environment is available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
+
+.. note ::
+    If you want to access ClimateDT data, you will need to run `pip install aqua-core[fdb]`
 
 .. note ::
     If you need to access data written in a local FDB database (not polytope), you need to install the FDB5 library.
@@ -45,6 +59,8 @@ You can install them with the following command:
     pip install aqua-core[docs]
     pip install aqua-core[notebooks]
     pip install aqua-core[tests]
+    pip install aqua-core[style]
+    pip install aqua-core[fdb]
 
 Or to install all the extra dependencies:
 

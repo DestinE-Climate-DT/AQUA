@@ -1,4 +1,5 @@
 """Test regridding from Reader"""
+
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -18,33 +19,34 @@ from aqua.core.regridder.griddicthandler import GridDictHandler
         ("ICON", "test-r2b0", "short", "2t", 0),
         ("ICON", "test-healpix", "short", "2t", 0),
         ("FESOM", "test-pi", "original_2d", "tos", 0.33925926),
-        ("NEMO", "test-eORCA1", "long-2d", "tos", 0.3379)
+        ("NEMO", "test-eORCA1", "long-2d", "tos", 0.3379),
     ]
 )
 def reader_arguments(request):
     return request.param
 
+
 # fake dictionary for doing tests
 cfg_dict = {
-    "grids":{
+    "grids": {
         "r1000": "r36x18",
         "n128": "n128",
         "tragic": "tragic",
-        "afternoon": { "path": { "2d": "r100x50" } },
-        "doing": { "path": "noise.nc" },
-        "wonderful": { "path": { '2d': "r360x180" } },
-        "lovely": { "path": { '2d': "tests" } },
-        "amazing": { "path": {
-            '2d': "r100x50" ,
-            'level': "banana" },
+        "afternoon": {"path": {"2d": "r100x50"}},
+        "doing": {"path": "noise.nc"},
+        "wonderful": {"path": {"2d": "r360x180"}},
+        "lovely": {"path": {"2d": "tests"}},
+        "amazing": {
+            "path": {"2d": "r100x50", "level": "banana"},
         },
-        "romantic": { "path": "n128" },
-        "tests": { "path": { "pizza please!" } }
+        "romantic": {"path": "n128"},
+        "tests": {"path": {"pizza please!"}},
     }
 }
 
+
 @pytest.mark.aqua
-class TestRegridder():
+class TestRegridder:
     """class for regridding test"""
 
     def test_grid_dict_handler(self):
@@ -80,10 +82,10 @@ class TestRegridder():
             gdh.normalize_grid_dict("tragic")
 
         # test on grid path
-        assert gdh.normalize_grid_dict("afternoon")['path'] == {'2d': 'r100x50'}
-        assert gdh.normalize_grid_dict("lovely")['path'] == {'2d': 'tests'}
-        assert gdh.normalize_grid_dict("wonderful")['path'] == {'2d': 'r360x180'}
-        assert gdh.normalize_grid_dict("romantic")['path'] == {'2d': 'n128'}
+        assert gdh.normalize_grid_dict("afternoon")["path"] == {"2d": "r100x50"}
+        assert gdh.normalize_grid_dict("lovely")["path"] == {"2d": "tests"}
+        assert gdh.normalize_grid_dict("wonderful")["path"] == {"2d": "r360x180"}
+        assert gdh.normalize_grid_dict("romantic")["path"] == {"2d": "n128"}
 
         # errors on grid path
         with pytest.raises(FileNotFoundError, match="Grid file 'noise.nc' does not exist."):
@@ -93,16 +95,15 @@ class TestRegridder():
         with pytest.raises(ValueError, match="Grid path 'banana' is not a valid CDO grid name nor a file path."):
             gdh.normalize_grid_dict("amazing")
 
-
     def test_regridder(self):
         """Testing the regridder all in independent way"""
 
-        reader = Reader(catalog='ci', model='IFS', exp='test-tco79', source='long', loglevel='ERROR')
+        reader = Reader(catalog="ci", model="IFS", exp="test-tco79", source="long", loglevel="ERROR")
         data = reader.retrieve()
-        regridder = Regridder(data=data.isel(time=0), loglevel='debug')
+        regridder = Regridder(data=data.isel(time=0), loglevel="debug")
 
         # Regrid the data
-        weights = regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+        weights = regridder.weights(tgt_grid_name="r144x72", regrid_method="bil")
 
         # initialize regridder with weights
         regridder.initialize(weights)
@@ -115,7 +116,7 @@ class TestRegridder():
         assert len(src_area.lon) == 18
         assert len(src_area.lat) == 9
 
-        tgt_area = regridder.areas(tgt_grid_name='n32')
+        tgt_area = regridder.areas(tgt_grid_name="n32")
         assert len(tgt_area.lon) == 128
         assert len(tgt_area.lat) == 64
 
@@ -127,18 +128,17 @@ class TestRegridder():
         """
         model, exp, source, variable, ratio = reader_arguments
 
-        reader = Reader(model=model, exp=exp, source=source, regrid="r200",
-                        fix=True, loglevel=LOGLEVEL)
+        reader = Reader(model=model, exp=exp, source=source, regrid="r200", fix=True, loglevel=LOGLEVEL)
         data = reader.retrieve()
         rgd = reader.regrid(data[variable])
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
-        assert ratio == pytest.approx((rgd.isnull().sum()/rgd.size).values, rel=APPROX_REL)  # land fraction
-        assert hasattr(rgd, 'AQUA_catalog')
+        assert ratio == pytest.approx((rgd.isnull().sum() / rgd.size).values, rel=APPROX_REL)  # land fraction
+        assert hasattr(rgd, "AQUA_catalog")
 
         # test on Dataset regridding
         rgd = data.aqua.regrid()[variable]
-        assert hasattr(rgd, 'AQUA_exp')
+        assert hasattr(rgd, "AQUA_exp")
 
     def test_recompute_weights_fesom2d(self):
         """
@@ -146,12 +146,13 @@ class TestRegridder():
         checking output grid dimension and fraction of land
         (i.e. any missing points)
         """
-        reader = Reader(model='FESOM', exp='test-pi', source='original_2d',
-                        regrid='r100', rebuild=True, fix=False, loglevel=LOGLEVEL)
-        data = reader.retrieve(var='sst')
+        reader = Reader(
+            model="FESOM", exp="test-pi", source="original_2d", regrid="r100", rebuild=True, fix=False, loglevel=LOGLEVEL
+        )
+        data = reader.retrieve(var="sst")
         rgd = reader.regrid(data)
 
-        ratio = rgd['sst'].isnull().sum()/rgd['sst'].size  # land fraction
+        ratio = rgd["sst"].isnull().sum() / rgd["sst"].size  # land fraction
 
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
@@ -161,9 +162,8 @@ class TestRegridder():
     def test_recompute_weights_ifs(self):
         """Test the case where no source grid path is specified in the regrid.yaml file
         and areas/weights are reconstructed from the file itself"""
-        reader = Reader(model='IFS', exp='test-tco79', source='long',
-                        regrid='r100', rebuild=True, loglevel=LOGLEVEL)
-        data = reader.retrieve(var='ttr')
+        reader = Reader(model="IFS", exp="test-tco79", source="long", regrid="r100", rebuild=True, loglevel=LOGLEVEL)
+        data = reader.retrieve(var="ttr")
         rgd = reader.regrid(data)
 
         assert len(rgd.lon) == 360
@@ -172,9 +172,8 @@ class TestRegridder():
 
     def test_recompute_weights_healpix(self):
         """Test Healpix and areas/weights are reconstructed from the file itself"""
-        reader = Reader(model='ICON', exp='test-healpix', source='short',
-                        regrid='r100', rebuild=True)
-        data = reader.retrieve(var='t')
+        reader = Reader(model="ICON", exp="test-healpix", source="short", regrid="r100", rebuild=True)
+        data = reader.retrieve(var="t")
         rgd = reader.regrid(data)
 
         assert len(rgd.lon) == 360
@@ -188,15 +187,23 @@ class TestRegridder():
         checking output grid dimension and fraction of land
         (i.e. any missing points)
         """
-        reader = Reader(model='FESOM', exp='test-pi', source='original_3d',
-                        regrid='r100', rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL)
-        data = reader.retrieve(var='temp')
+        reader = Reader(
+            model="FESOM",
+            exp="test-pi",
+            source="original_3d",
+            regrid="r100",
+            rebuild=True,
+            datamodel=False,
+            fix=False,
+            loglevel=LOGLEVEL,
+        )
+        data = reader.retrieve(var="temp")
         rgd = reader.regrid(data)
 
         subdata = rgd.temp.isel(nz1=0)
-        ratio1 = subdata.isnull().sum()/subdata.size  # land fraction
+        ratio1 = subdata.isnull().sum() / subdata.size  # land fraction
         subdata = rgd.temp.isel(nz1=2)
-        ratio2 = subdata.isnull().sum()/subdata.size  # land fraction
+        ratio2 = subdata.isnull().sum() / subdata.size  # land fraction
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
         assert len(rgd.time) == 2
@@ -209,53 +216,62 @@ class TestRegridder():
         checking output grid dimension and fraction of land
         (i.e. any missing points)
         """
-        reader = Reader(model='NEMO', exp='test-eORCA1', source='short-3d',
-                        regrid='r200', rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL)
-        data = reader.retrieve(var='avg_so')
+        reader = Reader(
+            model="NEMO",
+            exp="test-eORCA1",
+            source="short-3d",
+            regrid="r200",
+            rebuild=True,
+            datamodel=False,
+            fix=False,
+            loglevel=LOGLEVEL,
+        )
+        data = reader.retrieve(var="avg_so")
         rgd = reader.regrid(data)
 
         subdata = rgd.avg_so.isel(level=0)
-        ratio1 = subdata.isnull().sum().values/subdata.size  # land fraction
+        ratio1 = subdata.isnull().sum().values / subdata.size  # land fraction
         subdata = rgd.avg_so.isel(level=6)
-        ratio2 = subdata.isnull().sum().values/subdata.size  # land fraction
+        ratio2 = subdata.isnull().sum().values / subdata.size  # land fraction
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert 0.32 <= ratio1 <= 0.36
         assert 0.50 <= ratio2 <= 0.54
-        #assert 0.44 <= ratio2 <= 0.47
+        # assert 0.44 <= ratio2 <= 0.47
 
     def test_levels_and_regrid(self):
         """
         Test regridding selected levels.
         """
-        reader = Reader(model='FESOM', exp='test-pi', source='original_3d', datamodel=False,
-                        regrid='r100', loglevel=LOGLEVEL, rebuild=True)
+        reader = Reader(
+            model="FESOM", exp="test-pi", source="original_3d", datamodel=False, regrid="r100", loglevel=LOGLEVEL, rebuild=True
+        )
         data = reader.retrieve()
 
         layers = [0, 2]
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).wo.aqua.fldmean().values
-        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
         assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().wo.aqua.fldmean().values
-        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
         assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).wo.aqua.regrid().aqua.fldmean().values
-        #assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(8.6758228e-08) #smmregrid <= v0.1.3
         assert val == pytest.approx(7.00622013e-08, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
-        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.aqua.regrid().isel(time=1, nz=2, nz1=layers).thetao.isel(nz1=1).aqua.fldmean().values
-        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
         val = data.isel(time=1, nz=2, nz1=layers).thetao.aqua.regrid().isel(nz1=1).aqua.fldmean().values
-        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
 
         # test reading specific levels for first vertical coordinate (nz1)
         data = reader.retrieve(level=[2.5, 2275])
         val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
-        #assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
+        # assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
 
     def test_regridder_missing_vertical_dataset(self):
@@ -269,7 +285,7 @@ class TestRegridder():
         # Initialize Regridder for 'r36x18' (a CDO grid name)
         regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
         # Ensure smmregridder exists even if init returned early
-        if not hasattr(regridder, 'smmregridder'):
+        if not hasattr(regridder, "smmregridder"):
             regridder.smmregridder = {}
 
         # Mock the logger
@@ -292,13 +308,13 @@ class TestRegridder():
             np.random.rand(10, 20),
             coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
             dims=("lat", "lon"),
-            name="temp"
+            name="temp",
         )
 
         # Initialize Regridder
         regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
         # Ensure smmregridder exists even if init returned early
-        if not hasattr(regridder, 'smmregridder'):
+        if not hasattr(regridder, "smmregridder"):
             regridder.smmregridder = {}
 
         # Mock the logger
@@ -320,36 +336,47 @@ class TestRegridder():
         with pytest.raises(ValueError, match="Data must be an xarray Dataset or DataArray."):
             regridder._apply_regrid("not a dataset", {})
 
+
 @pytest.mark.aqua
 def test_non_latlon_interpolation():
     """
     Test interpolation to a non regular grid,
     checking appropriate logging message
     """
-    reader = Reader(model="IFS", exp="test-tco79", source="short", regrid="F80",
-                    fix=True, loglevel=LOGLEVEL, rebuild=True)
+    reader = Reader(model="IFS", exp="test-tco79", source="short", regrid="F80", fix=True, loglevel=LOGLEVEL, rebuild=True)
 
-    data = reader.retrieve(var='2t')['2t'].isel(time=0).aqua.regrid()
+    data = reader.retrieve(var="2t")["2t"].isel(time=0).aqua.regrid()
 
     assert data.shape == (160, 320)
     assert data.values[0, 0] == pytest.approx(246.71156470963325)
 
+
 @pytest.mark.aqua
 def test_regrid_method():
     """Test different regridding method from the grid file"""
-    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly-nn", regrid="r100",
-                    fix=True, loglevel=LOGLEVEL, rebuild=True)
+    reader = Reader(
+        model="ERA5", exp="era5-hpz3", source="monthly-nn", regrid="r100", fix=True, loglevel=LOGLEVEL, rebuild=True
+    )
 
-    data = reader.retrieve(var='2t')['2t'].isel(time=0).aqua.regrid()
+    data = reader.retrieve(var="2t")["2t"].isel(time=0).aqua.regrid()
 
     assert data.shape == (180, 360)
     assert data.values[0, 0] == pytest.approx(242.4824981689453)
 
-    reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly-nn", regrid="r100",
-                    fix=True, loglevel=LOGLEVEL, rebuild=True, regrid_method="bil")
-    data = reader.retrieve(var='2t')['2t'].isel(time=0).aqua.regrid()
+    reader = Reader(
+        model="ERA5",
+        exp="era5-hpz3",
+        source="monthly-nn",
+        regrid="r100",
+        fix=True,
+        loglevel=LOGLEVEL,
+        rebuild=True,
+        regrid_method="bil",
+    )
+    data = reader.retrieve(var="2t")["2t"].isel(time=0).aqua.regrid()
 
     assert data.shape == (180, 360)
     assert data.values[0, 0] == pytest.approx(252.35510736926696)
+
 
 # missing test for ICON-Healpix

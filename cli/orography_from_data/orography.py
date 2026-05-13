@@ -19,10 +19,9 @@ outputdir = "./output"
 
 
 def main():
-    logger = log_configure(loglevel, 'Orography')
+    logger = log_configure(loglevel, "Orography")
 
-    reader = Reader(catalog=catalog, model=model, exp=exp, source=source,
-                    regrid=res, loglevel=loglevel)
+    reader = Reader(catalog=catalog, model=model, exp=exp, source=source, regrid=res, loglevel=loglevel)
 
     data = reader.retrieve(var=var)
 
@@ -38,5 +37,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

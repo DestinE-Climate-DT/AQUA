@@ -22,10 +22,7 @@ DEFAULT_COORD_NAMES = {
         "latitude",
         "lat",
     ],
-    "longitude": [
-        "longitude",
-        "lon"
-    ],
+    "longitude": ["longitude", "lon"],
     "time": ["time", "time_counter"],
     "isobaric": ["plev"],
     "depth": ["depth"],

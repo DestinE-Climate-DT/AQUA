@@ -10,7 +10,7 @@ class TestConfigStyle:
         Test that ConfigStyle class is correctly initialized
         with a matplotlib style
         """
-        style = 'ggplot'
+        style = "ggplot"
 
         cs = ConfigStyle(style=style)
         assert cs.style == style
@@ -20,11 +20,11 @@ class TestConfigStyle:
         Test that ConfigStyle class is correctly initialized with default style
         """
         cs = ConfigStyle()
-        assert cs.style == 'aqua'
+        assert cs.style == "aqua"
 
     def test_wrong_style(self):
         """
         Test that ConfigStyle class is correctly initialized with wrong style
         """
         with pytest.raises(OSError):
-            ConfigStyle(style='wrong_style')
+            ConfigStyle(style="wrong_style")

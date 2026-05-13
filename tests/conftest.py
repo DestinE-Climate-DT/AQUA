@@ -50,12 +50,16 @@ def pytest_configure(config):
 
 def pytest_sessionfinish(session, exitstatus):
     """
-    Runs once at the end of the entire test session (controller only with xdist).
-    Uses current configdir if available, otherwise falls back to cached one.
-    This prevents race conditions in parallel test.
+    Runs once at the end of the entire test session.
+    Cleanup only runs on the controller, after all workers
+    have finished, preventing deletion of files that other workers
+    still need.
     """
+    if getattr(session.config, "workerinput", None) is not None:
+        return  # skip cleanup on xdist workers; only controller cleans up
+
     # Get stored configdir from session.config (same object as config in pytest_configure)
-    stored_configdir = getattr(session.config, '_stored_configdir', None)
+    stored_configdir = getattr(session.config, "_stored_configdir", None)
 
     # Prefer current configdir, but fall back to stored one if ConfigPath() fails (e.g. HOME was deleted)
     cleanup_configdir = stored_configdir
@@ -75,6 +79,7 @@ def pytest_sessionfinish(session, exitstatus):
 # xdist: log worker -> test mapping (per test start/finish) for hang debugging
 # Log file: .pytest_cache/xdist_worker_tests.log
 # ======================================================================
+
 
 def _get_xdist_log_path(config):
     """Resolve the path for the xdist worker log file."""
@@ -146,53 +151,66 @@ def pytest_runtest_makereport(item, call):
 def ifs_tco79_short_reader():
     return Reader(model="IFS", exp="test-tco79", source="short", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_short_data(ifs_tco79_short_reader):
     return ifs_tco79_short_reader.retrieve()
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_short_data_2t(ifs_tco79_short_reader):
-    return ifs_tco79_short_reader.retrieve(var='2t')
+    return ifs_tco79_short_reader.retrieve(var="2t")
+
 
 @pytest.fixture(scope="session")
 def ifs_tco79_short_r100_reader():
     return Reader(model="IFS", exp="test-tco79", source="short", loglevel=LOGLEVEL, regrid="r100")
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_short_r100_data(ifs_tco79_short_r100_reader):
     return ifs_tco79_short_r100_reader.retrieve()
+
 
 @pytest.fixture(scope="session")
 def ifs_tco79_short_r200_reader():
     return Reader(model="IFS", exp="test-tco79", source="short", loglevel=LOGLEVEL, regrid="r200")
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_short_r200_data(ifs_tco79_short_r200_reader):
     return ifs_tco79_short_r200_reader.retrieve()
+
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long_fixfalse_reader():
     return Reader(model="IFS", exp="test-tco79", source="long", fix=False, loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_reader():
     return Reader(model="IFS", exp="test-tco79", source="long400", fix=False, loglevel=LOGLEVEL)
+
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long_fixfalse_data(ifs_tco79_long_fixfalse_reader):
     return ifs_tco79_long_fixfalse_reader.retrieve(var=["2t", "ttr"])
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_data(ifs_tco79_long400_fixfalse_reader):
     return ifs_tco79_long400_fixfalse_reader.retrieve(var=["2t", "ttr"])
+
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long_reader():
     return Reader(model="IFS", exp="test-tco79", source="long", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def ifs_tco79_long_data(ifs_tco79_long_reader):
     return ifs_tco79_long_reader.retrieve()
+
 
 # ======================================================================
 # FESOM fixtures
@@ -201,17 +219,21 @@ def ifs_tco79_long_data(ifs_tco79_long_reader):
 def fesom_test_pi_original_2d_reader():
     return Reader(model="FESOM", exp="test-pi", source="original_2d", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def fesom_test_pi_original_2d_data(fesom_test_pi_original_2d_reader):
-    return fesom_test_pi_original_2d_reader.retrieve(var='tos')
+    return fesom_test_pi_original_2d_reader.retrieve(var="tos")
+
 
 @pytest.fixture(scope="session")
 def fesom_test_pi_original_2d_r200_fixfalse_reader():
     return Reader(model="FESOM", exp="test-pi", source="original_2d", regrid="r200", fix=False, loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def fesom_test_pi_original_2d_r200_fixfalse_data(fesom_test_pi_original_2d_r200_fixfalse_reader):
     return fesom_test_pi_original_2d_r200_fixfalse_reader.retrieve()
+
 
 # ======================================================================
 # ICON fixtures
@@ -220,17 +242,21 @@ def fesom_test_pi_original_2d_r200_fixfalse_data(fesom_test_pi_original_2d_r200_
 def icon_test_healpix_short_reader():
     return Reader(model="ICON", exp="test-healpix", source="short", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def icon_test_healpix_short_data(icon_test_healpix_short_reader):
-    return icon_test_healpix_short_reader.retrieve(var='2t')
+    return icon_test_healpix_short_reader.retrieve(var="2t")
+
 
 @pytest.fixture(scope="session")
 def icon_test_r2b0_short_reader():
     return Reader(model="ICON", exp="test-r2b0", source="short", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def icon_test_r2b0_short_data(icon_test_r2b0_short_reader):
-    return icon_test_r2b0_short_reader.retrieve(var='t')
+    return icon_test_r2b0_short_reader.retrieve(var="t")
+
 
 # ======================================================================
 # NEMO fixtures
@@ -239,33 +265,40 @@ def icon_test_r2b0_short_data(icon_test_r2b0_short_reader):
 def nemo_test_e_orca1_long_2d_reader():
     return Reader(model="NEMO", exp="test-eORCA1", source="long-2d", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_long_2d_data(nemo_test_e_orca1_long_2d_reader):
-    return nemo_test_e_orca1_long_2d_reader.retrieve(var='tos')
+    return nemo_test_e_orca1_long_2d_reader.retrieve(var="tos")
+
 
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_short_3d_reader():
     return Reader(model="NEMO", exp="test-eORCA1", source="short-3d", loglevel=LOGLEVEL)
 
+
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_short_3d_data(nemo_test_e_orca1_short_3d_reader):
-    return nemo_test_e_orca1_short_3d_reader.retrieve(var='so')
+    return nemo_test_e_orca1_short_3d_reader.retrieve(var="so")
+
 
 # ======================================================================
 # ERA5 fixtures
 # ======================================================================
 @pytest.fixture(scope="session")
 def era5_hpz3_monthly_reader():
-    return Reader(model="ERA5", exp='era5-hpz3', source='monthly', loglevel=LOGLEVEL)
+    return Reader(model="ERA5", exp="era5-hpz3", source="monthly", loglevel=LOGLEVEL)
+
 
 @pytest.fixture(scope="session")
 def era5_hpz3_monthly_data(era5_hpz3_monthly_reader):
-    return era5_hpz3_monthly_reader.retrieve(var=['2t', 'tprate','q'])
+    return era5_hpz3_monthly_reader.retrieve(var=["2t", "tprate", "q"])
+
 
 @pytest.fixture(scope="session")
 def era5_hpz3_monthly_r100_reader():
-    return Reader(model="ERA5", exp='era5-hpz3', source='monthly', regrid="r100", loglevel=LOGLEVEL)
+    return Reader(model="ERA5", exp="era5-hpz3", source="monthly", regrid="r100", loglevel=LOGLEVEL)
+
 
 @pytest.fixture(scope="session")
 def era5_hpz3_monthly_r100_data(era5_hpz3_monthly_r100_reader):
-    return era5_hpz3_monthly_r100_reader.retrieve(var=['q'])
+    return era5_hpz3_monthly_r100_reader.retrieve(var=["q"])

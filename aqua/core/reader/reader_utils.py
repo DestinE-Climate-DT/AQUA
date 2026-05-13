@@ -1,4 +1,5 @@
 """Common functions for the Reader"""
+
 import xarray as xr
 
 
@@ -21,12 +22,12 @@ def check_catalog_source(cat, model, exp, source, name="dictionary"):
 
     if model not in cat:
         avail = list(cat.keys())
-        raise KeyError(f"Model {model} not found in {name}. "
-                       f"Please choose between available models: {avail}")
+        raise KeyError(f"Model {model} not found in {name}. Please choose between available models: {avail}")
     if exp not in cat[model]:
         avail = list(cat[model].keys())
-        raise KeyError(f"Experiment {exp} not found in {name} for model {model}. "
-                       f"Please choose between available exps: {avail}")
+        raise KeyError(
+            f"Experiment {exp} not found in {name} for model {model}. Please choose between available exps: {avail}"
+        )
     if not cat[model][exp].keys():
         raise KeyError(f"Experiment {exp} in {name} for model {model} has no sources.")
 
@@ -34,9 +35,11 @@ def check_catalog_source(cat, model, exp, source, name="dictionary"):
         if source not in cat[model][exp]:
             if "default" not in cat[model][exp]:
                 avail = list(cat[model][exp].keys())
-                raise KeyError(f"Source {source} of experiment {exp} "
-                               f"not found in {name} for model {model}. "
-                               f"Please choose between available sources: {avail}")
+                raise KeyError(
+                    f"Source {source} of experiment {exp} "
+                    f"not found in {name} for model {model}. "
+                    f"Please choose between available sources: {avail}"
+                )
             source = "default"
     else:
         source = list(cat[model][exp].keys())[0]  # take first source if none provided

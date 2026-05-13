@@ -8,29 +8,28 @@ from aqua import Reader
 
 loglevel = LOGLEVEL
 
-@pytest.fixture(
-    params=[
-        ("IFS", "test-tco79", "short_masked", "2t")
-    ]
-)
 
+@pytest.fixture(params=[("IFS", "test-tco79", "short_masked", "2t")])
 def reader_arguments(request):
     return request.param
 
-def double(x : xarray.Dataset) -> xarray.Dataset:
+
+def double(x: xarray.Dataset) -> xarray.Dataset:
     return x * 2
 
-def shift_time(x :xarray.Dataset) -> xarray.Dataset:
-    """ Shift the time of 10 years """
-    shifted_time = pd.to_datetime(x['time'].values) + pd.DateOffset(years=1)
+
+def shift_time(x: xarray.Dataset) -> xarray.Dataset:
+    """Shift the time of 10 years"""
+    shifted_time = pd.to_datetime(x["time"].values) + pd.DateOffset(years=1)
 
     shifted_data = x.copy(deep=True)
-    shifted_data['time'] = shifted_time
+    shifted_data["time"] = shifted_time
 
     return shifted_data
 
+
 @pytest.mark.aqua
-class TestPreproc():
+class TestPreproc:
     """Test different preprocessing functions"""
 
     def test_preproc_double(self, reader_arguments):
@@ -42,8 +41,7 @@ class TestPreproc():
         reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
         data = reader.retrieve()
 
-        reader_preproc = Reader(model=model, exp=exp, source=source,
-                                preproc=double, loglevel=loglevel)
+        reader_preproc = Reader(model=model, exp=exp, source=source, preproc=double, loglevel=loglevel)
         data_preproc = reader_preproc.retrieve()
 
         assert (data[variable] * 2).equals(data_preproc[variable])
@@ -57,9 +55,9 @@ class TestPreproc():
         reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
         data = reader.retrieve()
 
-        reader_preproc = Reader(model=model, exp=exp, source=source,
-                                preproc=shift_time, loglevel=loglevel)
+        reader_preproc = Reader(model=model, exp=exp, source=source, preproc=shift_time, loglevel=loglevel)
         data_preproc = reader_preproc.retrieve()
 
-        assert np.array_equal((pd.to_datetime(data['time'].values) + pd.DateOffset(years=1)).values,
-                             data_preproc['time'].values)
+        assert np.array_equal(
+            (pd.to_datetime(data["time"].values) + pd.DateOffset(years=1)).values, data_preproc["time"].values
+        )

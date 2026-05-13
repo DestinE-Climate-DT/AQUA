@@ -1,6 +1,7 @@
 """
 Module including time utilities for AQUA
 """
+
 import math
 import re
 
@@ -15,7 +16,7 @@ from aqua.core.logger import log_configure
 from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
 from aqua.core.util.string import get_quarter_anchor_month
 
-default_time_unit = 'us'  # default to microseconds for datetime64 for a wider dates range
+default_time_unit = "us"  # default to microseconds for datetime64 for a wider dates range
 
 
 def frequency_string_to_pandas(freq):
@@ -30,36 +31,36 @@ def frequency_string_to_pandas(freq):
     Returns:
         str: The converted frequency string, pandas compliant.
     """
-    logger = log_configure('WARNING', 'frequency_string_to_pandas')
+    logger = log_configure("WARNING", "frequency_string_to_pandas")
 
     if freq is None:
-        logger.debug('No frequency provided, returning None')
+        logger.debug("No frequency provided, returning None")
         return None
 
     trans = {
-        'hourly': 'h',
-        'daily': 'D',
-        'weekly': 'W',
-        'seasonal': 'QS-DEC',
-        'monthly': 'MS', #this implies start of the month
-        'annual': 'YS', #this implies start of the year
-        'yearly': 'YS', #this implies start of the year
-        'hour': 'h',
-        'day': 'D',
-        'pentad': '5d',
-        'week': 'W',
-        'month': 'MS',
-        'year': 'YS',
-        'hours': 'h',
-        'days': 'D',
-        'pentads': '5D',
-        'weeks': 'W',
-        'months': 'MS',
-        'years': 'YS',
+        "hourly": "h",
+        "daily": "D",
+        "weekly": "W",
+        "seasonal": "QS-DEC",
+        "monthly": "MS",  # this implies start of the month
+        "annual": "YS",  # this implies start of the year
+        "yearly": "YS",  # this implies start of the year
+        "hour": "h",
+        "day": "D",
+        "pentad": "5d",
+        "week": "W",
+        "month": "MS",
+        "year": "YS",
+        "hours": "h",
+        "days": "D",
+        "pentads": "5D",
+        "weeks": "W",
+        "months": "MS",
+        "years": "YS",
     }
 
     # Extract numerical prefix if present (e.g., "3hourly" -> "3" and "hourly")
-    match = re.match(r'^(\d+)(.+)$', freq)
+    match = re.match(r"^(\d+)(.+)$", freq)
     if match:
         number, base_freq = match.groups()
         translated = trans.get(base_freq, base_freq)
@@ -88,7 +89,7 @@ def xarray_to_pandas_freq(xdataset: xr.Dataset | xr.DataArray):
         str: The inferred time frequency as a string, pandas compliant.
     """
     # to check if this is necessary
-    timedelta = pd.Timedelta(xdataset.time.diff('time').mean().values)
+    timedelta = pd.Timedelta(xdataset.time.diff("time").mean().values)
 
     hours = math.floor(timedelta.total_seconds() / 3600)
     days = math.floor(hours / 24)
@@ -120,36 +121,36 @@ def pandas_freq_to_string(freq: str) -> str:
     """
     trans = {
         # Hourly
-        'H': 'hourly',
-        'h': 'hourly',
-        '1h': 'hourly',
-        'hourly': 'hourly',
+        "H": "hourly",
+        "h": "hourly",
+        "1h": "hourly",
+        "hourly": "hourly",
         # Daily
-        'D': 'daily',
-        'd': 'daily',
-        '1D': 'daily',
-        'daily': 'daily',
+        "D": "daily",
+        "d": "daily",
+        "1D": "daily",
+        "daily": "daily",
         # Weekly
-        'W': 'weekly',
-        'weekly': 'weekly',
+        "W": "weekly",
+        "weekly": "weekly",
         # Seasonal
-        'QS-DEC': 'seasonal',
-        'Q': 'seasonal',
+        "QS-DEC": "seasonal",
+        "Q": "seasonal",
         # Monthly
-        '1MS': 'monthly',
-        'MS': 'monthly',
-        'M': 'monthly',
-        'ME': 'monthly',
-        'mon': 'monthly',
-        'monthly': 'monthly',
+        "1MS": "monthly",
+        "MS": "monthly",
+        "M": "monthly",
+        "ME": "monthly",
+        "mon": "monthly",
+        "monthly": "monthly",
         # Annual
-        '1Y': 'annual',
-        'YS': 'annual',
-        'Y': 'annual',
-        'YE': 'annual',
-        'yearly': 'annual',
-        'years': 'annual',
-        'annual': 'annual'
+        "1Y": "annual",
+        "YS": "annual",
+        "Y": "annual",
+        "YE": "annual",
+        "yearly": "annual",
+        "years": "annual",
+        "annual": "annual",
     }
 
     return trans.get(freq, freq)
@@ -162,7 +163,7 @@ def _find_end_date(start_date, offset):
     start_date = pd.Timestamp(start_date)
     end_date = start_date + to_offset(offset)
     # this because to_offset does not go to next month/year
-    #if 'Y' in offset or 'M' in offset:
+    # if 'Y' in offset or 'M' in offset:
     #    end_date = end_date + pd.DateOffset(days=1)
     return end_date
 
@@ -174,7 +175,7 @@ def _generate_expected_time_series(start_date, frequency, time_period):
     """
 
     end_date = _find_end_date(start_date, time_period)
-    time_series = pd.date_range(start=start_date, end=end_date, freq=frequency, inclusive='left')
+    time_series = pd.date_range(start=start_date, end=end_date, freq=frequency, inclusive="left")
 
     return time_series
 
@@ -184,12 +185,12 @@ def _normalize_period_freq(freq: str) -> str:
     Convert a pandas frequency string to a Period-compatible frequency.
     Pandas 3.0+ is strict about using 'M' instead of 'MS', 'Y' instead of 'YS', etc.
     """
-    if freq.startswith('MS'):
-        return 'M'
-    if freq.startswith('YS'):
-        return 'Y'
-    if freq.startswith('QS'):
-        return 'Q'
+    if freq.startswith("MS"):
+        return "M"
+    if freq.startswith("YS"):
+        return "Y"
+    if freq.startswith("QS"):
+        return "Q"
     # Handle other cases if needed, but these are the ones causing failures
     return freq
 
@@ -201,31 +202,29 @@ def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     Returns:
         tuple: (data_frequency, chunks)
     """
-    logger = log_configure(loglevel, 'timmean_chunking')
+    logger = log_configure(loglevel, "timmean_chunking")
 
     # get frequency of the dataset. Expected to be regular!
     data_frequency = xarray_to_pandas_freq(xdataset)
-    logger.debug('Data frequency detected as: %s', data_frequency)
+    logger.debug("Data frequency detected as: %s", data_frequency)
 
     # Normalize to Period-compatible frequency (e.g. MS -> M)
     period_freq = _normalize_period_freq(resample_frequency)
     normalized_dates = xdataset.time.to_index().to_period(period_freq).to_timestamp()
-    chunks = pd.date_range(start=normalized_dates[0],
-                           end=normalized_dates[-1],
-                           freq=resample_frequency)
+    chunks = pd.date_range(start=normalized_dates[0], end=normalized_dates[-1], freq=resample_frequency)
 
-    logger.info('%s chunks from %s to %s at %s frequency to be analysed',
-                len(chunks), chunks[0],
-                chunks[-1], resample_frequency)
+    logger.info(
+        "%s chunks from %s to %s at %s frequency to be analysed", len(chunks), chunks[0], chunks[-1], resample_frequency
+    )
 
     # if no chunks, no averages
     if len(chunks) == 0:
-        raise ValueError(f'No chunks! Cannot compute average on {resample_frequency} period, not enough data')
+        raise ValueError(f"No chunks! Cannot compute average on {resample_frequency} period, not enough data")
 
     return data_frequency, chunks
 
 
-def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNING'):
+def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNING"):
     """
     Support function for timmean().
     Verify that all the chunks available in a dataset are complete given a
@@ -241,31 +240,34 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
 
     data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel)
 
-    logger = log_configure(loglevel, 'timmean_chunk_completeness')
+    logger = log_configure(loglevel, "timmean_chunk_completeness")
 
     check_completeness = []
 
     for chunk in chunks:
         end_date = _find_end_date(chunk, resample_frequency)
-        logger.debug('Processing chunk from %s to %s', chunk, end_date)
-        expected_timeseries = _generate_expected_time_series(chunk, data_frequency,
-                                                             resample_frequency)
+        logger.debug("Processing chunk from %s to %s", chunk, end_date)
+        expected_timeseries = _generate_expected_time_series(chunk, data_frequency, resample_frequency)
         expected_len = len(expected_timeseries)
 
-        effective_len = len(xdataset.time[(xdataset['time'] >= chunk) &
-                                          (xdataset['time'] < end_date)])
-        logger.debug('Expected chunk length: %s, Effective chunk length: %s', expected_len, effective_len)
+        effective_len = len(xdataset.time[(xdataset["time"] >= chunk) & (xdataset["time"] < end_date)])
+        logger.debug("Expected chunk length: %s, Effective chunk length: %s", expected_len, effective_len)
         if expected_len == effective_len:
             check_completeness.append(True)
         else:
-            logger.warning('Chunk %s->%s for has %s elements instead of expected %s, timmean() will exclude this',
-                           expected_timeseries[0], expected_timeseries[-1], effective_len, expected_len)
+            logger.warning(
+                "Chunk %s->%s for has %s elements instead of expected %s, timmean() will exclude this",
+                expected_timeseries[0],
+                expected_timeseries[-1],
+                effective_len,
+                expected_len,
+            )
             check_completeness.append(False)
 
     # build the binary mask
     taxis = xdataset.time.resample(time=resample_frequency).mean()
     if sum(check_completeness) == 0:
-        logger.warning('Not enough data to compute any average on %s period, returning empty array', resample_frequency)
+        logger.warning("Not enough data to compute any average on %s period, returning empty array", resample_frequency)
 
     # Create a dict mapping chunk dates to completeness flag
     completeness_dict = {pd.Timestamp(chunk): is_complete for chunk, is_complete in zip(chunks, check_completeness)}
@@ -273,12 +275,12 @@ def check_chunk_completeness(xdataset, resample_frequency='1D', loglevel='WARNIN
     # Align with the actual resampled time axis
     aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis.time.values]
 
-    boolean_mask = xr.DataArray(aligned_completeness, dims=('time',), coords={'time': taxis.time})
+    boolean_mask = xr.DataArray(aligned_completeness, dims=("time",), coords={"time": taxis.time})
 
     return boolean_mask
 
 
-def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', loglevel='WARNING'):
+def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", loglevel="WARNING"):
     """
     Support function for timmean() to check seasonal chunk completeness.
     Verify that all seasonal (quarterly) chunks have complete months.
@@ -302,48 +304,45 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
 
     anchor_month = get_quarter_anchor_month(resample_frequency)
 
-    logger = log_configure(loglevel, 'timmean_seasonal_completeness')
+    logger = log_configure(loglevel, "timmean_seasonal_completeness")
 
     # Generate quarter months: e.g. {'DEC': {'Q1': [12,1,2], 'Q2': [3,4,5], ...}}
     quarters_full = generate_quarter_months(anchor_month)
-    quarter_months = quarters_full[anchor_month] # e.g. {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], ...}
+    quarter_months = quarters_full[anchor_month]  # e.g. {'Q1': [12, 1, 2], 'Q2': [3, 4, 5], ...}
 
     # Build season_months: map from start_month
     # e.g., {12: {12, 1, 2}, 3: {3, 4, 5}, 6: {6, 7, 8}, 9: {9, 10, 11}}
     season_months = {}
-    for quarter_key in ['Q1', 'Q2', 'Q3', 'Q4']:
-        months_list = quarter_months[quarter_key] # e.g. [12, 1, 2]
+    for quarter_key in ["Q1", "Q2", "Q3", "Q4"]:
+        months_list = quarter_months[quarter_key]  # e.g. [12, 1, 2]
         start_month = months_list[0]
         season_months[start_month] = set(months_list)
 
-    if 'D' in data_frequency or 'h' in data_frequency:
-        logger.info('Data is sub-monthly (%s), first checking monthly completeness...', data_frequency)
-        monthly_mask = check_chunk_completeness(xdataset,
-                                                resample_frequency='MS',
-                                                loglevel=loglevel)
+    if "D" in data_frequency or "h" in data_frequency:
+        logger.info("Data is sub-monthly (%s), first checking monthly completeness...", data_frequency)
+        monthly_mask = check_chunk_completeness(xdataset, resample_frequency="MS", loglevel=loglevel)
         # Get only complete months, use .resample().mean() to get time axis
-        complete_month_times = xdataset.time.resample(time='MS').mean().time
+        complete_month_times = xdataset.time.resample(time="MS").mean().time
         complete_month_times = complete_month_times.where(monthly_mask, drop=True)
 
         # Store complete month-year combinations as timestamps
         complete_month_timestamps = set(complete_month_times.to_index())
-        logger.debug('Complete months available: %s', sorted(complete_month_timestamps))
+        logger.debug("Complete months available: %s", sorted(complete_month_timestamps))
     else:
         complete_month_timestamps = set(xdataset.time.to_index())
-        logger.debug('Retrieved data frequency is monthly or coarser, using all months')
+        logger.debug("Retrieved data frequency is monthly or coarser, using all months")
 
     check_completeness = []
     for chunk in chunks:
         end_date = _find_end_date(chunk, resample_frequency)
-        logger.debug('Processing seasonal chunk from %s to %s', chunk, end_date)
+        logger.debug("Processing seasonal chunk from %s to %s", chunk, end_date)
 
         # Determine which season this is based on the start month
         start_month = chunk.month
         expected_months = season_months.get(start_month, set())
 
         # Get actual months present in this quarter period
-        quarter_data = xdataset.time[(xdataset['time'] >= chunk) &
-                                     (xdataset['time'] < end_date)]
+        quarter_data = xdataset.time[(xdataset["time"] >= chunk) & (xdataset["time"] < end_date)]
 
         if len(quarter_data) == 0:
             actual_months = set()
@@ -355,13 +354,13 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
         has_all_months = expected_months.issubset(actual_months)
 
         # Additionally check that these months are complete
-        if 'D' in data_frequency or 'h' in data_frequency:
+        if "D" in data_frequency or "h" in data_frequency:
             # Check completeness for the specific months within this quarter period
             # Generate the expected month timestamps for this quarter
             quarter_start = pd.Timestamp(chunk)
             quarter_end = pd.Timestamp(end_date)
             # Get all month starts within this quarter e.g. [2024-12-01, 2025-01-01, 2025-02-01]
-            quarter_month_starts = pd.date_range(start=quarter_start, end=quarter_end, freq='MS', inclusive='left')
+            quarter_month_starts = pd.date_range(start=quarter_start, end=quarter_end, freq="MS", inclusive="left")
             # Check if all these specific month-year combinations are complete
             months_are_complete = quarter_month_starts.isin(complete_month_timestamps).all()
             is_complete = has_all_months and months_are_complete
@@ -373,14 +372,16 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
             check_completeness.append(True)
         else:
             season_name = mon_to_quarter_season_name(start_month)
-            logger.warning(f"Seasonal chunk {chunk.strftime('%Y-%m')} ({season_name}) incomplete: expected months "
-                           f"{sorted(expected_months)}, found {sorted(actual_months)}, timmean() will exclude this")
+            logger.warning(
+                f"Seasonal chunk {chunk.strftime('%Y-%m')} ({season_name}) incomplete: expected months "
+                f"{sorted(expected_months)}, found {sorted(actual_months)}, timmean() will exclude this"
+            )
             check_completeness.append(False)
 
     if sum(check_completeness) == 0:
         logger.warning(
-            f'Not enough data to compute any complete seasonal average on {resample_frequency} period, returning empty array'
-            )
+            f"Not enough data to compute any complete seasonal average on {resample_frequency} period, returning empty array"
+        )
 
     taxis = xdataset.time.resample(time=resample_frequency).mean()
 
@@ -390,12 +391,12 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency='QS-DEC', log
     # Align with the actual resampled time axis
     aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis.time.values]
 
-    boolean_mask = xr.DataArray(aligned_completeness, dims=('time',), coords={'time': taxis.time})
+    boolean_mask = xr.DataArray(aligned_completeness, dims=("time",), coords={"time": taxis.time})
 
     return boolean_mask
 
 
-def time_to_string(time=None, format='%Y-%m-%d'):
+def time_to_string(time=None, format="%Y-%m-%d"):
     """Convert a time object to a string in the format YYYY-MM-DD
 
     Args:
@@ -409,7 +410,7 @@ def time_to_string(time=None, format='%Y-%m-%d'):
         ValueError if time is None or if time is not a supported type
     """
     if time is None:
-        raise ValueError('time_to_string() requires a time argument')
+        raise ValueError("time_to_string() requires a time argument")
 
     # Timestap for safer string handling
     if isinstance(time, str):
@@ -418,7 +419,7 @@ def time_to_string(time=None, format='%Y-%m-%d'):
     if isinstance(time, (pd.Timestamp, np.datetime64)):
         ts = pd.to_datetime(time)
     else:
-        raise ValueError('time_to_string() requires a time argument of type str, pd.Timestamp or np.datetime64')
+        raise ValueError("time_to_string() requires a time argument of type str, pd.Timestamp or np.datetime64")
     return ts.strftime(format)
 
 
@@ -433,8 +434,20 @@ def int_month_name(month, abbreviated=False):
     Returns:
         str: The name of the month.
     """
-    name = ["January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"][month - 1]
+    name = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ][month - 1]
     return name[:3] if abbreviated else name
 
 
@@ -454,8 +467,7 @@ def mon_to_quarter_season_name(month):
             return season_name
 
 
-def fix_calendar(data: xr.Dataset | xr.DataArray,
-                 loglevel: str = 'WARNING') -> xr.Dataset | xr.DataArray:
+def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> xr.Dataset | xr.DataArray:
     """
     Fix calendar attribute in xarray Dataset or DataArray to ensure compatibility.
 
@@ -466,24 +478,24 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    default_calendar = 'gregorian'
+    default_calendar = "gregorian"
     # default_calendar_start = 'microseconds since 1850-01-01'
     unit = default_time_unit
 
-    logger = log_configure(loglevel, 'fix_calendar')
-    cal = data.time.encoding.get("calendar", "standard") if 'time' in data.coords else "standard"
-    logger.debug(f'Current calendar: {cal}')
+    logger = log_configure(loglevel, "fix_calendar")
+    cal = data.time.encoding.get("calendar", "standard") if "time" in data.coords else "standard"
+    logger.debug(f"Current calendar: {cal}")
 
     if cal.lower() not in ("gregorian", "standard", "proleptic_gregorian"):
-        if 'datetime64' in str(data.time.values.dtype):
+        if "datetime64" in str(data.time.values.dtype):
             unit = np.datetime_data(data.time.values.dtype)[0]
-            logger.debug(f'Time units detected as {unit} from datetime64 dtype')
+            logger.debug(f"Time units detected as {unit} from datetime64 dtype")
 
-        logger.info(f'Converting calendar from {cal} to {default_calendar} for data retrieval...')
-        data = data.convert_calendar(default_calendar, align_on='year')
+        logger.info(f"Converting calendar from {cal} to {default_calendar} for data retrieval...")
+        data = data.convert_calendar(default_calendar, align_on="year")
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
-        if (data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime)):
+        if data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime):
             logger.info(f"Rolling back cftime to datetime64[{default_time_unit}] after calendar conversion")
 
             np_time = cftime_to_nptime(data.time.values, time_unit=default_time_unit)
@@ -492,7 +504,7 @@ def fix_calendar(data: xr.Dataset | xr.DataArray,
         else:  # Still datetime64, ensure we keep original precision
             new_unit = np.datetime_data(data.time.values.dtype)[0]
             if unit != new_unit:
-                logger.info(f'Casting time precision from {new_unit} back to original {unit}...')
+                logger.info(f"Casting time precision from {new_unit} back to original {unit}...")
                 data = data.assign_coords(time=data.time.astype(f"datetime64[{unit}]"))
 
     return data

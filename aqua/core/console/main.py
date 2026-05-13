@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
 AQUA command line main functions
-'''
+"""
 
 import os
 from importlib import resources as pypath
@@ -29,56 +29,48 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         """The main AQUA command line interface"""
 
         # NOTE: self.corepath points to $AQUA/aqua/core/config folder
-        self.corepath = os.path.join(pypath.files('aqua.core'), 'config')
+        self.corepath = os.path.join(pypath.files("aqua.core"), "config")
         if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATE_DIRECTORIES:
-            self.diagpath = os.path.join(pypath.files('aqua.diagnostics'), 'config')
+            self.diagpath = os.path.join(pypath.files("aqua.diagnostics"), "config")
         else:
             self.diagpath = None
         self.configpath = None
         self.templatepath = None
-        self.configfile = 'config-aqua.yaml'
+        self.configfile = "config-aqua.yaml"
         self.grids = None
         self.logger = None
-        self.loglevel = 'WARNING'
+        self.loglevel = "WARNING"
 
         self.command_map = {
-            'install': self.install,
-            'add': self.add,
-            'remove': self.remove,
-            'set': self.set,
-            'uninstall': self.uninstall,
-            'avail': self.avail,
-            'list': self.list,
-            'update': self.update,
-            'fixes': {
-                'add': self.fixes_add,
-                'remove': self.remove_file
-            },
-            'grids': {
-                'add': self.grids_add,
-                'remove': self.remove_file,
-                'set': self.grids_set,
-                'build': self.grids_build
-            },
-            'analysis': self.analysis,
-            'drop': self.drop,
-            'catgen': self.catgen
+            "install": self.install,
+            "add": self.add,
+            "remove": self.remove,
+            "set": self.set,
+            "uninstall": self.uninstall,
+            "avail": self.avail,
+            "list": self.list,
+            "update": self.update,
+            "fixes": {"add": self.fixes_add, "remove": self.remove_file},
+            "grids": {"add": self.grids_add, "remove": self.remove_file, "set": self.grids_set, "build": self.grids_build},
+            "analysis": self.analysis,
+            "drop": self.drop,
+            "catgen": self.catgen,
         }
 
     def execute(self):
         """Parse AQUA class and run the required command"""
 
         parser_dict = parse_arguments()
-        parser = parser_dict['main']
+        parser = parser_dict["main"]
         args = parser.parse_args()
 
         # Set the log level
         if args.very_verbose or (args.verbose and args.very_verbose):
-            self.loglevel = 'DEBUG'
+            self.loglevel = "DEBUG"
         elif args.verbose:
-            self.loglevel = 'INFO'
+            self.loglevel = "INFO"
 
-        self.logger = log_configure(self.loglevel, 'AQUA')
+        self.logger = log_configure(self.loglevel, "AQUA")
 
         command = args.command
         method = self.command_map.get(command, parser.print_help)
@@ -104,7 +96,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             args (argparse.Namespace): arguments from the command line
         """
 
-        print('Running the AQUA analysis')
+        print("Running the AQUA analysis")
         analysis_execute(args)
 
     def drop(self, args):
@@ -115,7 +107,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             args (argparse.Namespace): arguments from the command line
         """
 
-        print('Running the Data Reduction OPerator')
+        print("Running the Data Reduction OPerator")
         drop_execute(args)
 
     def catgen(self, args):
@@ -135,7 +127,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        print('Running AQUA grids builder')
+        print("Running AQUA grids builder")
         builder_execute(args)
 
 

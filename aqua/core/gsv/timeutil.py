@@ -18,7 +18,8 @@ def date2str(dateobj):
         date, time (str): Date and time as a strings
     """
 
-    return dateobj.strftime('%Y%m%d'), dateobj.strftime('%H%M')
+    return dateobj.strftime("%Y%m%d"), dateobj.strftime("%H%M")
+
 
 def date2yyyymm(dateobj):
     """
@@ -31,7 +32,7 @@ def date2yyyymm(dateobj):
         year, month (str): Date as year and month
     """
 
-    return dateobj.strftime('%Y'), dateobj.strftime('%m')
+    return dateobj.strftime("%Y"), dateobj.strftime("%m")
 
 
 def add_offset(data_start_date, startdate, offset, timestep):
@@ -58,7 +59,7 @@ def add_offset(data_start_date, startdate, offset, timestep):
         if startdate_obj > base_date:
             base_date = startdate_obj
 
-        return base_date.strftime('%Y%m%dT%H%M')
+        return base_date.strftime("%Y%m%dT%H%M")
     else:
         return startdate
 
@@ -77,10 +78,10 @@ def check_dates(startdate, start_date, enddate, end_date):
         ValueError: If the given date is not within the data range
     """
 
-    startdate_fmt = "%Y%m%dT%H%M" if 'T' in str(startdate) else "%Y%m%d"
-    start_date_fmt = "%Y%m%dT%H%M" if 'T' in str(start_date) else "%Y%m%d"
-    enddate_fmt = "%Y%m%dT%H%M" if 'T' in str(enddate) else "%Y%m%d"
-    end_date_fmt = "%Y%m%dT%H%M" if 'T' in str(end_date) else "%Y%m%d"
+    startdate_fmt = "%Y%m%dT%H%M" if "T" in str(startdate) else "%Y%m%d"
+    start_date_fmt = "%Y%m%dT%H%M" if "T" in str(start_date) else "%Y%m%d"
+    enddate_fmt = "%Y%m%dT%H%M" if "T" in str(enddate) else "%Y%m%d"
+    end_date_fmt = "%Y%m%dT%H%M" if "T" in str(end_date) else "%Y%m%d"
 
     if datetime.strptime(str(startdate), startdate_fmt) < datetime.strptime(str(start_date), start_date_fmt):
         raise ValueError(f"Starting date {str(startdate)} is earlier than the data start at {str(start_date)}.")
@@ -118,14 +119,23 @@ def split_date(datestr, timedefault="0000"):
         date and time as str
     """
 
-    dd = str(datestr).split('T')
+    dd = str(datestr).split("T")
     timestr = dd[1] if "T" in str(datestr) else timedefault
     return dd[0], timestr
 
 
-def make_timeaxis(data_startdate, startdate, enddate, timestep=None,
-                  savefreq=None, chunkfreq=None, shiftmonth=False, skiplast=False,
-                  bridge_start_date=None, bridge_end_date=None):
+def make_timeaxis(
+    data_startdate,
+    startdate,
+    enddate,
+    timestep=None,
+    savefreq=None,
+    chunkfreq=None,
+    shiftmonth=False,
+    skiplast=False,
+    bridge_start_date=None,
+    bridge_end_date=None,
+):
     """
     Compute timeaxis and chunk start and end dates and indices.
 
@@ -213,14 +223,14 @@ def make_timeaxis(data_startdate, startdate, enddate, timestep=None,
         chunktype_end = np.zeros(len(dates), dtype=int)
 
     return {
-        'timeaxis': dates[idx],
-        'start_idx': sidx + offset,
-        'start_date': sdate,
-        'end_idx': eidx + offset,
-        'end_date': edate,
-        'size': chunksize,
-        'type': chunktype,
-        'type_end': chunktype_end  # this is used only for chunk alignment sanity check
+        "timeaxis": dates[idx],
+        "start_idx": sidx + offset,
+        "start_date": sdate,
+        "end_idx": eidx + offset,
+        "end_date": edate,
+        "size": chunksize,
+        "type": chunktype,
+        "type_end": chunktype_end,  # this is used only for chunk alignment sanity check
     }
 
 
@@ -244,12 +254,13 @@ def read_bridge_date(obj):
     """
 
     if obj and obj != "complete" and os.path.isfile(obj):
-        with open(obj, 'r') as file:
+        with open(obj, "r") as file:
             date = file.read()
         date = pd.Timestamp(date.strip())
-        return date.strftime('%Y%m%dT%H%M')
+        return date.strftime("%Y%m%dT%H%M")
     else:
         return obj
+
 
 def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
     """
@@ -268,20 +279,20 @@ def floor_datetime(dt, freq, output_format="%Y%m%dT%H%M"):
     # safety checks
     if dt is None:
         return dt
-    if dt == 'complete':
+    if dt == "complete":
         return dt
 
     if not isinstance(dt, pd.Timestamp):
         dt = pd.Timestamp(str(dt))
 
-    if freq in ['M', 'MS']:  # Floor to the first of the month
+    if freq in ["M", "MS"]:  # Floor to the first of the month
         dt = pd.Timestamp(dt.year, dt.month, 1)
-    elif freq in ['Y', 'YS']:  # Floor to the first of the year
+    elif freq in ["Y", "YS"]:  # Floor to the first of the year
         dt = pd.Timestamp(dt.year, 1, 1)
-    elif freq in ['ME', 'YE']:
-        raise KeyError(f'Freq {freq} is not supported, please use {freq[0]}S')
-    elif 'W' in freq:
-        raise KeyError('Weekly frequency not supported')
+    elif freq in ["ME", "YE"]:
+        raise KeyError(f"Freq {freq} is not supported, please use {freq[0]}S")
+    elif "W" in freq:
+        raise KeyError("Weekly frequency not supported")
     else:
         dt = dt.floor(freq)
 

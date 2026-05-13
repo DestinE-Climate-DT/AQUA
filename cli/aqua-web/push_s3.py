@@ -37,6 +37,7 @@ def get_file_from_s3(client, bucket_name, object_name, dest_path):
             # Any other error
             sys.exit(3)
 
+
 def upload_file_to_s3(client, bucket_name, file_path, object_name):
     """Upload a single file to an S3 bucket."""
     try:
@@ -54,6 +55,7 @@ def upload_file_to_s3(client, bucket_name, file_path, object_name):
             # Any other error
             sys.exit(3)
 
+
 def upload_directory_to_s3(client, bucket_name, source, dest):
     """Upload the contents of a directory to an S3 bucket."""
 
@@ -66,6 +68,7 @@ def upload_directory_to_s3(client, bucket_name, source, dest):
             else:
                 dest_path = file_path
             upload_file_to_s3(client, bucket_name, file_path, dest_path)
+
 
 def main():
     """Parse command-line arguments and upload a directory or single file to an S3 bucket.
@@ -92,12 +95,14 @@ def main():
 
     args = parser.parse_args()
 
-    config = Config(signature_version='s3')
-    s3 = boto3.client('s3',
-                      aws_access_key_id=args.aws_access_key_id,
-                      aws_secret_access_key=args.aws_secret_access_key,
-                      endpoint_url=args.endpoint_url,
-                      config=config)
+    config = Config(signature_version="s3")
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=args.aws_access_key_id,
+        aws_secret_access_key=args.aws_secret_access_key,
+        endpoint_url=args.endpoint_url,
+        config=config,
+    )
 
     if args.get:  # Download a single file from the S3 bucket
         if args.destination:
@@ -115,6 +120,7 @@ def main():
                 dest_path = os.path.basename(args.source)
 
             upload_file_to_s3(s3, args.bucket_name, args.source, dest_path)
+
 
 if __name__ == "__main__":
     main()

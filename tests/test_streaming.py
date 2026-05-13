@@ -10,20 +10,23 @@ from aqua import Reader
 approx_rel = APPROX_REL
 loglevel = LOGLEVEL
 
+
 # streaming class for tests
 @pytest.mark.aqua
 class TestAquaStreaming:
     """The streaming testing class"""
 
-    @pytest.fixture(scope="function",
-                    params=[{"aggregation": '3S', "startdate": "2020-01-20"},
-                            {"aggregation": 'daily', "startdate": "2020-05-01"},
-                            {"aggregation": '3D', "startdate": "2020-05-01", "enddate": "2020-05-02"}
-                            ])
+    @pytest.fixture(
+        scope="function",
+        params=[
+            {"aggregation": "3S", "startdate": "2020-01-20"},
+            {"aggregation": "daily", "startdate": "2020-05-01"},
+            {"aggregation": "3D", "startdate": "2020-05-01", "enddate": "2020-05-02"},
+        ],
+    )
     def reader_instance_with_args(self, request):
         req = request.param
-        req.update({"streaming": True, "model": "IFS", "exp": "test-tco79",
-                    "source": "long", "fix": False, "regrid":False})
+        req.update({"streaming": True, "model": "IFS", "exp": "test-tco79", "source": "long", "fix": False, "regrid": False})
         return Reader(**req)
 
     def test_stream(self, reader_instance_with_args):
@@ -34,11 +37,11 @@ class TestAquaStreaming:
 
         reader = reader_instance_with_args
 
-        if 'S' in reader.aggregation:
+        if "S" in reader.aggregation:
             offset = pd.DateOffset(**{"hours": 3})
-        if 'D' in reader.aggregation:
+        if "D" in reader.aggregation:
             offset = pd.DateOffset(**{"days": 3})
-        if 'daily' in reader.aggregation:
+        if "daily" in reader.aggregation:
             offset = pd.DateOffset(**{"days": 1})
 
         step = pd.DateOffset(hours=1)
@@ -49,14 +52,14 @@ class TestAquaStreaming:
         else:
             end_date = start_date + offset
 
-        dates = pd.date_range(start=start_date, end=end_date, freq='h')
+        dates = pd.date_range(start=start_date, end=end_date, freq="h")
 
         num_hours = (dates[-1] - dates[0]).total_seconds() / 3600
 
         data = reader.retrieve()
 
-         # Test if it has the right size
-        assert data['2t'].shape == (num_hours, 9, 18)
+        # Test if it has the right size
+        assert data["2t"].shape == (num_hours, 9, 18)
 
         # Test if starting date is ok
         assert data.time.values[0] == pd.to_datetime(start_date)

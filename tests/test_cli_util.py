@@ -14,6 +14,7 @@ def test_template_parse_arguments():
     parser = argparse.ArgumentParser()
     parser = template_parse_arguments(parser)
 
+    # fmt: off
     # Parse with all arguments
     args = parser.parse_args([
         '--loglevel', 'INFO',
@@ -30,20 +31,20 @@ def test_template_parse_arguments():
         '--startdate', '2020-01-01',
         '--enddate', '2020-12-31'
     ])
-
-    assert args.loglevel == 'INFO'
-    assert args.catalog == 'test_catalog'
-    assert args.model == 'IFS'
-    assert args.exp == 'test-exp'
-    assert args.source == 'monthly'
-    assert args.realization == 'r1'
-    assert args.config == 'config.yaml'
+    # fmt: on
+    assert args.loglevel == "INFO"
+    assert args.catalog == "test_catalog"
+    assert args.model == "IFS"
+    assert args.exp == "test-exp"
+    assert args.source == "monthly"
+    assert args.realization == "r1"
+    assert args.config == "config.yaml"
     assert args.nworkers == 2
-    assert args.cluster == 'tcp://127.0.0.1:8786'
-    assert args.regrid == 'r100'
-    assert args.outputdir == '/tmp/output'
-    assert args.startdate == '2020-01-01'
-    assert args.enddate == '2020-12-31'
+    assert args.cluster == "tcp://127.0.0.1:8786"
+    assert args.regrid == "r100"
+    assert args.outputdir == "/tmp/output"
+    assert args.startdate == "2020-01-01"
+    assert args.enddate == "2020-12-31"
 
 
 def test_template_parse_arguments_optional():

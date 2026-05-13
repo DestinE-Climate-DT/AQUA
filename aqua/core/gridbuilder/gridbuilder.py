@@ -1,4 +1,5 @@
 """Module for aqua grid build"""
+
 import os
 from typing import Any, Optional
 
@@ -16,29 +17,30 @@ from .extragridbuilder import (
 from .gridentrymanager import GridEntryManager
 
 
-class GridBuilder():
+class GridBuilder:
     """
     Class to build automatically grids from data sources.
     Currently tested with HEALPix grids and can be extended for other grid types.
     """
+
     GRIDTYPE_REGISTRY = {
-        'HEALPix': HealpixGridBuilder,
-        'Regular': RegularGridBuilder,
-        'Unstructured': UnstructuredGridBuilder,
-        'Curvilinear': CurvilinearGridBuilder,
-        'GaussianRegular': GaussianRegularGridBuilder,
+        "HEALPix": HealpixGridBuilder,
+        "Regular": RegularGridBuilder,
+        "Unstructured": UnstructuredGridBuilder,
+        "Curvilinear": CurvilinearGridBuilder,
+        "GaussianRegular": GaussianRegularGridBuilder,
         # Add more grid types here as needed
     }
 
     def __init__(
         self,
-        outdir: str = '.',
+        outdir: str = ".",
         model_name: Optional[str] = None,
         grid_name: Optional[str] = None,
         original_resolution: Optional[str] = None,
         vert_coord: Optional[str] = None,
         force_unstructured: bool = False,
-        loglevel: str = 'warning'
+        loglevel: str = "warning",
     ) -> None:
         """
         Initialize the GridBuilder with a reader instance.
@@ -64,7 +66,7 @@ class GridBuilder():
         self.grid_name = grid_name
 
         # Log level configuration
-        self.logger = log_configure(log_level=loglevel, log_name='GridBuilder')
+        self.logger = log_configure(log_level=loglevel, log_name="GridBuilder")
         self.loglevel = loglevel
 
         # Vertical coordinates to consider for the grid build for the 3d case.
@@ -78,7 +80,7 @@ class GridBuilder():
             model_name=self.model_name,
             grid_name=self.grid_name,
             original_resolution=self.original_resolution,
-            loglevel=loglevel
+            loglevel=loglevel,
         )
 
     def build(self, data, rebuild=False, version=None, verify=True, create_yaml=True):
@@ -99,10 +101,7 @@ class GridBuilder():
             return
         self.logger.info("Build on %s gridtypes", len(gridtypes))
         for gridtype in gridtypes:
-            self._build_gridtype(
-                data, gridtype, rebuild=rebuild,
-                version=version, verify=verify,
-                create_yaml=create_yaml)
+            self._build_gridtype(data, gridtype, rebuild=rebuild, version=version, verify=verify, create_yaml=create_yaml)
 
     def _build_gridtype(
         self,
@@ -111,7 +110,7 @@ class GridBuilder():
         rebuild: bool = False,
         version: Optional[int] = None,
         verify: bool = True,
-        create_yaml: bool = True
+        create_yaml: bool = True,
     ) -> None:
         """
         Build the grid data based on the detected grid type.
@@ -119,7 +118,7 @@ class GridBuilder():
         self.logger.info("Detected grid type: %s", gridtype)
         if self.force_unstructured:
             self.logger.info("Forcing unstructured grid type")
-            gridtype.kind = 'Unstructured'
+            gridtype.kind = "Unstructured"
         kind = gridtype.kind
         self.logger.info("Grid type is: %s", kind)
 
@@ -135,18 +134,21 @@ class GridBuilder():
 
         # Initialize the builder
         builder = builder_class(
-            vert_coord=vert_coord, model_name=self.model_name, grid_name=self.grid_name,
-            original_resolution=self.original_resolution, loglevel=self.loglevel
+            vert_coord=vert_coord,
+            model_name=self.model_name,
+            grid_name=self.grid_name,
+            original_resolution=self.original_resolution,
+            loglevel=self.loglevel,
         )
 
         # Data reduction. Load the data into memory for convenience.
         data3d = builder.data_reduction(data, gridtype, vert_coord).load()
 
         # Add history attribute, get metadata from the attributes
-        exp = data3d['mask'].attrs.get('AQUA_exp', None)
-        source = data3d['mask'].attrs.get('AQUA_source', None)
-        model = data3d['mask'].attrs.get('AQUA_model', None)
-        log_history(data3d, msg=f'Gridfile generated with GridBuilder from {model}_{exp}_{source}')
+        exp = data3d["mask"].attrs.get("AQUA_exp", None)
+        source = data3d["mask"].attrs.get("AQUA_source", None)
+        model = data3d["mask"].attrs.get("AQUA_model", None)
+        log_history(data3d, msg=f"Gridfile generated with GridBuilder from {model}_{exp}_{source}")
 
         # Store the data in a temporary netcdf file
         filename_tmp = f"{self.model_name}_{exp}_{source}.nc"
@@ -166,8 +168,8 @@ class GridBuilder():
         # Get the basename and metadata for the grid file
         # need to read grid property from 2d data
         metadata = builder.get_metadata(data2d)
-        aquagrid = metadata['aquagrid']
-        cdogrid = metadata['cdogrid']
+        aquagrid = metadata["aquagrid"]
+        cdogrid = metadata["cdogrid"]
         self.logger.debug("Grid metadata: %s", metadata)
 
         # Initialize GridEntryManager for this gridtype
@@ -183,22 +185,20 @@ class GridBuilder():
             filename = f"{basepath}.nc"
             if os.path.exists(filename):
                 if rebuild:
-                    self.logger.warning('File %s already exists, removing it', filename)
+                    self.logger.warning("File %s already exists, removing it", filename)
                     os.remove(filename)
                 else:
                     self.logger.error("File %s already exists, skipping", filename)
                     return
 
             # Write the grid file with the class specific method
-            builder.write_gridfile(
-                input_file=filename_tmp, output_file=filename, metadata=metadata
-            )
+            builder.write_gridfile(input_file=filename_tmp, output_file=filename, metadata=metadata)
         else:
             self.logger.warning("CDO grid %s detected without mask, skipping physical file creation for %s", cdogrid, basename)
             filename = cdogrid
 
         # Cleanup
-        self.logger.info('Removing temporary file %s', filename_tmp)
+        self.logger.info("Removing temporary file %s", filename_tmp)
         os.remove(filename_tmp)
 
         # Verify the creation of the weights
@@ -210,10 +210,13 @@ class GridBuilder():
             gridfile = self.gem.get_gridfilename(cdogrid, kind)
             self.logger.info("Creating grid entry in %s", gridfile)
             grid_entry_name = self.gem.create_grid_entry_name(aquagrid, cdogrid, masked, vert_coord)
-            cdo_options = metadata.get('cdo_options') if metadata else None
-            remap_method = metadata.get('remap_method') if metadata else None
+            cdo_options = metadata.get("cdo_options") if metadata else None
+            remap_method = metadata.get("remap_method") if metadata else None
             grid_block = self.gem.create_grid_entry_block(
-                filename, horizontal_dims=gridtype.horizontal_dims, cdo_options=cdo_options, remap_method=remap_method,
-                vert_coord=vert_coord
+                filename,
+                horizontal_dims=gridtype.horizontal_dims,
+                cdo_options=cdo_options,
+                remap_method=remap_method,
+                vert_coord=vert_coord,
             )
             self.gem.create_grid_entry(gridfile, grid_entry_name, grid_block, rebuild=rebuild)

@@ -38,16 +38,16 @@ def create_folder(folder, loglevel="WARNING"):
     Returns:
         None
     """
-    logger = log_configure(loglevel, 'create_folder')
+    logger = log_configure(loglevel, "create_folder")
 
     if not os.path.exists(folder):
-        logger.info('Creating folder %s', folder)
+        logger.info("Creating folder %s", folder)
         os.makedirs(folder, exist_ok=True)
     else:
-        logger.info('Folder %s already exists', folder)
+        logger.info("Folder %s already exists", folder)
 
 
-def file_is_complete(filename, loglevel='WARNING'):
+def file_is_complete(filename, loglevel="WARNING"):
     """
     Basic check to see if file exists and that includes values
     which are not NaN in its first variabiles
@@ -62,14 +62,14 @@ def file_is_complete(filename, loglevel='WARNING'):
         A boolean flag (True for file ok, False for file corrupted)
     """
 
-    logger = log_configure(loglevel, 'file_is_complete')
+    logger = log_configure(loglevel, "file_is_complete")
 
     # check file existence
     if not os.path.isfile(filename):
-        logger.info('File %s not found...', filename)
+        logger.info("File %s not found...", filename)
         return False
 
-    logger.info('File %s is found...', filename)
+    logger.info("File %s is found...", filename)
 
     # check opening
     try:
@@ -77,7 +77,7 @@ def file_is_complete(filename, loglevel='WARNING'):
 
         # check variables
         if len(xfield.data_vars) == 0:
-            logger.error('File %s has no variables!', filename)
+            logger.error("File %s has no variables!", filename)
             return False
 
         # check on a single variable
@@ -85,46 +85,46 @@ def file_is_complete(filename, loglevel='WARNING'):
 
         # all NaN case
         if xfield[varname].isnull().all():
-
             # case of a mindate on all NaN single files
-            mindate = xfield[varname].attrs.get('mindate')
+            mindate = xfield[varname].attrs.get("mindate")
             if mindate is not None:
-                logger.warning('All NaN and mindate found: %s', mindate)
+                logger.warning("All NaN and mindate found: %s", mindate)
                 if xfield[varname].time.max() < np.datetime64(mindate):
-                    logger.info('File %s is full of NaN but it is ok according to mindate', filename)
+                    logger.info("File %s is full of NaN but it is ok according to mindate", filename)
                     return True
 
-                logger.error('File %s is full of NaN and not ok according to mindate', filename)
+                logger.error("File %s is full of NaN and not ok according to mindate", filename)
                 return False
 
-            logger.error('File %s is empty or full of NaN! Recomputing...', filename)
+            logger.error("File %s is empty or full of NaN! Recomputing...", filename)
             return False
 
         # some NaN case
-        mydims = [dim for dim in xfield[varname].dims if dim != 'time']
+        mydims = [dim for dim in xfield[varname].dims if dim != "time"]
         nan_count = np.isnan(xfield[varname]).sum(dim=mydims)
         if all(value == nan_count[0] for value in nan_count):
-            logger.info('File %s seems ok!', filename)
+            logger.info("File %s seems ok!", filename)
             return True
 
         # case of a mindate on some NaN
-        mindate = xfield[varname].attrs.get('mindate')
+        mindate = xfield[varname].attrs.get("mindate")
         if mindate is not None:
-            logger.warning('Some NaN and mindate found: %s', mindate)
+            logger.warning("Some NaN and mindate found: %s", mindate)
             last_nan = xfield.time[np.where(nan_count == nan_count[0])].max()
             if np.datetime64(mindate) > last_nan:
-                logger.info('File %s has some of NaN up to %s but it is ok according to mindate %s',
-                            filename, last_nan.values, mindate)
+                logger.info(
+                    "File %s has some of NaN up to %s but it is ok according to mindate %s", filename, last_nan.values, mindate
+                )
                 return True
 
-            logger.error('File %s has some NaN bit it is not ok according to mindate', filename)
+            logger.error("File %s has some NaN bit it is not ok according to mindate", filename)
             return False
 
-        logger.error('File %s has at least one time step with NaN! Recomputing...', filename)
+        logger.error("File %s has at least one time step with NaN! Recomputing...", filename)
         return False
 
     except Exception as e:
-        logger.error('Something wrong with file %s! Recomputing... Error: %s', filename, e)
+        logger.error("Something wrong with file %s! Recomputing... Error: %s", filename, e)
         return False
 
 
@@ -132,7 +132,7 @@ def normalize_key(key: str) -> str:
     """
     Normalize metadata key by removing leading '/' and converting to lowercase.
     """
-    return key.lstrip('/').lower()
+    return key.lstrip("/").lower()
 
 
 def normalize_value(value):
@@ -160,7 +160,7 @@ def normalize_value(value):
                     return {normalize_key(k): normalize_value(v) for k, v in parsed_value.items()}
             except Exception as e:
                 # Log parsing errors and return the original string if parsing fails
-                log_configure('WARNING', 'normalize_value').warning(f"Failed to parse string as dictionary: {e}")
+                log_configure("WARNING", "normalize_value").warning(f"Failed to parse string as dictionary: {e}")
 
     # Return the value as-is if it can't be processed further
     return value
@@ -185,8 +185,8 @@ def update_metadata(metadata: dict = None, additional_metadata: dict = None) -> 
     # Add current date and time to metadata
     now = pd.Timestamp.now()
     date_now = now.strftime("%Y-%m-%d %H:%M:%S")
-    metadata['timestamp'] = date_now
-    metadata['aqua_version'] = version
+    metadata["timestamp"] = date_now
+    metadata["aqua_version"] = version
 
     # Add additional metadata fields
     if additional_metadata:

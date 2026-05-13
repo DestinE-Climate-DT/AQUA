@@ -12,7 +12,7 @@ def generate_random_string(length):
     Generate a random string of lowercase and uppercase letters and digits
     """
     letters_and_digits = string.ascii_letters + string.digits
-    random_string = ''.join(random.choice(letters_and_digits) for _ in range(length))
+    random_string = "".join(random.choice(letters_and_digits) for _ in range(length))
     return random_string
 
 
@@ -58,9 +58,9 @@ def get_quarter_anchor_month(freq_string: str) -> str:
     Returns:
         str: The anchor month.
     """
-    if '-' in freq_string:
-        return freq_string.split('-')[1]
-    return 'DEC'
+    if "-" in freq_string:
+        return freq_string.split("-")[1]
+    return "DEC"
 
 
 def clean_filename(filename: str) -> str:
@@ -73,7 +73,7 @@ def clean_filename(filename: str) -> str:
     Returns:
         str: Filename with spaces replaced by '_' and forced lowercase.
     """
-    return filename.replace(' ', '_').lower()
+    return filename.replace(" ", "_").lower()
 
 
 def extract_literal_and_numeric(text):
@@ -81,7 +81,7 @@ def extract_literal_and_numeric(text):
     Given a string, extract its literal and numeric part
     """
     # Using regular expression to find alphabetical characters and digits in the text
-    match = re.search(r'(\d*)([A-Za-z]+)', text)
+    match = re.search(r"(\d*)([A-Za-z]+)", text)
 
     if match:
         # If a match is found, return the literal and numeric parts
@@ -118,28 +118,28 @@ def unit_to_latex(unit_str):
     s = unit_str.strip()
 
     # Preserve if already in LaTeX format
-    if any(x in s for x in ['$', '\\', '{']):
+    if any(x in s for x in ["$", "\\", "{"]):
         return s
 
     # Handle pure numeric units (e.g., "1" for dimensionless)
-    if re.match(r'^\d+$', s):
+    if re.match(r"^\d+$", s):
         return s
 
     # Replace ** with ^ for consistency; e.g. m**2 -> m^2
-    s = s.replace('**', '^')
+    s = s.replace("**", "^")
 
     # Handle grouped division; e.g. W/(m^2 s) -> W / m^2 / s
     def _repl_div_group(match):
         content = match.group(1)
-        return '/' + content.replace(' ', '/')
+        return "/" + content.replace(" ", "/")
 
-    s = re.sub(r'/\s*\(([^)]+)\)', _repl_div_group, s)
+    s = re.sub(r"/\s*\(([^)]+)\)", _repl_div_group, s)
 
     # Remove any remaining parentheses
-    s = s.replace('(', '').replace(')', '')
+    s = s.replace("(", "").replace(")", "")
 
     # Split by '/' to handle division
-    parts = s.split('/')
+    parts = s.split("/")
 
     latex_parts = []
     # Process numerator
@@ -150,8 +150,8 @@ def unit_to_latex(unit_str):
         latex_parts.extend(_parse_unit_parts(p, invert=True))
 
     # Join and normalize spaces and replace multiple spaces with single space
-    result = ' '.join(latex_parts)
-    result = re.sub(r'\s+', ' ', result)
+    result = " ".join(latex_parts)
+    result = re.sub(r"\s+", " ", result)
     return result
 
 
@@ -162,7 +162,7 @@ def _parse_unit_parts(text, invert):
     """
     # Pattern matches: optional leading space, unit (letters/µ/°/%), optional exponent
     # This preserves spaces between units
-    pattern = r'(\s*)([a-zA-Zµ°%]+)(?:\^?\s*(-?\d+)|(-?\d+))?'
+    pattern = r"(\s*)([a-zA-Zµ°%]+)(?:\^?\s*(-?\d+)|(-?\d+))?"
 
     matches = re.findall(pattern, text)
     results = []
@@ -183,7 +183,7 @@ def _parse_unit_parts(text, invert):
             exp = -exp
 
         # Escape % for LaTeX (must be \% to display properly)
-        unit_escaped = unit.replace('%', r"$\%$")
+        unit_escaped = unit.replace("%", r"$\%$")
 
         # Format: only wrap exponents
         if exp == 1:

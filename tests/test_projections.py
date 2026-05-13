@@ -13,8 +13,9 @@ projection_cases = [
     {"name": "lambert_conformal", "expected_cls": ccrs.LambertConformal, "kwargs": {"central_longitude": -10}},
     {"name": "robinson", "expected_cls": ccrs.Robinson, "kwargs": {}},
     {"name": "lambert_equal_area", "expected_cls": ccrs.LambertAzimuthalEqualArea, "kwargs": {"central_longitude": 0}},
-    {"name": "rotated_pole", "expected_cls": ccrs.RotatedPole, "kwargs": {"pole_longitude": 180, "pole_latitude": 45}}
+    {"name": "rotated_pole", "expected_cls": ccrs.RotatedPole, "kwargs": {"pole_longitude": 180, "pole_latitude": 45}},
 ]
+
 
 @pytest.mark.aqua
 class TestProjections:

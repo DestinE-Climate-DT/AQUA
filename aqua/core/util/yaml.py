@@ -31,13 +31,12 @@ def construct_yaml_merge(loader, node):
 
 
 # Run this to enable YAML override for the yaml package when using SafeLoader in intake
-yaml.SafeLoader.add_constructor(
-            'tag:yaml.org,2002:merge',
-            construct_yaml_merge)
+yaml.SafeLoader.add_constructor("tag:yaml.org,2002:merge", construct_yaml_merge)
 
 
-def load_multi_yaml(folder_path: str | None = None, filenames: list | None = None,
-                    definitions: str | dict | None = None, **kwargs):
+def load_multi_yaml(
+    folder_path: str | None = None, filenames: list | None = None, definitions: str | dict | None = None, **kwargs
+):
     """
     Load and merge yaml files.
     If a filenames list of strings is provided, only the yaml files with
@@ -60,14 +59,15 @@ def load_multi_yaml(folder_path: str | None = None, filenames: list | None = Non
     yaml = YAML()  # default, if not specified, is 'rt' (round-trip) # noqa F841
 
     if isinstance(definitions, str):  # if definitions is a string we need to read twice
-        yaml_dict = _load_merge(folder_path=folder_path, definitions=None,
-                                filenames=filenames, **kwargs)  # Read without definitions
+        yaml_dict = _load_merge(
+            folder_path=folder_path, definitions=None, filenames=filenames, **kwargs
+        )  # Read without definitions
         definitions = yaml_dict.get(definitions)
-        yaml_dict = _load_merge(folder_path=folder_path, definitions=definitions,
-                                filenames=filenames, **kwargs)  # Read again with definitions
+        yaml_dict = _load_merge(
+            folder_path=folder_path, definitions=definitions, filenames=filenames, **kwargs
+        )  # Read again with definitions
     else:  # if a dictionary or None has been passed for definitions we read only once
-        yaml_dict = _load_merge(folder_path=folder_path, definitions=definitions,
-                                filenames=filenames, **kwargs)
+        yaml_dict = _load_merge(folder_path=folder_path, definitions=definitions, filenames=filenames, **kwargs)
 
     return yaml_dict
 
@@ -86,13 +86,13 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     """
 
     if not os.path.exists(infile):
-        raise FileNotFoundError(f'ERROR: {infile} not found: you need to have this configuration file!')
+        raise FileNotFoundError(f"ERROR: {infile} not found: you need to have this configuration file!")
 
-    yaml = YAML(typ='rt')  # default, if not specified, is 'rt' (round-trip)
+    yaml = YAML(typ="rt")  # default, if not specified, is 'rt' (round-trip)
 
     cfg = None
     # Load the YAML file as a text string
-    with open(infile, 'r', encoding='utf-8') as file:
+    with open(infile, "r", encoding="utf-8") as file:
         yaml_text = file.read()
 
     if isinstance(definitions, str):  # if it is a string extract from original yaml, else it is directly a dict
@@ -116,7 +116,7 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     return cfg
 
 
-def dump_yaml(outfile=None, cfg=None, typ='rt'):
+def dump_yaml(outfile=None, cfg=None, typ="rt"):
     """
     Dump to a custom yaml file
 
@@ -129,16 +129,13 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
     # Initialize YAML object
     yaml = YAML(typ=typ)
 
-    yaml.representer.add_representer(
-        type(None),
-        lambda self, _: self.represent_scalar('tag:yaml.org,2002:null', 'null')
-    )
+    yaml.representer.add_representer(type(None), lambda self, _: self.represent_scalar("tag:yaml.org,2002:null", "null"))
 
     # Check input
     if outfile is None:
-        raise ValueError('ERROR: outfile not defined')
+        raise ValueError("ERROR: outfile not defined")
     if cfg is None:
-        raise ValueError('ERROR: cfg not defined')
+        raise ValueError("ERROR: cfg not defined")
 
     # Dump the dictionary with a safe temporary directory
     # to avoid intake reading a partially written file
@@ -148,17 +145,21 @@ def dump_yaml(outfile=None, cfg=None, typ='rt'):
     if dest_dir:  # Handle edge case where filename has no directory component
         os.makedirs(dest_dir, exist_ok=True)
     else:
-        dest_dir = '.'  # Use current directory
+        dest_dir = "."  # Use current directory
     with TemporaryDirectory(dir=dest_dir) as tmpdirname:
         tmp_file = os.path.join(tmpdirname, "temp.yaml")
-        with open(tmp_file, 'w', encoding='utf-8') as file:
+        with open(tmp_file, "w", encoding="utf-8") as file:
             yaml.dump(cfg, file)
         os.replace(tmp_file, outfile)
 
 
-def _load_merge(folder_path: str | None = None, filenames: list | None = None,
-                definitions: str | dict | None = None, merged_dict: dict | None = None,
-                loglevel: str = 'WARNING'):
+def _load_merge(
+    folder_path: str | None = None,
+    filenames: list | None = None,
+    definitions: str | dict | None = None,
+    merged_dict: dict | None = None,
+    loglevel: str = "WARNING",
+):
     """
     Helper function for load_merge_yaml.
     Load and merge yaml files located in a given folder
@@ -179,36 +180,36 @@ def _load_merge(folder_path: str | None = None, filenames: list | None = None,
     Raises:
         ValueError: if both folder_path and filenames are None or if both are not None.
     """
-    logger = log_configure(log_name='yaml', log_level=loglevel)
+    logger = log_configure(log_name="yaml", log_level=loglevel)
 
     if merged_dict is None:
-        logger.debug('Creating a new dictionary')
+        logger.debug("Creating a new dictionary")
         merged_dict = defaultdict(dict)
     else:
-        logger.debug('Updating an existing dictionary')
+        logger.debug("Updating an existing dictionary")
 
     if filenames is None and folder_path is None:
-        raise ValueError('ERROR: at least one between folder_path or filenames must be provided')
+        raise ValueError("ERROR: at least one between folder_path or filenames must be provided")
 
     if filenames:  # Merging a list of files
-        logger.debug(f'Files to be merged: {filenames}')
+        logger.debug(f"Files to be merged: {filenames}")
         for filename in filenames:
             yaml_dict = load_yaml(filename, definitions)
             for key, value in yaml_dict.items():
                 merged_dict[key].update(value)
 
     if folder_path:  # Merging all the files in a folder
-        logger.debug(f'Folder to be merged: {folder_path}')
+        logger.debug(f"Folder to be merged: {folder_path}")
         if not os.path.exists(folder_path):
-            raise FileNotFoundError(f'ERROR: {folder_path} not found: it is required to have this folder!')
+            raise FileNotFoundError(f"ERROR: {folder_path} not found: it is required to have this folder!")
         for filename in os.listdir(folder_path):
-            if filename.endswith(('.yml', '.yaml')):
+            if filename.endswith((".yml", ".yaml")):
                 file_path = os.path.join(folder_path, filename)
                 yaml_dict = load_yaml(file_path, definitions)
                 for key, value in yaml_dict.items():
                     merged_dict[key].update(value)
 
-    logger.debug('Dictionary updated')
-    logger.debug(f'Keys: {merged_dict.keys()}')
+    logger.debug("Dictionary updated")
+    logger.debug(f"Keys: {merged_dict.keys()}")
 
     return merged_dict

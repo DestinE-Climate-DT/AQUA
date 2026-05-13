@@ -19,7 +19,7 @@ def log_configure(log_level=None, log_name=None):
 
     # this is the default loglevel for the AQUA framework
     if log_name is None:
-        logging.warning('You are configuring the root logger, are you sure this is what you want?')
+        logging.warning("You are configuring the root logger, are you sure this is what you want?")
 
     # get the logger
     logger = logging.getLogger(log_name)
@@ -27,9 +27,9 @@ def log_configure(log_level=None, log_name=None):
     # fix the log level
     log_level = _check_loglevel(log_level)
 
-    if log_level in ['DEBUG']:
+    if log_level in ["DEBUG"]:
         if not logger.handlers:
-            logger.debug('Enabling Future and Deprecation Warning...')
+            logger.debug("Enabling Future and Deprecation Warning...")
         warnings.filterwarnings("always", category=DeprecationWarning)
         warnings.filterwarnings("always", category=FutureWarning)
     else:
@@ -40,7 +40,7 @@ def log_configure(log_level=None, log_name=None):
     if logger.handlers:
         if log_level != logging.getLevelName(logger.getEffectiveLevel()):
             logger.setLevel(log_level)
-            logger.debug('Updating the log_level to %s', log_level)
+            logger.debug("Updating the log_level to %s", log_level)
         return logger
 
     # avoid duplication/propagation of loggers
@@ -79,7 +79,7 @@ def _check_loglevel(log_level=None):
         ValueError: if the log level is not a string or an integer
     """
 
-    log_level_default = 'WARNING'
+    log_level_default = "WARNING"
 
     # ensure that loglevel is uppercase if it is a string
     if isinstance(log_level, str):
@@ -92,7 +92,7 @@ def _check_loglevel(log_level=None):
         log_level = log_level_default
     # error!
     else:
-        raise ValueError('Invalid log level type, must be a string or an integer!')
+        raise ValueError("Invalid log level type, must be a string or an integer!")
 
     # use conversion to integer to check if value exist, set None if unable to do it
     log_level_int = getattr(logging, log_level, None)
@@ -103,6 +103,7 @@ def _check_loglevel(log_level=None):
         log_level = log_level_default
 
     return log_level
+
 
 def log_history(data, msg):
     """
@@ -139,7 +140,7 @@ class CustomLogColors(logging.Formatter):
 
     # 8 bit
     GREEN = "\x1b[32m"  # Less vibrant green
-    ORANGE = "\x1b[33m" # Less vibrant orange
+    ORANGE = "\x1b[33m"  # Less vibrant orange
     RED = "\x1b[31;20m"  # Less vibrant red
 
     # 24bit
@@ -154,7 +155,7 @@ class CustomLogColors(logging.Formatter):
         logging.INFO: f"{GREEN}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
         logging.WARNING: f"{ORANGE}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
         logging.ERROR: f"{RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
-        logging.CRITICAL: f"{BOLD_RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}"
+        logging.CRITICAL: f"{BOLD_RED}%(asctime)s :: %(name)s :: %(levelname)-8s -> %(message)s{RESET}",
     }
 
     def format(self, record):
@@ -168,7 +169,7 @@ class CustomLogColors(logging.Formatter):
             the formatted message
         """
         log_fmt = self.FORMATS.get(record.levelno)
-        datefmt = '%Y-%m-%d %H:%M:%S'
+        datefmt = "%Y-%m-%d %H:%M:%S"
         formatter = logging.Formatter(fmt=log_fmt, datefmt=datefmt)
 
         return formatter.format(record)

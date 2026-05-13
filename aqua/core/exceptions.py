@@ -32,6 +32,7 @@ class NoObservationError(Exception):
         self.message = message
         super().__init__(self.message)
 
+
 class NoRegridError(Exception):
     """Exception raised when no regrid is available"""
 

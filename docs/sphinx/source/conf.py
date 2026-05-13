@@ -18,12 +18,12 @@ version = str(project_version)
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
 templates_path = ["_templates"]
-autoclass_content = 'both'
+autoclass_content = "both"
 exclude_patterns = []
 
 # Mock imports for modules that are not available during docs build, can be expanded
@@ -41,7 +41,7 @@ html_theme_options = {
 }
 
 # Add the path to the package to the sys.path
-sys.path.insert(0, os.path.relpath('../../diagnostics'))
-sys.path.insert(0, os.path.relpath('../../diagnostics/teleconnections'))
-sys.path.insert(0, os.path.relpath('../../diagnostics/ocean3d'))
-sys.path.insert(0, os.path.relpath('../../diagnostics/tropical_cyclones'))
+sys.path.insert(0, os.path.relpath("../../diagnostics"))
+sys.path.insert(0, os.path.relpath("../../diagnostics/teleconnections"))
+sys.path.insert(0, os.path.relpath("../../diagnostics/ocean3d"))
+sys.path.insert(0, os.path.relpath("../../diagnostics/tropical_cyclones"))

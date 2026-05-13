@@ -13,12 +13,19 @@ class OutputPathBuilder:
     Class to build output paths for DROP data files.
     """
 
-    def __init__(self, catalog: str, model: str, exp: str,
-                 resolution: Optional[str] = None,
-                 realization: Optional[str] = None,
-                 frequency: Optional[str] = None, stat: Optional[str] = None,
-                 region: Optional[str] = None, level: Optional[str] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        catalog: str,
+        model: str,
+        exp: str,
+        resolution: Optional[str] = None,
+        realization: Optional[str] = None,
+        frequency: Optional[str] = None,
+        stat: Optional[str] = None,
+        region: Optional[str] = None,
+        level: Optional[str] = None,
+        **kwargs,
+    ):
         """
         Initialize the OutputPathBuilder with the necessary parameters.
         Params:
@@ -40,9 +47,9 @@ class OutputPathBuilder:
         self.resolution = resolution
 
         self.realization = format_realization(realization)  # ensure realization is formatted correctly
-        self.frequency = frequency if frequency is not None else 'native'
-        self.stat = stat if stat is not None else 'nostat'
-        self.region = region if region is not None else 'global'
+        self.frequency = frequency if frequency is not None else "native"
+        self.stat = stat if stat is not None else "nostat"
+        self.region = region if region is not None else "global"
 
         self.level = level
         self.kwargs = kwargs or {}
@@ -73,10 +80,7 @@ class OutputPathBuilder:
         Returns:
             str: The directory path for the output files.
         """
-        parts = [
-            self.catalog, self.model, self.exp, self.realization,
-            self.resolution, self.frequency, self.stat, self.region
-        ]
+        parts = [self.catalog, self.model, self.exp, self.realization, self.resolution, self.frequency, self.stat, self.region]
         folder = os.path.join(*[p for p in parts if p])
         return folder
 
@@ -121,9 +125,9 @@ class OutputPathBuilder:
 
         # Combine date parts with their format lengths
         date_parts = {
-            'year': (year, 4),
-            'month': (month, 2),
-            'day': (day, 2),
+            "year": (year, 4),
+            "month": (month, 2),
+            "day": (day, 2),
         }
 
         # loop to format the dates
@@ -156,4 +160,4 @@ class OutputPathBuilder:
     @staticmethod
     def is_wildcard(s):
         """Guess if a string includes a wildcard"""
-        return any(char in str(s) for char in ['*', '?', '[', ']'])
+        return any(char in str(s) for char in ["*", "?", "[", "]"])
