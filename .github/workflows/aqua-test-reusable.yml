@@ -7,7 +7,7 @@ on:
         description: 'JSON array of Python versions to test'
         required: true
         type: string
-        default: '["3.12"]'
+        default: '["3.14]'
       pytest-markers:
         description: 'Pytest markers to run (e.g., "aqua or slow")'
         required: true
@@ -87,7 +87,7 @@ jobs:
     continue-on-error: false
 
     concurrency:
-      group: ${{ inputs.pr-number != '' && format('aqua-pr-{0}', inputs.pr-number) || format('aqua-{0}', github.run_id) }}
+      group: ${{ inputs.pr-number != '' && format('aqua-pr-{0}-py{1}', inputs.pr-number, matrix.python-version) || format('aqua-{0}-py{1}', github.run_id, matrix.python-version) }}
       cancel-in-progress: ${{ inputs.pr-number != '' }}
 
     container:

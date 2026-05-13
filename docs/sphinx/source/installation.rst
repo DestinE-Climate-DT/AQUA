@@ -4,7 +4,7 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package ``aqua-core``.
-AQUA is developed and tested with Python 3.12 and it supports Python>=3.10,<3.13 or later.
+AQUA is developed and tested with Python 3.14 and it supports Python>=3.10,<3.15.
 
 .. note ::
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
@@ -27,7 +27,7 @@ recommended way to do this is to use Mamba/Conda package manager for the install
 This can be achieved with:
 
 .. code-block:: bash
-    mamba create -n aquarium -c conda-forge python=3.12 cdo netcdf4 eccodes=2.41.0
+    mamba create -n aquarium -c conda-forge python=3.14 cdo netcdf4 eccodes
     mamba activate aquarium
     pip install aqua-core
 

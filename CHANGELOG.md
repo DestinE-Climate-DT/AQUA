@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Support for python 3.13 and 3.14, with new default from 3.12 to 3.14 (#2853)
 - Update intake and intake-xarray to >=2.0.0 (#2843)
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
 - push_analysis deal with missing experiments.yaml file (#2792)
