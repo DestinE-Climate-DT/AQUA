@@ -11,6 +11,7 @@ from fnmatch import fnmatch
 
 import yaml
 from PIL import Image
+from pypdf import PdfReader
 
 # Get a logger instance
 logger = logging.getLogger("make_contents")
@@ -155,12 +156,12 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             experiment["label"] = experiment["title"]
 
         # Retrieve the date of the latest commit
-        infile = f"../pdf/{path}/last_update.txt"
+        infile = f"{path}/last_update.txt"
         if os.path.exists(infile):
             with open(infile, "r") as file:
                 experiment["last_update"] = file.read().strip()
         else:
-            logger.debug(f"last_update.txt not found at {infile}")
+            logger.debug(f"File {infile} not found.")
 
         content = {}
         content["experiment"] = experiment
@@ -169,16 +170,22 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         properties = {}
 
         for fn in os.listdir(f"{path}"):
-            if fn.endswith(".png"):
-                if realization:
-                    fn_line = f"{catalog}/{model}/{exp}/{realization}/{fn}"
-                else:
-                    fn_line = f"{catalog}/{model}/{exp}/{fn}"
-                filename_list.append(fn_line)
+            if realization:
+                fn_line = f"{catalog}/{model}/{exp}/{realization}/{fn}"
+            else:
+                fn_line = f"{catalog}/{model}/{exp}/{fn}"
+            filename_list.append(fn_line)
 
-                with Image.open(fn) as img:
+            if fn.endswith(".png"):
+                with Image.open(os.path.join(path, fn)) as img:
                     metadata = img.info
                 properties[fn_line] = metadata
+            elif fn.endswith(".pdf"):
+                with PdfReader(os.path.join(path, fn)) as pdf_reader:
+                    metadata = pdf_reader.metadata
+                properties[fn_line] = metadata
+            else:
+                properties[fn_line] = {}
 
         grouping = {}
         for key, val in diagnostics.items():
@@ -228,7 +235,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         logger.info(f"Content files for {path} already exist. Skipping. Use --force to overwrite.")
 
 
-def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, loglevel="INFO"):
+def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, loglevel="INFO", format="png"):
     """
     Main function to create content.yaml and content.json files for each experiment in the content/png directory.
 
@@ -255,7 +262,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
         logger.error(f"Configuration file not found: {configfile}")
         sys.exit(1)
 
-    os.chdir("content/png")
+    os.chdir(f"content/{format}")
     logger.info(f"Changed directory to {os.getcwd()}")
 
     diagnostics = config.get("diagnostics", {})
@@ -350,6 +357,7 @@ def parse_arguments(arguments):
         default="INFO",
         help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.",
     )
+    parser.add_argument("--format", type=str, default="png", help="Format of the input data files (e.g. png, pdf)")
 
     return parser.parse_args(arguments)
 
@@ -361,4 +369,5 @@ if __name__ == "__main__":
     config = args.config
     ensemble = args.ensemble
     loglevel = args.loglevel
-    main(force=force, experiment=experiment, configfile=config, ensemble=ensemble, loglevel=loglevel)
+    format = args.format
+    main(force=force, experiment=experiment, configfile=config, ensemble=ensemble, loglevel=loglevel, format=format)
