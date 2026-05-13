@@ -53,7 +53,8 @@ so it might be a long operation if data are not sampled in the right way.
 .. code-block:: python
 
     regridder = Regridder(data=data.isel(time=0), loglevel='debug')
-    regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+    weights = regridder.weights(tgt_grid_name='r144x72', regrid_method="bil")
+    regridder.initialize(weights)
     data_r = regridder.regrid(data)
 
 As in the previous case, this will return an ``xarray.Dataset`` with the data lazily regridded to the target grid.
