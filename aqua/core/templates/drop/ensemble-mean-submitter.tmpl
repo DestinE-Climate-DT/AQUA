@@ -1,0 +1,63 @@
+#!/bin/bash
+#SBATCH --partition=<partition>
+#SBATCH --job-name=ensemble_mean
+#SBATCH --output=ensemble_mean_%j.out
+#SBATCH --error=ensemble_mean_%j.err
+#SBATCH --account=<account>
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --time=04:00:00
+#SBATCH --mem=128G
+
+set -e
+
+# find mamba/conda (to be refined)
+whereconda=$(which mamba | rev | cut -f 3-10 -d"/" | rev)
+source $whereconda/etc/profile.d/conda.sh
+
+# activate conda environment
+conda activate aqua
+
+# ---------------------------------------------------------------------------
+# Number of dask workers per job — should match --ntasks-per-node above.
+# Increase on fat nodes; keep at 1 for single-core debugging.
+# ---------------------------------------------------------------------------
+workers=8
+
+# ---------------------------------------------------------------------------
+# Parallel job limit: maximum number of simultaneously running SLURM jobs.
+# Throttles scheduler load when processing many variables.
+# ---------------------------------------------------------------------------
+parallel=4
+
+# ---------------------------------------------------------------------------
+# Configuration file — copy and fill from config_ensemble_mean.tmpl
+# ---------------------------------------------------------------------------
+config=config_ensemble_mean.yml
+
+# ---------------------------------------------------------------------------
+# Submit one SLURM job per variable using the parallel slurm submitter.
+#
+# Flags:
+#   -d   definitive run (write output files; omit for dry-run)
+#   -o   overwrite existing ensemble output
+#   -s   use AQUA Singularity container instead of conda environment
+#   -w   dask workers per job (overrides config ntasks_per_node)
+#   -p   max concurrent SLURM jobs before chaining dependencies
+#   -l   log level (DEBUG, INFO, WARNING, ERROR)
+# ---------------------------------------------------------------------------
+python cli_ensemble_mean_slurm.py \
+    -c ${config} \
+    -w ${workers} \
+    -p ${parallel} \
+    -d \
+    -l INFO
+
+# ---------------------------------------------------------------------------
+# To run a single variable manually (e.g. for testing):
+#   aqua ensemble-mean -c ${config} -v 2t -d -w ${workers} -l DEBUG
+#
+# To only update the catalog entry without reprocessing data:
+#   aqua ensemble-mean -c ${config} -v 2t -d --only-catalog
+# ---------------------------------------------------------------------------
+

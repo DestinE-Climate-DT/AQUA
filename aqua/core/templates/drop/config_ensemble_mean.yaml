@@ -1,0 +1,100 @@
+# Configuration template for ensemble mean computation
+# Computes the arithmetic mean across realizations (r1–r5) of an existing
+# LRA source and registers the result as realization='ensemble' in the catalog.
+#
+# The output follows the standard DROP OutputPathBuilder convention:
+#   {outdir}/{catalog}/{model}/{exp}/ensemble/{resolution}/{frequency}/{stat}/{region}/
+#
+# After running, access the result via:
+#   Reader(catalog=..., model=..., exp=..., source='lra-r100-monthly',
+#          realization='ensemble')
+#
+# Usage:
+#   aqua ensemble-mean -c config_ensemble_mean.yml -v 2t -d
+#   cli_ensemble_mean_slurm.py -c config_ensemble_mean.yml -d -w 8 -p 4
+
+# ---------------------------------------------------------------------------
+# Target: resolution/frequency must match the existing LRA source exactly
+# ---------------------------------------------------------------------------
+target:
+  resolution: r100       # must match the LRA source (r100 = 1°)
+  frequency: monthly     # must match the LRA source
+  stat: mean             # statistic applied across the realization dimension
+  catalog: "climatedt-gen2" # {{ catalog }}
+  startdate: {{ startdate }}   # optional: restrict time range, e.g. 2020-01-01
+  enddate: {{ enddate }}       # optional: restrict time range, e.g. 2024-12-31
+
+# ---------------------------------------------------------------------------
+# Output paths
+# ---------------------------------------------------------------------------
+paths:
+  outdir: /scratch/a/a270260/AQUA-ensemble #{{ outputdir }}   # root output directory (same as existing LRA output root)
+  tmpdir: /scratch/a/a270260/AQUA-ensemble #{{ tmpdir }}      # fast local scratch for temporary monthly files
+
+# ---------------------------------------------------------------------------
+# Processing options
+# ---------------------------------------------------------------------------
+options:
+  loglevel: INFO
+  # Overwrite existing ensemble output files
+  overwrite: False
+  # Compacting: merge 12 monthly NetCDF files into one yearly file
+  # Options: xarray, cdo, null (no compacting)
+  compact: xarray
+  # CDO options used if compact: cdo
+  cdo_options: ["-f", "nc4", "-z", "zip_1"]
+
+# ---------------------------------------------------------------------------
+# Ensemble definition
+# Realizations listed here are used as the default for all sources below.
+# Can be overridden per source under data.<model>.<exp>.<source>.realizations
+# ---------------------------------------------------------------------------
+ensemble:
+  realizations: [r1, r2, r3, r4, r5]
+
+# ---------------------------------------------------------------------------
+# SLURM job definitions (used by cli_ensemble_mean_slurm.py)
+# ---------------------------------------------------------------------------
+slurm:
+  partition: compute # {{ partition }}
+  username: # {{ username }}
+  account: ab0995 # {{ project }}
+  nodes: 1
+  ntasks_per_node: 8       # also used as the number of dask workers per job
+  time:  "02:00:00"  # {{ walltime }}
+  mem:  "128GB"  # {{ memory }}
+
+# ---------------------------------------------------------------------------
+# Data: model → experiment → source → variables
+# One SLURM job is submitted per variable entry.
+#
+# Optional per-source overrides (uncomment to use):
+#   realizations: [r1, r2, r3]   override ensemble members for this source
+#   workers: 4                   override dask workers for this source
+# ---------------------------------------------------------------------------
+data:
+  IFS-FESOM-10km:
+    story-nudging-hist:
+      lra-r100-monthly:
+        vars: ['2t', '10u', '10v', 'msl', 'tprate', 'skt',
+               'tcc', 'tciw', 'tclw', 'ie', 'iews', 'inss',
+               'ishf', 'sd', 'sdlwrf', 'sdswrf', 'slhtf',
+               'snlwrf', 'snswrf', 'tdswrf', 'tnlwrf', 'tnswrf',
+               'tsrwe', 'q', 't', 'u', 'v']
+        workers: 8
+        # Uncomment to restrict realizations for this source only:
+        # realizations: [r1, r2, r3]
+
+# Example: multiple experiments
+# data:
+#   IFS-FESOM-10km:
+#     story-nudging-hist:
+#       lra-r100-monthly:
+#         vars: ['2t', 'msl']
+#         workers: 8
+#     storyline-Tplus2K:
+#       lra-r100-monthly:
+#         vars: ['2t', 'msl']
+#         workers: 8
+#         realizations: [r1, r2, r3, r4, r5]
+
