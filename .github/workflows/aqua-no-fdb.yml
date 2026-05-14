@@ -57,6 +57,7 @@ jobs:
       fail-fast: false
       enable-fdb: false
       container-image: ''
+      test-data-source: 'http'
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
