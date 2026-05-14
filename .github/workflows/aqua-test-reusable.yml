@@ -267,10 +267,8 @@ jobs:
           echo "========================================"
           mkdir -p AQUA/AQUA_tests
           cd AQUA/AQUA_tests
-          wget -r -np -nH -R "index.html*" --cut-dirs=3 \
-            http://wilma.to.isac.cnr.it/paolo/aqua-tests/data-tests/
-          echo "Download completed"
-          ls -lah
+          wget -nv -r -np -nH -R "index.html*" --cut-dirs=3 http://wilma.to.isac.cnr.it/paolo/aqua-tests/data-tests/
+          echo "Test data downloaded"
 
       # ========================================
       # 7. SETUP FDB

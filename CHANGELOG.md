@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 Main changes:
 
 Complete list:
+- Fallback test download from wilma (#2867)
 - Added preprint DOI to references and acknowledgments (#2845)
 - Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
