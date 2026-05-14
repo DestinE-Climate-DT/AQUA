@@ -4,6 +4,7 @@
 AQUA files operations mixin
 """
 
+import fnmatch
 import os
 import re
 import shutil
@@ -94,8 +95,10 @@ class FilesMixin:
         filename = os.path.join(self.configpath, self.configfile)
         cfg = load_yaml(filename)
         if "paths" not in cfg or "grids" not in cfg["paths"]:
-            self.logger.error("Default grids path is not set in %s. Please set it with the aqua grids set command before deploying the grids.", # noqa E501
-                              self.configfile)
+            self.logger.error(
+                "Default grids path is not set in %s. Please set it with the aqua grids set command before deploying the grids.",  # noqa E501
+                self.configfile,
+            )
             sys.exit(1)
         else:
             grids_path = cfg["paths"]["grids"]
@@ -105,22 +108,41 @@ class FilesMixin:
         _, grids_folder = self.configurer.get_reader_filenames()
 
         # Load the grids information from the auxiliary file.
-        grids_dict = load_multi_yaml(folder_path=grids_folder,
-                                     loglevel=self.loglevel)
+        grids_dict = load_multi_yaml(folder_path=grids_folder, loglevel=self.loglevel)
 
-        # Scan for a match
-        if args.source_grid_name in grids_dict['grids']:
-            self.logger.info("Deploying grid %s", args.source_grid_name)
-            single_dict = grids_dict["grids"][args.source_grid_name]
+        # Determine which grids to deploy
+        if "*" in args.source_grid_name:
+            # Wildcard matching
+            grids_to_deploy = [name for name in grids_dict["grids"].keys() if fnmatch.fnmatch(name, args.source_grid_name)]
 
-            # Extract the path(s) to deploy
-            paths_to_deploy = self._grids_deploy_path(single_dict, source_grid_name=args.source_grid_name)
-            for path in paths_to_deploy:
-                grid_name = path.split("/")[-1]  # Extract the grid name
-                grid_dir = "/".join(path.split("/")[:-1])  # Extract the parent
-                self._download_grid(grid_dir=grid_dir, grid_name=grid_name, targetdir=grids_path)
+            if not grids_to_deploy:
+                self.logger.error("No grids found matching pattern %s.", args.source_grid_name)
+                return
+
+            self.logger.info(
+                "Found %d grids matching pattern %s: %s",
+                len(grids_to_deploy),
+                args.source_grid_name,
+                ", ".join(grids_to_deploy),
+            )
+        elif args.source_grid_name in grids_dict["grids"]:
+            # Exact match
+            grids_to_deploy = [args.source_grid_name]
         else:
             self.logger.error("No exact match found for grid name %s.", args.source_grid_name)
+            return
+
+        # Deploy each grid
+        for grid_name in grids_to_deploy:
+            self.logger.info("Deploying grid %s", grid_name)
+            single_dict = grids_dict["grids"][grid_name]
+
+            # Extract the path(s) to deploy
+            paths_to_deploy = self._grids_deploy_path(single_dict, source_grid_name=grid_name)
+            for path in paths_to_deploy:
+                file_name = path.split("/")[-1]  # Extract the grid file name
+                grid_dir = "/".join(path.split("/")[:-1])  # Extract the parent
+                self._download_grid(grid_dir=grid_dir, grid_name=file_name, targetdir=grids_path)
 
     def _grids_deploy_path(self, single_dict, source_grid_name=None):
         """
@@ -157,16 +179,17 @@ class FilesMixin:
                 self.logger.debug(f"Extracted path for grid {source_grid_name}: {extracted_path}")
                 extracted_paths.append(extracted_path)
             else:
-                self.logger.error(f"Grid {source_grid_name} path format is incorrect: {path}. Expected format is {{ SOME_VARIABLE }}/path/to/grid.") # noqa E501
+                self.logger.error(
+                    f"Grid {source_grid_name} path format is incorrect: {path}."
+                    f"Expected format is {{ SOME_VARIABLE }}/path/to/grid."
+                )  # noqa E501
                 return []
 
         return extracted_paths
 
-    def _download_grid(self,
-                       grid_dir: str,
-                       grid_name: str,
-                       targetdir: str,
-                       bucket: str = "https://lumidata.eu/465000454:aqua-grids/grids"):
+    def _download_grid(
+        self, grid_dir: str, grid_name: str, targetdir: str, bucket: str = "https://lumidata.eu/465000454:aqua-grids/grids"
+    ):
         """
         Download the grid from the bucket to the target directory.
 
