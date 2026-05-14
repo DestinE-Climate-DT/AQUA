@@ -6,10 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+ClimateDT workflow modifications:
+- removed dependency on imagemagick
+- removed the --no-convert option from `push_analysis.sh`
+
 Main changes:
 
 Complete list:
 - Fallback test download from wilma (#2867)
+- push_analysis png metadata support and remove imagemagick dependency (#2866)
 - Support for python 3.13 and 3.14, with new default from 3.12 to 3.14 (#2853)
 - Update intake and intake-xarray to >=2.0.0 (#2843)
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
