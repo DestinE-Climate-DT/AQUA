@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import xml.etree.ElementTree as ET
 from fnmatch import fnmatch
 
 import yaml
@@ -183,6 +184,16 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
             elif fn.endswith(".pdf"):
                 with PdfReader(os.path.join(path, fn)) as pdf_reader:
                     metadata = pdf_reader.metadata
+                properties[fn_line] = metadata
+            elif fn.endswith(".svg"):
+                root = ET.parse(os.path.join(path, fn)).getroot()
+                desc = root.find("{http://www.w3.org/2000/svg}desc")
+                metadata = {}
+                if desc is not None and desc.text:
+                    for line in desc.text.strip().split("\n"):
+                        if ": " in line:
+                            key, value = line.split(": ", 1)
+                            metadata[key] = value
                 properties[fn_line] = metadata
             else:
                 properties[fn_line] = {}
