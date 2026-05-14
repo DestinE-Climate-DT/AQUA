@@ -15,11 +15,12 @@ jobs:
   aqua-complete-tests:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.10", "3.11", "3.12"]'
+      python-versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or polytope or gsv or graphics or catgen'
       enable-parallel: false
       enable-coverage: false
       fail-fast: false
+      test-data-source: 'auto'
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}

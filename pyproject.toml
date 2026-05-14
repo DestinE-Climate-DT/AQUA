@@ -20,7 +20,7 @@ description = "AQUA; a model evaluation framework for high-resolution climate mo
 readme = "README.md"
 keywords = ["climate", "modeling", "diagnostics", "high-resolution"]
 license = {file = "LICENSE"}
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.15"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -31,12 +31,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
     # binaries
-    "eccodes==2.41.0",
+    "eccodes>=2.41.0",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -49,8 +51,8 @@ dependencies = [
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
     "icechunk",
-    "intake==0.7.0", # Version 2 is a major refactor still in development
-    "intake-xarray<=0.7.0", # Version 2 is a major refactor still in development
+    "intake>=2.0.9", # Version 2 is a major refactor, 2.0.8 had a vulnerability
+    "intake-xarray>=2.0.0", # Version 2 is a major refactor
     "jinja2",
     "kerchunk",
     "matplotlib",

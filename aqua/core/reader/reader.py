@@ -7,6 +7,7 @@ from glob import glob
 
 # import intake_esm
 import intake_xarray
+import intake_xarray.xzarr
 import pandas as pd
 import xarray as xr
 from metpy.units import units
@@ -188,14 +189,33 @@ class Reader:
         self.kwargs = self._filter_kwargs(kwargs, engine=engine, intake_vars=intake_vars, databridge=self.machine_from_catalog)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
-        self.esmcat = self.expcat[self.source](**self.kwargs)
 
-        # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
+        # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
+        self.esmcat = self.expcat._entries[self.source](**self.kwargs)
+
+        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) or isinstance(
+            self.esmcat, intake_xarray.xzarr.ZarrSource
+        ):
+            # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2
+
+            # this provides direct access to the intake data object
+            self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
+
+            self.esmcat.metadata = self.esmcat.reader.metadata
+            self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
+
         if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            if not files_exist(self.esmcat.urlpath):
+            # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
+            # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
+            url_input = to_list(self.esmcat.data.url)
+            self.esmcat.data.url = sorted([f for x in url_input for f in glob(x)])
+            self.logger.debug("Using url: %s", self.esmcat.data.url)
+
+            # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
+            if not files_exist(self.esmcat.data.url):
                 raise NoDataError(
                     f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
-                    + f"please check the urlpath: {self.esmcat.urlpath}"
+                    + f"please check the url: {self.esmcat.data.url}"
                 )
 
         # extend the unit registry
@@ -723,7 +743,8 @@ class Reader:
     def intake_user_parameters(self):
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
         if not hasattr(self, "_intake_user_parameters"):
-            self._intake_user_parameters = self.esmcat.describe().get("user_parameters", {})
+            self._intake_user_parameters = [v.describe() for v in self.esmcat._entry._user_parameters]  # intake2 change
+            self.logger.debug("Intake user parameters: %s", self._intake_user_parameters)
         return self._intake_user_parameters
 
     def _filter_kwargs(self, kwargs: dict = {}, engine: str = "fdb", intake_vars: dict = {}, databridge: str = None) -> dict:
@@ -927,7 +948,7 @@ class Reader:
         # attribute. I would not add it since it is a deprecated feature
         if fdb_var is None:
             self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
-            fdb_var = esmcat.describe()["args"]["request"]["param"]
+            fdb_var = esmcat._entry._open_args["request"]["param"]  # This does work with intake2
             fdb_var = to_list(fdb_var)
 
         # We avoid the following loop if the user didn't specify any variable
@@ -1075,7 +1096,7 @@ class Reader:
 
     def _filter_netcdf_files(self, esmcat, filter_key="year"):
         """
-        Filter the esmcat to include only netcdf files based on specfici filter_key
+        Filter the esmcat to include only netcdf files based on specific filter_key
         Args:
             esmcat (intake.catalog.Catalog): your catalog
             filter_key (str): type of filter to apply (default is "year")
@@ -1084,29 +1105,35 @@ class Reader:
             intake.catalog.Catalog: filtered catalog
         """
 
-        # list available files in folder
-        files = sorted([f for x in esmcat.urlpath for f in glob(x)])
+        # list available files in folder.
+        files = to_list(esmcat.data.url)
         self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename
         # within the startdate and enddate range
         if filter_key == "year":
-            if not (self.startdate and self.enddate):
-                return esmcat
-            keys = list(range(pd.Timestamp(self.startdate).year, pd.Timestamp(self.enddate).year + 1))
-            # create regex pattern for each year: only yyyy will be detected
-            pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
-
+            if self.startdate and self.enddate:
+                keys = list(range(pd.Timestamp(self.startdate).year, pd.Timestamp(self.enddate).year + 1))
+                # create regex pattern for each year: only yyyy will be detected
+                pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
+                files = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
         else:
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
-        # replace the urlpath with the filtered one searching the regex
-        esmcat.urlpath = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        # replace the url with the expanded/filtered list
+        esmcat.data.url = files
 
-        if len(esmcat.urlpath) == 0:
+        self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
+
+        if len(esmcat.data.url) == 0:
             raise NoDataError("No files found after filtering the catalog!")
 
-        self.logger.debug("Selected: %s files from %s to %s", len(esmcat.urlpath), esmcat.urlpath[0], esmcat.urlpath[-1])
+        self.logger.debug(
+            "Selected: %s files from %s to %s",
+            len(esmcat.data.url),
+            esmcat.data.url[0],
+            esmcat.data.url[-1],
+        )
 
         return esmcat
 
@@ -1141,7 +1168,14 @@ class Reader:
 
             esmcat.xarray_kwargs.update({"decode_times": coder})
 
-        data = esmcat.to_dask()
+        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
+
+        # HACK: forcing to netcdf4 for intake2
+        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
+            read_kwargs.setdefault("engine", "netcdf4")
+            self.logger.debug("Forcing netcdf4 engine")
+
+        data = esmcat.reader.read(**read_kwargs)
 
         if loadvar:
             loadvar = to_list(loadvar)

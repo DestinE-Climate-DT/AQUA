@@ -28,10 +28,16 @@ get_file() {
 
     if [[ -n "$4" ]]; then
         log_message INFO "Getting file $2 from rsync target $4 writing to $3"
-        rsync -avz $4/$2 $3
+        if rsync "$4/$2" > /dev/null 2>&1; then
+            rsync -avz $4/$2 $3
+        else
+            log_message WARNING "File $2 not found in rsync target $4."
+        fi
     else
         log_message INFO "Getting file $2 from bucket $1 on LUMI-O"
-        python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2
+        if ! python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2; then
+            log_message WARNING "File $2 not found in bucket $1."
+        fi
     fi
 }
 
@@ -92,47 +98,24 @@ collect_figures() {
     log_message INFO "Collecting figures for $2"
 
     indir="$1/$2"
-    dstdir="./content/pdf/$2"
 
-    mkdir -p $dstdir
-    find $indir -name "*.pdf"  -exec cp {} $dstdir/ \;
-
-    # Remove dates from EC-mean filenames
-    for file in $dstdir/PI4*_????_????.pdf $dstdir/global_mean*_????_????.pdf
+    for format in pdf png
     do
-        if [ -e "$file" ]; then
-            mv -- "$file" "${file%_*_*}.pdf"
-        fi
+        dstdir="./content/$format/$2"
+        mkdir -p $dstdir
+        find $indir -name "*.$format"  -exec cp {} $dstdir/ \;
+        echo $(date) > $dstdir/last_update.txt
     done
 
     # Copy experiment.yaml if it exists
     log_message INFO "Trying to collect $indir/experiment.yaml"
     if [ -f "$indir/experiment.yaml" ]; then
         log_message INFO "Collecting also experiment.yaml"
-        mkdir -p ./content/png/$2
-        cp "$indir/experiment.yaml" "./content/png/$2/"
-    fi
-
-    echo $(date) > $dstdir/last_update.txt
-}
-
-convert_pdf_to_png() {
-    # This assumes that we are inside the aqua-web repository
-
-    if [ "$convert" -eq 1 ]; then
-        log_message INFO "Converting PDFs to PNGs for $1"
-
-        dstdir="./content/png/$1"
-
-        mkdir -p $dstdir
-
-        if [ $ensemble -eq 1 ]; then
-            IFS='/' read -r catalog model experiment realization <<< "$1"
-            $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment" "$realization"
-        else
-            IFS='/' read -r catalog model experiment <<< "$1"
-            $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment"
-        fi
+        for format in png pdf
+        do
+            mkdir -p ./content/$format/$2
+            cp "$indir/experiment.yaml" "./content/$format/$2/"
+        done
     fi
 }
 
@@ -150,7 +133,6 @@ print_help() {
     echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
     echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
-    echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"
     echo "  -r, --repository       remote aqua-web repository (default 'DestinE-Climate-DT/aqua-web'). If it starts with 'local:' a local directory is used."
     echo "  -s, --rsync URL        remote rsync target (takes priority over s3 bucket if specified)"
 }
@@ -166,7 +148,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Parse command line arguments
 
 loglevel=2
-convert=1
 bucket="aqua-web"
 repository="DestinE-Climate-DT/aqua-web"
 update=1
@@ -181,10 +162,6 @@ while [[ $# -gt 0 ]]; do
       print_help
       exit 0
       ;;
-    -n|--no-convert)
-        convert=0
-        shift
-        ;;
     -l|--loglevel)
         loglevel="$2"
         shift 2
@@ -275,10 +252,6 @@ fi
 
 log_message INFO "Processing $indir"
 
-if [ "$convert" -eq 0 ]; then
-    log_message INFO "Conversion of PDFs to PNGs suppressed"
-fi
-
 if [ $localrepo -eq 1 ]; then
     log_message INFO "Using local repository $repository"
     repo=$repository
@@ -302,7 +275,7 @@ echo "Updated figures in bucket $bucket"  > updated.txt
 echo "on $(date) for the following experiments:" >> updated.txt
 
 # erase content and copy all files to content
-log_message INFO "Collect and update figures in content/pdf"
+log_message INFO "Collect and update figures in content/pdf and content/png"
 
 # Check if the second argument is an actual file and use it as a list of experiments
 if [ -f "$exps" ]; then
@@ -329,18 +302,16 @@ if [ -f "$exps" ]; then
         else
             expstr="$catalog/$model/$experiment"
         fi
-        log_message INFO "Collect figures for $expstr and converting to png"
+        log_message INFO "Collect figures for $expstr"
         collect_figures "$1" "$expstr"
-        convert_pdf_to_png "$expstr"
         get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
         make_contents "$expstr" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
         push_lumio $bucket "$expstr" "$rsync"  # push figures including experiments.yaml
         echo "$expstr" >> updated.txt
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
-    log_message INFO "Collect figures for $exps and converting to png"
+    log_message INFO "Collect figures for $exps"
     collect_figures "$indir" "$exps"
-    convert_pdf_to_png "$exps"
     get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
     make_contents "$exps" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
     push_lumio $bucket "$exps" "$rsync"  # push figures to LUMI-O including experiments.yaml

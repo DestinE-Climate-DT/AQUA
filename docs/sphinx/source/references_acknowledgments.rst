@@ -30,7 +30,7 @@ and please include also the following acknowledgements:
   publisher = {Copernicus GmbH},
   author = {Nurisso,  Matteo and von Hardenberg,  Jost and Cadau,  Marco and Caprioli,  Silvia and Ghinassi,  Paolo and Ghosh,  Supriyo and Koldunov,  Nikolay and Nazarova,  Natalia and Rajput,  Maqsood Mubarak and Tovazzi,  Emanuele and Davini,  Paolo},
   year = {2026},
-  month = May 
+  month = May
   }
 
 Acknowledgments
