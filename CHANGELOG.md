@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+ClimateDT workflow modifications:
+- removed dependency on imagemagick
+- removed the --no-convert option from `push_analysis.sh`
+
 Main changes:
 
 Complete list:
