@@ -142,7 +142,7 @@ function setup_container_path(){
             ;;
 
         "levante")
-            AQUA_folder="/work/bb1153/b382289/container/aqua"
+            AQUA_folder="path/in/levante"
             ;;
 
         "MN5")
