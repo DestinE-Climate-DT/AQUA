@@ -301,6 +301,10 @@ class Reader:
 
         # load and check the regrid
         if regrid or areas:
+            if self.src_grid_name is False:
+                self.logger.info("Grid metadata is False, regrid and areas disabled")
+                return False, False
+
             # create the configuration dictionary
             cfg_regrid = load_multi_yaml(
                 folder_path=self.grids_folder, definitions=machine_paths["paths"], loglevel=self.loglevel
@@ -311,9 +315,6 @@ class Reader:
                 self.logger.info("Grid metadata is not defined. Trying to access the real data")
                 data = self._retrieve_plain()
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
-            elif self.src_grid_name is False:
-                self.logger.info("Grid metadata is False, regrid and areas disabled")
-                return False, False
             else:
                 self.logger.info("Grid metadata is %s", self.src_grid_name)
                 self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, loglevel=self.loglevel)
