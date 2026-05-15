@@ -334,7 +334,7 @@ def parse_arguments(arguments):
     """
 
     parser = argparse.ArgumentParser(
-        description="Create content.yaml and content.json files for each experiment in the content/png directory."
+        description="Create content.yaml and content.json files for each experiment in the content/<format> directory."
     )
 
     parser.add_argument(
@@ -368,7 +368,9 @@ def parse_arguments(arguments):
         default="INFO",
         help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.",
     )
-    parser.add_argument("--format", type=str, default="png", help="Format of the input data files on which to work (png, pdf)")
+    parser.add_argument(
+        "--format", type=str, default="png", help="Input data formats to work on (png, pdf or svg). Default: png"
+    )
 
     return parser.parse_args(arguments)
 
