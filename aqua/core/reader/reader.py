@@ -261,6 +261,7 @@ class Reader:
         self.tgt_grid_name = regrid
 
         # init the regridder and the areas
+        self.regridder = None
         areas, regrid = self._configure_regridder(
             machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs
         )
@@ -612,7 +613,7 @@ class Reader:
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
 
-        if self.tgt_grid_name is None:
+        if not callable(getattr(self, "regridder", None)):
             raise NoRegridError("regrid has not been initialized in the Reader, cannot perform any regrid.")
 
         data = counter_reverse_coordinate(data)
@@ -1301,7 +1302,7 @@ class Reader:
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        if self._check_if_regridded(data) and self.tgt_fldstat:
+        if self._check_if_regridded(data) and callable(getattr(self, "tgt_fldstat", None)):
             data = self.tgt_fldstat.fldstat(
                 data,
                 stat=stat,
