@@ -195,8 +195,6 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                             key, value = line.split(": ", 1)
                             metadata[key] = value
                 properties[fn_line] = metadata
-            else:
-                properties[fn_line] = {}
 
         grouping = {}
         for key, val in diagnostics.items():
