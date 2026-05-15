@@ -261,7 +261,9 @@ class Reader:
         self.tgt_grid_name = regrid
 
         # init the regridder and the areas
-        self._configure_regridder(machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs)
+        areas, regrid = self._configure_regridder(
+            machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs
+        )
 
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
@@ -311,15 +313,13 @@ class Reader:
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
             elif self.src_grid_name is False:
                 self.logger.info("Grid metadata is False, regrid and areas disabled")
-                regrid = False
-                areas = False
-                return
+                return False, False
             else:
                 self.logger.info("Grid metadata is %s", self.src_grid_name)
                 self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, loglevel=self.loglevel)
 
                 if self.regridder.error:
-                    self.logger.warning("Issues in the Regridder() init: trying with data")
+                    self.logger.info("Regridder() cannot init with the provided grid metadata: trying with data")
                     data = self._retrieve_plain()
                     self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, data=data, loglevel=self.loglevel)
 
@@ -329,8 +329,7 @@ class Reader:
 
             # TODO: it is likely there are other cases where we need to disable regrid.
             if not self.regridder.cdo:
-                areas = False
-                regrid = False
+                return False, False
 
         if areas:
             # generate source areas and expose them in the reader
@@ -371,6 +370,8 @@ class Reader:
 
         # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
+
+        return areas, regrid
 
     def _fix_datamodel_weights(self, weights, mode="datamodel"):
         """
