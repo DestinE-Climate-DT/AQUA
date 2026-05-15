@@ -175,16 +175,17 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                 fn_line = f"{catalog}/{model}/{exp}/{realization}/{fn}"
             else:
                 fn_line = f"{catalog}/{model}/{exp}/{fn}"
-            filename_list.append(fn_line)
 
             if fn.endswith(".png"):
                 with Image.open(os.path.join(path, fn)) as img:
                     metadata = img.info
                 properties[fn_line] = metadata
+                filename_list.append(fn_line)
             elif fn.endswith(".pdf"):
                 with PdfReader(os.path.join(path, fn)) as pdf_reader:
                     metadata = pdf_reader.metadata
                 properties[fn_line] = metadata
+                filename_list.append(fn_line)
             elif fn.endswith(".svg"):
                 root = ET.parse(os.path.join(path, fn)).getroot()
                 desc = root.find("{http://www.w3.org/2000/svg}desc")
@@ -195,6 +196,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                             key, value = line.split(": ", 1)
                             metadata[key] = value
                 properties[fn_line] = metadata
+                filename_list.append(fn_line)
 
         grouping = {}
         for key, val in diagnostics.items():
