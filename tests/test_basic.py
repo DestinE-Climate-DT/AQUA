@@ -189,10 +189,11 @@ class TestAqua:
 
     def test_reader_no_area(self):
         """
-        Test that the Reader class works when areas are disabled
+        Test that the Reader class works when `source_grid_name` is set to False.
         """
         reader = Reader(catalog="ci", model="ERA5", exp="era5-hpz3", source="monthly-no-grid", regrid="r100")
-        data = reader.retrieve()
+        data = reader.retrieve(var="2t")
         assert reader.tgt_fldstat is None
+        assert reader.regridder is None
         with pytest.raises(NoRegridError):
             reader.regrid(data)
