@@ -3,6 +3,7 @@ import pytest
 from conftest import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
+from aqua.core.exceptions import NoRegridError
 
 approx_rel = APPROX_REL
 loglevel = LOGLEVEL
@@ -185,3 +186,13 @@ class TestAqua:
             model="ICON", exp="test-healpix", source="fake-ensemble-str", loglevel=loglevel, areas=False, realization="r2i1p1"
         )
         assert reader.kwargs["realization"] == "r2i1p1"
+
+    def test_reader_no_area(self):
+        """
+        Test that the Reader class works when areas are disabled
+        """
+        reader = Reader(catalog="ci", model="ERA5", exp="era5-hpz3", source="monthly-no-grid", regrid="r100")
+        data = reader.retrieve()
+        assert reader.tgt_fldstat is None
+        with pytest.raises(NoRegridError):
+            reader.regrid(data)
