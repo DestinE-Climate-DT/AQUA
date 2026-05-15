@@ -302,7 +302,7 @@ class Reader:
         # load and check the regrid
         if regrid or areas:
             if self.src_grid_name is False:
-                self.logger.info("Grid metadata is False, regrid and areas disabled")
+                self.logger.warning("Grid metadata is False, regrid and areas disabled")
                 return False, False
 
             # create the configuration dictionary
