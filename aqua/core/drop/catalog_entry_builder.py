@@ -120,10 +120,13 @@ class CatalogEntryBuilder:
             chunks.update({"lat": (18000 // ref_value) + 1, "lon": (36000 // ref_value)})
 
         # self guessing ot time chunking based on frequency
-        freq = frequency_string_to_pandas(self.frequency)
-        if freq:
-            rng = pd.date_range(f"{baseyear}-01-01", f"{baseyear + 1}-01-01", freq=freq, inclusive="left")
-            chunks.update({"time": len(rng)})
+        try:
+            freq = frequency_string_to_pandas(self.frequency)
+            if freq:
+                rng = pd.date_range(f"{baseyear}-01-01", f"{baseyear + 1}-01-01", freq=freq, inclusive="left")
+                chunks.update({"time": len(rng)})
+        except Exception as e:
+            self.logger.warning("Unable to define optimal chunks, leaving them undefined: %s", e)
 
         return chunks
 
