@@ -191,7 +191,7 @@ class IcechunkWriter(BaseWriter):
         """Not used: IcechunkWriter fully overrides write_variable()."""
         raise NotImplementedError("IcechunkWriter does not use concat; write_variable() is fully overridden")
 
-    def _concat_year_files(self, var, year):
+    def concat_year_files(self, var, year):
         """
         Icechunk override: no concatenation needed.
 
@@ -455,13 +455,9 @@ class IcechunkWriter(BaseWriter):
                     t_elapsed = time.time() - t_start
                     self.logger.info("Month %s-%02d execution time: %.2f seconds", year, month, t_elapsed)
 
-                del month_data
-
-            del year_data
-
             # Yearly checkpoint (optional)
             if definitive:
-                self._concat_year_files(var, year)  # Calls optional GC
+                self.concat_year_files(var, year)  # Calls optional GC
 
         return True
 

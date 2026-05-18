@@ -10,11 +10,11 @@ Requires Zarr v3+.
 import os
 import shutil
 
-import numpy as np
 import xarray as xr
 import zarr
 
 from aqua.core.drop.drop_writer_base import BaseWriter
+from aqua.core.util.io_util import file_is_complete
 
 # zarr chunking defaults
 ZARR_CHUNKS = {"time": 1, "lat": None, "lon": None}
@@ -61,21 +61,7 @@ class ZarrWriter(BaseWriter):
         Returns:
             bool: True if valid, False otherwise
         """
-        try:
-            ds = xr.open_zarr(store_path, consolidated=False)
-            if "time" not in ds.dims:
-                return False
-            if len(ds.time) == 0:
-                return False
-            # Check for duplicates
-            if len(ds.time) != len(set(ds.time.values)):
-                return False
-            # Check sorted
-            if len(ds.time) > 1 and not (ds.time.diff("time") > np.timedelta64(0, "ns")).all():
-                return False
-            return True
-        except Exception:
-            return False
+        return file_is_complete(store_path, loglevel=self.logger.level)
 
     def _get_encoding(self, data, var=None):
         """
@@ -159,7 +145,7 @@ class ZarrWriter(BaseWriter):
         """Open one or more Zarr stores."""
         return xr.open_mfdataset(filepaths, engine="zarr", combine="by_coords", consolidated=False)
 
-    def _concat_year_files(self, var, year, minimum_required=12):
+    def concat_year_files(self, var, year):
         """
         Concatenate monthly zarr stores into a single yearly store.
 

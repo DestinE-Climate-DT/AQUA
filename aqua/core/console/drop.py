@@ -52,6 +52,8 @@ def drop_parser(parser=None):
                         help='source to be processed. Use with coherence with --exp and --var')
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
+    parser.add_argument('--no-validate', action="store_true",
+                        help='skip pre-run integrity check on existing output files (speeds up startup)')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
     parser.add_argument('--realization', type=str,
                         help='realization to be processed. Use with coherence with --model, --exp and --source')
@@ -121,6 +123,7 @@ def drop_execute(args):
     monitoring = get_arg(args, "monitoring", False)
     overwrite = get_arg(args, "overwrite", False)
     rebuild = get_arg(args, "rebuild", False)
+    no_validate = get_arg(args, "no_validate", False)
     only_catalog = get_arg(args, "only_catalog", False)
     if only_catalog:
         print("--only-catalog selected, doing a lot of noise but in the end producing only catalog update!")
@@ -147,6 +150,7 @@ def drop_execute(args):
         definitive=definitive,
         overwrite=overwrite,
         rebuild=rebuild,
+        no_validate=no_validate,
         default_workers=default_workers,
         engine=engine,
         monitoring=monitoring,
@@ -173,6 +177,7 @@ def drop_cli(
     definitive=False,
     overwrite=False,
     rebuild=False,
+    no_validate=False,
     monitoring=False,
     engine="fdb",
     default_workers=1,
@@ -201,6 +206,7 @@ def drop_cli(
         definitive: bool flag to create definitive files
         overwrite: bool flag to overwrite existing files
         rebuild: bool flag to rebuild the areas and weights
+        no_validate: bool flag to skip pre-run integrity check on existing output files
         default_workers: default number of workers
         monitoring: bool flag to enable the dask monitoring
         driver: output format driver
@@ -271,7 +277,8 @@ def drop_cli(
 
                         if not only_catalog:
                             # check that your DROP output is not already there (it will not work in streaming mode)
-                            drop.check_integrity(varname)
+                            if not no_validate:
+                                drop.check_integrity(varname)
 
                             # retrieve and generate
                             drop.retrieve()

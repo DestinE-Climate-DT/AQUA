@@ -104,20 +104,6 @@ class BaseWriter(ABC):
         pass
 
     @abstractmethod
-    def _concat_year_files(self, var, year):
-        """
-        Concatenate monthly files into a single yearly file/store.
-
-        Args:
-            var: Variable name
-            year: Year to concatenate
-
-        Returns:
-            bool: True if successful
-        """
-        pass
-
-    @abstractmethod
     def _should_concat(self):
         """
         Check if concatenation should be performed.
@@ -308,6 +294,7 @@ class BaseWriter(ABC):
                 shutil.rmtree(monthly_file)
             else:
                 self.logger.info("Cleaning monthly file %s...", basename)
+                os.remove(monthly_file)
 
     def _prepare_concat_monthly_files(self, var, year, minimum_required):
         """
@@ -356,19 +343,19 @@ class BaseWriter(ABC):
 
         return tmp_monthly_files, year_file, tmp_year_file
 
-    def concat_year_files(self, var, year, get_filename_fn=None):
+    @abstractmethod
+    def concat_year_files(self, var, year):
         """
-        Public wrapper for concatenating monthly files into yearly files.
+        Concatenate monthly files into a single yearly file/store.
 
         Args:
             var: Variable name
             year: Year to concatenate
-            get_filename_fn: Legacy parameter, ignored (uses self.get_filename)
 
         Returns:
             bool: True if successful
         """
-        return self._concat_year_files(var, year)
+        pass
 
     def check_integrity(self, var, overwrite=False):
         """
@@ -520,12 +507,8 @@ class BaseWriter(ABC):
                     self.logger.info("Moving temporary file %s to %s", tmpfile, outfile)
                     move_tmp_files(self.tmpdir, self.outdir)
 
-                del month_data
-
-            del year_data
-
             # Concatenate into yearly file if concat enabled
             if definitive and self._should_concat():
-                self._concat_year_files(var, year)
+                self.concat_year_files(var, year)
 
         return True

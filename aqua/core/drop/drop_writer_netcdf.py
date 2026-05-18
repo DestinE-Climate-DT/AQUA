@@ -5,7 +5,6 @@ Handles writing climate data chunks to NetCDF files with optional concatenation
 into yearly files. Supports both xarray and CDO for file concatenation.
 """
 
-import os
 import shutil
 import subprocess
 
@@ -79,10 +78,8 @@ class NetCDFWriter(BaseWriter):
         Returns:
             dict: Encoding configuration
         """
-        if var:
-            return {"time": self.time_encoding, var: self.var_encoding}
-        # Fallback: use first data variable
-        var_name = list(data.data_vars)[0] if isinstance(data, xr.Dataset) else data.name
+        data_vars = list(data.data_vars) if isinstance(data, xr.Dataset) else [data.name]
+        var_name = var if var in data_vars else data_vars[0]
         return {"time": self.time_encoding, var_name: self.var_encoding}
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
@@ -112,7 +109,7 @@ class NetCDFWriter(BaseWriter):
         """Open one or more NetCDF files."""
         return xr.open_mfdataset(filepaths, combine="by_coords", parallel=True)
 
-    def _concat_year_files(self, var, year):
+    def concat_year_files(self, var, year):
         """
         Concatenate monthly files into a single yearly file.
 
@@ -125,29 +122,11 @@ class NetCDFWriter(BaseWriter):
         Returns:
             bool: True if successful
         """
-        # Get and validate monthly files (NetCDF requires exactly 12)
-        monthly_files, is_valid = self._get_and_validate_monthly_files(var, year, minimum_required=12)
+        # Prepare monthly files for concatenation (gather, move to tmp, clean year files)
+        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=12)
 
-        if not is_valid:
+        if tmp_monthly_files is None:
             return False
-
-        self.logger.info("Creating yearly file for %s, year %s from %d monthly files...", var, year, len(monthly_files))
-
-        # Get output paths
-        year_file = self.get_filename(var, year)
-        tmp_year_file = os.path.join(self.tmpdir, os.path.basename(year_file))
-
-        # Move monthly files to tmpdir for safety
-        for monthly_file in monthly_files:
-            shutil.move(monthly_file, self.tmpdir)
-
-        # Clean any existing output files
-        for f in [tmp_year_file, year_file]:
-            if os.path.exists(f):
-                os.remove(f)
-
-        # Get the moved files in tmpdir - they keep the same basename
-        tmp_monthly_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in monthly_files]
 
         # Concatenate using CDO or xarray
         try:
