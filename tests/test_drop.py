@@ -11,6 +11,8 @@ from conftest import LOGLEVEL
 from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
+from aqua.core.drop.drop_writer_icechunk import IcechunkWriter
+from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 from aqua.core.lock import SafeFileLock
 from aqua.core.reader.reader import Reader
@@ -19,8 +21,8 @@ from aqua.core.util import dump_yaml, load_yaml
 DROP_PATH = "ci/IFS/test-tco79/r1/r100/monthly/mean/global"
 DROP_PATH_DAILY = "ci/IFS/test-tco79/r1/r100/daily/mean/europe"
 
-# pytestmark groups tests that run sequentially on the same worker to avoid conflicts
-pytestmark = [pytest.mark.aqua, pytest.mark.console, pytest.mark.xdist_group(name="dask_operations")]
+# Applies to every test class in this module; additional marks are added per-class below.
+pytestmark = pytest.mark.aqua
 
 
 @pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "drop_test"}])
@@ -148,7 +150,10 @@ class TestCatalogEntryBuilder:
 
 
 class TestDROP:
-    """Class containing DROP tests."""
+    """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
+
+    # Sequential execution required: all tests write to the shared "drop_test/" outdir.
+    pytestmark = [pytest.mark.console, pytest.mark.xdist_group(name="dask_operations")]
 
     def test_definitive_false(self, drop_arguments, tmp_path):
         """Test DROP with definitive=False."""
@@ -249,6 +254,7 @@ class TestDROP:
         )
 
         test.retrieve()
+        test.data = test.data.sel(time=slice("2020-01", "2020-03"))  # 3 months: limits dask+icechunk overhead
         test.drop_generator()
         assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
@@ -475,61 +481,6 @@ class TestDROP:
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
-    def test_zarr_writer_validation(self, drop_arguments, tmp_path):
-        """Test ZarrWriter validation edge cases."""
-        from aqua.core.drop.drop_writer_zarr import ZarrWriter
-
-        writer = ZarrWriter(tmpdir=str(tmp_path), outdir=drop_arguments["outdir"], loglevel=LOGLEVEL)
-
-        # Case 1: Store without 'time' dimension
-        ds_no_time = xr.Dataset({"var": xr.DataArray([1, 2, 3], dims=["x"])})
-        invalid_store = os.path.join(str(tmp_path), "no_time.zarr")
-        ds_no_time.to_zarr(invalid_store, mode="w")
-        assert writer.validate(invalid_store) is False
-
-        # Case 2: Store with empty time
-        ds_empty = xr.Dataset({"var": xr.DataArray([], dims=["time"], coords={"time": []})})
-        empty_store = os.path.join(str(tmp_path), "empty_time.zarr")
-        ds_empty.to_zarr(empty_store, mode="w")
-        assert writer.validate(empty_store) is False
-
-        # Case 3: Store with duplicate timestamps
-        times = [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-01-01")]
-        ds_dup = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times})})
-        dup_store = os.path.join(str(tmp_path), "duplicate.zarr")
-        ds_dup.to_zarr(dup_store, mode="w")
-        assert writer.validate(dup_store) is False
-
-        # Case 4: Store with unsorted timestamps
-        times_unsorted = [pd.Timestamp("2020-02-01"), pd.Timestamp("2020-01-01")]
-        ds_unsorted = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times_unsorted})})
-        unsorted_store = os.path.join(str(tmp_path), "unsorted.zarr")
-        ds_unsorted.to_zarr(unsorted_store, mode="w")
-        assert writer.validate(unsorted_store) is False
-
-        # Case 5: Valid store
-        times_valid = [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-02-01")]
-        ds_valid = xr.Dataset({"var": xr.DataArray([1, 2], dims=["time"], coords={"time": times_valid})})
-        valid_store = os.path.join(str(tmp_path), "valid.zarr")
-        ds_valid.to_zarr(valid_store, mode="w")
-        assert writer.validate(valid_store) is True
-
-    def test_zarr_encoding_without_chunks(self, drop_arguments, tmp_path):
-        """Test ZarrWriter encoding when chunks is None."""
-        from aqua.core.drop.drop_writer_zarr import ZarrWriter
-
-        # Create writer with chunks=None
-        writer = ZarrWriter(tmpdir=str(tmp_path), outdir=drop_arguments["outdir"], loglevel=LOGLEVEL)
-        writer.chunks = None
-
-        ds = xr.Dataset(
-            {"var": xr.DataArray([1, 2, 3], dims=["time"], coords={"time": pd.date_range("2020-01-01", periods=3)})}
-        )
-        encoding = writer._get_encoding(ds)
-
-        # Should return None when chunks is None
-        assert encoding is None
-
     def test_performance_reporting(self, drop_arguments, tmp_path):
         """Test write_variable performance reporting."""
         test = Drop(
@@ -544,7 +495,7 @@ class TestDROP:
         )
 
         test.retrieve()
-        test.drop_generator()  # Should work without dask_client
+        test.drop_generator()
 
         file_path = os.path.join(
             os.getcwd(),
@@ -561,3 +512,142 @@ class TestDROP:
         )
         assert not os.path.exists(file_missing), "Incomplete file should not be created: {}".format(file_missing)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+
+class TestZarrWriter:
+    """Unit tests for ZarrWriter (validation, encoding, error paths)."""
+
+    @pytest.fixture
+    def writer(self, tmp_path):
+        return ZarrWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+
+    @pytest.mark.parametrize(
+        "ds,expected",
+        [
+            pytest.param(xr.Dataset({"v": xr.DataArray([1], dims=["x"])}), False, id="no_time"),
+            pytest.param(xr.Dataset({"v": xr.DataArray([], dims=["time"], coords={"time": []})}), False, id="empty"),
+            pytest.param(
+                xr.Dataset(
+                    {
+                        "v": xr.DataArray(
+                            [1, 2], dims=["time"], coords={"time": [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-01-01")]}
+                        )
+                    }
+                ),
+                False,
+                id="dup",
+            ),
+            pytest.param(
+                xr.Dataset(
+                    {
+                        "v": xr.DataArray(
+                            [1, 2], dims=["time"], coords={"time": [pd.Timestamp("2020-02-01"), pd.Timestamp("2020-01-01")]}
+                        )
+                    }
+                ),
+                False,
+                id="unsorted",
+            ),
+            pytest.param(
+                xr.Dataset(
+                    {
+                        "v": xr.DataArray(
+                            [1, 2], dims=["time"], coords={"time": [pd.Timestamp("2020-01-01"), pd.Timestamp("2020-02-01")]}
+                        )
+                    }
+                ),
+                True,
+                id="valid",
+            ),
+        ],
+    )
+    def test_validation(self, writer, tmp_path, ds, expected):
+        """Parametrized coverage of all ZarrWriter.validate() edge cases."""
+        store = os.path.join(str(tmp_path), "test.zarr")
+        ds.to_zarr(store, mode="w")
+        assert writer.validate(store) is expected
+
+    def test_encoding_without_chunks(self, writer):
+        """_get_encoding returns None when chunks is not set."""
+        writer.chunks = None
+        ds = xr.Dataset(
+            {"var": xr.DataArray([1, 2, 3], dims=["time"], coords={"time": pd.date_range("2020-01-01", periods=3)})}
+        )
+        assert writer._get_encoding(ds) is None
+
+    def test_write_error_path(self, writer):
+        """_write_chunk_to_disk returns False when the write fails."""
+        ds = xr.Dataset({"var": xr.DataArray([1.0], dims=["time"])})
+        assert writer._write_chunk_to_disk(ds, "/proc/nonexistent/test.zarr", None) is False
+
+
+class TestIcechunkWriter:
+    """Unit and integration tests for IcechunkWriter (integrity check, resume, skip)."""
+
+    # resume/skip write to the shared "drop_test/" outdir so they must be serialized.
+    pytestmark = pytest.mark.xdist_group(name="dask_operations")
+
+    def _first_run(self, common, tmp_path):
+        """Write Jan-Feb as the initial committed state for resume/skip tests."""
+        run = Drop(**common, tmpdir=str(tmp_path))
+        run.retrieve()
+        run.data = run.data.sel(time=slice("2020-01", "2020-02"))
+        run.drop_generator()
+
+    def test_integrity_var_not_found(self, tmp_path):
+        """check_integrity returns incomplete when the variable is missing from the repo."""
+        writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+        writer._init_repo()
+        ds = xr.Dataset({"foo": xr.DataArray([1.0], dims=["time"], coords={"time": [pd.Timestamp("2020-01-01")]})})
+        writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
+        writer.main_session.commit("test")
+
+        result = writer.check_integrity("bar")
+        assert result["complete"] is False
+        assert "bar" in result["message"]
+
+    def test_resume(self, drop_arguments, tmp_path):
+        """IcechunkWriter appends only the missing months on a second run."""
+        common = dict(
+            catalog="ci",
+            **drop_arguments,
+            resolution="r100",
+            frequency="monthly",
+            output_format="icechunk",
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+        self._first_run(common, tmp_path)
+
+        run2 = Drop(**common, tmpdir=str(tmp_path))
+        run2.retrieve()
+        run2.data = run2.data.sel(time=slice("2020-01", "2020-03"))
+        run2.drop_generator()
+
+        storage = icechunk.local_filesystem_storage(run2.writer.repo_path)
+        ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
+        assert len(ds.time) == 3, "Resumed store should have Jan+Feb+Mar"
+        shutil.rmtree(drop_arguments["outdir"])
+
+    def test_skip(self, drop_arguments, tmp_path):
+        """IcechunkWriter skips a variable already fully committed."""
+        common = dict(
+            catalog="ci",
+            **drop_arguments,
+            resolution="r100",
+            frequency="monthly",
+            output_format="icechunk",
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+        self._first_run(common, tmp_path)
+
+        run2 = Drop(**common, tmpdir=str(tmp_path))
+        run2.retrieve()
+        run2.data = run2.data.sel(time=slice("2020-01", "2020-02"))
+        run2.drop_generator()
+
+        storage = icechunk.local_filesystem_storage(run2.writer.repo_path)
+        ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
+        assert len(ds.time) == 2, "Skip run must not add timesteps"
+        shutil.rmtree(drop_arguments["outdir"])
