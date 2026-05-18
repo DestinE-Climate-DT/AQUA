@@ -235,15 +235,24 @@ class IcechunkWriter(BaseWriter):
         """Not used: IcechunkWriter fully overrides check_integrity()."""
         raise NotImplementedError("IcechunkWriter does not use _open_files(); check_integrity() is fully overridden")
 
-    def check_integrity(self, var, overwrite=False):
+    def check_integrity(self, var, overwrite=False, end_date=None):
         """
         Check variable integrity by querying repo metadata.
 
         Reads from current session store; very fast (metadata-only).
 
+        Because icechunk holds a single store for all variables, completeness
+        must be evaluated against the requested time range: having *some* data
+        is not enough if it does not cover up to ``end_date``.
+
         Args:
             var: Variable name
             overwrite: If True, always report incomplete
+            end_date: Optional upper bound of the requested time range
+                (numpy datetime64, pandas Timestamp, or any value accepted
+                by ``pd.Timestamp``).  When provided, the repo is considered
+                complete only if its last committed timestamp is >= end_date.
+                More data than requested is fine; less is not.
 
         Returns:
             dict: {
@@ -284,6 +293,19 @@ class IcechunkWriter(BaseWriter):
                 return {"complete": False, "last_record": None, "message": "Unsorted timestamps"}
 
             last_record = pd.to_datetime(times[-1]).strftime("%Y%m%d")
+
+            # When an expected end date is provided, verify coverage.
+            # Keep last_record so write_variable can resume from the right point.
+            if end_date is not None:
+                last_store_ts = pd.Timestamp(times[-1])
+                end_ts = pd.Timestamp(end_date)
+                if last_store_ts < end_ts:
+                    return {
+                        "complete": False,
+                        "last_record": last_record,
+                        "message": (f"Variable {var} covers up to {last_record} but {end_ts.strftime('%Y%m%d')} is requested"),
+                    }
+
             return {
                 "complete": True,
                 "last_record": last_record,
@@ -329,8 +351,9 @@ class IcechunkWriter(BaseWriter):
         if not self.repo:
             self._init_repo()
 
-        # Check existing state to decide whether to skip or resume
-        integrity = self.check_integrity(var, overwrite=overwrite)
+        # Check existing state to decide whether to skip or resume.
+        # Pass end_date so check_integrity can verify the repo covers the full requested range.
+        integrity = self.check_integrity(var, overwrite=overwrite, end_date=data.time.values[-1])
         if integrity["complete"] and not overwrite:
             self.logger.info("Variable %s already complete in repo; skipping", var)
             return True
