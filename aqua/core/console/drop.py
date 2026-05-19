@@ -105,6 +105,7 @@ def drop_execute(args):
     region = config["target"].get("region", None)
 
     # Command line argumens override config file
+    # from target block
     catalog = get_arg(args, "catalog", config["target"].get("catalog"))
     stat = get_arg(args, "stat", config["target"].get("stat", "mean"))
     stat_kwargs = config["target"].get("stat_kwargs", {})
@@ -112,17 +113,18 @@ def drop_execute(args):
     resolution = get_arg(args, "resolution", config["target"].get("resolution"))
     startdate = get_arg(args, "startdate", config["target"].get("startdate"))
     enddate = get_arg(args, "enddate", config["target"].get("enddate"))
-    engine = get_arg(args, "engine", config["options"].get("engine", "fdb"))
 
+    # options
+    engine = get_arg(args, "engine", config["options"].get("engine", "fdb"))
     loglevel = get_arg(args, "loglevel", config["options"].get("loglevel", "WARNING"))
     compact = config["options"].get("compact", "cdo")
     driver = get_arg(args, "driver", config["options"].get("driver", "netcdf"))
 
     # Other options, only from command line
     definitive = get_arg(args, "definitive", False)
-    monitoring = get_arg(args, "monitoring", False)
-    overwrite = get_arg(args, "overwrite", False)
-    rebuild = get_arg(args, "rebuild", False)
+    monitoring = get_arg(args, "monitoring", config["options"].get("performance_monitoring", False))
+    overwrite = get_arg(args, "overwrite", config["options"].get("overwrite", False))
+    rebuild = get_arg(args, "rebuild", config["options"].get("rebuild", False))
     no_validate = get_arg(args, "no_validate", False)
     only_catalog = get_arg(args, "only_catalog", False)
     if only_catalog:

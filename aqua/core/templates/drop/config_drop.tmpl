@@ -12,6 +12,11 @@ target:
   catalog: {{ catalog }}
   startdate: {{ startdate }}  # Optional: starting date for Drop analysis
   enddate: {{ enddate }}      # Optiona: ending date for Drop analysis
+  frequency: monthly          # Optional: time averaging frequency
+  stat: mean                  # Optional: Statistical operator (default: mean)
+  # Additional option: kwargs for the statistical callable function can be set
+  # here as a dictionary
+  stat_kwargs: {}
 
   # Optional: Regional selection
   # Uncomment to extract specific regions
@@ -21,11 +26,7 @@ target:
   #  lon: [-10, 40]      # Longitude range [min, max]
 
   # Optional: Statistical operator (default: mean)
-  # Options: mean, std, max, min
-  # Additional option: kwargs for the statistical callable function can be set
-  # here as a dictionary
-  #stat: mean
-  #stat_kwargs: {}
+
 
 # Output paths
 paths:
@@ -40,10 +41,6 @@ options:
 
   loglevel: INFO
 
-  # Zarr reference creation for faster data access
-  zarr: False
-  verify_zarr: False
-
   # Overwrite existing files
   overwrite: False
 
@@ -54,10 +51,7 @@ options:
   rebuild: False
 
   # Compacting method: xarray, cdo, or null for no compacting
-  compact: xarray
-
-  # CDO options (used if compact: cdo)
-  cdo_options: ["-f", "nc4", "-z", "zip_1"]
+  compact: cdo
 
   # Performance monitoring (creates HTML report)
   performance_reporting: False
