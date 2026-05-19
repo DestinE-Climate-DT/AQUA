@@ -13,6 +13,8 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- Introduce a report txt file for monotoring DROP execution time and memory occupation (#2824)
+- Introducing a `--no-validate` flag to disable file validation on reading and speed up DROP (#2824)
 - Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
 - Solve `areas=True` and `src_grd_name=False` conflict (#2871)
 - Fallback test download from wilma (#2867)
