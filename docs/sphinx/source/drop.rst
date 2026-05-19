@@ -294,9 +294,8 @@ Controls processing behavior and performance settings:
     options:
       engine: fdb
       loglevel: INFO
-      output_format: netcdf
+      driver: netcdf
       overwrite: False
-      exclude_incomplete: False
       rebuild: False
       compact: xarray
       performance_reporting: False
@@ -311,7 +310,7 @@ Controls processing behavior and performance settings:
 
   - Available levels: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``
 
-- **output_format** (string, optional): Format for the output files. Default: ``netcdf``
+- **driver** (string, optional): Format for the output files. Default: ``netcdf``
 
   - ``netcdf``: Create NetCDF files.
   Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
@@ -324,7 +323,7 @@ Controls processing behavior and performance settings:
   .. warning::
 
       **Experimental feature.** ``icechunk`` output is experimental and **not compatible with AQUA catalog integration**.
-      Running ``aqua drop`` with ``--driver icechunk`` (or ``output_format: icechunk`` in the config file) will
+      Running ``aqua drop`` with ``--driver icechunk`` (or ``driver: icechunk`` in the config file) will
       skip the automatic ``create_catalog_entry`` step, meaning the output **cannot be accessed via** ``Reader``
       using a catalog source name. Direct access via ``icechunk.Repository.open`` and ``xr.open_zarr`` is required.
       Do not use in production pipelines until this limitation is resolved.
