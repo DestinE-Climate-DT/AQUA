@@ -188,7 +188,7 @@ def drop_cli(
     driver="netcdf",
     compact="cdo",
     only_catalog=False,
-    exclude_incomplete=False,
+    exclude_incomplete=True,
 ):
     """
     Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
