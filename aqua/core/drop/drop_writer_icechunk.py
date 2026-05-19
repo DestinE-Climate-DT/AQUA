@@ -101,10 +101,29 @@ class IcechunkWriter(BaseWriter):
         """Return file extension for zarr format."""
         return ".zarr"
 
+    def _open_icechunk(self, store_path):
+        """Open a committed icechunk store as a read-only xarray Dataset.
+
+        Args:
+            store_path: Path to the icechunk zarr repository.
+
+        Returns:
+            xarray.Dataset: Dataset opened from the latest committed snapshot.
+
+        Raises:
+            Exception: Any error from icechunk or xarray (caller decides how to handle).
+        """
+        storage = icechunk.local_filesystem_storage(store_path)
+        repo = icechunk.Repository.open(storage)
+        read_session = repo.readonly_session("main")
+        return xr.open_zarr(read_session.store, consolidated=False)
+
     def validate(self, store_path):
         """Validate icechunk store: must exist and contain at least one time step."""
+        if not os.path.exists(store_path):
+            return False
         try:
-            ds = xr.open_zarr(store_path, consolidated=False)
+            ds = self._open_icechunk(store_path)
             return "time" in ds.dims and len(ds.time) > 0
         except Exception:
             return False
@@ -271,10 +290,7 @@ class IcechunkWriter(BaseWriter):
         try:
             # Open a fresh read-only session to inspect committed state only.
             # Using self.main_session would expose uncommitted data during an active write.
-            storage = icechunk.local_filesystem_storage(self.repo_path)
-            repo = icechunk.Repository.open(storage)
-            read_session = repo.readonly_session("main")
-            ds = xr.open_zarr(read_session.store, consolidated=False)
+            ds = self._open_icechunk(self.repo_path)
 
             if var not in ds:
                 return {"complete": False, "last_record": None, "message": f"Variable {var} not found"}

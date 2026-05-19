@@ -651,3 +651,62 @@ class TestIcechunkWriter:
         ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
         assert len(ds.time) == 2, "Skip run must not add timesteps"
         shutil.rmtree(drop_arguments["outdir"])
+
+    @pytest.mark.parametrize(
+        "scenario,expected",
+        [
+            ("nonexistent", False),
+            ("with_time", True),
+            ("without_time", False),
+        ],
+        ids=["nonexistent", "with_time", "without_time"],
+    )
+    def test_validate(self, tmp_path, scenario, expected):
+        """validate() returns True only for committed icechunk stores with a non-empty time dimension."""
+        writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+
+        if scenario == "nonexistent":
+            path = str(tmp_path / "nonexistent.zarr")
+        else:
+            writer._init_repo()
+            if scenario == "with_time":
+                ds = xr.Dataset({"foo": xr.DataArray([1.0], dims=["time"], coords={"time": [pd.Timestamp("2020-01-01")]})})
+            else:  # without_time
+                ds = xr.Dataset({"foo": xr.DataArray([1.0], dims=["x"])})
+            writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
+            writer.main_session.commit("test")
+            path = writer.repo_path
+
+        assert writer.validate(path) is expected
+
+    def test_garbage_collect_yearly(self, tmp_path):
+        """concat_year_files() triggers GC when garbage_collect_yearly=True without corrupting the store."""
+        writer = IcechunkWriter(
+            tmpdir=str(tmp_path),
+            outdir=str(tmp_path),
+            garbage_collect_yearly=True,
+            loglevel=LOGLEVEL,
+        )
+        writer._init_repo()
+
+        ds = xr.Dataset(
+            {
+                "foo": xr.DataArray(
+                    [1.0, 2.0],
+                    dims=["time"],
+                    coords={"time": pd.date_range("2020-01-01", periods=2, freq="MS")},
+                )
+            }
+        )
+        writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
+        writer.main_session.commit("pre-gc")
+        writer.main_session = writer.repo.writable_session("main")
+
+        # concat_year_files calls _yearly_garbage_collect when the flag is set
+        result = writer.concat_year_files("foo", 2020)
+        assert result is True
+
+        # Store must remain readable after GC
+        ds_after = writer._open_icechunk(writer.repo_path)
+        assert "foo" in ds_after.data_vars
+        assert len(ds_after.time) == 2
