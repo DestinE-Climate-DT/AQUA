@@ -58,7 +58,7 @@ def drop_parser(parser=None):
     parser.add_argument('--realization', type=str,
                         help='realization to be processed. Use with coherence with --model, --exp and --source')
     parser.add_argument('--stat', type=str,
-                        help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std'].")
+                        help="statistic to be computed. Can be one of ['mean', 'std', 'max', 'min', 'sum', 'histogram'].")
     parser.add_argument('--frequency', type=str,
                         help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
@@ -122,9 +122,10 @@ def drop_execute(args):
 
     # Other options, only from command line
     definitive = get_arg(args, "definitive", False)
-    monitoring = get_arg(args, "monitoring", config["options"].get("performance_monitoring", False))
+    monitoring = get_arg(args, "monitoring", config["options"].get("performance_reporting", False))
     overwrite = get_arg(args, "overwrite", config["options"].get("overwrite", False))
     rebuild = get_arg(args, "rebuild", config["options"].get("rebuild", False))
+    exclude_incomplete = config["options"].get("exclude_incomplete", False)
     no_validate = get_arg(args, "no_validate", False)
     only_catalog = get_arg(args, "only_catalog", False)
     if only_catalog:
@@ -158,6 +159,7 @@ def drop_execute(args):
         monitoring=monitoring,
         only_catalog=only_catalog,
         driver=driver,
+        exclude_incomplete=exclude_incomplete,
     )
 
 
@@ -186,6 +188,7 @@ def drop_cli(
     driver="netcdf",
     compact="cdo",
     only_catalog=False,
+    exclude_incomplete=False,
 ):
     """
     Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
@@ -214,6 +217,7 @@ def drop_cli(
         driver: output format driver
         compact: compaction method
         only_catalog: bool flag to only update the catalog
+        exclude_incomplete: bool flag to exclude incomplete temporal chunks when averaging
     """
 
     models = to_list(get_arg(args, "model", config["data"]))
@@ -232,6 +236,11 @@ def drop_cli(
 
                 # get the number of workers for this specific configuration
                 workers = config["data"][model][exp][source].get("workers", default_workers)
+
+                # per-source overrides: resolution, frequency, stat fall back to global values
+                src_resolution = config["data"][model][exp][source].get("resolution", resolution)
+                src_frequency = config["data"][model][exp][source].get("frequency", frequency)
+                src_stat = config["data"][model][exp][source].get("stat", stat)
 
                 # loop in realizations
                 for realization in loop_realizations:
@@ -254,24 +263,24 @@ def drop_cli(
                             exp=exp,
                             source=source,
                             var=varname,
-                            resolution=resolution,
+                            resolution=src_resolution,
                             startdate=startdate,
                             enddate=enddate,
-                            frequency=frequency,
+                            frequency=src_frequency,
                             fix=fix,
                             outdir=outdir,
                             tmpdir=tmpdir,
                             nproc=workers,
                             loglevel=loglevel,
                             region=region,
-                            stat=stat,
+                            stat=src_stat,
                             stat_kwargs=stat_kwargs,
                             definitive=definitive,
                             overwrite=overwrite,
                             rebuild=rebuild,
                             compact=compact,
                             performance_reporting=monitoring,
-                            exclude_incomplete=True,
+                            exclude_incomplete=exclude_incomplete,
                             output_format=driver,
                             engine=engine,
                             **extra_args,

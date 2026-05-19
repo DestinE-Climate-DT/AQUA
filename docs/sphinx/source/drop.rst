@@ -297,7 +297,7 @@ Controls processing behavior and performance settings:
       driver: netcdf
       overwrite: False
       rebuild: False
-      compact: xarray
+      compact: cdo
       performance_reporting: False
 
 - **engine** (string, optional): Data retrieval engine. Default: ``fdb``
@@ -345,7 +345,7 @@ Controls processing behavior and performance settings:
   - ``False``: Use cached weights if available
   - Set to ``True`` if you suspect weights are outdated (e.g., after a major update to CDO or AQUA)
 
-- **compact** (string, optional): Method for concatenating monthly files into yearly files. Only relevant when ``output_format: netcdf``. Default: ``xarray``
+- **compact** (string, optional): Method for concatenating monthly files into yearly files. Only relevant when ``driver: netcdf``. Default: ``cdo``
 
   - ``xarray``: Use xarray for concatenation
   - ``cdo``: Use Climate Data Operators
@@ -415,6 +415,8 @@ Each source configuration supports the following parameters:
   - Example: ``[0, 1, 2]`` processes r0, r1, and r2
   - If omitted, processes the default realization (r1)
   - Only applicable to ensemble datasets
+
+- **zoom** (int, optional): Zoom level for HEALPix sources (e.g., ``zoom: 8``). Passed directly to the Reader.
 
 - **resolution** (string, optional): Override target resolution for this specific source.
 
@@ -517,7 +519,7 @@ Usage
 
 .. option:: --stat
 
-    Statistic to be computed (default: 'mean')
+    Statistic to be computed (default: 'mean'). Options: 'mean', 'std', 'max', 'min', 'sum', 'histogram'.
 
 .. option:: --frequency
 
@@ -544,6 +546,36 @@ Usage
 .. option:: --engine
 
     The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'.
+
+.. option:: --driver
+
+    Output format for DROP files: ``netcdf`` (default), ``zarr``, or ``icechunk``.
+    ``icechunk`` is experimental and does not support catalog integration.
+
+.. option:: --no-validate
+
+    Skip the pre-run integrity check on existing output files. Speeds up startup for large datasets.
+
+.. option:: --catalog CATALOG
+
+    Catalog to process. Use together with ``--model``, ``--exp`` and ``--source`` to narrow the run
+    to a specific triplet instead of looping over the full ``data`` section.
+
+.. option:: -m MODEL, --model MODEL
+
+    Model to process. Use together with ``--exp`` and ``--source``.
+
+.. option:: -e EXP, --exp EXP
+
+    Experiment to process. Use together with ``--model`` and ``--source``.
+
+.. option:: -s SOURCE, --source SOURCE
+
+    Source to process. Use together with ``--model`` and ``--exp``.
+
+.. option:: -v VAR, --var VAR
+
+    Single variable to process. Use together with ``--source``.
 
 **Examples:**
 
