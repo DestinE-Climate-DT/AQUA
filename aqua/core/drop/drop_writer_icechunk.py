@@ -325,6 +325,7 @@ class IcechunkWriter(BaseWriter):
         definitive=True,
         dask=False,
         performance_reporting=False,
+        stats_file=None,
     ):
         """
         Write complete variable with monthly commits to icechunk repo.
@@ -456,6 +457,11 @@ class IcechunkWriter(BaseWriter):
 
                     t_elapsed = time.time() - t_start
                     self.logger.info("Month %s-%02d execution time: %.2f seconds", year, month, t_elapsed)
+                    entry = {"var": var, "year": year, "month": month, "elapsed": t_elapsed, "mem": self._last_mem_stats}
+                    self._chunk_stats.append(entry)
+                    self._last_mem_stats = None
+                    if stats_file is not None:
+                        self._write_chunk_stat_line(entry, stats_file)
 
             # Yearly checkpoint (optional)
             if definitive:
