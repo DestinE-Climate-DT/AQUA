@@ -14,6 +14,7 @@ Main changes:
 
 Complete list:
 - Add AQUA attributes for source and target grid (#2869)
+- Solve `areas=True` and `src_grd_name=False` conflict (#2871)
 - Fallback test download from wilma (#2867)
 - push_analysis png metadata support and remove imagemagick dependency (#2866)
 - Support for python 3.13 and 3.14, with new default from 3.12 to 3.14 (#2853)
