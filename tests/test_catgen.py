@@ -289,8 +289,8 @@ def test_load_jinja_template_missing(tmp_path):
 
 # generate_catalog — edge cases
 @pytest.mark.catgen
-def test_generate_catalog_no_resolutions(tmp_path, caplog):
-    """If local_grids is empty, generate an empty file and log the error."""
+def test_generate_catalog_no_resolutions(tmp_path):
+    """If local_grids is empty, generate_catalog returns early without errors."""
     config_path = tmp_path / "test.yaml"
     config_template = Path("tests/catgen/config-test-catgen.j2")
     definitions = {"model": "IFS-NEMO", "kind": "minimal", "resolution": "lowres", "expid": "test"}
@@ -300,10 +300,11 @@ def test_generate_catalog_no_resolutions(tmp_path, caplog):
 
     gen = AquaFDBGenerator(data_portfolio="minimal", config_path=str(config_path))
     gen.local_grids = {}
-    with caplog.at_level(logging.ERROR):
-        gen.generate_catalog()
-    assert "No resolutions found" in caplog.text
+    gen.generate_catalog()  # must return early without raising
 
+    # verify no catalog file was written
+    entry_file = tmp_path / "Climate-DT-catalog" / "catalogs" / "ci" / "catalog" / "IFS-NEMO" / "linobanfi.yaml"
+    assert not entry_file.exists()
 
 # catgen_execute
 @pytest.mark.catgen
