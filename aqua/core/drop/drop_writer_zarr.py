@@ -76,27 +76,10 @@ class ZarrWriter(BaseWriter):
         Returns:
             dict: Encoding configuration or None
         """
-        encoding = {}
-
-        # Get variable list
-        vars_to_encode = list(data.data_vars)
-
-        # Setup chunking
-        if self.chunks:
-            for var_name in vars_to_encode:
-                # Convert None to actual dimension size
-                chunks_resolved = tuple(
-                    self.chunks.get(dim, data[var_name].sizes[dim])
-                    if self.chunks.get(dim) is not None
-                    else data[var_name].sizes[dim]
-                    for dim in data[var_name].dims
-                )
-                encoding[var_name] = {"chunks": chunks_resolved}
-
-        # Compression: let xarray handle zarr v3 codecs by default
+        if not self.chunks:
+            return None
         self.logger.debug("Using xarray default compression for zarr v3")
-
-        return encoding or None
+        return self._build_zarr_encoding(data, time_chunk=self.chunks.get("time", 1))
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """

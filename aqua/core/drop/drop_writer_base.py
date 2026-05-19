@@ -129,6 +129,27 @@ class BaseWriter(ABC):
         """
         pass
 
+    def _build_zarr_encoding(self, data, time_chunk):
+        """
+        Build per-variable chunk encoding with explicit time chunking and full spatial dims.
+
+        Shared by ZarrWriter and IcechunkWriter. For each variable in ``data``,
+        constructs a chunk tuple where the ``time`` dimension uses ``time_chunk``
+        and all other dimensions use the full dimension size (no chunking).
+
+        Args:
+            data: xarray Dataset
+            time_chunk (int): Number of time steps per chunk.
+
+        Returns:
+            dict: Encoding configuration or None if data has no data_vars.
+        """
+        encoding = {}
+        for var_name in data.data_vars:
+            chunks = tuple(time_chunk if dim == "time" else data[var_name].sizes[dim] for dim in data[var_name].dims)
+            encoding[var_name] = {"chunks": chunks}
+        return encoding or None
+
     def _compute_data(self, data, dask=False, performance_reporting=False):
         """
         Compute data with Dask monitoring and performance reporting.

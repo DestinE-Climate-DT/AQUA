@@ -146,21 +146,7 @@ class IcechunkWriter(BaseWriter):
         if not self.time_chunk_size:
             self.logger.warning("time_chunk_size not set; icechunk will use default chunk layout")
             return None
-
-        encoding = {}
-
-        for var_name in data.data_vars:
-            chunks = []
-            for dim in data[var_name].dims:
-                if dim == "time":
-                    chunks.append(self.time_chunk_size)
-                else:
-                    # Spatial dims: use full size (no chunking)
-                    chunks.append(data[var_name].sizes[dim])
-
-            encoding[var_name] = {"chunks": tuple(chunks)}
-
-        return encoding or None
+        return self._build_zarr_encoding(data, time_chunk=self.time_chunk_size)
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """Not used: IcechunkWriter writes via _write_to_icechunk_session(), not tmpfiles."""
