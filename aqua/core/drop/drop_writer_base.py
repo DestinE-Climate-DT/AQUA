@@ -50,6 +50,8 @@ class BaseWriter(ABC):
         self.outdir = outdir
         self.filename_builder = filename_builder
         self.logger = log_configure(loglevel, self.__class__.__name__)
+        self._chunk_stats = []
+        self._last_mem_stats = None
 
     @abstractmethod
     def get_extension(self):
@@ -182,6 +184,7 @@ class BaseWriter(ABC):
                     avg_mem,
                     max_mem,
                 )
+                self._last_mem_stats = {"avg_mem": avg_mem, "max_mem": max_mem}
         else:
             if hasattr(data, "compute"):
                 with ProgressBar():
@@ -514,6 +517,10 @@ class BaseWriter(ABC):
                     )
                     t_elapsed = time() - t_start
                     self.logger.info("Chunk execution time: %.2f", t_elapsed)
+                    self._chunk_stats.append(
+                        {"var": var, "year": year, "month": month, "elapsed": t_elapsed, "mem": self._last_mem_stats}
+                    )
+                    self._last_mem_stats = None
 
                     if not success:
                         self.logger.error("Failed to write chunk for %s-%s", year, month)
