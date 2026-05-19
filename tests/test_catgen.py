@@ -306,6 +306,7 @@ def test_generate_catalog_no_resolutions(tmp_path):
     entry_file = tmp_path / "Climate-DT-catalog" / "catalogs" / "ci" / "catalog" / "IFS-NEMO" / "linobanfi.yaml"
     assert not entry_file.exists()
 
+
 # catgen_execute
 @pytest.mark.catgen
 def test_catgen_execute(tmp_path):
