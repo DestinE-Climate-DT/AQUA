@@ -236,7 +236,7 @@ class Drop:
 
         # stats file written in outdir (timestamped to avoid overwrites)
         _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.stats_file = os.path.join(self.outdir, f"drop_stats_{_ts}.txt")
+        self.stats_file = os.path.join(self.outdir, f"drop_stats_{output_format}_{_ts}.txt")
 
     @staticmethod
     def _require_param(param, name, msg=None):
