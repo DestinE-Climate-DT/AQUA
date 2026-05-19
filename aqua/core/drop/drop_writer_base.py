@@ -9,6 +9,7 @@ import glob
 import os
 import shutil
 from abc import ABC, abstractmethod
+from datetime import datetime
 from time import time
 
 import numpy as np
@@ -437,6 +438,7 @@ class BaseWriter(ABC):
         definitive=True,
         dask=False,
         performance_reporting=False,
+        stats_file=None,
     ):
         """
         Write complete variable with all year/month logic.
@@ -461,11 +463,9 @@ class BaseWriter(ABC):
             definitive: Actually write files (vs dry-run)
             dask: If True, use Dask for distributed computing
             performance_reporting: Limit to first month only
-
-        Returns:
-            bool: True if successful
+            stats_file: Path to stats text file for immediate per-chunk writes. None disables writing.
         """
-        # Preserve original attributes for re-application after slicing
+        # Capture attrs before slicing (slicing can drop Dataset-level attrs)
         original_attrs = data.attrs.copy()
 
         # Split data into years
@@ -517,10 +517,11 @@ class BaseWriter(ABC):
                     )
                     t_elapsed = time() - t_start
                     self.logger.info("Chunk execution time: %.2f", t_elapsed)
-                    self._chunk_stats.append(
-                        {"var": var, "year": year, "month": month, "elapsed": t_elapsed, "mem": self._last_mem_stats}
-                    )
+                    entry = {"var": var, "year": year, "month": month, "elapsed": t_elapsed, "mem": self._last_mem_stats}
+                    self._chunk_stats.append(entry)
                     self._last_mem_stats = None
+                    if stats_file is not None:
+                        self._write_chunk_stat_line(entry, stats_file)
 
                     if not success:
                         self.logger.error("Failed to write chunk for %s-%s", year, month)
@@ -540,3 +541,15 @@ class BaseWriter(ABC):
                 self.concat_year_files(var, year)
 
         return True
+
+    def _write_chunk_stat_line(self, entry, stats_file):
+        """Write a single chunk stat line immediately to the stats file."""
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        mem = entry.get("mem")
+        mem_str = f"  avg_mem={mem['avg_mem']:.2f} GiB  peak_mem={mem['max_mem']:.2f} GiB" if mem is not None else ""
+        line = (
+            f"[{ts}] CHUNK  var={entry['var']}  year={entry['year']}  "
+            f"month={entry['month']:02d}  elapsed={entry['elapsed']:.2f}s{mem_str}\n"
+        )
+        with open(stats_file, "a", encoding="utf-8") as fh:
+            fh.write(line)

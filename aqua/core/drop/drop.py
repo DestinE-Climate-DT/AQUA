@@ -234,9 +234,12 @@ class Drop:
         self.last_record = None
         self.check = False
 
-        # stats file written in outdir (timestamped to avoid overwrites)
+        # stats file written in basedir (timestamped, with run details to avoid overwrites)
         _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.stats_file = os.path.join(self.outdir, f"drop_stats_{output_format}_{_ts}.txt")
+        self.stats_file = os.path.join(
+            self.basedir,
+            f"drop_stats_{self.catalog}_{self.model}_{self.exp}_{self.source}_{output_format}_{_ts}.txt",
+        )
 
     @staticmethod
     def _require_param(param, name, msg=None):
@@ -595,6 +598,7 @@ class Drop:
             definitive=self.definitive,
             dask=self.dask,
             performance_reporting=self.performance_reporting,
+            stats_file=self.stats_file if self.definitive else None,
         )
 
         del temp_data
@@ -618,24 +622,15 @@ class Drop:
         self.logger.info("Stats file: %s", self.stats_file)
 
     def _append_stats(self, var, t_beg, t_end):
-        """Append per-chunk lines and a variable summary line to the stats file."""
+        """Append a variable summary line to the stats file (chunk lines already written inline)."""
         if not self.definitive:
             return
         chunk_stats = getattr(self.writer, "_chunk_stats", [])
         total_time = t_end - t_beg
-        lines = []
-        for entry in chunk_stats:
-            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            mem = entry.get("mem")
-            mem_str = f"  avg_mem={mem['avg_mem']:.2f} GiB  peak_mem={mem['max_mem']:.2f} GiB" if mem is not None else ""
-            lines.append(
-                f"[{ts}] CHUNK  var={entry['var']}  year={entry['year']}  "
-                f"month={entry['month']:02d}  elapsed={entry['elapsed']:.2f}s{mem_str}\n"
-            )
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        lines.append(f"[{ts}] SUMMARY  var={var}  total_time={total_time:.2f}s  chunks={len(chunk_stats)}\n")
+        line = f"[{ts}] SUMMARY  var={var}  total_time={total_time:.2f}s  chunks={len(chunk_stats)}\n"
         with open(self.stats_file, "a", encoding="utf-8") as fh:
-            fh.writelines(lines)
+            fh.write(line)
         # Clear collected stats for the next variable
         if hasattr(self.writer, "_chunk_stats"):
             self.writer._chunk_stats = []
