@@ -7,8 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 ClimateDT workflow modifications:
-- removed dependency on imagemagick
-- removed the --no-convert option from `push_analysis.sh`
+- Removed dependency on imagemagick
+- Removed the `--no-convert` option from `push_analysis.sh`
+- Added the `--format <FORMAT>` option to `push_analysis.sh` to select output formats to be uploaded (`png,pdf,svg` by default)
 
 Main changes:
 
@@ -16,9 +17,10 @@ Complete list:
 - Introduce a report txt file for monitoring DROP execution time and memory occupation (#2824)
 - Introducing a `--no-validate` flag to disable file validation on reading and speed up DROP (#2824)
 - Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
+- Add AQUA attributes for source and target grid (#2869)
 - Solve `areas=True` and `src_grd_name=False` conflict (#2871)
 - Fallback test download from wilma (#2867)
-- push_analysis png metadata support and remove imagemagick dependency (#2866)
+- push_analysis png, pdf and svg metadata support and remove imagemagick dependency (#2866, #2872)
 - Support for python 3.13 and 3.14, with new default from 3.12 to 3.14 (#2853)
 - Update intake and intake-xarray to >=2.0.0 (#2843)
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)

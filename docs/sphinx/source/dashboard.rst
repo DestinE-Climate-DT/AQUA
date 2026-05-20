@@ -104,6 +104,10 @@ Additional options
 
     Compatibility flag to process experiments with old 3-level structure (``catalog/model/experiment``).
 
+.. option:: -f <format>, --format <format>
+
+    Specify image formats to transfer, using a comma-separated list (default is 'pdf,png,svg').
+
 .. option:: -h, --help
 
     Display the help and exit.
