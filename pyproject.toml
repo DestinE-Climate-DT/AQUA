@@ -69,7 +69,7 @@ dependencies = [
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
     "xarray>=2025.12.0",
-    "zarr"
+    "zarr>=3.0"
 ]
 
 [project.optional-dependencies]

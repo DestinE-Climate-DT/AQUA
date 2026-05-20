@@ -131,7 +131,9 @@ class Drop:
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
-            output_format (string, opt): Output format: 'netcdf' or 'zarr'. Default is 'netcdf'.
+            output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
+                                         Default is 'netcdf'. When set to 'icechunk',
+                                         catalog entry generation is skipped.
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
