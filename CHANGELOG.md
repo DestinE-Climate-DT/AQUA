@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- Add AQUA attributes for source and target grid (#2869)
 - Solve `areas=True` and `src_grd_name=False` conflict (#2871)
 - Fallback test download from wilma (#2867)
 - push_analysis png, pdf and svg metadata support and remove imagemagick dependency (#2866, #2872)

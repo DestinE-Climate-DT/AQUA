@@ -621,7 +621,9 @@ class Reader:
         out = self.regridder.regrid(data)
 
         # set regridded attribute to 1 for all vars
-        out = set_attrs(out, {"AQUA_regridded": 1})
+        out = set_attrs(
+            out, {"AQUA_regridded": 1, "AQUA_source_grid": self.src_grid_name, "AQUA_target_grid": self.tgt_grid_name}
+        )
         return out
 
     # def trend(self, data, dim='time', degree=1, skipna=False):
