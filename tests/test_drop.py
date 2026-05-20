@@ -510,7 +510,7 @@ class TestDROP:
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
         )
-        assert not os.path.exists(file_missing), "Incomplete file should not be created: {}".format(file_missing)
+        assert not os.path.exists(file_missing), f"Incomplete file should not be created: {file_missing}"
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_stats_file_performance_reporting(self, drop_arguments, tmp_path):

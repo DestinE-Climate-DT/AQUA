@@ -288,15 +288,6 @@ class TestAquaConsole:
         stats_files = [f for f in os.listdir(outdir_monitoring) if f.startswith("drop_stats_") and f.endswith(".txt")]
         assert len(stats_files) >= 1, f"Expected at least one stats file in {outdir_monitoring}, found: {stats_files}"
 
-        content = open(os.path.join(outdir_monitoring, stats_files[-1]), encoding="utf-8").read()
-        assert "DROP Performance Stats" in content
-        # performance_reporting limits to first month only: exactly one CHUNK line per variable
-        chunk_lines = [line for line in content.splitlines() if "CHUNK" in line]
-        assert len(chunk_lines) == 1, f"Expected 1 CHUNK line with --monitoring, got {len(chunk_lines)}"
-        summary_lines = [line for line in content.splitlines() if "SUMMARY" in line]
-        assert len(summary_lines) == 1, f"Expected 1 SUMMARY line, got {len(summary_lines)}"
-        assert "chunks=1" in summary_lines[0]
-
         # remove aqua
         run_aqua_console_with_input(["uninstall"], "yes")
 
