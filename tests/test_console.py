@@ -288,6 +288,42 @@ class TestAquaConsole:
         stats_files = [f for f in os.listdir(outdir_monitoring) if f.startswith("drop_stats_") and f.endswith(".txt")]
         assert len(stats_files) >= 1, f"Expected at least one stats file in {outdir_monitoring}, found: {stats_files}"
 
+        # --catalog-entry no: data is written, catalog creation is skipped (no error expected)
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-01-31",
+                "--catalog-entry",
+                "no",
+            ]
+        )
+
+        # --catalog-entry only: no data writing, catalog update attempted (completes without data-write error)
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-01-31",
+                "--catalog-entry",
+                "only",
+            ]
+        )
+
         # remove aqua
         run_aqua_console_with_input(["uninstall"], "yes")
 

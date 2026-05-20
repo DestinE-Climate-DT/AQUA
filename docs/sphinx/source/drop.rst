@@ -505,9 +505,13 @@ Usage
 
     Enable a single chunk run to produce the html dask performance report. Dask should be activated.
 
-.. option:: --only-catalog
+.. option:: --catalog-entry {yes,no,only}
 
-    Will generate/update only the catalog entry for DROP, without running the code for generating DROP output itself
+    Controls catalog entry behaviour (default: ``yes``):
+
+    - ``yes``: write data **and** create/update the catalog entry (default behaviour).
+    - ``no``: write data but **skip** catalog creation (useful when catalog management is handled separately or for icechunk-based runs).
+    - ``only``: **skip data writing** and only create/update the catalog entry (replaces the former ``--only-catalog`` flag).
 
 .. option:: --rebuild
 

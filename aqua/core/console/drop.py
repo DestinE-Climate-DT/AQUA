@@ -40,8 +40,10 @@ def drop_parser(parser=None):
                         help='log level [default: WARNING]')
     parser.add_argument('--monitoring', action="store_true",
                         help='enable the dask performance monitoring. Will run a single chunk')
-    parser.add_argument('--only-catalog', action="store_true",
-                        help='To not run DROP but simply create the catalog entries for netcdf and zarr')
+    parser.add_argument('--catalog-entry', type=str, choices=['yes', 'no', 'only'], default='yes',
+                        help="Catalog entry behaviour: 'yes' (default) writes data and creates catalog; "
+                             "'no' writes data but skips catalog creation; "
+                             "'only' skips data writing and only creates/updates the catalog entry.")
     parser.add_argument('--catalog', type=str,
                         help='catalog to be processed. Use with coherence with --model, -exp and --source')
     parser.add_argument('-m', '--model', type=str,
@@ -127,9 +129,9 @@ def drop_execute(args):
     rebuild = get_arg(args, "rebuild", config["options"].get("rebuild", False))
     exclude_incomplete = config["options"].get("exclude_incomplete", False)
     no_validate = get_arg(args, "no_validate", False)
-    only_catalog = get_arg(args, "only_catalog", False)
-    if only_catalog:
-        print("--only-catalog selected, doing a lot of noise but in the end producing only catalog update!")
+    catalog_entry = get_arg(args, "catalog_entry", config["options"].get("catalog_entry", "yes"))
+    if catalog_entry == "only":
+        print("--catalog-entry only: skipping data generation, updating catalog entry only.")
     fix = get_arg(args, "fix", True)
 
     default_workers = get_arg(args, "workers", 1)
@@ -157,7 +159,7 @@ def drop_execute(args):
         default_workers=default_workers,
         engine=engine,
         monitoring=monitoring,
-        only_catalog=only_catalog,
+        catalog_entry=catalog_entry,
         driver=driver,
         exclude_incomplete=exclude_incomplete,
     )
@@ -187,7 +189,7 @@ def drop_cli(
     default_workers=1,
     driver="netcdf",
     compact="cdo",
-    only_catalog=False,
+    catalog_entry="yes",
     exclude_incomplete=True,
 ):
     """
@@ -216,7 +218,7 @@ def drop_cli(
         monitoring: bool flag to enable the dask monitoring
         driver: output format driver
         compact: compaction method
-        only_catalog: bool flag to only update the catalog
+        catalog_entry: catalog entry behaviour ('yes', 'no', 'only')
         exclude_incomplete: bool flag to exclude incomplete temporal chunks when averaging
     """
 
@@ -286,7 +288,7 @@ def drop_cli(
                             **extra_args,
                         )
 
-                        if not only_catalog:
+                        if catalog_entry != "only":
                             # check that your DROP output is not already there (it will not work in streaming mode)
                             if not no_validate:
                                 drop.check_integrity(varname)
@@ -295,10 +297,10 @@ def drop_cli(
                             drop.retrieve()
                             drop.drop_generator()
 
-            # create the catalog once the loop is over (not supported for icechunk)
-            if driver != "icechunk":
+            # create the catalog once the loop is over
+            if catalog_entry != "no" and driver != "icechunk":
                 drop.create_catalog_entry()
-            else:
+            elif driver == "icechunk":
                 print("Skipping catalog entry creation: not supported for icechunk output format.")
 
     print("CLI DROP run completed. Have yourself a tasty pint of beer!")
