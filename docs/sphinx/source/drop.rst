@@ -146,20 +146,17 @@ interface using the automatically created catalog sources.
 
 **Zarr access for faster performance:**
 
-You can access data using Zarr reference files for improved performance, when available:
+You can access data using Zarr stores files for improved performance, when available:
 
 .. code-block:: python
 
     # Faster access using Zarr references
-    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="r100-monthly-zarr")
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly-zarr")
     data = reader.retrieve()
 
 .. note ::
     The specific source names depend on the resolution and frequency you configured when
     running DROP. See the "Source Naming Convention" section above for details.
-
-.. warning ::
-    Zarr storage generation access is experimental and may not work with all experiment configurations.
 
 Using DROP to process data
 --------------------------
