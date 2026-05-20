@@ -43,11 +43,11 @@ def get_arg(args, arg, default):
     Returns:
         The argument value or the default value
     """
-
-    res = getattr(args, arg)
-    if not res:
-        res = default
-    return res
+    return getattr(args, arg, None) or default
+    # res = getattr(args, arg)
+    # if not res:
+    #    res = default
+    # return res
 
 
 def extract_attrs(data, attr):
@@ -65,14 +65,14 @@ def extract_attrs(data, attr):
     return getattr(data, attr, None)
 
 
-def username():
-    """
-    Retrieves the current user's username from the 'USER' environment variable.
-    """
-    user = os.getenv("USER")
-    if user is None:
-        raise EnvironmentError("The 'USER' environment variable is not set.")
-    return user
+# def username():
+#     """
+#     Retrieves the current user's username from the 'USER' environment variable.
+#     """
+#     user = os.getenv("USER")
+#     if user is None:
+#         raise EnvironmentError("The 'USER' environment variable is not set.")
+#     return user
 
 
 class HiddenPrints:
@@ -93,9 +93,8 @@ def expand_env_vars(obj):
     """
     if isinstance(obj, dict):
         return {k: expand_env_vars(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [expand_env_vars(v) for v in obj]
-    elif isinstance(obj, str):
+    if isinstance(obj, str):
         return os.path.expandvars(obj)
-    else:
-        return obj
+    return obj
