@@ -771,6 +771,6 @@ class TestIcechunkWriter:
         assert result is True
 
         # Store must remain readable after GC
-        ds_after = writer._open_icechunk(writer.repo_path)
+        ds_after = writer._open_files(writer.repo_path)
         assert "foo" in ds_after.data_vars
         assert len(ds_after.time) == 2
