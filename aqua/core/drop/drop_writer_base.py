@@ -284,7 +284,7 @@ class BaseWriter(ABC):
             minimum_required: Minimum number of files required
 
         Returns:
-            tuple: (monthly_files: list, is_valid: bool, message: str)
+            tuple: (monthly_files: list, is_valid: bool)
         """
         monthly_pattern = self.get_filename(var, year, month="??")
         monthly_files = sorted(glob.glob(monthly_pattern))

@@ -101,29 +101,12 @@ class IcechunkWriter(BaseWriter):
         """Return file extension for zarr format."""
         return ".zarr"
 
-    def _open_icechunk(self, store_path):
-        """Open a committed icechunk store as a read-only xarray Dataset.
-
-        Args:
-            store_path: Path to the icechunk zarr repository.
-
-        Returns:
-            xarray.Dataset: Dataset opened from the latest committed snapshot.
-
-        Raises:
-            Exception: Any error from icechunk or xarray (caller decides how to handle).
-        """
-        storage = icechunk.local_filesystem_storage(store_path)
-        repo = icechunk.Repository.open(storage)
-        read_session = repo.readonly_session("main")
-        return xr.open_zarr(read_session.store, consolidated=False)
-
     def validate(self, store_path):
         """Validate icechunk store: must exist and contain at least one time step."""
         if not os.path.exists(store_path):
             return False
         try:
-            ds = self._open_icechunk(store_path)
+            ds = self._open_files(store_path)
             return "time" in ds.dims and len(ds.time) > 0
         except Exception:
             return False
@@ -237,8 +220,24 @@ class IcechunkWriter(BaseWriter):
             self.logger.warning("Garbage collection failed (non-fatal): %s", e)
 
     def _open_files(self, filepaths):
-        """Not used: IcechunkWriter fully overrides check_integrity()."""
-        raise NotImplementedError("IcechunkWriter does not use _open_files(); check_integrity() is fully overridden")
+        """Open a committed icechunk store as a read-only xarray Dataset.
+
+        Args:
+            filepaths: Path or list of paths to the icechunk zarr repository;
+                only a single store path is meaningful (the first element of a
+                list is used).
+
+        Returns:
+            xarray.Dataset: Dataset opened from the latest committed snapshot.
+
+        Raises:
+            Exception: Any error from icechunk or xarray (caller decides how to handle).
+        """
+        store_path = filepaths[0] if isinstance(filepaths, list) else filepaths
+        storage = icechunk.local_filesystem_storage(store_path)
+        repo = icechunk.Repository.open(storage)
+        read_session = repo.readonly_session("main")
+        return xr.open_zarr(read_session.store, consolidated=False)
 
     def check_integrity(self, var, overwrite=False, end_date=None):
         """
@@ -276,7 +275,7 @@ class IcechunkWriter(BaseWriter):
         try:
             # Open a fresh read-only session to inspect committed state only.
             # Using self.main_session would expose uncommitted data during an active write.
-            ds = self._open_icechunk(self.repo_path)
+            ds = self._open_files(self.repo_path)
 
             if var not in ds:
                 return {"complete": False, "last_record": None, "message": f"Variable {var} not found"}
