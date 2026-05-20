@@ -513,6 +513,70 @@ class TestDROP:
         assert not os.path.exists(file_missing), "Incomplete file should not be created: {}".format(file_missing)
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
+    def test_stats_file_performance_reporting(self, drop_arguments, tmp_path):
+        """Stats file is written correctly when definitive=True and performance_reporting=True.
+
+        performance_reporting limits execution to the first month only, so exactly one
+        CHUNK line and one SUMMARY line (chunks=1) are expected. Memory fields are absent
+        because MemorySampler is skipped in the performance-reporting code path.
+
+        This test verifies both the monitoring behaviour (only January is written,
+        February is not) and the stats file content.
+        """
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            performance_reporting=True,
+            definitive=True,
+            loglevel=LOGLEVEL,
+        )
+
+        test.retrieve()
+        test.drop_generator()
+
+        # ---- monitoring behaviour: only the first month must be written ----
+        jan_path = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
+        )
+        feb_path = os.path.join(
+            os.getcwd(),
+            drop_arguments["outdir"],
+            DROP_PATH,
+            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc",
+        )
+        assert os.path.isfile(jan_path), "First month must be written in monitoring mode"
+        assert not os.path.isfile(feb_path), "Second month must NOT be written in monitoring mode"
+
+        # ---- stats file: exactly one CHUNK and one SUMMARY line ----
+        stats_files = [f for f in os.listdir(test.basedir) if f.startswith("drop_stats_") and f.endswith(".txt")]
+        assert len(stats_files) == 1, f"Expected one stats file, found: {stats_files}"
+
+        content = open(os.path.join(test.basedir, stats_files[0]), encoding="utf-8").read()
+        assert "DROP Performance Stats" in content
+        assert f"Model: {drop_arguments['model']}" in content
+        assert "Workers: 1" in content
+
+        chunk_lines = [line for line in content.splitlines() if "CHUNK" in line]
+        assert len(chunk_lines) == 1, f"Expected 1 CHUNK line, got {len(chunk_lines)}"
+        assert f"var={drop_arguments['var']}" in chunk_lines[0]
+        assert "elapsed=" in chunk_lines[0]
+        assert "size=" in chunk_lines[0]
+        assert "throughput=" in chunk_lines[0]
+        # Memory fields absent: MemorySampler is disabled in the performance-reporting path
+        assert "avg_mem" not in chunk_lines[0]
+
+        summary_lines = [line for line in content.splitlines() if "SUMMARY" in line]
+        assert len(summary_lines) == 1, f"Expected 1 SUMMARY line, got {len(summary_lines)}"
+        assert "chunks=1" in summary_lines[0]
+
+        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
 
 class TestZarrWriter:
     """Unit tests for ZarrWriter (validation, encoding, error paths)."""

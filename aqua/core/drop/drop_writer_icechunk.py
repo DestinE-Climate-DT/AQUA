@@ -405,6 +405,7 @@ class IcechunkWriter(BaseWriter):
 
                     # Compute data
                     month_data = self._compute_data(month_data, dask=dask, performance_reporting=performance_reporting)
+                    self._last_chunk_size_bytes = month_data.nbytes
 
                     mode = "w" if first_session_write else "a"
                     append_dim = None if first_session_write else "time"
@@ -457,9 +458,21 @@ class IcechunkWriter(BaseWriter):
 
                     t_elapsed = time.time() - t_start
                     self.logger.info("Month %s-%02d execution time: %.2f seconds", year, month, t_elapsed)
-                    entry = {"var": var, "year": year, "month": month, "elapsed": t_elapsed, "mem": self._last_mem_stats}
+                    size_bytes = self._last_chunk_size_bytes
+                    entry = {
+                        "var": var,
+                        "year": year,
+                        "month": month,
+                        "elapsed": t_elapsed,
+                        "mem": self._last_mem_stats,
+                        "size_bytes": size_bytes,
+                        "throughput_mib_s": (size_bytes / (1024**2)) / t_elapsed
+                        if (size_bytes is not None and t_elapsed > 0)
+                        else None,
+                    }
                     self._chunk_stats.append(entry)
                     self._last_mem_stats = None
+                    self._last_chunk_size_bytes = None
                     if stats_file is not None:
                         self._write_chunk_stat_line(entry, stats_file)
 
