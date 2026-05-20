@@ -477,6 +477,13 @@ Usage
 
 **Options:** these override the configuration file options.
 
+.. note::
+
+    The configuration file (``-c/--config``) is optional. When omitted, DROP runs in CLI-only mode
+    and requires ``--outdir``, ``--model``, ``--exp``, ``--source``, and ``--var`` to be provided
+    on the command line. Parameters that accept complex structures (``region``, ``stat_kwargs``,
+    ``compact``, ``exclude_incomplete``) are available only through the configuration file.
+
 .. option:: -c CONFIG, --config CONFIG
 
     Set up a specific configuration file
@@ -552,6 +559,16 @@ Usage
 
     Output format for DROP files: ``netcdf`` (default), ``zarr``, or ``icechunk``.
     ``icechunk`` is experimental and does not support catalog integration.
+
+.. option:: --outdir OUTDIR
+
+    Output directory. Overrides ``paths.outdir`` from the configuration file.
+    Required when running without a configuration file.
+
+.. option:: --tmpdir TMPDIR
+
+    Temporary directory. Overrides ``paths.tmpdir`` from the configuration file.
+    Falls back to ``--outdir`` when not specified.
 
 .. option:: --no-validate
 

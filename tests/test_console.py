@@ -324,6 +324,38 @@ class TestAquaConsole:
             ]
         )
 
+        # CLI-only mode: no config file, all parameters provided via command line
+        run_aqua(
+            [
+                "drop",
+                "--outdir",
+                os.path.join(mydir, "drop_test"),
+                "-w",
+                "1",
+                "-d",
+                "--catalog",
+                "ci",
+                "--model",
+                "IFS",
+                "--exp",
+                "test-tco79",
+                "--source",
+                "long",
+                "--var",
+                "2t",
+                "--resolution",
+                "r200",
+                "--frequency",
+                "monthly",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-01-31",
+                "--catalog-entry",
+                "no",
+            ]
+        )
+
         # remove aqua
         run_aqua_console_with_input(["uninstall"], "yes")
 

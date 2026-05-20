@@ -21,6 +21,8 @@ def drop_parser(parser=None):
 
     Args:
         Optional part to be extended with DROP options
+
+    Important: defaults are controlled by the _cfg approach below, not set in the parser
     """
 
     if parser is None:
@@ -40,8 +42,9 @@ def drop_parser(parser=None):
                         help='log level [default: WARNING]')
     parser.add_argument('--monitoring', action="store_true",
                         help='enable the dask performance monitoring. Will run a single chunk')
-    parser.add_argument('--catalog-entry', type=str, choices=['yes', 'no', 'only'], default='yes',
-                        help="Catalog entry behaviour: 'yes' (default) writes data and creates catalog; "
+    parser.add_argument('--catalog-entry', type=str, choices=['yes', 'no', 'only'],
+                        help="Catalog entry behaviour [default: yes, or options.catalog_entry from config]: "
+                             "'yes' writes data and creates catalog; "
                              "'no' writes data but skips catalog creation; "
                              "'only' skips data writing and only creates/updates the catalog entry.")
     parser.add_argument('--catalog', type=str,
@@ -71,11 +74,50 @@ def drop_parser(parser=None):
                         help="End date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--engine', type=str,
                         help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
-    parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'], default='netcdf',
-                        help='Output format for DROP files. Can be netcdf, zarr or icechunk '
+    parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'],
+                        help='Output format for DROP files [default: netcdf, or options.driver from config]: '
+                             'netcdf, zarr or icechunk '
                              '(icechunk is preliminary and does not support catalog integration).')
+    parser.add_argument('--outdir', type=str,
+                        help='Output directory. Required when running without a config file.')
+    parser.add_argument('--tmpdir', type=str,
+                        help='Temporary directory. Required when running without a config file.')
     # fmt: on
     return parser
+
+
+def _cfg(config, section, key, default=None):
+    """Read a value from a nested two-level config dict without raising on missing keys.
+
+    Args:
+        config (dict): top-level configuration dictionary
+        section (str): top-level key (e.g. 'target', 'options', 'paths')
+        key (str): key inside the section
+        default: value to return when the section or key is absent. Defaults to None.
+
+    Returns:
+        The value at ``config[section][key]``, or ``default`` if absent.
+    """
+    return config.get(section, {}).get(key, default)
+
+
+def _validate_drop_args(config, outdir):
+    """Validate mandatory arguments when no config file is loaded.
+
+    Args:
+        config (dict): configuration dictionary (may be empty when no config file was loaded)
+        outdir (str or None): output directory resolved from CLI or config
+    """
+    errors = []
+    if not outdir:
+        errors.append("  --outdir   output directory")
+    if not config.get("data"):
+        errors.append("  --model, --exp, --source, --var   data selection")
+    if errors:
+        print("ERROR: the following mandatory arguments are missing (required when running without a config file):")
+        for e in errors:
+            print(e)
+        sys.exit(1)
 
 
 def drop_execute(args):
@@ -86,55 +128,69 @@ def drop_execute(args):
     print("AQUA version is: " + version)
 
     file = get_arg(args, "config", "drop_config.yaml")
-    print("Reading configuration yaml file..")
+    explicit_config = bool(getattr(args, "config", None))
 
-    # basic from configuration
-    config = load_yaml(file)
+    # Load config - optional unless explicitly requested with --config
+    try:
+        print("Reading configuration yaml file..")
+        config = load_yaml(file)
+        config_loaded = True
+    except FileNotFoundError:
+        if explicit_config:
+            raise
+        print(f"Configuration file '{file}' not found, running in CLI-only mode.")
+        config = {}
+        config_loaded = False
 
-    # safety check
-    for item in ["target", "paths", "data", "options"]:
-        if item not in config:
-            raise KeyError(
-                f'Configuration file {file} does not have the "{item}" key, please modify it according to the template'
-            )
+    # paths: CLI args take priority, fall back to config file
+    outdir = get_arg(args, "outdir", _cfg(config, "paths", "outdir"))
+    tmpdir = get_arg(args, "tmpdir", _cfg(config, "paths", "tmpdir")) or outdir
 
-    # paths
-    paths = config["paths"]
-    outdir = paths["outdir"]
-    tmpdir = paths["tmpdir"]
+    # main arguments, only from config file
+    region = _cfg(config, "target", "region")
 
-    # main arguments, ony from config file
-    region = config["target"].get("region", None)
-
-    # Command line argumens override config file
+    # Command line arguments override config file
     # from target block
-    catalog = get_arg(args, "catalog", config["target"].get("catalog"))
-    stat = get_arg(args, "stat", config["target"].get("stat", "mean"))
-    stat_kwargs = config["target"].get("stat_kwargs", {})
-    frequency = get_arg(args, "frequency", config["target"].get("frequency"))
-    resolution = get_arg(args, "resolution", config["target"].get("resolution"))
-    startdate = get_arg(args, "startdate", config["target"].get("startdate"))
-    enddate = get_arg(args, "enddate", config["target"].get("enddate"))
+    catalog = get_arg(args, "catalog", _cfg(config, "target", "catalog"))
+    stat = get_arg(args, "stat", _cfg(config, "target", "stat", "mean"))
+    stat_kwargs = _cfg(config, "target", "stat_kwargs", {})
+    frequency = get_arg(args, "frequency", _cfg(config, "target", "frequency"))
+    resolution = get_arg(args, "resolution", _cfg(config, "target", "resolution"))
+    startdate = get_arg(args, "startdate", _cfg(config, "target", "startdate"))
+    enddate = get_arg(args, "enddate", _cfg(config, "target", "enddate"))
 
     # options
-    engine = get_arg(args, "engine", config["options"].get("engine", "fdb"))
-    loglevel = get_arg(args, "loglevel", config["options"].get("loglevel", "WARNING"))
-    compact = config["options"].get("compact", "cdo")
-    driver = get_arg(args, "driver", config["options"].get("driver", "netcdf"))
+    engine = get_arg(args, "engine", _cfg(config, "options", "engine", "fdb"))
+    loglevel = get_arg(args, "loglevel", _cfg(config, "options", "loglevel", "WARNING"))
+    compact = _cfg(config, "options", "compact", "cdo")
+    driver = get_arg(args, "driver", _cfg(config, "options", "driver", "netcdf"))
 
     # Other options, only from command line
     definitive = get_arg(args, "definitive", False)
-    monitoring = get_arg(args, "monitoring", config["options"].get("performance_reporting", False))
-    overwrite = get_arg(args, "overwrite", config["options"].get("overwrite", False))
-    rebuild = get_arg(args, "rebuild", config["options"].get("rebuild", False))
-    exclude_incomplete = config["options"].get("exclude_incomplete", False)
+    monitoring = get_arg(args, "monitoring", _cfg(config, "options", "performance_reporting", False))
+    overwrite = get_arg(args, "overwrite", _cfg(config, "options", "overwrite", False))
+    rebuild = get_arg(args, "rebuild", _cfg(config, "options", "rebuild", False))
+    exclude_incomplete = _cfg(config, "options", "exclude_incomplete", False)
     no_validate = get_arg(args, "no_validate", False)
-    catalog_entry = get_arg(args, "catalog_entry", config["options"].get("catalog_entry", "yes"))
+    catalog_entry = get_arg(args, "catalog_entry", _cfg(config, "options", "catalog_entry", "yes"))
     if catalog_entry == "only":
         print("--catalog-entry only: skipping data generation, updating catalog entry only.")
     fix = get_arg(args, "fix", True)
 
     default_workers = get_arg(args, "workers", 1)
+
+    # When no config was loaded, synthesize config["data"] from CLI args
+    if "data" not in config:
+        model_arg = getattr(args, "model", None)
+        exp_arg = getattr(args, "exp", None)
+        source_arg = getattr(args, "source", None)
+        var_arg = getattr(args, "var", None)
+        if model_arg and exp_arg and source_arg and var_arg:
+            config["data"] = {model_arg: {exp_arg: {source_arg: {"vars": var_arg}}}}
+
+    # In CLI-only mode validate that all mandatory arguments are present
+    if not config_loaded:
+        _validate_drop_args(config, outdir)
 
     drop_cli(
         args=args,
