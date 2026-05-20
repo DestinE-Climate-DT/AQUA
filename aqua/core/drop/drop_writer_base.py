@@ -46,6 +46,10 @@ class BaseWriter(ABC):
             outdir: Output directory for final files
             filename_builder: OutputPathBuilder instance for filename generation
             loglevel: Logging level
+            _chunk_stats: the list of chunk stats dictionaries, each with keys:
+                var, year, month, elapsed, mem, size_bytes, throughput_mib_s
+            _last_mem_stats: the last memory stats dictionary with keys avg_mem and max_mem, or None
+            _last_chunk_size_bytes: the size in bytes of the last chunk, or None
         """
         self.tmpdir = tmpdir
         self.outdir = outdir
@@ -271,8 +275,7 @@ class BaseWriter(ABC):
 
         if tmp:
             return os.path.join(self.tmpdir, os.path.basename(filename))
-        else:
-            return os.path.join(self.outdir, filename) if not os.path.isabs(filename) else filename
+        return os.path.join(self.outdir, filename) if not os.path.isabs(filename) else filename
 
     def _get_and_validate_monthly_files(self, var, year, minimum_required):
         """
@@ -480,7 +483,7 @@ class BaseWriter(ABC):
             yearfile = self.get_filename(var, year=year)
 
             # Check if yearly file exists
-            if self.validate(yearfile):
+            if os.path.exists(yearfile):
                 if not overwrite:
                     self.logger.info("Yearly file %s already exists, skipping...", yearfile)
                     continue
@@ -497,14 +500,14 @@ class BaseWriter(ABC):
 
             for month in months:
                 self.logger.info("Processing month %s...", str(month))
-                outfile = self.get_filename(var, year=year, month=month)
+                monthfile = self.get_filename(var, year=year, month=month)
 
                 # Check if monthly file exists
-                if self.validate(outfile):
+                if os.path.exists(monthfile):
                     if not overwrite:
-                        self.logger.info("Monthly file %s already exists, skipping...", outfile)
+                        self.logger.info("Monthly file %s already exists, skipping...", monthfile)
                         continue
-                    self.logger.warning("Monthly file %s already exists, overwriting...", outfile)
+                    self.logger.warning("Monthly file %s already exists, overwriting...", monthfile)
 
                 month_data = year_data.sel(time=year_data.time.dt.month == month)
                 # Preserve attributes after slicing
@@ -547,7 +550,7 @@ class BaseWriter(ABC):
                         continue
 
                     # Move IMMEDIATELY (NetCDF timing, not Zarr's deferred move)
-                    self.logger.info("Moving temporary file %s to %s", tmpfile, outfile)
+                    self.logger.info("Moving temporary file %s to %s", tmpfile, monthfile)
                     move_tmp_files(self.tmpdir, self.outdir)
 
             # Concatenate into yearly file if concat enabled
