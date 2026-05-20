@@ -178,10 +178,7 @@ class TestAquaConsole:
             assert excinfo.value.code == 1
 
         # create a test for DROP
-        with pytest.raises(
-            FileNotFoundError,
-            match=("ERROR: drop_config.yaml not found: you need to have this configuration file!"),
-        ):
+        with pytest.raises(SystemExit) as excinfo:
             run_aqua(["drop"])
 
         # create a test for catgen
