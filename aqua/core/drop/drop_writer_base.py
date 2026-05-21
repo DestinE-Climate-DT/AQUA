@@ -15,6 +15,7 @@ from time import time
 import numpy as np
 import pandas as pd
 import xarray as xr
+import zarr
 from dask.diagnostics import ProgressBar
 from dask.distributed import progress
 from dask.distributed.diagnostics import MemorySampler
@@ -137,7 +138,7 @@ class BaseWriter(ABC):
         """
         pass
 
-    def _build_zarr_encoding(self, data, time_chunk):
+    def _build_zarr_encoding(self, data, time_chunk, compressor_level=1):
         """
         Build per-variable chunk encoding with explicit time chunking and full spatial dims.
 
@@ -148,14 +149,16 @@ class BaseWriter(ABC):
         Args:
             data: xarray Dataset
             time_chunk (int): Number of time steps per chunk.
+            compressor_level (int): Compression level for GzipCodec (1-9)
 
         Returns:
             dict: Encoding configuration or None if data has no data_vars.
         """
         encoding = {}
+        compressor = zarr.codecs.GzipCodec(level=compressor_level)
         for var_name in data.data_vars:
             chunks = tuple(time_chunk if dim == "time" else data[var_name].sizes[dim] for dim in data[var_name].dims)
-            encoding[var_name] = {"chunks": chunks}
+            encoding[var_name] = {"chunks": chunks, "compressor": compressor}
         return encoding or None
 
     def _compute_data(self, data, dask=False, performance_reporting=False):
