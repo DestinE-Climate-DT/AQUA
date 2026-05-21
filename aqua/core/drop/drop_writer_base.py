@@ -23,6 +23,8 @@ from dask.distributed.diagnostics import MemorySampler
 from aqua.core.drop.drop_util import move_tmp_files
 from aqua.core.logger import log_configure
 
+xr.set_options(keep_attrs=True)
+
 
 class BaseWriter(ABC):
     """
@@ -226,14 +228,11 @@ class BaseWriter(ABC):
         Yields:
             tuple: (year, year_data) where year_data has original attrs restored.
         """
-        original_attrs = data.attrs.copy()
         years = sorted(set(data.time.dt.year.values))
         if performance_reporting:
             years = [years[0]]
         for year in years:
-            year_data = data.sel(time=data.time.dt.year == year)
-            year_data.attrs.update(original_attrs)
-            yield year, year_data
+            yield year, data.sel(time=data.time.dt.year == year)
 
     def _iter_months_in_year(self, year_data, performance_reporting):
         """Yield (month, month_data) pairs with Dataset-level attrs preserved after slicing.
@@ -245,14 +244,11 @@ class BaseWriter(ABC):
         Yields:
             tuple: (month, month_data) where month_data has original attrs restored.
         """
-        original_attrs = year_data.attrs.copy()
         months = sorted(set(year_data.time.dt.month.values))
         if performance_reporting:
             months = [months[0]]
         for month in months:
-            month_data = year_data.sel(time=year_data.time.dt.month == month)
-            month_data.attrs.update(original_attrs)
-            yield month, month_data
+            yield month, year_data.sel(time=year_data.time.dt.month == month)
 
     def _write_chunk(self, data, var, year, month, dask=False, performance_reporting=False):
         """
