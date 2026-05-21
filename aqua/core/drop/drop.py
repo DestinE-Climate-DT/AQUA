@@ -616,7 +616,8 @@ class Drop:
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = (
             "\n=== DROP Performance Stats ===\n"
-            f"Model: {self.model} | Exp: {self.exp} | Source: {self.source} | Started: {now} | Workers: {self.nproc}\n"
+            f"Model: {self.model} | Exp: {self.exp} | Source: {self.source} |"
+            f"Stat: {self.stat} | Started: {now} | Workers: {self.nproc}\n"
             "================================================\n"
         )
         with open(self.stats_file, "a", encoding="utf-8") as fh:

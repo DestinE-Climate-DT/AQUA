@@ -112,12 +112,13 @@ class CatalogEntryBuilder:
         chunks = {}
 
         # guessing cases for rXXX and rXXXs resolutions: all other cases stay undefined
-        if self.resolution and len(self.resolution) == 4 and self.resolution.startswith("r"):
-            ref_value = int(self.resolution[1:])
-            chunks.update({"lat": 18000 // ref_value, "lon": 36000 // ref_value})
-        if self.resolution and len(self.resolution) == 5 and self.resolution.endswith("s"):
-            ref_value = int(self.resolution[1:-1])
-            chunks.update({"lat": (18000 // ref_value) + 1, "lon": (36000 // ref_value)})
+        if self.resolution:
+            if len(self.resolution) == 4 and self.resolution.startswith("r"):
+                ref_value = int(self.resolution[1:])
+                chunks.update({"lat": 18000 // ref_value, "lon": 36000 // ref_value})
+            if len(self.resolution) == 5 and self.resolution.endswith("s"):
+                ref_value = int(self.resolution[1:-1])
+                chunks.update({"lat": (18000 // ref_value) + 1, "lon": (36000 // ref_value)})
 
         # self guessing ot time chunking based on frequency
         try:
