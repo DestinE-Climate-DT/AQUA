@@ -170,7 +170,7 @@ def drop_execute(args):
     monitoring = get_arg(args, "monitoring", _cfg(config, "options", "performance_reporting", False))
     overwrite = get_arg(args, "overwrite", _cfg(config, "options", "overwrite", False))
     rebuild = get_arg(args, "rebuild", _cfg(config, "options", "rebuild", False))
-    exclude_incomplete = _cfg(config, "options", "exclude_incomplete", False)
+    exclude_incomplete = _cfg(config, "options", "exclude_incomplete", True)
     no_validate = get_arg(args, "no_validate", False)
     catalog_entry = get_arg(args, "catalog_entry", _cfg(config, "options", "catalog_entry", "yes"))
     if catalog_entry == "only":

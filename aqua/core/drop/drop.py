@@ -74,7 +74,7 @@ class Drop:
         definitive=False,
         performance_reporting=False,
         rebuild=False,
-        exclude_incomplete=False,
+        exclude_incomplete=True,
         stat="mean",
         stat_kwargs={},
         compact="xarray",
@@ -122,7 +122,7 @@ class Drop:
                                                dask usage, default is False. This will run a single month
                                                to collect the performance data.
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
-                                            when averaging, default is false.
+                                            when averaging, default is true.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
             stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min', 'sum' or 'histogram'.
                 Default is 'mean'.
