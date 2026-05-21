@@ -105,7 +105,9 @@ Once this is defined, we can access our dataset from AQUA with the following com
 
 Finally, the ``metadata`` entry contains optional additional information useful to define how to postprocess the data:
 
-    - ``source_grid_name``: the grid name defined in ``aqua-grids.yaml`` to be used for areas and regridding
+    - ``source_grid_name``: the grid name defined in ``aqua-grids.yaml`` to be used for areas and regridding.
+                            if set to ``null`` or not specified, the regridder will try to guess the grid based on the data coordinates, but this can be costly and not always successful.
+                            if set to ``False``, the regridder will be disabled and no attempt to guess the grid will be done.
     - ``fixer_name``: the name of the fixer defined in the fixes folder
     - ``deltat`` (optional): the cumulation window of fluxes in the dataset. This is a fixer option. If not present, the default is 1 second.
     - ``time_coder`` (optional): xarray builds on pandas, and pandas support a limited time range becuase time precision is based on nanoseconds.

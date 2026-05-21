@@ -50,7 +50,7 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
-    "intake>=2.0.0", # Version 2 is a major refactor
+    "intake>=2.0.9", # Version 2 is a major refactor, 2.0.8 had a vulnerability
     "intake-xarray>=2.0.0", # Version 2 is a major refactor
     "jinja2",
     "kerchunk",
@@ -94,7 +94,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.15.12"
+    "ruff==0.15.13"
 ]
 all = [
     "aqua-core[docs]",

@@ -261,7 +261,10 @@ class Reader:
         self.tgt_grid_name = regrid
 
         # init the regridder and the areas
-        self._configure_regridder(machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs)
+        self.regridder = None
+        areas, regrid = self._configure_regridder(
+            machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs
+        )
 
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
@@ -299,6 +302,10 @@ class Reader:
 
         # load and check the regrid
         if regrid or areas:
+            if self.src_grid_name is False:
+                self.logger.warning("Grid metadata is False, regrid and areas disabled")
+                return False, False
+
             # create the configuration dictionary
             cfg_regrid = load_multi_yaml(
                 folder_path=self.grids_folder, definitions=machine_paths["paths"], loglevel=self.loglevel
@@ -309,17 +316,12 @@ class Reader:
                 self.logger.info("Grid metadata is not defined. Trying to access the real data")
                 data = self._retrieve_plain()
                 self.regridder = Regridder(cfg_regrid, data=data, loglevel=self.loglevel)
-            elif self.src_grid_name is False:
-                self.logger.info("Grid metadata is False, regrid and areas disabled")
-                regrid = False
-                areas = False
-                return
             else:
                 self.logger.info("Grid metadata is %s", self.src_grid_name)
                 self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, loglevel=self.loglevel)
 
                 if self.regridder.error:
-                    self.logger.warning("Issues in the Regridder() init: trying with data")
+                    self.logger.info("Regridder() cannot init with the provided grid metadata: trying with data")
                     data = self._retrieve_plain()
                     self.regridder = Regridder(cfg_regrid, src_grid_name=self.src_grid_name, data=data, loglevel=self.loglevel)
 
@@ -329,8 +331,7 @@ class Reader:
 
             # TODO: it is likely there are other cases where we need to disable regrid.
             if not self.regridder.cdo:
-                areas = False
-                regrid = False
+                return False, False
 
         if areas:
             # generate source areas and expose them in the reader
@@ -372,6 +373,8 @@ class Reader:
 
         # activate time statistics
         self.timemodule = TimStat(loglevel=self.loglevel)
+
+        return areas, regrid
 
     def _fix_datamodel_weights(self, weights, mode="datamodel"):
         """
@@ -611,7 +614,7 @@ class Reader:
     def regrid(self, data):
         """Call the regridder function returning container or iterator"""
 
-        if self.tgt_grid_name is None:
+        if self.regridder is None:
             raise NoRegridError("regrid has not been initialized in the Reader, cannot perform any regrid.")
 
         data = counter_reverse_coordinate(data)
@@ -619,7 +622,9 @@ class Reader:
         out = self.regridder.regrid(data)
 
         # set regridded attribute to 1 for all vars
-        out = set_attrs(out, {"AQUA_regridded": 1})
+        out = set_attrs(
+            out, {"AQUA_regridded": 1, "AQUA_source_grid": self.src_grid_name, "AQUA_target_grid": self.tgt_grid_name}
+        )
         return out
 
     # def trend(self, data, dim='time', degree=1, skipna=False):
@@ -1300,7 +1305,7 @@ class Reader:
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        if self._check_if_regridded(data) and self.tgt_fldstat:
+        if self._check_if_regridded(data) and self.tgt_fldstat is not None:
             data = self.tgt_fldstat.fldstat(
                 data,
                 stat=stat,

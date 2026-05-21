@@ -131,6 +131,8 @@ class TestRegridder:
         reader = Reader(model=model, exp=exp, source=source, regrid="r200", fix=True, loglevel=LOGLEVEL)
         data = reader.retrieve()
         rgd = reader.regrid(data[variable])
+        assert getattr(rgd, "AQUA_regridded") == 1
+        assert getattr(rgd, "AQUA_target_grid") == "r200"
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert ratio == pytest.approx((rgd.isnull().sum() / rgd.size).values, rel=APPROX_REL)  # land fraction
