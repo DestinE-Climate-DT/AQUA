@@ -200,7 +200,61 @@ class BaseWriter(ABC):
                     data = data.compute()
         return data
 
-    def _write_monthly_chunk(self, data, var, year, month, dask=False, performance_reporting=False):
+    def _to_dataset(self, data, var):
+        """Convert DataArray to Dataset, preserving Dataset-level attributes.
+
+        Args:
+            data: xarray Dataset or DataArray.
+            var: Variable name used as fallback when the DataArray has no name.
+
+        Returns:
+            xarray.Dataset: Dataset with original attributes intact.
+        """
+        if isinstance(data, xr.DataArray):
+            attrs = data.attrs.copy()
+            data = data.to_dataset(name=data.name or var or "data")
+            data.attrs.update(attrs)
+        return data
+
+    def _iter_years(self, data, performance_reporting):
+        """Yield (year, year_data) pairs with Dataset-level attrs preserved after slicing.
+
+        Args:
+            data: xarray Dataset with a time dimension.
+            performance_reporting: If True, yield only the first year.
+
+        Yields:
+            tuple: (year, year_data) where year_data has original attrs restored.
+        """
+        original_attrs = data.attrs.copy()
+        years = sorted(set(data.time.dt.year.values))
+        if performance_reporting:
+            years = [years[0]]
+        for year in years:
+            year_data = data.sel(time=data.time.dt.year == year)
+            year_data.attrs.update(original_attrs)
+            yield year, year_data
+
+    def _iter_months_in_year(self, year_data, performance_reporting):
+        """Yield (month, month_data) pairs with Dataset-level attrs preserved after slicing.
+
+        Args:
+            year_data: xarray Dataset for a single year (attrs already restored by _iter_years).
+            performance_reporting: If True, yield only the first month.
+
+        Yields:
+            tuple: (month, month_data) where month_data has original attrs restored.
+        """
+        original_attrs = year_data.attrs.copy()
+        months = sorted(set(year_data.time.dt.month.values))
+        if performance_reporting:
+            months = [months[0]]
+        for month in months:
+            month_data = year_data.sel(time=year_data.time.dt.month == month)
+            month_data.attrs.update(original_attrs)
+            yield month, month_data
+
+    def _write_chunk(self, data, var, year, month, dask=False, performance_reporting=False):
         """
         Write a single monthly chunk.
 
@@ -233,13 +287,7 @@ class BaseWriter(ABC):
         self.logger.info("Computing to write file %s...", tmpfile)
 
         # Convert DataArray to Dataset if needed, preserving attributes
-        if isinstance(data, xr.DataArray):
-            var_name = data.name or var or "data"
-            # Preserve DataArray attributes before conversion
-            attrs = data.attrs.copy()
-            data = data.to_dataset(name=var_name)
-            # Apply attributes to Dataset level
-            data.attrs.update(attrs)
+        data = self._to_dataset(data, var)
 
         # Compute data
         data = self._compute_data(data, dask=dask, performance_reporting=performance_reporting)
@@ -390,13 +438,16 @@ class BaseWriter(ABC):
         """
         pass
 
-    def check_integrity(self, var, overwrite=False):
+    def check_integrity(self, var, overwrite=False, end_date=None):
         """
         Check integrity of files/stores for a variable.
 
         Args:
             var: Variable name
             overwrite: If True, always report incomplete
+            end_date: Unused in the base implementation; accepted for interface
+                compatibility with subclasses (e.g. IcechunkWriter) that need
+                to verify coverage up to a specific date.
 
         Returns:
             dict: {
@@ -473,15 +524,7 @@ class BaseWriter(ABC):
             performance_reporting: Limit to first month only
             stats_file: Path to stats text file for immediate per-chunk writes. None disables writing.
         """
-        # Capture attrs before slicing (slicing can drop Dataset-level attrs)
-        original_attrs = data.attrs.copy()
-
-        # Split data into years
-        years = sorted(set(data.time.dt.year.values))
-        if performance_reporting:
-            years = [years[0]]
-
-        for year in years:
+        for year, year_data in self._iter_years(data, performance_reporting):
             self.logger.info("Processing year %s...", str(year))
             yearfile = self.get_filename(var, year=year)
 
@@ -492,16 +535,7 @@ class BaseWriter(ABC):
                     continue
                 self.logger.warning("Yearly file %s already exists, overwriting...", yearfile)
 
-            year_data = data.sel(time=data.time.dt.year == year)
-            # Preserve attributes after slicing
-            year_data.attrs.update(original_attrs)
-
-            # Split into months
-            months = sorted(set(year_data.time.dt.month.values))
-            if performance_reporting:
-                months = [months[0]]
-
-            for month in months:
+            for month, month_data in self._iter_months_in_year(year_data, performance_reporting):
                 self.logger.info("Processing month %s...", str(month))
                 monthfile = self.get_filename(var, year=year, month=month)
 
@@ -512,36 +546,16 @@ class BaseWriter(ABC):
                         continue
                     self.logger.warning("Monthly file %s already exists, overwriting...", monthfile)
 
-                month_data = year_data.sel(time=year_data.time.dt.month == month)
-                # Preserve attributes after slicing
-                month_data.attrs.update(original_attrs)
-
                 # Write file
                 if definitive:
                     tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
                     t_start = time()
-                    success = self._write_monthly_chunk(
+                    success = self._write_chunk(
                         month_data, var, year, month, dask=dask, performance_reporting=performance_reporting
                     )
                     t_elapsed = time() - t_start
                     self.logger.info("Chunk execution time: %.2f", t_elapsed)
-                    size_bytes = self._last_chunk_size_bytes
-                    entry = {
-                        "var": var,
-                        "year": year,
-                        "month": month,
-                        "elapsed": t_elapsed,
-                        "mem": self._last_mem_stats,
-                        "size_bytes": size_bytes,
-                        "throughput_mib_s": (size_bytes / (1024**2)) / t_elapsed
-                        if (size_bytes is not None and t_elapsed > 0)
-                        else None,
-                    }
-                    self._chunk_stats.append(entry)
-                    self._last_mem_stats = None
-                    self._last_chunk_size_bytes = None
-                    if stats_file is not None:
-                        self._write_chunk_stat_line(entry, stats_file)
+                    self._record_chunk_stats(var, year, month, t_elapsed, self._last_chunk_size_bytes, stats_file)
 
                     if not success:
                         self.logger.error("Failed to write chunk for %s-%s", year, month)
@@ -561,6 +575,35 @@ class BaseWriter(ABC):
                 self.concat_year_files(var, year)
 
         return True
+
+    def _record_chunk_stats(self, var, year, month, t_elapsed, size_bytes, stats_file):
+        """Record per-chunk performance stats and optionally append to the stats file.
+
+        Resets ``_last_mem_stats`` and ``_last_chunk_size_bytes`` after recording
+        so the next chunk starts with clean state.
+
+        Args:
+            var: Variable name.
+            year: Year of the chunk.
+            month: Month of the chunk.
+            t_elapsed: Wall-clock elapsed time in seconds.
+            size_bytes: Uncompressed data size in bytes, or None.
+            stats_file: Path to the stats text file, or None to skip file write.
+        """
+        entry = {
+            "var": var,
+            "year": year,
+            "month": month,
+            "elapsed": t_elapsed,
+            "mem": self._last_mem_stats,
+            "size_bytes": size_bytes,
+            "throughput_mib_s": (size_bytes / (1024**2)) / t_elapsed if (size_bytes is not None and t_elapsed > 0) else None,
+        }
+        self._chunk_stats.append(entry)
+        self._last_mem_stats = None
+        self._last_chunk_size_bytes = None
+        if stats_file is not None:
+            self._write_chunk_stat_line(entry, stats_file)
 
     def _write_chunk_stat_line(self, entry, stats_file):
         """Write a single chunk stat line immediately to the stats file."""

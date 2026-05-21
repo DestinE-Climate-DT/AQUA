@@ -150,10 +150,7 @@ class IcechunkWriter(BaseWriter):
         """
         try:
             # Convert DataArray → Dataset if needed (preserve attrs)
-            if isinstance(data, xr.DataArray):
-                attrs = data.attrs.copy()
-                data = data.to_dataset(name=data.name or "data")
-                data.attrs.update(attrs)
+            data = self._to_dataset(data, None)
 
             # Encoding is only valid on the initial write (mode='w').
             # Passing it on append ('a') raises "variable already exists, but encoding was provided".
@@ -370,34 +367,15 @@ class IcechunkWriter(BaseWriter):
                 self.logger.info("No new data for %s after last committed record", var)
                 return True
 
-        # Preserve original attributes for re-application after slicing
-        original_attrs = data.attrs.copy()
-
-        # Split data into years
-        years = sorted(set(data.time.dt.year.values))
-        if performance_reporting:
-            years = [years[0]]
-
         # mode='w' clobbers; used only for the first write of a fresh/overwrite run.
         # When resuming, all writes must append to the existing store.
         first_session_write = last_record is None
 
-        for year in years:
+        for year, year_data in self._iter_years(data, performance_reporting):
             self.logger.info("Processing year %s...", str(year))
-            year_data = data.sel(time=data.time.dt.year == year)
-            # Preserve attributes after slicing
-            year_data.attrs.update(original_attrs)
 
-            # Split into months
-            months = sorted(set(year_data.time.dt.month.values))
-            if performance_reporting:
-                months = [months[0]]
-
-            for month in months:
+            for month, month_data in self._iter_months_in_year(year_data, performance_reporting):
                 self.logger.info("Processing month %s-%02d...", year, month)
-                month_data = year_data.sel(time=year_data.time.dt.month == month)
-                # Preserve attributes after slicing
-                month_data.attrs.update(original_attrs)
 
                 if definitive:
                     t_start = time.time()
@@ -457,23 +435,7 @@ class IcechunkWriter(BaseWriter):
 
                     t_elapsed = time.time() - t_start
                     self.logger.info("Month %s-%02d execution time: %.2f seconds", year, month, t_elapsed)
-                    size_bytes = self._last_chunk_size_bytes
-                    entry = {
-                        "var": var,
-                        "year": year,
-                        "month": month,
-                        "elapsed": t_elapsed,
-                        "mem": self._last_mem_stats,
-                        "size_bytes": size_bytes,
-                        "throughput_mib_s": (size_bytes / (1024**2)) / t_elapsed
-                        if (size_bytes is not None and t_elapsed > 0)
-                        else None,
-                    }
-                    self._chunk_stats.append(entry)
-                    self._last_mem_stats = None
-                    self._last_chunk_size_bytes = None
-                    if stats_file is not None:
-                        self._write_chunk_stat_line(entry, stats_file)
+                    self._record_chunk_stats(var, year, month, t_elapsed, self._last_chunk_size_bytes, stats_file)
 
             # Yearly checkpoint (optional)
             if definitive:
