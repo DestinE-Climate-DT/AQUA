@@ -4,17 +4,13 @@
 AQUA files operations mixin
 """
 
-import fnmatch
 import os
-import re
 import shutil
 import sys
 
-import requests
-
 from aqua.core.gridbuilder import GridDeployer
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import create_folder, dump_yaml, load_multi_yaml, load_yaml, to_list
+from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml
 
 
 class FilesMixin:
