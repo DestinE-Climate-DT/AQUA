@@ -351,6 +351,7 @@ class Reader:
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
                 reader_kwargs=reader_kwargs,
+                initialize=False,
             )
             if self.fix:
                 weights = self._fix_datamodel_weights(weights, mode="fixer")
