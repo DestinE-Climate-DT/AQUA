@@ -1,10 +1,12 @@
 import fnmatch
 import os
 import re
+
 import requests
+
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
-from aqua.core.util import load_yaml, load_multi_yaml, to_list, create_folder
+from aqua.core.util import create_folder, load_multi_yaml, load_yaml, to_list
 
 
 class GridDeployer():
