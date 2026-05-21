@@ -194,6 +194,14 @@ fixer_name:
             mx2t24: # there might be 24h mismatch in grib definition
                 source: tx
 
+    era5-earth-data-hub:
+        convention: eccodes
+        coords:
+            time:
+                source: valid_time
+            plev:
+                source: isobaricInhPa
+
     era5-arco:
         convention: eccodes
         data_model: false
