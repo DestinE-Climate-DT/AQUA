@@ -9,15 +9,14 @@ from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, load_multi_yaml, load_yaml, to_list
 
 
-class GridDeployer():
+class GridDeployer:
     """
     Class to deploy the grids to the default grids path set in the config-aqua.yaml file.
     The deploy method takes the name of the source grid to be deployed,
     which can be either an exact name or a wildcard pattern.
     """
 
-    def __init__(self,
-                 loglevel: str = "WARNING"):
+    def __init__(self, loglevel: str = "WARNING"):
         """
         Initialize the GridDeployer.
 
@@ -92,7 +91,6 @@ class GridDeployer():
                 file_name = path.split("/")[-1]  # Extract the grid file name
                 grid_dir = "/".join(path.split("/")[:-1])  # Extract the parent
                 self._download_grid(grid_dir=grid_dir, grid_name=file_name, targetdir=grids_path)
-
 
     def _grids_deploy_path(self, single_dict, source_grid_name=None):
         """

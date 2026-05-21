@@ -3,5 +3,4 @@
 from .gridbuilder import GridBuilder
 from .griddeploy import GridDeployer
 
-__all__ = ["GridBuilder",
-           "GridDeployer"]
+__all__ = ["GridBuilder", "GridDeployer"]
