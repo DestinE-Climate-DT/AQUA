@@ -75,17 +75,42 @@ class CatalogEntryBuilder:
 
     def create_entry_name(self):
         """
-        Create an entry name for the DROP outputs
+        Create an entry name for the DROP outputs.
         """
-        # Default LRA-100-monthly entry keeps the 'lra-' prefix
-        if self.resolution == "r100" and self.frequency == "monthly":
-            entry_name = f"lra-{self.resolution}-{self.frequency}"
-        else:
-            # All other entries drop the 'lra-' prefix
-            entry_name = f"{self.resolution}-{self.frequency}"
 
-        return entry_name
+        parts = []
 
+        #
+        # realization
+        #
+        if self.realization:
+            parts.append(self.realization)
+
+        #
+        # resolution
+        #
+        if self.resolution:
+            parts.append(self.resolution)
+
+        #
+        # frequency
+        #
+        if self.frequency:
+            parts.append(self.frequency)
+
+        #
+        # statistic
+        #
+        if self.stat and self.stat != "mean":
+            parts.append(self.stat)
+
+        #
+        # region
+        #
+        if self.region and self.region != "global":
+            parts.append(self.region)
+
+        return "-".join(parts)
     # def update_urlpath(self, oldpath, newpath):
     #     """Update the urlpath in the catalog entry."""
     #     old = to_list(oldpath)

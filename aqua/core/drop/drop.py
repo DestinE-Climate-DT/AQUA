@@ -62,6 +62,7 @@ class Drop:
         model=None,
         exp=None,
         source=None,
+        realization=None,
         var=None,
         configdir=None,
         resolution=None,
@@ -95,6 +96,7 @@ class Drop:
             model (string):          The model name from the catalog
             exp (string):            The experiment name from the catalog
             source (string):         The sourceid name from the catalog
+            realization (string):    The realization ID from the catalog
             var (str, list):         Variable(s) to be processed and archived.
             resolution (string):     The target resolution for the DROP output. If None,
                                      no regridding is performed.
@@ -144,6 +146,7 @@ class Drop:
         self.model = self._require_param(model, "model")
         self.exp = self._require_param(exp, "experiment")
         self.source = self._require_param(source, "source")
+        self.realization = realization
         self.var = self._require_param(var, "variable string or list.")
 
         # General settings
@@ -221,6 +224,7 @@ class Drop:
             catalog=self.catalog,
             model=self.model,
             exp=self.exp,
+            realization=self.realization,
             resolution=self.resolution,
             frequency=self.frequency,
             region=self.region_name,
@@ -337,6 +341,7 @@ class Drop:
             model=self.model,
             exp=self.exp,
             source=self.source,
+            realization=self.realization, 
             regrid=self.resolution if self.resolution != "native" else None,
             catalog=self.catalog,
             loglevel=self.loglevel,
