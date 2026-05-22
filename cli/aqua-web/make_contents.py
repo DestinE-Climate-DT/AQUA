@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import xml.etree.ElementTree as ET
 from fnmatch import fnmatch
 
 import yaml
@@ -174,18 +175,28 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
                 fn_line = f"{catalog}/{model}/{exp}/{realization}/{fn}"
             else:
                 fn_line = f"{catalog}/{model}/{exp}/{fn}"
-            filename_list.append(fn_line)
 
             if fn.endswith(".png"):
                 with Image.open(os.path.join(path, fn)) as img:
                     metadata = img.info
                 properties[fn_line] = metadata
+                filename_list.append(fn_line)
             elif fn.endswith(".pdf"):
                 with PdfReader(os.path.join(path, fn)) as pdf_reader:
                     metadata = pdf_reader.metadata
                 properties[fn_line] = metadata
-            else:
-                properties[fn_line] = {}
+                filename_list.append(fn_line)
+            elif fn.endswith(".svg"):
+                root = ET.parse(os.path.join(path, fn)).getroot()
+                desc = root.find("{http://www.w3.org/2000/svg}desc")
+                metadata = {}
+                if desc is not None and desc.text:
+                    for line in desc.text.strip().split("\n"):
+                        if ": " in line:
+                            key, value = line.split(": ", 1)
+                            metadata[key] = value
+                properties[fn_line] = metadata
+                filename_list.append(fn_line)
 
         grouping = {}
         for key, val in diagnostics.items():
@@ -323,7 +334,7 @@ def parse_arguments(arguments):
     """
 
     parser = argparse.ArgumentParser(
-        description="Create content.yaml and content.json files for each experiment in the content/png directory."
+        description="Create content.yaml and content.json files for each experiment in the content/<format> directory."
     )
 
     parser.add_argument(
@@ -357,7 +368,9 @@ def parse_arguments(arguments):
         default="INFO",
         help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.",
     )
-    parser.add_argument("--format", type=str, default="png", help="Format of the input data files on which to work (png, pdf)")
+    parser.add_argument(
+        "--format", type=str, default="png", help="Input data formats to work on (png, pdf or svg). Default: png"
+    )
 
     return parser.parse_args(arguments)
 
