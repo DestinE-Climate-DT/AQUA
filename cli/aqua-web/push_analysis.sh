@@ -13,11 +13,16 @@ rsync_with_mkdir() {
     local remote_path="${rsync_target#*:}"
 
     # Run rsync
-    rsync -avz "$local_path/" "$rsync_target/" --relative --chmod=D775,F664
-    exit_code=$?
-    if [ $exit_code -ne 0 ]; then
-        log_message ERROR "Rsync failed with exit code $exit_code"
-        exit $exit_code
+
+    if [ -e "$local_path" ]; then
+        rsync -avz "$local_path/" "$rsync_target/" --relative --chmod=D775,F664
+        exit_code=$?
+        if [ $exit_code -ne 0 ]; then
+            log_message ERROR "Rsync failed with exit code $exit_code"
+            exit $exit_code
+        fi
+    else
+        log_message ERROR "Directory $local_path does not exist, skipping rsync"
     fi
 }
 
@@ -28,21 +33,32 @@ get_file() {
 
     if [[ -n "$4" ]]; then
         log_message INFO "Getting file $2 from rsync target $4 writing to $3"
-        rsync -avz $4/$2 $3
+        if rsync "$4/$2" > /dev/null 2>&1; then
+            rsync -avz $4/$2 $3
+        else
+            log_message WARNING "File $2 not found in rsync target $4."
+        fi
     else
         log_message INFO "Getting file $2 from bucket $1 on LUMI-O"
-        python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2
+        if ! python $SCRIPT_DIR/push_s3.py -g $1 $3 -d $2; then
+            log_message WARNING "File $2 not found in bucket $1."
+        fi
     fi
 }
 
 push_s3() {
     # push_s3 <bucket> <file>
-    log_message INFO "Pushing file $2 to bucket $1 on LUMI-O"
-    python $SCRIPT_DIR/push_s3.py $1 $2 -d $2
-    exit_code=$?
-    if [ $exit_code -ne 0 ]; then
-        log_message ERROR "Pushing $2 to bucket $1 failed with exit code $exit_code"
-        exit $exit_code
+
+    if [ -e "$2" ]; then
+        log_message INFO "Pushing file $2 to bucket $1 on LUMI-O"
+        python $SCRIPT_DIR/push_s3.py $1 $2 -d $2
+        exit_code=$?
+        if [ $exit_code -ne 0 ]; then
+            log_message ERROR "Pushing $2 to bucket $1 failed with exit code $exit_code"
+            exit $exit_code
+        fi
+    else
+        log_message ERROR "File/directory $2 does not exist, skipping push_s3"
     fi
 }
 
@@ -55,16 +71,18 @@ push_lumio() {
         if [ -f "content/experiments.yaml" ]; then
             rsync -avz content/experiments.yaml $3/content/experiments.yaml
         fi
-        rsync_with_mkdir content/png/$2/ $3
-        rsync_with_mkdir content/pdf/$2/ $3
+        for fmt in $format; do
+            rsync_with_mkdir "content/$fmt/$2/" "$3"
+        done
         return
     else
         log_message INFO "Pushing figures to bucket $1 on LUMI-O, experiment: $2"
         if [ -f "content/experiments.yaml" ]; then
             push_s3 $1 content/experiments.yaml
         fi
-        push_s3 $1 content/png/$2
-        push_s3 $1 content/pdf/$2
+        for fmt in $format; do
+            push_s3 $1 "content/$fmt/$2"
+        done
     fi
 }
 
@@ -74,10 +92,14 @@ make_contents() {
     log_message INFO "Making content files for $1 with config $2 and ensemble $3"
     if [ $ensemble -eq 1 ]; then
         # If ensemble structure, we need to pass the ensemble flag
-        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2
+        for fmt in $format; do
+            python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --format $fmt
+        done
     else
         # Otherwise, we use the old structure
-        python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --no-ensemble
+        for fmt in $format; do
+            python $SCRIPT_DIR/make_contents.py -f -e $1 -c $2 --no-ensemble --format $fmt
+        done
     fi
     exit_code=$?
     if [ $exit_code -ne 0 ]; then
@@ -92,47 +114,22 @@ collect_figures() {
     log_message INFO "Collecting figures for $2"
 
     indir="$1/$2"
-    dstdir="./content/pdf/$2"
 
-    mkdir -p $dstdir
-    find $indir -name "*.pdf"  -exec cp {} $dstdir/ \;
-
-    # Remove dates from EC-mean filenames
-    for file in $dstdir/PI4*_????_????.pdf $dstdir/global_mean*_????_????.pdf
-    do
-        if [ -e "$file" ]; then
-            mv -- "$file" "${file%_*_*}.pdf"
-        fi
+    for fmt in $format; do
+        dstdir="./content/$fmt/$2"
+        mkdir -p $dstdir
+        find $indir -name "*.$fmt"  -exec cp {} $dstdir/ \;
+        echo $(date) > $dstdir/last_update.txt
     done
 
     # Copy experiment.yaml if it exists
     log_message INFO "Trying to collect $indir/experiment.yaml"
     if [ -f "$indir/experiment.yaml" ]; then
         log_message INFO "Collecting also experiment.yaml"
-        mkdir -p ./content/png/$2
-        cp "$indir/experiment.yaml" "./content/png/$2/"
-    fi
-
-    echo $(date) > $dstdir/last_update.txt
-}
-
-convert_pdf_to_png() {
-    # This assumes that we are inside the aqua-web repository
-
-    if [ "$convert" -eq 1 ]; then
-        log_message INFO "Converting PDFs to PNGs for $1"
-
-        dstdir="./content/png/$1"
-
-        mkdir -p $dstdir
-
-        if [ $ensemble -eq 1 ]; then
-            IFS='/' read -r catalog model experiment realization <<< "$1"
-            $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment" "$realization"
-        else
-            IFS='/' read -r catalog model experiment <<< "$1"
-            $SCRIPT_DIR/pdf_to_png.sh "$catalog" "$model" "$experiment"
-        fi
+        for fmt in $format; do
+            mkdir -p "./content/$fmt/$2"
+            cp "$indir/experiment.yaml" "./content/$fmt/$2/"
+        done
     fi
 }
 
@@ -148,9 +145,9 @@ print_help() {
     echo "  -c, --config FILE      alternate config file to determine diagnostic groupings for make_contents (defaults to config.grouping.yaml in \$AQUA/config/analysis)"
     echo "  -d, --no-update        do not update the remote github repository"
     echo "  --no-ensemble          use old ensemble structure with only 3 levels catalog/model/exp"
+    echo "  -f, --format FORMAT    specify image formats to transfer (default is 'pdf,png,svg')"
     echo "  -h, --help             display this help and exit"
     echo "  -l, --loglevel LEVEL   set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2."
-    echo "  -n, --no-convert       do not convert PDFs to PNGs (use only if all PNGs are already available)"
     echo "  -r, --repository       remote aqua-web repository (default 'DestinE-Climate-DT/aqua-web'). If it starts with 'local:' a local directory is used."
     echo "  -s, --rsync URL        remote rsync target (takes priority over s3 bucket if specified)"
 }
@@ -166,13 +163,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Parse command line arguments
 
 loglevel=2
-convert=1
 bucket="aqua-web"
 repository="DestinE-Climate-DT/aqua-web"
 update=1
 rsync=""
 config=""
 ensemble=1  # Default to new ensemble structure with 4 levels (catalog/model/experiment/realization)
+format="pdf png svg"
 
 # Parse all options first
 while [[ $# -gt 0 ]]; do
@@ -181,10 +178,6 @@ while [[ $# -gt 0 ]]; do
       print_help
       exit 0
       ;;
-    -n|--no-convert)
-        convert=0
-        shift
-        ;;
     -l|--loglevel)
         loglevel="$2"
         shift 2
@@ -203,6 +196,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     -b|--bucket)
         bucket="$2"
+        shift 2
+        ;;
+    -f|--format)
+        format=$(echo "$2" | tr ',' ' ')
         shift 2
         ;;
     -s|--rsync)
@@ -275,10 +272,6 @@ fi
 
 log_message INFO "Processing $indir"
 
-if [ "$convert" -eq 0 ]; then
-    log_message INFO "Conversion of PDFs to PNGs suppressed"
-fi
-
 if [ $localrepo -eq 1 ]; then
     log_message INFO "Using local repository $repository"
     repo=$repository
@@ -302,7 +295,7 @@ echo "Updated figures in bucket $bucket"  > updated.txt
 echo "on $(date) for the following experiments:" >> updated.txt
 
 # erase content and copy all files to content
-log_message INFO "Collect and update figures in content/pdf"
+log_message INFO "Collect and update figures in content/pdf, content/png and content/svg"
 
 # Check if the second argument is an actual file and use it as a list of experiments
 if [ -f "$exps" ]; then
@@ -329,18 +322,16 @@ if [ -f "$exps" ]; then
         else
             expstr="$catalog/$model/$experiment"
         fi
-        log_message INFO "Collect figures for $expstr and converting to png"
+        log_message INFO "Collect figures for $expstr"
         collect_figures "$1" "$expstr"
-        convert_pdf_to_png "$expstr"
         get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
         make_contents "$expstr" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
         push_lumio $bucket "$expstr" "$rsync"  # push figures including experiments.yaml
         echo "$expstr" >> updated.txt
     done < "$exps"
 else  # Otherwise, use the second argument as the experiment folder
-    log_message INFO "Collect figures for $exps and converting to png"
+    log_message INFO "Collect figures for $exps"
     collect_figures "$indir" "$exps"
-    convert_pdf_to_png "$exps"
     get_file $bucket content/experiments.yaml content/experiments.yaml "$rsync"  # recover experiments.yaml file
     make_contents "$exps" "$config" # create catalog.yaml and catalog.json and update experiments.yaml
     push_lumio $bucket "$exps" "$rsync"  # push figures to LUMI-O including experiments.yaml

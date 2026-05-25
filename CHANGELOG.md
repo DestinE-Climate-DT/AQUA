@@ -6,9 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+ClimateDT workflow modifications:
+- Removed dependency on imagemagick
+- Removed the `--no-convert` option from `push_analysis.sh`
+- Added the `--format <FORMAT>` option to `push_analysis.sh` to select output formats to be uploaded (`png,pdf,svg` by default)
+
 Main changes:
 
 Complete list:
+- Automatically initialize regridders with loaded weights in the Regridder class (#2700)
+- Add AQUA attributes for source and target grid (#2869)
+- Solve `areas=True` and `src_grd_name=False` conflict (#2871)
+- Fallback test download from wilma (#2867)
+- push_analysis png, pdf and svg metadata support and remove imagemagick dependency (#2866, #2872)
+- Support for python 3.13 and 3.14, with new default from 3.12 to 3.14 (#2853)
+- Update intake and intake-xarray to >=2.0.0 (#2843)
+- Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
+- push_analysis deal with missing experiments.yaml file (#2792)
 - Added preprint DOI to references and acknowledgments (#2845)
 - Improve Grahics coverage (#2841)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
