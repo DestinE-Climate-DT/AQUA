@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- Improve Catalog Generator tests (#2842)
 - Automatically initialize regridders with loaded weights in the Regridder class (#2700)
 - Add AQUA attributes for source and target grid (#2869)
 - Solve `areas=True` and `src_grd_name=False` conflict (#2871)
