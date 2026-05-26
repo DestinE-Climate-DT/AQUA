@@ -14,6 +14,9 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- Introduce a report txt file for monitoring DROP execution time and memory occupation (#2824)
+- Introducing a `--no-validate` flag to disable file validation on reading and speed up DROP (#2824)
+- Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
 - Improve Catalog Generator tests (#2842)
 - Automatically initialize regridders with loaded weights in the Regridder class (#2700)
 - Add AQUA attributes for source and target grid (#2869)

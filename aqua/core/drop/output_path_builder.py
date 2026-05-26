@@ -54,7 +54,7 @@ class OutputPathBuilder:
         self.level = level
         self.kwargs = kwargs or {}
 
-    def build_path(self, basedir, var, year=None, month=None, day=None):
+    def build_path(self, basedir, var, year=None, month=None, day=None, output_format=".nc"):
         """Ceate the full path to the output file.
 
         Args:
@@ -66,11 +66,12 @@ class OutputPathBuilder:
                                    Can be a wildcard.
             day (int, optional): Day to include in the filename. Defaults to None.
                                  Can be a wildcard.
+            output_format (str, optional): File extension for the output file. Defaults to ".nc".
         Returns:
             str: The full path to the output file.
         """
         folder = self.build_directory()
-        filename = self.build_filename(var, year, month, day)
+        filename = self.build_filename(var, year, month, day, output_format=output_format)
         return os.path.join(basedir, folder, filename)
 
     def build_directory(self):
@@ -84,7 +85,7 @@ class OutputPathBuilder:
         folder = os.path.join(*[p for p in parts if p])
         return folder
 
-    def build_filename(self, var=None, year=None, month=None, day=None):
+    def build_filename(self, var=None, year=None, month=None, day=None, output_format=".nc"):
         """
         Create the filename based on the class parameters.
         Variable and year are set as wildcards by default if not provided.
@@ -95,7 +96,7 @@ class OutputPathBuilder:
             year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
             month (int, optional): Month to include in the filename. Defaults to None. Can be a wildcard.
             day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
-
+            output_format (str, optional): File extension for the output file. Defaults to ".nc".
         Returns:
             str: The filename for the output file.
         """
@@ -138,7 +139,7 @@ class OutputPathBuilder:
                 date_components = date_components + date_formatted
 
         # collapse all the component to create the final file
-        filename = "_".join(str(c) for c in components + [date_components] if c) + ".nc"
+        filename = "_".join(str(c) for c in components + [date_components] if c) + output_format
 
         return filename
 
