@@ -179,10 +179,7 @@ class TestAquaConsole:
             assert excinfo.value.code == 1
 
         # create a test for DROP
-        with pytest.raises(
-            FileNotFoundError,
-            match=("ERROR: drop_config.yaml not found: you need to have this configuration file!"),
-        ):
+        with pytest.raises(SystemExit) as excinfo:
             run_aqua(["drop"])
 
         # create a test for catgen
@@ -229,6 +226,7 @@ class TestAquaConsole:
                 "--rebuild",
                 "--startdate", "2020-01-01",
                 "--enddate", "2020-03-31",
+                "--driver", "netcdf",
             ]
         )
         # fmt: on
@@ -239,12 +237,122 @@ class TestAquaConsole:
         assert os.path.isfile(path), f"File not found: {path}"
 
         # run DROP with a different stat and verify that at least one file exist
-        run_aqua(["drop", "--config", drop_test, "-w", "1", "-d", "--rebuild", "--stat", "min"])
-        path = os.path.join(
-            os.path.join(mydir, "drop_test"),
-            "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.nc",
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-03-31",
+                "--rebuild",
+                "--stat",
+                "min",
+                "--driver",
+                "zarr",
+            ]
         )
-        assert os.path.isfile(path), f"File not found: {path}"
+
+        monthly_path = os.path.join(
+            os.path.join(mydir, "drop_test"),
+            "ci/IFS/test-tco79/r1/r200/monthly/min/global/2t_ci_IFS_test-tco79_r1_r200_monthly_min_global_202002.zarr",
+        )
+        # Zarr stores are directories, not files
+        assert os.path.exists(monthly_path), f"Monthly Zarr store not found: {monthly_path}"
+
+        # run DROP with --monitoring: only the first month is processed and a stats file is written
+        outdir_monitoring = os.path.join(mydir, "drop_test")
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--monitoring",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-03-31",
+                "--rebuild",
+            ]
+        )
+
+        stats_files = [f for f in os.listdir(outdir_monitoring) if f.startswith("drop_stats_") and f.endswith(".txt")]
+        assert len(stats_files) >= 1, f"Expected at least one stats file in {outdir_monitoring}, found: {stats_files}"
+
+        # --catalog-entry no: data is written, catalog creation is skipped (no error expected)
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-01-31",
+                "--catalog-entry",
+                "no",
+            ]
+        )
+
+        # --catalog-entry only: no data writing, catalog update attempted (completes without data-write error)
+        run_aqua(
+            [
+                "drop",
+                "--config",
+                drop_test,
+                "-w",
+                "1",
+                "-d",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-01-31",
+                "--catalog-entry",
+                "only",
+            ]
+        )
+
+        # CLI-only mode: no config file, all parameters provided via command line
+        run_aqua(
+            [
+                "drop",
+                "--outdir",
+                os.path.join(mydir, "drop_test"),
+                "-w",
+                "1",
+                "-d",
+                "--catalog",
+                "ci",
+                "--model",
+                "IFS",
+                "--exp",
+                "test-tco79",
+                "--source",
+                "long",
+                "--var",
+                "2t",
+                "--resolution",
+                "r200",
+                "--frequency",
+                "monthly",
+                "--startdate",
+                "2020-01-01",
+                "--enddate",
+                "2020-01-31",
+                "--catalog-entry",
+                "no",
+            ]
+        )
 
         # remove aqua
         run_aqua_console_with_input(["uninstall"], "yes")

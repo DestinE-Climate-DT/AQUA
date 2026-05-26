@@ -90,7 +90,7 @@ class AquaFDBGenerator:
         self.resolution = self.config["resolution"]
         self.ocean_grid = self.config.get("ocean_grid")
         self.atm_grid = self.config.get("atm_grid")
-        self.num_of_realizations = int(self.config.get("num_of_realizations", 1))
+        self.num_of_realizations = int(self.config.get("num_of_realizations") or 1)
         self.description = None
         self.grid_resolutions = None
 

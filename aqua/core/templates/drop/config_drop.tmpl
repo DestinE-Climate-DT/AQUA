@@ -11,7 +11,11 @@ target:
   frequency: monthly    # Options: monthly, daily, 3hourly, 6hourly, etc.
   catalog: {{ catalog }}
   startdate: {{ startdate }}  # Optional: starting date for Drop analysis
-  enddate: {{ enddate }}      # Optiona: ending date for Drop analysis
+  enddate: {{ enddate }}      # Optional: ending date for Drop analysis
+  stat: mean                  # Optional: Statistical operator (default: mean). Options: mean, std, max, min, sum, histogram
+  # Additional option: kwargs for the statistical callable function can be set
+  # here as a dictionary
+  stat_kwargs: {}
 
   # Optional: Regional selection
   # Uncomment to extract specific regions
@@ -20,12 +24,6 @@ target:
   #  lat: [35, 70]       # Latitude range [min, max]
   #  lon: [-10, 40]      # Longitude range [min, max]
 
-  # Optional: Statistical operator (default: mean)
-  # Options: mean, std, max, min
-  # Additional option: kwargs for the statistical callable function can be set
-  # here as a dictionary
-  #stat: mean
-  #stat_kwargs: {}
 
 # Output paths
 paths:
@@ -40,10 +38,6 @@ options:
 
   loglevel: INFO
 
-  # Zarr reference creation for faster data access
-  zarr: False
-  verify_zarr: False
-
   # Overwrite existing files
   overwrite: False
 
@@ -54,13 +48,14 @@ options:
   rebuild: False
 
   # Compacting method: xarray, cdo, or null for no compacting
-  compact: xarray
-
-  # CDO options (used if compact: cdo)
-  cdo_options: ["-f", "nc4", "-z", "zip_1"]
+  compact: cdo
 
   # Performance monitoring (creates HTML report)
   performance_reporting: False
+
+  # Output file format: netcdf, zarr, or icechunk
+  # icechunk is experimental and does not support catalog integration
+  driver: netcdf
 
 # SLURM job definitions
 slurm:
@@ -86,13 +81,14 @@ data:
         #zoom: 8
 
         # Optional: custom resolution for this source (overrides target.resolution)
-        #resolution: r25
+        # resolution: r25
 
         # Optional: custom frequency for this source (overrides target.frequency)
-        #frequency: daily
+        # frequency: daily
 
         # Optional: custom statistic for this source (overrides target.stat)
-        #stat: std
+        # Options: mean, std, max, min, sum, histogram
+        # stat: std
 
       hourly-hpz10-atm3d:
         vars: ['q', 't', 'u', 'v']
