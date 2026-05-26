@@ -23,6 +23,8 @@ from dask.distributed.diagnostics import MemorySampler
 from aqua.core.drop.drop_util import move_tmp_files
 from aqua.core.logger import log_configure
 
+from .output_path_builder import OutputPathBuilder
+
 xr.set_options(keep_attrs=True)
 
 
@@ -32,14 +34,24 @@ class BaseWriter(ABC):
 
     Implements common logic for monthly file/store creation and yearly concatenation.
     Subclasses must implement format-specific methods.
+
+    Attributes:
+        tmpdir: Temporary directory for intermediate files
+        outdir: Output directory for final files
+        filename_builder: OutputPathBuilder instance for filename generation
+        logger: Logger instance for logging
+        _chunk_stats: the list of chunk stats dictionaries, each with keys:
+                var, year, month, elapsed, mem, size_bytes, throughput_mib_s
+        _last_mem_stats: the last memory stats dictionary with keys avg_mem and max_mem, or None
+        _last_chunk_size_bytes: the size in bytes of the last chunk, or None
     """
 
     def __init__(
         self,
-        tmpdir,
-        outdir,
-        filename_builder=None,
-        loglevel="WARNING",
+        tmpdir: str,
+        outdir: str,
+        filename_builder: OutputPathBuilder = None,
+        loglevel: str = "WARNING",
     ):
         """
         Initialize base writer.
@@ -49,10 +61,6 @@ class BaseWriter(ABC):
             outdir: Output directory for final files
             filename_builder: OutputPathBuilder instance for filename generation
             loglevel: Logging level
-            _chunk_stats: the list of chunk stats dictionaries, each with keys:
-                var, year, month, elapsed, mem, size_bytes, throughput_mib_s
-            _last_mem_stats: the last memory stats dictionary with keys avg_mem and max_mem, or None
-            _last_chunk_size_bytes: the size in bytes of the last chunk, or None
         """
         self.tmpdir = tmpdir
         self.outdir = outdir
