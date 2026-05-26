@@ -179,6 +179,7 @@ class CatalogEntryBuilder:
             #    self.logger.warning("Setting xarray_kwargs for NetCDF driver")
             catblock["args"]["xarray_kwargs"] = {"decode_times": True, "combine": "by_coords"}
 
+        # TODO: check if we need specific xarray_kwargs for zarr, e.g. to support multi-zarr annual files (mirroring NetCDF)
         # elif output_format == "zarr":
         #    # Support multi-zarr annual files (mirroring NetCDF)
         # catblock["args"]["xarray_kwargs"] = {"engine": "zarr", "combine": "by_coords"}
