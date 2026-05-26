@@ -50,6 +50,7 @@ DROP's architecture enables various data processing tasks:
 DROP can be explored in the `DROP notebook <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/drop/drop.ipynb>`_.
 
 .. note ::
+
     DROP is designed to be flexible and can be used for a wide range of data reduction tasks beyond the specific use cases mentioned above.
     However, the processing window and output file are always based on monthly chunks.
 
