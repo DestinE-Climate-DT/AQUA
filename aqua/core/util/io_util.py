@@ -49,75 +49,93 @@ def create_folder(folder, loglevel="WARNING"):
 
 def file_is_complete(filename, loglevel="WARNING"):
     """
-    Basic check to see if file exists and that includes values
-    which are not NaN in its first variabiles
-    Return a boolean that can be used as a flag for further operation
-    A loglevel can be passed for tune the logging properties
+    Check if a file or store exists and contains valid, non-NaN data.
+
+    Supports NetCDF files and Zarr stores (directories with '.zarr' in the path,
+    including intermediate '.zarr.tmp' stores).  The same validation logic is applied
+    to both formats after format detection: the opener is the only format-specific step.
 
     Args:
-        filename: a string with the filename
-        loglevel: the log level
+        filename: Path to a NetCDF file or Zarr store.
+        loglevel: Logging level.
 
-    Returns
-        A boolean flag (True for file ok, False for file corrupted)
+    Returns:
+        bool: True if the file/store is complete and valid, False otherwise.
     """
-
     logger = log_configure(loglevel, "file_is_complete")
 
-    # check file existence
-    if not os.path.isfile(filename):
+    # Detect format: Zarr store is a directory whose path contains '.zarr'
+    is_zarr = os.path.isdir(filename) and ".zarr" in str(filename)
+
+    # Check existence
+    if is_zarr:
+        logger.info("Zarr store %s found...", filename)
+    elif os.path.isfile(filename):
+        logger.info("File %s found...", filename)
+    else:
         logger.info("File %s not found...", filename)
         return False
 
-    logger.info("File %s is found...", filename)
-
-    # check opening
     try:
-        xfield = xr.open_dataset(filename)
+        xfield = xr.open_zarr(filename, consolidated=False) if is_zarr else xr.open_dataset(filename)
 
-        # check variables
+        # Check variables
         if len(xfield.data_vars) == 0:
             logger.error("File %s has no variables!", filename)
             return False
 
-        # check on a single variable
+        # Time dimension is required
+        if "time" not in xfield.dims:
+            logger.error("File %s has no time dimension!", filename)
+            return False
+
+        # Time sanity checks
+        if len(xfield.time) == 0:
+            logger.error("File %s has empty time dimension!", filename)
+            return False
+        if len(xfield.time) != len(set(xfield.time.values)):
+            logger.error("File %s has duplicate time steps!", filename)
+            return False
+        if len(xfield.time) > 1 and not (xfield.time.diff("time") > np.timedelta64(0, "ns")).all():
+            logger.error("File %s has unsorted time steps!", filename)
+            return False
+
+        # NaN check on first variable
         varname = list(xfield.data_vars)[0]
 
-        # all NaN case
         if xfield[varname].isnull().all():
-            # case of a mindate on all NaN single files
             mindate = xfield[varname].attrs.get("mindate")
             if mindate is not None:
                 logger.warning("All NaN and mindate found: %s", mindate)
                 if xfield[varname].time.max() < np.datetime64(mindate):
                     logger.info("File %s is full of NaN but it is ok according to mindate", filename)
                     return True
-
                 logger.error("File %s is full of NaN and not ok according to mindate", filename)
                 return False
-
             logger.error("File %s is empty or full of NaN! Recomputing...", filename)
             return False
 
-        # some NaN case
+        # Check NaN pattern is consistent across time steps
         mydims = [dim for dim in xfield[varname].dims if dim != "time"]
         nan_count = np.isnan(xfield[varname]).sum(dim=mydims)
         if all(value == nan_count[0] for value in nan_count):
             logger.info("File %s seems ok!", filename)
             return True
 
-        # case of a mindate on some NaN
+        # Partial NaN with mindate
         mindate = xfield[varname].attrs.get("mindate")
         if mindate is not None:
             logger.warning("Some NaN and mindate found: %s", mindate)
             last_nan = xfield.time[np.where(nan_count == nan_count[0])].max()
             if np.datetime64(mindate) > last_nan:
                 logger.info(
-                    "File %s has some of NaN up to %s but it is ok according to mindate %s", filename, last_nan.values, mindate
+                    "File %s has some NaN up to %s but it is ok according to mindate %s",
+                    filename,
+                    last_nan.values,
+                    mindate,
                 )
                 return True
-
-            logger.error("File %s has some NaN bit it is not ok according to mindate", filename)
+            logger.error("File %s has some NaN but it is not ok according to mindate", filename)
             return False
 
         logger.error("File %s has at least one time step with NaN! Recomputing...", filename)
