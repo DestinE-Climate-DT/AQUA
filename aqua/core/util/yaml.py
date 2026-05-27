@@ -6,10 +6,19 @@ from string import Template as DefaultTemplate
 from tempfile import TemporaryDirectory
 
 import yaml  # This is needed to allow YAML override in intake
-from jinja2 import Template
+from jinja2 import Environment, StrictUndefined
 from ruamel.yaml import YAML
 
 from aqua.core.logger import log_configure
+
+# instead of creating a new jinja environment every time we need to render a yaml file,
+# we create it once and reuse it to save resources.
+_JINJA_ENV = Environment(
+    undefined=StrictUndefined,  # UndefinedError on missing variables instead of empty string
+    trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
+    lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
+    keep_trailing_newline=True,  # preserve the trailing newline of the source file
+)
 
 
 def construct_yaml_merge(loader, node):
@@ -102,7 +111,7 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     if definitions:
         # perform template substitution with jinja
         if jinja:
-            template = Template(yaml_text)
+            template = _JINJA_ENV.from_string(yaml_text)
             rendered_yaml = template.render(definitions)
             cfg = yaml.load(rendered_yaml)
         # use default python templating
@@ -192,14 +201,14 @@ def _load_merge(
         raise ValueError("ERROR: at least one between folder_path or filenames must be provided")
 
     if filenames:  # Merging a list of files
-        logger.debug(f"Files to be merged: {filenames}")
+        logger.debug("Files to be merged: %s", filenames)
         for filename in filenames:
             yaml_dict = load_yaml(filename, definitions)
             for key, value in yaml_dict.items():
                 merged_dict[key].update(value)
 
     if folder_path:  # Merging all the files in a folder
-        logger.debug(f"Folder to be merged: {folder_path}")
+        logger.debug("Folder to be merged: %s", folder_path)
         if not os.path.exists(folder_path):
             raise FileNotFoundError(f"ERROR: {folder_path} not found: it is required to have this folder!")
         for filename in os.listdir(folder_path):
@@ -210,6 +219,6 @@ def _load_merge(
                     merged_dict[key].update(value)
 
     logger.debug("Dictionary updated")
-    logger.debug(f"Keys: {merged_dict.keys()}")
+    logger.debug("Keys: %s", merged_dict.keys())
 
     return merged_dict
