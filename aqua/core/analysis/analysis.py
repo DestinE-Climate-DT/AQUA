@@ -184,6 +184,7 @@ def run_diagnostic_collection(
             logger.error(f"Config for tool '{tool}' not found, skipping.")
             continue
 
+        # update cfgs with experiment kind templating if exp_kind_dict is provided
         if exp_kind_dict:
             cfgs = configure_template_configs(cfgs, exp_kind_dict, logger)
 
@@ -204,6 +205,7 @@ def run_diagnostic_collection(
                 logfile=logfile,
             )
 
+        # remove temporary rendered config files created when using experiment kind templating
         if exp_kind_dict:
             temp_cfg_dir = os.path.dirname(cfgs[0])
             shutil.rmtree(temp_cfg_dir, ignore_errors=True)
@@ -211,8 +213,13 @@ def run_diagnostic_collection(
 
 
 def configure_experiment_kind(exp_kind, exp_kind_file, logger):
-    """ "
+    """
     Configure the experiment kind based on the provided kind and configuration file.
+
+    Args:
+        exp_kind (str): The experiment kind to configure (e.g "historical").
+        exp_kind_file (str): YAML file containing kind configurations (e.g. "startdate").
+        logger: Logger instance for logging messages.
     """
     if exp_kind is None:
         return None
@@ -224,7 +231,7 @@ def configure_experiment_kind(exp_kind, exp_kind_file, logger):
     complete_dictionary = load_yaml(exp_kind_file)
 
     if exp_kind not in complete_dictionary:
-        logger.warning(f"Experiment kind '{exp_kind}' not found in config file '{exp_kind_file}'. Default selected")
+        logger.error(f"Experiment kind '{exp_kind}' not found in config file '{exp_kind_file}'. Default selected")
     return complete_dictionary.get(exp_kind, "default")
 
 
