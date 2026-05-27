@@ -11,6 +11,7 @@ import pytest
 from aqua import __path__ as pypath
 from aqua import __version__ as version
 from aqua.core.console import catalog
+from aqua.core.gridbuilder.griddeploy import GridDeployer
 from aqua.core.console.main import AquaConsole
 from aqua.core.console.util import query_yes_no
 from aqua.core.util import dump_yaml, load_yaml, to_list
@@ -703,6 +704,22 @@ class TestAquaConsoleShared:
         }
 
         # base set of tests for list
+
+    def test_grids_deploy_entrypoint(self, shared_aqua_install, run_aqua, monkeypatch):
+        """Test that `aqua grids deploy` reaches GridDeployer with a realistic grid name."""
+        mydir = shared_aqua_install
+        called = []
+
+        def fake_deploy(self, source_grid_name):
+            called.append(source_grid_name)
+
+        monkeypatch.setattr(GridDeployer, "deploy", fake_deploy)
+
+        # Keep the call realistic: configure default paths before deploy.
+        run_aqua(["-v", "grids", "set", os.path.join(mydir, "deploy-target")])
+        run_aqua(["-v", "grids", "deploy", "hpz1-nested"])
+
+        assert called == ["hpz1-nested"]
 
     def test_console_list(self, shared_aqua_install, run_aqua, capfd):
         """Basic tests for list command"""
