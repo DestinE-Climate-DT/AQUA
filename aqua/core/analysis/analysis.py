@@ -246,7 +246,7 @@ def configure_template_configs(cfgs, exp_kind_dict, logger):
 
     new_cfg_paths = []
     for cfg in cfgs:
-        rendered_cfg = load_yaml(cfg, definitions=exp_kind_dict)
+        rendered_cfg = load_yaml(cfg, definitions=exp_kind_dict, strict=True)
         new_cfg_path = os.path.join(temp_dir, os.path.basename(cfg))
         dump_yaml(new_cfg_path, rendered_cfg)
         logger.info("Rendered config saved to: %s", new_cfg_path)

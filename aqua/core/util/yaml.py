@@ -13,8 +13,15 @@ from aqua.core.logger import log_configure
 
 # instead of creating a new jinja environment every time we need to render a yaml file,
 # we create it once and reuse it to save resources.
-_JINJA_ENV = Environment(
+_JINJA_ENV_UNDEFINED = Environment(
     undefined=StrictUndefined,  # UndefinedError on missing variables instead of empty string
+    trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
+    lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
+    keep_trailing_newline=True,  # preserve the trailing newline of the source file
+)
+
+# same as above, but no undefined to allow for optional variables in the yaml files
+_JINJA_ENV_BASE = Environment(
     trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
     lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
     keep_trailing_newline=True,  # preserve the trailing newline of the source file
@@ -81,7 +88,7 @@ def load_multi_yaml(
     return yaml_dict
 
 
-def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True):
+def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True, strict: bool = False):
     """
     Load yaml file with template substitution
 
@@ -89,7 +96,10 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
         infile (str): a file path to the yaml
         definitions (str or dict, optional): name of the section containing string template
                                              definitions or a dictionary with the same content
-        jinja: (bool): jinja2 templating is used instead of standard python templating. Default is true.
+        jinja (bool): jinja2 templating is used instead of standard python templating. Default is True.
+        strict (bool): if True, raises UndefinedError on missing template variables instead of
+                       silently rendering them as empty strings. Default is False.
+
     Returns:
         A dictionary with the yaml file keys
     """
@@ -111,7 +121,10 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     if definitions:
         # perform template substitution with jinja
         if jinja:
-            template = _JINJA_ENV.from_string(yaml_text)
+            if strict:
+                template = _JINJA_ENV_UNDEFINED.from_string(yaml_text)
+            else:
+                template = _JINJA_ENV_BASE.from_string(yaml_text)
             rendered_yaml = template.render(definitions)
             cfg = yaml.load(rendered_yaml)
         # use default python templating
