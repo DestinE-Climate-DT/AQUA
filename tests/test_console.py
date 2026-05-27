@@ -11,9 +11,9 @@ import pytest
 from aqua import __path__ as pypath
 from aqua import __version__ as version
 from aqua.core.console import catalog
-from aqua.core.gridbuilder.griddeploy import GridDeployer
 from aqua.core.console.main import AquaConsole
 from aqua.core.console.util import query_yes_no
+from aqua.core.gridbuilder.griddeploy import GridDeployer
 from aqua.core.util import dump_yaml, load_yaml, to_list
 
 TESTFILE = "testfile.txt"
