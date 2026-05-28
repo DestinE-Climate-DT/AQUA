@@ -9,6 +9,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from jinja2 import UndefinedError
 
 from aqua.core.analysis import run_command, run_diagnostic_collection
 from aqua.core.analysis.analysis import (
@@ -543,3 +544,10 @@ class TestConfigureTemplateConfigs:
         result_paths = configure_template_configs([str(cfg_file)], {}, logger)
 
         assert os.path.basename(result_paths[0]) == "my_config.yaml"
+
+    def test_undefined_variable_raises(self, tmp_path):
+        """An undefined jinja var in a template must raise — strict mode is on."""
+        cfg = tmp_path / "cfg.yaml"
+        cfg.write_text("startdate: '{{ ref_startdate }}'\n")
+        with pytest.raises(UndefinedError):
+            configure_template_configs([str(cfg)], {"unrelated": "x"}, logger)
