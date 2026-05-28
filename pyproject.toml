@@ -50,6 +50,7 @@ dependencies = [
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
+    "icechunk",
     "intake>=2.0.9", # Version 2 is a major refactor, 2.0.8 had a vulnerability
     "intake-xarray>=2.0.0", # Version 2 is a major refactor
     "jinja2",
@@ -68,7 +69,7 @@ dependencies = [
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "typeguard",
     "xarray>=2025.12.0",
-    "zarr<=3.1.5"
+    "zarr>=3.0"
 ]
 
 [project.optional-dependencies]
@@ -94,7 +95,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.15.13"
+    "ruff==0.15.14"
 ]
 all = [
     "aqua-core[docs]",

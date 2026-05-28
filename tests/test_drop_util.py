@@ -3,6 +3,7 @@ import os
 import pytest
 
 from aqua.core.drop import drop_util
+from aqua.core.drop.drop_util import estimate_time_chunk_size
 from aqua.core.util import replace_intake_vars
 
 
@@ -62,6 +63,51 @@ def test_move_tmp_files(tmp_directory, output_directory):
     # assert not os.path.exists(tmp_file2)
     assert os.path.exists(output_file1)
     assert os.path.exists(output_file2)
+
+
+@pytest.mark.aqua
+def test_move_tmp_files_zarr(tmpdir):
+    """Test that move_tmp_files handles zarr stores correctly"""
+    # Create separate tmp and output directories
+    tmp_directory = str(tmpdir.mkdir("tmp"))
+    output_directory = str(tmpdir.mkdir("output"))
+
+    # Create a zarr store directory structure
+    zarr_store1 = os.path.join(tmp_directory, "var1.zarr")
+    zarr_store2 = os.path.join(tmp_directory, "var2.zarr")
+    os.makedirs(zarr_store1)
+    os.makedirs(zarr_store2)
+
+    # Create some dummy zarr metadata files
+    with open(os.path.join(zarr_store1, ".zarray"), "w") as f:
+        f.write('{"shape": [10, 20]}')
+    with open(os.path.join(zarr_store2, ".zarray"), "w") as f:
+        f.write('{"shape": [5, 10]}')
+
+    # Expected output locations
+    output_zarr1 = os.path.join(output_directory, "var1.zarr")
+    output_zarr2 = os.path.join(output_directory, "var2.zarr")
+
+    drop_util.move_tmp_files(tmp_directory, output_directory)
+
+    # Verify stores were moved
+    assert os.path.exists(output_zarr1)
+    assert os.path.exists(output_zarr2)
+    assert os.path.isdir(output_zarr1)
+    assert os.path.isdir(output_zarr2)
+    assert os.path.exists(os.path.join(output_zarr1, ".zarray"))
+    assert os.path.exists(os.path.join(output_zarr2, ".zarray"))
+
+
+@pytest.mark.aqua
+def test_estimate_time_chunk_size():
+    """Cover all branches of estimate_time_chunk_size."""
+    assert estimate_time_chunk_size("daily") == 37  # fixed-interval
+    assert estimate_time_chunk_size("hourly") == 892  # fixed-interval
+    assert estimate_time_chunk_size("monthly") == 14  # calendar default
+    assert estimate_time_chunk_size("seasonal") == 3  # quarterly branch
+    assert estimate_time_chunk_size("yearly") == 1  # yearly branch
+    assert estimate_time_chunk_size("foobar") > 0  # fallback exception path
 
 
 # Test replace_intake_vars
