@@ -5,6 +5,8 @@ Handles writing climate data chunks to NetCDF files with optional concatenation
 into yearly files. Supports both xarray and CDO for file concatenation.
 """
 
+import glob
+import os
 import shutil
 import subprocess
 
@@ -26,7 +28,7 @@ class NetCDFWriter(BaseWriter):
     """
     Writer for NetCDF format in DROP processing.
 
-    Handles monthly file creation and optional yearly concatenation.
+    Handles daily or monthly file creation and optional yearly concatenation.
     """
 
     def __init__(
@@ -34,6 +36,7 @@ class NetCDFWriter(BaseWriter):
         tmpdir,
         outdir,
         compact="xarray",
+        save_frequency="monthly",
         **kwargs,
     ):
         """
@@ -43,9 +46,10 @@ class NetCDFWriter(BaseWriter):
             tmpdir: Temporary directory for intermediate files
             outdir: Output directory for final files
             compact: Concatenation method ('xarray', 'cdo', or None)
+            save_frequency: Checkpoint granularity ('monthly' or 'daily'). Default 'monthly'.
             **kwargs: Additional arguments passed to BaseWriter
         """
-        super().__init__(tmpdir, outdir, **kwargs)
+        super().__init__(tmpdir, outdir, save_frequency=save_frequency, **kwargs)
         self.time_encoding = TIME_ENCODING
         self.var_encoding = VAR_ENCODING
         self.compact = compact
@@ -151,4 +155,70 @@ class NetCDFWriter(BaseWriter):
 
         except Exception as e:
             self.logger.error("Failed to concatenate monthly files: %s", e)
+            return False
+
+    def concat_month_files(self, var, year, month):
+        """
+        Concatenate daily files into a single monthly file.
+
+        Used when ``save_frequency='daily'``.  Expects one file per calendar day
+        present in the data for the given year-month; accepts any number >= 1.
+
+        Args:
+            var: Variable name
+            year: Year
+            month: Month
+
+        Returns:
+            bool: True if successful
+        """
+        # Gather daily files for this month using a glob on the day component
+        daily_pattern = self.get_filename(var, year=year, month=month, day="??")
+        daily_files = sorted(glob.glob(daily_pattern))
+
+        if not daily_files:
+            self.logger.warning("No daily files found for %s year %s month %s", var, year, month)
+            return False
+
+        self.logger.info(
+            "Concatenating %d daily files into monthly file for %s %s-%02d...",
+            len(daily_files),
+            var,
+            year,
+            month,
+        )
+
+        month_file = self.get_filename(var, year=year, month=month)
+        tmp_month_file = os.path.join(self.tmpdir, os.path.basename(month_file))
+
+        # Move daily files to tmpdir for safety
+        for daily_file in daily_files:
+            shutil.move(daily_file, self.tmpdir)
+        tmp_daily_files = [os.path.join(self.tmpdir, os.path.basename(f)) for f in daily_files]
+
+        # Remove any pre-existing monthly file
+        for f in [tmp_month_file, month_file]:
+            if os.path.exists(f):
+                os.remove(f)
+
+        try:
+            if self.compact == "cdo":
+                command = ["cdo", *self.cdo_options, "cat", *tmp_daily_files, tmp_month_file]
+                self.logger.debug("Using CDO: %s", " ".join(command[:4]) + " ...")
+                subprocess.check_output(command, stderr=subprocess.STDOUT)
+            else:
+                self.logger.debug("Using xarray for daily-to-monthly concatenation")
+                ds = self._open_files(tmp_daily_files)
+                var_name = list(ds.data_vars)[0]
+                ds.to_netcdf(
+                    tmp_month_file,
+                    encoding={"time": self.time_encoding, var_name: self.var_encoding},
+                )
+
+            shutil.move(tmp_month_file, month_file)
+            self._cleanup_monthly_files(tmp_daily_files)
+            return True
+
+        except Exception as e:
+            self.logger.error("Failed to concatenate daily files into monthly file: %s", e)
             return False

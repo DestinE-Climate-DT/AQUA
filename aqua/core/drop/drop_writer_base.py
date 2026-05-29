@@ -51,6 +51,7 @@ class BaseWriter(ABC):
         tmpdir: str,
         outdir: str,
         filename_builder: OutputPathBuilder = None,
+        save_frequency: str = "monthly",
         loglevel: str = "WARNING",
     ):
         """
@@ -60,12 +61,14 @@ class BaseWriter(ABC):
             tmpdir: Temporary directory for intermediate files
             outdir: Output directory for final files
             filename_builder: OutputPathBuilder instance for filename generation
+            save_frequency: Checkpoint granularity ('monthly' or 'daily'). Default 'monthly'.
             loglevel: Logging level
         """
         self.tmpdir = tmpdir
         self.outdir = outdir
         self.filename_builder = filename_builder
         self.logger = log_configure(loglevel, self.__class__.__name__)
+        self.save_frequency = save_frequency
         self._chunk_stats = []
         self._last_mem_stats = None
         self._last_chunk_size_bytes = None
@@ -258,9 +261,25 @@ class BaseWriter(ABC):
         for month in months:
             yield month, year_data.sel(time=year_data.time.dt.month == month)
 
-    def _write_chunk(self, data, var, year, month, dask=False, performance_reporting=False):
+    def _iter_days_in_month(self, month_data, performance_reporting):
+        """Yield (day, day_data) pairs for each day present in month_data.
+
+        Args:
+            month_data: xarray Dataset for a single month.
+            performance_reporting: If True, yield only the first day.
+
+        Yields:
+            tuple: (day, day_data) where day is an int and day_data has original attrs.
         """
-        Write a single monthly chunk.
+        days = sorted(set(month_data.time.dt.day.values))
+        if performance_reporting:
+            days = [days[0]]
+        for day in days:
+            yield day, month_data.sel(time=month_data.time.dt.day == day)
+
+    def _write_chunk(self, data, var, year, month, day=None, dask=False, performance_reporting=False):
+        """
+        Write a single chunk (monthly or daily).
 
         Template method that orchestrates the write process:
         1. Compute data with monitoring
@@ -268,17 +287,18 @@ class BaseWriter(ABC):
         3. Write to disk using format-specific method
 
         Args:
-            data: xarray Dataset/DataArray for one month
+            data: xarray Dataset/DataArray for one chunk
             var: Variable name
             year: Year
             month: Month
+            day: Day (only for daily save_frequency)
             dask: If True, use Dask for distributed computing
             performance_reporting: Enable performance reporting
 
         Returns:
             bool: True if write successful
         """
-        tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
+        tmpfile = self.get_filename(var, year=year, month=month, day=day, tmp=True)
 
         # Remove existing tmpfile
         if os.path.exists(tmpfile):
@@ -308,14 +328,31 @@ class BaseWriter(ABC):
 
         return success
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def concat_month_files(self, var, year, month):
+        """Concatenate daily files into a single monthly file.
+
+        Base implementation is a no-op; override in format-specific writers
+        that support daily saving (currently only NetCDFWriter).
+
+        Args:
+            var: Variable name.
+            year: Year.
+            month: Month.
+
+        Returns:
+            bool: False (not supported at base level).
         """
-        Generate filename/storename (monthly or yearly).
+        return False
+
+    def get_filename(self, var, year=None, month=None, day=None, tmp=False):
+        """
+        Generate filename/storename (daily, monthly, or yearly).
 
         Args:
             var: Variable name
             year: Year (for yearly or monthly files)
-            month: Month (for monthly files, optional)
+            month: Month (for monthly or daily files, optional)
+            day: Day (for daily files, optional)
             tmp: If True, return path in tmpdir
 
         Returns:
@@ -323,7 +360,7 @@ class BaseWriter(ABC):
         """
         ext = self.get_extension()
 
-        filename = self.filename_builder.build_filename(var=var, year=year, month=month)
+        filename = self.filename_builder.build_filename(var=var, year=year, month=month, day=day)
         # Replace extension if needed
         if not filename.endswith(ext):
             filename = os.path.splitext(filename)[0] + ext
@@ -504,18 +541,22 @@ class BaseWriter(ABC):
         stats_file=None,
     ):
         """
-        Write complete variable with all year/month logic.
+        Write complete variable with all year/month(/day) logic.
 
-        Template method that orchestrates the complete write process:
+        Template method that orchestrates the complete write process.
+        When ``save_frequency="daily"``, each day is written as a separate chunk
+        and daily files are concatenated into monthly files before the optional
+        yearly concat.  When ``save_frequency="monthly"`` (default), the
+        existing monthly behaviour is preserved.
+
         1. Split data into years
         2. For each year:
            - Check if yearly file exists
            - Split into months
            - For each month:
-             * Check if monthly file exists
-             * Write monthly chunk
-             * Validate tmpfile
-             * Move tmpfile to outdir (IMMEDIATELY)
+             * (monthly) Check if monthly file exists, write monthly chunk
+             * (daily)   For each day: check/write daily chunk; after all days
+                         call concat_month_files to merge daily → monthly
            - Concatenate monthly files into yearly file
         3. Return success status
 
@@ -525,7 +566,7 @@ class BaseWriter(ABC):
             overwrite: Overwrite existing files
             definitive: Actually write files (vs dry-run)
             dask: If True, use Dask for distributed computing
-            performance_reporting: Limit to first month only
+            performance_reporting: Limit to first month/day only
             stats_file: Path to stats text file for immediate per-chunk writes. None disables writing.
         """
         for year, year_data in self._iter_years(data, performance_reporting):
@@ -541,38 +582,52 @@ class BaseWriter(ABC):
 
             for month, month_data in self._iter_months_in_year(year_data, performance_reporting):
                 self.logger.info("Processing month %s...", str(month))
-                monthfile = self.get_filename(var, year=year, month=month)
 
-                # Check if monthly file exists
-                if os.path.exists(monthfile):
-                    if not overwrite:
-                        self.logger.info("Monthly file %s already exists, skipping...", monthfile)
-                        continue
-                    self.logger.warning("Monthly file %s already exists, overwriting...", monthfile)
-
-                # Write file
-                if definitive:
-                    tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
-                    t_start = time()
-                    success = self._write_chunk(
-                        month_data, var, year, month, dask=dask, performance_reporting=performance_reporting
+                if self.save_frequency == "daily":
+                    self._write_month_as_daily_chunks(
+                        month_data,
+                        var,
+                        year,
+                        month,
+                        overwrite=overwrite,
+                        definitive=definitive,
+                        dask=dask,
+                        performance_reporting=performance_reporting,
+                        stats_file=stats_file,
                     )
-                    t_elapsed = time() - t_start
-                    self.logger.info("Chunk execution time: %.2f", t_elapsed)
-                    self._record_chunk_stats(var, year, month, t_elapsed, self._last_chunk_size_bytes, stats_file)
+                else:
+                    # Default monthly behaviour
+                    monthfile = self.get_filename(var, year=year, month=month)
 
-                    if not success:
-                        self.logger.error("Failed to write chunk for %s-%s", year, month)
-                        continue
+                    # Check if monthly file exists
+                    if os.path.exists(monthfile):
+                        if not overwrite:
+                            self.logger.info("Monthly file %s already exists, skipping...", monthfile)
+                            continue
+                        self.logger.warning("Monthly file %s already exists, overwriting...", monthfile)
 
-                    # Validate temp file
-                    if not self.validate(tmpfile):
-                        self.logger.error("Something has gone wrong in %s!", tmpfile)
-                        continue
+                    if definitive:
+                        tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
+                        t_start = time()
+                        success = self._write_chunk(
+                            month_data, var, year, month, dask=dask, performance_reporting=performance_reporting
+                        )
+                        t_elapsed = time() - t_start
+                        self.logger.info("Chunk execution time: %.2f", t_elapsed)
+                        self._record_chunk_stats(var, year, month, t_elapsed, self._last_chunk_size_bytes, stats_file)
 
-                    # Move IMMEDIATELY (NetCDF timing, not Zarr's deferred move)
-                    self.logger.info("Moving temporary file %s to %s", tmpfile, monthfile)
-                    move_tmp_files(self.tmpdir, self.outdir)
+                        if not success:
+                            self.logger.error("Failed to write chunk for %s-%s", year, month)
+                            continue
+
+                        # Validate temp file
+                        if not self.validate(tmpfile):
+                            self.logger.error("Something has gone wrong in %s!", tmpfile)
+                            continue
+
+                        # Move IMMEDIATELY
+                        self.logger.info("Moving temporary file %s to %s", tmpfile, monthfile)
+                        move_tmp_files(self.tmpdir, self.outdir)
 
             # Concatenate into yearly file if concat enabled
             if definitive and self._should_concat():
@@ -580,7 +635,75 @@ class BaseWriter(ABC):
 
         return True
 
-    def _record_chunk_stats(self, var, year, month, t_elapsed, size_bytes, stats_file):
+    def _write_month_as_daily_chunks(
+        self,
+        month_data,
+        var,
+        year,
+        month,
+        overwrite=False,
+        definitive=True,
+        dask=False,
+        performance_reporting=False,
+        stats_file=None,
+    ):
+        """Write all daily chunks for a single month, then concat into a monthly file.
+
+        Called by ``write_variable`` when ``save_frequency="daily"``.
+
+        Args:
+            month_data: xarray Dataset for a single month.
+            var: Variable name.
+            year: Year.
+            month: Month.
+            overwrite: Overwrite existing files.
+            definitive: Actually write files (vs dry-run).
+            dask: If True, use Dask for distributed computing.
+            performance_reporting: If True, process only the first day.
+            stats_file: Path to stats text file, or None.
+        """
+        for day, day_data in self._iter_days_in_month(month_data, performance_reporting):
+            self.logger.info("Processing day %s...", str(day))
+            dayfile = self.get_filename(var, year=year, month=month, day=day)
+
+            if os.path.exists(dayfile):
+                if not overwrite:
+                    self.logger.info("Daily file %s already exists, skipping...", dayfile)
+                    continue
+                self.logger.warning("Daily file %s already exists, overwriting...", dayfile)
+
+            if definitive:
+                tmpfile = self.get_filename(var, year=year, month=month, day=day, tmp=True)
+                t_start = time()
+                success = self._write_chunk(
+                    day_data,
+                    var,
+                    year,
+                    month,
+                    day=day,
+                    dask=dask,
+                    performance_reporting=performance_reporting,
+                )
+                t_elapsed = time() - t_start
+                self.logger.info("Chunk execution time: %.2f", t_elapsed)
+                self._record_chunk_stats(var, year, month, t_elapsed, self._last_chunk_size_bytes, stats_file, day=day)
+
+                if not success:
+                    self.logger.error("Failed to write daily chunk for %s-%s-%s", year, month, day)
+                    continue
+
+                if not self.validate(tmpfile):
+                    self.logger.error("Something has gone wrong in %s!", tmpfile)
+                    continue
+
+                self.logger.info("Moving temporary file %s to %s", tmpfile, dayfile)
+                move_tmp_files(self.tmpdir, self.outdir)
+
+        # After all days in the month, concatenate daily → monthly if supported
+        if definitive and self._should_concat():
+            self.concat_month_files(var, year, month)
+
+    def _record_chunk_stats(self, var, year, month, t_elapsed, size_bytes, stats_file, day=None):
         """Record per-chunk performance stats and optionally append to the stats file.
 
         Resets ``_last_mem_stats`` and ``_last_chunk_size_bytes`` after recording
@@ -593,11 +716,13 @@ class BaseWriter(ABC):
             t_elapsed: Wall-clock elapsed time in seconds.
             size_bytes: Uncompressed data size in bytes, or None.
             stats_file: Path to the stats text file, or None to skip file write.
+            day: Day of the chunk (only for daily save_frequency). Defaults to None.
         """
         entry = {
             "var": var,
             "year": year,
             "month": month,
+            "day": day,
             "elapsed": t_elapsed,
             "mem": self._last_mem_stats,
             "size_bytes": size_bytes,
@@ -618,9 +743,11 @@ class BaseWriter(ABC):
         mem_str = f"  avg_mem={mem['avg_mem']:.2f} GiB  peak_mem={mem['max_mem']:.2f} GiB" if mem is not None else ""
         size_str = f"  size={size_bytes / (1024**2):.1f} MiB" if size_bytes is not None else ""
         tp_str = f"  throughput={tp:.2f} MiB/s" if tp is not None else ""
+        day = entry.get("day")
+        day_str = f"  day={day:02d}" if day is not None else ""
         line = (
             f"[{ts}] CHUNK  var={entry['var']}  year={entry['year']}  "
-            f"month={entry['month']:02d}  elapsed={entry['elapsed']:.2f}s{size_str}{tp_str}{mem_str}\n"
+            f"month={entry['month']:02d}{day_str}  elapsed={entry['elapsed']:.2f}s{size_str}{tp_str}{mem_str}\n"
         )
         with open(stats_file, "a", encoding="utf-8") as fh:
             fh.write(line)
