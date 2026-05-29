@@ -15,6 +15,7 @@ Main changes:
 
 Complete list:
 - Introduce a `aqua grids deploy` command to deploy target grids from a bucket to the local file system (#2865)
+- AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
 - Introduce a report txt file for monitoring DROP execution time and memory occupation (#2824)
 - Introducing a `--no-validate` flag to disable file validation on reading and speed up DROP (#2824)
 - Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
