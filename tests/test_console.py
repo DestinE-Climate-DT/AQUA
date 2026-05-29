@@ -721,7 +721,7 @@ class TestAquaConsoleShared:
         assert called == ["hpz1-nested"]
 
     # base set of tests for list
-    
+
     def test_console_list(self, shared_aqua_install, run_aqua, capfd):
         """Basic tests for list command"""
 
