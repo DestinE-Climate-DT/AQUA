@@ -16,7 +16,40 @@ class ConfigPath:
     """
     A class to manage the configuration path and directory robustly, including
     handling and browsing across multiple catalogs.
+
+    Instances are cached by their constructor arguments (excluding *locator*).
+    Repeated calls with the same ``configdir``, ``filename``, ``catalog`` and
+    ``loglevel`` return the same object without repeating the expensive I/O
+    performed during initialisation.  Pass a custom *locator* to bypass the
+    cache entirely.
+
+    Class methods:
+        clear_cache(): Evict all cached instances (useful in tests).
     """
+
+    _cache: dict = {}
+
+    def __new__(cls, configdir=None, filename="config-aqua.yaml", catalog=None, loglevel="warning", locator=None):
+        """Return a cached instance when arguments are unchanged."""
+        # Custom locator objects are not hashable in general — skip the cache.
+        if locator is not None:
+            return super().__new__(cls)
+
+        catalog_key = tuple(to_list(catalog)) if catalog is not None else None
+        cache_key = (configdir, filename, catalog_key, loglevel)
+
+        if cache_key in cls._cache:
+            return cls._cache[cache_key]
+
+        instance = super().__new__(cls)
+        instance._cache_key = cache_key
+        cls._cache[cache_key] = instance
+        return instance
+
+    @classmethod
+    def clear_cache(cls):
+        """Evict all cached ConfigPath instances."""
+        cls._cache.clear()
 
     def __init__(self, configdir=None, filename="config-aqua.yaml", catalog=None, loglevel="warning", locator=None):
         """
@@ -30,6 +63,10 @@ class ConfigPath:
             loglevel (str): The logging level. Defaults to 'warning'.
             locator (ConfigLocator | None): An optional ConfigLocator instance.
         """
+
+        # Skip re-initialisation for cached instances.
+        if hasattr(self, "_initialized"):
+            return
 
         # set up logger
         self.logger = log_configure(log_level=loglevel, log_name="ConfigPath")
@@ -65,6 +102,7 @@ class ConfigPath:
 
         # get also info on machine on init
         self.machine = self.get_machine()
+        self._initialized = True
 
     def get_config_dir(self):
         """
