@@ -329,6 +329,14 @@ If a match is found, the grid will be deployed from the bucket to the local file
     The name of the grid to be deployed.
     This is a mandatory field.
 
+Example usage:
+
+    To deploy the atmospheric healpix10 grid, you can run the following command:
+
+    .. code-block:: bash
+
+        aqua grids deploy hpz10-nested
+
 .. _aqua-grids-build:
 
 aqua grids build
