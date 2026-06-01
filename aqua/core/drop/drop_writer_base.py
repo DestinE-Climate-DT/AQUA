@@ -277,6 +277,33 @@ class BaseWriter(ABC):
         for day in days:
             yield day, month_data.sel(time=month_data.time.dt.day == day)
 
+    def _month_day_coverage(self, month_data, year, month):
+        """Return day coverage information for a given year-month slice.
+
+        This is used by daily save mode to avoid compacting partial months into
+        a monthly file.
+
+        Args:
+            month_data: xarray Dataset/DataArray for a single month.
+            year: Year.
+            month: Month.
+
+        Returns:
+            tuple: (present_days, expected_days, is_complete_month)
+        """
+        expected_days = pd.Period(f"{int(year):04d}-{int(month):02d}").days_in_month
+
+        if "time" not in month_data.coords or month_data.time.size == 0:
+            return 0, expected_days, False
+
+        times = pd.DatetimeIndex(pd.to_datetime(month_data.time.values))
+        present_days = times.normalize().nunique()
+        min_day = int(times.day.min())
+        max_day = int(times.day.max())
+
+        is_complete_month = present_days == expected_days and min_day == 1 and max_day == expected_days
+        return present_days, expected_days, is_complete_month
+
     def _write_chunk(self, data, var, year, month, day=None, dask=False, performance_reporting=False):
         """
         Write a single chunk (monthly or daily).
@@ -544,10 +571,11 @@ class BaseWriter(ABC):
         Write complete variable with all year/month(/day) logic.
 
         Template method that orchestrates the complete write process.
-        When ``save_frequency="daily"``, each day is written as a separate chunk
-        and daily files are concatenated into monthly files before the optional
-        yearly concat.  When ``save_frequency="monthly"`` (default), the
-        existing monthly behaviour is preserved.
+        When ``save_frequency="daily"``, each day is written as a separate chunk.
+        Daily files are concatenated into monthly files only for full calendar
+        months before the optional yearly concat. When
+        ``save_frequency="monthly"`` (default), the existing monthly behaviour
+        is preserved.
 
         1. Split data into years
         2. For each year:
@@ -699,8 +727,20 @@ class BaseWriter(ABC):
                 self.logger.info("Moving temporary file %s to %s", tmpfile, dayfile)
                 move_tmp_files(self.tmpdir, self.outdir)
 
-        # After all days in the month, concatenate daily → monthly if supported
+        # After all days in the month, concatenate daily → monthly only when the
+        # month coverage is complete. This avoids compacting truncated ranges.
         if definitive and self._should_concat():
+            present_days, expected_days, is_complete_month = self._month_day_coverage(month_data, year, month)
+            if not is_complete_month:
+                self.logger.info(
+                    "Skipping daily-to-monthly compaction for %s %04d-%02d: partial month (%d/%d days present)",
+                    var,
+                    int(year),
+                    int(month),
+                    present_days,
+                    expected_days,
+                )
+                return
             self.concat_month_files(var, year, month)
 
     def _record_chunk_stats(self, var, year, month, t_elapsed, size_bytes, stats_file, day=None):
