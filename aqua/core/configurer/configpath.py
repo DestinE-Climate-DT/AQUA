@@ -29,8 +29,11 @@ class ConfigPath:
 
     _cache: dict = {}
 
-    def __new__(cls, configdir=None, filename="config-aqua.yaml", catalog=None, loglevel="warning", locator=None):
+    def __new__(cls, configdir=None, filename="config-aqua.yaml", catalog=None, loglevel="warning", locator=None, **kwargs):
         """Return a cached instance when arguments are unchanged."""
+        # If this is a subclass, skip the cache and create a new instance.
+        if cls is not ConfigPath:
+            return super().__new__(cls)
         # Custom locator objects are not hashable in general — skip the cache.
         if locator is not None:
             return super().__new__(cls)
@@ -65,7 +68,9 @@ class ConfigPath:
         """
 
         # Skip re-initialisation for cached instances.
-        if hasattr(self, "_initialized"):
+        # We want to allow subclasses to be initialized multiple times,
+        # but for the base class we only want to initialize once per unique set of arguments (as determined by __new__).
+        if self.__class__ is ConfigPath and getattr(self, "_initialized", False):
             return
 
         # set up logger
