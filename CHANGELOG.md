@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- Added a cache for `ConfigPath` to speed up repeated access to the same config files (#2888)
 - AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
 - Introduce a report txt file for monitoring DROP execution time and memory occupation (#2824)
 - Introducing a `--no-validate` flag to disable file validation on reading and speed up DROP (#2824)
