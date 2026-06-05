@@ -287,10 +287,13 @@ This is useful if new external grids are created and need to be added to the lis
 
     It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
 
+.. _aqua-grids-set:
+
 aqua grids set <path>
 ---------------------
 
 This subcommand sets in the configuration file the path to the grids, areas and weights folders.
+If you need to deploy grids in this path, you can use the ``aqua grids deploy`` command (see :ref:`aqua-grids-deploy`).
 
 .. option:: <path>
 
@@ -304,6 +307,35 @@ This subcommand sets in the configuration file the path to the grids, areas and 
     This command is useful in new machines or if you don't have access to the default folders.
     In a locall installation for example, catalogs will not be able to find the grids, areas and weights
     unless this command is used to set the correct path.
+
+.. _aqua-grids-deploy:
+
+aqua grids deploy <grid-name>
+-----------------------------
+
+This subcommand is used to deploy a grid from a bucket to the local file system.
+It is useful to set up AQUA in a new machine, where the grids are not available yet.
+A match for the grid name (wildcard are supported) will be searched in the grids file in the configuration folder.
+If a match is found, the grid will be deployed from the bucket to the local file system.
+
+.. note::
+
+    In order to avoid unwanted overriding of existing grids in a shared system,
+    the command will work only if the user has set a custom path for the grids, areas and weights folders with the ``aqua grids set`` command.
+    See the :ref:`aqua-grids-set` section for more details.
+
+.. option:: <grid-name>
+
+    The name of the grid to be deployed.
+    This is a mandatory field.
+
+Example usage:
+
+    To deploy the atmospheric healpix10 grid, you can run the following command:
+
+    .. code-block:: bash
+
+        aqua grids deploy hpz10-nested
 
 .. _aqua-grids-build:
 

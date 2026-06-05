@@ -8,6 +8,7 @@ import os
 import shutil
 import sys
 
+from aqua.core.gridbuilder import GridDeployer
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml
 
@@ -72,6 +73,20 @@ class FilesMixin:
                 cfg["paths"] = path_dict["paths"]
 
             dump_yaml(filename, cfg)
+
+    def grids_deploy(self, args):
+        """
+        Deploy the grids selected by the user, which can specify a source_grid_name.
+
+        Since by default every catalog has is own grids folder,
+        this utility allows to deploy the grids only if the grids_set method has been
+        used to set the grids path in the config-aqua.yaml file.
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        grid_deployer = GridDeployer(loglevel=self.loglevel)
+        grid_deployer.deploy(source_grid_name=args.source_grid_name)
 
     def _file_add(self, kind, file, link=False):
         """Add a personalized file to the fixes/grids folder

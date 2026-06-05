@@ -27,6 +27,7 @@ recommended way to do this is to use Mamba/Conda package manager for the install
 This can be achieved with:
 
 .. code-block:: bash
+
     mamba create -n aquarium -c conda-forge python=3.14 cdo netcdf4 eccodes
     mamba activate aquarium
     pip install aqua-core

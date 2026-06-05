@@ -311,12 +311,12 @@ Controls processing behavior and performance settings:
 - **driver** (string, optional): Format for the output files. Default: ``netcdf``
 
   - ``netcdf``: Create NetCDF files.
-  Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
+    Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
   - ``zarr``: Create Zarr datasets files for faster subsequent access. Test feature under development, use with caution.
-  Monthly files are created and then concatenated into yearly consolidate files, and monthly files are removed. This is suboptimal but provides safety against incomplete or corrupted files.
+    Monthly files are created and then concatenated into yearly consolidate files, and monthly files are removed. This is suboptimal but provides safety against incomplete or corrupted files.
   - ``icechunk``: Write all data into a single git-like versioned Zarr repository using `icechunk <https://icechunk.io>`_.
-  Every month is committed as an atomic snapshot; failed writes are automatically rolled back to the last clean commit.
-  A post-commit integrity check is performed after each month.
+    Every month is committed as an atomic snapshot; failed writes are automatically rolled back to the last clean commit.
+    A post-commit integrity check is performed after each month.
 
   .. warning::
 
