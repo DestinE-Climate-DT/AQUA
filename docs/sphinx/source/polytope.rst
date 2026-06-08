@@ -52,3 +52,13 @@ Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge 
       forcing: historical
       start: '1990'
       machine: mn5
+
+.. seealso::
+
+   * The `ClimateDT external user guide
+     <https://platform.destine.eu/services/documents-and-api/doc/?service_name=climate-dt-user-guide>`_
+     on the DestinE platform, which includes a "Data and Access" section covering Polytope and other access methods.
+   * `aqua_access.ipynb <https://github.com/DestinE-Climate-DT/climatedt-community-resources/blob/main/example_aqua/aqua_access.ipynb>`_
+     in the
+     `climatedt-community-resources <https://github.com/DestinE-Climate-DT/climatedt-community-resources>`_
+     repository: example of ClimateDT data access with the AQUA ``Reader`` using the ``polytope`` engine.
