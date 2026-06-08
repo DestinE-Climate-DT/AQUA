@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- Refactor of the `catgen` to have it as a separate module (#2894)
 - Introduce a `aqua grids deploy` command to deploy target grids from a bucket to the local file system (#2865)
 - AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
 - Introduce a report txt file for monitoring DROP execution time and memory occupation (#2824)

@@ -113,6 +113,7 @@ def load_yaml(
         jinja (bool): jinja2 templating is used instead of standard python templating. Default is True.
         strict (bool): if True, raises UndefinedError on missing template variables instead of
                        silently rendering them as empty strings. Default is False.
+        catgen (bool): if True, use the Jinja environment configured to preserve formatting.
 
     Returns:
         A dictionary with the yaml file keys
