@@ -8,7 +8,6 @@ AQUA FDB catalog generator class.
 import os
 import re
 
-import jinja2
 from ruamel.yaml import YAML
 
 from aqua.core.configurer import ConfigPath
@@ -46,7 +45,8 @@ class AquaFDBGenerator:
         # get the templates and config files from the AQUA installation
         self.catgendir = os.path.join(ConfigPath().configdir, "catgen")
         self.logger.debug("Reading configuration files from %s", self.catgendir)
-        self.template = self.load_jinja_template(os.path.join(self.catgendir, "catalog_entry.j2"))
+        # self.template = self.load_jinja_template(os.path.join(self.catgendir, "catalog_entry.j2"))
+        self.template = os.path.join(self.catgendir, "catalog_entry.j2")
         self.matching_grids = load_yaml(os.path.join(self.catgendir, "matching_grids.yaml"))
 
         # config options
@@ -182,25 +182,6 @@ class AquaFDBGenerator:
         if not result:
             raise ValueError(f"Unexpected {value_type}: {value}")
         return result
-
-    def load_jinja_template(self, template_file):
-        """
-        Load a Jinja2 template.
-
-        Args:
-            template_file (str): Template file name.
-
-        Returns:
-            jinja2.Template: Loaded Jinja2 template.
-        """
-
-        templateloader = jinja2.FileSystemLoader(searchpath=os.path.dirname(template_file))
-        templateenv = jinja2.Environment(loader=templateloader, trim_blocks=False, lstrip_blocks=False)
-        if os.path.exists(template_file):
-            self.logger.debug("Loading template for %s", template_file)
-            return templateenv.get_template(os.path.basename(template_file))
-
-        raise FileNotFoundError(f"Cannot file template file {template_file}")
 
     def get_profile_content(self, profile, grid_resolution):
         """
@@ -411,7 +392,7 @@ class AquaFDBGenerator:
                         if key in combined and combined[key] is not None:
                             combined[key] = list(combined[key])
                     try:
-                        rendered_content = yaml.load(self.template.render(combined))
+                        rendered_content = load_yaml(self.template, definitions=combined, catgen=True)
                         all_content["sources"][source_name] = rendered_content[source_name]
                     except Exception as e:
                         self.logger.error("Error rendering template for source %s: %s", source_name, str(e))
