@@ -137,5 +137,12 @@ def file_subparser(main_parser, name):
         parser_set.add_argument("path", help=f"The {name} path to set as default")
         parser_build = subparsers.add_parser("build", help=f"Build {name} grids from data sources")
         parser_build = builder_parser(parser_build)
+        parser_deploy = subparsers.add_parser(
+            "deploy",
+            help=f"Deploy {name} grids. Requires to set the default path with the aqua grids set command",
+        )  # noqa: E501
+        parser_deploy.add_argument(
+            "source_grid_name", help="The source grid name to deploy. Can be a wildcard to deploy all the matching grids"
+        )
 
     return parser

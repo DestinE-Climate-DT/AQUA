@@ -52,7 +52,8 @@ class InstallMixin:
         checklevel = "ERROR" if silent else self.loglevel
 
         try:
-            self.configpath = ConfigPath(loglevel=checklevel).configdir
+            self.configurer = ConfigPath(loglevel=checklevel)
+            self.configpath = self.configurer.configdir
             self.configfile = os.path.join(self.configpath, "config-aqua.yaml")
             self.templatepath = os.path.join(self.configpath, "templates")
             self.logger.debug("AQUA found in %s", self.configpath)

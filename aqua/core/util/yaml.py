@@ -6,10 +6,26 @@ from string import Template as DefaultTemplate
 from tempfile import TemporaryDirectory
 
 import yaml  # This is needed to allow YAML override in intake
-from jinja2 import Template
+from jinja2 import Environment, StrictUndefined
 from ruamel.yaml import YAML
 
 from aqua.core.logger import log_configure
+
+# instead of creating a new jinja environment every time we need to render a yaml file,
+# we create it once and reuse it to save resources.
+_JINJA_ENV_UNDEFINED = Environment(
+    undefined=StrictUndefined,  # UndefinedError on missing variables instead of empty string
+    trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
+    lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
+    keep_trailing_newline=True,  # preserve the trailing newline of the source file
+)
+
+# same as above, but no undefined to allow for optional variables in the yaml files
+_JINJA_ENV_BASE = Environment(
+    trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
+    lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
+    keep_trailing_newline=True,  # preserve the trailing newline of the source file
+)
 
 
 def construct_yaml_merge(loader, node):
@@ -72,7 +88,7 @@ def load_multi_yaml(
     return yaml_dict
 
 
-def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True):
+def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True, strict: bool = False):
     """
     Load yaml file with template substitution
 
@@ -80,7 +96,10 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
         infile (str): a file path to the yaml
         definitions (str or dict, optional): name of the section containing string template
                                              definitions or a dictionary with the same content
-        jinja: (bool): jinja2 templating is used instead of standard python templating. Default is true.
+        jinja (bool): jinja2 templating is used instead of standard python templating. Default is True.
+        strict (bool): if True, raises UndefinedError on missing template variables instead of
+                       silently rendering them as empty strings. Default is False.
+
     Returns:
         A dictionary with the yaml file keys
     """
@@ -102,7 +121,10 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     if definitions:
         # perform template substitution with jinja
         if jinja:
-            template = Template(yaml_text)
+            if strict:
+                template = _JINJA_ENV_UNDEFINED.from_string(yaml_text)
+            else:
+                template = _JINJA_ENV_BASE.from_string(yaml_text)
             rendered_yaml = template.render(definitions)
             cfg = yaml.load(rendered_yaml)
         # use default python templating
@@ -192,14 +214,14 @@ def _load_merge(
         raise ValueError("ERROR: at least one between folder_path or filenames must be provided")
 
     if filenames:  # Merging a list of files
-        logger.debug(f"Files to be merged: {filenames}")
+        logger.debug("Files to be merged: %s", filenames)
         for filename in filenames:
             yaml_dict = load_yaml(filename, definitions)
             for key, value in yaml_dict.items():
                 merged_dict[key].update(value)
 
     if folder_path:  # Merging all the files in a folder
-        logger.debug(f"Folder to be merged: {folder_path}")
+        logger.debug("Folder to be merged: %s", folder_path)
         if not os.path.exists(folder_path):
             raise FileNotFoundError(f"ERROR: {folder_path} not found: it is required to have this folder!")
         for filename in os.listdir(folder_path):
@@ -210,6 +232,6 @@ def _load_merge(
                     merged_dict[key].update(value)
 
     logger.debug("Dictionary updated")
-    logger.debug(f"Keys: {merged_dict.keys()}")
+    logger.debug("Keys: %s", merged_dict.keys())
 
     return merged_dict

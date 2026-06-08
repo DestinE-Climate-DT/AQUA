@@ -168,19 +168,6 @@ Currently CI/CD tests are configured to use DVC data with ad-hoc tokens and AWS 
 
 `aqua-dvc` also contains 1) a subset of aqua-related observations that can be used for model evaluation and 2) the grids used in AQUA.
 
-Download of grids
-^^^^^^^^^^^^^^^^^
-
-Grids used in AQUA are stored and available on Swift storage, powered by DKRZ.
-A command line tool is available to download the grids from Swift on your machine.
-
-Please refer to the section :ref:`grids-downloader` for more details.
-
-.. warning::
-
-    Grids are now versioned using DVC and are available in the `aqua-dvc` repository.
-
-
 .. _FDB_dask:
 
 Dask access to FDB or GSV
@@ -278,6 +265,11 @@ In order to use this option, the user must pass a function as ``preproc`` keywor
 Enable regrid capabilities in a new machine
 -------------------------------------------
 
+.. note::
+
+    This section is relevant only if you want to set up regrid capabilities in a new machine for shared users.
+    If you want to individually use AQUA with a subset of the grids, you can set a grids path (see :ref:`aqua-grids-set`) and deploy the grids in this path (see :ref:`aqua-grids-deploy`).
+
 If AQUA has been installed in a machine where the grids are not available yet, some extra step may be needed to enable the regrid capabilities.
 
 Set the machine in the catalog machine file
@@ -303,8 +295,6 @@ Download the grids
 
 Please refer to the :ref:`aqua-dvc` section for more information on how to access the data.
 DVC deployment will be the standard way to access the grids in the future.
-If this is not possible, a non versioned copy of the grids used in AQUA are stored and available on Swift storage, powered by DKRZ.
-See the :ref:`grids-downloader` section for more details.
 
 .. _dev-notes:
 
