@@ -114,7 +114,8 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     with open(infile, "r", encoding="utf-8") as file:
         yaml_text = file.read()
 
-    if isinstance(definitions, str):  # if it is a string extract from original yaml, else it is directly a dict
+    # if it is a string extract from original yaml, else it is directly a dict
+    if isinstance(definitions, str):
         cfg = yaml.load(yaml_text)
         definitions = cfg.get(definitions)
 
