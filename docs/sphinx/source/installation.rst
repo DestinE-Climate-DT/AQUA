@@ -4,7 +4,7 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package ``aqua-core``.
-AQUA is developed and tested with Python 3.14 and it supports Python>=3.10,<3.15.
+AQUA is developed and tested with Python 3.14 and it supports Python>=3.11,<3.15.
 
 .. note ::
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
