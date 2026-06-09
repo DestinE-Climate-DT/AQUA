@@ -155,8 +155,7 @@ def analysis_execute(args):
 
     # read the experiment kind
     exp_kind_file = config.get("job", {}).get("experiment_kind")
-    exp_kind = args.kind
-    exp_kind_dict = analyzer.configure_experiment_kind(exp_kind, exp_kind_file)
+    analyzer.configure_experiment_kind(args.kind, exp_kind_file)
 
     run_checker = config.get("job", {}).get("run_checker", False)
     if run_checker:
@@ -250,9 +249,7 @@ def analysis_execute(args):
                         enddate=enddate,
                         regrid=regrid,
                         output_dir=output_dir,
-                        loglevel=loglevel,
                         cluster=cluster_address,
-                        exp_kind_dict=exp_kind_dict,
                     )
                 )
 

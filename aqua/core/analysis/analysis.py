@@ -40,6 +40,9 @@ class Analysis:
         self.aqua_core_path = None
         self.aqua_diagnostics_path = None
 
+        # experiment kind dictionary
+        self.exp_kind_dict = None
+
     def get_config(self):
         """Get the loaded AQUA analysis configuration."""
 
@@ -150,7 +153,6 @@ class Analysis:
         realization=None,
         output_dir="./output",
         cluster=None,
-        exp_kind_dict=None,
     ):
         """
         Run the diagnostic collection and log the output, handling parallel processing if required.
@@ -171,7 +173,6 @@ class Analysis:
             realization (str): Realization name. Defaults to None.
             output_dir (str): Directory to save output.
             cluster: Dask cluster scheduler address.
-            exp_kind_dict: Dictionary containing experiment kind configurations, if applicable.
         """
         if cli is None:
             cli = {}
@@ -233,8 +234,8 @@ class Analysis:
                 continue
 
             # update cfgs with experiment kind templating if exp_kind_dict is provided
-            if exp_kind_dict:
-                cfgs = self.configure_template_configs(cfgs, exp_kind_dict)
+            if self.exp_kind_dict:
+                cfgs = self.configure_template_configs(cfgs)
 
             for i, cfg in enumerate(cfgs, start=1):
                 args = f"--model {model} --exp {exp} --source {source} --outputdir {outname} {extra_args} --config {cfg}"
@@ -252,7 +253,7 @@ class Analysis:
                 )
 
             # remove temporary rendered config files created when using experiment kind templating
-            if exp_kind_dict:
+            if self.exp_kind_dict:
                 temp_cfg_dir = os.path.dirname(cfgs[0])
                 shutil.rmtree(temp_cfg_dir, ignore_errors=True)
                 self.logger.debug("Removed temporary config directory: %s", temp_cfg_dir)
@@ -276,16 +277,15 @@ class Analysis:
 
         if exp_kind not in complete_dictionary:
             self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
-        return complete_dictionary.get(exp_kind, "default")
+        self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
 
-    def configure_template_configs(self, cfgs, exp_kind_dict):
+    def configure_template_configs(self, cfgs):
         """
         Run jinja templating on the config files based on the experiment kind dictionary.
         Then dump them into a temporary folder and return the list of new config paths.
 
         Args:
             cfgs (list): List of config file paths to render.
-            exp_kind_dict (dict): Dictionary of template variables for Jinja rendering.
 
         Returns:
             list: List of paths to the rendered config files in a temporary directory.
@@ -295,7 +295,7 @@ class Analysis:
 
         new_cfg_paths = []
         for cfg in cfgs:
-            rendered_cfg = load_yaml(cfg, definitions=exp_kind_dict, strict=True)
+            rendered_cfg = load_yaml(cfg, definitions=self.exp_kind_dict, strict=True)
             new_cfg_path = os.path.join(temp_dir, os.path.basename(cfg))
             dump_yaml(new_cfg_path, rendered_cfg)
             self.logger.info("Rendered config saved to: %s", new_cfg_path)
