@@ -30,6 +30,7 @@ from aqua.core.util import (
     set_ticks,
 )
 from aqua.core.util.graphics import isnpixok
+from aqua.core.util.graphics import prettify_levels, get_decimals
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -392,22 +393,27 @@ def plot_single_map_diff(
     logger.debug("Setting contour vmin to %s, vmax to %s", vmin_contour, vmax_contour)
 
     if add_contour:
+        pretty_levels = prettify_levels(vmin_contour, vmax_contour, line_levels)
+        logger.debug("Pretty contour levels: %s", pretty_levels)
+
         ds = data.plot.contour(
             ax=ax,
             transform=ccrs.PlateCarree(),
-            vmin=vmin_contour,
-            vmax=vmax_contour,
-            levels=line_levels,
+            levels=pretty_levels,       
             colors="k",
             linewidths=0.5,
         )
 
-        fmt = {
-            level: "0.0"
-            if np.isclose(level, 0.0)
-            else (f"{level:.1e}" if (abs(level) < 0.1 or abs(level) > 1000) else f"{level:.1f}")
-            for level in ds.levels
-        }
+        # Label format: integer if step >= 1, otherwise minimum required decimal places
+        step = pretty_levels[1] - pretty_levels[0] if len(pretty_levels) > 1 else 1
+        decimals = get_decimals(step)
+        fmt = {}
+        for level in ds.levels:
+            if abs(level) >= 1000 or (abs(level) < 0.01 and level != 0):
+                fmt[level] = f"{level:.2e}"
+            else:
+                fmt[level] = f"{level:.{decimals}f}"
+
         ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
 
     if title:
