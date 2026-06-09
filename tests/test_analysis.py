@@ -11,34 +11,35 @@ from unittest.mock import patch
 import pytest
 from jinja2 import UndefinedError
 
-from aqua.core.analysis import run_command, run_diagnostic_collection
-from aqua.core.analysis.analysis import (
-    _build_extra_args,
-    configure_experiment_kind,
-    configure_template_configs,
-)
+from aqua.core.analysis import Analysis
 from aqua.core.console.analysis import analysis_parser
-from aqua.core.logger import log_configure
 from aqua.core.util import dump_yaml, load_yaml
-
-logger = log_configure("DEBUG", "test_analysis")
 
 pytestmark = pytest.mark.aqua
 
 
-def test_run_command():
+@pytest.fixture(scope="module")
+def analysis():
+    """Analysis class instance for test_analysis tests.
+
+    Initialized once per test module, reused across all tests that need it.
+    """
+    return Analysis(loglevel="DEBUG")
+
+
+def test_run_command(analysis):
     """Test the run_command function."""
     command = "echo 'Hello, World!'"
 
     with pytest.raises(TypeError):
         # Test with missing log_file argument
-        _ = run_command(command, logger=logger)
+        _ = analysis.run_command(command)
 
 
-def test_run_diagnostic_collection():
+def test_run_diagnostic_collection(analysis):
     """Test the run_diagnostic_collection function."""
 
-    res = run_diagnostic_collection(collection="pluto", diag_config={}, logger=logger)
+    res = analysis.run_diagnostic_collection(collection="pluto", diag_config={})
     assert res is None, "Expected None return value for empty config"
 
     config = {
@@ -55,11 +56,10 @@ def test_run_diagnostic_collection():
     # The fail is a return code != 0 so there is no
     # raise Exception, we just check that the function
     # completes without errors.
-    run_diagnostic_collection(
+    analysis.run_diagnostic_collection(
         collection="pluto",
         serial=False,
         regrid="r100",
-        logger=logger,
         diag_config=config,
         cluster=True,
         catalog="test_catalog",
@@ -91,7 +91,6 @@ def tool_env(tmp_path_factory):
 # which is the last step in run_diagnostic_collection before subprocess calls.
 # By patching here, we can test all the logic in run_diagnostic_collection without actually invoking any subprocesses.
 # Each test can then assert how run_diagnostic_tool was called (or not called) based on different inputs and configurations.
-PATCH_TOOL = "aqua.core.analysis.analysis.run_diagnostic_tool"
 
 
 class TestRunDiagnosticCollection:
@@ -100,46 +99,43 @@ class TestRunDiagnosticCollection:
     def _base_config(self, tool_env):
         return {"biases": {"config": tool_env["cfg"]}}
 
-    def test_empty_diag_config_no_calls(self, tool_env):
+    def test_empty_diag_config_no_calls(self, tool_env, analysis):
         """An empty diag_config triggers no tool invocations."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config={},
                 cli=tool_env["cli"],
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         mock_tool.assert_not_called()
 
-    def test_missing_cli_path_skips_tool(self, tool_env):
+    def test_missing_cli_path_skips_tool(self, tool_env, analysis):
         """A tool absent from cli dict is skipped silently."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli={},
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         mock_tool.assert_not_called()
 
-    def test_missing_script_file_skips_tool(self, tool_env):
+    def test_missing_script_file_skips_tool(self, tool_env, analysis):
         """A cli path pointing to a non-existent file is skipped."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli={"biases": "/nonexistent/script.py"},
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         mock_tool.assert_not_called()
 
-    def test_happy_path_calls_run_diagnostic_tool(self, tool_env):
+    def test_happy_path_calls_run_diagnostic_tool(self, tool_env, analysis):
         """Happy path: run_diagnostic_tool called once with correct core args."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
@@ -147,7 +143,6 @@ class TestRunDiagnosticCollection:
                 exp="test-tco79",
                 source="lra-r100",
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         mock_tool.assert_called_once()
         extra_args = mock_tool.call_args.kwargs["extra_args"]
@@ -156,130 +151,119 @@ class TestRunDiagnosticCollection:
         assert "--source lra-r100" in extra_args
         assert f"--config {tool_env['cfg']}" in extra_args
 
-    def test_regrid_flag_added(self, tool_env):
+    def test_regrid_flag_added(self, tool_env, analysis):
         """regrid='r100' appends --regrid r100 to extra_args."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
                 regrid="r100",
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--regrid r100" in extra_args
 
-    def test_parallel_adds_nworkers(self, tool_env):
+    def test_parallel_adds_nworkers(self, tool_env, analysis):
         """with nworkers and  --nworkers and --nthreads in config"""
         config = {"biases": {"config": tool_env["cfg"], "nworkers": 4, "nthreads": 2}}
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=tool_env["cli"],
                 serial=False,
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--nworkers 4" in extra_args
         assert "--nthreads 2" in extra_args
 
-    def test_cluster_flag_added(self, tool_env):
+    def test_cluster_flag_added(self, tool_env, analysis):
         """cluster address is forwarded as --cluster when nocluster is not set."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
                 cluster="tcp://scheduler:8786",
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--cluster tcp://scheduler:8786" in extra_args
 
-    def test_nocluster_suppresses_cluster_flag(self, tool_env):
+    def test_nocluster_suppresses_cluster_flag(self, tool_env, analysis):
         """nocluster=True in tool config prevents --cluster from being added."""
         config = {"biases": {"config": tool_env["cfg"], "nocluster": True}}
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=tool_env["cli"],
                 cluster="tcp://scheduler:8786",
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--cluster" not in extra_args
 
-    def test_source_oce_added_when_allowed(self, tool_env):
+    def test_source_oce_added_when_allowed(self, tool_env, analysis):
         """source_oce is forwarded when source_oce=True is set in tool config."""
         config = {"biases": {"config": tool_env["cfg"], "source_oce": True}}
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=tool_env["cli"],
                 source_oce="lra-r100-oce",
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--source_oce lra-r100-oce" in extra_args
 
-    def test_source_oce_skipped_when_not_allowed(self, tool_env):
+    def test_source_oce_skipped_when_not_allowed(self, tool_env, analysis):
         """source_oce is NOT forwarded when source_oce is absent from tool config."""
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
                 source_oce="lra-r100-oce",
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
         assert "--source_oce" not in extra_args
 
-    def test_multiple_configs_indexed_logfiles(self, tool_env, tmp_path):
+    def test_multiple_configs_indexed_logfiles(self, tool_env, tmp_path, analysis):
         """Two configs produce two calls; logfiles are suffixed with -1 and -2."""
         cfg2 = tmp_path / "config2.yaml"
         dump_yaml(str(cfg2), {"key": "value2"})
         config = {"biases": {"config": [tool_env["cfg"], str(cfg2)]}}
-        with patch(PATCH_TOOL) as mock_tool:
-            run_diagnostic_collection(
+        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=tool_env["cli"],
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         assert mock_tool.call_count == 2
         logfiles = [c.kwargs["logfile"] for c in mock_tool.call_args_list]
         assert logfiles[0].endswith("-1.log")
         assert logfiles[1].endswith("-2.log")
 
-    def test_exp_kind_dict_renders_and_cleans_up(self, tool_env):
+    def test_exp_kind_dict_renders_and_cleans_up(self, tool_env, analysis):
         """exp_kind_dict triggers template rendering; temp dir is removed afterwards."""
         rendered_cfg = tool_env["cfg"]
         with (
-            patch(PATCH_TOOL),
-            patch(
-                "aqua.core.analysis.analysis.configure_template_configs",
-                return_value=[rendered_cfg],
-            ) as mock_render,
+            patch.object(analysis, "run_diagnostic_tool"),
+            patch.object(analysis, "configure_template_configs", return_value=[rendered_cfg]) as mock_render,
             patch("aqua.core.analysis.analysis.shutil.rmtree") as mock_rm,
         ):
-            run_diagnostic_collection(
+            analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
                 exp_kind_dict={"period": "past"},
                 output_dir=tool_env["outdir"],
-                logger=logger,
             )
         mock_render.assert_called_once()
         mock_rm.assert_called_once()
@@ -405,39 +389,41 @@ class TestAnalysisParser:
 class TestBuildExtraArgsExtended:
     """Extended coverage for _build_extra_args."""
 
-    def test_all_none_returns_empty_string(self):
+    def test_all_none_returns_empty_string(self, analysis):
         """When every value is None the output is an empty string."""
-        result = _build_extra_args(catalog=None, model=None, startdate=None)
+        result = analysis._build_extra_args(catalog=None, model=None, startdate=None)
         assert result == ""
 
-    def test_single_kwarg(self):
+    def test_single_kwarg(self, analysis):
         """A single non-None kwarg produces the correct flag string."""
-        result = _build_extra_args(model="IFS")
+        result = analysis._build_extra_args(model="IFS")
         assert result.strip() == "--model IFS"
 
-    def test_flag_order_follows_kwargs(self):
+    def test_flag_order_follows_kwargs(self, analysis):
         """Flags appear in the same order as kwargs (Python 3.7+ dict ordering)."""
-        result = _build_extra_args(model="IFS", exp="test", source="lra")
+        result = analysis._build_extra_args(model="IFS", exp="test", source="lra")
         assert result.index("--model") < result.index("--exp") < result.index("--source")
 
-    def test_none_values_skipped(self):
+    def test_none_values_skipped(self, analysis):
         """None values are silently omitted while non-None values are included."""
-        result = _build_extra_args(model="IFS", exp=None, source="lra")
+        result = analysis._build_extra_args(model="IFS", exp=None, source="lra")
         assert "--model IFS" in result
         assert "--exp" not in result
         assert "--source lra" in result
 
-    def test_build_extra_args_with_dates(self):
+    def test_build_extra_args_with_dates(self, analysis):
         """Test that _build_extra_args correctly formats startdate and enddate."""
-        result = _build_extra_args(catalog="test_catalog", realization="r1", startdate="2020-01-01", enddate="2020-12-31")
+        result = analysis._build_extra_args(
+            catalog="test_catalog", realization="r1", startdate="2020-01-01", enddate="2020-12-31"
+        )
         assert "--catalog test_catalog" in result
         assert "--realization r1" in result
         assert "--startdate 2020-01-01" in result
         assert "--enddate 2020-12-31" in result
 
-    def test_build_extra_args_without_dates(self):
+    def test_build_extra_args_without_dates(self, analysis):
         """Test that _build_extra_args skips None values."""
-        result = _build_extra_args(catalog="test_catalog", startdate=None, enddate=None)
+        result = analysis._build_extra_args(catalog="test_catalog", startdate=None, enddate=None)
         assert "--catalog test_catalog" in result
         assert "--startdate" not in result
         assert "--enddate" not in result
@@ -466,30 +452,30 @@ def jinja_cfg_yaml(tmp_path_factory):
 class TestConfigureExperimentKind:
     """Tests for configure_experiment_kind — uses tmp_path, no mocking."""
 
-    def test_none_exp_kind_returns_none(self):
+    def test_none_exp_kind_returns_none(self, analysis):
         """exp_kind=None returns None without accessing any file."""
-        result = configure_experiment_kind(None, "/nonexistent/file.yaml", logger)
+        result = analysis.configure_experiment_kind(None, "/nonexistent/file.yaml")
         assert result is None
 
-    def test_missing_file_raises_file_not_found(self, tmp_path):
+    def test_missing_file_raises_file_not_found(self, tmp_path, analysis):
         """A non-existent exp_kind_file raises FileNotFoundError."""
         with pytest.raises(FileNotFoundError):
-            configure_experiment_kind("historical", str(tmp_path / "missing.yaml"), logger)
+            analysis.configure_experiment_kind("historical", str(tmp_path / "missing.yaml"))
 
-    def test_valid_kind_returned(self, kinds_yaml):
+    def test_valid_kind_returned(self, kinds_yaml, analysis):
         """A matching kind key returns its sub-dictionary."""
-        result = configure_experiment_kind("historical", str(kinds_yaml), logger)
+        result = analysis.configure_experiment_kind("historical", str(kinds_yaml))
         assert result["period"] == "past"
 
-    def test_unknown_kind_returns_string_default(self, kinds_yaml):
+    def test_unknown_kind_returns_string_default(self, kinds_yaml, analysis):
         """A kind absent from the YAML returns the string literal 'default'."""
-        result = configure_experiment_kind("unknown_kind", str(kinds_yaml), logger)
+        result = analysis.configure_experiment_kind("unknown_kind", str(kinds_yaml))
         assert result == "default"
 
-    def test_multiple_kinds_isolated(self, kinds_yaml):
+    def test_multiple_kinds_isolated(self, kinds_yaml, analysis):
         """Different kind keys each return their own independent sub-dictionary."""
-        hist = configure_experiment_kind("historical", str(kinds_yaml), logger)
-        scen = configure_experiment_kind("scenario", str(kinds_yaml), logger)
+        hist = analysis.configure_experiment_kind("historical", str(kinds_yaml))
+        scen = analysis.configure_experiment_kind("scenario", str(kinds_yaml))
 
         assert hist["forcing"] == "CMIP6"
         assert scen["forcing"] == "SSP5"
@@ -498,18 +484,18 @@ class TestConfigureExperimentKind:
 class TestConfigureTemplateConfigs:
     """Tests for configure_template_configs — uses tmp_path, no mocking."""
 
-    def test_jinja_variables_substituted(self, jinja_cfg_yaml, kinds_yaml):
+    def test_jinja_variables_substituted(self, jinja_cfg_yaml, kinds_yaml, analysis):
         """Jinja2 placeholders in config files are replaced by exp_kind_dict values."""
         definitions = load_yaml(str(kinds_yaml))["historical"]
 
-        result_paths = configure_template_configs([str(jinja_cfg_yaml)], definitions, logger)
+        result_paths = analysis.configure_template_configs([str(jinja_cfg_yaml)], definitions)
 
         assert len(result_paths) == 1
         rendered = load_yaml(result_paths[0])
         assert rendered["model"] == "past"
         assert rendered["source"] == "CMIP6"
 
-    def test_multiple_configs_all_rendered(self, tmp_path):
+    def test_multiple_configs_all_rendered(self, tmp_path, analysis):
         """All configs in the list are rendered and returned."""
         cfg1 = tmp_path / "a.yaml"
         cfg2 = tmp_path / "b.yaml"
@@ -517,37 +503,37 @@ class TestConfigureTemplateConfigs:
         dump_yaml(str(cfg2), {"tag": "{{ val }}"})
         definitions = {"val": "hello"}
 
-        result_paths = configure_template_configs([str(cfg1), str(cfg2)], definitions, logger)
+        result_paths = analysis.configure_template_configs([str(cfg1), str(cfg2)], definitions)
 
         assert len(result_paths) == 2
         for path in result_paths:
             rendered = load_yaml(path)
             assert rendered["tag"] == "hello"
 
-    def test_all_outputs_in_same_temp_dir(self, tmp_path):
+    def test_all_outputs_in_same_temp_dir(self, tmp_path, analysis):
         """All rendered configs land in a single shared temporary directory."""
         cfg1 = tmp_path / "a.yaml"
         cfg2 = tmp_path / "b.yaml"
         dump_yaml(str(cfg1), {"key": "value1"})
         dump_yaml(str(cfg2), {"key": "value2"})
 
-        result_paths = configure_template_configs([str(cfg1), str(cfg2)], {"x": "y"}, logger)
+        result_paths = analysis.configure_template_configs([str(cfg1), str(cfg2)], {"x": "y"})
 
         dirs = {os.path.dirname(p) for p in result_paths}
         assert len(dirs) == 1, "All rendered configs should be in the same temp dir"
 
-    def test_output_filenames_match_input_basenames(self, tmp_path):
+    def test_output_filenames_match_input_basenames(self, tmp_path, analysis):
         """The rendered file's basename equals the original config's basename."""
         cfg_file = tmp_path / "my_config.yaml"
         dump_yaml(str(cfg_file), {"key": "value"})
 
-        result_paths = configure_template_configs([str(cfg_file)], {}, logger)
+        result_paths = analysis.configure_template_configs([str(cfg_file)], {})
 
         assert os.path.basename(result_paths[0]) == "my_config.yaml"
 
-    def test_undefined_variable_raises(self, tmp_path):
+    def test_undefined_variable_raises(self, tmp_path, analysis):
         """An undefined jinja var in a template must raise — strict mode is on."""
         cfg = tmp_path / "cfg.yaml"
         cfg.write_text("startdate: '{{ ref_startdate }}'\n")
         with pytest.raises(UndefinedError):
-            configure_template_configs([str(cfg)], {"unrelated": "x"}, logger)
+            analysis.configure_template_configs([str(cfg)], {"unrelated": "x"})

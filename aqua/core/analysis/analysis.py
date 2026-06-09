@@ -11,21 +11,23 @@ import tempfile
 from importlib import resources as pypath
 
 from aqua.core.configurer import ConfigPath
+from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, load_yaml, to_list
 
 
 class Analysis:
     """Structured class for running AQUA diagnostic collections and managing configurations."""
 
-    def __init__(self, logger, config_file_path):
+    def __init__(self, config_file_path="config.aqua-analysis.yaml", loglevel="WARNING"):
         """
         Initialize the analysis instance.
 
         Args:
-            logger: Logger instance for logging messages.
             config_file_path (str): Path to the AQUA analysis configuration file.
+            loglevel (str): Logging level for the analysis instance.
         """
-        self.logger = logger
+        self.loglevel = loglevel
+        self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
         self.config_file_path = config_file_path
 
         # Cached state
@@ -34,24 +36,20 @@ class Analysis:
         self._aqua_diagnostics_path = None
         self._aqua_configdir = None
 
-    def _load_config(self):
-        """Load and cache the AQUA analysis configuration."""
+    def get_config(self):
+        """Get the loaded AQUA analysis configuration."""
         if self._config is not None:
             return self._config
 
         if not os.path.exists(self.config_file_path):
-            self.logger.error(f"Config file {self.config_file_path} not found.")
+            self.logger.error("Config file %s not found.", self.config_file_path)
             sys.exit(1)
 
         self._config = load_yaml(self.config_file_path)
-        self.logger.info(f"AQUA analysis config loaded: {self.config_file_path}")
+        self.logger.info("AQUA analysis config loaded: %s", self.config_file_path)
         return self._config
 
-    def get_config(self):
-        """Get the loaded AQUA analysis configuration."""
-        return self._load_config()
-
-    def _get_aqua_paths(self):
+    def get_aqua_paths(self):
         """Get and cache AQUA core and diagnostics paths."""
         if self._aqua_core_path is not None:
             return self._aqua_core_path, self._aqua_diagnostics_path, self._aqua_configdir
@@ -65,15 +63,11 @@ class Analysis:
 
         self._aqua_configdir = ConfigPath().configdir
 
-        self.logger.debug(f"AQUA core path: {self._aqua_core_path}")
-        self.logger.debug(f"AQUA diagnostics path: {self._aqua_diagnostics_path}")
-        self.logger.debug(f"AQUA config dir: {self._aqua_configdir}")
+        self.logger.debug("AQUA core path: %s", self._aqua_core_path)
+        self.logger.debug("AQUA diagnostics path: %s", self._aqua_diagnostics_path)
+        self.logger.debug("AQUA config dir: %s", self._aqua_configdir)
 
         return self._aqua_core_path, self._aqua_diagnostics_path, self._aqua_configdir
-
-    def get_aqua_paths(self):
-        """Get the cached AQUA core and diagnostics paths."""
-        return self._get_aqua_paths()
 
     def run_command(self, cmd: str, log_file: str) -> int:
         """
@@ -95,7 +89,7 @@ class Analysis:
                 process = subprocess.run(cmd, shell=True, stdout=log, stderr=log, text=True, check=False)
                 return process.returncode
         except (OSError, subprocess.SubprocessError) as e:
-            self.logger.error(f"Error running command {cmd}: {e}")
+            self.logger.error("Error running command %s: %s", cmd, e)
             raise
 
     def run_diagnostic_tool(
@@ -104,7 +98,6 @@ class Analysis:
         tool: str,
         script_path: str,
         extra_args: str,
-        loglevel: str = "INFO",
         logfile: str = "aqua-diagnostic-tool.log",
     ):
         """
@@ -115,25 +108,24 @@ class Analysis:
             tool (str): Name of the diagnostic tool to use.
             script_path (str): Path to the diagnostic tool script.
             extra_args (str): Additional arguments for the script.
-            loglevel (str): Log level to use.
             logfile (str): Path to the logfile for capturing the command output.
         """
         try:
             logfile = os.path.expandvars(logfile)
             create_folder(os.path.dirname(logfile))
 
-            cmd = f"python {script_path} {extra_args} -l {loglevel} > {logfile} 2>&1"
-            self.logger.info(f"Running tool {tool} for diagnostic collection {collection}")
-            self.logger.debug(f"Command: {cmd}")
+            cmd = f"python {script_path} {extra_args} -l {self.loglevel} > {logfile} 2>&1"
+            self.logger.info("Running tool %s for diagnostic collection %s", tool, collection)
+            self.logger.debug("Command: %s", cmd)
 
             process = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
 
             if process.returncode != 0:
-                self.logger.error(f"Error running tool {tool} for diagnostic collection {collection}: {process.stderr}")
+                self.logger.error("Error running tool %s for diagnostic collection %s: %s", tool, collection, process.stderr)
             else:
-                self.logger.info(f"Tool {tool} for diagnostic collection {collection} completed successfully.")
+                self.logger.info("Tool %s for diagnostic collection %s completed successfully.", tool, collection)
         except (OSError, subprocess.SubprocessError) as e:
-            self.logger.error(f"Failed to run tool {tool} for diagnostic collection {collection}: {e}")
+            self.logger.error("Failed to run tool %s for diagnostic collection %s: %s", tool, collection, e)
 
     def _build_extra_args(self, **kwargs):
         """Build command line arguments from key-value pairs, skipping None values."""
@@ -159,7 +151,6 @@ class Analysis:
         enddate=None,
         realization=None,
         output_dir="./output",
-        loglevel="INFO",
         cluster=None,
         exp_kind_dict=None,
     ):
@@ -181,7 +172,6 @@ class Analysis:
             enddate (str): End date (YYYY-MM-DD). Defaults to None.
             realization (str): Realization name. Defaults to None.
             output_dir (str): Directory to save output.
-            loglevel (str): Log level for the tool.
             cluster: Dask cluster scheduler address.
             exp_kind_dict: Dictionary containing experiment kind configurations, if applicable.
         """
@@ -197,7 +187,7 @@ class Analysis:
 
         # run individual tools in serial mode
         for tool, tool_config in diag_config.items():
-            self.logger.info(f"Configuring tool {tool} for diagnostic collection {collection}")
+            self.logger.info("Configuring tool %s for diagnostic collection %s", tool, collection)
 
             cli_path = cli.get(tool)
             if cli_path is None:
@@ -241,7 +231,7 @@ class Analysis:
 
             cfgs = to_list(tool_config.get("config"))
             if not cfgs:
-                self.logger.error(f"Config for tool '{tool}' not found, skipping.")
+                self.logger.error("Config for tool '%s' not found, skipping.", tool)
                 continue
 
             # update cfgs with experiment kind templating if exp_kind_dict is provided
@@ -260,7 +250,6 @@ class Analysis:
                     tool=tool,
                     script_path=cli_path,
                     extra_args=args,
-                    loglevel=loglevel,
                     logfile=logfile,
                 )
 
@@ -284,11 +273,11 @@ class Analysis:
         if not os.path.exists(exp_kind_file):
             raise FileNotFoundError(f"Experiment kind config file '{exp_kind_file}' not found.")
 
-        self.logger.info(f"Configuring experiment kind: {exp_kind} using config file: {exp_kind_file}")
+        self.logger.info("Configuring experiment kind: %s using config file: %s", exp_kind, exp_kind_file)
         complete_dictionary = load_yaml(exp_kind_file)
 
         if exp_kind not in complete_dictionary:
-            self.logger.error(f"Experiment kind '{exp_kind}' not found in config file '{exp_kind_file}'. Default selected")
+            self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
         return complete_dictionary.get(exp_kind, "default")
 
     def configure_template_configs(self, cfgs, exp_kind_dict):
