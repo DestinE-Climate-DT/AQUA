@@ -96,7 +96,6 @@ This command will copy the catalog folder to the configuration folder. Please no
 
   You will need an internet connection available since the catalog are fetched from the `Climate-DT GitHub repository <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_ .
 
-
 Set up Jupyter kernel
 ---------------------
 
@@ -119,3 +118,17 @@ Activate the environment and register the kernel with the following command:
     Please refer to the :ref:`container` section if you are working from a container
     or the :ref:`installation-lumi` section for more information on how to install AQUA
     specifically on Lumi.
+
+Additional resources
+--------------------
+
+A step-by-step installation guide and a data access example are available in the
+`example_aqua <https://github.com/DestinE-Climate-DT/climatedt-community-resources/tree/main/example_aqua>`_
+folder of the `climatedt-community-resources <https://github.com/DestinE-Climate-DT/climatedt-community-resources>`_
+repository:
+
+* ``aqua_installation_and_setup.md``: setup walkthrough for the ``climatedt-gen2`` catalog.
+* ``aqua_access.ipynb``: notebook using ``show_catalog_content`` and the ``Reader`` class.
+
+See also the `ClimateDT external user guide
+<https://github.com/DestinE-Climate-DT/climatedt-external-user-guide>`_.

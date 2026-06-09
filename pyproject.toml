@@ -20,7 +20,7 @@ description = "AQUA; a model evaluation framework for high-resolution climate mo
 readme = "README.md"
 keywords = ["climate", "modeling", "diagnostics", "high-resolution"]
 license = {file = "LICENSE"}
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.11,<3.15"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
@@ -28,7 +28,6 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -95,7 +94,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.15.15"
+    "ruff==0.15.16"
 ]
 all = [
     "aqua-core[docs]",
@@ -157,7 +156,7 @@ omit = [
 [tool.ruff]
 # --- Global Settings ---
 line-length = 127
-target-version = "py310"
+target-version = "py311"
 exclude = ["**/__init__.py"]
 
 [tool.ruff.lint]
