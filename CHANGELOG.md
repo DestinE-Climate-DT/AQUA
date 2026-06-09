@@ -14,8 +14,8 @@ ClimateDT workflow modifications:
 - Added the `--format <FORMAT>` option to `push_analysis.sh` to select output formats to be uploaded (`png,pdf,svg` by default)
 
 Main changes:
-- Ship base AQUA without FDB/GSV/polytope dependencies, now available
-  through the `[fdb]` optional installation argument (#2818)
+- Base AQUA is now shipped without FDB/GSV/polytope dependencies, 
+  available with [fdb] optional installation argument (#2818)
 - Add support for Python 3.13 and 3.14, with new default 3.14 (#2853)
 - Switch to astropy-healpix due to licensing issues with healpy (#2844)
 - Extend DROP: `--no-validate` flag, execution time/memory
