@@ -266,6 +266,7 @@ class TestAquaConsole:
         assert os.path.exists(monthly_path), f"Monthly Zarr store not found: {monthly_path}"
 
         # run DROP with --monitoring: only the first month is processed and a stats file is written
+        # we test also the --regrid_first flag
         outdir_monitoring = os.path.join(mydir, "drop_test")
         run_aqua(
             [
@@ -281,6 +282,7 @@ class TestAquaConsole:
                 "--enddate",
                 "2020-03-31",
                 "--rebuild",
+                "--regrid_first",
             ]
         )
 
