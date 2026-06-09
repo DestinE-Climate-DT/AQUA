@@ -91,7 +91,7 @@ def analysis_execute(args):
 
     # Load config and get AQUA paths
     config = analyzer.get_config()
-    aqua_core_path, aqua_diagnostics_path, aqua_configdir_cached = analyzer.get_aqua_paths()
+    aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
     model = args.model or config.get("job", {}).get("model")
     exp = args.exp or config.get("job", {}).get("exp")
@@ -158,7 +158,7 @@ def analysis_execute(args):
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
-    os.environ["AQUA_CONFIG"] = aqua_configdir_cached if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
+    os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
     create_folder(output_dir, loglevel=loglevel)
 
     # expand the environment variables in the entire config

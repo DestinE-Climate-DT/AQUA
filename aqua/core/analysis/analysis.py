@@ -30,44 +30,38 @@ class Analysis:
         self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
         self.config_file_path = config_file_path
 
-        # Cached state
-        self._config = None
-        self._aqua_core_path = None
-        self._aqua_diagnostics_path = None
-        self._aqua_configdir = None
+        self.config = None
+        self.aqua_core_path = None
+        self.aqua_diagnostics_path = None
+        self.aqua_configdir = None
 
     def get_config(self):
         """Get the loaded AQUA analysis configuration."""
-        if self._config is not None:
-            return self._config
-
         if not os.path.exists(self.config_file_path):
             self.logger.error("Config file %s not found.", self.config_file_path)
             sys.exit(1)
 
-        self._config = load_yaml(self.config_file_path)
+        self.config = load_yaml(self.config_file_path)
         self.logger.info("AQUA analysis config loaded: %s", self.config_file_path)
-        return self._config
+        return self.config
 
     def get_aqua_paths(self):
         """Get and cache AQUA core and diagnostics paths."""
-        if self._aqua_core_path is not None:
-            return self._aqua_core_path, self._aqua_diagnostics_path, self._aqua_configdir
 
-        self._aqua_core_path = str(pypath.files("aqua.core"))
+        self.aqua_core_path = str(pypath.files("aqua.core"))
         try:
-            self._aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
+            self.aqua_diagnostics_path = str(pypath.files("aqua.diagnostics"))
         except ModuleNotFoundError:
-            self._aqua_diagnostics_path = ""
+            self.aqua_diagnostics_path = ""
             self.logger.error("aqua.diagnostics package not found; AQUA_DIAGNOSTICS will be empty.")
 
-        self._aqua_configdir = ConfigPath().configdir
+        self.aqua_configdir = ConfigPath().configdir
 
-        self.logger.debug("AQUA core path: %s", self._aqua_core_path)
-        self.logger.debug("AQUA diagnostics path: %s", self._aqua_diagnostics_path)
-        self.logger.debug("AQUA config dir: %s", self._aqua_configdir)
+        self.logger.debug("AQUA core path: %s", self.aqua_core_path)
+        self.logger.debug("AQUA diagnostics path: %s", self.aqua_diagnostics_path)
+        self.logger.debug("AQUA config dir: %s", self.aqua_configdir)
 
-        return self._aqua_core_path, self._aqua_diagnostics_path, self._aqua_configdir
+        return self.aqua_core_path, self.aqua_diagnostics_path, self.aqua_configdir
 
     def run_command(self, cmd: str, log_file: str) -> int:
         """
@@ -127,7 +121,8 @@ class Analysis:
         except (OSError, subprocess.SubprocessError) as e:
             self.logger.error("Failed to run tool %s for diagnostic collection %s: %s", tool, collection, e)
 
-    def _build_extra_args(self, **kwargs):
+    @staticmethod
+    def _build_extra_args(**kwargs):
         """Build command line arguments from key-value pairs, skipping None values."""
         args = ""
         for flag, value in kwargs.items():
