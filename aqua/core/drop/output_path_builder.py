@@ -44,10 +44,13 @@ class OutputPathBuilder:
         self.catalog = catalog
         self.model = model
         self.exp = exp
-        self.resolution = resolution
+
+        # Treat missing resolution or frequency as 'native' so paths explicitly reflect
+        # that no spatial or temporal manipulation was performed.
+        self.resolution = resolution if resolution is not None else "native"
+        self.frequency = frequency if frequency is not None else "native"
 
         self.realization = format_realization(realization)  # ensure realization is formatted correctly
-        self.frequency = frequency if frequency is not None else "native"
         self.stat = stat if stat is not None else "nostat"
         self.region = region if region is not None else "global"
 
