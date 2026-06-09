@@ -18,7 +18,7 @@ from aqua.core.util import create_folder, dump_yaml, load_yaml, to_list
 class Analysis:
     """Structured class for running AQUA diagnostic collections and managing configurations."""
 
-    def __init__(self, config_file_path="config.aqua-analysis.yaml", loglevel="WARNING"):
+    def __init__(self, config_file_path=None, loglevel="WARNING"):
         """
         Initialize the analysis instance.
 
@@ -28,15 +28,21 @@ class Analysis:
         """
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
-        self.config_file_path = config_file_path
+
+        self.aqua_configdir = ConfigPath().configdir
+
+        if config_file_path is None:
+            self.config_file_path = os.path.join(self.aqua_configdir, "analysis/config.aqua-analysis.yaml")
+        else:
+            self.config_file_path = os.path.expandvars(config_file_path)
 
         self.config = None
         self.aqua_core_path = None
         self.aqua_diagnostics_path = None
-        self.aqua_configdir = None
 
     def get_config(self):
         """Get the loaded AQUA analysis configuration."""
+
         if not os.path.exists(self.config_file_path):
             self.logger.error("Config file %s not found.", self.config_file_path)
             sys.exit(1)
@@ -55,11 +61,8 @@ class Analysis:
             self.aqua_diagnostics_path = ""
             self.logger.error("aqua.diagnostics package not found; AQUA_DIAGNOSTICS will be empty.")
 
-        self.aqua_configdir = ConfigPath().configdir
-
         self.logger.debug("AQUA core path: %s", self.aqua_core_path)
         self.logger.debug("AQUA diagnostics path: %s", self.aqua_diagnostics_path)
-        self.logger.debug("AQUA config dir: %s", self.aqua_configdir)
 
         return self.aqua_core_path, self.aqua_diagnostics_path, self.aqua_configdir
 

@@ -75,19 +75,8 @@ def analysis_execute(args):
     loglevel = args.loglevel
     logger = log_configure(loglevel, "AQUA Analysis")
 
-    # Determine config path
-    aqua_configdir = ConfigPath().configdir
-    aqua_analysis_config_path = (
-        os.path.expandvars(args.config)
-        if args.config and args.config.strip()
-        else os.path.join(aqua_configdir, "analysis/config.aqua-analysis.yaml")
-    )
-    if not os.path.exists(aqua_analysis_config_path):
-        logger.error("Config file %s not found.", aqua_analysis_config_path)
-        sys.exit(1)
-
     # Initialize analyzer
-    analyzer = Analysis(logger, aqua_analysis_config_path)
+    analyzer = Analysis(config_file_path=args.config, loglevel=loglevel)
 
     # Load config and get AQUA paths
     config = analyzer.get_config()
