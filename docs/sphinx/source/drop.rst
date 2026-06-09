@@ -215,6 +215,7 @@ The ``target`` section defines the primary output characteristics for the DROP p
         lon: [-10, 40]
       stat: mean
       stat_kwargs: {}
+      regrid_first: False
 
 - **resolution** (string, required): Target spatial resolution for regridding.
 
@@ -262,6 +263,11 @@ The ``target`` section defines the primary output characteristics for the DROP p
 
   - For ``histogram`` e.g.: ``{bins: 20, range: [0, 100]}``
   - Empty dict or missing line for other statistics that don't require additional arguments
+
+- **regrid_first** (bool, optional): Whether to apply regridding (and region selection) before time statistics. Default: ``False``
+
+  - For some statistics (e.g., histogram), it may be necessary to regrid the data before applying the statistic
+  because the statistic can disrupt the spatial dimensions required for regridding.
 
 **Paths Section**
 
@@ -537,6 +543,12 @@ Usage
 .. option:: --resolution
 
     Resolution of the DROP output (default: as the original data)
+
+.. option:: --regrid_first
+
+    Whether to apply regridding (and region selection) before time statistics (default: False)
+    For some statistics (e.g., histogram), it may be necessary to regrid the data before applying the statistic
+    because the statistic can disrupt the spatial dimensions required for regridding.
 
 .. option:: --realization
 
