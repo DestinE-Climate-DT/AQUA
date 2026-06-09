@@ -3,8 +3,9 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
-## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
+
+## [v1.0.0a5]
 
 ClimateDT workflow modifications:
 - Removed dependency on imagemagick
@@ -12,6 +13,14 @@ ClimateDT workflow modifications:
 - Added the `--format <FORMAT>` option to `push_analysis.sh` to select output formats to be uploaded (`png,pdf,svg` by default)
 
 Main changes:
+- Ship base AQUA without FDB/GSV/polytope dependencies, now available
+  through the `[fdb]` optional installation argument (#2818)
+- Add support for Python 3.13 and 3.14, with new default 3.14 (#2853)
+- Switch to astropy-healpix due to licensing issues with healpy (#2844)
+- Extend DROP: `--no-validate` flag, execution time/memory
+  report, and zarr/icechunk store support (#2824)
+- Apply jinja templating to diagnostic config files via the new
+  `--kind` option in AQUA analysis (#2834)
 
 Complete list:
 - Add references to climatedt-community-resources in getting_started.rst and polytope.rst (#2854)
