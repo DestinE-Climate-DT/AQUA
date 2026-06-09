@@ -564,6 +564,10 @@ class Drop:
 
     def _apply_regrid(self, data):
         """Apply regridding if requested and supported."""
+        # We could have None data after time statistics, so we check before applying regrid.
+        if data is None:
+            self.logger.warning("No data to regrid, skipping regridding step...")
+            return None
         if self.resolution and self.resolution != "native":
             data = self.reader.regrid(data)
             data = self._remove_regridded(data)
@@ -579,6 +583,10 @@ class Drop:
                 exclude_incomplete=self.exclude_incomplete,
                 func_kwargs=self.stat_kwargs,
             )
+            # data could be empty after time statistics if everything was excluded
+            if "time" in data.coords and len(data.time) == 0:
+                self.logger.warning("No data available after time statistics, skipping...")
+                return None
         return data
 
     def _apply_region(self, data):
@@ -607,9 +615,10 @@ class Drop:
             temp_data = self._apply_time_stat(temp_data)
             temp_data = self._apply_regrid(temp_data)
 
-        # temp_data could be empty after time statistics if everything was excluded
-        if "time" in temp_data.coords and len(temp_data.time) == 0:
-            self.logger.warning("No data available for variable %s after time statistics, skipping...", var)
+        # The check on empty data is done in _apply_time_stat,
+        # but if regrid_first is True, we need to check again after regridding
+        if temp_data is None:
+            self.logger.warning("No data to write for variable %s, skipping...", var)
             return
 
         # regional selection
