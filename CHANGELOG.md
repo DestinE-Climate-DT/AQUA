@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 Main changes:
 
 Complete list:
+- DROP: resolution is now always present in paths and filenames as a string, with "native" as default value if not specified (#2898)
 - Add references to climatedt-community-resources in getting_started.rst and polytope.rst (#2854)
 - Introduce a `aqua grids deploy` command to deploy target grids from a bucket to the local file system (#2865)
 - AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
