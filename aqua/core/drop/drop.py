@@ -610,19 +610,18 @@ class Drop:
         # Processing pipeline: allow regrid to happen either before or after time statistics
         if self.regrid_first:
             temp_data = self._apply_regrid(temp_data)
+            temp_data = self._apply_region(temp_data)
             temp_data = self._apply_time_stat(temp_data)
         else:
             temp_data = self._apply_time_stat(temp_data)
             temp_data = self._apply_regrid(temp_data)
+            temp_data = self._apply_region(temp_data)
 
         # The check on empty data is done in _apply_time_stat,
         # but if regrid_first is True, we need to check again after regridding
         if temp_data is None:
             self.logger.warning("No data to write for variable %s, skipping...", var)
             return
-
-        # regional selection
-        temp_data = self._apply_region(temp_data)
 
         # Apply history once to the dataset (xarray preserves it during slicing)
         temp_data = self.append_history(temp_data)
