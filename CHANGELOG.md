@@ -6,12 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+## [v1.0.0a5]
+
 ClimateDT workflow modifications:
 - Removed dependency on imagemagick
 - Removed the `--no-convert` option from `push_analysis.sh`
 - Added the `--format <FORMAT>` option to `push_analysis.sh` to select output formats to be uploaded (`png,pdf,svg` by default)
 
 Main changes:
+- Base AQUA is now shipped without FDB/GSV/polytope dependencies, 
+  available with [fdb] optional installation argument (#2818)
+- Add support for Python 3.13 and 3.14, with new default 3.14 (#2853)
+- Switch to astropy-healpix due to licensing issues with healpy (#2844)
+- Extend DROP: `--no-validate` flag, execution time/memory
+  report, and zarr/icechunk store support (#2824)
+- Apply jinja templating to diagnostic config files via the new
+  `--kind` option in AQUA analysis (#2834)
 
 Complete list:
 - DROP: resolution is now always present in paths and filenames as a string, with "native" as default value if not specified (#2898)
@@ -1431,7 +1441,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...HEAD
+[v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
 [v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
 [v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
 [v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2
