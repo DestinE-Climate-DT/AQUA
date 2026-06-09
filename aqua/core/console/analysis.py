@@ -9,10 +9,10 @@ from importlib import resources as pypath
 
 from dask.distributed import LocalCluster
 
-from aqua.core.analysis import configure_experiment_kind, get_aqua_paths, run_command, run_diagnostic_collection
+from aqua.core.analysis import Analysis
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
+from aqua.core.util import create_folder, expand_env_vars, format_realization
 
 
 def analysis_parser(parser=None):
@@ -75,11 +75,23 @@ def analysis_execute(args):
     loglevel = args.loglevel
     logger = log_configure(loglevel, "AQUA Analysis")
 
-    aqua_core_path, aqua_diagnostics_path, aqua_configdir, aqua_config_path = get_aqua_paths(args=args, logger=logger)
+    # Determine config path
+    aqua_configdir = ConfigPath().configdir
+    aqua_analysis_config_path = (
+        os.path.expandvars(args.config)
+        if args.config and args.config.strip()
+        else os.path.join(aqua_configdir, "analysis/config.aqua-analysis.yaml")
+    )
+    if not os.path.exists(aqua_analysis_config_path):
+        logger.error("Config file %s not found.", aqua_analysis_config_path)
+        sys.exit(1)
 
-    config = load_yaml(aqua_config_path)
-    loglevel = args.loglevel or config.get("job", {}).get("loglevel", "info")
-    logger = log_configure(log_level=loglevel.lower(), log_name="AQUA Analysis")
+    # Initialize analyzer
+    analyzer = Analysis(logger, aqua_analysis_config_path)
+
+    # Load config and get AQUA paths
+    config = analyzer.get_config()
+    aqua_core_path, aqua_diagnostics_path, aqua_configdir_cached = analyzer.get_aqua_paths()
 
     model = args.model or config.get("job", {}).get("model")
     exp = args.exp or config.get("job", {}).get("exp")
@@ -146,7 +158,7 @@ def analysis_execute(args):
     os.environ["OUTPUT"] = output_dir
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
-    os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
+    os.environ["AQUA_CONFIG"] = aqua_configdir_cached if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
     create_folder(output_dir, loglevel=loglevel)
 
     # expand the environment variables in the entire config
@@ -155,7 +167,7 @@ def analysis_execute(args):
     # read the experiment kind
     exp_kind_file = config.get("job", {}).get("experiment_kind")
     exp_kind = args.kind
-    exp_kind_dict = configure_experiment_kind(exp_kind, exp_kind_file, logger)
+    exp_kind_dict = analyzer.configure_experiment_kind(exp_kind, exp_kind_file)
 
     run_checker = config.get("job", {}).get("run_checker", False)
     if run_checker:
@@ -172,7 +184,7 @@ def analysis_execute(args):
         if realization:
             command += f" --realization {realization}"
         logger.debug("Command: %s", command)
-        result = run_command(command, log_file=output_log_path, logger=logger)
+        result = analyzer.run_command(command, log_file=output_log_path)
 
         if result == 1:
             logger.critical("Setup checker failed, exiting.")
@@ -234,7 +246,7 @@ def analysis_execute(args):
 
                 futures.append(
                     executor.submit(
-                        run_diagnostic_collection,
+                        analyzer.run_diagnostic_collection,
                         collection=collection,
                         serial=args.serial,
                         diag_config=diag_config,
@@ -250,7 +262,6 @@ def analysis_execute(args):
                         regrid=regrid,
                         output_dir=output_dir,
                         loglevel=loglevel,
-                        logger=logger,
                         cluster=cluster_address,
                         exp_kind_dict=exp_kind_dict,
                     )
