@@ -15,7 +15,6 @@ from scipy.interpolate import griddata
 
 from aqua.core.logger import log_configure
 
-
 from .sci_util import check_coordinates
 from .string import unit_to_latex
 
