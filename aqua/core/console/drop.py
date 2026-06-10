@@ -72,6 +72,8 @@ def drop_parser(parser=None):
                         help="Start date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--enddate', type=str,
                         help="End date to subset the data. Format YYYY-MM-DD")
+    parser.add_argument('--level', type=str,
+                        help="Level(s) to be included in the filename. Can be a single level (int or float) or a list of levels separated by commas (e.g. '1000,850,500').") # noqa: E501
     parser.add_argument('--engine', type=str,
                         help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
     parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'],
@@ -158,6 +160,10 @@ def drop_execute(args):
     resolution = get_arg(args, "resolution", _cfg(config, "target", "resolution"))
     startdate = get_arg(args, "startdate", _cfg(config, "target", "startdate"))
     enddate = get_arg(args, "enddate", _cfg(config, "target", "enddate"))
+    level = get_arg(args, "level", _cfg(config, "target", "level"))
+    # Convert comma-separated level string to list if necessary
+    if isinstance(level, str) and level:
+        level = [float(lev) if "." in lev else int(lev) for lev in level.split(",")]
 
     # options
     engine = get_arg(args, "engine", _cfg(config, "options", "engine", "fdb"))
@@ -201,6 +207,7 @@ def drop_execute(args):
         fix=fix,
         enddate=enddate,
         startdate=startdate,
+        level=level,
         outdir=outdir,
         tmpdir=tmpdir,
         loglevel=loglevel,
@@ -230,6 +237,7 @@ def drop_cli(
     fix=None,
     startdate=None,
     enddate=None,
+    level=None,
     outdir=None,
     tmpdir=None,
     loglevel=None,
@@ -260,6 +268,9 @@ def drop_cli(
         resolution: resolution of the DROP output
         frequency: frequency of the DROP output
         fix: fixer option
+        startdate: start date to subset the data
+        enddate: end date to subset the data
+        level: level(s) to be included in the filename
         outdir: output directory
         tmpdir: temporary directory
         loglevel: log level
@@ -323,6 +334,7 @@ def drop_cli(
                             resolution=src_resolution,
                             startdate=startdate,
                             enddate=enddate,
+                            level=level,
                             frequency=src_frequency,
                             fix=fix,
                             outdir=outdir,
