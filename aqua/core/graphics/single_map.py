@@ -29,8 +29,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import isnpixok
-from aqua.core.util.graphics import prettify_levels, get_decimals
+from aqua.core.util.graphics import get_decimals, isnpixok, prettify_levels
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
