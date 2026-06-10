@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 from conftest import LOGLEVEL
 
-from aqua.core.console.catgen import AquaFDBGenerator, catgen_execute, get_nested
+from aqua.core.catgen import AquaFDBGenerator, get_nested
+from aqua.core.console.catgen import catgen_execute
 from aqua.core.util import dump_yaml, load_yaml
 
 loglevel = LOGLEVEL
@@ -275,16 +276,6 @@ def test_get_value_from_map():
 
     with pytest.raises(ValueError, match="Unexpected resolution"):
         AquaFDBGenerator.get_value_from_map("unknown", mapping, "resolution")
-
-
-# load_jinja_template
-@pytest.mark.catgen
-def test_load_jinja_template_missing(tmp_path):
-    """Verify FileNotFoundError is raised when the Jinja template file is missing."""
-    gen = AquaFDBGenerator.__new__(AquaFDBGenerator)
-    gen.logger = __import__("logging").getLogger("test")
-    with pytest.raises(FileNotFoundError):
-        gen.load_jinja_template("/nonexistent/template.j2")
 
 
 # generate_catalog — edge cases

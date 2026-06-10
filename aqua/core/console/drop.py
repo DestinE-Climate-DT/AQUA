@@ -310,7 +310,6 @@ def drop_cli(
                 for realization in loop_realizations:
                     # define realization as extra args only if this is found in the configuration file
                     extra_args = {"realization": realization} if realizations else {}
-                    print(varnames)
                     for varname in varnames:
                         # get the zoom level - this might need some tuning for extra kwargs
                         zoom = config["data"][model][exp][source].get("zoom", None)
