@@ -149,6 +149,46 @@ class TestCatalogEntryBuilder:
         assert newblock["args"]["chunks"] == chunks
 
 
+class TestDROPLevelParameter:
+    """Unit tests for DROP level parameter handling."""
+
+    pytestmark = pytest.mark.aqua
+
+    @pytest.mark.parametrize(
+        "level,expected",
+        [
+            (50000, 50000),
+            (50000.5, 50000.5),
+            ([50000, 70000], [50000, 70000]),
+            ([50000.5, 70000.5], [50000.5, 70000.5]),
+            ([50000, 70000.5, 30000], [50000, 70000.5, 30000]),
+            (None, None),
+        ],
+        ids=[
+            "single_int",
+            "single_float",
+            "list_int",
+            "list_float",
+            "list_mixed",
+            "none",
+        ],
+    )
+    def test_drop_level_parameter(self, level, expected, tmp_path):
+        """Test that DROP correctly stores level parameter in various formats."""
+        drop = Drop(
+            catalog="ci",
+            model="IFS",
+            exp="test-tco79",
+            source="long",
+            var="2t",
+            tmpdir=str(tmp_path),
+            outdir=str(tmp_path / "out"),
+            level=level,
+            loglevel=LOGLEVEL,
+        )
+        assert drop.level == expected, f"Level not stored correctly. Got {drop.level}, expected {expected}"
+
+
 class TestDROP:
     """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
 
