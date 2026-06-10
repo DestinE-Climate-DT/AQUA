@@ -64,6 +64,7 @@ class Drop:
         fix=True,
         startdate=None,
         enddate=None,
+        level=None,
         outdir=None,
         tmpdir=None,
         nproc=1,
@@ -102,6 +103,7 @@ class Drop:
                                      format YYYYMMDD, default is None
             enddate (string,opt):   End date for the data to be processed,
                                      format YYYYMMDD, default is None
+            level (int, float, or list, opt): Level(s) to be processed, default is None (all levels)
             outdir (string):         Where the DROP output is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
@@ -160,10 +162,11 @@ class Drop:
         self.kwargs = kwargs
         self.fix = fix
 
-        # configure start date and end date
+        # configure retrieve parameters
         self.startdate = startdate
         self.enddate = enddate
         self._validate_date(startdate, enddate)
+        self.level = level
 
         # configure statistics
         self.stat = stat
@@ -274,6 +277,9 @@ class Drop:
             self.logger.info("startdate is %s, enddate is %s", self.startdate, self.enddate)
             self.logger.info("startdate or enddate are set, please be sure to process one experiment at the time.")
 
+        if self.level is not None:
+            self.logger.info("Level(s) to be processed: %s", self.level)
+
         if not self.frequency:
             self.logger.info("Frequency not specified, no time averaging will be performed.")
         else:
@@ -375,6 +381,7 @@ class Drop:
             rebuild=self.rebuild,
             startdate=self.startdate,
             enddate=self.enddate,
+            level=self.level,
             fix=self.fix,
             engine=self.engine,
             **self.kwargs,

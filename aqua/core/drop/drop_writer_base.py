@@ -308,12 +308,13 @@ class BaseWriter(ABC):
 
         return success
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def get_filename(self, var, level=None, year=None, month=None, tmp=False):
         """
         Generate filename/storename (monthly or yearly).
 
         Args:
             var: Variable name
+            level: Level(s) to include in the filename (optional)
             year: Year (for yearly or monthly files)
             month: Month (for monthly files, optional)
             tmp: If True, return path in tmpdir
@@ -323,7 +324,7 @@ class BaseWriter(ABC):
         """
         ext = self.get_extension()
 
-        filename = self.filename_builder.build_filename(var=var, year=year, month=month)
+        filename = self.filename_builder.build_filename(var=var, level=level, year=year, month=month)
         # Replace extension if needed
         if not filename.endswith(ext):
             filename = os.path.splitext(filename)[0] + ext
