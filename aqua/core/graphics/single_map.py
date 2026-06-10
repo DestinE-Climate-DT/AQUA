@@ -399,7 +399,7 @@ def plot_single_map_diff(
         ds = data.plot.contour(
             ax=ax,
             transform=ccrs.PlateCarree(),
-            levels=pretty_levels,       
+            levels=pretty_levels,
             colors="k",
             linewidths=0.5,
         )
