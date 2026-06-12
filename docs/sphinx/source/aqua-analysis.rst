@@ -111,11 +111,6 @@ so that the script can be used in a batch job or in a workflow. These override c
     The log level to use for the cli and the diagnostics.
     Default is ``INFO``.
 
-.. option:: --local_clusters
-
-    This is a legacy feature to run the diagnostics with multiple dask.distributed 'local' clusters (not recommended).
-    In this case a predefined number of workers is used for each diagnostic, set in the configuration file ``config.aqua-analysis.yaml``.
-
 .. note ::
 
     By default the script will run all the state-of-the-art diagnostics available in AQUA.

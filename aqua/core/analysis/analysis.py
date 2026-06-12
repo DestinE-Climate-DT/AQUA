@@ -128,7 +128,7 @@ class Analysis:
             self.logger.error("Failed to run tool %s for diagnostic collection %s: %s", tool, collection, e)
 
     @staticmethod
-    def _build_extra_args(**kwargs):
+    def build_extra_args(**kwargs):
         """Build command line arguments from key-value pairs, skipping None values."""
         args = ""
         for flag, value in kwargs.items():
@@ -217,7 +217,7 @@ class Analysis:
                 extra_args += f" --cluster {cluster}"
 
             # Add standard arguments using helper function
-            extra_args += self._build_extra_args(
+            extra_args += self.build_extra_args(
                 catalog=catalog,
                 realization=realization,
                 startdate=startdate,
@@ -277,6 +277,10 @@ class Analysis:
 
         if exp_kind not in complete_dictionary:
             self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
+            if "default" not in complete_dictionary:
+                raise KeyError(
+                    f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
+                )
         self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
 
     def configure_template_configs(self, cfgs):

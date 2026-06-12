@@ -12,7 +12,7 @@ from dask.distributed import LocalCluster
 from aqua.core.analysis import Analysis
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, expand_env_vars, format_realization
+from aqua.core.util import create_folder, expand_env_vars, format_realization, get_arg
 
 
 def analysis_parser(parser=None):
@@ -50,9 +50,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
 
     # computation
-    parser.add_argument("--local_clusters", action="store_true",
-                        help="Use separate local clusters instead of single global one (deprecated)")
-    parser.add_argument("--serial", action="store_true", help="Disable dask parallel execution with a cluster")
+    parser.add_argument("--serial", action="store_true", help="Disable dask cluster parallel execution")
     parser.add_argument("--nworkers", type=int, default=None,
                         help="Number of workers to use in the cluster (overrides config file)")
     parser.add_argument("--nthreads", type=int, default=None,
@@ -82,22 +80,17 @@ def analysis_execute(args):
     config = analyzer.get_config()
     aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
-    model = args.model or config.get("job", {}).get("model")
-    exp = args.exp or config.get("job", {}).get("exp")
-    source = args.source or config.get("job", {}).get("source", "lra-r100-monthly")
-    source_oce = args.source_oce or config.get("job", {}).get("source_oce")
-    realization = args.realization if args.realization else config.get("job", {}).get("realization")
+    # extract default
+    job_config = config.get("job", {})
+    cluster_config = config.get("cluster", {})
 
-    # startdate and enddate
-    startdate = args.startdate or config.get("job", {}).get("startdate")
-    enddate = args.enddate or config.get("job", {}).get("enddate")
-    # We get regrid option and then we set it to None if it is False
-    # This avoids to add the --regrid argument to the command line
-    # if it is not needed
-    regrid = args.regrid or config.get("job", {}).get("regrid", False)
-    if regrid is False or regrid.lower() == "false":
-        regrid = None
+    # basic configuration
+    model = get_arg(args, "model", None, config=job_config)
+    exp = get_arg(args, "exp", None, config=job_config)
+    source = get_arg(args, "source", None, config=job_config)
+    source_oce = get_arg(args, "source_oce", None, config=job_config)
 
+    # guard
     if not all([model, exp, source]):
         logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
         sys.exit(1)
@@ -106,7 +99,19 @@ def analysis_execute(args):
             "Requested experiment: Model = %s, Experiment = %s, Source = %s. Source_oce = %s", model, exp, source, source_oce
         )
 
-    catalog = args.catalog or config.get("job", {}).get("catalog")
+    # realizaiton, startdate and enddate
+    startdate = get_arg(args, "startdate", None, config=job_config)
+    enddate = get_arg(args, "enddate", None, config=job_config)
+    realization = get_arg(args, "realization", None, config=job_config)
+    # We get regrid option and then we set it to None if it is False
+    # This avoids to add the --regrid argument to the command line
+    # if it is not needed
+    regrid = get_arg(args, "regrid", "False", config=job_config)
+    if regrid is False or regrid.lower() == "false":
+        regrid = None
+
+    # catalog
+    catalog = get_arg(args, "catalog", None, config=job_config)
     if catalog:
         logger.info("Requested catalog: %s", catalog)
     else:
@@ -120,9 +125,9 @@ def analysis_execute(args):
             )
             sys.exit(1)
 
+    # output directory and maximum parallel processes for the ThreadPoolExecutor
     outputdir = os.path.expandvars(args.outputdir or config.get("job", {}).get("outputdir", "./output"))
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
-
     logger.debug("outputdir: %s", outputdir)
     logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
@@ -132,15 +137,17 @@ def analysis_execute(args):
 
     output_dir = os.path.join(outputdir, catalog, model, exp, realization)
     output_dir = os.path.expandvars(output_dir)
+    create_folder(output_dir, loglevel=loglevel)
+    logger.debug("Output directory set to: %s", output_dir)
 
     # Set Dask timeouts if not already defined in the environment
     if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
-        connect_timeout = config.get("cluster", {}).get("connect_timeout", None)
+        connect_timeout = cluster_config.get("connect_timeout", None)
         if connect_timeout:
             # Increase timeout (certainly needed on LUMI, possibly useful elsewhere too).
             os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"
     if "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP" not in os.environ:
-        tcp_timeout = config.get("cluster", {}).get("tcp_timeout", None)
+        tcp_timeout = cluster_config.get("tcp_timeout", None)
         if tcp_timeout:
             os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
 
@@ -148,29 +155,28 @@ def analysis_execute(args):
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
-    create_folder(output_dir, loglevel=loglevel)
 
-    # expand the environment variables in the entire config
+    # expand the environment variables in the entire config, extract again job and cluster config in case they were modified
     config = expand_env_vars(config)
+    job_config = config.get("job", {})
+    cluster_config = config.get("cluster", {})
 
     # read the experiment kind
-    exp_kind_file = config.get("job", {}).get("experiment_kind")
+    exp_kind_file = job_config.get("experiment_kind")
     analyzer.configure_experiment_kind(args.kind, exp_kind_file)
 
-    run_checker = config.get("job", {}).get("run_checker", False)
+    # cli checker setup and run
+    run_checker = job_config.get("run_checker", False)
     if run_checker:
         logger.info("Running setup checker")
         checker_script_path = os.path.join(pypath.files("aqua.core"), "analysis", "cli_checker.py")
         output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
+        extra_args = analyzer.build_extra_args(regrid=regrid, catalog=catalog, realization=realization)
         command = (
-            f"python {checker_script_path} --model {model} --exp {exp} --source {source} -l {loglevel} --yaml {output_dir}"
+            f"python {checker_script_path} --model {model} --exp {exp}"
+            f"--source {source} -l {loglevel} --yaml {output_dir} {extra_args}"
         )
-        if regrid:
-            command += f" --regrid {regrid}"
-        if catalog:
-            command += f" --catalog {catalog}"
-        if realization:
-            command += f" --realization {realization}"
+        # use the analsis class to build the command
         logger.debug("Command: %s", command)
         result = analyzer.run_command(command, log_file=output_log_path)
 
@@ -182,39 +188,34 @@ def analysis_execute(args):
         else:
             logger.error("Setup checker returned exit code %s, check the logs for more information.", result)
 
+    # running or not
     run = config.get("run", [])
     if not run:
         logger.error("No run block found in configuration.")
         sys.exit(1)
 
+    # confiuration of dask cluster
     if args.serial:
-        if args.local_clusters or args.nworkers or args.nthreads:
-            logger.warning("Serial execution selected, ignoring local cluster and worker/thread settings.")
-
+        if args.nworkers or args.nthreads:
+            logger.warning("Serial execution selected, ignoring worker/thread settings.")
         logger.info("Running diagnostic collections without a dask cluster.")
-        cluster = None
-        cluster_address = None
+        cluster, cluster_address = None, None
     else:
-        if args.local_clusters:
-            logger.info("Running diagnostic collections in parallel with separate local clusters.")
-            cluster = None
-            cluster_address = None
-        else:
-            nthreads = args.nthreads if args.nthreads is not None else config.get("cluster", {}).get("threads", 2)
-            nworkers = args.nworkers if args.nworkers is not None else config.get("cluster", {}).get("workers", 32)
-            mem_limit = config.get("cluster", {}).get("memory_limit", "3.1GiB")
-            logger.debug("Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit)
+        nthreads = get_arg(args, "nthreads", 2, config=cluster_config, key="threads")
+        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="workers")
+        mem_limit = cluster_config.get("memory_limit", "3.1GiB")
+        logger.debug("Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit)
 
-            # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
-            cluster = LocalCluster(
-                threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR
-            )
-            cluster_address = cluster.scheduler_address
-            logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
+        # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
+        cluster = LocalCluster(
+            threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR
+        )
+        cluster_address = cluster.scheduler_address
+        logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
 
     # read cli definitions and prepend script path
     cli = config.get("cli", {})
-    script_dir = config.get("job", {}).get("script_path_base")  # we were not using this key
+    script_dir = job_config.get("script_path_base")  # we were not using this key
     if script_dir:
         for diag in cli:
             cli[diag] = os.path.join(script_dir, cli[diag])

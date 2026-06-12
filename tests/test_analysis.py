@@ -27,6 +27,11 @@ def analysis():
     return Analysis(loglevel="DEBUG")
 
 
+@pytest.fixture(scope="function")
+def analysis_function():
+    return Analysis(loglevel="debug")
+
+
 def test_run_command(analysis):
     """Test the run_command function."""
     command = "echo 'Hello, World!'"
@@ -258,11 +263,11 @@ class TestRunDiagnosticCollection:
             patch.object(analysis, "configure_template_configs", return_value=[rendered_cfg]) as mock_render,
             patch("aqua.core.analysis.analysis.shutil.rmtree") as mock_rm,
         ):
+            analysis.exp_kind_dict = {"period": "past"}  # set class attribute for templating
             analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
-                exp_kind_dict={"period": "past"},
                 output_dir=tool_env["outdir"],
             )
         mock_render.assert_called_once()
@@ -281,7 +286,6 @@ class TestAnalysisParser:
         assert args.regrid == "False"
         assert args.loglevel == "INFO"
         assert args.serial is False
-        assert args.local_clusters is False
         assert args.nmaxprocesses == -1
         assert args.nthreads is None
         assert args.nworkers is None
@@ -327,7 +331,6 @@ class TestAnalysisParser:
                 "--kind",
                 "historical",
                 "--serial",
-                "--local_clusters",
                 "--nmaxprocesses",
                 "4",
                 "--loglevel",
@@ -348,7 +351,6 @@ class TestAnalysisParser:
         assert args.config == "/tmp/config.yaml"
         assert args.kind == "historical"
         assert args.serial is True
-        assert args.local_clusters is True
         assert args.nmaxprocesses == 4
         assert args.loglevel == "DEBUG"
 
@@ -391,29 +393,29 @@ class TestBuildExtraArgsExtended:
 
     def test_all_none_returns_empty_string(self, analysis):
         """When every value is None the output is an empty string."""
-        result = analysis._build_extra_args(catalog=None, model=None, startdate=None)
+        result = analysis.build_extra_args(catalog=None, model=None, startdate=None)
         assert result == ""
 
     def test_single_kwarg(self, analysis):
         """A single non-None kwarg produces the correct flag string."""
-        result = analysis._build_extra_args(model="IFS")
+        result = analysis.build_extra_args(model="IFS")
         assert result.strip() == "--model IFS"
 
     def test_flag_order_follows_kwargs(self, analysis):
         """Flags appear in the same order as kwargs (Python 3.7+ dict ordering)."""
-        result = analysis._build_extra_args(model="IFS", exp="test", source="lra")
+        result = analysis.build_extra_args(model="IFS", exp="test", source="lra")
         assert result.index("--model") < result.index("--exp") < result.index("--source")
 
     def test_none_values_skipped(self, analysis):
         """None values are silently omitted while non-None values are included."""
-        result = analysis._build_extra_args(model="IFS", exp=None, source="lra")
+        result = analysis.build_extra_args(model="IFS", exp=None, source="lra")
         assert "--model IFS" in result
         assert "--exp" not in result
         assert "--source lra" in result
 
     def test_build_extra_args_with_dates(self, analysis):
         """Test that _build_extra_args correctly formats startdate and enddate."""
-        result = analysis._build_extra_args(
+        result = analysis.build_extra_args(
             catalog="test_catalog", realization="r1", startdate="2020-01-01", enddate="2020-12-31"
         )
         assert "--catalog test_catalog" in result
@@ -423,7 +425,7 @@ class TestBuildExtraArgsExtended:
 
     def test_build_extra_args_without_dates(self, analysis):
         """Test that _build_extra_args skips None values."""
-        result = analysis._build_extra_args(catalog="test_catalog", startdate=None, enddate=None)
+        result = analysis.build_extra_args(catalog="test_catalog", startdate=None, enddate=None)
         assert "--catalog test_catalog" in result
         assert "--startdate" not in result
         assert "--enddate" not in result
@@ -452,88 +454,88 @@ def jinja_cfg_yaml(tmp_path_factory):
 class TestConfigureExperimentKind:
     """Tests for configure_experiment_kind — uses tmp_path, no mocking."""
 
-    def test_none_exp_kind_returns_none(self, analysis):
+    def test_none_exp_kind_returns_none(self, analysis_function):
         """exp_kind=None returns None without accessing any file."""
-        result = analysis.configure_experiment_kind(None, "/nonexistent/file.yaml")
-        assert result is None
+        analysis_function.configure_experiment_kind(None, "/nonexistent/file.yaml")
+        assert analysis_function.exp_kind_dict is None
 
-    def test_missing_file_raises_file_not_found(self, tmp_path, analysis):
+    def test_missing_file_raises_file_not_found(self, tmp_path, analysis_function):
         """A non-existent exp_kind_file raises FileNotFoundError."""
         with pytest.raises(FileNotFoundError):
-            analysis.configure_experiment_kind("historical", str(tmp_path / "missing.yaml"))
+            analysis_function.configure_experiment_kind("historical", str(tmp_path / "missing.yaml"))
 
-    def test_valid_kind_returned(self, kinds_yaml, analysis):
+    def test_valid_kind_returned(self, kinds_yaml, analysis_function):
         """A matching kind key returns its sub-dictionary."""
-        result = analysis.configure_experiment_kind("historical", str(kinds_yaml))
-        assert result["period"] == "past"
+        analysis_function.configure_experiment_kind("historical", str(kinds_yaml))
+        assert analysis_function.exp_kind_dict["period"] == "past"
 
-    def test_unknown_kind_returns_string_default(self, kinds_yaml, analysis):
+    def test_unknown_kind_returns_string_default(self, kinds_yaml, analysis_function):
         """A kind absent from the YAML returns the string literal 'default'."""
-        result = analysis.configure_experiment_kind("unknown_kind", str(kinds_yaml))
-        assert result == "default"
+        with pytest.raises(KeyError):
+            analysis_function.configure_experiment_kind("unknown_kind", str(kinds_yaml))
 
-    def test_multiple_kinds_isolated(self, kinds_yaml, analysis):
+    def test_multiple_kinds_isolated(self, kinds_yaml, analysis_function):
         """Different kind keys each return their own independent sub-dictionary."""
-        hist = analysis.configure_experiment_kind("historical", str(kinds_yaml))
-        scen = analysis.configure_experiment_kind("scenario", str(kinds_yaml))
-
-        assert hist["forcing"] == "CMIP6"
-        assert scen["forcing"] == "SSP5"
+        analysis_function.configure_experiment_kind("historical", str(kinds_yaml))
+        assert analysis_function.exp_kind_dict["forcing"] == "CMIP6"
+        analysis_function.configure_experiment_kind("scenario", str(kinds_yaml))
+        assert analysis_function.exp_kind_dict["forcing"] == "SSP5"
 
 
 class TestConfigureTemplateConfigs:
     """Tests for configure_template_configs — uses tmp_path, no mocking."""
 
-    def test_jinja_variables_substituted(self, jinja_cfg_yaml, kinds_yaml, analysis):
+    def test_jinja_variables_substituted(self, jinja_cfg_yaml, kinds_yaml, analysis_function):
         """Jinja2 placeholders in config files are replaced by exp_kind_dict values."""
-        definitions = load_yaml(str(kinds_yaml))["historical"]
-
-        result_paths = analysis.configure_template_configs([str(jinja_cfg_yaml)], definitions)
+        analysis_function.exp_kind_dict = load_yaml(str(kinds_yaml))["historical"]
+        result_paths = analysis_function.configure_template_configs([str(jinja_cfg_yaml)])
 
         assert len(result_paths) == 1
         rendered = load_yaml(result_paths[0])
         assert rendered["model"] == "past"
         assert rendered["source"] == "CMIP6"
 
-    def test_multiple_configs_all_rendered(self, tmp_path, analysis):
+    def test_multiple_configs_all_rendered(self, tmp_path, analysis_function):
         """All configs in the list are rendered and returned."""
         cfg1 = tmp_path / "a.yaml"
         cfg2 = tmp_path / "b.yaml"
         dump_yaml(str(cfg1), {"tag": "{{ val }}"})
         dump_yaml(str(cfg2), {"tag": "{{ val }}"})
-        definitions = {"val": "hello"}
-
-        result_paths = analysis.configure_template_configs([str(cfg1), str(cfg2)], definitions)
+        analysis_function.exp_kind_dict = {"val": "hello"}
+        result_paths = analysis_function.configure_template_configs([str(cfg1), str(cfg2)])
 
         assert len(result_paths) == 2
         for path in result_paths:
             rendered = load_yaml(path)
             assert rendered["tag"] == "hello"
 
-    def test_all_outputs_in_same_temp_dir(self, tmp_path, analysis):
+    def test_all_outputs_in_same_temp_dir(self, tmp_path, analysis_function):
         """All rendered configs land in a single shared temporary directory."""
         cfg1 = tmp_path / "a.yaml"
         cfg2 = tmp_path / "b.yaml"
         dump_yaml(str(cfg1), {"key": "value1"})
         dump_yaml(str(cfg2), {"key": "value2"})
 
-        result_paths = analysis.configure_template_configs([str(cfg1), str(cfg2)], {"x": "y"})
+        analysis_function.exp_kind_dict = {"x": "y"}
+        result_paths = analysis_function.configure_template_configs([str(cfg1), str(cfg2)])
 
         dirs = {os.path.dirname(p) for p in result_paths}
         assert len(dirs) == 1, "All rendered configs should be in the same temp dir"
 
-    def test_output_filenames_match_input_basenames(self, tmp_path, analysis):
+    def test_output_filenames_match_input_basenames(self, tmp_path, analysis_function):
         """The rendered file's basename equals the original config's basename."""
         cfg_file = tmp_path / "my_config.yaml"
         dump_yaml(str(cfg_file), {"key": "value"})
 
-        result_paths = analysis.configure_template_configs([str(cfg_file)], {})
+        analysis_function.exp_kind_dict = {}
+        result_paths = analysis_function.configure_template_configs([str(cfg_file)])
 
         assert os.path.basename(result_paths[0]) == "my_config.yaml"
 
-    def test_undefined_variable_raises(self, tmp_path, analysis):
+    def test_undefined_variable_raises(self, tmp_path, analysis_function):
         """An undefined jinja var in a template must raise — strict mode is on."""
         cfg = tmp_path / "cfg.yaml"
         cfg.write_text("startdate: '{{ ref_startdate }}'\n")
+        analysis_function.exp_kind_dict = {"unrelated": "x"}
         with pytest.raises(UndefinedError):
-            analysis.configure_template_configs([str(cfg)], {"unrelated": "x"})
+            analysis_function.configure_template_configs([str(cfg)])
