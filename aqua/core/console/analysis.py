@@ -10,9 +10,8 @@ from importlib import resources as pypath
 from dask.distributed import LocalCluster
 
 from aqua.core.analysis import Analysis
-from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, expand_env_vars, format_realization, get_arg
+from aqua.core.util import create_folder, expand_env_vars, get_arg
 
 
 def analysis_parser(parser=None):
@@ -84,46 +83,11 @@ def analysis_execute(args):
     job_config = config.get("job", {})
     cluster_config = config.get("cluster", {})
 
-    # basic configuration
-    model = get_arg(args, "model", None, config=job_config)
-    exp = get_arg(args, "exp", None, config=job_config)
-    source = get_arg(args, "source", None, config=job_config)
-    source_oce = get_arg(args, "source_oce", None, config=job_config)
-
-    # guard
-    if not all([model, exp, source]):
-        logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
-        sys.exit(1)
-    else:
-        logger.info(
-            "Requested experiment: Model = %s, Experiment = %s, Source = %s. Source_oce = %s", model, exp, source, source_oce
-        )
-
-    # realizaiton, startdate and enddate
-    startdate = get_arg(args, "startdate", None, config=job_config)
-    enddate = get_arg(args, "enddate", None, config=job_config)
-    realization = get_arg(args, "realization", None, config=job_config)
-    # We get regrid option and then we set it to None if it is False
-    # This avoids to add the --regrid argument to the command line
-    # if it is not needed
-    regrid = get_arg(args, "regrid", "False", config=job_config)
-    if regrid is False or regrid.lower() == "false":
-        regrid = None
-
-    # catalog
-    catalog = get_arg(args, "catalog", None, config=job_config)
-    if catalog:
-        logger.info("Requested catalog: %s", catalog)
-    else:
-        cat, _ = ConfigPath().browse_catalogs(model, exp, source)
-        if cat:
-            catalog = cat[0]
-            logger.info("Automatically determined catalog: %s", catalog)
-        else:
-            logger.error(
-                "Model = %s, Experiment = %s, Source = %s triplet not found in any installed catalog.", model, exp, source
-            )
-            sys.exit(1)
+    # set catalog, model, exp, source, source_oce in the analyzer
+    analyzer.set_catalog_model_exp_source(args, job_config)
+    analyzer.set_startdate_enddate(args, job_config)
+    analyzer.set_realization(args, job_config)
+    analyzer.set_regrid_option(args, job_config)
 
     # output directory and maximum parallel processes for the ThreadPoolExecutor
     outputdir = os.path.expandvars(args.outputdir or config.get("job", {}).get("outputdir", "./output"))
@@ -131,11 +95,7 @@ def analysis_execute(args):
     logger.debug("outputdir: %s", outputdir)
     logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
-    # Format the realization string by prepending 'r' if it is a digit or setting a default `r1`.
-    realization = format_realization(realization)
-    logger.info("Input realization formatted to: %s", realization)
-
-    output_dir = os.path.join(outputdir, catalog, model, exp, realization)
+    output_dir = os.path.join(outputdir, analyzer.catalog, analyzer.model, analyzer.exp, analyzer.realization)
     output_dir = os.path.expandvars(output_dir)
     create_folder(output_dir, loglevel=loglevel)
     logger.debug("Output directory set to: %s", output_dir)
@@ -168,17 +128,13 @@ def analysis_execute(args):
     # cli checker setup and run
     run_checker = job_config.get("run_checker", False)
     if run_checker:
-        logger.info("Running setup checker")
         checker_script_path = os.path.join(pypath.files("aqua.core"), "analysis", "cli_checker.py")
         output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        extra_args = analyzer.build_extra_args(regrid=regrid, catalog=catalog, realization=realization)
-        command = (
-            f"python {checker_script_path} --model {model} --exp {exp}"
-            f"--source {source} -l {loglevel} --yaml {output_dir} {extra_args}"
+        result = analyzer.run_setup_checker(
+            script_path=checker_script_path,
+            output_dir=output_dir,
+            logfile=output_log_path,
         )
-        # use the analsis class to build the command
-        logger.debug("Command: %s", command)
-        result = analyzer.run_command(command, log_file=output_log_path)
 
         if result == 1:
             logger.critical("Setup checker failed, exiting.")
@@ -240,15 +196,6 @@ def analysis_execute(args):
                         serial=args.serial,
                         diag_config=diag_config,
                         cli=cli,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        source_oce=source_oce,
-                        realization=realization,
-                        startdate=startdate,
-                        enddate=enddate,
-                        regrid=regrid,
                         output_dir=output_dir,
                         cluster=cluster_address,
                     )

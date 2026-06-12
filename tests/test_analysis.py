@@ -64,11 +64,8 @@ def test_run_diagnostic_collection(analysis):
     analysis.run_diagnostic_collection(
         collection="pluto",
         serial=False,
-        regrid="r100",
         diag_config=config,
         cluster=True,
-        catalog="test_catalog",
-        realization="r2",
     )
 
     assert True, "run_diagnostic_collection should complete without errors"
@@ -140,13 +137,13 @@ class TestRunDiagnosticCollection:
     def test_happy_path_calls_run_diagnostic_tool(self, tool_env, analysis):
         """Happy path: run_diagnostic_tool called once with correct core args."""
         with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.model = "IFS"
+            analysis.exp = "test-tco79"
+            analysis.source = "lra-r100"
             analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
-                model="IFS",
-                exp="test-tco79",
-                source="lra-r100",
                 output_dir=tool_env["outdir"],
             )
         mock_tool.assert_called_once()
@@ -159,11 +156,11 @@ class TestRunDiagnosticCollection:
     def test_regrid_flag_added(self, tool_env, analysis):
         """regrid='r100' appends --regrid r100 to extra_args."""
         with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.regrid = "r100"
             analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
-                regrid="r100",
                 output_dir=tool_env["outdir"],
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
@@ -215,11 +212,11 @@ class TestRunDiagnosticCollection:
         """source_oce is forwarded when source_oce=True is set in tool config."""
         config = {"biases": {"config": tool_env["cfg"], "source_oce": True}}
         with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+            analysis.source_oce = "lra-r100-oce"
             analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=tool_env["cli"],
-                source_oce="lra-r100-oce",
                 output_dir=tool_env["outdir"],
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
@@ -232,7 +229,6 @@ class TestRunDiagnosticCollection:
                 collection="atm",
                 diag_config=self._base_config(tool_env),
                 cli=tool_env["cli"],
-                source_oce="lra-r100-oce",
                 output_dir=tool_env["outdir"],
             )
         extra_args = mock_tool.call_args.kwargs["extra_args"]
