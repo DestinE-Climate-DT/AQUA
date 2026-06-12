@@ -11,21 +11,33 @@ from ruamel.yaml import YAML
 
 from aqua.core.logger import log_configure
 
-# instead of creating a new jinja environment every time we need to render a yaml file,
-# we create it once and reuse it to save resources.
-_JINJA_ENV_UNDEFINED = Environment(
-    undefined=StrictUndefined,  # UndefinedError on missing variables instead of empty string
-    trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
-    lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
-    keep_trailing_newline=True,  # preserve the trailing newline of the source file
-)
 
-# same as above, but no undefined to allow for optional variables in the yaml files
-_JINJA_ENV_BASE = Environment(
-    trim_blocks=True,  # remove the first newline after a tag, prevents blank lines
-    lstrip_blocks=True,  # strip leading whitespace from tags, keeps indentation clean
-    keep_trailing_newline=True,  # preserve the trailing newline of the source file
-)
+def _create_jinja_env(strict: bool = False, preserve_formatting: bool = False):
+    """Create a Jinja2 Environment with the given settings.
+
+    Args:
+        strict: If True, raise UndefinedError on missing template variables.
+                Default False (silently renders as empty string).
+        preserve_formatting: If True, preserve template formatting (no trim/lstrip).
+                            Default False (trim and lstrip for cleaner YAML).
+
+    Returns:
+        A configured Jinja2 Environment.
+    """
+    kwargs = {
+        "trim_blocks": not preserve_formatting,
+        "lstrip_blocks": not preserve_formatting,
+        "keep_trailing_newline": True,
+    }
+    if strict:
+        kwargs["undefined"] = StrictUndefined
+    return Environment(**kwargs)
+
+
+# Pre-create common Jinja2 environments for efficiency
+_JINJA_ENV_BASE = _create_jinja_env()  # Default: trim blocks, soft undefined
+_JINJA_ENV_STRICT = _create_jinja_env(strict=True)  # Strict: raise on missing vars
+_JINJA_ENV_CATGEN = _create_jinja_env(preserve_formatting=True)  # Preserve: for catalog_entry.j2
 
 
 def construct_yaml_merge(loader, node):
@@ -88,7 +100,9 @@ def load_multi_yaml(
     return yaml_dict
 
 
-def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True, strict: bool = False):
+def load_yaml(
+    infile: str, definitions: str | dict | None = None, jinja: bool = True, strict: bool = False, catgen: bool = False
+):
     """
     Load yaml file with template substitution
 
@@ -99,6 +113,7 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
         jinja (bool): jinja2 templating is used instead of standard python templating. Default is True.
         strict (bool): if True, raises UndefinedError on missing template variables instead of
                        silently rendering them as empty strings. Default is False.
+        catgen (bool): if True, use the Jinja environment configured to preserve formatting.
 
     Returns:
         A dictionary with the yaml file keys
@@ -114,7 +129,8 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     with open(infile, "r", encoding="utf-8") as file:
         yaml_text = file.read()
 
-    if isinstance(definitions, str):  # if it is a string extract from original yaml, else it is directly a dict
+    # if it is a string extract from original yaml, else it is directly a dict
+    if isinstance(definitions, str):
         cfg = yaml.load(yaml_text)
         definitions = cfg.get(definitions)
 
@@ -122,7 +138,9 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
         # perform template substitution with jinja
         if jinja:
             if strict:
-                template = _JINJA_ENV_UNDEFINED.from_string(yaml_text)
+                template = _JINJA_ENV_STRICT.from_string(yaml_text)
+            elif catgen:
+                template = _JINJA_ENV_CATGEN.from_string(yaml_text)
             else:
                 template = _JINJA_ENV_BASE.from_string(yaml_text)
             rendered_yaml = template.render(definitions)

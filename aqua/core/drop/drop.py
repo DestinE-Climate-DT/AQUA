@@ -74,6 +74,7 @@ class Drop:
         definitive=False,
         performance_reporting=False,
         rebuild=False,
+        regrid_first=False,
         exclude_incomplete=False,
         stat="mean",
         stat_kwargs={},
@@ -124,6 +125,8 @@ class Drop:
             exclude_incomplete (bool,opt)   : True to remove incomplete chunk
                                             when averaging, default is false.
             rebuild (bool, opt):     Rebuild the weights when calling the reader
+            regrid_first (bool, opt): If True, perform regridding before applying time statistics.
+                                       Useful when time-statistics can remove spatial coords.
             stat (string, opt):      Statistic to compute. Can be 'mean', 'std', 'max', 'min', 'sum' or 'histogram'.
                 Default is 'mean'.
             stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram.
@@ -185,6 +188,9 @@ class Drop:
         self.output_format = output_format
         self.compact = compact
         self.zarr_chunks = zarr_chunks
+
+        # whether to regrid before time statistics
+        self.regrid_first = regrid_first
 
         # validate parameters and raise errors if needed
         self._issue_info_raise()
@@ -298,6 +304,8 @@ class Drop:
         self.logger.info("Fixing data: %s", self.fix)
         self.logger.info("Resolution: %s", self.resolution)
         self.logger.info("Statistic to be computed: %s", self.stat)
+        if self.regrid_first:
+            self.logger.info("Regrid before time statistics: True")
         if self.stat_kwargs is not None and self.stat_kwargs != {}:
             self.logger.info("Additional kwargs for the statistic: %s", self.stat_kwargs)
         self.logger.info("Domain selection: %s", self.region_name)
@@ -554,6 +562,42 @@ class Drop:
             del data.attrs["AQUA_regridded"]
         return data
 
+    def _apply_regrid(self, data):
+        """Apply regridding if requested and supported."""
+        # We could have None data after time statistics, so we check before applying regrid.
+        if data is None:
+            self.logger.warning("No data to regrid, skipping regridding step...")
+            return None
+        if self.resolution and self.resolution != "native":
+            data = self.reader.regrid(data)
+            data = self._remove_regridded(data)
+        return data
+
+    def _apply_time_stat(self, data):
+        """Apply time statistic if requested."""
+        if self.frequency:
+            data = self.reader.timstat(
+                data,
+                self.stat,
+                freq=self.frequency,
+                exclude_incomplete=self.exclude_incomplete,
+                func_kwargs=self.stat_kwargs,
+            )
+            # data could be empty after time statistics if everything was excluded
+            if "time" in data.coords and len(data.time) == 0:
+                self.logger.warning("No data available after time statistics, skipping...")
+                return None
+        return data
+
+    def _apply_region(self, data):
+        """Apply regional selection if requested."""
+        if data is None:
+            self.logger.warning("No data to apply regional selection, skipping regional selection step...")
+            return None
+        if self.region:
+            data = self.reader.select_area(data, lon=self.region["lon"], lat=self.region["lat"], drop=self.drop)
+        return data
+
     def _write_var(self, var):
         """
         Write variable to file
@@ -566,29 +610,21 @@ class Drop:
         self.logger.info("Processing variable %s...", var)
         temp_data = self.data[var]
 
-        if self.frequency:
-            # The stat_kwargs are used only if the statistic function is a callable that accepts kwargs,
-            # like histogram. For other statistics, they will be ignored.
-            temp_data = self.reader.timstat(
-                temp_data,
-                self.stat,
-                freq=self.frequency,
-                exclude_incomplete=self.exclude_incomplete,
-                func_kwargs=self.stat_kwargs,
-            )
+        # Processing pipeline: allow regrid to happen either before or after time statistics
+        if self.regrid_first:
+            temp_data = self._apply_regrid(temp_data)
+            temp_data = self._apply_region(temp_data)
+            temp_data = self._apply_time_stat(temp_data)
+        else:
+            temp_data = self._apply_time_stat(temp_data)
+            temp_data = self._apply_regrid(temp_data)
+            temp_data = self._apply_region(temp_data)
 
-        # temp_data could be empty after time statistics if everything was excluded
-        if "time" in temp_data.coords and len(temp_data.time) == 0:
-            self.logger.warning("No data available for variable %s after time statistics, skipping...", var)
+        # The check on empty data is done in _apply_time_stat,
+        # but if regrid_first is True, we need to check again after regridding
+        if temp_data is None:
+            self.logger.warning("No data to write for variable %s, skipping...", var)
             return
-
-        # regrid
-        if self.resolution and self.resolution != "native":
-            temp_data = self.reader.regrid(temp_data)
-            temp_data = self._remove_regridded(temp_data)
-
-        if self.region:
-            temp_data = self.reader.select_area(temp_data, lon=self.region["lon"], lat=self.region["lat"], drop=self.drop)
 
         # Apply history once to the dataset (xarray preserves it during slicing)
         temp_data = self.append_history(temp_data)

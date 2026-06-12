@@ -36,7 +36,7 @@ class TestOutputPathBuilder:
 
     expected = [
         None,
-        "ci/IFS/test-tco79/r1/native/nostat/europe/2t_ci_IFS_test-tco79_r1_native_nostat_europe_202001.nc",
+        "ci/IFS/test-tco79/r1/native/native/nostat/europe/2t_ci_IFS_test-tco79_r1_native_native_nostat_europe_202001.nc",
         None,
     ]
 
