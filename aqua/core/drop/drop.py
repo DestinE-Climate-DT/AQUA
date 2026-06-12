@@ -591,6 +591,9 @@ class Drop:
 
     def _apply_region(self, data):
         """Apply regional selection if requested."""
+        if data is None:
+            self.logger.warning("No data to apply regional selection, skipping regional selection step...")
+            return None
         if self.region:
             data = self.reader.select_area(data, lon=self.region["lon"], lat=self.region["lat"], drop=self.drop)
         return data
