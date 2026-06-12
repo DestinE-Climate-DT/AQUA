@@ -223,15 +223,6 @@ class Analysis:
         result = self.run_command(cmd, logfile)
         return result
 
-    @staticmethod
-    def build_extra_args(**kwargs):
-        """Build command line arguments from key-value pairs, skipping None values."""
-        args = ""
-        for flag, value in kwargs.items():
-            if value is not None:
-                args += f" --{flag} {value}"
-        return args
-
     def run_diagnostic_collection(
         self,
         collection: str,
@@ -389,3 +380,12 @@ class Analysis:
             new_cfg_paths.append(new_cfg_path)
 
         return new_cfg_paths
+
+    @staticmethod
+    def build_extra_args(**kwargs):
+        """Build command line arguments from key-value pairs, skipping None values."""
+        args = ""
+        for flag, value in kwargs.items():
+            if value is not None:
+                args += f" --{flag} {value}"
+        return args

@@ -762,7 +762,7 @@ class TestAquaConsoleShared:
             # For editable, mock a write failure
             with tempfile.TemporaryDirectory() as src_dir:
                 # Create minimal valid catalog
-                with open(os.path.join(src_dir, "catalog.yaml"), "w") as f:
+                with open(os.path.join(src_dir, "catalog.yaml"), "w", encoding="utf-8") as f:
                     f.write("sources: {}")
 
                 # define a mock failing dump_yaml function to fail during _set_catalog
@@ -834,7 +834,7 @@ class TestAquaConsoleShared:
             },
         )
 
-        with patch("aqua.core.analysis.analysis.run_diagnostic_tool") as mock_tool:
+        with patch("aqua.core.analysis.Analysis.run_diagnostic_tool") as mock_tool:
             run_aqua(
                 [
                     "analysis",
