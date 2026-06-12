@@ -114,7 +114,7 @@ class Drop:
             region (dict, opt):      Region to be processed, default is None,
                                      meaning 'global'.
                                      Requires 'name' (str), 'lon' (list) and 'lat' (list)
-            drop (bool, opt):        Drop the missing values in the region selection.
+            drop (bool, opt):        Drop the missing values in the region selection. Default is False
             overwrite (bool, opt):   True to overwrite existing files, default is False
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
@@ -362,10 +362,11 @@ class Drop:
                 self.region["lon"],
                 self.region["lat"],
             )
+            self.drop = drop if self.region.get("drop") is None else self.region["drop"]
         else:
             self.region = None
             self.region_name = None
-        self.drop = drop
+            self.drop = drop
 
     def retrieve(self):
         """
