@@ -249,6 +249,7 @@ The ``target`` section defines the primary output characteristics for the DROP p
   - **name** (string): Region identifier (e.g., ``Europe``, ``Tropics``)
   - **lat** (list): Latitude range as ``[min, max]`` (e.g., ``[35, 70]``)
   - **lon** (list): Longitude range as ``[min, max]`` (e.g., ``[-10, 40]``)
+  - **drop** (bool, optional): Whether to drop missing values in the region selection. Default: ``False``
 
 - **stat** (string, optional): Statistical operator for temporal aggregation. Default: ``mean``
 
