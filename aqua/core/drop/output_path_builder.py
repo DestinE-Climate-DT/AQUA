@@ -94,11 +94,10 @@ class OutputPathBuilder:
 
         Args:
             var (str, optional): Variable name to include in the filename. Defaults to None. Can be a wildcard.
-            level (str or list, optional): Level(s) to include in the filename. Defaults to None.
+            level (int or float or list, optional): Level(s) to include in the filename. Defaults to None.
             year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
             month (int, optional): Month to include in the filename. Defaults to None. Can be a wildcard.
             day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
-            level (str or list, optional): Level(s) to include in the filename. Defaults to None.
             output_format (str, optional): File extension for the output file. Defaults to ".nc".
         Returns:
             str: The filename for the output file.
@@ -109,7 +108,7 @@ class OutputPathBuilder:
         year = "*" if year is None else year
 
         # specific case for a specific list of levels
-        level = to_list(level) if level is not None else None
+        level = to_list(str(level)) if level is not None else None
         varname = f"{var}_{'_'.join(level)}" if level else var
 
         components = [
