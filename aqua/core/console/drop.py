@@ -68,6 +68,8 @@ def drop_parser(parser=None):
                         help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
                         help="Resolution of the DROP output. Can be anything in the AQUA resolution.")
+    parser.add_argument('--regrid_first', action="store_true",
+                        help="Whether to apply regridding before time statistics (default is False)")
     parser.add_argument('--startdate', type=str,
                         help="Start date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--enddate', type=str,
@@ -158,6 +160,7 @@ def drop_execute(args):
     stat_kwargs = _cfg(config, "target", "stat_kwargs", {})
     frequency = get_arg(args, "frequency", _cfg(config, "target", "frequency"))
     resolution = get_arg(args, "resolution", _cfg(config, "target", "resolution"))
+    regrid_first = get_arg(args, "regrid_first", _cfg(config, "target", "regrid_first", False))
     startdate = get_arg(args, "startdate", _cfg(config, "target", "startdate"))
     enddate = get_arg(args, "enddate", _cfg(config, "target", "enddate"))
     level = get_arg(args, "level", _cfg(config, "target", "level"))
@@ -203,6 +206,7 @@ def drop_execute(args):
         config=config,
         catalog=catalog,
         resolution=resolution,
+        regrid_first=regrid_first,
         frequency=frequency,
         fix=fix,
         enddate=enddate,
@@ -233,6 +237,7 @@ def drop_cli(
     config,
     catalog=None,
     resolution=None,
+    regrid_first=False,
     frequency=None,
     fix=None,
     startdate=None,
@@ -266,6 +271,7 @@ def drop_cli(
         config: configuration dictionary
         catalog: catalog to be processed
         resolution: resolution of the DROP output
+        regrid_first: whether to apply regridding before time statistics (default is False)
         frequency: frequency of the DROP output
         fix: fixer option
         startdate: start date to subset the data
@@ -332,6 +338,7 @@ def drop_cli(
                             source=source,
                             var=varname,
                             resolution=src_resolution,
+                            regrid_first=regrid_first,
                             startdate=startdate,
                             enddate=enddate,
                             level=level,
