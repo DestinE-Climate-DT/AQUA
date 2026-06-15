@@ -176,7 +176,7 @@ class IcechunkWriter(BaseWriter):
         """Not used: IcechunkWriter fully overrides write_variable()."""
         raise NotImplementedError("IcechunkWriter does not use concat; write_variable() is fully overridden")
 
-    def concat_year_files(self, var, year):
+    def concat_year_files(self, var, year, level=None):
         """
         Icechunk override: no concatenation needed.
 
@@ -185,6 +185,7 @@ class IcechunkWriter(BaseWriter):
         Args:
             var: Variable name
             year: Year
+            level: Level (optional, for filename generation)
 
         Returns:
             bool: Always True
