@@ -389,7 +389,6 @@ class Drop:
             rebuild=self.rebuild,
             startdate=self.startdate,
             enddate=self.enddate,
-            level=self.level,
             fix=self.fix,
             engine=self.engine,
             **self.kwargs,
@@ -402,7 +401,7 @@ class Drop:
             self.catalog = self.reader.catalog
 
         self.logger.info("Retrieving data...")
-        self.data = self.reader.retrieve(var=self.var)
+        self.data = self.reader.retrieve(var=self.var, level=self.level)
 
         # Set time chunk size for icechunk writer if needed
         if self.output_format == "icechunk":
