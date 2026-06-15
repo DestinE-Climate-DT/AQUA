@@ -400,7 +400,7 @@ class TestDROP:
         # Create monthly files/stores in the appropriate format
         for month in range(1, num_months + 1):
             mm = f"{month:02d}"
-            filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+            filename = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([month], dims=["time"], coords={"time": [timeobj]})})
 
@@ -410,8 +410,8 @@ class TestDROP:
                 ds.to_zarr(filename, mode="w")
 
         # Attempt concatenation
-        result = test.writer.concat_year_files(drop_arguments["var"], year)
-        yearly_file = test.writer.get_filename(drop_arguments["var"], year)
+        result = test.writer.concat_year_files(drop_arguments["var"], year=year)
+        yearly_file = test.writer.get_filename(drop_arguments["var"], year=year)
 
         if should_concat:
             # With 12 months: yearly file/store should be created, monthly ones removed
@@ -421,7 +421,7 @@ class TestDROP:
             # Verify monthly files/stores are removed
             for month in range(1, 13):
                 mm = f"{month:02d}"
-                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
                 assert not os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should be removed"
 
             # Verify yearly file/store content
@@ -440,7 +440,7 @@ class TestDROP:
             # Verify monthly files/stores still exist
             for month in range(1, num_months + 1):
                 mm = f"{month:02d}"
-                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
                 assert os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should exist"
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
