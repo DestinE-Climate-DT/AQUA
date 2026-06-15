@@ -543,9 +543,9 @@ class Drop:
         self.logger.info("Removing temporary directory %s", self.tmpdir)
         shutil.rmtree(self.tmpdir)
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def get_filename(self, var, year=None, month=None, level=None, tmp=False):
         """Create output filenames (delegates to writer)"""
-        return self.writer.get_filename(var, year=year, month=month, tmp=tmp)
+        return self.writer.get_filename(var, year=year, month=month, level=level, tmp=tmp)
 
     def check_integrity(self, varname):
         """To check if the DROP entry is fine before running (delegates to writer)"""
