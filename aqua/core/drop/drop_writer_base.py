@@ -258,7 +258,7 @@ class BaseWriter(ABC):
         for month in months:
             yield month, year_data.sel(time=year_data.time.dt.month == month)
 
-    def _write_chunk(self, data, var, year, month, dask=False, performance_reporting=False):
+    def _write_chunk(self, data, var, year, month, level=None, dask=False, performance_reporting=False):
         """
         Write a single monthly chunk.
 
@@ -272,13 +272,14 @@ class BaseWriter(ABC):
             var: Variable name
             year: Year
             month: Month
+            level: Level (optional, for filename generation)
             dask: If True, use Dask for distributed computing
             performance_reporting: Enable performance reporting
 
         Returns:
             bool: True if write successful
         """
-        tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
+        tmpfile = self.get_filename(var, level=level, year=year, month=month, tmp=True)
 
         # Remove existing tmpfile
         if os.path.exists(tmpfile):
@@ -333,7 +334,7 @@ class BaseWriter(ABC):
             return os.path.join(self.tmpdir, os.path.basename(filename))
         return os.path.join(self.outdir, filename) if not os.path.isabs(filename) else filename
 
-    def _get_and_validate_monthly_files(self, var, year, minimum_required):
+    def _get_and_validate_monthly_files(self, var, year, minimum_required, level=None):
         """
         Get and validate monthly files/stores for concatenation.
 
@@ -341,11 +342,12 @@ class BaseWriter(ABC):
             var: Variable name
             year: Year
             minimum_required: Minimum number of files required
+            level: Level (optional, for filename generation)
 
         Returns:
             tuple: (monthly_files: list, is_valid: bool)
         """
-        monthly_pattern = self.get_filename(var, year, month="??")
+        monthly_pattern = self.get_filename(var, level=level, year=year, month="??")
         monthly_files = sorted(glob.glob(monthly_pattern))
         count = len(monthly_files)
 
@@ -382,7 +384,7 @@ class BaseWriter(ABC):
                 self.logger.info("Cleaning monthly file %s...", basename)
                 os.remove(monthly_file)
 
-    def _prepare_concat_monthly_files(self, var, year, minimum_required):
+    def _prepare_concat_monthly_files(self, var, year, minimum_required, level=None):
         """
         Prepare monthly files for concatenation into yearly file.
 
@@ -396,12 +398,14 @@ class BaseWriter(ABC):
             var: Variable name
             year: Year to concatenate
             minimum_required: Minimum number of monthly files required
-
+            level: Level (optional, for filename generation)
         Returns:
             tuple: (tmp_monthly_files, year_file, tmp_year_file) or (None, None, None) if invalid
         """
         # Get and validate monthly files
-        monthly_files, is_valid = self._get_and_validate_monthly_files(var, year, minimum_required=minimum_required)
+        monthly_files, is_valid = self._get_and_validate_monthly_files(
+            var, year, minimum_required=minimum_required, level=level
+        )
 
         if not is_valid:
             return None, None, None
@@ -409,7 +413,7 @@ class BaseWriter(ABC):
         self.logger.info("Creating yearly file for %s, year %s from %d monthly files...", var, year, len(monthly_files))
 
         # Get output paths
-        year_file = self.get_filename(var, year)
+        year_file = self.get_filename(var, level=level, year=year)
         tmp_year_file = os.path.join(self.tmpdir, os.path.basename(year_file))
 
         # Move monthly files to tmpdir for safety
@@ -430,25 +434,27 @@ class BaseWriter(ABC):
         return tmp_monthly_files, year_file, tmp_year_file
 
     @abstractmethod
-    def concat_year_files(self, var, year):
+    def concat_year_files(self, var, year, level=None):
         """
         Concatenate monthly files into a single yearly file/store.
 
         Args:
             var: Variable name
             year: Year to concatenate
+            level: Level (optional, for filename generation)
 
         Returns:
             bool: True if successful
         """
         pass
 
-    def check_integrity(self, var, overwrite=False, end_date=None):
+    def check_integrity(self, var, level=None, overwrite=False, end_date=None):
         """
         Check integrity of files/stores for a variable.
 
         Args:
             var: Variable name
+            level: Level (optional, for filename generation)
             overwrite: If True, always report incomplete
             end_date: Unused in the base implementation; accepted for interface
                 compatibility with subclasses (e.g. IcechunkWriter) that need
@@ -465,7 +471,7 @@ class BaseWriter(ABC):
             return {"complete": False, "last_record": None, "message": "Overwrite mode enabled"}
 
         # Check yearly files/stores
-        yearfiles = self.get_filename(var, year="*")
+        yearfiles = self.get_filename(var, level=level, year="*")
         yearfiles = glob.glob(yearfiles)
 
         if not yearfiles:
@@ -498,6 +504,7 @@ class BaseWriter(ABC):
         self,
         data,
         var,
+        level=None,
         overwrite=False,
         definitive=True,
         dask=False,
@@ -523,6 +530,7 @@ class BaseWriter(ABC):
         Args:
             data: xarray DataArray with processed data (history already applied)
             var: Variable name
+            level: Level (optional, for filename generation)
             overwrite: Overwrite existing files
             definitive: Actually write files (vs dry-run)
             dask: If True, use Dask for distributed computing
@@ -531,7 +539,7 @@ class BaseWriter(ABC):
         """
         for year, year_data in self._iter_years(data, performance_reporting):
             self.logger.info("Processing year %s...", str(year))
-            yearfile = self.get_filename(var, year=year)
+            yearfile = self.get_filename(var, level=level, year=year)
 
             # Check if yearly file exists
             if os.path.exists(yearfile):
@@ -542,7 +550,7 @@ class BaseWriter(ABC):
 
             for month, month_data in self._iter_months_in_year(year_data, performance_reporting):
                 self.logger.info("Processing month %s...", str(month))
-                monthfile = self.get_filename(var, year=year, month=month)
+                monthfile = self.get_filename(var, level=level, year=year, month=month)
 
                 # Check if monthly file exists
                 if os.path.exists(monthfile):
@@ -553,7 +561,7 @@ class BaseWriter(ABC):
 
                 # Write file
                 if definitive:
-                    tmpfile = self.get_filename(var, year=year, month=month, tmp=True)
+                    tmpfile = self.get_filename(var, level=level, year=year, month=month, tmp=True)
                     t_start = time()
                     success = self._write_chunk(
                         month_data, var, year, month, dask=dask, performance_reporting=performance_reporting
@@ -577,7 +585,7 @@ class BaseWriter(ABC):
 
             # Concatenate into yearly file if concat enabled
             if definitive and self._should_concat():
-                self.concat_year_files(var, year)
+                self.concat_year_files(var, year, level=level)
 
         return True
 
