@@ -5,13 +5,12 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from importlib import resources as pypath
 
 from dask.distributed import LocalCluster
 
 from aqua.core.analysis import Analysis
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, expand_env_vars, get_arg
+from aqua.core.util import get_arg
 
 
 def analysis_parser(parser=None):
@@ -88,19 +87,14 @@ def analysis_execute(args):
     analyzer.set_startdate_enddate(args, job_config)
     analyzer.set_realization(args, job_config)
     analyzer.set_regrid_option(args, job_config)
+    analyzer.set_output_directory(args, job_config)
 
-    # output directory and maximum parallel processes for the ThreadPoolExecutor
-    outputdir = os.path.expandvars(args.outputdir or config.get("job", {}).get("outputdir", "./output"))
+    # maximum parallel processes for the ThreadPoolExecutor
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
-    logger.debug("outputdir: %s", outputdir)
     logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
-    output_dir = os.path.join(outputdir, analyzer.catalog, analyzer.model, analyzer.exp, analyzer.realization)
-    output_dir = os.path.expandvars(output_dir)
-    create_folder(output_dir, loglevel=loglevel)
-    logger.debug("Output directory set to: %s", output_dir)
-
     # Set Dask timeouts if not already defined in the environment
+    # TODO: make a function or move it into the class
     if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
         connect_timeout = cluster_config.get("connect_timeout", None)
         if connect_timeout:
@@ -110,16 +104,10 @@ def analysis_execute(args):
         tcp_timeout = cluster_config.get("tcp_timeout", None)
         if tcp_timeout:
             os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
-
-    os.environ["OUTPUT"] = output_dir
+    os.environ["OUTPUT"] = analyzer.output_dir
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
-
-    # expand the environment variables in the entire config, extract again job and cluster config in case they were modified
-    config = expand_env_vars(config)
-    job_config = config.get("job", {})
-    cluster_config = config.get("cluster", {})
 
     # read the experiment kind
     exp_kind_file = job_config.get("experiment_kind")
@@ -128,14 +116,7 @@ def analysis_execute(args):
     # cli checker setup and run
     run_checker = job_config.get("run_checker", False)
     if run_checker:
-        checker_script_path = os.path.join(pypath.files("aqua.core"), "analysis", "cli_checker.py")
-        output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        result = analyzer.run_setup_checker(
-            script_path=checker_script_path,
-            output_dir=output_dir,
-            logfile=output_log_path,
-        )
-
+        result = analyzer.run_setup_checker()
         if result == 1:
             logger.critical("Setup checker failed, exiting.")
             sys.exit(1)
@@ -196,7 +177,6 @@ def analysis_execute(args):
                         serial=args.serial,
                         diag_config=diag_config,
                         cli=cli,
-                        output_dir=output_dir,
                         cluster=cluster_address,
                     )
                 )

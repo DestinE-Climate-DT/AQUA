@@ -53,9 +53,10 @@ class Analysis:
         self.enddate = None
         self.realization = None
         self.regrid = False
+        self.output_dir = None
 
     def get_config(self):
-        """Get the loaded AQUA analysis configuration."""
+        """Load the configuration file and return the config dictionary."""
 
         if not os.path.exists(self.config_file_path):
             self.logger.error("Config file %s not found.", self.config_file_path)
@@ -65,15 +66,8 @@ class Analysis:
         self.logger.info("AQUA analysis config loaded: %s", self.config_file_path)
         return self.config
 
-    def set_catalog_model_exp_source(self, args, job_config):
-        """Get catalog, model, experiment, and source from command-line arguments or job configuration."""
-
-        self.model = get_arg(args, "model", None, config=job_config)
-        self.exp = get_arg(args, "exp", None, config=job_config)
-        self.source = get_arg(args, "source", None, config=job_config)
-        self.source_oce = get_arg(args, "source_oce", None, config=job_config)
-
-        # guard
+    def check_model_exp_source(self):
+        """Check that the required model-exp-source triplet is provided and log the configuration."""
         if not all([self.model, self.exp, self.source]):
             self.logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
             sys.exit(1)
@@ -86,8 +80,27 @@ class Analysis:
                 self.source_oce,
             )
 
+    def set_catalog_model_exp_source(self, args, config):
+        """
+        Get catalog, model, experiment, and source (and source_oce) from command-line arguments configuration dictionary
+        and set them into class attributes. Catalog is determined automatically if not provided.
+        Guards against missing required model-exp-source and logs the requested configuration.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            config (dict): Job configuration dictionary loaded from YAML.
+        """
+
+        self.model = get_arg(args, "model", None, config=config)
+        self.exp = get_arg(args, "exp", None, config=config)
+        self.source = get_arg(args, "source", None, config=config)
+        self.source_oce = get_arg(args, "source_oce", None, config=config)
+
+        # guard
+        self.check_model_exp_source()
+
         # catalog
-        self.catalog = get_arg(args, "catalog", None, config=job_config)
+        self.catalog = get_arg(args, "catalog", None, config=config)
         if self.catalog:
             self.logger.info("Requested catalog: %s", self.catalog)
         else:
@@ -104,32 +117,81 @@ class Analysis:
                 )
                 sys.exit(1)
 
-    def set_startdate_enddate(self, args, job_config):
-        """Get startdate and enddate from command-line arguments or job configuration."""
-        self.startdate = get_arg(args, "startdate", None, config=job_config)
-        self.enddate = get_arg(args, "enddate", None, config=job_config)
+    def set_startdate_enddate(self, args, config):
+        """
+        Get startdate and enddate from command-line arguments and set them into class attributes.
+        If not provided, they will remain None.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            config (dict): Job configuration dictionary loaded from YAML.
+        """
+
+        self.startdate = get_arg(args, "startdate", None, config=config)
+        self.enddate = get_arg(args, "enddate", None, config=config)
 
         if self.startdate and self.enddate:
             self.logger.info("Requested time range: %s to %s", self.startdate, self.enddate)
         else:
             self.logger.info("No time range specified; using all available data.")
 
-    def set_regrid_option(self, args, job_config):
-        """Get regrid option from command-line arguments or job configuration and set it to None if it is False."""
+    def set_regrid_option(self, args, config):
+        """Get regrid option from from command-line arguments and set them into class attribute.
+        If not provided, they will remain be set to False to disable regrid.
 
-        self.regrid = get_arg(args, "regrid", "False", config=job_config)
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            config (dict): Job configuration dictionary loaded from YAML.
+        """
+
+        self.regrid = get_arg(args, "regrid", "False", config=config)
         if self.regrid is False or self.regrid.lower() == "false":
             self.regrid = None
 
-    def set_realization(self, args, job_config):
-        """Get realization from command-line arguments or job configuration and format it."""
+    def set_realization(self, args, config):
+        """Get realization from command-line arguments and set them into class attribute.
+        If not provided, they will remain be formatted to r1.
 
-        realization = get_arg(args, "realization", None, config=job_config)
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            config (dict): Job configuration dictionary loaded from YAML.
+        """
+
+        realization = get_arg(args, "realization", None, config=config)
         self.realization = format_realization(realization)
+        self.check_realization
         self.logger.info("Input realization formatted to: %s", realization)
 
+    def check_realization(self):
+        """Check that realization is set and log the configuration."""
+        if not self.realization:
+            self.logger.error("Realization must be specified either in config or as command-line argument.")
+            sys.exit(1)
+        else:
+            self.logger.info("Using realization: %s", self.realization)
+
+    def set_output_directory(self, args, config):
+        """Get output directory from command-line arguments and set them into class attribute.
+        If not provided, it will be set to ./output.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            config (dict): Job configuration dictionary loaded from YAML.
+        """
+
+        outputdir = os.path.expandvars(get_arg(args, "outputdir", "./output", config=config))
+        self.check_model_exp_source()  # ensure model, exp, source are set before setting output directory
+        self.check_realization()  # ensure realization is set before setting output directory
+        self.output_dir = os.path.join(outputdir, self.catalog, self.model, self.exp, self.realization)
+        create_folder(self.output_dir, loglevel=self.loglevel)
+        self.logger.debug("Output directory set to: %s", self.output_dir)
+
     def get_aqua_paths(self):
-        """Get and cache AQUA core and diagnostics paths."""
+        """Get and cache AQUA core and diagnostics paths.
+
+        Returns:
+            tuple: (aqua_core_path, aqua_diagnostics_path, aqua_configdir)
+        """
 
         self.aqua_core_path = str(pypath.files("aqua.core"))
         try:
@@ -184,6 +246,7 @@ class Analysis:
             extra_args (str): Additional arguments for the script.
             logfile (str): Path to the logfile for capturing the command output.
         """
+
         self.logger.info("Running tool %s for diagnostic collection %s", tool, collection)
         cmd = f"python {script_path} {extra_args} -l {self.loglevel}"
         self.logger.debug("Command: %s", cmd)
@@ -197,9 +260,8 @@ class Analysis:
 
     def run_setup_checker(
         self,
-        script_path: str,
-        output_dir: str,
-        logfile: str = "setup_checker.log",
+        script_path: str = None,
+        logfile: str = None,
     ) -> int:
         """
         Run the setup checker script and return the exit code.
@@ -212,10 +274,16 @@ class Analysis:
         Returns:
             int: The exit code of the command.
         """
+        # self gueessing
+        if script_path is None:
+            script_path = os.path.join(self.aqua_core_path, "analysis", "cli_checker.py")
+        if logfile is None:
+            logfile = os.path.expandvars(f"{self.output_dir}/setup_checker.log")
+
         self.logger.info("Running setup checker")
         extra_args = self.build_extra_args(regrid=self.regrid, catalog=self.catalog, realization=self.realization)
         cmd = (
-            f"python {script_path} --model {self.model} --exp {self.exp} --source {self.source} --yaml {output_dir}"
+            f"python {script_path} --model {self.model} --exp {self.exp} --source {self.source} --yaml {self.output_dir}"
             f"{extra_args} -l {self.loglevel}"
         )
         self.logger.debug("Command: %s", cmd)
@@ -229,7 +297,6 @@ class Analysis:
         serial: bool = False,
         cli: dict = None,
         diag_config=None,
-        output_dir="./output",
         cluster=None,
     ):
         """
@@ -241,8 +308,6 @@ class Analysis:
             regrid (str): Regrid option.
             cli (dict): CLI definitions for the tools.
             diag_config (dict): Configuration dictionary loaded from YAML.
-            realization (str): Realization name. Defaults to None.
-            output_dir (str): Directory to save output.
             cluster: Dask cluster scheduler address.
         """
         if cli is None:
@@ -251,9 +316,6 @@ class Analysis:
         # Internal naming scheme:
         # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
         # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
-
-        output_dir = os.path.expandvars(output_dir)
-        create_folder(output_dir)
 
         # run individual tools in serial mode
         for tool, tool_config in diag_config.items():
@@ -268,7 +330,7 @@ class Analysis:
                 self.logger.error("Script for tool '%s' not found at path: %s, skipping", tool, cli_path)
                 continue
 
-            outname = f"{output_dir}/{tool_config.get('outname', collection)}"
+            outname = f"{self.output_dir}/{tool_config.get('outname', collection)}"
             extra_args = tool_config.get("extra", "")
 
             # Build conditional arguments
@@ -314,9 +376,9 @@ class Analysis:
                     f" {extra_args} --config {cfg}"
                 )
                 if len(cfgs) == 1:
-                    logfile = f"{output_dir}/{collection}-{tool}.log"
+                    logfile = f"{self.output_dir}/{collection}-{tool}.log"
                 else:
-                    logfile = f"{output_dir}/{collection}-{tool}-{i}.log"
+                    logfile = f"{self.output_dir}/{collection}-{tool}-{i}.log"
 
                 self.run_diagnostic_tool(
                     collection=collection,
