@@ -213,6 +213,7 @@ The ``target`` section defines the primary output characteristics for the DROP p
         name: Europe
         lat: [35, 70]
         lon: [-10, 40]
+      level: [850, 500]
       stat: mean
       stat_kwargs: {}
       regrid_first: False
@@ -250,6 +251,10 @@ The ``target`` section defines the primary output characteristics for the DROP p
   - **lat** (list): Latitude range as ``[min, max]`` (e.g., ``[35, 70]``)
   - **lon** (list): Longitude range as ``[min, max]`` (e.g., ``[-10, 40]``)
   - **drop** (bool, optional): Whether to drop missing values in the region selection. Default: ``False``
+
+- **level** (int, float or list, optional): Vertical levels to select (e.g., pressure levels like ``[850, 500]`` or model-specific levels). Default: ``None``
+
+   - If specified, only these levels will be processed. If omitted, all levels are included.
 
 - **stat** (string, optional): Statistical operator for temporal aggregation. Default: ``mean``
 
@@ -564,6 +569,12 @@ Usage
 
     End date for the DROP output (default: as the original data).
     Accepted format: 'YYYY-MM-DDT23:00:00'
+
+.. option:: --level
+
+    Vertical levels to select. Default: None
+    Can be a single level (int or float) or a list of levels separated by commas (e.g. '1000,850,500').
+    If specified, only these levels will be processed. If omitted, all levels are included.
 
 .. option:: --engine
 
