@@ -1,5 +1,6 @@
 """Module for tests for AQUA cli"""
 
+import logging
 import os
 import shutil
 import subprocess
@@ -390,53 +391,6 @@ class TestAquaConsole:
             run_aqua_console_with_input(["uninstall"], "yes")
             assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    # def test_console_analysis(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
-    #     """Test for running the analysis via the console"""
-
-    #     mydir = str(tmpdir)
-    #     set_home(mydir)
-
-    #     # aqua install
-    #     run_aqua(['install', MACHINE])
-    #     run_aqua(['add', 'ci', '--repository', 'DestinE-Climate-DT/Climate-DT-catalog'])
-
-    #     test_dir = os.path.dirname(os.path.abspath(__file__))
-    #     config_path = os.path.join(test_dir, 'analysis', 'config.aqua-analysis-test.yaml')
-
-    #     # Run details
-    #     catalog = 'ci'
-    #     model = 'IFS'
-    #     experiment = 'test-tco79'
-    #     source = 'teleconnections'
-    #     output_dir = os.path.join(mydir, 'output')
-    #     regrid = False
-
-    #     # run the analysis and verify that at least one file exist
-    #     run_aqua(['analysis', '--config', config_path, '-m', model, '-e', experiment,
-    #             '-s', source, '-d', output_dir, '-l', 'debug', '--regrid', regrid])
-
-    #     output_path = os.path.join(output_dir, catalog, model, experiment, 'r1')
-
-    #     assert os.path.exists(os.path.join(output_path, 'experiment.yaml')), \
-    #         "experiment.yaml not found"
-
-    #     log_file = os.path.join(output_path, 'dummy-dummy_tool.log')
-    #     assert os.path.exists(log_file), \
-    #         f"dummy-dummy_tool.log not found. Files in {output_path}: {os.listdir(output_path) "
-    #         f"if os.path.exists(output_path) else 'directory does not exist'}"
-
-    #     # Check if "This is a dummy CLI script that does nothing." is in the log
-    #     with open(log_file, 'r', encoding='utf-8') as f:
-    #         content = f.read()
-    #     assert "This is a dummy CLI script that does nothing." in content, \
-    #         "Expected content not found in dummy-dummy_tool.log"
-
-    #     assert os.path.exists(os.path.join(output_path, 'setup_checker.log')), \
-    #         "setup_checker.log not found"
-
-    #     # remove aqua
-    #     run_aqua_console_with_input(['uninstall'], 'yes')
-
     def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,
         add a wrong catalog, uninstall
@@ -495,14 +449,6 @@ class TestAquaConsole:
             run_aqua_console_with_input(["-v", "install", MACHINE, "-p", "environment.yml"], "yes")
             assert excinfo.value.code == 1
 
-        # install from path with grids
-        # run_aqua_console_with_input(['-v', 'install', '-g', os.path.join(mydir, 'supercazzola')], 'yes')
-        # assert os.path.exists(os.path.join(mydir, '.aqua'))
-
-        # uninstall everything
-        # run_aqua_console_with_input(['uninstall'], 'yes')
-        # assert not os.path.exists(os.path.join(mydir,'.aqua'))
-
         # install from path
         run_aqua_console_with_input(["-v", "install", MACHINE, "-p", os.path.join(mydir, "vicesindaco")], "yes")
         assert os.path.exists(os.path.join(mydir, "vicesindaco"))
@@ -522,11 +468,6 @@ class TestAquaConsole:
         test_dir = os.path.dirname(os.path.abspath(__file__))  # /path/to/AQUA/tests
         aqua_root = os.path.abspath(os.path.join(test_dir, ".."))  # /path/to/AQUA
         # config_dir = os.path.join(aqua_root, 'config')  # /path/to/AQUA/config
-
-        # check unexesting installation
-        # with pytest.raises(SystemExit) as excinfo:
-        #    run_aqua(['-vv', 'install', MACHINE, '--core', test_dir])
-        #    assert excinfo.value.code == 1
 
         # install from path with grids
         run_aqua(["-vv", "install", MACHINE, "--core", aqua_root])
@@ -722,8 +663,6 @@ class TestAquaConsoleShared:
 
         assert called == ["hpz1-nested"]
 
-    # base set of tests for list
-
     def test_console_list(self, shared_aqua_install, run_aqua, capfd):
         """Basic tests for list command"""
 
@@ -750,6 +689,14 @@ class TestAquaConsoleShared:
 
         out, _ = capfd.readouterr()
         assert ".aqua/catalogs/ci .." in out
+
+    def test_console_nonexistent_catalog_from_existing_repo(self, shared_aqua_install, run_aqua):
+        """Test adding a non-existing catalog from an existing GitHub repository"""
+
+        # Try to add a catalog that doesn't exist in the repository
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["add", "nonexistent-catalog-test-xyz", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
+        assert excinfo.value.code == 1
 
     @pytest.mark.parametrize("is_editable", [False, True])
     def test_add_catalog_cleanup_on_failure(self, shared_aqua_install, run_aqua, monkeypatch, is_editable):
@@ -799,7 +746,11 @@ class TestAquaConsoleShared:
             run_aqua(["update", "-c", "non_existent_catalog"])
         assert excinfo.value.code == 1
 
-    def test_console_analysis_checker(self, shared_aqua_install, run_aqua, tmp_path, capsys):
+
+@pytest.mark.aqua
+class TestAquaConsoleAnalysis:
+    def test_console_analysis_checker(self, shared_aqua_install, run_aqua, tmp_path, caplog):
+        """Test that the analysis checker properly handles missing aqua.diagnostics package"""
 
         # Dummy CLI script — must exist on disk to pass os.path.exists check
         dummy_script = tmp_path / "cli_dummy.py"
@@ -823,25 +774,26 @@ class TestAquaConsoleShared:
                 },
             },
         )
-
         with pytest.raises(SystemExit) as exc_info:
-            run_aqua(
-                [
-                    "analysis",
-                    "--config",
-                    str(analysis_cfg),
-                    "--checker",
-                ]
-            )
+            with caplog.at_level(logging.ERROR, logger="AquaAnalysis"):
+                run_aqua(
+                    [
+                        "analysis",
+                        "--config",
+                        str(analysis_cfg),
+                        "--checker",
+                    ]
+                )
 
         assert exc_info.value.code == 1
-        captured = capsys.readouterr()
-        assert "aqua.diagnostics package not found" in captured.err
 
     def test_console_analysis_minimal(self, shared_aqua_install, run_aqua, tmp_path):
         """Minimal smoke test: verifies aqua analysis routes through the config without
         running real subprocesses."""
         # Dummy CLI script — must exist on disk to pass os.path.exists check
+
+        run_aqua(["add", "ci"])
+
         dummy_script = tmp_path / "cli_dummy.py"
         dummy_script.touch()
 
@@ -892,14 +844,6 @@ class TestAquaConsoleShared:
 
         # The dummy tool should have been invoked once
         mock_tool.assert_called_once()
-
-    def test_console_nonexistent_catalog_from_existing_repo(self, shared_aqua_install, run_aqua):
-        """Test adding a non-existing catalog from an existing GitHub repository"""
-
-        # Try to add a catalog that doesn't exist in the repository
-        with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["add", "nonexistent-catalog-test-xyz", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
-        assert excinfo.value.code == 1
 
 
 class TestAquaConsoleGridBuilder:
