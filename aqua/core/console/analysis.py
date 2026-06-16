@@ -1,12 +1,9 @@
 """AQUA analysis command line interface."""
 
 import argparse
-import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from dask.distributed import LocalCluster
 
 from aqua.core.analysis import Analysis
 from aqua.core.logger import log_configure
@@ -83,12 +80,13 @@ def analysis_execute(args):
     job_config = config.get("job", {})
     cluster_config = config.get("cluster", {})
 
-    # set catalog, model, exp, source, source_oce in the analyzer
+    # set catalog, model, exp, source, source_oce, realization, regrid, output and dask in the analyzer
     analyzer.set_catalog_model_exp_source(args, job_config)
     analyzer.set_startdate_enddate(args, job_config)
     analyzer.set_realization(args, job_config)
     analyzer.set_regrid_option(args, job_config)
     analyzer.set_output_directory(args, job_config)
+    analyzer.set_serial_or_parallel(args)
 
     # maximum parallel processes for the ThreadPoolExecutor
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
@@ -98,17 +96,7 @@ def analysis_execute(args):
     exp_kind_file = job_config.get("experiment_kind")
     analyzer.configure_experiment_kind(args.kind, exp_kind_file)
 
-    # Set Dask timeouts if not already defined in the environment
     # TODO: make a function or move it into the class
-    if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
-        connect_timeout = cluster_config.get("connect_timeout", None)
-        if connect_timeout:
-            # Increase timeout (certainly needed on LUMI, possibly useful elsewhere too).
-            os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"
-    if "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP" not in os.environ:
-        tcp_timeout = cluster_config.get("tcp_timeout", None)
-        if tcp_timeout:
-            os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
     os.environ["OUTPUT"] = analyzer.output_dir
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
@@ -117,14 +105,7 @@ def analysis_execute(args):
     # cli checker setup and run
     run_checker = get_arg(args, "checker", False, config=job_config, key="run_checker")
     if run_checker:
-        result = analyzer.run_setup_checker()
-        if result == 1:
-            logger.critical("Setup checker failed, exiting.")
-            sys.exit(1)
-        elif result == 0:
-            logger.info("Setup checker completed successfully.")
-        else:
-            logger.error("Setup checker returned exit code %s, check the logs for more information.", result)
+        _ = analyzer.run_setup_checker()
 
     # running or not
     run = config.get("run", [])
@@ -132,24 +113,8 @@ def analysis_execute(args):
         logger.error("No run block found in configuration.")
         sys.exit(1)
 
-    # confiuration of dask cluster
-    if args.serial:
-        if args.nworkers or args.nthreads:
-            logger.warning("Serial execution selected, ignoring worker/thread settings.")
-        logger.info("Running diagnostic collections without a dask cluster.")
-        cluster, cluster_address = None, None
-    else:
-        nthreads = get_arg(args, "nthreads", 2, config=cluster_config, key="threads")
-        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="workers")
-        mem_limit = cluster_config.get("memory_limit", "3.1GiB")
-        logger.debug("Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit)
-
-        # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
-        cluster = LocalCluster(
-            threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR
-        )
-        cluster_address = cluster.scheduler_address
-        logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
+    if not analyzer.serial:
+        analyzer.configure_dask_cluster(args, cluster_config)
 
     # read cli definitions and prepend script path
     cli = config.get("cli", {})
@@ -175,22 +140,19 @@ def analysis_execute(args):
                     executor.submit(
                         analyzer.run_diagnostic_collection,
                         collection=collection,
-                        serial=args.serial,
                         diag_config=diag_config,
                         cli=cli,
-                        cluster=cluster_address,
                     )
                 )
 
             for future in as_completed(futures):
                 try:
-                    result = future.result()
+                    _ = future.result()
                 except Exception as e:
                     logger.error("Diagnostic collection raised an exception: %s", e)
 
-    if cluster:
-        cluster.close()
-        logger.info("Dask cluster closed.")
+    if not analyzer.serial:
+        analyzer.close_dask_cluster()
 
     logger.info("All diagnostic collections finished.")
 

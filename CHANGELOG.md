@@ -8,6 +8,7 @@ Unreleased in the current development version (target v1.0.0):
 
 Complete list:
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+- AQUA analysis refactored as a class, cleaned up parser and extended tests (#2897)
 
 ## [v1.0.0a5]
 

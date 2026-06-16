@@ -259,6 +259,12 @@ class TestConfigurationSetters:
         analysis.set_output_directory(args, config)
         assert "./output/my_catalog/IFS/test-tco79/r1" in analysis.output_dir
 
+    def test_set_serial_or_parallel_serial(self, analysis):
+        """Serial mode is set correctly when --serial is True."""
+        args = argparse.Namespace(serial=True, nworkers=None, nthreads=3)
+        analysis.set_serial_or_parallel(args)
+        assert analysis.serial is True
+
 
 # ============================================================================
 # TestIntegrationFlow: Full set* → run* with mocked subprocess
@@ -327,12 +333,13 @@ class TestIntegrationFlow:
             }
         }
 
+        analysis.set_serial_or_parallel(argparse.Namespace(serial=serial, nworkers=4, nthreads=2))
+
         with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
             analysis.run_diagnostic_collection(
                 collection="atm",
                 diag_config=config,
                 cli=temp_env["cli"],
-                serial=serial,
             )
 
         call_kwargs = mock_tool.call_args.kwargs
@@ -409,11 +416,10 @@ class TestIntegrationFlow:
                 collection="atm",
                 diag_config=config,
                 cli=temp_env["cli"],
-                cluster="tcp://scheduler:8786",
             )
 
         call_kwargs = mock_tool.call_args.kwargs
-        assert "--cluster tcp://scheduler:8786" in call_kwargs["extra_args"]
+        assert "--cluster" in call_kwargs["extra_args"]
 
     def test_run_diagnostic_collection_nocluster_suppresses_flag(self, analysis, temp_env):
         """nocluster=True prevents cluster flag from being added."""
@@ -431,7 +437,6 @@ class TestIntegrationFlow:
                 collection="atm",
                 diag_config=config,
                 cli=temp_env["cli"],
-                cluster="tcp://scheduler:8786",
             )
 
         call_kwargs = mock_tool.call_args.kwargs

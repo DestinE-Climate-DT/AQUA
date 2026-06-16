@@ -799,6 +799,45 @@ class TestAquaConsoleShared:
             run_aqua(["update", "-c", "non_existent_catalog"])
         assert excinfo.value.code == 1
 
+    def test_console_analysis_checker(self, shared_aqua_install, run_aqua, tmp_path, capsys):
+
+        # Dummy CLI script — must exist on disk to pass os.path.exists check
+        dummy_script = tmp_path / "cli_dummy.py"
+        dummy_script.touch()
+
+        # Minimal diagnostic config consumed by the tool
+        diag_cfg = tmp_path / "diag_config.yaml"
+        dump_yaml(str(diag_cfg), {"key": "value"})
+
+        # Minimal aqua-analysis config
+        analysis_cfg = tmp_path / "config.aqua-analysis-test.yaml"
+        dump_yaml(
+            str(analysis_cfg),
+            {
+                "job": {
+                    "run_checker": True,
+                    "outputdir": str(tmp_path / "output"),
+                    "model": "IFS",
+                    "exp": "test-tco79",
+                    "source": "lra-r100-monthly",
+                },
+            },
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_aqua(
+                [
+                    "analysis",
+                    "--config",
+                    str(analysis_cfg),
+                    "--checker",
+                ]
+            )
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "aqua.diagnostics package not found" in captured.err
+
     def test_console_analysis_minimal(self, shared_aqua_install, run_aqua, tmp_path):
         """Minimal smoke test: verifies aqua analysis routes through the config without
         running real subprocesses."""
@@ -819,10 +858,6 @@ class TestAquaConsoleShared:
                     "run_checker": False,
                     "loglevel": "WARNING",
                     "outputdir": str(tmp_path / "output"),
-                    "model": "IFS",
-                    "exp": "test-tco79",
-                    "source": "lra-r100-monthly",
-                    "catalog": "ci",
                 },
                 "cli": {"dummy_tool": str(dummy_script)},
                 "run": [["dummy"]],
@@ -841,18 +876,18 @@ class TestAquaConsoleShared:
                     "--config",
                     str(analysis_cfg),
                     "-m",
-                    "IFS",
+                    "ERA5",
                     "-e",
-                    "test-tco79",
+                    "era5-hpz3",
                     "-s",
-                    "lra-r100-monthly",
+                    "monthly",
                     "-l",
                     "WARNING",
                 ]
             )
 
         # Output directory should be created by the routing logic
-        output_dir = tmp_path / "output" / "ci" / "IFS" / "test-tco79" / "r1"
+        output_dir = tmp_path / "output" / "ci" / "ERA5" / "era5-hpz3" / "r1"
         assert output_dir.exists(), f"Output directory not created: {output_dir}"
 
         # The dummy tool should have been invoked once

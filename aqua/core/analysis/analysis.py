@@ -3,12 +3,15 @@
 AQUA analysis module for running diagnostics and handling configurations.
 """
 
+import logging
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 from importlib import resources as pypath
+
+from dask.distributed import LocalCluster
 
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
@@ -54,6 +57,11 @@ class Analysis:
         self.realization = None
         self.regrid = False
         self.output_dir = None
+
+        # dask
+        self.serial = False
+        self.cluster = None
+        self.cluster_address = None
 
     def get_config(self):
         """Load the configuration file and return the config dictionary."""
@@ -106,8 +114,8 @@ class Analysis:
         else:
             cat, _ = ConfigPath().browse_catalogs(self.model, self.exp, self.source)
             if cat:
-                catalog = cat[0]
-                self.logger.info("Automatically determined catalog: %s", catalog)
+                self.catalog = cat[0]
+                self.logger.info("Automatically determined catalog: %s", self.catalog)
             else:
                 self.logger.error(
                     "Model = %s, Experiment = %s, Source = %s triplet not found in any installed catalog.",
@@ -116,6 +124,17 @@ class Analysis:
                     self.source,
                 )
                 sys.exit(1)
+
+        # guard
+        self.check_catalog()
+
+    def check_catalog(self):
+        """Check that the catalog is set and log the configuration."""
+        if not self.catalog:
+            self.logger.error("Catalog must be specified either in config or as command-line argument.")
+            sys.exit(1)
+        else:
+            self.logger.info("Using catalog: %s", self.catalog)
 
     def set_startdate_enddate(self, args, config):
         """
@@ -145,7 +164,7 @@ class Analysis:
         """
 
         self.regrid = get_arg(args, "regrid", "False", config=config)
-        if self.regrid is False or self.regrid.lower() == "false":
+        if not self.regrid or (isinstance(self.regrid, str) and self.regrid.lower() == "false"):
             self.regrid = None
 
     def set_realization(self, args, config):
@@ -159,8 +178,25 @@ class Analysis:
 
         realization = get_arg(args, "realization", None, config=config)
         self.realization = format_realization(realization)
-        self.check_realization
+        self.check_realization()
         self.logger.info("Input realization formatted to: %s", realization)
+
+    def set_serial_or_parallel(self, args):
+        """Get serial option from command-line arguments and set them into class attribute.
+        If not provided, they will remain be set to False to enable parallel execution.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            config (dict): Job configuration dictionary loaded from YAML.
+        """
+
+        self.serial = get_arg(args, "serial", False)
+        if self.serial:
+            self.logger.info("Serial execution enabled; dask cluster will not be used.")
+            if args.nworkers or args.nthreads:
+                self.logger.warning("Serial execution selected, ignoring worker/thread settings.")
+        else:
+            self.logger.info("Parallel execution enabled; dask cluster will be used if configured.")
 
     def check_realization(self):
         """Check that realization is set and log the configuration."""
@@ -182,6 +218,7 @@ class Analysis:
         outputdir = os.path.expandvars(get_arg(args, "outputdir", "./output", config=config))
         self.check_model_exp_source()  # ensure model, exp, source are set before setting output directory
         self.check_realization()  # ensure realization is set before setting output directory
+        self.check_catalog()  # ensure catalog is set before setting output directory
         self.output_dir = os.path.join(outputdir, self.catalog, self.model, self.exp, self.realization)
         create_folder(self.output_dir, loglevel=self.loglevel)
         self.logger.debug("Output directory set to: %s", self.output_dir)
@@ -289,26 +326,30 @@ class Analysis:
         self.logger.debug("Command: %s", cmd)
 
         result = self.run_command(cmd, logfile)
-        return result
+        if result == 1:
+            self.logger.critical("Setup checker failed, exiting.")
+            sys.exit(1)
+        elif result == 0:
+            self.logger.info("Setup checker completed successfully.")
+            return 0
+        else:
+            self.logger.error("Setup checker returned exit code %s, check the log %s for more information.", result, logfile)
+            return result
 
     def run_diagnostic_collection(
         self,
         collection: str,
-        serial: bool = False,
         cli: dict = None,
         diag_config=None,
-        cluster=None,
     ):
         """
         Run the diagnostic collection and log the output, handling parallel processing if required.
 
         Args:
             collection (str): Name of the diagnostic collection.
-            serial (bool): Whether to run in serial mode. When False, the dask parallel execution will be used.
             regrid (str): Regrid option.
             cli (dict): CLI definitions for the tools.
             diag_config (dict): Configuration dictionary loaded from YAML.
-            cluster: Dask cluster scheduler address.
         """
         if cli is None:
             cli = {}
@@ -337,7 +378,7 @@ class Analysis:
             if self.regrid:
                 extra_args += f" --regrid {self.regrid}"
 
-            if not serial:
+            if not self.serial:
                 tool_nworkers = tool_config.get("nworkers")
                 tool_nthreads = tool_config.get("nthreads")
                 if tool_nworkers is not None:
@@ -346,8 +387,8 @@ class Analysis:
                     extra_args += f" --nthreads {tool_nthreads}"
 
             # This is needed for ECmean which uses multiprocessing
-            if cluster and not tool_config.get("nocluster", False):
-                extra_args += f" --cluster {cluster}"
+            if self.cluster_address and not tool_config.get("nocluster", False):
+                extra_args += f" --cluster {self.cluster_address}"
 
             # Add standard arguments using helper function
             extra_args += self.build_extra_args(
@@ -442,6 +483,56 @@ class Analysis:
             new_cfg_paths.append(new_cfg_path)
 
         return new_cfg_paths
+
+    def configure_dask_cluster(self, args, cluster_config):
+        """
+        Configure a global dask cluster based on the provided arguments and cluster configuration.
+
+        Args:
+            args (argparse.Namespace): Parsed command-line arguments.
+            cluster_config (dict): Cluster configuration dictionary loaded from YAML.
+        """
+
+        nthreads = get_arg(args, "nthreads", 2, config=cluster_config, key="threads")
+        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="workers")
+        mem_limit = cluster_config.get("memory_limit", "3.1GiB")
+        self.logger.debug(
+            "Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit
+        )
+
+        # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
+        self.cluster = LocalCluster(
+            threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR
+        )
+        self.cluster_address = self.cluster.scheduler_address
+        self.logger.info(
+            "Initialized global dask cluster %s providing %d workers.", self.cluster_address, len(self.cluster.workers)
+        )
+
+        # set DASK timeouts if not already set in the environment
+        if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
+            connect_timeout = cluster_config.get("connect_timeout", None)
+            if connect_timeout:
+                # Increase timeout (certainly needed on LUMI, possibly useful elsewhere too).
+                os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"
+                self.logger.debug(
+                    "Set DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT to %s",
+                    os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"],
+                )
+        if "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP" not in os.environ:
+            tcp_timeout = cluster_config.get("tcp_timeout", None)
+            if tcp_timeout:
+                os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
+                self.logger.debug(
+                    "Set DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP to %s", os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"]
+                )
+
+    def close_dask_cluster(self):
+        """Close the dask cluster if it was created."""
+        if self.cluster:
+            self.logger.info("Closing dask cluster %s.", self.cluster_address)
+            self.cluster.close()
+            self.cluster = None
 
     @staticmethod
     def build_extra_args(**kwargs):
