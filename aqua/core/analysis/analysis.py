@@ -3,7 +3,6 @@
 AQUA analysis module for running diagnostics and handling configurations.
 """
 
-import logging
 import os
 import shutil
 import subprocess
@@ -11,9 +10,8 @@ import sys
 import tempfile
 from importlib import resources as pypath
 
-from dask.distributed import LocalCluster
-
 from aqua.core.configurer import ConfigPath
+from aqua.core.dask.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
@@ -60,8 +58,7 @@ class Analysis:
 
         # dask
         self.serial = False
-        self.cluster = None
-        self.cluster_address = None
+        self.cluster = DaskCluster(loglevel=loglevel)
 
     def get_config(self):
         """Load the configuration file and return the config dictionary."""
@@ -387,8 +384,8 @@ class Analysis:
                     extra_args += f" --nthreads {tool_nthreads}"
 
             # This is needed for ECmean which uses multiprocessing
-            if self.cluster_address and not tool_config.get("nocluster", False):
-                extra_args += f" --cluster {self.cluster_address}"
+            if self.cluster.address and not tool_config.get("nocluster", False):
+                extra_args += f" --cluster {self.cluster.address}"
 
             # Add standard arguments using helper function
             extra_args += self.build_extra_args(
@@ -486,7 +483,7 @@ class Analysis:
 
     def configure_dask_cluster(self, args, cluster_config):
         """
-        Configure a global dask cluster based on the provided arguments and cluster configuration.
+        Configure the Dask cluster based on command-line arguments and configuration dictionary.
 
         Args:
             args (argparse.Namespace): Parsed command-line arguments.
@@ -496,43 +493,31 @@ class Analysis:
         nthreads = get_arg(args, "nthreads", 2, config=cluster_config, key="threads")
         nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="workers")
         mem_limit = cluster_config.get("memory_limit", "3.1GiB")
-        self.logger.debug(
-            "Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit
-        )
+        timeouts = {
+            "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT": cluster_config.get("connect_timeout"),
+            "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP": cluster_config.get("tcp_timeout"),
+        }
 
-        # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
-        self.cluster = LocalCluster(
-            threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR
+        self.cluster.setup(
+            nworkers=nworkers,
+            nthreads=nthreads,
+            mem_limit=mem_limit,
+            connect_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"],
+            tcp_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"],
         )
-        self.cluster_address = self.cluster.scheduler_address
-        self.logger.info(
-            "Initialized global dask cluster %s providing %d workers.", self.cluster_address, len(self.cluster.workers)
-        )
-
-        # set DASK timeouts if not already set in the environment
-        if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
-            connect_timeout = cluster_config.get("connect_timeout", None)
-            if connect_timeout:
-                # Increase timeout (certainly needed on LUMI, possibly useful elsewhere too).
-                os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"
-                self.logger.debug(
-                    "Set DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT to %s",
-                    os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"],
-                )
-        if "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP" not in os.environ:
-            tcp_timeout = cluster_config.get("tcp_timeout", None)
-            if tcp_timeout:
-                os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
-                self.logger.debug(
-                    "Set DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP to %s", os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"]
-                )
+        if not self.cluster.active:
+            self.logger.error("Failed to start Dask cluster.")
+            sys.exit(1)
+        else:
+            self.logger.info("Dask cluster running at address: %s", self.cluster.address)
 
     def close_dask_cluster(self):
-        """Close the dask cluster if it was created."""
-        if self.cluster:
-            self.logger.info("Closing dask cluster %s.", self.cluster_address)
+        """Close the Dask cluster if it is active."""
+        if self.cluster.active:
             self.cluster.close()
-            self.cluster = None
+            self.logger.info("Dask cluster closed.")
+        else:
+            self.logger.debug("No active Dask cluster to close.")
 
     @staticmethod
     def build_extra_args(**kwargs):

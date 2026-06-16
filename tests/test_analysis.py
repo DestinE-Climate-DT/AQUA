@@ -408,6 +408,7 @@ class TestIntegrationFlow:
         analysis.catalog = "test_catalog"
         analysis.realization = "r1"
         analysis.output_dir = temp_env["outdir"]
+        analysis.cluster = MagicMock()
 
         config = {"biases": {"config": temp_env["cfg_biases"]}}
 

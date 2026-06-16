@@ -151,8 +151,7 @@ def analysis_execute(args):
                 except Exception as e:
                     logger.error("Diagnostic collection raised an exception: %s", e)
 
-    if not analyzer.serial:
-        analyzer.close_dask_cluster()
+    analyzer.close_dask_cluster()
 
     logger.info("All diagnostic collections finished.")
 
