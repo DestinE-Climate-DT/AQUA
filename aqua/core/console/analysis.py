@@ -55,6 +55,7 @@ def analysis_parser(parser=None):
                         help="Number of threads per worker to use in the cluster (overrides config file)")
     parser.add_argument("--nmaxprocesses", type=int, default=-1,
                         help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
+    parser.add_argument("--checker", action="store_true", help="Run the setup checker")
 
     # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
@@ -93,6 +94,10 @@ def analysis_execute(args):
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
     logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
+    # read the experiment kind and configure
+    exp_kind_file = job_config.get("experiment_kind")
+    analyzer.configure_experiment_kind(args.kind, exp_kind_file)
+
     # Set Dask timeouts if not already defined in the environment
     # TODO: make a function or move it into the class
     if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
@@ -109,12 +114,8 @@ def analysis_execute(args):
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
 
-    # read the experiment kind
-    exp_kind_file = job_config.get("experiment_kind")
-    analyzer.configure_experiment_kind(args.kind, exp_kind_file)
-
     # cli checker setup and run
-    run_checker = job_config.get("run_checker", False)
+    run_checker = get_arg(args, "checker", False, config=job_config, key="run_checker")
     if run_checker:
         result = analyzer.run_setup_checker()
         if result == 1:

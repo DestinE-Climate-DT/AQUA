@@ -266,6 +266,19 @@ class TestConfigurationSetters:
 class TestIntegrationFlow:
     """Integration tests: setters → diagnostic collection with mocked subprocess."""
 
+    def test_run_cli_checker_valid_entry(self, analysis):
+        """Integration test: run_setup_checker with valid config and mocked subprocess."""
+        # Configure analysis with valid settings
+        args = argparse.Namespace(model="IFS", exp="test-tco79", source="short", catalog="test_catalog", checker=True)
+        analysis.set_catalog_model_exp_source(args, {})
+        analysis.set_realization(args, {})
+
+        # Mock run_setup_checker to simulate successful check
+        with patch.object(analysis, "run_setup_checker", return_value=0) as mock_checker:
+            result = analysis.run_setup_checker()
+            mock_checker.assert_called_once()
+            assert result == 0
+
     def test_run_diagnostic_collection_happy_path(self, analysis, temp_env):
         """Happy path: set* methods → run_diagnostic_collection with mocked run_diagnostic_tool."""
         # Configure analysis
