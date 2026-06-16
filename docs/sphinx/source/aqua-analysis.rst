@@ -50,6 +50,11 @@ so that the script can be used in a batch job or in a workflow. These override c
 
     Additional ocean source to use for diagnostics accepting it (currently only ECmean).
 
+.. option:: --realization <realization>
+
+    The realization to use. If not specified or set to ``None``,
+    no realization argument will be passed to the diagnostics.
+
 .. option:: --config <config>
 
     The config file to use.
@@ -58,11 +63,6 @@ so that the script can be used in a batch job or in a workflow. These override c
 
     The target grid to use for regridding the data.
     If not specified, the default is ``null``, which means no regridding will be applied.
-
-.. option:: --realization <realization>
-
-    The realization to use. If not specified or set to ``None``,
-    no realization argument will be passed to the diagnostics.
 
 .. option:: --startdate <YYYY-MM-DD>
 
@@ -88,6 +88,12 @@ so that the script can be used in a batch job or in a workflow. These override c
     This works in combination with the jinja template configuration files available in AQUA-diagnostics, and allow
     for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
     Overrides the value from the configuration file.
+
+.. option:: --checker
+
+    Activate the setup checker diagnostic. This diagnostic checks if the input data are available and
+    if the configuration is correct before running the other diagnostics.
+    Default is ``False``. Overrides the value from the configuration file.
 
 .. option:: --serial
 
@@ -119,7 +125,7 @@ so that the script can be used in a batch job or in a workflow. These override c
 Configuration file
 ------------------
 
-The configuration file ``config.aqua-analysis.yaml`` contains the list of diagnostics to run and technical details of the analysis.
+The configuration file ``templates/config.aqua-analysis.tmpl`` contains the list of diagnostics to run and technical details of the analysis.
 If a configuration is available also as a command line argument, the command line argument will take precedence.
 
 The configuration file is divided in three main sections:
@@ -133,12 +139,15 @@ The configuration file is divided in three main sections:
     The configuration file allows for the definition of a custom folder path where the individual diagnostics configuration files are stored.
     This is done by setting an environment variable ``AQUA_CONFIG``.
 
+Please noticed that a supplementary configuration file is needed for each diagnostic, which contains the specific configuration for that diagnostic (e.g. the variables to use, the time range, etc.).
+These files are specified in the ``script_path`` key of each diagnostic in the ``diagnostics``, and can be templated with jinja to allow for dynamic configuration based on the experiment kind or other parameters.
+The `templates/config.exp-kind.tmpl` file contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
+
 Job
 ^^^
 
 The job section contains the following keys:
 
-- ``max_threads``: the maximum number of diagnostics running in parallel. Leave it to 0 for no limit
 - ``loglevel``: the log level to use for the cli and the diagnostics. Default is ``WARNING``
 - ``run_checker``: a boolean flag to activate the checker diagnostic. Default is ``true``
 - ``outputdir``: the output directory to use. Default is ``$AQUA/cli/aqua-analysis/output``
@@ -163,10 +172,10 @@ The cluster section contains the following keys:
 - ``workers``: the number of workers to use. Default is ``32``.
 - ``threads``: the number of threads per worker. Default is ``2``.
 - ``memory_limit``: the memory per worker. Default is ``7GiB``.
-- ``reconnect_timeout``: the timeout in seconds to wait for client to connect to the cluster.
+- ``connect_timeout``: the timeout in seconds to wait for client to connect to the cluster.
                         Default is ``120``.
                         Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT=120s``.
-- ``ftp_timeout``: the timeout in seconds for ftp connections.
+- ``tcp_timeout``: the timeout in seconds for tcp connections.
                         Default is ``60``.
                         Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__FTP=60s``
 
@@ -183,6 +192,7 @@ A ``run`` list contains the diagnostics to run. By default, all the diagnostics 
 The diagnostics are specified as a dictionary with the following keys:
 
 - ``nworkers``: the number of workers to use for this diagnostic.
+- ``nthreads``: the number of threads per worker to use for this diagnostic.
 - ``script_path``: the relative path to the diagnostic script with respect to ``script_path_base``.
 - ``config``: the configuration file for the diagnostic.
 - ``nocluster``: a boolean flag to disable the use of the global dask cluster for this diagnostic (used by ECmean)
