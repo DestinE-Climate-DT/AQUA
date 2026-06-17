@@ -84,6 +84,10 @@ def drop_parser(parser=None):
                         help='Output directory. Required when running without a config file.')
     parser.add_argument('--tmpdir', type=str,
                         help='Temporary directory. Required when running without a config file.')
+    parser.add_argument('--save-frequency', type=str, choices=['monthly', 'daily'],
+                        help='Checkpoint granularity for writing intermediate files: '
+                             "'monthly' (default) writes one file per month; "
+                             "'daily' writes one file per day (netcdf only).")
     # fmt: on
     return parser
 
@@ -167,6 +171,7 @@ def drop_execute(args):
     loglevel = get_arg(args, "loglevel", _cfg(config, "options", "loglevel", "WARNING"))
     compact = _cfg(config, "options", "compact", "cdo")
     driver = get_arg(args, "driver", _cfg(config, "options", "driver", "netcdf"))
+    save_frequency = get_arg(args, "save_frequency", _cfg(config, "options", "save_frequency", "monthly"))
 
     # Other options, only from command line
     definitive = get_arg(args, "definitive", False)
@@ -222,6 +227,7 @@ def drop_execute(args):
         catalog_entry=catalog_entry,
         driver=driver,
         exclude_incomplete=exclude_incomplete,
+        save_frequency=save_frequency,
     )
 
 
@@ -252,6 +258,7 @@ def drop_cli(
     compact="cdo",
     catalog_entry="yes",
     exclude_incomplete=True,
+    save_frequency="monthly",
 ):
     """
     Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
@@ -282,6 +289,7 @@ def drop_cli(
         compact: compaction method
         catalog_entry: catalog entry behaviour ('yes', 'no', 'only')
         exclude_incomplete: bool flag to exclude incomplete temporal chunks when averaging
+        save_frequency: checkpoint granularity ('monthly' or 'daily')
     """
 
     models = to_list(get_arg(args, "model", config["data"]))
@@ -347,6 +355,7 @@ def drop_cli(
                             exclude_incomplete=exclude_incomplete,
                             output_format=driver,
                             engine=engine,
+                            save_frequency=save_frequency,
                             **extra_args,
                         )
 

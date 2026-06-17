@@ -82,6 +82,7 @@ class Drop:
         engine="fdb",
         output_format="netcdf",
         zarr_chunks=None,
+        save_frequency="monthly",
         **kwargs,
     ):
         """
@@ -137,6 +138,9 @@ class Drop:
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.
+            save_frequency (string, opt): Checkpoint granularity for writing intermediate files.
+                                          'monthly' (default) writes one file per month;
+                                          'daily' writes one file per day (netcdf only).
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -188,6 +192,7 @@ class Drop:
         self.output_format = output_format
         self.compact = compact
         self.zarr_chunks = zarr_chunks
+        self.save_frequency = save_frequency
 
         # whether to regrid before time statistics
         self.regrid_first = regrid_first
@@ -285,6 +290,8 @@ class Drop:
         else:
             self.logger.info("Frequency: %s", self.frequency)
 
+        self.logger.info("Save frequency (checkpoint granularity): %s", self.save_frequency)
+
         if self.overwrite:
             self.logger.warning("File will be overwritten if already existing.")
 
@@ -321,6 +328,12 @@ class Drop:
         # Validate output format
         if self.output_format not in ["netcdf", "zarr", "icechunk"]:
             raise ValueError("output_format must be 'netcdf', 'zarr' or 'icechunk'")
+
+        # Validate save_frequency
+        if self.save_frequency not in ["monthly", "daily"]:
+            raise ValueError("save_frequency must be 'monthly' or 'daily'")
+        if self.save_frequency == "daily" and self.output_format != "netcdf":
+            raise ValueError("save_frequency='daily' is currently supported only for output_format='netcdf'")
 
         # Zarr/icechunk do not support post-write compact (they write in-place)
         if self.output_format in ("zarr", "icechunk"):
@@ -487,6 +500,7 @@ class Drop:
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
                 compact=self.compact,
+                save_frequency=self.save_frequency,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
             )
@@ -538,9 +552,9 @@ class Drop:
         self.logger.info("Removing temporary directory %s", self.tmpdir)
         shutil.rmtree(self.tmpdir)
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def get_filename(self, var, year=None, month=None, day=None, tmp=False):
         """Create output filenames (delegates to writer)"""
-        return self.writer.get_filename(var, year=year, month=month, tmp=tmp)
+        return self.writer.get_filename(var, year=year, month=month, day=day, tmp=tmp)
 
     def check_integrity(self, varname):
         """To check if the DROP entry is fine before running (delegates to writer)"""

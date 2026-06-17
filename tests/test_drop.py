@@ -12,6 +12,7 @@ from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.drop_writer_icechunk import IcechunkWriter
+from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
 from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 from aqua.core.lock import SafeFileLock
@@ -404,6 +405,51 @@ class TestDROP:
                 assert os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should exist"
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_daily_save_frequency_skips_partial_month_compaction(self, drop_arguments, tmp_path):
+        """Daily save mode must not compact when the requested month is partial."""
+        outdir = tmp_path / "out"
+        tmpdir = tmp_path / "tmp"
+        os.makedirs(outdir, exist_ok=True)
+        os.makedirs(tmpdir, exist_ok=True)
+
+        builder = OutputPathBuilder(
+            catalog="ci",
+            model=drop_arguments["model"],
+            exp=drop_arguments["exp"],
+            realization="r1",
+            resolution="r100",
+            frequency="daily",
+            stat="mean",
+            region="global",
+        )
+
+        writer = NetCDFWriter(
+            tmpdir=str(tmpdir),
+            outdir=str(outdir),
+            compact="xarray",
+            save_frequency="daily",
+            filename_builder=builder,
+            loglevel=LOGLEVEL,
+        )
+
+        var = drop_arguments["var"]
+        data = xr.DataArray(
+            range(10),
+            dims=["time"],
+            coords={"time": pd.date_range("2020-01-01", periods=10, freq="D")},
+            name=var,
+        )
+
+        writer.write_variable(data=data, var=var, overwrite=True, definitive=True, dask=False)
+
+        monthly_file = writer.get_filename(var, year=2020, month="01")
+        day1_file = writer.get_filename(var, year=2020, month="01", day="01")
+        day10_file = writer.get_filename(var, year=2020, month="01", day="10")
+
+        assert not os.path.exists(monthly_file), "Partial month should not be compacted into a monthly file"
+        assert os.path.exists(day1_file), "Daily file for first requested day should exist"
+        assert os.path.exists(day10_file), "Daily file for last requested day should exist"
 
     def test_unknown_statistic(self, drop_arguments, tmp_path):
         """Test DROP with an unknown statistic."""
