@@ -314,7 +314,7 @@ class AquaFDBGenerator:
             all_content (dict): Dictionary of all generated content strings.
         """
         output_dir = os.path.join(self.catalog_dir_path, 'catalogs',
-                                  self.config['catalog_dir'], 'catalog', self.model.upper())
+                                  self.config['catalog_dir'], 'catalog', self.model)
         os.makedirs(output_dir, exist_ok=True)
         output_filename = f"{self.config['exp']}.yaml"
         output_path = os.path.join(output_dir, output_filename)
@@ -391,11 +391,11 @@ class AquaFDBGenerator:
 
             if self.model not in catalog_yaml.get('sources', {}):
                 catalog_yaml.setdefault('sources', {})
-                catalog_yaml['sources'][self.model.upper()] = {
-                    'description': f"{self.model.upper()} model",
+                catalog_yaml['sources'][self.model] = {
+                    'description': f"{self.model} model",
                     'driver': 'yaml_file_cat',
                     'args': {
-                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model.upper()}/main.yaml"
+                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model}/main.yaml"
                     }
                 }
                 dump_yaml(catalog_yaml_path, catalog_yaml)
@@ -431,6 +431,8 @@ class AquaFDBGenerator:
         
                 content = self.get_profile_content(profile, grid_resolution)
                 combined = {**self.config, **content}
+                # Add model_base (without resolution suffix) for template
+                combined["model_base"] = model_base
                 source_name = combined.get('source')
 
                 if source_name in all_content['sources']:
