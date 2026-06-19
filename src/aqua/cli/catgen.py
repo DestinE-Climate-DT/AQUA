@@ -83,8 +83,8 @@ class AquaFDBGenerator:
         self.machine = self.config['machine']
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
-        self.model = self.config["model"].lower()
-        #self.portfolio = self.config["portfolio"]
+        self.model_display = self.config["model"]          # original casing, e.g. "IFS-NEMO-5km"
+        self.model = self.config["model"].lower()          # lowercase for internal lookups
         self.resolution = self.config["resolution"]
         self.ocean_grid = self.config.get("ocean_grid")
         self.atm_grid = self.config.get("atm_grid")
@@ -113,13 +113,12 @@ class AquaFDBGenerator:
         Returns:
             dict: Local grids for the given portfolio.
         """
-        local_grids = grids["common"]
+        local_grids = dict(grids["common"])  # copy to avoid mutating the shared dict
         if resolution in grids:
             self.logger.debug('Update grids for specific %s portfolio', resolution)
             local_grids.update(grids[resolution])
         else:
             self.logger.error('Cannot find grids for %s portfolio', resolution)
-        print(local_grids)
         return local_grids
 
     def get_available_resolutions(self, local_grids, model):
@@ -282,7 +281,7 @@ class AquaFDBGenerator:
 
         self.description = (
             self.config.get("description")
-            or f'"{self.model} {self.config["exp"]} {self.config["data_start_date"][:4]}, '
+            or f'"{self.model_display} {self.config["exp"]} {self.config["data_start_date"][:4]}, '
             f'grids: {self.atm_grid} {self.ocean_grid}"' )
         
         # Set the stream based on the frequency
@@ -315,7 +314,7 @@ class AquaFDBGenerator:
             all_content (dict): Dictionary of all generated content strings.
         """
         output_dir = os.path.join(self.catalog_dir_path, 'catalogs',
-                                  self.config['catalog_dir'], 'catalog', self.model.upper())
+                                  self.config['catalog_dir'], 'catalog', self.model_display)
         os.makedirs(output_dir, exist_ok=True)
         output_filename = f"{self.config['exp']}.yaml"
         output_path = os.path.join(output_dir, output_filename)
@@ -390,17 +389,17 @@ class AquaFDBGenerator:
             if catalog_yaml.get('sources') is None:
                 catalog_yaml['sources'] = {}
 
-            if self.model not in catalog_yaml.get('sources', {}):  
-                catalog_yaml.setdefault('sources', {}) 
-                catalog_yaml['sources'][self.model.upper()] = {
-                    'description': f"{self.model.upper()} model",
+            if self.model_display not in catalog_yaml.get('sources', {}):
+                catalog_yaml.setdefault('sources', {})
+                catalog_yaml['sources'][self.model_display] = {
+                    'description': f"{self.model_display} model",
                     'driver': 'yaml_file_cat',
                     'args': {
-                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model.upper()}/main.yaml"
+                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model_display}/main.yaml"
                     }
                 }
                 dump_yaml(catalog_yaml_path, catalog_yaml)
-                self.logger.info("%s entry in 'catalog.yaml' has been created at %s", self.model, catalog_yaml_path)
+                self.logger.info("%s entry in 'catalog.yaml' has been created at %s", self.model_display, catalog_yaml_path)
 
 
     def generate_catalog(self):
@@ -468,4 +467,3 @@ if __name__ == '__main__':
 
     args = catgen_parser().parse_args(sys.argv[1:])
     catgen_execute(args)
-
