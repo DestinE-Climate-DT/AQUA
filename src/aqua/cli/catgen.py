@@ -238,7 +238,8 @@ class AquaFDBGenerator:
             dict: Generated profile content.
         """
 
-        grid = self.local_grids[f"horizontal-{self.model.upper()}-{grid_resolution}"]
+        model_key = re.sub(r'-\d+km$', '', self.model).lower()
+        grid = self.local_grids[f"horizontal-{model_key}-{grid_resolution}"]
         
         aqua_grid = self.matching_grids[grid]
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
@@ -252,21 +253,21 @@ class AquaFDBGenerator:
         )
 
         if not self.ocean_grid:
-            self.ocean_grid = self.matching_grids['ocean_grid'][self.model][self.resolution]
+            self.ocean_grid = self.matching_grids['ocean_grid'][model_key][self.resolution]
             if self.ocean_grid is None:
-                raise ValueError(f"No ocean grid available for: {self.model} {self.resolution}")
+                raise ValueError(f"No ocean grid available for: {model_key} {self.resolution}")
 
         if not self.atm_grid:
-            self.atm_grid = self.matching_grids['atm_grid'][self.model][self.resolution]
+            self.atm_grid = self.matching_grids['atm_grid'][model_key][self.resolution]
             if self.atm_grid is None:
-                raise ValueError(f"No atmospheric grid available for: {self.model} {self.resolution}")
+                raise ValueError(f"No atmospheric grid available for: {model_key} {self.resolution}")
                 
         grid_mappings = self.matching_grids['grid_mappings']
         levtype = profile["levtype"]
 
         if levtype in grid_mappings:
             grid_str = grid_mappings[levtype].get(
-                self.model, grid_mappings[levtype].get('default')).format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
+                model_key, grid_mappings[levtype].get('default')).format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
         else:
             grid_str = grid_mappings['default'].format(aqua_grid=aqua_grid)
  
