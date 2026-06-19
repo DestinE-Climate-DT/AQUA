@@ -83,7 +83,7 @@ class AquaFDBGenerator:
         self.machine = self.config['machine']
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
-        self.model = self.config["model"]              # original casing preserved throughout
+        self.model = self.config["model"]
         self.resolution = self.config["resolution"]
         self.ocean_grid = self.config.get("ocean_grid")
         self.atm_grid = self.config.get("atm_grid")
@@ -314,7 +314,7 @@ class AquaFDBGenerator:
             all_content (dict): Dictionary of all generated content strings.
         """
         output_dir = os.path.join(self.catalog_dir_path, 'catalogs',
-                                  self.config['catalog_dir'], 'catalog', self.model)
+                                  self.config['catalog_dir'], 'catalog', self.model.upper())
         os.makedirs(output_dir, exist_ok=True)
         output_filename = f"{self.config['exp']}.yaml"
         output_path = os.path.join(output_dir, output_filename)
@@ -391,11 +391,11 @@ class AquaFDBGenerator:
 
             if self.model not in catalog_yaml.get('sources', {}):
                 catalog_yaml.setdefault('sources', {})
-                catalog_yaml['sources'][self.model] = {
-                    'description': f"{self.model} model",
+                catalog_yaml['sources'][self.model.upper()] = {
+                    'description': f"{self.model.upper()} model",
                     'driver': 'yaml_file_cat',
                     'args': {
-                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model}/main.yaml"
+                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model.upper()}/main.yaml"
                     }
                 }
                 dump_yaml(catalog_yaml_path, catalog_yaml)
@@ -412,7 +412,7 @@ class AquaFDBGenerator:
 
         # Retrieve available resolutions for the current model
         self.grid_resolutions = self.get_available_resolutions(self.local_grids, model_base)
-        
+
         if not self.grid_resolutions:
             self.logger.error('No resolutions found, generating an empty file!')
             return
