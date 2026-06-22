@@ -10,7 +10,6 @@ AQUA core complete list:
 - More info on the origin of a push to lumi-o in the logs (#2913)
 
 AQUA diagnostics complete list:
-- Storyline reference dates updated to 2025 (#2855)
 
 ## [v0.19.11]
 

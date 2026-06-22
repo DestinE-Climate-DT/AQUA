@@ -24,7 +24,7 @@ references:
     exp: 'era5'
     source: 'monthly'
     startdate: '2017-01-01'
-    enddate: '2025-12-31'
+    enddate: '2024-12-31'
 
 output:
   outputdir: "./"
@@ -63,7 +63,7 @@ diagnostics:
         startdate_data: null
         enddate_data: null
         startdate_ref: "2017-01-01"
-        enddate_ref: "2025-12-31"
+        enddate_ref: "2024-12-31"
     plot_params: 
       default: 
         projection: 'robinson'
