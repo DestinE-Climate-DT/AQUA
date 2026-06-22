@@ -119,7 +119,7 @@ collect_figures() {
         cp "$indir/experiment.yaml" "./content/png/$2/"
     fi
 
-    echo $(date) > $dstdir/last_update.txt
+    echo $(date) $(whoami) @ $(uname -n) $(hostname -I) > $dstdir/last_update.txt
 }
 
 convert_pdf_to_png() {
