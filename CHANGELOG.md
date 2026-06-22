@@ -17,7 +17,6 @@ AQUA core complete list:
 - CatGen: more flexible handling of forcing string (#2832)
 
 AQUA diagnostics complete list:
-- Storyline reference dates updated to 2025 (#2855)
 
 ## [v0.19.11]
 
