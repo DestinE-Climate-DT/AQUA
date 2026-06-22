@@ -20,7 +20,8 @@ except ModuleNotFoundError:
 
 approx_rel = 1e-4 #
 
-@pytest.mark.diagnostics
+pytestmark = pytest.mark.diagnostics
+
 @pytest.fixture
 def retrieved_dataarray():
     if os.getenv('INPUT_ARG') is None:

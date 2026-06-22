@@ -137,9 +137,9 @@ def test_catgen_reduced(tmp_path, model, nsources, nocelevels):
 
 
 @pytest.mark.parametrize(('model,nsources,nocelevels'),
-                        [('IFS-NEMO', 28, 75),
+                        [('IFS-NEMO-5km', 28, 75),
                          ('IFS-FESOM', 31, 69),
-                         ('ICON', 27, 72)])
+                         ('ICON-10km', 27, 72)])
 @pytest.mark.catgen
 def test_catgen_full(tmp_path, model, nsources, nocelevels):
     """test for full portfolio"""

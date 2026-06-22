@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2907)
 - More info on the origin of a push to lumi-o in the logs (#2913)
 
 AQUA diagnostics complete list:

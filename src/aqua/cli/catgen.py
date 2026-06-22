@@ -83,8 +83,7 @@ class AquaFDBGenerator:
         self.machine = self.config['machine']
         self.dp_dir_path = self.config["repos"]["data-portfolio_path"]
         self.catalog_dir_path = self.config["repos"]["Climate-DT-catalog_path"]
-        self.model = self.config["model"].lower()
-        #self.portfolio = self.config["portfolio"]
+        self.model = self.config["model"]
         self.resolution = self.config["resolution"]
         self.ocean_grid = self.config.get("ocean_grid")
         self.atm_grid = self.config.get("atm_grid")
@@ -113,13 +112,12 @@ class AquaFDBGenerator:
         Returns:
             dict: Local grids for the given portfolio.
         """
-        local_grids = grids["common"]
+        local_grids = dict(grids["common"])  # copy to avoid mutating the shared dict
         if resolution in grids:
             self.logger.debug('Update grids for specific %s portfolio', resolution)
             local_grids.update(grids[resolution])
         else:
             self.logger.error('Cannot find grids for %s portfolio', resolution)
-        print(local_grids)
         return local_grids
 
     def get_available_resolutions(self, local_grids, model):
@@ -133,7 +131,7 @@ class AquaFDBGenerator:
         Returns:
             list: List of available grid resolutions.
         """
-        re_pattern = f"horizontal-{model.upper()}-(.+)"
+        re_pattern = f"horizontal-{model}-(.+)"
         grid_resolutions = [match.group(1) for key in local_grids if (match := re.match(re_pattern, key))]
         self.logger.debug('Resolutions found are %s', grid_resolutions)
         return grid_resolutions
@@ -235,9 +233,11 @@ class AquaFDBGenerator:
         Returns:
             dict: Generated profile content.
         """
+        # Normalize model name: remove resolution suffix for data lookups
+        model_base = re.sub(r'-\d+km$', '', self.model)  # IFS-NEMO-5km -> IFS-NEMO
+        model_key = model_base.lower()  # IFS-NEMO -> ifs-nemo
 
-        grid = self.local_grids[f"horizontal-{self.model.upper()}-{grid_resolution}"]
-        
+        grid = self.local_grids[f"horizontal-{model_base}-{grid_resolution}"]
         aqua_grid = self.matching_grids[grid]
         levelist, levels_values = self.get_levelist(profile, self.local_grids, self.levels)
 
@@ -250,21 +250,21 @@ class AquaFDBGenerator:
         )
 
         if not self.ocean_grid:
-            self.ocean_grid = self.matching_grids['ocean_grid'][self.model][self.resolution]
+            self.ocean_grid = self.matching_grids['ocean_grid'][model_key][self.resolution]
             if self.ocean_grid is None:
-                raise ValueError(f"No ocean grid available for: {self.model} {self.resolution}")
+                raise ValueError(f"No ocean grid available for: {model_key} {self.resolution}")
 
         if not self.atm_grid:
-            self.atm_grid = self.matching_grids['atm_grid'][self.model][self.resolution]
+            self.atm_grid = self.matching_grids['atm_grid'][model_key][self.resolution]
             if self.atm_grid is None:
-                raise ValueError(f"No atmospheric grid available for: {self.model} {self.resolution}")
-                
+                raise ValueError(f"No atmospheric grid available for: {model_key} {self.resolution}")
+
         grid_mappings = self.matching_grids['grid_mappings']
         levtype = profile["levtype"]
 
         if levtype in grid_mappings:
             grid_str = grid_mappings[levtype].get(
-                self.model, grid_mappings[levtype].get('default')).format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
+                model_key, grid_mappings[levtype].get('default')).format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
         else:
             grid_str = grid_mappings['default'].format(aqua_grid=aqua_grid)
  
@@ -280,7 +280,7 @@ class AquaFDBGenerator:
         self.description = (
             self.config.get("description")
             or f'"{self.model} {self.config["exp"]} {self.config["data_start_date"][:4]}, '
-            f'grids: {self.atm_grid} {self.ocean_grid}"' )
+            f'grids: {self.atm_grid} {self.ocean_grid}"')
         
         # Set the stream based on the frequency
         stream = 'clmn' if profile['frequency'] == 'monthly' else 'clte'
@@ -312,7 +312,7 @@ class AquaFDBGenerator:
             all_content (dict): Dictionary of all generated content strings.
         """
         output_dir = os.path.join(self.catalog_dir_path, 'catalogs',
-                                  self.config['catalog_dir'], 'catalog', self.model.upper())
+                                  self.config['catalog_dir'], 'catalog', self.model)
         os.makedirs(output_dir, exist_ok=True)
         output_filename = f"{self.config['exp']}.yaml"
         output_path = os.path.join(output_dir, output_filename)
@@ -339,7 +339,7 @@ class AquaFDBGenerator:
                 'lowres': 'LR',
                 'intermediate': 'MR'
             }
-            
+
             resolution_id = self.get_value_from_map(self.config['resolution'], resolution_map, 'resolution')
             
             forcing = self.config.get("forcing")
@@ -383,13 +383,13 @@ class AquaFDBGenerator:
             if catalog_yaml.get('sources') is None:
                 catalog_yaml['sources'] = {}
 
-            if self.model not in catalog_yaml.get('sources', {}):  
-                catalog_yaml.setdefault('sources', {}) 
-                catalog_yaml['sources'][self.model.upper()] = {
-                    'description': f"{self.model.upper()} model",
+            if self.model not in catalog_yaml.get('sources', {}):
+                catalog_yaml.setdefault('sources', {})
+                catalog_yaml['sources'][self.model] = {
+                    'description': f"{self.model} model",
                     'driver': 'yaml_file_cat',
                     'args': {
-                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model.upper()}/main.yaml"
+                        'path': f"{{{{CATALOG_DIR}}}}/catalog/{self.model}/main.yaml"
                     }
                 }
                 dump_yaml(catalog_yaml_path, catalog_yaml)
@@ -401,15 +401,19 @@ class AquaFDBGenerator:
         Generate the entire catalog by processing profiles and resolutions.
         """
         all_content = {'sources': {}}
+        # Normalize model name: remove resolution suffix
+        model_base = re.sub(r'-\d+km$', '', self.model)  # IFS-NEMO-5km -> IFS-NEMO
 
         # Retrieve available resolutions for the current model
-        self.grid_resolutions = self.get_available_resolutions(self.local_grids, self.model)
-        
+        self.grid_resolutions = self.get_available_resolutions(self.local_grids, model_base)
+
         if not self.grid_resolutions:
             self.logger.error('No resolutions found, generating an empty file!')
             return
 
-        for profile in self.dp[self.model]:
+        # Normalize model name to lowercase for portfolio.yaml access
+        model_key = re.sub(r'-\d+km$', '', self.model).lower()
+        for profile in self.dp[model_key]:
 
             # Filter out omitted resolutions, if any
             current_resolutions = [
@@ -421,6 +425,8 @@ class AquaFDBGenerator:
         
                 content = self.get_profile_content(profile, grid_resolution)
                 combined = {**self.config, **content}
+                # Add model_base (without resolution suffix) for template
+                combined["model_base"] = model_base
                 source_name = combined.get('source')
 
                 if source_name in all_content['sources']:
@@ -461,4 +467,3 @@ if __name__ == '__main__':
 
     args = catgen_parser().parse_args(sys.argv[1:])
     catgen_execute(args)
-
