@@ -50,7 +50,7 @@ diagnostics:
         startdate_data: null
         enddate_data: null
         startdate_ref: "2017-01-01"
-        enddate_ref: "2024-12-31"
+        enddate_ref: "2025-12-31"
     plot_params:
       default: 
         projection: 'robinson'
@@ -72,8 +72,8 @@ diagnostics:
         daily: False
         monthly: True
         annual: True
-        std_startdate: '20000101'
-        std_enddate: '20241231'
+        std_startdate: '2001-01-01'
+        std_enddate: '2025-12-31'
       tos:
         regions: ['nh', 'sh']
 
@@ -84,8 +84,8 @@ diagnostics:
     center_time: true
     params:
       default:
-        std_startdate: '20000101'
-        std_enddate: '20241231'
+        std_startdate: '2001-01-01'
+        std_enddate: '2025-12-31'
       tos:
         regions: ['nh', 'sh']
 
@@ -101,9 +101,9 @@ diagnostics:
     params:
       default:
         startdate: '2017-01-01'
-        enddate: '2024-12-31'
-        std_startdate: '2000-01-01'
-        std_enddate: '2024-12-31'
+        enddate: '2025-12-31'
+        std_startdate: '2001-01-01'
+        std_enddate: '2025-12-31'
     variables:
       - name: 'tos'
         regions: [null]  # global
