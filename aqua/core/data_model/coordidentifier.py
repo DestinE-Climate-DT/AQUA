@@ -468,7 +468,8 @@ class CoordIdentifier:
             score += self.SCORE_WEIGHTS["axis"]  # Use axis weight for substring match
             matched.append("axis")
         # HACK to detect depth in NEMO model output, which uses "NEMO model levels" in units attribute
-        if is_meter(coord.attrs.get("units") or "NEMO" in coord.attrs.get("units", "")):
+        units_attr = coord.attrs.get("units") or ""
+        if is_meter(units_attr) or "NEMO" in units_attr:
             score += self.SCORE_WEIGHTS["units"]
             matched.append("units")
         if "depth" in coord.attrs.get("long_name", ""):
