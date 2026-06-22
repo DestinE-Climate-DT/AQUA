@@ -138,11 +138,11 @@ function setup_container_path(){
     machine=$1
     case "$machine" in
         "lumi")
-            AQUA_folder="/project/project_465000454/containers/aqua"
+            AQUA_folder="/pfs/lustrep4/projappl/project_465002727/containers/aqua"
             ;;
 
         "levante")
-            AQUA_folder="/work/bb1153/b382289/container/aqua"
+            AQUA_folder="path/in/levante"
             ;;
 
         "MN5")
