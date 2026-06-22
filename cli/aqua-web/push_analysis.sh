@@ -119,7 +119,7 @@ collect_figures() {
         dstdir="./content/$fmt/$2"
         mkdir -p $dstdir
         find $indir -name "*.$fmt"  -exec cp {} $dstdir/ \;
-        echo $(date) > $dstdir/last_update.txt
+        echo $(date) $(whoami) @ $(uname -n) $(hostname -I) > $dstdir/last_update.txt
     done
 
     # Copy experiment.yaml if it exists

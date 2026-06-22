@@ -8,6 +8,7 @@ Unreleased in the current development version (target v1.0.0):
 
 Complete list:
 - DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
+- More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
 
