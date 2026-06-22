@@ -6,15 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.19.12]
+
+AQUA core complete list:
 - Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2907)
 - More info on the origin of a push to lumi-o in the logs (#2913)
+- CatGen: more flexible handling of forcing string (#2832)
 
 AQUA diagnostics complete list:
 
 ## [v0.19.11]
 
 AQUA core complete list:
-- CatGen: more flexible handling of forcing string (#2832)
 - Attributes guessing for eccodes works also with local destine table (#2785)
 - Fix area selection, `default_coords` are deduced from the dataset (#2771)
 - Netcdf4 and h5py in env instead of pip (#2739)
@@ -1277,7 +1283,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.11
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.12
+[v0.19.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.11...v0.19.12
 [v0.19.11]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.10...v0.19.11
 [v0.19.10]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.9...v0.19.10
 [v0.19.9]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.8...v0.19.9
