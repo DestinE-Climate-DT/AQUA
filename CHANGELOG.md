@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Remove bold from graphics functions (#2916)
 - More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
