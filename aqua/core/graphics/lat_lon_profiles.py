@@ -118,6 +118,6 @@ def plot_lat_lon_profiles(
 
     # Set title if provided
     if title:
-        ax.set_title(title, fontsize=13, fontweight="bold")
+        ax.set_title(title, fontsize=13)
 
     return fig, ax
