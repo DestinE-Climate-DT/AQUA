@@ -639,6 +639,7 @@ class Drop:
         self.writer.write_variable(
             data=temp_data,
             var=var,
+            level=self.level,
             overwrite=self.overwrite,
             definitive=self.definitive,
             dask=self.dask,

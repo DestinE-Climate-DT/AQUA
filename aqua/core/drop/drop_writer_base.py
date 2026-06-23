@@ -564,7 +564,7 @@ class BaseWriter(ABC):
                     tmpfile = self.get_filename(var, level=level, year=year, month=month, tmp=True)
                     t_start = time()
                     success = self._write_chunk(
-                        month_data, var, year, month, dask=dask, performance_reporting=performance_reporting
+                        month_data, var, year, month, level=level, dask=dask, performance_reporting=performance_reporting
                     )
                     t_elapsed = time() - t_start
                     self.logger.info("Chunk execution time: %.2f", t_elapsed)
