@@ -318,6 +318,7 @@ class IcechunkWriter(BaseWriter):
         self,
         data,
         var,
+        level=None,
         overwrite=False,
         definitive=True,
         dask=False,
@@ -338,6 +339,7 @@ class IcechunkWriter(BaseWriter):
         Args:
             data: xarray DataArray with processed data (history already applied)
             var: Variable name
+            level: Optional level information
             overwrite: If True, clobber existing data and restart from scratch.
                        If False, skip completed variables and resume from the last committed record.
             definitive: Actually write files (vs dry-run)
@@ -444,7 +446,7 @@ class IcechunkWriter(BaseWriter):
 
         return True
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def get_filename(self, var, year=None, month=None, level=None, tmp=False):
         """
         Get filename/store name for variable.
 
@@ -452,6 +454,7 @@ class IcechunkWriter(BaseWriter):
             var: Variable name
             year: Year (unused for icechunk; single repo)
             month: Month (unused for icechunk; single repo)
+            level: Optional level information (unused for icechunk; single repo)
             tmp: Unused (no tmpfiles in icechunk)
 
         Returns:
