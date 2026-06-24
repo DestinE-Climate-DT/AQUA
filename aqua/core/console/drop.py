@@ -365,7 +365,7 @@ def drop_cli(
                         if catalog_entry != "only":
                             # check that your DROP output is not already there (it will not work in streaming mode)
                             if not no_validate:
-                                drop.check_integrity(varname)
+                                drop.check_integrity(varname, level=level)
 
                             # retrieve and generate
                             drop.retrieve()

@@ -237,7 +237,7 @@ class IcechunkWriter(BaseWriter):
         read_session = repo.readonly_session("main")
         return xr.open_zarr(read_session.store, consolidated=False)
 
-    def check_integrity(self, var, overwrite=False, end_date=None):
+    def check_integrity(self, var, level=None, overwrite=False, end_date=None):
         """
         Check variable integrity by querying repo metadata.
 
@@ -249,6 +249,7 @@ class IcechunkWriter(BaseWriter):
 
         Args:
             var: Variable name
+            level: Optional level information (unused for icechunk; single repo)
             overwrite: If True, always report incomplete
             end_date: Optional upper bound of the requested time range
                 (numpy datetime64, pandas Timestamp, or any value accepted
@@ -292,6 +293,8 @@ class IcechunkWriter(BaseWriter):
                 return {"complete": False, "last_record": None, "message": "Unsorted timestamps"}
 
             last_record = pd.to_datetime(times[-1]).strftime("%Y%m%d")
+
+            # TODO: We would like to check for level as well, but we do not have info on the level name.
 
             # When an expected end date is provided, verify coverage.
             # Keep last_record so write_variable can resume from the right point.

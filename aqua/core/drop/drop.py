@@ -548,9 +548,15 @@ class Drop:
         """Create output filenames (delegates to writer)"""
         return self.writer.get_filename(var, year=year, month=month, level=level, tmp=tmp)
 
-    def check_integrity(self, varname):
-        """To check if the DROP entry is fine before running (delegates to writer)"""
-        result = self.writer.check_integrity(varname, overwrite=self.overwrite)
+    def check_integrity(self, varname, level=None):
+        """
+        To check if the DROP entry is fine before running (delegates to writer)
+
+        Args:
+            varname (str): Variable name to check
+            level (int, float, or list, opt): Level(s) to check, default is None (all levels)
+        """
+        result = self.writer.check_integrity(varname, level=level, overwrite=self.overwrite)
         self.check = result["complete"]
         self.last_record = result["last_record"]
 
