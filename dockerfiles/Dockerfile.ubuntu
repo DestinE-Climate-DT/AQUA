@@ -7,7 +7,7 @@
 FROM ubuntu:24.04
 
 LABEL maintainer="jost.hardenberg@polito.it"
-LABEL version="0.6"
+LABEL version="0.7"
 LABEL description="Custom docker image based ion Ubuntu 24.04 with FDB5 and ECCODES for DestinE ClimateDT"
 
 #ARG DEBIAN_FRONTEND=noninteractive
@@ -17,11 +17,12 @@ RUN apt -y install git wget cmake g++
 RUN apt -y install libaec-dev gfortran
 
 # DIR definitions
+# https://jira.eduuni.fi/browse/CSCDESTINCLIMADT-1331
 ENV INSTALL_DIR=/usr/local
-ENV ECKIT_VER=1.29.3
+ENV ECKIT_VER=1.32.5
 ENV ECCODES_VER=2.41.0
-ENV METKIT_VER=1.13.1
-ENV FDB5_VER=5.17.3
+ENV METKIT_VER=1.15.10
+ENV FDB5_VER=5.19.0
 # mars client 7.0.2
 
 # ECBUILD
