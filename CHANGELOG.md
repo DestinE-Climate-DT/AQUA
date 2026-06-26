@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Updated the AQUA development container to FDB 5.19.0, Metkit 1.15.10, eccodes 2.41.0 and eckit 1.32.5 (#2920)
 
 AQUA diagnostics complete list:
 
