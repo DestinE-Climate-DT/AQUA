@@ -15,10 +15,11 @@ push:
     ntasks_per_node: 1
     time: 00:30:00
 
-logdir_error: /pfs/lustrep3/projappl/project_465000454/jvonhar/log/
-logdir_output: /pfs/lustrep3/projappl/project_465000454/jvonhar/log/
-aquadir: /pfs/lustrep3/projappl/project_465000454/jvonhar/AQUA
-outdir: /pfs/lustrep3/projappl/project_465000454/jvonhar/aqua-analysis/output
+logdir_error: /pfs/lustrep4/scratch/project_465002727/jvonhar/log/
+logdir_output: /pfs/lustrep4/scratch/project_465002727/jvonhar/log/
+aquadir: /pfs/lustrep4/scratch/project_465002727/jvonhar/AQUA
+outdir: /pfs/lustrep4/scratch/project_465002727/jvonhar/aqua-analysis/output
+
 config: config.aqua-web.yaml
 template: aqua-web.job.j2
 
