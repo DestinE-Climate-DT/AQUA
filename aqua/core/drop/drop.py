@@ -64,6 +64,7 @@ class Drop:
         fix=True,
         startdate=None,
         enddate=None,
+        level=None,
         outdir=None,
         tmpdir=None,
         nproc=1,
@@ -103,6 +104,7 @@ class Drop:
                                      format YYYYMMDD, default is None
             enddate (string,opt):   End date for the data to be processed,
                                      format YYYYMMDD, default is None
+            level (int, float, or list, opt): Level(s) to be processed, default is None (all levels)
             outdir (string):         Where the DROP output is stored.
             tmpdir (string):         Where to store temporary files,
                                      default is None.
@@ -163,10 +165,11 @@ class Drop:
         self.kwargs = kwargs
         self.fix = fix
 
-        # configure start date and end date
+        # configure retrieve parameters
         self.startdate = startdate
         self.enddate = enddate
         self._validate_date(startdate, enddate)
+        self.level = level
 
         # configure statistics
         self.stat = stat
@@ -279,6 +282,9 @@ class Drop:
         if self.startdate is not None or self.enddate is not None:
             self.logger.info("startdate is %s, enddate is %s", self.startdate, self.enddate)
             self.logger.info("startdate or enddate are set, please be sure to process one experiment at the time.")
+
+        if self.level is not None:
+            self.logger.info("Level(s) to be processed: %s", self.level)
 
         if not self.frequency:
             self.logger.info("Frequency not specified, no time averaging will be performed.")
@@ -396,7 +402,7 @@ class Drop:
             self.catalog = self.reader.catalog
 
         self.logger.info("Retrieving data...")
-        self.data = self.reader.retrieve(var=self.var)
+        self.data = self.reader.retrieve(var=self.var, level=self.level)
 
         # Set time chunk size for icechunk writer if needed
         if self.output_format == "icechunk":
@@ -538,13 +544,19 @@ class Drop:
         self.logger.info("Removing temporary directory %s", self.tmpdir)
         shutil.rmtree(self.tmpdir)
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def get_filename(self, var, year=None, month=None, level=None, tmp=False):
         """Create output filenames (delegates to writer)"""
-        return self.writer.get_filename(var, year=year, month=month, tmp=tmp)
+        return self.writer.get_filename(var, year=year, month=month, level=level, tmp=tmp)
 
-    def check_integrity(self, varname):
-        """To check if the DROP entry is fine before running (delegates to writer)"""
-        result = self.writer.check_integrity(varname, overwrite=self.overwrite)
+    def check_integrity(self, varname, level=None):
+        """
+        To check if the DROP entry is fine before running (delegates to writer)
+
+        Args:
+            varname (str): Variable name to check
+            level (int, float, or list, opt): Level(s) to check, default is None (all levels)
+        """
+        result = self.writer.check_integrity(varname, level=level, overwrite=self.overwrite)
         self.check = result["complete"]
         self.last_record = result["last_record"]
 
@@ -633,6 +645,7 @@ class Drop:
         self.writer.write_variable(
             data=temp_data,
             var=var,
+            level=self.level,
             overwrite=self.overwrite,
             definitive=self.definitive,
             dask=self.dask,

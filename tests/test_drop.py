@@ -149,6 +149,46 @@ class TestCatalogEntryBuilder:
         assert newblock["args"]["chunks"] == chunks
 
 
+class TestDROPLevelParameter:
+    """Unit tests for DROP level parameter handling."""
+
+    pytestmark = pytest.mark.aqua
+
+    @pytest.mark.parametrize(
+        "level,expected",
+        [
+            (50000, 50000),
+            (50000.5, 50000.5),
+            ([50000, 70000], [50000, 70000]),
+            ([50000.5, 70000.5], [50000.5, 70000.5]),
+            ([50000, 70000.5, 30000], [50000, 70000.5, 30000]),
+            (None, None),
+        ],
+        ids=[
+            "single_int",
+            "single_float",
+            "list_int",
+            "list_float",
+            "list_mixed",
+            "none",
+        ],
+    )
+    def test_drop_level_parameter(self, level, expected, tmp_path):
+        """Test that DROP correctly stores level parameter in various formats."""
+        drop = Drop(
+            catalog="ci",
+            model="IFS",
+            exp="test-tco79",
+            source="long",
+            var="2t",
+            tmpdir=str(tmp_path),
+            outdir=str(tmp_path / "out"),
+            level=level,
+            loglevel=LOGLEVEL,
+        )
+        assert drop.level == expected, f"Level not stored correctly. Got {drop.level}, expected {expected}"
+
+
 class TestDROP:
     """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
 
@@ -360,7 +400,7 @@ class TestDROP:
         # Create monthly files/stores in the appropriate format
         for month in range(1, num_months + 1):
             mm = f"{month:02d}"
-            filename = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+            filename = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
             timeobj = pd.Timestamp(f"{year}-{mm}-01")
             ds = xr.Dataset({drop_arguments["var"]: xr.DataArray([month], dims=["time"], coords={"time": [timeobj]})})
 
@@ -370,8 +410,8 @@ class TestDROP:
                 ds.to_zarr(filename, mode="w")
 
         # Attempt concatenation
-        result = test.writer.concat_year_files(drop_arguments["var"], year)
-        yearly_file = test.writer.get_filename(drop_arguments["var"], year)
+        result = test.writer.concat_year_files(drop_arguments["var"], year=year)
+        yearly_file = test.writer.get_filename(drop_arguments["var"], year=year)
 
         if should_concat:
             # With 12 months: yearly file/store should be created, monthly ones removed
@@ -381,7 +421,7 @@ class TestDROP:
             # Verify monthly files/stores are removed
             for month in range(1, 13):
                 mm = f"{month:02d}"
-                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
                 assert not os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should be removed"
 
             # Verify yearly file/store content
@@ -400,7 +440,7 @@ class TestDROP:
             # Verify monthly files/stores still exist
             for month in range(1, num_months + 1):
                 mm = f"{month:02d}"
-                monthly_file = test.writer.get_filename(drop_arguments["var"], year, month=mm)
+                monthly_file = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
                 assert os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should exist"
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
