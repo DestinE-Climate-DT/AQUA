@@ -311,6 +311,7 @@ def parse_arguments(arguments):
     )
     parser.add_argument("-s", "--source", type=str, help="source to be processed")
     parser.add_argument("--serial", action="store_true", help="run in serial mode (only one core)")
+    parser.add_argument("--no-kind", action="store_true", help="use legacy list files with no kind")
     parser.add_argument("-x", "--max", type=int, help="max number of jobs to submit without dependency")
     parser.add_argument("-t", "--template", type=str, help="template jinja file for slurm job")
     parser.add_argument("-d", "--dry", action="store_true", help="perform a dry run (no job submission)")
@@ -339,6 +340,7 @@ if __name__ == "__main__":
     source = get_arg(args, "source", None)
     config = get_arg(args, "config", "config.aqua-web.yaml")
     serial = get_arg(args, "serial", False)
+    no_kind = get_arg(args, "no_kind", False)
     listfile = get_arg(args, "list", None)
     dependency = get_arg(args, "max", None)
     dryrun = get_arg(args, "dry", False)
@@ -387,9 +389,17 @@ if __name__ == "__main__":
                     continue
 
                 if ensemble:
-                    catalog, model, exp, realization, kind, *source = re.split(r",|\s+|\t+", line.strip())
+                    if no_kind:
+                        catalog, model, exp, realization, *source = re.split(r",|\s+|\t+", line.strip())
+                        kind = None
+                    else:
+                        catalog, model, exp, realization, kind, *source = re.split(r",|\s+|\t+", line.strip())
                 else:
-                    catalog, model, exp, kind, *source = re.split(r",|\s+|\t+", line.strip())  # split by comma, space, tab
+                    if no_kind:
+                        catalog, model, exp, *source = re.split(r",|\s+|\t+", line.strip())
+                        kind = None
+                    else:
+                        catalog, model, exp, kind, *source = re.split(r",|\s+|\t+", line.strip())  # split by comma, space, tab
 
                 # Convert source list to string or None
                 if len(source) == 0:

@@ -282,13 +282,17 @@ Options
 
     Source to be processed.
 
-.. option: --catalog <catalog>
+.. option:: --catalog <catalog>
 
     The catalog to be processed.
 
-.. option: --kind <kind>
+.. option:: --kind <kind>
 
     Experiment kind to be passed to ``aqua analysis`` command.
+
+.. option:: --no-kind
+
+    Use legacy list files with no kind.
 
 .. option:: --no-ensemble
 
