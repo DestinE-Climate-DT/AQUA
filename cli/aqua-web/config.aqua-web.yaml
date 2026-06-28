@@ -2,11 +2,19 @@ machine: lumi
 account: project_462000911
 username: jvonhar
 
-job_name: aqua-web
-partition: small
-nodes: 1
-ntasks_per_node: 128
-time: 03:30:00
+analysis:
+    job_name: aqua-web
+    partition: small
+    nodes: 1
+    ntasks_per_node: 128
+    time: 04:30:00
+push:
+    job_name: aqua-web.push
+    partition: debug
+    nodes: 1
+    ntasks_per_node: 1
+    time: 00:30:00
+
 logdir_error: /pfs/lustrep3/projappl/project_465000454/jvonhar/log/
 logdir_output: /pfs/lustrep3/projappl/project_465000454/jvonhar/log/
 aquadir: /pfs/lustrep3/projappl/project_465000454/jvonhar/AQUA

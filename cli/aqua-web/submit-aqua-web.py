@@ -142,10 +142,15 @@ class Submitter:
         if self.jobname:
             jobname = self.jobname
         else:
-            jobname = definitions.get("jobname", "aqua-web")
+            jobname = definitions["analysis"].get("jobname", "aqua-web")
         # create identifier for each model-exp-source-var tuple
         full_job_name = jobname + "_" + "_".join([catalog, model, exp, source])
         definitions["job_name"] = full_job_name
+
+        definitions["partition"] = definitions["analysis"]["partition"]
+        definitions["nodes"] = definitions["analysis"]["nodes"]
+        definitions["ntasks_per_node"] = definitions["analysis"]["ntasks_per_node"]
+        definitions["time"] = definitions["analysis"]["time"]
 
         definitions["output"] = full_job_name + "_%j.out"
         definitions["error"] = full_job_name + "_%j.err"
@@ -202,11 +207,16 @@ class Submitter:
             definitions = yaml.load(file)
 
         username = definitions["username"]
-        full_job_name = definitions.get("jobname", "push-aqua-web")
+        full_job_name = definitions.get("jobname", "aqua-web.push")
 
         definitions["job_name"] = full_job_name
         definitions["output"] = full_job_name + "_%j.out"
         definitions["error"] = full_job_name + "_%j.err"
+
+        definitions["partition"] = definitions["push"]["partition"]
+        definitions["nodes"] = definitions["push"]["nodes"]
+        definitions["ntasks_per_node"] = definitions["push"]["ntasks_per_node"]
+        definitions["time"] = definitions["push"]["time"]
 
         definitions["push"] = "true"
         definitions["explist"] = listfile
