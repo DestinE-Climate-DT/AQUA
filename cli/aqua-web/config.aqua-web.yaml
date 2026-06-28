@@ -4,12 +4,14 @@ username: jvonhar
 
 analysis:
     job_name: aqua-web
+    emplate: aqua-web.job.j2
     partition: small
     nodes: 1
     ntasks_per_node: 128
     time: 04:30:00
 push:
     job_name: aqua-web.push
+    template: aqua-web.push.job.j2
     partition: debug
     nodes: 1
     ntasks_per_node: 1
@@ -19,9 +21,6 @@ logdir_error: /pfs/lustrep4/scratch/project_465002727/jvonhar/log/
 logdir_output: /pfs/lustrep4/scratch/project_465002727/jvonhar/log/
 aquadir: /pfs/lustrep4/scratch/project_465002727/jvonhar/AQUA
 outdir: /pfs/lustrep4/scratch/project_465002727/jvonhar/aqua-analysis/output
-
-config: config.aqua-web.yaml
-template: aqua-web.job.j2
 
 catalog: climatedt-phase1
 model: IFS-NEMO
