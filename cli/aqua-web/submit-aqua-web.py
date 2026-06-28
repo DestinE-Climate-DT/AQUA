@@ -31,7 +31,7 @@ class Submitter:
         config="config.aqua-web.yaml",
         template="aqua-web.job.j2",
         dryrun=False,
-        parallel=True,
+        serial=True,
         ensemble=True,
         native=False,
         fresh=False,
@@ -45,7 +45,7 @@ class Submitter:
             config: yaml configuration file base name
             template: jinja template file base name
             dryrun: perform a dry run (no job submission)
-            parallel: run in parallel mode (multiple cores)
+            serial: run in serial mode (no dask cluster will be created)
             ensemble: process ensemble experiments/new folder structure.
             native: use the native AQUA version (default is the container version)
             fresh: use a fresh (new) output directory, do not recycle original one
@@ -61,7 +61,7 @@ class Submitter:
 
         self.jobname = jobname
         self.dryrun = dryrun
-        self.parallel = parallel
+        self.serial = serial
         self.native = native
         self.ensemble = ensemble
         if fresh:
@@ -78,7 +78,7 @@ class Submitter:
         # Parse the output to check if the job name is in the list
         return job_name in output
 
-    def submit_sbatch(self, catalog, model, exp, realization, source=None, dependency=None):
+    def submit_sbatch(self, catalog, model, exp, realization, kind, source=None, dependency=None):
         """
         Submit a sbatch script with basic options
 
@@ -87,6 +87,7 @@ class Submitter:
             model: model to be processed
             exp: experiment to be processed
             realization: realization to be processed
+            kind: kind of the experiment
             source: source to be processed
             dependency: jobid on which dependency of slurm is built
 
@@ -114,14 +115,18 @@ class Submitter:
             definitions["exp"] = exp
         else:
             exp = definitions["exp"]
+        if kind:
+            definitions["kind"] = f"-k {kind}"
+        else:
+            definitions["kind"] = ""
         if source:
             definitions["source"] = source
         else:
             source = definitions["source"]
-        if self.parallel:
-            definitions["parallel"] = "-p"
+        if self.serial:
+            definitions["serial"] = "--serial"
         else:
-            definitions["parallel"] = ""
+            definitions["serial"] = ""
         if self.native:
             definitions["nativeaqua"] = "true"
         else:
@@ -294,17 +299,18 @@ def parse_arguments(arguments):
 
     parser.add_argument("-c", "--config", type=str, help="yaml configuration file")
     parser.add_argument("-m", "--model", type=str, help="model to be processed")
-    parser.add_argument("-k", "--catalog", type=str, help="catalog for experiment")
+    parser.add_argument("--catalog", type=str, help="catalog for experiment")
     parser.add_argument("-e", "--exp", type=str, help="experiment to be processed")
-    parser.add_argument("--realization", type=str, help="realization to be processed. Specifying it assumes ensemble usage.")
+    parser.add_argument("-k", "--kind", type=str, help="experiment kind to be passed to aqua analysis")
+    parser.add_argument("--realization", type=str, help="realization to be processed. If not specified r1 is assumed")
     parser.add_argument(
         "--no-ensemble",
         action="store_false",
         dest="ensemble",
-        help="Assume old 3-level folder structure. NB: If realization not chosen set it to r1 by default",
+        help="Assume old 3-level folder structure.",
     )
     parser.add_argument("-s", "--source", type=str, help="source to be processed")
-    parser.add_argument("-r", "--serial", action="store_true", help="run in serial mode (only one core)")
+    parser.add_argument("--serial", action="store_true", help="run in serial mode (only one core)")
     parser.add_argument("-x", "--max", type=int, help="max number of jobs to submit without dependency")
     parser.add_argument("-t", "--template", type=str, help="template jinja file for slurm job")
     parser.add_argument("-d", "--dry", action="store_true", help="perform a dry run (no job submission)")
@@ -340,6 +346,7 @@ if __name__ == "__main__":
     push = get_arg(args, "push", False)
     native = get_arg(args, "native", False)
     fresh = get_arg(args, "fresh", False)
+    kind = get_arg(args, "kind", None)
     jobname = get_arg(args, "jobname", None)
 
     ensemble = get_arg(args, "ensemble", True)
@@ -355,7 +362,7 @@ if __name__ == "__main__":
         config=config,
         template=template,
         dryrun=dryrun,
-        parallel=not serial,
+        serial=serial,
         native=native,
         ensemble=ensemble,
         fresh=fresh,
@@ -380,9 +387,9 @@ if __name__ == "__main__":
                     continue
 
                 if ensemble:
-                    catalog, model, exp, realization, *source = re.split(r",|\s+|\t+", line.strip())
+                    catalog, model, exp, realization, kind, *source = re.split(r",|\s+|\t+", line.strip())
                 else:
-                    catalog, model, exp, *source = re.split(r",|\s+|\t+", line.strip())  # split by comma, space, tab
+                    catalog, model, exp, kind, *source = re.split(r",|\s+|\t+", line.strip())  # split by comma, space, tab
 
                 # Convert source list to string or None
                 if len(source) == 0:
@@ -398,13 +405,13 @@ if __name__ == "__main__":
 
                 count = count + 1
 
-                jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
+                jobid = submitter.submit_sbatch(catalog, model, exp, realization, kind, source=source, dependency=parent_job)
                 jobid_list.append(jobid)
 
         if push:
             submitter.submit_push(jobid_list, listfile)
 
     else:
-        jobid = submitter.submit_sbatch(catalog, model, exp, realization, source=source, dependency=parent_job)
+        jobid = submitter.submit_sbatch(catalog, model, exp, realization, kind, source=source, dependency=parent_job)
         if push:
             submitter.submit_push([jobid], f"{model}/{exp}")
