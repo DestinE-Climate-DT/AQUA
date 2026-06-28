@@ -6,7 +6,7 @@
 #climatedt-gen2 IFS-FESOM-5km baseline-cont r1 default
 
 #climatedt-gen2 IFS-NEMO-5km baseline-hist r1 default
-#@climatedt-gen2 IFS-NEMO-5km projections-ssp370 r1 scenario
+#climatedt-gen2 IFS-NEMO-5km projections-ssp370 r1 scenario
 #climatedt-gen2 IFS-NEMO-5km baseline-cont r1 default
 
 climatedt-gen2 ICON-5km baseline-hist r1 default
