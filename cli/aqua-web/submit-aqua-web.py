@@ -29,8 +29,8 @@ class Submitter:
         self,
         loglevel="INFO",
         config="config.aqua-web.yaml",
-        template="aqua-web.job.j2",
-        template_push="aqua-web.push.job.j2",
+        template=None,
+        template_push=None,
         dryrun=False,
         serial=True,
         ensemble=True,
@@ -286,6 +286,20 @@ class Submitter:
             if not found_config:
                 raise FileNotFoundError(f"Config file '{config}' not found in search paths: {search_paths}")
 
+        yaml = YAML(typ="rt")
+        with open(config, "r", encoding="utf-8") as file:
+            config_dict = yaml.load(file)
+
+        if template is None:
+            template = config_dict.get("analysis", {}).get("template")
+        if not template:
+            template = "aqua-web.job.j2"
+
+        if template_push is None:
+            template_push = config_dict.get("push", {}).get("template")
+        if not template_push:
+            template_push = "aqua-web.push.job.j2"
+
         if not os.path.isfile(template):
             found_config = False
             for path in search_paths:
@@ -383,8 +397,8 @@ if __name__ == "__main__":
     elif ensemble and not realization:
         realization = "r1"  # Default realization for ensemble mode
 
-    template = get_arg(args, "template", "aqua-web.job.j2")
-    template_push = get_arg(args, "template-push", "aqua-web.push.job.j2")
+    template = get_arg(args, "template", None)
+    template_push = get_arg(args, "template-push", None)
 
     submitter = Submitter(
         config=config,
