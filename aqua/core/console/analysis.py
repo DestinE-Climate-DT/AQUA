@@ -123,7 +123,7 @@ def analysis_execute(args):
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
 
     logger.debug("outputdir: %s", outputdir)
-    if nmaxprocesses:
+    if nmaxprocesses is not None:
         logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
     # Format the realization string by prepending 'r' if it is a digit or setting a default `r1`.
