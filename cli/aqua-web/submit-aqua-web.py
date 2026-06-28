@@ -233,7 +233,7 @@ class Submitter:
 
         definitions["fresh"] = self.fresh
 
-        with open(self.templat_push, "r", encoding="utf-8") as file:
+        with open(self.template_push, "r", encoding="utf-8") as file:
             rendered_job = Template(file.read()).render(definitions)
 
         with NamedTemporaryFile("w", delete=False) as tempfile:
