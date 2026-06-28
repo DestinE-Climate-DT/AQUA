@@ -30,6 +30,7 @@ class Submitter:
         loglevel="INFO",
         config="config.aqua-web.yaml",
         template="aqua-web.job.j2",
+        template_push="aqua-web.push.job.j2",
         dryrun=False,
         serial=True,
         ensemble=True,
@@ -44,6 +45,7 @@ class Submitter:
             loglevel: logging level
             config: yaml configuration file base name
             template: jinja template file base name
+            template_push: jinja template file base name for push job
             dryrun: perform a dry run (no job submission)
             serial: run in serial mode (no dask cluster will be created)
             ensemble: process ensemble experiments/new folder structure.
@@ -57,7 +59,7 @@ class Submitter:
 
         self.logger = log_configure(log_level=loglevel, log_name="aqua-web")
 
-        self.config, self.template = self.find_config_files(config, template)
+        self.config, self.template, self.template_push = self.find_config_files(config, template, template_push)
 
         self.jobname = jobname
         self.dryrun = dryrun
@@ -231,7 +233,7 @@ class Submitter:
 
         definitions["fresh"] = self.fresh
 
-        with open(self.template, "r", encoding="utf-8") as file:
+        with open(self.templat_push, "r", encoding="utf-8") as file:
             rendered_job = Template(file.read()).render(definitions)
 
         with NamedTemporaryFile("w", delete=False) as tempfile:
@@ -261,7 +263,7 @@ class Submitter:
             self.logger.debug("SLURM job name: %s", full_job_name)
             return "0"
 
-    def find_config_files(self, config, template):
+    def find_config_files(self, config, template, template_push):
         """
         Find the configuration and template files
         """
@@ -295,9 +297,21 @@ class Submitter:
             if not found_config:
                 raise FileNotFoundError(f"Template file '{config}' not found in search paths: {search_paths}")
 
+        if not os.path.isfile(template_push):
+            found_config = False
+            for path in search_paths:
+                template_push_path = os.path.join(path, template_push)
+                if os.path.exists(template_push_path):
+                    template_push = template_push_path
+                    found_config = True
+                    break
+            if not found_config:
+                raise FileNotFoundError(f"Template file '{template_push}' not found in search paths: {search_paths}")
+
         self.logger.debug("Using configuration file: %s", config)
-        self.logger.debug("Using job template: %s", template)
-        return config, template
+        self.logger.debug("Using analysis job template: %s", template)
+        self.logger.debug("Using push job template: %s", template_push)
+        return config, template, template_push
 
 
 def parse_arguments(arguments):
@@ -323,7 +337,8 @@ def parse_arguments(arguments):
     parser.add_argument("--serial", action="store_true", help="run in serial mode (only one core)")
     parser.add_argument("--no-kind", action="store_true", help="use legacy list files with no kind")
     parser.add_argument("-x", "--max", type=int, help="max number of jobs to submit without dependency")
-    parser.add_argument("-t", "--template", type=str, help="template jinja file for slurm job")
+    parser.add_argument("-t", "--template", type=str, help="template jinja file for analysis slurm job")
+    parser.add_argument("--template-push", type=str, help="template jinja file for push slurm job")
     parser.add_argument("-d", "--dry", action="store_true", help="perform a dry run (no job submission)")
     parser.add_argument("-l", "--loglevel", type=str, help="logging level")
     parser.add_argument("-p", "--push", action="store_true", help="flag to push to aqua-web")
@@ -369,10 +384,12 @@ if __name__ == "__main__":
         realization = "r1"  # Default realization for ensemble mode
 
     template = get_arg(args, "template", "aqua-web.job.j2")
+    template_push = get_arg(args, "template-push", "aqua-web.push.job.j2")
 
     submitter = Submitter(
         config=config,
         template=template,
+        template_push=template_push,
         dryrun=dryrun,
         serial=serial,
         native=native,
