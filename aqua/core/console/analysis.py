@@ -1,18 +1,13 @@
 """AQUA analysis command line interface."""
 
 import argparse
-import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from importlib import resources as pypath
 
-from dask.distributed import LocalCluster
-
-from aqua.core.analysis import configure_experiment_kind, get_aqua_paths, run_command, run_diagnostic_collection
-from aqua.core.configurer import ConfigPath
+from aqua.core.analysis import Analysis
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
+from aqua.core.util import get_arg
 
 
 def analysis_parser(parser=None):
@@ -48,17 +43,17 @@ def analysis_parser(parser=None):
     parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
     parser.add_argument("--config", type=str, help="Configuration file")
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
+    parser.add_argument("--checker", action="store_true", help="Run the setup checker")
 
     # computation
-    parser.add_argument("--local_clusters", action="store_true",
-                        help="Use separate local clusters instead of single global one (deprecated)")
-    parser.add_argument("--serial", action="store_true", help="Disable dask parallel execution with a cluster")
+    parser.add_argument("--serial", action="store_true", help="Disable dask cluster parallel execution")
     parser.add_argument("--nworkers", type=int, default=None,
                         help="Number of workers to use in the cluster (overrides config file)")
     parser.add_argument("--nthreads", type=int, default=None,
                         help="Number of threads per worker to use in the cluster (overrides config file)")
     parser.add_argument("--nmaxprocesses", type=int, default=-1,
                         help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
+
 
     # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
@@ -75,146 +70,55 @@ def analysis_execute(args):
     loglevel = args.loglevel
     logger = log_configure(loglevel, "AQUA Analysis")
 
-    aqua_core_path, aqua_diagnostics_path, aqua_configdir, aqua_config_path = get_aqua_paths(args=args, logger=logger)
+    # Initialize analyzer
+    analyzer = Analysis(config_file_path=args.config, loglevel=loglevel)
 
-    config = load_yaml(aqua_config_path)
-    loglevel = args.loglevel or config.get("job", {}).get("loglevel", "info")
-    logger = log_configure(log_level=loglevel.lower(), log_name="AQUA Analysis")
+    # Load config and get AQUA paths
+    config = analyzer.get_config()
+    aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
-    model = args.model or config.get("job", {}).get("model")
-    exp = args.exp or config.get("job", {}).get("exp")
-    source = args.source or config.get("job", {}).get("source", "lra-r100-monthly")
-    source_oce = args.source_oce or config.get("job", {}).get("source_oce")
-    realization = args.realization if args.realization else config.get("job", {}).get("realization")
+    # extract default
+    job_config = config.get("job", {})
+    cluster_config = config.get("cluster", {})
 
-    # startdate and enddate
-    startdate = args.startdate or config.get("job", {}).get("startdate")
-    enddate = args.enddate or config.get("job", {}).get("enddate")
-    # We get regrid option and then we set it to None if it is False
-    # This avoids to add the --regrid argument to the command line
-    # if it is not needed
-    regrid = args.regrid or config.get("job", {}).get("regrid", False)
-    if regrid is False or regrid.lower() == "false":
-        regrid = None
+    # set catalog, model, exp, source, source_oce, realization, regrid, output and dask in the analyzer
+    analyzer.set_catalog_model_exp_source(args, job_config)
+    analyzer.set_startdate_enddate(args, job_config)
+    analyzer.set_realization(args, job_config)
+    analyzer.set_regrid_option(args, job_config)
+    analyzer.set_output_directory(args, job_config)
+    analyzer.set_serial_or_parallel(args)
 
-    if not all([model, exp, source]):
-        logger.error("Model, experiment, and source must be specified either in config or as command-line arguments.")
-        sys.exit(1)
-    else:
-        logger.info(
-            "Requested experiment: Model = %s, Experiment = %s, Source = %s. Source_oce = %s", model, exp, source, source_oce
-        )
-
-    catalog = args.catalog or config.get("job", {}).get("catalog")
-    if catalog:
-        logger.info("Requested catalog: %s", catalog)
-    else:
-        cat, _ = ConfigPath().browse_catalogs(model, exp, source)
-        if cat:
-            catalog = cat[0]
-            logger.info("Automatically determined catalog: %s", catalog)
-        else:
-            logger.error(
-                "Model = %s, Experiment = %s, Source = %s triplet not found in any installed catalog.", model, exp, source
-            )
-            sys.exit(1)
-
-    outputdir = os.path.expandvars(args.outputdir or config.get("job", {}).get("outputdir", "./output"))
+    # maximum parallel processes for the ThreadPoolExecutor
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
-
-    logger.debug("outputdir: %s", outputdir)
     logger.debug("nmaxprocesses: %d", nmaxprocesses)
+    # read the experiment kind and configure
+    exp_kind_file = job_config.get("experiment_kind")
+    analyzer.configure_experiment_kind(args.kind, exp_kind_file)
 
-    # Format the realization string by prepending 'r' if it is a digit or setting a default `r1`.
-    realization = format_realization(realization)
-    logger.info("Input realization formatted to: %s", realization)
-
-    output_dir = os.path.join(outputdir, catalog, model, exp, realization)
-    output_dir = os.path.expandvars(output_dir)
-
-    # Set Dask timeouts if not already defined in the environment
-    if "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT" not in os.environ:
-        connect_timeout = config.get("cluster", {}).get("connect_timeout", None)
-        if connect_timeout:
-            # Increase timeout (certainly needed on LUMI, possibly useful elsewhere too).
-            os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"] = f"{connect_timeout}s"
-    if "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP" not in os.environ:
-        tcp_timeout = config.get("cluster", {}).get("tcp_timeout", None)
-        if tcp_timeout:
-            os.environ["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"] = f"{tcp_timeout}s"  # optional, might be good
-
-    os.environ["OUTPUT"] = output_dir
+    # TODO: make a function or move it into the class
+    os.environ["OUTPUT"] = analyzer.output_dir
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
-    create_folder(output_dir, loglevel=loglevel)
 
-    # expand the environment variables in the entire config
-    config = expand_env_vars(config)
-
-    # read the experiment kind
-    exp_kind_file = config.get("job", {}).get("experiment_kind")
-    exp_kind = args.kind
-    exp_kind_dict = configure_experiment_kind(exp_kind, exp_kind_file, logger)
-
-    run_checker = config.get("job", {}).get("run_checker", False)
+    # cli checker setup and run
+    run_checker = get_arg(args, "checker", False, config=job_config, key="run_checker")
     if run_checker:
-        logger.info("Running setup checker")
-        checker_script_path = os.path.join(pypath.files("aqua.core"), "analysis", "cli_checker.py")
-        output_log_path = os.path.expandvars(f"{output_dir}/setup_checker.log")
-        command = (
-            f"python {checker_script_path} --model {model} --exp {exp} --source {source} -l {loglevel} --yaml {output_dir}"
-        )
-        if regrid:
-            command += f" --regrid {regrid}"
-        if catalog:
-            command += f" --catalog {catalog}"
-        if realization:
-            command += f" --realization {realization}"
-        logger.debug("Command: %s", command)
-        result = run_command(command, log_file=output_log_path, logger=logger)
+        _ = analyzer.run_setup_checker()
 
-        if result == 1:
-            logger.critical("Setup checker failed, exiting.")
-            sys.exit(1)
-        elif result == 0:
-            logger.info("Setup checker completed successfully.")
-        else:
-            logger.error("Setup checker returned exit code %s, check the logs for more information.", result)
-
+    # running or not
     run = config.get("run", [])
     if not run:
         logger.error("No run block found in configuration.")
         sys.exit(1)
 
-    if args.serial:
-        if args.local_clusters or args.nworkers or args.nthreads:
-            logger.warning("Serial execution selected, ignoring local cluster and worker/thread settings.")
-
-        logger.info("Running diagnostic collections without a dask cluster.")
-        cluster = None
-        cluster_address = None
-    else:
-        if args.local_clusters:
-            logger.info("Running diagnostic collections in parallel with separate local clusters.")
-            cluster = None
-            cluster_address = None
-        else:
-            nthreads = args.nthreads if args.nthreads is not None else config.get("cluster", {}).get("threads", 2)
-            nworkers = args.nworkers if args.nworkers is not None else config.get("cluster", {}).get("workers", 32)
-            mem_limit = config.get("cluster", {}).get("memory_limit", "3.1GiB")
-            logger.debug("Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit)
-
-            # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
-            cluster = LocalCluster(
-                threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR
-            )
-            cluster_address = cluster.scheduler_address
-            logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
+    if not analyzer.serial:
+        analyzer.configure_dask_cluster(args, cluster_config)
 
     # read cli definitions and prepend script path
     cli = config.get("cli", {})
-    script_dir = config.get("job", {}).get("script_path_base")  # we were not using this key
+    script_dir = job_config.get("script_path_base")  # we were not using this key
     if script_dir:
         for diag in cli:
             cli[diag] = os.path.join(script_dir, cli[diag])
@@ -234,37 +138,20 @@ def analysis_execute(args):
 
                 futures.append(
                     executor.submit(
-                        run_diagnostic_collection,
+                        analyzer.run_diagnostic_collection,
                         collection=collection,
-                        serial=args.serial,
                         diag_config=diag_config,
                         cli=cli,
-                        catalog=catalog,
-                        model=model,
-                        exp=exp,
-                        source=source,
-                        source_oce=source_oce,
-                        realization=realization,
-                        startdate=startdate,
-                        enddate=enddate,
-                        regrid=regrid,
-                        output_dir=output_dir,
-                        loglevel=loglevel,
-                        logger=logger,
-                        cluster=cluster_address,
-                        exp_kind_dict=exp_kind_dict,
                     )
                 )
 
             for future in as_completed(futures):
                 try:
-                    result = future.result()
+                    _ = future.result()
                 except Exception as e:
                     logger.error("Diagnostic collection raised an exception: %s", e)
 
-    if cluster:
-        cluster.close()
-        logger.info("Dask cluster closed.")
+    analyzer.close_dask_cluster()
 
     logger.info("All diagnostic collections finished.")
 
