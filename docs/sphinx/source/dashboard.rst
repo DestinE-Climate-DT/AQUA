@@ -282,6 +282,18 @@ Options
 
     Source to be processed.
 
+.. option:: --catalog <catalog>
+
+    The catalog to be processed.
+
+.. option:: --kind <kind>
+
+    Experiment kind to be passed to ``aqua analysis`` command.
+
+.. option:: --no-kind
+
+    Use legacy list files with no kind.
+
 .. option:: --no-ensemble
 
     Specifies that the old 3-level ensemble structure (catalog/model/experiment) should be used instead
@@ -293,9 +305,9 @@ Options
     If a single experiment is specified, and ``--realization`` is not specified,
     "r1" will be assumed as the realization by default.
 
-.. option:: -r, --serial
+.. option:: --serial
 
-    Run in serial mode (only one core). This is passed to the ``aqua-analysis.py`` script.
+    Run in serial mode (no dask cluster will be started). This is passed to the ``aqua analysis`` command.
 
 .. option:: -x <max>, --max <max>
 
