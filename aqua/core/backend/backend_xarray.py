@@ -61,21 +61,14 @@ class BackendXarray(Backend):
 
         data = xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine, **self.xr_kwargs)
 
-        # Apply the fixer first and the datamodel as second
-        if self.fixer:
-            self.logger.debug("Applying variable fixes")
-            data = self.fixer.fixer(data, var)
-            data = self.fixer.fixerdatamodel.apply(data)
-        if self.datamodel:
-            self.logger.debug("Applying data model")
-            data = self.datamodel.apply(data)
-
-        if var:
-            data = self._selvar(data=data, var=var)
-        if startdate or enddate:
-            data = self._seldate(data=data, startdate=startdate, enddate=enddate)
-        if level:
-            data = self._sellevel(data=data, level=level, level_coord=level_coord)
+        data = super()._postprocess_data(
+            data=data,
+            var=var,
+            level=level,
+            level_coord=level_coord,
+            startdate=startdate,
+            enddate=enddate,
+        )
 
         return data
 

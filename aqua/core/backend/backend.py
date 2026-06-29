@@ -38,6 +38,33 @@ class Backend(ABC):
     ):
         """Open data, apply filters, return xr.Dataset."""
 
+    def _postprocess_data(
+        self,
+        data: xr.Dataset,
+        var: str | list = None,
+        level: str | list = None,
+        level_coord: str = None,
+        startdate: str = None,
+        enddate: str = None,
+    ):
+        # Apply the fixer first and the datamodel as second
+        if self.fixer:
+            self.logger.debug("Applying variable fixes")
+            data = self.fixer.fixer(data, var)
+            data = self.fixer.fixerdatamodel.apply(data)
+        if self.datamodel:
+            self.logger.debug("Applying data model")
+            data = self.datamodel.apply(data)
+
+        if var:
+            data = self._selvar(data=data, var=var)
+        if startdate or enddate:
+            data = self._seldate(data=data, startdate=startdate, enddate=enddate)
+        if level:
+            data = self._sellevel(data=data, level=level, level_coord=level_coord)
+
+        return data
+
     # @abstractmethod
     # def _retrieve_plain(self):
     #     """Open raw data with no filters. Used by Regridder during init."""
