@@ -229,7 +229,7 @@ class AquaFDBGenerator:
         if levtype in grid_mappings:
             grid_str = (
                 grid_mappings[levtype]
-                .get(self.model, grid_mappings[levtype].get("default"))
+                .get(model_key, grid_mappings[levtype].get("default"))
                 .format(ocean_grid=self.ocean_grid, aqua_grid=aqua_grid)
             )
         else:
