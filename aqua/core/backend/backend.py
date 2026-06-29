@@ -28,14 +28,20 @@ class Backend(ABC):
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
 
     @abstractmethod
-    def retrieve(self, var: str | list = None, level: str | list = None, startdate: str = None, enddate: str = None):
+    def retrieve(
+        self,
+        var: str | list = None,
+        level: str | list = None,
+        level_coord: str = None,
+        startdate: str = None,
+        enddate: str = None,
+    ):
         """Open data, apply filters, return xr.Dataset."""
-        ...
 
-    @abstractmethod
-    def _retrieve_plain(self):
-        """Open raw data with no filters. Used by Regridder during init."""
-        ...
+    # @abstractmethod
+    # def _retrieve_plain(self):
+    #     """Open raw data with no filters. Used by Regridder during init."""
+    #     ...
 
     @abstractmethod
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
@@ -53,8 +59,7 @@ class Backend(ABC):
             if level_coord not in full_vert_coord:
                 self.logger.error("Specified vertical coordinate %s not found in data!", level_coord)
                 return data
-            else:
-                full_vert_coord = [level_coord]
+            full_vert_coord = [level_coord]
 
         # return if no vertical coordinate is found
         if not full_vert_coord:

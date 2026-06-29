@@ -14,12 +14,12 @@ class BackendXarray(Backend):
     No intake catalog is involved. Supports netCDF and zarr.
     """
 
-    SUPPORTED_FORMATS = ("netcdf", "zarr")
+    SUPPORTED_ENGINES = ("netcdf", "zarr")
 
     def __init__(
         self,
         path: str,
-        format: str = None,
+        engine: str = None,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
         datamodel: DataModel = None,
@@ -31,7 +31,7 @@ class BackendXarray(Backend):
 
         Args:
             path (str): Path to the data file or directory.
-            format (str, optional): Format of the data file. If None, it will be detected automatically.
+            engine (str, optional): Engine to use for opening the data file. If None, it will be detected automatically.
             chunks (str | dict, optional): Chunking strategy for xarray. Defaults to "auto".
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to define the data structure. Defaults to None.
@@ -40,13 +40,13 @@ class BackendXarray(Backend):
         """
 
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
-        detected_format = self._detect_format(path)
-        format = format or detected_format
+        detected_engine = self._detect_engine(path)
+        engine = engine or detected_engine
 
-        if format not in self.SUPPORTED_FORMATS:
-            raise ValueError(f"format must be one of {self.SUPPORTED_FORMATS}, got {format!r}")
+        if engine not in self.SUPPORTED_ENGINES:
+            raise ValueError(f"engine must be one of {self.SUPPORTED_ENGINES}, got {engine!r}")
         self.path = path
-        self.format = format
+        self.engine = engine
         self.chunks = chunks
         self.xr_kwargs = kwargs
 
@@ -59,10 +59,7 @@ class BackendXarray(Backend):
         enddate: str = None,
     ):
 
-        if self.format == "netcdf":
-            data = xr.open_mfdataset(self.path, chunks=self.chunks, **self.xr_kwargs)
-        elif self.format == "zarr":
-            data = xr.open_zarr(self.path, chunks=self.chunks, **self.xr_kwargs)
+        data = xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine, **self.xr_kwargs)
 
         # Apply the fixer first and the datamodel as second
         if self.fixer:
@@ -96,9 +93,9 @@ class BackendXarray(Backend):
         return super()._selvar(data=data, var=var)
 
     @staticmethod
-    def _detect_format(path):
+    def _detect_engine(path):
         """
-        Detect the format of the data file based on its extension.
+        Detect the engine of the data file based on its extension.
 
         Args:
             path (str): Path to the data file or directory.
@@ -107,7 +104,7 @@ class BackendXarray(Backend):
         # Raise NoDataError if the expanded glob does not contain any files of the same format
         if path.endswith(".zarr"):
             return "zarr"
-        elif path.endswith(".nc") or path.endswith(".nc4"):
+        if path.endswith(".nc") or path.endswith(".nc4"):
             return "netcdf"
         else:
             raise ValueError(f"Could not detect format from path: {path}")
