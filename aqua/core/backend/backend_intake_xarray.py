@@ -78,7 +78,7 @@ class BackendIntakeXarray(BackendIntake):
         startdate: str = None,
         enddate: str = None,
     ):
-        esmcat = self.esmcat.copy()
+        esmcat = self.esmcat
         read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
 
         # HACK: forcing to netcdf4 for intake2
