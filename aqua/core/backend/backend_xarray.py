@@ -14,7 +14,7 @@ class BackendXarray(Backend):
     No intake catalog is involved. Supports netCDF and zarr.
     """
 
-    SUPPORTED_ENGINES = ("netcdf", "zarr")
+    SUPPORTED_ENGINES = ("netcdf4", "zarr")
 
     def __init__(
         self,
@@ -98,6 +98,6 @@ class BackendXarray(Backend):
         if path.endswith(".zarr"):
             return "zarr"
         if path.endswith(".nc") or path.endswith(".nc4"):
-            return "netcdf"
+            return "netcdf4"
         else:
             raise ValueError(f"Could not detect format from path: {path}")
