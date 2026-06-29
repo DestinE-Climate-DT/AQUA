@@ -137,7 +137,7 @@ def _load_generated_sources(config):
     model = config["model"]
     exp = config["exp"]
 
-    catalog_entry_dir = catalog_path / "catalogs" / catalog_dir / "catalog" / model.upper()
+    catalog_entry_dir = catalog_path / "catalogs" / catalog_dir / "catalog" / model
     entry_file = catalog_entry_dir / f"{exp}.yaml"
     main_yaml_file = catalog_entry_dir / "main.yaml"
 
