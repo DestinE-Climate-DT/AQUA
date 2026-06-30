@@ -72,7 +72,6 @@ class BackendIntakeFactory:
 
     def get_metadata(
         self,
-        fix: bool = True,
         fixer_name: str = None,
         src_grid_name: str = None,
         convention: str = None,
@@ -86,6 +85,9 @@ class BackendIntakeFactory:
         src_grid_name = src_grid_name or self.metadata.get("src_grid_name")
         convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION)
         datamodel_name = datamodel_name or self.metadata.get("data_model", DEFAULT_DATAMODEL)
+
+        if convention is not None and convention != DEFAULT_CONVENTION:
+            raise ValueError(f"Convention {convention} not supported, only 'eccodes' is supported so far.")
 
         return fixer_name, src_grid_name, convention, datamodel_name
 

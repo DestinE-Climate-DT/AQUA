@@ -11,7 +11,7 @@ import xarray as xr
 from metpy.units import units
 from smmregrid import GridInspector
 
-from aqua.core.backend import BackendIntakeFDB, BackendIntakeXarray
+from aqua.core.backend import BackendIntakeFactory, BackendIntakeFDB
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -154,6 +154,9 @@ class Reader:
         self.startdate = startdate
         self.enddate = enddate
 
+        # fixer
+        self.fix = fix
+
         self.sample_data = None  # used to avoid multiple calls of retrieve_plain
 
         # define configuration file and paths
@@ -172,25 +175,19 @@ class Reader:
         if not all(v is not None for v in [model, exp, source]):
             raise ValueError("The 'model', 'exp', and 'source' arguments are mandatory when using the intake catalog.")
 
-        # extract info on expact to check which backend to use.
-        self.cat, self.catalog_file, self.machine_file = configurer.deliver_intake_catalog(
-            catalog=catalog, model=model, exp=exp, source=source
-        )
-        machine_paths, intake_vars = configurer.get_machine_info()
-        self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
-        self.metadata = self.esmcat.reader.metadata
-        # self.esmcat = self.sourcecat._entries()
-        driver = self.esmcat._entry._driver
-
         # extend the unit registry
         units_extra_definition()
 
-        # Get fixes dictionary and find them
-        self.fix = fix  # fix activation flag
-        self.fixer_name = self.metadata.get("fixer_name", None)
-        self.convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION)
-        if self.convention is not None and self.convention != DEFAULT_CONVENTION:
-            raise ValueError(f"Convention {self.convention} not supported, only 'eccodes' is supported so far.")
+        backend_factory = BackendIntakeFactory(
+            model=self.model, exp=self.exp, source=self.source, configurer=configurer, catalog=catalog, loglevel=self.loglevel
+        )
+        backend_factory.select_backend()
+        self.metadata = backend_factory.metadata
+        self.catalog = backend_factory.catalog
+        self.machine_paths = backend_factory.machine_paths
+        self.fixer_name, self.src_grid_name, self.convention, self.datamodel_name = backend_factory.get_metadata(
+            convention=convention, fixer_name=None, src_grid_name=None, datamodel_name=datamodel
+        )
 
         # case to disable automatic fix
         if self.fixer_name is False:
@@ -209,36 +206,21 @@ class Reader:
             )
 
         # if data model is not passed to Reader, try to get it from the catalog source metadata
-        datamodel_name = datamodel or self.metadata.get("data_model", DEFAULT_DATAMODEL)
-        if datamodel_name is False:
+        if self.datamodel_name is False:
             self.logger.warning("A False flag is specified in data_model metadata, disabling data model!")
             self.datamodel = None
         else:
-            self.datamodel = DataModel(name=datamodel_name, loglevel=self.loglevel)
+            self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
 
-        if driver == "gsv":
-            self.backend = BackendIntakeFDB(
-                self.model,
-                self.exp,
-                self.source,
-                configurer=configurer,
-                catalog=catalog,
-                fixer=self.fixer if self.fix else None,
-                datamodel=self.datamodel,
-                engine=engine,
-            )
-        if driver in ("netcdf", "zarr"):
-            self.backend = BackendIntakeXarray(
-                self.model,
-                self.exp,
-                self.source,
-                configurer=configurer,
-                catalog=catalog,
-                fixer=self.fixer if self.fix else None,
-                datamodel=self.datamodel,
-            )
-        else:
-            raise ValueError(f"Unsupported driver '{driver}' for model '{model}', exp '{exp}', source '{source}'.")
+        # create the backend
+        self.backend = backend_factory.create_backend(
+            fixer=self.fixer if self.fix else None,
+            datamodel=self.datamodel,
+            chunks=self.chunks,
+            engine=engine,
+            databridge=None,
+        )
+
         self.cat, self.catalog_file, self.machine_file = self.backend.cat, self.backend.catalog_file, self.backend.machine_file
         self.catalog = self.backend.catalog
 
@@ -249,7 +231,7 @@ class Reader:
         # init the regridder and the areas
         self.regridder = None
         areas, regrid = self._configure_regridder(
-            machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs
+            self.machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs
         )
 
         # init the fldstat modules. if areas are not available, will issue a warning
