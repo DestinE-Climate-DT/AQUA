@@ -87,15 +87,12 @@ class BackendIntake(Backend, ABC):
     ):
         """Open data, apply filters, return xr.Dataset."""
 
-    @abstractmethod
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         return super()._seldate(data=data, startdate=startdate, enddate=enddate)
 
-    @abstractmethod
     def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
         return super()._sellevel(data=data, level=level, level_coord=level_coord)
 
-    @abstractmethod
     def _selvar(self, data: xr.Dataset, var: str | list = None):
         return super()._selvar(data=data, var=var)
 

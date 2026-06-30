@@ -1,7 +1,5 @@
 """Backend realization using the intake 'gsv' driver (FDB/GSV) for data handling."""
 
-import xarray as xr
-
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
@@ -191,16 +189,3 @@ class BackendIntakeFDB(BackendIntake):
         # Skeleton fallback: pass the requested variables straight through.
         # Replace with the matching logic from reader_fdb (var_match construction).
         return to_list(var)
-
-    # The three selection helpers below mirror BackendIntakeXarray (delegate to the base
-    # implementation) so the interface stays uniform across intake backends. In the FDB flow
-    # date/level selection is pushed into the GSV request, so retrieve() does not invoke
-    # _seldate/_sellevel; they remain available and correct if called directly on FDB data.
-    def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
-        return super()._seldate(data=data, startdate=startdate, enddate=enddate)
-
-    def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
-        return super()._sellevel(data=data, level=level, level_coord=level_coord)
-
-    def _selvar(self, data: xr.Dataset, var: str | list = None):
-        return super()._selvar(data=data, var=var)

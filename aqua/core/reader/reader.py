@@ -191,6 +191,8 @@ class Reader:
                 metadata=self.metadata,
                 loglevel=self.loglevel,
             )
+        else:
+            self.fixer = None
 
         # if data model is not passed to Reader, try to get it from the catalog source metadata
         if self.datamodel_name is False:
@@ -206,6 +208,7 @@ class Reader:
             chunks=self.chunks,
             engine=engine,
             databridge=None,
+            loglevel=self.loglevel,
         )
 
         # define tgt grid names

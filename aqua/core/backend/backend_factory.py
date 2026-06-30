@@ -15,11 +15,58 @@ class BackendFactory:
     """
 
     BACKEND_TYPES = {
-        # Update to FDB
         "gsv": BackendIntakeFDB,
         "netcdf": BackendIntakeXarray,
         "zarr": BackendIntakeXarray,
         "xarray": BackendXarray,
+    }
+
+    # Parameters accepted by each driver's backend constructor.
+    # netcdf and zarr share the same intake-xarray signature.
+    _BACKEND_PARAMS = {
+        "gsv": {
+            "model",
+            "exp",
+            "source",
+            "configurer",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "engine",
+            "databridge",
+            "loglevel",
+        },
+        "netcdf": {
+            "model",
+            "exp",
+            "source",
+            "configurer",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
+        "zarr": {
+            "model",
+            "exp",
+            "source",
+            "configurer",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
+        "xarray": {
+            "path",
+            "xarray_engine",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
     }
 
     def __init__(
@@ -39,12 +86,13 @@ class BackendFactory:
         self.source = source
         self.catalog = catalog
         self.path = path
-        self._check_required_params()
 
         self.configurer = configurer
         self.loglevel = loglevel
 
         self.logger = log_configure(log_level=loglevel, log_name="BackendFactory")
+
+        self._check_required_params()
 
         # Attributes to be populated:
         self.cat = None
@@ -125,10 +173,13 @@ class BackendFactory:
         loglevel: str = None,
         **kwargs,
     ):
-        """Create and return a backend instance based on the provided parameters."""
+        """Create and return a backend instance based on the provided parameters.
 
-        backend_class = self.BACKEND_TYPES[self.driver]
-        backend_instance = backend_class(
+        Only kwargs accepted by the target backend's constructor are forwarded;
+        driver-specific parameters (e.g. engine/databridge for GSV, path for xarray)
+        are included or excluded automatically via _BACKEND_PARAMS.
+        """
+        all_kwargs = dict(
             model=self.model,
             exp=self.exp,
             source=self.source,
@@ -144,8 +195,10 @@ class BackendFactory:
             loglevel=loglevel,
             **kwargs,
         )
-
-        return backend_instance
+        accepted = self._BACKEND_PARAMS[self.driver]
+        filtered = {k: v for k, v in all_kwargs.items() if k in accepted}
+        self.logger.debug("Creating backend %s with kwargs: %s", self.driver, list(filtered))
+        return self.BACKEND_TYPES[self.driver](**filtered)
 
     def _check_required_params(self):
         """Check if the required parameters are provided."""

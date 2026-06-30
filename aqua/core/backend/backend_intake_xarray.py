@@ -80,6 +80,12 @@ class BackendIntakeXarray(BackendIntake):
                 + f"please check the url: {self.esmcat.data.url}"
             )
 
+        # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
+        # filters from the complete set, not from a previously-filtered subset.
+        # Without this, a second retrieve() call with different dates would start from
+        # the already-narrowed list produced by the first call.
+        self._all_urls = list(self.esmcat.data.url)
+
     def retrieve(
         self,
         var: str | list = None,
@@ -95,7 +101,13 @@ class BackendIntakeXarray(BackendIntake):
         if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
             read_kwargs.setdefault("engine", "netcdf4")
 
-        esmcat = self._filter_netcdf_files(esmcat, filter_key="year", startdate=startdate, enddate=enddate)
+        # Only apply year-based file filtering when the catalog explicitly requests it
+        # via the 'filter_key' metadata entry.  Unconditional filtering would drop all
+        # files for catalogs whose filenames do not contain year tokens.
+        filter_key = esmcat.metadata.get("filter_key")
+        if filter_key:
+            self.logger.info("Filtering netcdf files in the catalog based on %s", filter_key)
+            esmcat = self._filter_netcdf_files(esmcat, filter_key=filter_key, startdate=startdate, enddate=enddate)
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
@@ -122,7 +134,11 @@ class BackendIntakeXarray(BackendIntake):
 
     def _filter_netcdf_files(self, esmcat, filter_key="year", startdate=None, enddate=None):
         """
-        Filter the esmcat to include only netcdf files based on specific filter_key
+        Filter the esmcat to include only netcdf files based on specific filter_key.
+
+        Filters from ``self._all_urls`` (the full snapshot saved at init time) so that
+        repeated calls with different date ranges always start from the complete file list.
+
         Args:
             esmcat (intake.catalog.Catalog): your catalog
             filter_key (str): type of filter to apply (default is "year")
@@ -133,8 +149,9 @@ class BackendIntakeXarray(BackendIntake):
             intake.catalog.Catalog: filtered catalog
         """
 
-        # list available files in folder.
-        files = to_list(esmcat.data.url)
+        # Filter from the immutable snapshot saved at init, not from esmcat.data.url
+        # which may already be narrowed by a previous retrieve() call.
+        files = list(self._all_urls)
         self.logger.debug("Total files before filtering: %s", len(files))
 
         # this will consider only files that have "year" in their filename
@@ -164,12 +181,3 @@ class BackendIntakeXarray(BackendIntake):
         )
 
         return esmcat
-
-    def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
-        return super()._seldate(data=data, startdate=startdate, enddate=enddate)
-
-    def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
-        return super()._sellevel(data=data, level=level, level_coord=level_coord)
-
-    def _selvar(self, data: xr.Dataset, var: str | list = None):
-        return super()._selvar(data=data, var=var)
