@@ -14,6 +14,12 @@ from smmregrid import GridInspector
 from aqua.core.backend import BackendIntakeFactory, BackendIntakeFDB
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
+
+# set default data model
+from aqua.core.default import (
+    DEFAULT_ENGINE,
+    DEFAULT_NPROC,
+)
 from aqua.core.exceptions import NoDataError, NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
@@ -21,7 +27,7 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import default_time_unit, find_vert_coord, fix_calendar, load_multi_yaml, to_list
+from aqua.core.util import DEFAULT_TIME_UNIT, find_vert_coord, fix_calendar, load_multi_yaml, to_list
 from aqua.core.version import __version__ as aqua_version
 
 from .reader_utils import set_attrs
@@ -29,13 +35,6 @@ from .trender import Trender
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
-
-# set default data model
-DEFAULT_DATAMODEL = "aqua"
-DEFAULT_CONVENTION = "eccodes"
-DEFAULT_REGRID_METHOD = "ycon"
-DEFAULT_ENGINE = "fdb"
-DEFAULT_NPROC = 4
 
 
 class Reader:
@@ -406,7 +405,7 @@ class Reader:
             # TODO: Check, the commented code is probably not needed
             # Convert time to datetime64 microsecond resolution by default
             # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
-            #     data['time'] = data.time.astype(f"datetime64[{default_time_unit}]")
+            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
             # Fix the calendar to Gregorian if needed
             data = fix_calendar(data, loglevel=self.loglevel)
 
@@ -979,13 +978,13 @@ class Reader:
             esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata["filter_key"])
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if hasattr(esmcat, "xarray_kwargs") and "use_cftime" not in esmcat.xarray_kwargs:
             if "time_coder" in esmcat.metadata:
                 self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
                 coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
             else:
-                coder = xr.coders.CFDatetimeCoder(time_unit=default_time_unit)
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
             esmcat.xarray_kwargs.update({"decode_times": coder})
 

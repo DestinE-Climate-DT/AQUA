@@ -1,13 +1,11 @@
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
+from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DATAMODEL
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
 
 from .backend_intake_fdb import BackendIntakeFDB
 from .backend_intake_xarray import BackendIntakeXarray
-
-DEFAULT_DATAMODEL = "aqua"
-DEFAULT_CONVENTION = "eccodes"
 
 
 class BackendIntakeFactory:
