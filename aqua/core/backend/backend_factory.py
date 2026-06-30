@@ -128,7 +128,12 @@ class BackendFactory:
         if self.driver not in self.BACKEND_TYPES:
             raise ValueError(f"Unsupported driver: {self.driver}. Supported drivers are: {list(self.BACKEND_TYPES.keys())}")
 
-        self.metadata = self.esmcat.reader.metadata
+        # GSV sources (IntakeGSVSource) store catalog metadata via base.DataSource.__init__(metadata=…)
+        # and do not expose the intake-xarray .reader.metadata pattern.
+        if self.driver == "gsv":
+            self.metadata = self.esmcat.metadata
+        else:
+            self.metadata = self.esmcat.reader.metadata
 
     def _select_backend_xarray(self):
         """
@@ -152,7 +157,12 @@ class BackendFactory:
         and datamodel_name based on the provided parameters and metadata.
         """
         fixer_name = fixer_name or self.metadata.get("fixer_name") if self.metadata else None
-        src_grid_name = src_grid_name or self.metadata.get("src_grid_name") if self.metadata else None
+        # Catalog template writes 'source_grid_name'; fall back to it when 'src_grid_name' is absent.
+        src_grid_name = (
+            src_grid_name or (self.metadata.get("src_grid_name") or self.metadata.get("source_grid_name"))
+            if self.metadata
+            else None
+        )
         convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION) if self.metadata else DEFAULT_CONVENTION
         datamodel_name = (
             datamodel_name or self.metadata.get("data_model", DEFAULT_DATAMODEL) if self.metadata else DEFAULT_DATAMODEL

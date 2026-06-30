@@ -101,10 +101,6 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         if needs_rebuild:
             self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
-        # GSV/FDB specific handle: the request dict carried by the GSVSource
-        # (the xarray-style esmcat.data/.xarray_kwargs handles do not exist for GSV).
-        self.request = self.esmcat._request
-
         # default list of variables (paramids) available in this source, read from catalog metadata
         self.fdb_var = self.esmcat.metadata.get("variables")
 
@@ -135,30 +131,27 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         loadvar = self._resolve_loadvar(var)
         level = to_list(level) if level else None
 
-        # Build/configure the GSV source for this request and return a lazy dask dataset.
-        # Mirrors the legacy Reader.reader_fdb(...).to_dask() call.
-        # TODO: thread engine/databridge through (see __init__ note); also honour aggregation/streaming
-        #       and the chunks dict semantics handled in the legacy reader_fdb if those are needed here.
-        call_kwargs = {
-            "request": self.request,
+        # Re-instantiate the source from the catalog entry with the retrieve-specific
+        # parameters merged on top of the base kwargs (engine, databridge, …).
+        # self.esmcat is an already-instantiated source whose __call__ returns self unchanged,
+        # so we must go back through the entry to apply startdate/enddate/var/level.
+        retrieve_kwargs = {
             "startdate": startdate,
             "enddate": enddate,
             "var": loadvar,
             "level": level,
-            "logging": True,
             "loglevel": self.loglevel,
         }
         # Only override the catalog chunking when the user actually specified it: passing
         # chunks=None would clobber the source default (e.g. 'chunks: h') and break GSVSource.
         if self.chunks is not None:
-            call_kwargs["chunks"] = self.chunks
+            retrieve_kwargs["chunks"] = self.chunks
 
-        source = self.esmcat(**call_kwargs)
+        source = self.expcat._entries[self.source](**{**self.kwargs, **retrieve_kwargs})
         data = source.to_dask()
 
-        # Only fixer + datamodel (+ optional variable selection) are applied on top.
-        # We deliberately pass startdate/enddate/level=None so the base post-selection (.sel)
-        # is skipped: GSV already selected dates and levels inside the request above.
+        # Date/level selection was already baked into the GSV source at construction time;
+        # pass None so _postprocess_data does not re-apply .sel() on top.
         data = self._postprocess_data(
             data=data,
             var=var,
