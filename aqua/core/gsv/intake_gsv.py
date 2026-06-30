@@ -1005,3 +1005,85 @@ def log_history(data, msg):
         date_now = now.strftime("%Y-%m-%d %H:%M:%S")
         hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
         data.attrs.update({"history": hist})
+
+
+def open_gsv(
+    request,
+    data_start_date,
+    data_end_date,
+    bridge_start_date=None,
+    bridge_end_date=None,
+    hpc_expver=None,
+    timestyle="date",
+    chunks="S",
+    savefreq="h",
+    timestep="h",
+    timeshift=None,
+    startdate=None,
+    enddate=None,
+    var=None,
+    metadata=None,
+    level=None,
+    switch_eccodes=False,
+    loglevel="WARNING",
+    engine=None,
+    databridge=None,
+    **kwargs,
+):
+    """
+    Open GSV data as a dask-enabled xarray dataset directly.
+
+    This function wraps the GSVSource intake driver, allowing it to be used
+    as a standalone function. This is useful for direct testing, calling from
+    other code without a catalog, and for adaptation to Intake 2.
+
+    Args:
+        request (dict): Request dictionary
+        data_start_date (str): Start date of the available data.
+        data_end_date (str): End date of the available data.
+        bridge_start_date (str, optional): Start date of the bridge data. Defaults to None.
+        bridge_end_date (str, optional): End date of the bridge data. Defaults to None.
+        hpc_expver (str, optional): Alternative expver to be used if the data are on hpc
+        timestyle (str, optional): Time style. Defaults to "date".
+        chunks (str or dict, optional): Time and vertical chunking. Defaults to "S".
+        savefreq (str, optional): Data saving frequency. Defaults to "h".
+        timestep (str, optional): Time step. Defaults to "h".
+        timeshift (str, optional): Time shift. Defaults to None.
+        startdate (str, optional): Start date for request. Defaults to None.
+        enddate (str, optional): End date for request. Defaults to None.
+        var (str, optional): Variable ID. Defaults to those in the catalog.
+        metadata (dict, optional): Metadata containing paths to FDB.
+        level (int, float, list, optional): level(s) to be read.
+        switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
+        loglevel (str, optional): The loglevel. Defaults to "WARNING".
+        engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to None.
+        databridge (str, optional): Databridge to be used. Defaults to None.
+        kwargs: other keyword arguments.
+
+    Returns:
+        xr.Dataset: A lazy dask-enabled xarray dataset.
+    """
+    source = GSVSource(
+        request=request,
+        data_start_date=data_start_date,
+        data_end_date=data_end_date,
+        bridge_start_date=bridge_start_date,
+        bridge_end_date=bridge_end_date,
+        hpc_expver=hpc_expver,
+        timestyle=timestyle,
+        chunks=chunks,
+        savefreq=savefreq,
+        timestep=timestep,
+        timeshift=timeshift,
+        startdate=startdate,
+        enddate=enddate,
+        var=var,
+        metadata=metadata,
+        level=level,
+        switch_eccodes=switch_eccodes,
+        loglevel=loglevel,
+        engine=engine,
+        databridge=databridge,
+        **kwargs,
+    )
+    return source.to_dask()
