@@ -5,10 +5,11 @@ from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.util import to_list
 
-from .backend_intake import BackendIntake
+from .backend import Backend
+from .catalog_mixin import CatalogMixin
 
 
-class BackendIntakeFDB(BackendIntake):
+class BackendIntakeFDB(Backend, CatalogMixin):
     """
     Concrete backend retrieving data from FDB/GSV through the intake ``gsv`` driver.
 
@@ -18,6 +19,17 @@ class BackendIntakeFDB(BackendIntake):
     Only variable fixes and the data model are applied on top of the retrieved dataset.
 
     This mirrors the legacy ``Reader.reader_fdb`` flow, see ``aqua/core/reader/reader.py``.
+
+    Example usage::
+
+        backend = BackendIntakeFDB(
+            model="IFS",
+            exp="test",
+            source="long",
+            configurer=configurer,
+            engine="fdb",
+        )
+        data = backend.retrieve(var="2t", startdate="2020-01-01", enddate="2020-01-31")
     """
 
     def __init__(
@@ -53,30 +65,14 @@ class BackendIntakeFDB(BackendIntake):
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional intake parameters forwarded to the catalog source entry.
         """
-        # TODO: the legacy Reader._filter_kwargs injected 'engine' (and 'databridge' for polytope)
-        # into the intake kwargs *before* the GSVSource was instantiated, because GSVSource runs in
-        # 'dummy_run' mode when engine is None (it will not actually read). The refactored
-        # BackendIntake._filter_kwargs no longer does this. Decide where to thread engine/databridge:
-        #   (a) re-add GSV-awareness to BackendIntake._filter_kwargs, or
-        #   (b) pass engine via **kwargs here so it flows into self.kwargs and the source constructor.
-        # For now we keep them as attributes and forward them at retrieve() time.
-        super().__init__(
-            model,
-            exp,
-            source,
-            configurer=configurer,
-            catalog=catalog,
-            chunks=chunks,
-            fixer=fixer,
-            datamodel=datamodel,
-            loglevel=loglevel,
-            **kwargs,
-        )
+        Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.loglevel = loglevel
         self.engine = engine
         self.databridge = databridge
 
-        # check machine compatibility
+        self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
+
+        # Check machine compatibility
         self.machine_from_catalog = self.expcat.metadata.get("machine")
         if engine != "polytope":
             if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
@@ -88,7 +84,7 @@ class BackendIntakeFDB(BackendIntake):
                 )
 
         # Inject engine and databridge into kwargs for GSV/FDB sources.
-        # BackendIntake._filter_kwargs is source-agnostic and does not add these;
+        # CatalogMixin._filter_kwargs is source-agnostic and does not add these;
         # we mirror the legacy Reader._filter_kwargs GSV logic here.
         # Use the catalog 'machine' metadata as the polytope databridge target when
         # the caller has not supplied one explicitly (mirrors Reader.machine_from_catalog).
@@ -125,10 +121,18 @@ class BackendIntakeFDB(BackendIntake):
 
         Date and level selection are delegated to the GSV request itself, so they are passed
         to the source here and intentionally NOT re-applied in ``_postprocess_data``.
-        """
-        # Resolve which variables (paramids) to request from FDB.
-        loadvar = self._resolve_loadvar(var)
 
+        Args:
+            var (str | list, optional): Variable(s) to retrieve. Defaults to None (all catalog variables).
+            level (str | list, optional): Level(s) to select. Defaults to None.
+            level_coord (str, optional): Name of the vertical coordinate. Defaults to None.
+            startdate (str, optional): Start date (YYYY-MM-DD). Defaults to None.
+            enddate (str, optional): End date (YYYY-MM-DD). Defaults to None.
+
+        Returns:
+            xr.Dataset: Lazy dask-backed dataset with fixes and data model applied.
+        """
+        loadvar = self._resolve_loadvar(var)
         level = to_list(level) if level else None
 
         # Build/configure the GSV source for this request and return a lazy dask dataset.
@@ -155,7 +159,7 @@ class BackendIntakeFDB(BackendIntake):
         # Only fixer + datamodel (+ optional variable selection) are applied on top.
         # We deliberately pass startdate/enddate/level=None so the base post-selection (.sel)
         # is skipped: GSV already selected dates and levels inside the request above.
-        data = super()._postprocess_data(
+        data = self._postprocess_data(
             data=data,
             var=var,
             level=None,
@@ -176,6 +180,12 @@ class BackendIntakeFDB(BackendIntake):
         TODO: port the full var<->paramid matching from the legacy Reader.reader_fdb. That logic
         handles: integer paramids, short-name -> fixer 'source' lookup, derived variables, and the
         eccodes fallback. It is intentionally left as a stub here to keep the skeleton focused.
+
+        Args:
+            var (str | list, optional): Requested variable name(s) or paramid(s). Defaults to None.
+
+        Returns:
+            list: Paramid list to forward to the GSV source.
         """
         if self.fdb_var is not None:
             fdb_var = to_list(self.fdb_var)
