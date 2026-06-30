@@ -68,11 +68,12 @@ class BackendIntake(Backend, ABC):
         # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
         self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
-        # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2
-        # this provides direct access to the intake data object
-        self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
-        self.esmcat.metadata = self.esmcat.reader.metadata
-        self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
+        # NOTE: exposing the underlying intake2 data object (url, xarray_kwargs, ...) is
+        # backend-specific and therefore delegated to the concrete subclasses:
+        #   - netcdf/zarr expose esmcat.reader.kwargs["args"][0], esmcat.xarray_kwargs (see BackendIntakeXarray)
+        #   - GSV/FDB expose esmcat._request (see BackendIntakeFDB)
+        # Keeping it out of this base __init__ avoids assuming an xarray-like source for every
+        # intake backend (the legacy Reader guarded this block with an isinstance NetCDF/Zarr check).
 
     @abstractmethod
     def retrieve(

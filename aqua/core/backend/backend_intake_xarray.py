@@ -57,6 +57,13 @@ class BackendIntakeXarray(BackendIntake):
             loglevel=loglevel,
         )
 
+        # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
+        # This provides direct access to the intake data object and is xarray-specific (moved here from
+        # BackendIntake.__init__ so that non-xarray intake backends, e.g. FDB, do not inherit it).
+        self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
+        self.esmcat.metadata = self.esmcat.reader.metadata
+        self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
+
         # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
         # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
         url_input = to_list(self.esmcat.data.url)
