@@ -479,7 +479,7 @@ def prettify_levels(vmin: float, vmax: float, nlevels: int) -> np.ndarray:
         best_step = 10 * magnitude
 
     # Build levels aligned to zero if possible (cleaner grid)
-    start = np.ceil(vmin / best_step) * best_step
+    start = np.floor(vmin / best_step) * best_step
     levels = np.arange(start, vmax + best_step * 0.5, best_step)
 
     return np.round(levels, decimals=get_decimals(best_step))
