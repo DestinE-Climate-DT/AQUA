@@ -13,6 +13,9 @@ from smmregrid import GridInspector
 from aqua.core.backend import BackendIntakeFactory, BackendIntakeFDB
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
+
+# set default data model
+from aqua.core.default import DEFAULT_ENGINE, DEFAULT_NPROC
 from aqua.core.exceptions import NoDataError, NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
@@ -28,13 +31,6 @@ from .trender import Trender
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
-
-# set default data model
-DEFAULT_DATAMODEL = "aqua"
-DEFAULT_CONVENTION = "eccodes"
-DEFAULT_REGRID_METHOD = "ycon"
-DEFAULT_ENGINE = "fdb"
-DEFAULT_NPROC = 4
 
 
 class Reader:
@@ -403,7 +399,7 @@ class Reader:
             # TODO: Check, the commented code is probably not needed
             # Convert time to datetime64 microsecond resolution by default
             # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
-            #     data['time'] = data.time.astype(f"datetime64[{default_time_unit}]")
+            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
             # Fix the calendar to Gregorian if needed
             data = fix_calendar(data, loglevel=self.loglevel)
 

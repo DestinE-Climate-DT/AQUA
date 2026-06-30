@@ -9,7 +9,7 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
-from aqua.core.util import default_time_unit, files_exist, to_list
+from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 
 from .backend_intake import BackendIntake
 
@@ -95,12 +95,12 @@ class BackendIntakeXarray(BackendIntake):
         # TODO: Possible _filter_netcdf_files to be refined and placed here
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if "time_coder" in esmcat.metadata:
             self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
             coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
         else:
-            coder = xr.coders.CFDatetimeCoder(time_unit=default_time_unit)
+            coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
         esmcat.xarray_kwargs.update({"decode_times": coder})
 
