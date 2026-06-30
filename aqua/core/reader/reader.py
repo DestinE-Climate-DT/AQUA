@@ -11,7 +11,6 @@ import xarray as xr
 from metpy.units import units
 from smmregrid import GridInspector
 
-import aqua.core.gsv
 from aqua.core.backend import BackendIntakeFDB, BackendIntakeXarray
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
@@ -130,6 +129,7 @@ class Reader:
         # these infos are used by the regridder to correct define areas/weights name
         # TODO: find an alterantive approah when path is used, and possibly rename to avoid confusion
         reader_kwargs = {"model": model, "exp": exp, "source": source}
+        self.kwargs = kwargs
 
         # regridding
         self.regrid_method = regrid_method
@@ -177,17 +177,18 @@ class Reader:
             catalog=catalog, model=model, exp=exp, source=source
         )
         machine_paths, intake_vars = configurer.get_machine_info()
-        self.sourcecat = self.cat(**intake_vars)[self.model][self.exp][self.source]
-        self.esmcat = self.sourcecat()
-        driver = self.sourcecat._entry._driver
+        self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
+        self.metadata = self.esmcat.reader.metadata
+        # self.esmcat = self.sourcecat._entries()
+        driver = self.esmcat._entry._driver
 
         # extend the unit registry
         units_extra_definition()
 
         # Get fixes dictionary and find them
         self.fix = fix  # fix activation flag
-        self.fixer_name = self.esmcat.metadata.get("fixer_name", None)
-        self.convention = convention or self.esmcat.metadata.get("convention", DEFAULT_CONVENTION)
+        self.fixer_name = self.metadata.get("fixer_name", None)
+        self.convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION)
         if self.convention is not None and self.convention != DEFAULT_CONVENTION:
             raise ValueError(f"Convention {self.convention} not supported, only 'eccodes' is supported so far.")
 
@@ -203,12 +204,12 @@ class Reader:
                 fixer_name=self.fixer_name,
                 convention=self.convention,
                 fixes_dictionary=self.fixes_dictionary,
-                metadata=self.esmcat.metadata,
+                metadata=self.metadata,
                 loglevel=self.loglevel,
             )
 
         # if data model is not passed to Reader, try to get it from the catalog source metadata
-        datamodel_name = datamodel or self.esmcat.metadata.get("data_model", DEFAULT_DATAMODEL)
+        datamodel_name = datamodel or self.metadata.get("data_model", DEFAULT_DATAMODEL)
         if datamodel_name is False:
             self.logger.warning("A False flag is specified in data_model metadata, disabling data model!")
             self.datamodel = None
@@ -242,7 +243,7 @@ class Reader:
         self.catalog = self.backend.catalog
 
         # define grid names
-        self.src_grid_name = self.esmcat.metadata.get("source_grid_name")
+        self.src_grid_name = self.metadata.get("source_grid_name")
         self.tgt_grid_name = regrid
 
         # init the regridder and the areas
@@ -408,65 +409,14 @@ class Reader:
         if not enddate:  # In case the streaming startdate is used also for FDB copy it
             enddate = self.enddate
 
-        # get loadvar
-        if var:
-            if isinstance(var, str) or isinstance(var, int):
-                var = str(var).split()  # conversion to list guarantees that a Dataset is produced
-            self.logger.info("Retrieving variables: %s", var)
-            # HACK: to be checked if can be done in a better way
-            loadvar = self.fixer.get_fixer_varname(var) if self.fix else var
-        else:
-            # If we are retrieving from fdb we have to specify the var
-            if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-                metadata = self.esmcat.metadata
-                if metadata:
-                    loadvar = metadata.get("variables")
+        data = self.backend.retrieve(var=var, level=level, startdate=startdate, enddate=enddate)
 
-                    if loadvar is None:
-                        loadvar = [self.esmcat._request["param"]]  # retrieve var from catalog
-
-                    if not isinstance(loadvar, list):
-                        loadvar = [loadvar]
-
-                    if sample:
-                        # self.logger.debug("FDB source sample reading, selecting only one variable")
-                        loadvar = [loadvar[0]]
-
-                    self.logger.debug("FDB source: loading variables as %s", loadvar)
-
-            else:
-                loadvar = None
-
-        ffdb = False
-
-        # If this is an ESM-intake catalog use first dictionary value,
-        # if isinstance(self.esmcat, intake_esm.core.esm_datastore):
-        #    data = self.reader_esm(self.esmcat, loadvar)
-        # If this is an fdb entry
-        if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-            data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate, dask=True, level=level)
-            ffdb = True  # These data have been read from fdb
-        else:
-            data = self.reader_intake(self.esmcat, var, loadvar)
+        ffdb = isinstance(self.backend, BackendIntakeFDB)
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
             fkind = "FDB" if ffdb else "file from disk"
             data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using {fkind}")
-
-        if not ffdb and level:  # FDB sources already have the index, already selected levels
-            data = self._select_level(data, level=level)  # select levels (optional)
-
-        # Apply variable fixes (units, names, attributes) and data model fixes
-        if self.fix:
-            self.logger.debug("Applying variable fixes")
-            data = self.fixer.fixer(data, var)
-            data = self.fixer.fixerdatamodel.apply(data)
-
-        # Apply base data model transformation (always applied)
-        if self.datamodel:
-            self.logger.debug("Applying base data model: %s", self.datamodel_name)
-            data = self.datamodel.apply(data)
 
         # Time threatment: we want to ensure that time is always in Gregorian calendar
         # and to change the default numpy datetime64 resolution to microseconds
@@ -484,14 +434,9 @@ class Reader:
                 if not hasattr(data[variable], "units"):
                     self.logger.warning("Variable %s has no units!", variable)
 
-        if self.streaming:
-            data = self.streamer.stream(data)
         else:
             if data is None or len(data.data_vars) == 0:
                 self.logger.error("Retrieved empty dataset for var=%s. First, check its existence in the data catalog.", var)
-
-            if (startdate or enddate) and not ffdb:  # do not select if data come from FDB (already done)
-                data = data.sel(time=slice(startdate, enddate))
 
         if isinstance(data, xr.Dataset):
             data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
@@ -730,88 +675,6 @@ class Reader:
 
         raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
 
-    @property
-    def intake_user_parameters(self):
-        """Lazy loader for intake user parameters to avoid expensive describe() calls."""
-        if not hasattr(self, "_intake_user_parameters"):
-            self._intake_user_parameters = [v.describe() for v in self.esmcat._entry._user_parameters]  # intake2 change
-            self.logger.debug("Intake user parameters: %s", self._intake_user_parameters)
-        return self._intake_user_parameters
-
-    def _filter_kwargs(self, kwargs: dict = {}, engine: str = "fdb", intake_vars: dict = {}, databridge: str = None) -> dict:
-        """
-        Uses the esmcat.describe() to remove the intake_vars, then check in the parameters if the kwargs are present.
-        Kwargs which are not present in the intake_vars will be removed.
-
-        Args:
-            kwargs (dict): The keyword arguments passed to the reader, which are intake parameters in the source.
-            engine (str): The engine used for the GSV retrieval, default is 'fdb'.
-            databridge (str): The databridge used for the GSV retrieval, default is None.
-            intake_vars (dict): Machine-specific intake variables to exclude from checks.
-
-        Returns:
-            A dictionary of kwargs filtered to only include parameters that are present in the intake_vars.
-        """
-        if intake_vars is None:
-            intake_vars = {}
-
-        filtered_kwargs = {}
-
-        # Create a dictionary lookup of parameter definitions
-        # This avoids repeated iteration and index lookups in the loop
-        param_defs = {p["name"]: p for p in self.intake_user_parameters}
-        valid_params = set(param_defs.keys())
-
-        if kwargs:
-            # Filter kwargs that are valid parameters
-            filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
-
-            # Find and log dropped keys efficiently using set difference
-            dropped_keys = kwargs.keys() - valid_params
-            for key in dropped_keys:
-                self.logger.warning("kwarg %s is not in the intake parameters of the source, removing it", key)
-
-        # Handle 'engine' for GSV/FDB sources
-        if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
-            if "engine" not in filtered_kwargs:
-                filtered_kwargs["engine"] = engine
-                self.logger.debug("Adding engine=%s to the filtered kwargs", engine)
-
-        if engine == "polytope" and databridge is not None:
-            # If the engine is polytope, we need to add the databridge parameter
-            if "databridge" not in filtered_kwargs:
-                filtered_kwargs.update({"databridge": databridge})
-                self.logger.debug("Adding databridge=%s to the filtered kwargs", databridge)
-
-        # HACK: Keep chunking info if present as reader kwarg
-        if self.chunks is not None:
-            self.logger.warning("Keeping chunks=%s in the filtered kwargs", self.chunks)
-            filtered_kwargs["chunks"] = self.chunks
-
-        # Check for missing required parameters and apply defaults, with logging
-        # We identify parameters that are valid but not present in either filtered_kwargs or intake_vars
-
-        # params that are already covered by user kwargs or machine-specific intake_vars
-        covered_params = set(filtered_kwargs) | set(intake_vars)
-
-        # Identify missing parameters using set difference
-        missing_params = valid_params - covered_params
-
-        for param in missing_params:
-            element = param_defs[param]
-            default_val = element.get("default")
-
-            # Log the default application
-            self.logger.info("%s parameter is required but is missing, setting to default %s", param, default_val)
-
-            allowed = element.get("allowed", None)
-            if allowed is not None:
-                self.logger.info("Available values for %s are: %s", param, allowed)
-
-            filtered_kwargs[param] = default_val
-
-        return filtered_kwargs
-
     def vertinterp(self, data, levels=None, vert_coord="plev", units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
@@ -1023,30 +886,15 @@ class Reader:
         if level and not isinstance(level, list):
             level = [level]
 
-        # for streaming emulator
-        if self.aggregation and not dask:
-            chunks = self.aggregation
-        else:
-            chunks = self.chunks
-
-        if isinstance(chunks, dict):
-            if self.aggregation and not chunks.get("time"):
-                chunks["time"] = self.aggregation
-            if self.streaming and not self.aggregation:
-                self.logger.warning(
-                    "Aggregation is not set, using default time resolution for streaming. "
-                    "If you are asking for a longer chunks['time'] for GSV access, please set a suitable aggregation value"
-                )
-
         if dask:
-            if chunks:  # if the chunking or aggregation option is specified override that from the catalog
+            if self.chunks:  # if the chunking or aggregation option is specified override that from the catalog
                 data = esmcat(
                     request=request,
                     startdate=startdate,
                     enddate=enddate,
                     var=var,
                     level=level,
-                    chunks=chunks,
+                    chunks=self.chunks,
                     logging=True,
                     loglevel=self.loglevel,
                 ).to_dask()
@@ -1061,14 +909,14 @@ class Reader:
                     loglevel=self.loglevel,
                 ).to_dask()
         else:
-            if chunks:
+            if self.chunks:
                 data = esmcat(
                     request=request,
                     startdate=startdate,
                     enddate=enddate,
                     var=var,
                     level=level,
-                    chunks=chunks,
+                    chunks=self.chunks,
                     logging=True,
                     loglevel=self.loglevel,
                 ).read_chunked()
