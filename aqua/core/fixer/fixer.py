@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 
+from aqua.core.default import DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -11,8 +12,6 @@ from .evaluate_formula import EvaluateFormula
 from .fixer_configure import FixerConfigure
 from .fixer_datamodel import FixerDataModel
 from .fixer_operator import FixerOperator
-
-DEFAULT_DELTAT = 1
 
 
 class Fixer:

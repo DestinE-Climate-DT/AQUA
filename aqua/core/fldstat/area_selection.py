@@ -2,13 +2,12 @@ import regionmask
 import xarray as xr
 from typeguard import typechecked
 
+from aqua.core.default import DEFAULT_COORDS
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
-
-DEFAULT_COORDS = {"lat_min": -90, "lat_max": 90, "lon_min": 0, "lon_max": 360}
 
 
 class AreaSelection:
