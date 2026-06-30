@@ -239,20 +239,19 @@ class TestHealpixResample:
         result = healpix_resample(var, nx=20, ny=20, method="nearest")
         assert isinstance(result, xr.DataArray)
         assert result.ndim == 2
-        
+
+
 @pytest.mark.graphics
 class TestPrettifyLevels:
- 
     @pytest.mark.parametrize("vmin,vmax,n", [(0, 100, 10), (0, 0.05, 5), (0, 1e5, 4), (-50, 50, 10), (0, 9.999, 0.99)])
     def test_prettify_levels(self, vmin, vmax, n):
         levels = prettify_levels(vmin, vmax, n)
         assert len(levels) >= 1
         assert (np.diff(levels) > 0).all()
- 
+
     def test_prettify_levels_zero_range(self):
         assert prettify_levels(5.0, 5.0, 10).tolist() == [5.0]
- 
+
     @pytest.mark.parametrize("step,expected", [(1, 0), (0.5, 1), (0.05, 2), (0.001, 3), (0.99, 1)])
     def test_get_decimals(self, step, expected):
         assert get_decimals(step) == expected
- 
