@@ -20,7 +20,7 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import find_vert_coord, fix_calendar, load_multi_yaml, to_list
+from aqua.core.util import fix_calendar, load_multi_yaml, to_list
 from aqua.core.version import __version__ as aqua_version
 
 from .reader_utils import set_attrs
@@ -151,9 +151,6 @@ class Reader:
         # define configuration file and paths
         # TODO: revisit configpath to allow xarray backend. define a behaviour without catalog.
         configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
-        self.configdir = configurer.configdir
-        self.machine = configurer.get_machine()
-        self.config_file = configurer.config_file
         self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
 
         # minimal check for mandatory arguments
@@ -171,10 +168,13 @@ class Reader:
         backend_factory = BackendIntakeFactory(
             model=self.model, exp=self.exp, source=self.source, configurer=configurer, catalog=catalog, loglevel=self.loglevel
         )
+        # configure the intake catalog for the backend
         backend_factory.select_backend()
         self.metadata = backend_factory.metadata
         self.catalog = backend_factory.catalog
         self.machine_paths = backend_factory.machine_paths
+
+        # return the metadata for fixer, src_grid, convention and datamodel
         self.fixer_name, self.src_grid_name, self.convention, self.datamodel_name = backend_factory.get_metadata(
             convention=convention, fixer_name=None, src_grid_name=None, datamodel_name=datamodel
         )
@@ -186,11 +186,9 @@ class Reader:
 
         # Initialize variable fixer
         if self.fix:
-            self.fixes_dictionary = load_multi_yaml(self.fixer_folder, loglevel=self.loglevel)
             self.fixer = Fixer(
                 fixer_name=self.fixer_name,
                 convention=self.convention,
-                fixes_dictionary=self.fixes_dictionary,
                 metadata=self.metadata,
                 loglevel=self.loglevel,
             )
@@ -202,7 +200,7 @@ class Reader:
         else:
             self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
 
-        # create the backend
+        # create the backend: this is the interface that access the data
         self.backend = backend_factory.create_backend(
             fixer=self.fixer if self.fix else None,
             datamodel=self.datamodel,
@@ -211,11 +209,7 @@ class Reader:
             databridge=None,
         )
 
-        self.cat, self.catalog_file, self.machine_file = self.backend.cat, self.backend.catalog_file, self.backend.machine_file
-        self.catalog = self.backend.catalog
-
-        # define grid names
-        self.src_grid_name = self.metadata.get("source_grid_name")
+        # define tgt grid names
         self.tgt_grid_name = regrid
 
         # init the regridder and the areas
@@ -360,6 +354,8 @@ class Reader:
                 new_weights[coords[0]] = fixed
         return new_weights
 
+    # TODO: sample is not used, so no sampling is done for retrieve_plain and all the vars are loaded.
+    # also chunking can be specified to reduce the amount of data.
     def retrieve(self, var=None, level=None, startdate=None, enddate=None, history=True, sample=False):
         """
         Perform a data retrieve.
@@ -381,9 +377,9 @@ class Reader:
         if not enddate:  # In case the streaming startdate is used also for FDB copy it
             enddate = self.enddate
 
-        data = self.backend.retrieve(var=var, level=level, startdate=startdate, enddate=enddate)
-
         ffdb = isinstance(self.backend, BackendIntakeFDB)
+
+        data = self.backend.retrieve(var=var, level=level, startdate=startdate, enddate=enddate)
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
@@ -429,67 +425,6 @@ class Reader:
             info_metadata[f"AQUA_{kwarg}"] = str(self.kwargs[kwarg])
 
         data = set_attrs(data, info_metadata)
-
-        return data
-
-    # def _add_index(self, data):
-
-    #     """
-    #     Add a helper idx_{dim3d} coordinate to the data to be used for level selection
-
-    #     Arguments:
-    #         data (xr.Dataset):  the input xarray.Dataset
-
-    #     Returns:
-    #         A xarray.Dataset containing the data with the idx_dim{3d} coordinate.
-    #     """
-
-    #     if self.vert_coord:
-    #         for dim in to_list(self.vert_coord):
-    #             if dim in data.coords:
-    #                 idx = list(range(0, len(data.coords[dim])))
-    #                 data = data.assign_coords(**{f"idx_{dim}": (dim, idx)})
-    #     return data
-
-    def _select_level(self, data, level=None):
-        """
-        Select levels if provided. The vertical coordinate is determined automatically, based on units.
-
-        Arguments:
-            data (xr.Dataset):  the input xarray.Dataset
-            level (list, int):  levels to be selected. Defaults to None.
-
-        Returns:
-            A xarray.Dataset containing the data with the selected levels.
-        """
-
-        # return if no levels are selected
-        if not level:
-            return data
-
-        # find the vertical coordinate, which can be the smmregrid one or
-        # any other with a dimension compatible (Pa, cm, etc)
-        full_vert_coord = find_vert_coord(data)
-
-        # return if no vertical coordinate is found
-        if not full_vert_coord:
-            self.logger.error("Levels selected but no vertical coordinate found in data!")
-            return data
-
-        # ensure that level is a list
-        level = to_list(level)
-
-        # do the selection on the first vertical coordinate found
-        if len(full_vert_coord) > 1:
-            self.logger.warning("Found more than one vertical coordinate, using the first one: %s", full_vert_coord[0])
-
-        # check if levels are among the values in the coordinate
-        if not all(l in data[full_vert_coord[0]].values for l in level):
-            self.logger.error("Levels %s not found in vertical coordinate %s!", level, full_vert_coord[0])
-        else:
-            self.logger.debug("Selecting vertical coordinate %s = %s", full_vert_coord[0], level)
-            data = data.sel(**{full_vert_coord[0]: level})
-            data = log_history(data, f"Selecting levels {level} from vertical coordinate {full_vert_coord[0]}")
 
         return data
 
@@ -680,34 +615,34 @@ class Reader:
 
         return final
 
-    def reader_esm(self, esmcat, var):
-        """
-        Read intake-esm entry. Returns a dataset.
+    # def reader_esm(self, esmcat, var):
+    #     """
+    #     Read intake-esm entry. Returns a dataset.
 
-        Args:
-            esmcat (intake_esm.core.esm_datastore): The intake-esm catalog datastore to read from.
-            var (str or list): Variable(s) to retrieve. If None, uses the query from catalog metadata.
+    #     Args:
+    #         esmcat (intake_esm.core.esm_datastore): The intake-esm catalog datastore to read from.
+    #         var (str or list): Variable(s) to retrieve. If None, uses the query from catalog metadata.
 
-        Returns:
-            xarray.Dataset: The dataset retrieved from the intake-esm catalog.
-        """
-        xarray_open_kwargs = esmcat.metadata.get(
-            "xarray_open_kwargs", esmcat.metadata.get("cdf_kwargs", {"chunks": {"time": 1}})
-        )
-        query = esmcat.metadata["query"]
-        if var:
-            query_var = esmcat.metadata.get("query_var", "short_name")
-            # Convert to list if not already
-            query[query_var] = var.split() if isinstance(var, str) else var
-        subcat = esmcat.search(**query)
-        data = subcat.to_dataset_dict(
-            xarray_open_kwargs=xarray_open_kwargs,
-            # zarr_kwargs=dict(consolidated=True),
-            # decode_times=True,
-            # use_cftime=True)
-            progressbar=False,
-        )
-        return list(data.values())[0]
+    #     Returns:
+    #         xarray.Dataset: The dataset retrieved from the intake-esm catalog.
+    #     """
+    #     xarray_open_kwargs = esmcat.metadata.get(
+    #         "xarray_open_kwargs", esmcat.metadata.get("cdf_kwargs", {"chunks": {"time": 1}})
+    #     )
+    #     query = esmcat.metadata["query"]
+    #     if var:
+    #         query_var = esmcat.metadata.get("query_var", "short_name")
+    #         # Convert to list if not already
+    #         query[query_var] = var.split() if isinstance(var, str) else var
+    #     subcat = esmcat.search(**query)
+    #     data = subcat.to_dataset_dict(
+    #         xarray_open_kwargs=xarray_open_kwargs,
+    #         # zarr_kwargs=dict(consolidated=True),
+    #         # decode_times=True,
+    #         # use_cftime=True)
+    #         progressbar=False,
+    #     )
+    #     return list(data.values())[0]
 
     def reader_fdb(self, esmcat, var, startdate, enddate, dask=False, level=None):
         """
