@@ -14,7 +14,8 @@ class BackendIntakeFactory:
     """
 
     BACKEND_TYPES = {
-        "fdb": BackendIntakeFDB,
+        # Update to FDB
+        "gsv": BackendIntakeFDB,
         "netcdf": BackendIntakeXarray,
     }
 
