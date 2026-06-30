@@ -1,6 +1,10 @@
 """Class for fixer configuration and loading"""
 
+import os
+
+from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
+from aqua.core.util import load_multi_yaml
 
 
 class FixerConfigure:
@@ -17,7 +21,8 @@ class FixerConfigure:
 
         self.convention = convention
         self.fixer_name = fixer_name
-        self.fixes_dictionary = fixes_dictionary
+        # If the fixer_dictionary is not provided, the default one available in the package is used.
+        self.fixes_dictionary = fixes_dictionary if fixes_dictionary is not None else self._load_default_fixes_dictionary()
         self.logger = log_configure(log_level=loglevel, log_name="FixerConfigure")
 
     def find_fixes(self):
@@ -47,6 +52,20 @@ class FixerConfigure:
         # convention dictionary.
         base_fixes = self._load_fixer_name()
         return self._combine_convention(base_fixes, convention_dictionary)
+
+    def _load_default_fixes_dictionary(self):
+        """
+        Load the default fixes dictionary from the package.
+        The default fixes dictionary is located in the aqua/core/fixer/fixes.yaml file.
+
+        Returns:
+            The default fixes dictionary
+        """
+        configurer = ConfigPath().get_config_dir()
+        fixer_folder = os.path.join(configurer, "fixes")
+        fixes_dictionary = load_multi_yaml(fixer_folder)
+
+        return fixes_dictionary
 
     def _load_convention_dictionary(self, version="2.39.0"):
         """
@@ -94,11 +113,12 @@ class FixerConfigure:
             self.logger.info("No fixer_name found, only convention will be applied")
             base_fixes = {}
             base_convention = "eccodes"
-        elif convention_dictionary is None:
-            self.logger.info("No convention dictionary found, only fixer_name will be applied")
-            return base_fixes
         else:
             base_convention = base_fixes.get("convention", None)
+        if convention_dictionary is None:
+            self.logger.info("No convention dictionary found, only fixer_name will be applied")
+            return base_fixes
+
         # We do not crash if the convention is not eccodes, but we log an error and return the base fixes
         convention = convention_dictionary.get("convention", None)
         if convention != "eccodes":

@@ -1,7 +1,5 @@
 """Backend realization using the intake 'gsv' driver (FDB/GSV) for data handling."""
 
-import xarray as xr
-
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
@@ -77,6 +75,35 @@ class BackendIntakeFDB(BackendIntake):
         self.loglevel = loglevel
         self.engine = engine
         self.databridge = databridge
+
+        # check machine compatibility
+        self.machine_from_catalog = self.expcat.metadata.get("machine")
+        if engine != "polytope":
+            if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
+                self.logger.warning(
+                    "The machine configured (%s) is different from the machine in the catalog (%s). "
+                    "Please check that the data you are looking for are on the machine you are working on.",
+                    self.machine.lower(),
+                    self.machine_from_catalog.lower(),
+                )
+
+        # Inject engine and databridge into kwargs for GSV/FDB sources.
+        # BackendIntake._filter_kwargs is source-agnostic and does not add these;
+        # we mirror the legacy Reader._filter_kwargs GSV logic here.
+        # Use the catalog 'machine' metadata as the polytope databridge target when
+        # the caller has not supplied one explicitly (mirrors Reader.machine_from_catalog).
+        needs_rebuild = False
+        if "engine" not in self.kwargs:
+            self.kwargs["engine"] = engine
+            self.logger.debug("Adding engine=%s to filtered kwargs", engine)
+            needs_rebuild = True
+        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine")
+        if engine == "polytope" and effective_databridge is not None and "databridge" not in self.kwargs:
+            self.kwargs["databridge"] = effective_databridge
+            self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
+            needs_rebuild = True
+        if needs_rebuild:
+            self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
         # GSV/FDB specific handle: the request dict carried by the GSVSource
         # (the xarray-style esmcat.data/.xarray_kwargs handles do not exist for GSV).
@@ -162,16 +189,3 @@ class BackendIntakeFDB(BackendIntake):
         # Skeleton fallback: pass the requested variables straight through.
         # Replace with the matching logic from reader_fdb (var_match construction).
         return to_list(var)
-
-    # The three selection helpers below mirror BackendIntakeXarray (delegate to the base
-    # implementation) so the interface stays uniform across intake backends. In the FDB flow
-    # date/level selection is pushed into the GSV request, so retrieve() does not invoke
-    # _seldate/_sellevel; they remain available and correct if called directly on FDB data.
-    def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
-        return super()._seldate(data=data, startdate=startdate, enddate=enddate)
-
-    def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
-        return super()._sellevel(data=data, level=level, level_coord=level_coord)
-
-    def _selvar(self, data: xr.Dataset, var: str | list = None):
-        return super()._selvar(data=data, var=var)

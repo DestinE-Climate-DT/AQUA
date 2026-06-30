@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 
+from aqua.core.default import DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -11,8 +12,6 @@ from .evaluate_formula import EvaluateFormula
 from .fixer_configure import FixerConfigure
 from .fixer_datamodel import FixerDataModel
 from .fixer_operator import FixerOperator
-
-DEFAULT_DELTAT = 1
 
 
 class Fixer:
@@ -28,7 +27,14 @@ class Fixer:
 
     """
 
-    def __init__(self, fixer_name=None, fixes_dictionary=None, convention=None, metadata=None, loglevel="WARNING"):
+    def __init__(
+        self,
+        fixer_name=None,
+        fixes_dictionary=None,
+        convention="eccodes",
+        metadata=None,
+        loglevel="WARNING",
+    ):
 
         self.fixes_dictionary = fixes_dictionary
         self.fixer_name = fixer_name
@@ -295,13 +301,13 @@ class Fixer:
         """
 
         # First case: get from metadata
-        metadata_deltat = self.metadata.get("deltat")
+        metadata_deltat = self.metadata.get("deltat") if self.metadata else None
         if metadata_deltat:
             self.logger.debug("deltat = %s read from metadata", metadata_deltat)
             return metadata_deltat
 
         # Second case if not available: get from fixes
-        fix_deltat = self.fixes.get("deltat")
+        fix_deltat = self.fixes.get("deltat") if self.fixes else None
         if fix_deltat:
             self.logger.debug("deltat = %s read from fixes", fix_deltat)
             return fix_deltat

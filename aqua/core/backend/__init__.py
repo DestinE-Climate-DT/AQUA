@@ -1,13 +1,9 @@
-from .backend import Backend
-from .backend_intake import BackendIntake
-from .backend_intake_fdb import BackendIntakeFDB
-from .backend_intake_xarray import BackendIntakeXarray
+from .backend_factory import BackendFactory
 from .backend_xarray import BackendXarray
+from .backend_intake_fdb import BackendIntakeFDB
 
 __all__ = [
-    "Backend",
-    "BackendIntake",
-    "BackendIntakeFDB",
-    "BackendIntakeXarray",
+    "BackendFactory",
     "BackendXarray",
+    "BackendIntakeFDB",
 ]

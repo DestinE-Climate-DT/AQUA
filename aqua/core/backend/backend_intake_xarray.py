@@ -1,15 +1,18 @@
 """Backend realization using intake-xarray for data handling."""
 
+import os
+import re
 from glob import glob
 
 import intake_xarray
+import pandas as pd
 import xarray as xr
 
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
-from aqua.core.util import default_time_unit, files_exist, to_list
+from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 
 from .backend_intake import BackendIntake
 
@@ -77,6 +80,12 @@ class BackendIntakeXarray(BackendIntake):
                 + f"please check the url: {self.esmcat.data.url}"
             )
 
+        # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
+        # filters from the complete set, not from a previously-filtered subset.
+        # Without this, a second retrieve() call with different dates would start from
+        # the already-narrowed list produced by the first call.
+        self._all_urls = list(self.esmcat.data.url)
+
     def retrieve(
         self,
         var: str | list = None,
@@ -92,15 +101,21 @@ class BackendIntakeXarray(BackendIntake):
         if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
             read_kwargs.setdefault("engine", "netcdf4")
 
-        # TODO: Possible _filter_netcdf_files to be refined and placed here
+        # Only apply year-based file filtering when the catalog explicitly requests it
+        # via the 'filter_key' metadata entry.  Unconditional filtering would drop all
+        # files for catalogs whose filenames do not contain year tokens.
+        filter_key = esmcat.metadata.get("filter_key")
+        if filter_key:
+            self.logger.info("Filtering netcdf files in the catalog based on %s", filter_key)
+            esmcat = self._filter_netcdf_files(esmcat, filter_key=filter_key, startdate=startdate, enddate=enddate)
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
         if "time_coder" in esmcat.metadata:
             self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
             coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
         else:
-            coder = xr.coders.CFDatetimeCoder(time_unit=default_time_unit)
+            coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
         esmcat.xarray_kwargs.update({"decode_times": coder})
 
@@ -117,11 +132,52 @@ class BackendIntakeXarray(BackendIntake):
 
         return data
 
-    def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
-        return super()._seldate(data=data, startdate=startdate, enddate=enddate)
+    def _filter_netcdf_files(self, esmcat, filter_key="year", startdate=None, enddate=None):
+        """
+        Filter the esmcat to include only netcdf files based on specific filter_key.
 
-    def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
-        return super()._sellevel(data=data, level=level, level_coord=level_coord)
+        Filters from ``self._all_urls`` (the full snapshot saved at init time) so that
+        repeated calls with different date ranges always start from the complete file list.
 
-    def _selvar(self, data: xr.Dataset, var: str | list = None):
-        return super()._selvar(data=data, var=var)
+        Args:
+            esmcat (intake.catalog.Catalog): your catalog
+            filter_key (str): type of filter to apply (default is "year")
+            startdate (str): start date in format YYYY-MM-DD
+            enddate (str): end date in format YYYY-MM-DD
+
+        Returns:
+            intake.catalog.Catalog: filtered catalog
+        """
+
+        # Filter from the immutable snapshot saved at init, not from esmcat.data.url
+        # which may already be narrowed by a previous retrieve() call.
+        files = list(self._all_urls)
+        self.logger.debug("Total files before filtering: %s", len(files))
+
+        # this will consider only files that have "year" in their filename
+        # within the startdate and enddate range
+        if filter_key == "year":
+            if startdate and enddate:
+                keys = list(range(pd.Timestamp(startdate).year, pd.Timestamp(enddate).year + 1))
+                # create regex pattern for each year: only yyyy will be detected
+                pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
+                files = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        else:
+            raise ValueError(f"Filter type {filter_key} not recognized.")
+
+        # replace the url with the expanded/filtered list
+        esmcat.data.url = files
+
+        self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
+
+        if len(esmcat.data.url) == 0:
+            raise NoDataError("No files found after filtering the catalog!")
+
+        self.logger.debug(
+            "Selected: %s files from %s to %s",
+            len(esmcat.data.url),
+            esmcat.data.url[0],
+            esmcat.data.url[-1],
+        )
+
+        return esmcat
