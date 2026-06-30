@@ -1,8 +1,11 @@
 """Backend realization using intake-xarray for data handling."""
 
+import os
+import re
 from glob import glob
 
 import intake_xarray
+import pandas as pd
 import xarray as xr
 
 from aqua.core.configurer import ConfigPath
@@ -92,7 +95,7 @@ class BackendIntakeXarray(BackendIntake):
         if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
             read_kwargs.setdefault("engine", "netcdf4")
 
-        # TODO: Possible _filter_netcdf_files to be refined and placed here
+        esmcat = self._filter_netcdf_files(esmcat, filter_key="year", startdate=startdate, enddate=enddate)
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
         # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
@@ -116,6 +119,51 @@ class BackendIntakeXarray(BackendIntake):
         )
 
         return data
+
+    def _filter_netcdf_files(self, esmcat, filter_key="year", startdate=None, enddate=None):
+        """
+        Filter the esmcat to include only netcdf files based on specific filter_key
+        Args:
+            esmcat (intake.catalog.Catalog): your catalog
+            filter_key (str): type of filter to apply (default is "year")
+            startdate (str): start date in format YYYY-MM-DD
+            enddate (str): end date in format YYYY-MM-DD
+
+        Returns:
+            intake.catalog.Catalog: filtered catalog
+        """
+
+        # list available files in folder.
+        files = to_list(esmcat.data.url)
+        self.logger.debug("Total files before filtering: %s", len(files))
+
+        # this will consider only files that have "year" in their filename
+        # within the startdate and enddate range
+        if filter_key == "year":
+            if startdate and enddate:
+                keys = list(range(pd.Timestamp(startdate).year, pd.Timestamp(enddate).year + 1))
+                # create regex pattern for each year: only yyyy will be detected
+                pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
+                files = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
+        else:
+            raise ValueError(f"Filter type {filter_key} not recognized.")
+
+        # replace the url with the expanded/filtered list
+        esmcat.data.url = files
+
+        self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
+
+        if len(esmcat.data.url) == 0:
+            raise NoDataError("No files found after filtering the catalog!")
+
+        self.logger.debug(
+            "Selected: %s files from %s to %s",
+            len(esmcat.data.url),
+            esmcat.data.url[0],
+            esmcat.data.url[-1],
+        )
+
+        return esmcat
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         return super()._seldate(data=data, startdate=startdate, enddate=enddate)

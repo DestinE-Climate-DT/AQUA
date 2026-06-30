@@ -1,11 +1,8 @@
 """The main AQUA Reader class"""
 
-import os
-import re
 from contextlib import contextmanager
 
 # import intake_esm
-import pandas as pd
 import xarray as xr
 from metpy.units import units
 from smmregrid import GridInspector
@@ -16,7 +13,7 @@ from aqua.core.data_model import DataModel, counter_reverse_coordinate
 
 # set default data model
 from aqua.core.default import DEFAULT_ENGINE, DEFAULT_NPROC
-from aqua.core.exceptions import NoDataError, NoRegridError
+from aqua.core.exceptions import NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
 from aqua.core.histogram import histogram
@@ -616,40 +613,6 @@ class Reader:
     #                             name, list(drop_coords))
     #     return data.drop_vars(drop_coords)
 
-    def _format_realization_reader_kwargs(self, kwargs: dict):
-        """
-        Reformats the realization string for the access to the reader
-        If realization is in the format rXX and the intake type is int, it converts to int XX.
-        """
-        realization = kwargs.get("realization")
-        if realization is None:
-            return kwargs
-
-        param_types = {p["name"]: p["type"] for p in self.intake_user_parameters}
-        realization_type = param_types.get("realization")
-
-        if realization_type is None:
-            self.logger.info("'realization' not in intake parameters %s — removing it.", list(param_types))
-            kwargs.pop("realization", None)
-            return kwargs
-
-        # if type is string, return as is
-        if realization_type == "str":
-            self.logger.debug("realization parameter is of type string, will use it is as is: %s", str(realization))
-            kwargs["realization"] = str(realization)
-            return kwargs
-
-        # if it is in the rXX format and the type is int, convert to int
-        if realization_type == "int":
-            if isinstance(realization, str) and realization.startswith("r") and realization[1:].isdigit():
-                kwargs["realization"] = int(realization[1:])
-                self.logger.info("realization parameter converted from rXXX format to int: %d", kwargs["realization"])
-                return kwargs
-            if isinstance(realization, int):
-                return kwargs  # already an int
-
-        raise ValueError(f"Realization {kwargs['realization']} format not recognized for type {realization_type}")
-
     def vertinterp(self, data, levels=None, vert_coord="plev", units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
@@ -907,49 +870,6 @@ class Reader:
                 ).read_chunked()
 
         return data
-
-    def _filter_netcdf_files(self, esmcat, filter_key="year"):
-        """
-        Filter the esmcat to include only netcdf files based on specific filter_key
-        Args:
-            esmcat (intake.catalog.Catalog): your catalog
-            filter_key (str): type of filter to apply (default is "year")
-
-        Returns:
-            intake.catalog.Catalog: filtered catalog
-        """
-
-        # list available files in folder.
-        files = to_list(esmcat.data.url)
-        self.logger.debug("Total files before filtering: %s", len(files))
-
-        # this will consider only files that have "year" in their filename
-        # within the startdate and enddate range
-        if filter_key == "year":
-            if self.startdate and self.enddate:
-                keys = list(range(pd.Timestamp(self.startdate).year, pd.Timestamp(self.enddate).year + 1))
-                # create regex pattern for each year: only yyyy will be detected
-                pattern = [re.compile(rf"(?<!\d){yr}(?!\d)") for yr in keys]
-                files = [f for f in files if any(p.search(os.path.basename(f)) for p in pattern)]
-        else:
-            raise ValueError(f"Filter type {filter_key} not recognized.")
-
-        # replace the url with the expanded/filtered list
-        esmcat.data.url = files
-
-        self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
-
-        if len(esmcat.data.url) == 0:
-            raise NoDataError("No files found after filtering the catalog!")
-
-        self.logger.debug(
-            "Selected: %s files from %s to %s",
-            len(esmcat.data.url),
-            esmcat.data.url[0],
-            esmcat.data.url[-1],
-        )
-
-        return esmcat
 
     @contextmanager
     def _temporary_attrs(self, **kwargs):
