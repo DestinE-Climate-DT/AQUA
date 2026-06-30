@@ -170,25 +170,93 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         If ``var`` is None the catalog default (metadata 'variables', falling back to the request
         'param') is used.
 
-        TODO: port the full var<->paramid matching from the legacy Reader.reader_fdb. That logic
-        handles: integer paramids, short-name -> fixer 'source' lookup, derived variables, and the
-        eccodes fallback. It is intentionally left as a stub here to keep the skeleton focused.
+        When ``var`` is provided, each element is matched against the catalog variable list
+        (``fdb_var``) using the Fixer ``vars`` block to translate user-facing names (e.g. ``tos``)
+        to the names/paramids actually stored in FDB (e.g. ``263101`` / ``avg_tos``).  This mirrors
+        the matching logic in :meth:`aqua.core.reader.Reader.reader_fdb`.
 
         Args:
             var (str | list, optional): Requested variable name(s) or paramid(s). Defaults to None.
 
         Returns:
-            list: Paramid list to forward to the GSV source.
+            list: Paramid/variable list to forward to the GSV source.
         """
         if self.fdb_var is not None:
             fdb_var = to_list(self.fdb_var)
         else:
             self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
-            fdb_var = to_list(self.request.get("param"))
+            fdb_var = to_list(self.esmcat._entry._open_args["request"]["param"])
 
         if not var:
             return fdb_var
 
-        # Skeleton fallback: pass the requested variables straight through.
-        # Replace with the matching logic from reader_fdb (var_match construction).
-        return to_list(var)
+        var = to_list(var)
+
+        # Short-circuit: nothing to resolve when the request already matches the catalog list.
+        if var == fdb_var:
+            return var
+
+        # Build the fixer vars dict once.  An absent fixer or missing 'vars' block means we fall
+        # back to passing variable names directly to ecCodes (same behaviour as fix=False in
+        # the legacy reader_fdb).
+        fixer_dict = {}
+        if self.fixer is not None and self.fixer.fixes is not None:
+            fixer_dict = self.fixer.fixes.get("vars", {})
+            if not fixer_dict:
+                self.logger.debug("No 'vars' block in the fixer, guessing variable names based on ecCodes")
+
+        var_match = []
+        for element in var:
+            # Integer paramid or a numeric string — intersect directly with fdb_var.
+            if isinstance(element, int) or (isinstance(element, str) and element.isdigit()):
+                element = int(element)
+                match = list(set(fdb_var) & {element})
+                if len(match) == 1:
+                    var_match.append(match[0])
+                elif len(match) > 1:
+                    self.logger.warning("Multiple matches found for %s, using the first one", element)
+                    var_match.append(match[0])
+                else:
+                    self.logger.warning("No match found for %s, skipping it", element)
+            elif isinstance(element, str):
+                if self.fixer is not None and element in fixer_dict:
+                    src_element = fixer_dict[element].get("source", None)
+                    derived_element = fixer_dict[element].get("derived", None)
+                    if derived_element is not None or src_element is None:
+                        # Derived variable — let ecCodes / the fixer handle it at post-process time.
+                        var_match.append(derived_element)
+                    else:
+                        match = list(set(fdb_var) & set(src_element))
+                        if len(match) == 1:
+                            var_match.append(match[0])
+                        elif len(match) > 1:
+                            self.logger.warning("Multiple paramids found for %s: %s, using: %s", element, match, match[0])
+                            var_match.append(match[0])
+                        else:
+                            self.logger.warning("No match found for %s, using eccodes to find the paramid", element)
+                            var_match.append(element)
+                else:
+                    # No fixer or variable not in the fixer dict — pass through and let ecCodes resolve.
+                    var_match.append(element)
+            elif isinstance(element, list):
+                if self.fixer is None:
+                    self.logger.error("Var %s is a list and fixer is None, skipping it", element)
+                    continue
+                match = list(set(fdb_var) & set(element))
+                if len(match) == 1:
+                    var_match.append(match[0])
+                elif len(match) > 1:
+                    self.logger.warning("Multiple matches found for %s, using the first one", element)
+                    var_match.append(match[0])
+                else:
+                    self.logger.error("No match found for %s, skipping it", element)
+            else:
+                self.logger.error("Element %s is not a valid type, skipping it", element)
+
+        if not var_match:
+            self.logger.error("No match found for the variables you are asking for!")
+            self.logger.error("Please be sure the metadata 'variables' is defined in the catalog")
+            return var
+
+        self.logger.debug("Found variables: %s", var_match)
+        return var_match
