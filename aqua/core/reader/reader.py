@@ -170,7 +170,7 @@ class Reader:
 
         # load the catalog
         # Hack needed to avoid double checking of paths when working via polytope.
-        aqua.core.gsv.GSVSource.first_run = True
+        # aqua.core.gsv.GSVSource.first_run = True
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
 
         # check machine compatibility
@@ -432,7 +432,7 @@ class Reader:
             loadvar = self.fixer.get_fixer_varname(var) if self.fix else var
         else:
             # If we are retrieving from fdb we have to specify the var
-            if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
+            if isinstance(self.esmcat, aqua.core.gsv.gsv.IntakeGSVSource):
                 metadata = self.esmcat.metadata
                 if metadata:
                     loadvar = metadata.get("variables")
@@ -458,7 +458,7 @@ class Reader:
         # if isinstance(self.esmcat, intake_esm.core.esm_datastore):
         #    data = self.reader_esm(self.esmcat, loadvar)
         # If this is an fdb entry
-        if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
+        if isinstance(self.esmcat, aqua.core.gsv.gsv.IntakeGSVSource):
             data = self.reader_fdb(self.esmcat, loadvar, startdate, enddate, dask=True, level=level)
             ffdb = True  # These data have been read from fdb
         else:
@@ -787,7 +787,8 @@ class Reader:
                 self.logger.warning("kwarg %s is not in the intake parameters of the source, removing it", key)
 
         # Handle 'engine' for GSV/FDB sources
-        if isinstance(self.esmcat, aqua.core.gsv.intake_gsv.GSVSource):
+
+        if isinstance(self.esmcat, aqua.core.gsv.gsv.IntakeGSVSource):
             if "engine" not in filtered_kwargs:
                 filtered_kwargs["engine"] = engine
                 self.logger.debug("Adding engine=%s to the filtered kwargs", engine)
@@ -943,7 +944,8 @@ class Reader:
         # - a str, in which case it is a short_name that needs to be matched with the paramid
         # - a list (in this case I may have a list of lists) if fix=True and the original variable
         #   found a match in the source field of the fixer dictionary
-        request = esmcat._request
+
+        request = esmcat._entry._captured_init_kwargs.get("args", {})["request"]
         var = to_list(var)
         var_match = []
 
