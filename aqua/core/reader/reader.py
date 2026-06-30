@@ -8,7 +8,7 @@ from metpy.units import units
 from smmregrid import GridInspector
 
 import aqua.core.gsv  # noqa: F401
-from aqua.core.backend import BackendIntakeFactory, BackendIntakeFDB
+from aqua.core.backend import BackendFactory, BackendIntakeFDB
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 
@@ -154,20 +154,18 @@ class Reader:
         configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
         self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
 
-        # minimal check for mandatory arguments
-        if self.path:
-            raise ValueError(
-                "The 'path' argument is not supported in this version of Reader. Please use the intake catalog instead."
-            )
-        if not all(v is not None for v in [model, exp, source]):
-            raise ValueError("The 'model', 'exp', and 'source' arguments are mandatory when using the intake catalog.")
-
         # extend the unit registry
         units_extra_definition()
 
         # we use the backend factory to select the appropriate backend based on the provided arguments
-        backend_factory = BackendIntakeFactory(
-            model=self.model, exp=self.exp, source=self.source, configurer=configurer, catalog=catalog, loglevel=self.loglevel
+        backend_factory = BackendFactory(
+            model=self.model,
+            exp=self.exp,
+            source=self.source,
+            path=self.path,
+            configurer=configurer,
+            catalog=catalog,
+            loglevel=self.loglevel,
         )
         # configure the intake catalog for the backend
         backend_factory.select_backend()
