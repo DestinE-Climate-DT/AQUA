@@ -19,7 +19,7 @@ class BackendXarray(Backend):
     def __init__(
         self,
         path: str,
-        engine: str = None,
+        xarray_engine: str = None,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
         datamodel: DataModel = None,
@@ -31,7 +31,7 @@ class BackendXarray(Backend):
 
         Args:
             path (str): Path to the data file or directory.
-            engine (str, optional): Engine to use for opening the data file. If None, it will be detected automatically.
+            xarray_engine (str, optional): Engine to use for opening the data file. If None, it will be detected automatically.
             chunks (str | dict, optional): Chunking strategy for xarray. Defaults to "auto".
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to define the data structure. Defaults to None.
@@ -41,14 +41,15 @@ class BackendXarray(Backend):
 
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         detected_engine = self._detect_engine(path)
-        engine = engine or detected_engine
+        xarray_engine = xarray_engine or detected_engine
 
-        if engine not in self.SUPPORTED_ENGINES:
-            raise ValueError(f"engine must be one of {self.SUPPORTED_ENGINES}, got {engine!r}")
+        if xarray_engine not in self.SUPPORTED_ENGINES:
+            raise ValueError(f"xarray_engine must be one of {self.SUPPORTED_ENGINES}, got {xarray_engine!r}")
         self.path = path
-        self.engine = engine
+        self.engine = xarray_engine
         self.chunks = chunks
-        self.xr_kwargs = kwargs
+        # TODO: method to validate xarray kwargs
+        # self.xr_kwargs = new_kwargs
 
     def retrieve(
         self,
@@ -58,8 +59,8 @@ class BackendXarray(Backend):
         startdate: str = None,
         enddate: str = None,
     ):
-
-        data = xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine, **self.xr_kwargs)
+        # TODO: Add kwargs to pass to xarray open_dataset or open_zarr
+        data = xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine)
 
         data = super()._postprocess_data(
             data=data,
