@@ -47,6 +47,7 @@ class BackendIntakeFactory:
         self.esmcat = None
         self.driver = None
         self.metadata = None
+        self.machine_paths = None
 
     def select_backend(self):
         """
@@ -59,7 +60,7 @@ class BackendIntakeFactory:
         # Replace the catalog name if it was not provided
         self.catalog = self.cat.name
         # Extract the machine paths and intake variables
-        machine_paths, intake_vars = self.configurer.get_machine_info()
+        self.machine_paths, intake_vars = self.configurer.get_machine_info()
 
         # Extract the source catalog and explore it
         self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
