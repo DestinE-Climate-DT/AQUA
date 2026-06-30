@@ -5,7 +5,6 @@ import re
 from contextlib import contextmanager
 
 # import intake_esm
-import intake_xarray
 import pandas as pd
 import xarray as xr
 from metpy.units import units
@@ -21,7 +20,7 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import default_time_unit, find_vert_coord, fix_calendar, load_multi_yaml, to_list
+from aqua.core.util import find_vert_coord, fix_calendar, load_multi_yaml, to_list
 from aqua.core.version import __version__ as aqua_version
 
 from .reader_utils import set_attrs
@@ -83,15 +82,12 @@ class Reader:
                                            If not specified anywhere, using "ycon".
             fix (bool, optional): Activate data fixing
             areas (bool, optional): Compute pixel areas if needed. Defaults to True.
-            streaming (bool, optional): If to retrieve data in a streaming mode. Defaults to False.
             startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
             loglevel (str, optional): Level of logging according to logging module.
                                       Defaults to log_level_default of loglevel().
             nproc (int, optional): Number of processes to use for weights generation. Defaults to 4.
-            aggregation (str, optional): the streaming frequency in pandas style (1M, 7D etc. or 'monthly', 'daily' etc.)
-                                         Defaults to None (using default from catalog, recommended).
             chunks (str or dict, optional): chunking to be used for data access.
                                             Defaults to None (using default from catalog, recommended).
                                             If it is a string time chunking is assumed.
@@ -178,6 +174,7 @@ class Reader:
         # extend the unit registry
         units_extra_definition()
 
+        # we use the backend factory to select the appropriate backend based on the provided arguments
         backend_factory = BackendIntakeFactory(
             model=self.model, exp=self.exp, source=self.source, configurer=configurer, catalog=catalog, loglevel=self.loglevel
         )
@@ -958,83 +955,6 @@ class Reader:
 
         return esmcat
 
-    def reader_intake(self, esmcat, var, loadvar, keep="first"):
-        """
-        Read regular intake entry. Returns dataset.
-
-        Args:
-            esmcat (intake.catalog.Catalog): your catalog
-            var (list or str): Variable to load
-            loadvar (list of str): List of variables to load
-            keep (str, optional): which duplicate entry to keep ("first" (default), "last" or None)
-
-        Returns:
-            Dataset
-        """
-
-        # use filter_key metadata to filter netcdf files if present
-        # speed up for catalogs with many small files
-        if "filter_key" in esmcat.metadata and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            self.logger.info("Filtering netcdf files in the catalog based on %s", esmcat.metadata.get("filter_key"))
-            esmcat = self._filter_netcdf_files(esmcat, filter_key=esmcat.metadata["filter_key"])
-
-        # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to default_time_unit (microseconds) if not specified in the esmcat.xarray_kwargs
-        if hasattr(esmcat, "xarray_kwargs") and "use_cftime" not in esmcat.xarray_kwargs:
-            if "time_coder" in esmcat.metadata:
-                self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
-                coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
-            else:
-                coder = xr.coders.CFDatetimeCoder(time_unit=default_time_unit)
-
-            esmcat.xarray_kwargs.update({"decode_times": coder})
-
-        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
-
-        # HACK: forcing to netcdf4 for intake2
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
-            read_kwargs.setdefault("engine", "netcdf4")
-            self.logger.debug("Forcing netcdf4 engine")
-
-        data = esmcat.reader.read(**read_kwargs)
-
-        if loadvar:
-            loadvar = to_list(loadvar)
-            loadvar_match = []
-            for element in loadvar:
-                # Having to do a list comprehension we want to be sure that the element is a list
-                element = to_list(element)
-                match = list(set(data.data_vars) & set(element))
-
-                if match:
-                    loadvar_match.append(match[0])
-                else:
-                    self.logger.warning("No match found for %s", element)
-            loadvar = loadvar_match
-
-            if all(element in data.data_vars for element in loadvar):
-                data = data[loadvar]
-            else:
-                try:
-                    data = data[var]
-                    self.logger.warning(
-                        "You are asking for var %s but the fixes definition requires %s, which is not there.", var, loadvar
-                    )
-                    self.logger.warning(
-                        "Retrieving %s, but it would be safer to run with fix=False or to correct the fixes", var
-                    )
-                except Exception as e:
-                    raise KeyError("You are asking for variables which we cannot find in the catalog!") from e
-
-        # check for duplicates
-        if "time" in data.coords:
-            len0 = len(data.time)
-            data = data.drop_duplicates(dim="time", keep=keep)
-            if len(data.time) != len0:
-                self.logger.warning("Duplicate entries found along the time axis, keeping the %s one.", keep)
-
-        return data
-
     @contextmanager
     def _temporary_attrs(self, **kwargs):
         """Temporarily override Reader attributes, restoring them afterward."""
@@ -1066,7 +986,7 @@ class Reader:
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, streaming=False, datamodel=False, preproc=None):
+        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, datamodel=False, preproc=None):
             self.logger.debug("Getting sample data through _retrieve_plain()...")
             data = self.retrieve(history=False, *args, **kwargs)
 
