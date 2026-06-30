@@ -3,17 +3,16 @@
 import os
 import re
 from contextlib import contextmanager
-from glob import glob
 
 # import intake_esm
 import intake_xarray
-import intake_xarray.xzarr
 import pandas as pd
 import xarray as xr
 from metpy.units import units
 from smmregrid import GridInspector
 
 import aqua.core.gsv
+from aqua.core.backend import BackendIntakeFDB, BackendIntakeXarray
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 from aqua.core.exceptions import NoDataError, NoRegridError
@@ -23,18 +22,21 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import default_time_unit, files_exist, find_vert_coord, fix_calendar, load_multi_yaml, to_list
+from aqua.core.util import default_time_unit, find_vert_coord, fix_calendar, load_multi_yaml, to_list
 from aqua.core.version import __version__ as aqua_version
 
 from .reader_utils import set_attrs
-from .streaming import Streaming
 from .trender import Trender
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
 # set default data model
-data_model_default = "aqua"
+DEFAULT_DATAMODEL = "aqua"
+DEFAULT_CONVENTION = "eccodes"
+DEFAULT_REGRID_METHOD = "ycon"
+DEFAULT_ENGINE = "fdb"
+DEFAULT_NPROC = 4
 
 
 class Reader:
@@ -48,25 +50,25 @@ class Reader:
         exp=None,
         source=None,
         catalog=None,
+        path=None,
         fix=True,
         datamodel=None,
+        convention=None,
         regrid=None,
         regrid_method=None,
         areas=True,
-        streaming=False,
         startdate=None,
         enddate=None,
         rebuild=False,
-        loglevel=None,
-        nproc=4,
-        aggregation=None,
+        loglevel="WARNING",
+        nproc=DEFAULT_NPROC,
         chunks=None,
         preproc=None,
-        convention="eccodes",
-        engine="fdb",
+        engine=DEFAULT_ENGINE,
         **kwargs,
     ):
         """
+        TODO: adapt types and docstring
         Initializes the Reader class, which uses the catalog
         `config/config.yaml` to identify the required data.
 
@@ -117,16 +119,24 @@ class Reader:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name="Reader")
 
+        # intake arguments
         self.exp = exp
         self.model = model
         self.source = source
+
+        # xarray native argument
+        self.path = path
+
         # these infos are used by the regridder to correct define areas/weights name
+        # TODO: find an alterantive approah when path is used, and possibly rename to avoid confusion
         reader_kwargs = {"model": model, "exp": exp, "source": source}
+
+        # regridding
         self.regrid_method = regrid_method
         self.nproc = nproc
-        self.vert_coord = None
+
+        # various option
         self.time_correction = False  # extra flag for correction data with cumulation time on monthly timescale
-        self.aggregation = aggregation
         self.chunks = chunks
 
         # Preprocessing function
@@ -140,91 +150,45 @@ class Reader:
         self.tgt_space_coord = None
         self.vert_coord = None
 
-        if streaming:
-            self.streamer = Streaming(startdate=startdate, enddate=enddate, aggregation=aggregation, loglevel=self.loglevel)
-            # Export streaming methods TO DO: probably useless
-            self.reset_stream = self.streamer.reset
-            self.stream = self.streamer.stream
-        self.streaming = streaming
-
+        # time options
         self.startdate = startdate
         self.enddate = enddate
 
         self.sample_data = None  # used to avoid multiple calls of retrieve_plain
 
         # define configuration file and paths
+        # TODO: revisit configpath to allow xarray backend. define a behaviour without catalog.
         configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
         self.configdir = configurer.configdir
         self.machine = configurer.get_machine()
         self.config_file = configurer.config_file
+        self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
+
+        # minimal check for mandatory arguments
+        if self.path:
+            raise ValueError(
+                "The 'path' argument is not supported in this version of Reader. Please use the intake catalog instead."
+            )
+        if not all(v is not None for v in [model, exp, source]):
+            raise ValueError("The 'model', 'exp', and 'source' arguments are mandatory when using the intake catalog.")
+
+        # extract info on expact to check which backend to use.
         self.cat, self.catalog_file, self.machine_file = configurer.deliver_intake_catalog(
             catalog=catalog, model=model, exp=exp, source=source
         )
-        self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
-
-        # deduce catalog name
-        self.catalog = self.cat.name
-
-        # machine dependent catalog path
         machine_paths, intake_vars = configurer.get_machine_info()
-
-        # load the catalog
-        # Hack needed to avoid double checking of paths when working via polytope.
-        aqua.core.gsv.GSVSource.first_run = True
-        self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # the top-level experiment entry
-
-        # check machine compatibility
-        self.machine_from_catalog = self.expcat.metadata.get("machine")
-        if engine != "polytope":
-            if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
-                self.logger.warning(
-                    "The machine configured (%s) is different from the machine in the catalog (%s). "
-                    "Please check that the data you are looking for are on the machine you are working on.",
-                    self.machine.lower(),
-                    self.machine_from_catalog.lower(),
-                )
-        # We open before without kwargs to filter kwargs which are not in the parameters allowed by the intake catalog entry
-        self.esmcat = self.expcat[self.source]()
-
-        self.kwargs = self._filter_kwargs(kwargs, engine=engine, intake_vars=intake_vars, databridge=self.machine_from_catalog)
-        self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
-        self.logger.debug("Using filtered kwargs: %s", self.kwargs)
-
-        # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
-        self.esmcat = self.expcat._entries[self.source](**self.kwargs)
-
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) or isinstance(
-            self.esmcat, intake_xarray.xzarr.ZarrSource
-        ):
-            # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2
-
-            # this provides direct access to the intake data object
-            self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
-
-            self.esmcat.metadata = self.esmcat.reader.metadata
-            self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
-
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
-            # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
-            # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
-            url_input = to_list(self.esmcat.data.url)
-            self.esmcat.data.url = sorted([f for x in url_input for f in glob(x)])
-            self.logger.debug("Using url: %s", self.esmcat.data.url)
-
-            # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
-            if not files_exist(self.esmcat.data.url):
-                raise NoDataError(
-                    f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
-                    + f"please check the url: {self.esmcat.data.url}"
-                )
+        self.sourcecat = self.cat(**intake_vars)[self.model][self.exp][self.source]
+        self.esmcat = self.sourcecat()
+        driver = self.sourcecat._entry._driver
 
         # extend the unit registry
         units_extra_definition()
+
         # Get fixes dictionary and find them
         self.fix = fix  # fix activation flag
         self.fixer_name = self.esmcat.metadata.get("fixer_name", None)
-        self.convention = convention
-        if self.convention is not None and self.convention != "eccodes":
+        self.convention = convention or self.esmcat.metadata.get("convention", DEFAULT_CONVENTION)
+        if self.convention is not None and self.convention != DEFAULT_CONVENTION:
             raise ValueError(f"Convention {self.convention} not supported, only 'eccodes' is supported so far.")
 
         # case to disable automatic fix
@@ -244,17 +208,38 @@ class Reader:
             )
 
         # if data model is not passed to Reader, try to get it from the catalog source metadata
-        if datamodel is None:
-            self.datamodel_name = self.esmcat.metadata.get("data_model", data_model_default)
-        else:
-            self.datamodel_name = datamodel
-
-        # if datamodel is False, disable data model application
-        if not self.datamodel_name:
+        datamodel_name = datamodel or self.esmcat.metadata.get("data_model", DEFAULT_DATAMODEL)
+        if datamodel_name is False:
+            self.logger.warning("A False flag is specified in data_model metadata, disabling data model!")
             self.datamodel = None
-            self.logger.warning("Data model is not specified, many AQUA functionalities will not work properly!")
         else:
-            self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
+            self.datamodel = DataModel(name=datamodel_name, loglevel=self.loglevel)
+
+        if driver == "gsv":
+            self.backend = BackendIntakeFDB(
+                self.model,
+                self.exp,
+                self.source,
+                configurer=configurer,
+                catalog=catalog,
+                fixer=self.fixer if self.fix else None,
+                datamodel=self.datamodel,
+                engine=engine,
+            )
+        if driver in ("netcdf", "zarr"):
+            self.backend = BackendIntakeXarray(
+                self.model,
+                self.exp,
+                self.source,
+                configurer=configurer,
+                catalog=catalog,
+                fixer=self.fixer if self.fix else None,
+                datamodel=self.datamodel,
+            )
+        else:
+            raise ValueError(f"Unsupported driver '{driver}' for model '{model}', exp '{exp}', source '{source}'.")
+        self.cat, self.catalog_file, self.machine_file = self.backend.cat, self.backend.catalog_file, self.backend.machine_file
+        self.catalog = self.backend.catalog
 
         # define grid names
         self.src_grid_name = self.esmcat.metadata.get("source_grid_name")

@@ -78,6 +78,35 @@ class BackendIntakeFDB(BackendIntake):
         self.engine = engine
         self.databridge = databridge
 
+        # check machine compatibility
+        self.machine_from_catalog = self.expcat.metadata.get("machine")
+        if engine != "polytope":
+            if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
+                self.logger.warning(
+                    "The machine configured (%s) is different from the machine in the catalog (%s). "
+                    "Please check that the data you are looking for are on the machine you are working on.",
+                    self.machine.lower(),
+                    self.machine_from_catalog.lower(),
+                )
+
+        # Inject engine and databridge into kwargs for GSV/FDB sources.
+        # BackendIntake._filter_kwargs is source-agnostic and does not add these;
+        # we mirror the legacy Reader._filter_kwargs GSV logic here.
+        # Use the catalog 'machine' metadata as the polytope databridge target when
+        # the caller has not supplied one explicitly (mirrors Reader.machine_from_catalog).
+        needs_rebuild = False
+        if "engine" not in self.kwargs:
+            self.kwargs["engine"] = engine
+            self.logger.debug("Adding engine=%s to filtered kwargs", engine)
+            needs_rebuild = True
+        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine")
+        if engine == "polytope" and effective_databridge is not None and "databridge" not in self.kwargs:
+            self.kwargs["databridge"] = effective_databridge
+            self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
+            needs_rebuild = True
+        if needs_rebuild:
+            self.esmcat = self.expcat._entries[self.source](**self.kwargs)
+
         # GSV/FDB specific handle: the request dict carried by the GSVSource
         # (the xarray-style esmcat.data/.xarray_kwargs handles do not exist for GSV).
         self.request = self.esmcat._request

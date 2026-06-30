@@ -57,6 +57,7 @@ class BackendIntake(Backend, ABC):
             catalog=catalog, model=model, exp=exp, source=source
         )
         self.catalog = self.cat.name
+        self.machine = configurer.get_machine()
         machine_paths, intake_vars = configurer.get_machine_info()
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]  # Top-level experiment entry
         self.esmcat = self.expcat[self.source]()
