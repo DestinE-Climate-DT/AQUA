@@ -839,7 +839,7 @@ class Reader:
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(aggregation=None, chunks=None, fix=False, datamodel=False, preproc=None):
+        with self._temporary_attrs(chunks=None, fix=False, datamodel=False, preproc=None):
             self.logger.debug("Getting sample data through _retrieve_plain()...")
             data = self.retrieve(history=False, *args, **kwargs)
 
