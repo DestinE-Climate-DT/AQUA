@@ -14,10 +14,26 @@ from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 
-from .backend_intake import BackendIntake
+from .backend import Backend
+from .catalog_mixin import CatalogMixin
 
 
-class BackendIntakeXarray(BackendIntake):
+class BackendIntakeXarray(Backend, CatalogMixin):
+    """
+    Concrete backend retrieving data from NetCDF or Zarr files through the
+    intake ``netcdf`` / ``zarr`` drivers.
+
+    Example usage::
+
+        backend = BackendIntakeXarray(
+            model="IFS",
+            exp="test",
+            source="2d",
+            configurer=configurer,
+        )
+        data = backend.retrieve(var="2t", startdate="2020-01-01", enddate="2020-01-31")
+    """
+
     def __init__(
         self,
         model: str,
@@ -40,29 +56,17 @@ class BackendIntakeXarray(BackendIntake):
             source (str): Data source.
             configurer (ConfigPath): An instance of ConfigPath to manage configuration paths.
             catalog (str, optional): Catalog name. Defaults to None.
-            format (str, optional): Format of the data file. If None, it will be detected automatically.
             chunks (str | dict, optional): Chunking strategy for xarray. Defaults to "auto".
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to define the data structure. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
-            kwargs: Additional keyword arguments to pass to xarray's open_dataset or open_zarr functions.
+            kwargs: Additional keyword arguments forwarded to the intake catalog source entry.
         """
+        Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
+        self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
-        super().__init__(
-            model,
-            exp,
-            source,
-            configurer=configurer,
-            catalog=catalog,
-            chunks=chunks,
-            fixer=fixer,
-            datamodel=datamodel,
-            loglevel=loglevel,
-        )
-
-        # HACK convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
-        # This provides direct access to the intake data object and is xarray-specific (moved here from
-        # BackendIntake.__init__ so that non-xarray intake backends, e.g. FDB, do not inherit it).
+        # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
+        # This provides direct access to the intake data object and is xarray-specific.
         self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
         self.esmcat.metadata = self.esmcat.reader.metadata
         self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
@@ -94,6 +98,19 @@ class BackendIntakeXarray(BackendIntake):
         startdate: str = None,
         enddate: str = None,
     ):
+        """
+        Retrieve data from a NetCDF or Zarr source as an xarray.Dataset.
+
+        Args:
+            var (str | list, optional): Variable(s) to retrieve. Defaults to None (all).
+            level (str | list, optional): Level(s) to select. Defaults to None.
+            level_coord (str, optional): Name of the vertical coordinate. Defaults to None.
+            startdate (str, optional): Start date (YYYY-MM-DD). Defaults to None.
+            enddate (str, optional): End date (YYYY-MM-DD). Defaults to None.
+
+        Returns:
+            xr.Dataset: Dataset with fixes, data model, and date/level selection applied.
+        """
         esmcat = self.esmcat
         read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
 
@@ -102,7 +119,7 @@ class BackendIntakeXarray(BackendIntake):
             read_kwargs.setdefault("engine", "netcdf4")
 
         # Only apply year-based file filtering when the catalog explicitly requests it
-        # via the 'filter_key' metadata entry.  Unconditional filtering would drop all
+        # via the 'filter_key' metadata entry. Unconditional filtering would drop all
         # files for catalogs whose filenames do not contain year tokens.
         filter_key = esmcat.metadata.get("filter_key")
         if filter_key:
@@ -121,7 +138,7 @@ class BackendIntakeXarray(BackendIntake):
 
         data = esmcat.reader.read(**read_kwargs)
 
-        data = super()._postprocess_data(
+        data = self._postprocess_data(
             data=data,
             var=var,
             level=level,
@@ -148,7 +165,6 @@ class BackendIntakeXarray(BackendIntake):
         Returns:
             intake.catalog.Catalog: filtered catalog
         """
-
         # Filter from the immutable snapshot saved at init, not from esmcat.data.url
         # which may already be narrowed by a previous retrieve() call.
         files = list(self._all_urls)
@@ -167,7 +183,6 @@ class BackendIntakeXarray(BackendIntake):
 
         # replace the url with the expanded/filtered list
         esmcat.data.url = files
-
         self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
 
         if len(esmcat.data.url) == 0:
