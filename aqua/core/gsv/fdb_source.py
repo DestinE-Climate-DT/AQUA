@@ -44,7 +44,7 @@ from .timeutil import (
 )
 
 
-class FDBPartitionedSource(base.DataSource):
+class FDBSource(base.DataSource):
     """Generic intake source that reads FDB/MARS-like data in time/level partitions.
 
     Concrete subclasses must implement :meth:`_retrieve_partition` and populate the

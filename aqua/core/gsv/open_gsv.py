@@ -11,7 +11,6 @@ compatibility with the previous single-module layout.
 """
 
 from .gsv_source import GSVSource, gsv_available  # noqa: F401  (re-exported for back-compat)
-from .partitioned import log_history  # noqa: F401  (re-exported for back-compat)
 
 
 def open_gsv(

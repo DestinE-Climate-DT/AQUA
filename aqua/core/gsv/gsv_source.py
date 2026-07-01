@@ -21,7 +21,7 @@ from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
 
 from .dates import FDBDatesMixin
-from .partitioned import FDBPartitionedSource
+from .fdb_source import FDBSource
 
 # Test if FDB5 binary library is available
 try:
@@ -42,14 +42,14 @@ except ImportError:
     )
 
 
-class GSVSource(FDBPartitionedSource, FDBDatesMixin):
+class GSVSource(FDBSource, FDBDatesMixin):
     """Open a GSV/FDB source through the ``gsv`` retrieval engine."""
 
     name = "gsv"
 
     #: ``gsv`` holds the (bridge) GSVRetriever handle, which is not picklable and must
     #: never be shipped to dask workers on top of the generic exclusions.
-    _PICKLE_EXCLUDE = FDBPartitionedSource._PICKLE_EXCLUDE | {"gsv"}
+    _PICKLE_EXCLUDE = FDBSource._PICKLE_EXCLUDE | {"gsv"}
 
     def __init__(
         self,
