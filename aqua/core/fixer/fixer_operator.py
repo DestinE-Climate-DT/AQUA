@@ -50,12 +50,12 @@ class FixerOperator:
             offset = data.attrs.get("offset", 0)
             time_conversion_flag = data.attrs.get("time_conversion_flag", 0)
             if factor != 1:
-                data *= factor
+                data = data * factor
                 # if a special dpm correction has been defined, apply it
                 if time_conversion_flag and time_correction is not False:
-                    data /= time_correction
+                    data = data / time_correction
             if offset != 0:
-                data += offset
+                data = data + offset
             log_history(data, f"Units changed to {tgt_units} by fixer")
             data.attrs.pop("tgt_units", None)
 
