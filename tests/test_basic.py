@@ -176,7 +176,7 @@ class TestAqua:
                 areas=False,
                 realization=realization_input,
             )
-            assert reader.kwargs["realization"] == expected_output
+            assert reader.backend.kwargs["realization"] == expected_output
 
     def test_realization_formatting_str(self):
         """

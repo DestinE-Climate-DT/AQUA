@@ -78,7 +78,6 @@ class BackendFactory:
         path: str = None,
         catalog: str = None,
         loglevel: str = "WARNING",
-        **kwargs,
     ):
         # Set the provided parameters as instance attributes
         self.model = model
@@ -197,7 +196,9 @@ class BackendFactory:
             loglevel=loglevel,
             **kwargs,
         )
-        accepted = self._BACKEND_PARAMS[self.driver]
+        # Store all kwargs for debugging/logging purposes
+        # Filter kwargs to only include those accepted by the selected backend plus any additional kwargs provided by the user
+        accepted = self._BACKEND_PARAMS[self.driver] | set(kwargs.keys())
         filtered = {k: v for k, v in all_kwargs.items() if k in accepted}
         self.logger.debug("Creating backend %s with kwargs: %s", self.driver, list(filtered))
         return self.BACKEND_TYPES[self.driver](**filtered)

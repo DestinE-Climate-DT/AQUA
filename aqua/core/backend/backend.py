@@ -99,9 +99,7 @@ class Backend(ABC):
             self.logger.debug("Time dimensions found: %s", minimal_time)
             if startdate:
                 self.logger.debug("Selecting startdate: %s", startdate)
-                self.logger.debug(data)
                 data = data.sel({minimal_time[0]: startdate})
-                self.logger.debug(data)
             else:
                 data = data.isel({minimal_time[0]: 0})
         return data

@@ -209,6 +209,7 @@ class Reader:
             engine=engine,
             databridge=None,
             loglevel=self.loglevel,
+            **kwargs,
         )
 
         # define tgt grid names
