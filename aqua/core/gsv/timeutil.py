@@ -88,7 +88,15 @@ class FDBTimeMixin:
         if shiftmonth and savefreq != "M":
             raise ValueError("shiftmonth option requested but data are not saved at monthly frequency!")
 
-        offset = len(pd.date_range(str(self.data_start_date), str(self.startdate), freq=timestep)) - 1
+        # offset = len(pd.date_range(str(self.data_start_date), str(self.startdate), freq=timestep)) - 1
+        start_ts = pd.Timestamp(str(self.startdate))
+        data_start_ts = pd.Timestamp(str(self.data_start_date))
+
+        try:
+            delta = pd.to_timedelta(timestep)
+            offset = int((start_ts - data_start_ts) / delta)
+        except ValueError:
+            offset = len(pd.date_range(data_start_ts, start_ts, freq=timestep)) - 1
 
         sdate = pd.Timestamp(str(self.startdate))
         edate = pd.Timestamp(str(self.enddate))
@@ -130,8 +138,8 @@ class FDBTimeMixin:
             chunktype = np.where((sdate >= bridge_start) & (sdate <= bridge_end), 1, 0)
             chunktype_end = np.where((edate >= bridge_start) & (edate <= bridge_end), 1, 0)
         else:
-            chunktype = np.zeros(len(dates), dtype=int)
-            chunktype_end = np.zeros(len(dates), dtype=int)
+            chunktype = np.zeros(len(sdate), dtype=int)
+            chunktype_end = np.zeros(len(sdate), dtype=int)
 
         self.timeaxis = dates[idx]
         self.chk_start_idx = sidx + offset
