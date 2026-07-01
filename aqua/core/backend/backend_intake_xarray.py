@@ -2,6 +2,7 @@
 
 import os
 import re
+from glob import glob
 from urllib.parse import urlparse
 
 import intake_xarray
@@ -75,6 +76,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         # We exclude url path to remote storage from the check
         self.esmcat.data.url = to_list(self.esmcat.data.url)
         self._check_netcdf_files_exist()
+        self.esmcat.data.url = sorted([f for x in self.esmcat.data.url for f in glob(x)])
 
         # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
         # filters from the complete set, not from a previously-filtered subset.
