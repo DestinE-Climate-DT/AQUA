@@ -2,7 +2,7 @@
 
 import os
 import re
-from glob import glob
+from urllib.parse import urlparse
 
 import intake_xarray
 import pandas as pd
@@ -71,18 +71,10 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         self.esmcat.metadata = self.esmcat.reader.metadata
         self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
 
-        # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
-        # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
-        url_input = to_list(self.esmcat.data.url)
-        self.esmcat.data.url = sorted([f for x in url_input for f in glob(x)])
-        self.logger.debug("Using url: %s", self.esmcat.data.url)
-
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
-        if not files_exist(self.esmcat.data.url):
-            raise NoDataError(
-                f"No NetCDF files available for {self.model} {self.exp} {self.source}, "
-                + f"please check the url: {self.esmcat.data.url}"
-            )
+        # We exclude url path to remote storage from the check
+        self.esmcat.data.url = to_list(self.esmcat.data.url)
+        self._check_netcdf_files_exist()
 
         # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
         # filters from the complete set, not from a previously-filtered subset.
@@ -123,6 +115,24 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         esmcat.xarray_kwargs.update({"decode_times": coder})
 
         return esmcat
+
+    def _check_netcdf_files_exist(self):
+        """
+        Check if the netcdf files exist in the catalog. Raise NoDataError if any file is missing.
+        """
+        # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
+        # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
+        url_input = self.esmcat.data.url
+        # We assume all the files in the catalog have the same scheme (e.g., 'file', 'http', 's3', etc.)
+        self.logger.info(f"Checking existence of netcdf files in the catalog: {url_input}")
+        if urlparse(url_input[0]).scheme in ["file", ""]:
+            if not files_exist(url_input):
+                raise NoDataError(
+                    f"Some NetCDF files are missing for {self.model} {self.exp} {self.source}, "
+                    + f"please check the url: {url_input}"
+                )
+        else:
+            self.logger.info("Remote files detected, skipping existence check for NetCDF files in the catalog.")
 
     def retrieve_plain(self, startdate: str = None):
         """
