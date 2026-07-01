@@ -1,5 +1,5 @@
 from aqua.core.gsv.base import IntakeFDBSourceAdapter
-from aqua.core.gsv.datatypes import FDB
+from aqua.core.gsv.datatypes import GSV, Polytope
 from aqua.core.gsv.readers import GSVDatasetReader, PolytopeDatasetReader
 
 
@@ -40,33 +40,54 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
         # IntakeGSVSource.instancecount += 1
         # print("Number of GSV source calls = " + str(IntakeGSVSource.instancecount))
 
-        data = FDB(
-            request,
-            data_start_date=data_start_date,
-            data_end_date=data_end_date,
-            bridge_start_date=bridge_start_date,
-            bridge_end_date=bridge_end_date,
-            hpc_expver=hpc_expver,
-            timestyle=timestyle,
-            chunks=chunks,
-            savefreq=savefreq,
-            timestep=timestep,
-            timeshift=timeshift,
-            startdate=startdate,
-            enddate=enddate,
-            var=var,
-            metadata=metadata,
-            level=level,
-            switch_eccodes=switch_eccodes,
-            loglevel=loglevel,
-            engine=engine,
-            databridge=databridge,
-            **kwargs,
-        )
-
         if engine == "polytope":
+            data = Polytope(
+                request,
+                data_start_date=data_start_date,
+                data_end_date=data_end_date,
+                bridge_start_date=bridge_start_date,
+                bridge_end_date=bridge_end_date,
+                hpc_expver=hpc_expver,
+                timestyle=timestyle,
+                chunks=chunks,
+                savefreq=savefreq,
+                timestep=timestep,
+                timeshift=timeshift,
+                startdate=startdate,
+                enddate=enddate,
+                var=var,
+                metadata=metadata,
+                level=level,
+                loglevel=loglevel,
+                engine=engine,
+                databridge=databridge,
+                **kwargs,
+            )
             reader = PolytopeDatasetReader(data, **kwargs)
         else:
+            data = GSV(
+                request,
+                data_start_date=data_start_date,
+                data_end_date=data_end_date,
+                bridge_start_date=bridge_start_date,
+                bridge_end_date=bridge_end_date,
+                hpc_expver=hpc_expver,
+                timestyle=timestyle,
+                chunks=chunks,
+                savefreq=savefreq,
+                timestep=timestep,
+                timeshift=timeshift,
+                startdate=startdate,
+                enddate=enddate,
+                var=var,
+                metadata=metadata,
+                level=level,
+                switch_eccodes=switch_eccodes,
+                loglevel=loglevel,
+                engine=engine,
+                databridge=databridge,
+                **kwargs,
+            )
             reader = GSVDatasetReader(data, **kwargs)
         self.reader = reader
         self.reader.metadata = metadata

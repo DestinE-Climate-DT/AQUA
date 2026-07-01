@@ -1,6 +1,6 @@
 from intake import BaseReader
 
-from aqua.core.gsv.datatypes import FDB
+from aqua.core.gsv.datatypes import GSV, Polytope
 from aqua.core.gsv.openers import open_gsv, open_polytope
 
 
@@ -10,7 +10,7 @@ class GSVDatasetReader(BaseReader):
     optional_imports = {}
     func = "open_gsv"
     implements = {
-        FDB,
+        GSV,
     }
 
     def _read(self, data, **kwargs):
@@ -46,7 +46,7 @@ class PolytopeDatasetReader(BaseReader):
     optional_imports = {}
     func = "open_polytope"
     implements = {
-        FDB,
+        Polytope,
     }
 
     def _read(self, data, **kwargs):
@@ -67,7 +67,6 @@ class PolytopeDatasetReader(BaseReader):
             var=data.var,
             metadata=data.metadata,
             level=data.level,
-            switch_eccodes=data.switch_eccodes,
             loglevel=data.loglevel,
             engine=data.engine,
             databridge=data.databridge,
