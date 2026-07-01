@@ -1,6 +1,6 @@
 from aqua.core.gsv.base import IntakeFDBSourceAdapter
 from aqua.core.gsv.datatypes import FDB
-from aqua.core.gsv.readers import GSVDatasetReader
+from aqua.core.gsv.readers import GSVDatasetReader, PolytopeDatasetReader
 
 
 class IntakeGSVSource(IntakeFDBSourceAdapter):
@@ -64,7 +64,10 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
             **kwargs,
         )
 
-        reader = GSVDatasetReader(data, **kwargs)
+        if engine == "polytope":
+            reader = PolytopeDatasetReader(data, **kwargs)
+        else:
+            reader = GSVDatasetReader(data, **kwargs)
         self.reader = reader
         self.reader.metadata = metadata
         super(IntakeGSVSource, self).__init__(metadata=metadata)
