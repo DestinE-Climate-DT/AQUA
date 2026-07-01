@@ -55,6 +55,7 @@ class GSVSource(base.DataSource):
     name = "gsv"
     version = "0.0.2"
     partition_access = True
+    # instancecount = 0
 
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
@@ -118,6 +119,11 @@ class GSVSource(base.DataSource):
             loglevel (string) : The loglevel for the GSVSource
             kwargs: other keyword arguments.
         """
+
+        # TODO remove these
+        # GSVSource.instancecount += 1
+        # print("Number of GSV_open source calls = " + str(GSVSource.instancecount))
+
         # If engine is not specified, we set it to 'fdb' and we activate the dummy_run flag.
         # This means that we are running a dummy run, where the GSVRetriever is not actually used.
         # This is useful for testing and for the probe call of intake, which is used to get
@@ -1051,4 +1057,8 @@ def open_gsv(
         *args,
         **kwargs,
     )
+
+    print("open_gsv chunks is: ", kwargs.get("chunks"))
+    print("open_gsv *args is: ", args)
+    print("open_gsv **kwargs is: ", kwargs)
     return source.to_dask()

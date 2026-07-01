@@ -9,6 +9,7 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
     container = "xarray:Dataset"
     name = "gsv"
     version = ""
+    # instancecount = 0
 
     def __init__(
         self,
@@ -34,6 +35,10 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
         databridge=None,
         **kwargs,
     ):
+
+        # TODO: remove this
+        # IntakeGSVSource.instancecount += 1
+        # print("Number of GSV source calls = " + str(IntakeGSVSource.instancecount))
 
         data = FDB(
             request,
