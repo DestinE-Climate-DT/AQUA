@@ -26,6 +26,7 @@ Engine-specific behaviour is delegated to overridable hooks:
 import datetime
 
 import dask
+import eccodes
 import xarray as xr
 from intake.source import base
 
@@ -451,13 +452,27 @@ class FDBSource(base.DataSource, FDBTimeMixin):
         return dataset
 
     def _map_output_variable(self, ds_var):
-        """Map a raw retrieved variable to (output_name, retrieval_identifier).
+        """Translate the raw GRIB variable to (current-ecCodes short name, paramId).
 
-        Default is the identity: the output keeps the raw name and is re-requested by
-        the same name. GRIB/ecCodes-based engines override this to translate paramId to
-        the current-ecCodes short name.
+        We consider the paramId stable between ecCodes versions, not the short name.
+        So we read the ``GRIB_paramId`` attribute and derive the short name from the
+        current ecCodes definitions; if it differs from the retrieved short name a
+        warning is issued (this only affects the final name when ``fix=False``). Set
+        ``switch_eccodes=True`` in the catalog to read short names from a pinned
+        ecCodes version instead.
         """
-        return ds_var, ds_var
+        original_paramid = self._ds[ds_var].attrs.get("GRIB_paramId", ds_var)
+        updated_var = get_eccodes_attr(original_paramid)["shortName"]
+        if updated_var != ds_var:
+            self.logger.warning(
+                "Variable shortname %s has been interpreted with another eccodes. "
+                "Current eccodes %s will read paramid %s as %s",
+                ds_var,
+                eccodes.__version__,
+                original_paramid,
+                updated_var,
+            )
+        return updated_var, original_paramid
 
     # ---------------------------------------------------------------- readers
     def read(self):

@@ -11,10 +11,6 @@ To add a different engine (e.g. Polytope or z3fdb) subclass
 :class:`FDBPartitionedSource` and implement ``_retrieve_partition`` only.
 """
 
-import eccodes
-
-from aqua.core.util.eccodes import get_eccodes_attr
-
 from .dates import FDBDatesMixin
 from .fdb_source import FDBSource
 
@@ -112,29 +108,6 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
         else:
             self.fdb_info_file = None
             self.levels = None
-
-    def _map_output_variable(self, ds_var):
-        """Translate the raw GRIB variable to (current-ecCodes short name, paramId).
-
-        We consider the paramId stable between ecCodes versions, not the short name.
-        So we read the ``GRIB_paramId`` attribute and derive the short name from the
-        current ecCodes definitions; if it differs from the retrieved short name a
-        warning is issued (this only affects the final name when ``fix=False``). Set
-        ``switch_eccodes=True`` in the catalog to read short names from a pinned
-        ecCodes version instead.
-        """
-        original_paramid = self._ds[ds_var].attrs.get("GRIB_paramId", ds_var)
-        updated_var = get_eccodes_attr(original_paramid)["shortName"]
-        if updated_var != ds_var:
-            self.logger.warning(
-                "Variable shortname %s has been interpreted with another eccodes. "
-                "Current eccodes %s will read paramid %s as %s",
-                ds_var,
-                eccodes.__version__,
-                original_paramid,
-                updated_var,
-            )
-        return updated_var, original_paramid
 
     # -------------------------------------------------------------- retrieval
     def _retrieve_partition(self, request, chunk_type=None, first=False):
