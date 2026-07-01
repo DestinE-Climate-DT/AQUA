@@ -3,11 +3,11 @@ from aqua.core.fdb.intake2.datatypes import GSV, Polytope
 from aqua.core.fdb.intake2.readers import GSVDatasetReader, PolytopeDatasetReader
 
 
-class IntakeGSVSource(IntakeFDBSourceAdapter):
-    """Open GSV source file."""
+class IntakeFDBSource(IntakeFDBSourceAdapter):
+    """Open FDB source file."""
 
     container = "xarray:Dataset"
-    name = "gsv"
+    name = "gsv"  # This is still called gsv for compatibility with the catalog
     version = ""
     # instancecount = 0
 
@@ -37,8 +37,8 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
     ):
 
         # TODO: remove this
-        # IntakeGSVSource.instancecount += 1
-        # print("Number of GSV source calls = " + str(IntakeGSVSource.instancecount))
+        # IntakeFDBSource.instancecount += 1
+        # print("Number of FDB source calls = " + str(IntakeFDBSource.instancecount))
 
         if engine == "polytope":
             data = Polytope(
@@ -91,4 +91,4 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
             reader = GSVDatasetReader(data, **kwargs)
         self.reader = reader
         self.reader.metadata = metadata
-        super(IntakeGSVSource, self).__init__(metadata=metadata)
+        super(IntakeFDBSource, self).__init__(metadata=metadata)
