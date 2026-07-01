@@ -70,12 +70,10 @@ class Backend(ABC):
     #     """Open raw data with no filters. Used by Regridder during init."""
     #     ...
 
-    @abstractmethod
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         """Store date bounds for lazy application."""
         return data.sel(time=slice(startdate, enddate))
 
-    @abstractmethod
     def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
         """Store level selection for lazy application."""
         # find the vertical coordinate, which can be the smmregrid one or
@@ -111,7 +109,6 @@ class Backend(ABC):
 
         return data
 
-    @abstractmethod
     def _selvar(self, data: xr.Dataset, var: str | list = None):
         if isinstance(var, str):
             var = str(var).split()
