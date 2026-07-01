@@ -147,6 +147,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=startdate)
         data = esmcat.reader.read(**read_kwargs)
         data = self._grid_inspector(data, startdate)
+        return data
 
     def retrieve(
         self,
