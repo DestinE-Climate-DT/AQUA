@@ -72,12 +72,13 @@ class Backend(ABC):
 
         return data
 
-    def _grid_inspector(self, data):
+    def _grid_inspector(self, data, startdate: str = None):
         """
         Use smmregrid GridInspector to get minimal sample data
 
         Args:
             data (xarray.Dataset): input data
+            startdate (str, optional): Start date for time selection. Defaults to None.
 
         Returns:
             A xarray.Dataset containing the required miminal sample data.
@@ -93,10 +94,16 @@ class Backend(ABC):
 
         if minimal_variables:
             self.logger.debug("Variables found: %s", minimal_variables)
-            data = data[minimal_variables]
+            data = data[minimal_variables[0]]
         if minimal_time:
             self.logger.debug("Time dimensions found: %s", minimal_time)
-            data = data.isel({t: 0 for t in minimal_time})
+            if startdate:
+                self.logger.debug("Selecting startdate: %s", startdate)
+                self.logger.debug(data)
+                data = data.sel({minimal_time[0]: startdate})
+                self.logger.debug(data)
+            else:
+                data = data.isel({minimal_time[0]: 0})
         return data
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):

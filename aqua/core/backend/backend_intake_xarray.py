@@ -76,7 +76,6 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         # We exclude url path to remote storage from the check
         self.esmcat.data.url = to_list(self.esmcat.data.url)
         self._check_netcdf_files_exist()
-        self.esmcat.data.url = sorted([f for x in self.esmcat.data.url for f in glob(x)])
 
         # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
         # filters from the complete set, not from a previously-filtered subset.
@@ -124,15 +123,15 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         """
         # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
         # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
-        url_input = self.esmcat.data.url
         # We assume all the files in the catalog have the same scheme (e.g., 'file', 'http', 's3', etc.)
-        self.logger.info(f"Checking existence of netcdf files in the catalog: {url_input}")
-        if urlparse(url_input[0]).scheme in ["file", ""]:
-            if not files_exist(url_input):
+        self.logger.info("Checking existence of netcdf files in the catalog: %s", self.esmcat.data.url)
+        if urlparse(self.esmcat.data.url[0]).scheme in ["file", ""]:
+            if not files_exist(self.esmcat.data.url):
                 raise NoDataError(
                     f"Some NetCDF files are missing for {self.model} {self.exp} {self.source}, "
-                    + f"please check the url: {url_input}"
+                    + f"please check the url: {self.esmcat.data.url}"
                 )
+            self.esmcat.data.url = sorted([f for x in self.esmcat.data.url for f in glob(x)])
         else:
             self.logger.info("Remote files detected, skipping existence check for NetCDF files in the catalog.")
 
@@ -147,7 +146,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
         esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=startdate)
         data = esmcat.reader.read(**read_kwargs)
-        return self._grid_inspector(data)
+        data = self._grid_inspector(data, startdate)
 
     def retrieve(
         self,
