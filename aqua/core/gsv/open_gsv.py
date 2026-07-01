@@ -1058,7 +1058,4 @@ def open_gsv(
         **kwargs,
     )
 
-    print("open_gsv chunks is: ", kwargs.get("chunks"))
-    print("open_gsv *args is: ", args)
-    print("open_gsv **kwargs is: ", kwargs)
     return source.to_dask()
