@@ -481,6 +481,16 @@ class FDBSource(base.DataSource, FDBTimeMixin):
         ds = xr.concat(ds, dim="time", coords="different")
         return ds
 
+    def _get_partition_data(self, ii, var):
+        """Helper to retrieve the raw numpy array of the first variable in a partition.
+
+        This avoids the heavy overhead of xarray's `.to_array()` call and keeps the
+        Dask task graph simple by running the extraction entirely inside the delayed task.
+        """
+        ds = self._get_partition(ii, var=var)
+        var_name = list(ds.data_vars)[0]
+        return ds[var_name].data
+
     def get_part_delayed(self, ii, var, shape, dtype):
         """
         Function to read a delayed partition.
@@ -495,10 +505,8 @@ class FDBSource(base.DataSource, FDBTimeMixin):
 
         i, j = self._index_to_timelevel(ii)
 
-        ds = dask.delayed(self._get_partition)(ii, var=var)
+        ds = dask.delayed(self._get_partition_data)(ii, var=var)
 
-        # get the data from the first (and only) data array
-        ds = ds.to_array()[0].data
         newshape = list(shape)
         newshape[self.itime] = self.chk_size[i]
         if self.chunking_vertical:  # if we have vertical chunking
