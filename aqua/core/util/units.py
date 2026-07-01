@@ -73,20 +73,20 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel="WARNING"):
         offset = (0 * units(src)).to(units(dst)) - (0 * units(dst))
     else:
         if factor.units == "meter ** 3 / kilogram":
-            factor *= 1000 * units("kg m-3")
+            factor = factor * 1000 * units("kg m-3")
             if logger:
                 logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
         elif factor.units == "meter ** 3 * second / kilogram":
-            factor *= 1000 * units("kg m-3") / (deltat * units("s"))
+            factor = factor * 1000 * units("kg m-3") / (deltat * units("s"))
             if logger:
                 logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
                 logger.info("%s: corrected dividing by accumulation time %s s", var, deltat)
         elif factor.units == "second":
-            factor /= deltat * units("s")
+            factor = factor / (deltat * units("s"))
             if logger:
                 logger.debug("%s: corrected dividing by accumulation time %s s", var, deltat)
         elif factor.units == "kilogram / meter ** 3":
-            factor /= 1000 * units("kg m-3")
+            factor = factor / (1000 * units("kg m-3"))
             if logger:
                 logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
         else:

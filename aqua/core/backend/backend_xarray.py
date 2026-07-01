@@ -51,6 +51,9 @@ class BackendXarray(Backend):
         # TODO: method to validate xarray kwargs
         # self.xr_kwargs = new_kwargs
 
+    def retrieve_plain(self, startdate: str = None):
+        pass
+
     def retrieve(
         self,
         var: str | list = None,

@@ -95,7 +95,7 @@ class TestAqua:
         Test the compact catalog override functionality
         """
         reader = Reader(model="IFS", exp="test-tco79", source="short_override", loglevel=loglevel)
-        assert reader.esmcat.metadata["test-key"] == "test-value"  # from the default
+        assert reader.backend.esmcat.metadata["test-key"] == "test-value"  # from the default
         assert reader.src_grid_name == "tco79-nn"  # overwritten key
 
     def test_empty_dataset_error(self, reader_instance):
@@ -176,7 +176,7 @@ class TestAqua:
                 areas=False,
                 realization=realization_input,
             )
-            assert reader.kwargs["realization"] == expected_output
+            assert reader.backend.kwargs["realization"] == expected_output
 
     def test_realization_formatting_str(self):
         """
