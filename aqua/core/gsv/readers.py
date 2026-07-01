@@ -12,6 +12,7 @@ class GSVDatasetReader(BaseReader):
     implements = {
         GSV,
     }
+    partition_access = True
 
     def _read(self, data, **kwargs):
 
@@ -28,6 +29,7 @@ class PolytopeDatasetReader(BaseReader):
     implements = {
         Polytope,
     }
+    partition_access = True
 
     def _read(self, data, **kwargs):
 

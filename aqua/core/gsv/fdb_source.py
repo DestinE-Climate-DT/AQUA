@@ -44,10 +44,6 @@ class FDBSource(FDBTimeMixin):
     :class:`aqua.core.gsv.GSVSource` for a reference implementation).
     """
 
-    container = "xarray"
-    version = "0.0.2"
-    partition_access = True
-
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
     dask_access = False  # Flag if dask has been requested
@@ -158,23 +154,23 @@ class FDBSource(FDBTimeMixin):
     #: either heavy (data samples) or hold non-serialisable backend handles. Anything
     #: not listed here is snapshotted as-is, so no manual bookkeeping is required when
     #: new attributes are added (contrast with the old explicit ``__getstate__`` list).
-    _PICKLE_EXCLUDE = frozenset({"_ds", "_da", "_schema"})
+    # _PICKLE_EXCLUDE = frozenset({"_ds", "_da", "_schema"})
 
-    # ------------------------------------------------------------------ pickling
-    def __getstate__(self):
-        """Snapshot the state needed by :meth:`_get_partition` on dask workers.
+    # # ------------------------------------------------------------------ pickling
+    # def __getstate__(self):
+    #     """Snapshot the state needed by :meth:`_get_partition` on dask workers.
 
-        Unlike the intake default (which re-runs ``__init__`` from the captured
-        constructor arguments), this returns a copy of ``__dict__`` minus the
-        transient/non-serialisable keys in :attr:`_PICKLE_EXCLUDE`. This avoids
-        repeating expensive init-time work (date resolution, catalog probing) on
-        every worker while remaining robust to new attributes.
-        """
-        return {k: v for k, v in self.__dict__.items() if k not in self._PICKLE_EXCLUDE}
+    #     Unlike the intake default (which re-runs ``__init__`` from the captured
+    #     constructor arguments), this returns a copy of ``__dict__`` minus the
+    #     transient/non-serialisable keys in :attr:`_PICKLE_EXCLUDE`. This avoids
+    #     repeating expensive init-time work (date resolution, catalog probing) on
+    #     every worker while remaining robust to new attributes.
+    #     """
+    #     return {k: v for k, v in self.__dict__.items() if k not in self._PICKLE_EXCLUDE}
 
-    def __setstate__(self, state):
-        """Restore the snapshot produced by :meth:`__getstate__` without re-init."""
-        self.__dict__.update(state)
+    # def __setstate__(self, state):
+    #     """Restore the snapshot produced by :meth:`__getstate__` without re-init."""
+    #     self.__dict__.update(state)
 
     # ------------------------------------------------------------- planning
     def _compute_partition_plan(self, data_start_date, savefreq, timestep, chunks, level):
