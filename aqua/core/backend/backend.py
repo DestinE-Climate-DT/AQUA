@@ -161,6 +161,7 @@ class Backend(ABC):
                 self.logger.warning("Retrieving available variables: %s", matched_var)
                 data = data[matched_var]
             else:
-                raise ValueError(f"None of the requested variables {var} were found in the dataset.")
+                self.logger.error(f"None of the requested variables {var} were found in the dataset.")
+                return xr.Dataset()  # Return an empty Dataset if no variables match
 
         return data
