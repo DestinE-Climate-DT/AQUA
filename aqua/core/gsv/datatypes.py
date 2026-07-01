@@ -2,14 +2,14 @@ from intake.readers import BaseData
 
 
 class FDB(BaseData):
-    """Datatypes that uses a FDB request"""
+    """Base Datatype that uses a FDB request"""
 
     structure = {"fdb_request"}
 
     def __init__(
         self,
         request,
-        metadata: dict | None = None,
+        metadata=None,
         data_start_date=None,
         data_end_date=None,
         bridge_start_date=None,
@@ -53,37 +53,34 @@ class FDB(BaseData):
 
     def to_dict(self):
         """Serialize datatype instance attributes to a dict for the openers."""
-        exclude = {"request", "metadata", "structure"}
+        exclude = {"request", "structure"}
         return {k: v for k, v in self.__dict__.items() if k not in exclude and not k.startswith("_")}
 
 
 class GSV(FDB):
-    """Datatypes that uses a GSV request"""
+    """Derived Datatype from FDB that uses a GSV request"""
 
     structure = {"gsv_request"}
 
     def __init__(
         self,
         request,
-        metadata,
         switch_eccodes=False,
         **kwargs,
     ):
         self.switch_eccodes = switch_eccodes
 
-        super().__init__(request, metadata, **kwargs)
+        super().__init__(request, **kwargs)
 
 
 class Polytope(FDB):
-    """Datatypes that uses a Polytope request"""
+    """Derived Datatype from FDB that uses a Polytope request"""
 
     structure = {"polytope_request"}
 
     def __init__(
         self,
         request,
-        metadata,
         **kwargs,
     ):
-
-        super().__init__(request, metadata, **kwargs)
+        super().__init__(request, **kwargs)

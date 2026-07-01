@@ -204,8 +204,9 @@ class GSVSource(FDBSource, FDBDatesMixin):
         # See https://github.com/DestinE-Climate-DT/AQUA/issues/1715
         # Notice also that for some mysterious reason this works only if the
         # result is stored in self (even if then it is not used)
-        if chunk_type:
-            self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
+        # if chunk_type:
+        #    self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
+
         gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
 
         self.logger.debug("Request %s", request)
