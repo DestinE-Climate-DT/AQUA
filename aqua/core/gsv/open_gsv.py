@@ -12,7 +12,6 @@ import xarray as xr
 from intake.source import base
 from ruamel.yaml import YAML
 
-from aqua.core.exceptions import NoEcCodesShortNameError
 from aqua.core.logger import _check_loglevel, log_configure
 from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
@@ -767,18 +766,7 @@ class GSVSource(base.DataSource):
         for var in self._ds.data_vars:
             # We need to ask for the GRIB_paramid that is attribute of the variable
             original_paramid = self._ds[var].attrs.get("GRIB_paramId", var)
-            try:
-                updated_var = get_eccodes_attr(original_paramid)["shortName"]
-            except (NoEcCodesShortNameError, eccodes.CodesInternalError, TypeError, ValueError) as err:
-                # Keep the source variable name if this ecCodes version cannot map the paramId.
-                updated_var = var
-                self.logger.warning(
-                    "Could not map GRIB_paramId %s for variable %s with ecCodes %s; keeping original name. Error: %s",
-                    original_paramid,
-                    var,
-                    eccodes.__version__,
-                    err,
-                )
+            updated_var = get_eccodes_attr(original_paramid)["shortName"]
             # If this is executed, it means that the shortname came from a previous version of eccodes
             # and we're using a more recent one in which the paramId is still existing, but the shortName
             # has changed. This is a warning to the user. However the final variable name will be influenced
