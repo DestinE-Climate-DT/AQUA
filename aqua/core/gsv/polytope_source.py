@@ -103,7 +103,7 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
     def _read_metadata(self, metadata):
         """Extract the FDB/eccodes/level paths from the catalog metadata."""
         if metadata:
-            self.fdb_info_file = metadata.get("fdb_info_file", None)
+            self.fdb_info_file = None
             self.levels = metadata.get("levels", None)
         else:
             self.fdb_info_file = None
