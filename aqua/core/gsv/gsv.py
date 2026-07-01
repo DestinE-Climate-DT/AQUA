@@ -61,4 +61,5 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
 
         reader = GSVDatasetReader(data, **kwargs)
         self.reader = reader
+        self.reader.metadata = metadata
         super(IntakeGSVSource, self).__init__(metadata=metadata)

@@ -132,12 +132,7 @@ class BackendFactory:
         if self.driver not in self.BACKEND_TYPES:
             raise ValueError(f"Unsupported driver: {self.driver}. Supported drivers are: {list(self.BACKEND_TYPES.keys())}")
 
-        # GSV sources (IntakeGSVSource) store catalog metadata via base.DataSource.__init__(metadata=…)
-        # and do not expose the intake-xarray .reader.metadata pattern.
-        if self.driver == "gsv":
-            self.metadata = self.esmcat.metadata
-        else:
-            self.metadata = self.esmcat.reader.metadata
+        self.metadata = self.esmcat.reader.metadata
 
     def _select_backend_xarray(self):
         """
