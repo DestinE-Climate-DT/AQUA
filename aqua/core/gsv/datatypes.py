@@ -51,6 +51,11 @@ class FDB(BaseData):
 
         super().__init__(metadata)
 
+    def to_dict(self):
+        """Serialize datatype instance attributes to a dict for the openers."""
+        exclude = {"request", "metadata", "structure"}
+        return {k: v for k, v in self.__dict__.items() if k not in exclude and not k.startswith("_")}
+
 
 class GSV(FDB):
     """Datatypes that uses a GSV request"""

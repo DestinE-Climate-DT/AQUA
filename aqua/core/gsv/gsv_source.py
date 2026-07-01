@@ -16,8 +16,6 @@ import os
 import eccodes
 import numpy as np
 
-from aqua.core.logger import _check_loglevel, log_configure
-from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
 
 from .dates import FDBDatesMixin
@@ -73,110 +71,50 @@ class GSVSource(FDBSource, FDBDatesMixin):
         databridge=None,
         **kwargs,
     ):
-        """
-        Initializes the GSVSource class. These are typically specified in the catalog entry,
-        but can also be specified upon accessing the catalog.
+        self.switch_eccodes = switch_eccodes
+        engine = engine or "fdb"
 
-        Args:
-            request (dict): Request dictionary
-            data_start_date (str): Start date of the available data.
-            data_end_date (str): End date of the available data.
-            bridge_end_date (str, optional): End date of the bridge data. Defaults to None.
-            bridge_start_date (str, optional): Start date of the bridge data. Defaults to None.
-            hpc_expver (str, optional): Alternative expver to be used if the data are on hpc
-            timestyle (str, optional): Time style. Defaults to "date".
-            chunks (str or dict, optional): Time and vertical chunking.
-                                        If a string is provided, it is assumed to be time chunking.
-                                        If it is a dictionary the keys 'time' and 'vertical' are looked for.
-                                        Time chunking can be one of S (step), 10M, 15M, 30M, h, 1h, 3h, 6h, D, 5D, W, M, Y.
-                                        Defaults to "S".
-                                        Vertical chunking is expressed as the number of vertical levels to be used.
-                                        Defaults to None (no vertical chunking).
-            timestep (str, optional): Time step. Can be one of 10M, 15M, 30M, 1h, h, 3h, 6h, D, 5D, W, M, Y.
-                                      Defaults to "h".
-            startdate (str, optional): Start date for request. Defaults to None.
-            enddate (str, optional): End date for request. Defaults to None.
-            var (str, optional): Variable ID. Defaults to those in the catalog.
-            metadata (dict, optional): Metadata read from catalog. Contains path to FDB.
-            level (int, float, list): optional level(s) to be read. Must use the same units as the original source.
-            switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'.
-                Defaults to 'fdb' if not specified.
-            databridge (str, optional): Only for the Polytope engine. Sets wether the data must be retrieved from the
-            Lumi databridge or from the MN5 databridge. Defaults to None.
-            loglevel (string) : The loglevel for the GSVSource
-            kwargs: other keyword arguments.
-        """
-        # If engine is not specified, we set it to 'fdb' and we activate the dummy_run flag.
-        # This means that we are running a dummy run, where the GSVRetriever is not actually used.
-        # This is useful for testing and for the probe call of intake, which is used to get
-        # the schema without actually reading the data.
-        self.engine = engine or "fdb"
-        self.dummy_run = engine is None
-
-        self.logger = log_configure(log_level=loglevel, log_name="GSVSource")
-
-        if self.engine == "polytope":
+        if engine == "polytope":
             self.databridge = "lumi" if databridge is None else databridge
         else:
             self.databridge = None
-        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
-        self.logger.debug("Init of the GSV source class")
 
+        super().__init__(
+            request,
+            data_start_date=data_start_date,
+            data_end_date=data_end_date,
+            bridge_start_date=bridge_start_date,
+            bridge_end_date=bridge_end_date,
+            hpc_expver=hpc_expver,
+            timestyle=timestyle,
+            chunks=chunks,
+            savefreq=savefreq,
+            timestep=timestep,
+            timeshift=timeshift,
+            startdate=startdate,
+            enddate=enddate,
+            var=var,
+            metadata=metadata,
+            level=level,
+            loglevel=loglevel,
+            engine=engine,
+            databridge=self.databridge,
+            **kwargs,
+        )
+
+    # ------------------------------------------------------------ init helpers
+    def _check_availability(self):
         if not gsv_available:
             raise ImportError(gsv_error_cause)
 
-        self._request = request.copy()
-
-        self._read_metadata(metadata, switch_eccodes)
-
-        # set the timestyle
-        self.timestyle = timestyle
-        self.timeshift = timeshift
-
-        self._resolve_paramids(request, var)
-
-        self._kwargs = kwargs
-        self.hpc_expver = hpc_expver
-
-        # set all the start/end dates for data and bridge
-        self.data_start_date = None
-        self.data_end_date = None
-        self.bridge_start_date = None
-        self.bridge_end_date = None
-
-        self._define_start_end_dates(data_start_date, data_end_date, bridge_start_date, bridge_end_date)
-        # set all the start/end dates for the retrieval
-        self._define_retrieve_dates(startdate, enddate)
-
-        # compute the (engine-agnostic) time/level partition plan
-        self._compute_partition_plan(data_start_date, savefreq, timestep, chunks, level)
-
-        self.logger.debug("Data frequency (i.e. savefreq): %s", savefreq)
-        self.logger.debug(
-            "Data_start_date: %s, Data_end_date: %s, Bridge_start_date: %s, Bridge_end_date: %s",
-            self.data_start_date,
-            self.data_end_date,
-            self.bridge_start_date,
-            self.bridge_end_date,
-        )
-        self.logger.debug("Request startdate: %s, Request enddate: %s", self.startdate, self.enddate)
-
-        # GSV/FDB-specific validation of the configured FDB paths (needs chk_type from the plan)
-        self._check_fdb_paths()
-
-        self._switch_eccodes()
-        super().__init__(metadata=metadata)
-
-    # ------------------------------------------------------------ init helpers
-    def _read_metadata(self, metadata, switch_eccodes):
+    def _read_metadata(self, metadata):
         """Extract the FDB/eccodes/level paths from the catalog metadata."""
         if metadata:
             self.fdbhome = metadata.get("fdb_home", None)
             self.fdbpath = metadata.get("fdb_path", None)
             self.fdbhome_bridge = metadata.get("fdb_home_bridge", None)
             self.fdbpath_bridge = metadata.get("fdb_path_bridge", None)
-            if switch_eccodes:
+            if self.switch_eccodes:
                 self.eccodes_path = metadata.get("eccodes_path", None)
                 self.logger.info("ECCODES switching to %s", self.eccodes_path)
             else:
@@ -193,22 +131,10 @@ class GSVSource(FDBSource, FDBDatesMixin):
             self.eccodes_path = None
             self.levels = None
 
-    def _resolve_paramids(self, request, var):
-        """Resolve the requested variables into a list of ecCodes paramIds."""
-        if not var:  # if no var provided keep the default in the catalog
-            self._var = request["param"]
-        else:
-            self._var = var
-
-        self._var = to_list(self._var)  # Make sure self._var is a list
-
-        # Convert var names to paramId. The usage of strings is discouraged, so a warning is issued
-        for i, v in enumerate(self._var):
-            if isinstance(v, str):
-                self.logger.warning("Variable %s is a string, conversion to paramid may lead to errors", v)
-                self._var[i] = int(get_eccodes_attr(v)["paramId"])
-
-        self.logger.debug("List of paramid to retrieve %s", self._var)
+    def _post_init(self):
+        # GSV/FDB-specific validation of the configured FDB paths (needs chk_type from the plan)
+        self._check_fdb_paths()
+        self._switch_eccodes()
 
     def _check_fdb_paths(self):
         """Validate the configured HPC/bridge FDB paths against the partition types."""

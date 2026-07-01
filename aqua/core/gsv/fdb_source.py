@@ -29,7 +29,9 @@ import dask
 import xarray as xr
 from intake.source import base
 
+from aqua.core.logger import log_configure
 from aqua.core.util import to_list
+from aqua.core.util.eccodes import get_eccodes_attr
 
 from .timeutil import FDBTimeMixin
 
@@ -49,6 +51,108 @@ class FDBSource(base.DataSource, FDBTimeMixin):
     _ds = None  # _ds and _da will contain samples of the data for dask access
     _da = None
     dask_access = False  # Flag if dask has been requested
+
+    def __init__(
+        self,
+        request,
+        data_start_date=None,
+        data_end_date=None,
+        bridge_start_date=None,
+        bridge_end_date=None,
+        hpc_expver=None,
+        timestyle="date",
+        chunks="S",
+        savefreq="h",
+        timestep="h",
+        timeshift=None,
+        startdate=None,
+        enddate=None,
+        var=None,
+        metadata=None,
+        level=None,
+        loglevel="WARNING",
+        engine=None,
+        databridge=None,
+        **kwargs,
+    ):
+        self.engine = engine
+        self.dummy_run = engine is None
+
+        self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
+
+        from aqua.core.logger import _check_loglevel
+
+        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
+        self.logger.debug("Init of the %s class", self.__class__.__name__)
+
+        self._check_availability()
+
+        self._request = request.copy()
+
+        self._read_metadata(metadata)
+
+        # set the timestyle
+        self.timestyle = timestyle
+        self.timeshift = timeshift
+
+        self._resolve_paramids(request, var)
+
+        self._kwargs = kwargs
+        self.hpc_expver = hpc_expver
+
+        # set all the start/end dates for data and bridge
+        self.data_start_date = None
+        self.data_end_date = None
+        self.bridge_start_date = None
+        self.bridge_end_date = None
+
+        self._define_start_end_dates(data_start_date, data_end_date, bridge_start_date, bridge_end_date)
+        # set all the start/end dates for the retrieval
+        self._define_retrieve_dates(startdate, enddate)
+
+        # compute the (engine-agnostic) time/level partition plan
+        self._compute_partition_plan(data_start_date, savefreq, timestep, chunks, level)
+
+        self.logger.debug("Data frequency (i.e. savefreq): %s", savefreq)
+        self.logger.debug(
+            "Data_start_date: %s, Data_end_date: %s, Bridge_start_date: %s, Bridge_end_date: %s",
+            self.data_start_date,
+            self.data_end_date,
+            self.bridge_start_date,
+            self.bridge_end_date,
+        )
+        self.logger.debug("Request startdate: %s, Request enddate: %s", self.startdate, self.enddate)
+
+        self._post_init()
+
+    def _check_availability(self):
+        """Hook for checking external library availability."""
+        pass
+
+    def _read_metadata(self, metadata):
+        """Hook for reading metadata."""
+        pass
+
+    def _resolve_paramids(self, request, var):
+        """Resolve the requested variables into a list of ecCodes paramIds."""
+        if not var:  # if no var provided keep the default in the catalog
+            self._var = request["param"]
+        else:
+            self._var = var
+
+        self._var = to_list(self._var)  # Make sure self._var is a list
+
+        # Convert var names to paramId. The usage of strings is discouraged, so a warning is issued
+        for i, v in enumerate(self._var):
+            if isinstance(v, str):
+                self.logger.warning("Variable %s is a string, conversion to paramid may lead to errors", v)
+                self._var[i] = int(get_eccodes_attr(v)["paramId"])
+
+        self.logger.debug("List of paramid to retrieve %s", self._var)
+
+    def _post_init(self):
+        """Hook for any subclass-specific post-init logic."""
+        pass
 
     #: Instance attributes that must never be pickled to dask workers. They are
     #: either heavy (data samples) or hold non-serialisable backend handles. Anything
