@@ -102,7 +102,22 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
         # default list of variables (paramids) available in this source, read from catalog metadata
-        self.fdb_var = self.esmcat.metadata.get("variables")
+        self.fdb_var = to_list(self.esmcat.metadata.get("variables"))
+
+    def retrieve_plain(self, startdate: str = None):
+        # get the first variable available from metadata in the FDB catalog
+        loadvar = self._resolve_loadvar(var=None)[0]
+
+        retrieve_kwargs = {
+            "startdate": startdate,
+            "enddate": startdate,
+            "var": loadvar,
+            "loglevel": self.loglevel,
+            "chunks": "S",
+        }
+
+        source = self.expcat._entries[self.source](**{**self.kwargs, **retrieve_kwargs})
+        return source.to_dask()
 
     def retrieve(
         self,
@@ -181,19 +196,13 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         Returns:
             list: Paramid/variable list to forward to the GSV source.
         """
-        if self.fdb_var is not None:
-            fdb_var = to_list(self.fdb_var)
-        else:
-            self.logger.warning("No 'variables' metadata defined in the catalog, this is deprecated!")
-            fdb_var = to_list(self.esmcat._entry._open_args["request"]["param"])
-
         if not var:
-            return fdb_var
+            return self.fdb_var
 
         var = to_list(var)
 
         # Short-circuit: nothing to resolve when the request already matches the catalog list.
-        if var == fdb_var:
+        if var == self.fdb_var:
             return var
 
         # Build the fixer vars dict once.  An absent fixer or missing 'vars' block means we fall
@@ -210,7 +219,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             # Integer paramid or a numeric string — intersect directly with fdb_var.
             if isinstance(element, int) or (isinstance(element, str) and element.isdigit()):
                 element = int(element)
-                match = list(set(fdb_var) & {element})
+                match = list(set(self.fdb_var) & {element})
                 if len(match) == 1:
                     var_match.append(match[0])
                 elif len(match) > 1:
@@ -226,7 +235,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                         # Derived variable — let ecCodes / the fixer handle it at post-process time.
                         var_match.append(derived_element)
                     else:
-                        match = list(set(fdb_var) & set(src_element))
+                        match = list(set(self.fdb_var) & set(src_element))
                         if len(match) == 1:
                             var_match.append(match[0])
                         elif len(match) > 1:
@@ -242,7 +251,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                 if self.fixer is None:
                     self.logger.error("Var %s is a list and fixer is None, skipping it", element)
                     continue
-                match = list(set(fdb_var) & set(element))
+                match = list(set(self.fdb_var) & set(element))
                 if len(match) == 1:
                     var_match.append(match[0])
                 elif len(match) > 1:

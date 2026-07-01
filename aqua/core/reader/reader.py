@@ -821,7 +821,7 @@ class Reader:
             for key, value in original_values.items():
                 setattr(self, key, value)
 
-    def _retrieve_plain(self, *args, **kwargs):
+    def _retrieve_plain(self):
         """
         Retrieve data without any additional processing.
         Making use of GridInspector, provide a sample data which has minimum
@@ -840,11 +840,11 @@ class Reader:
             return self.sample_data
 
         # Temporarily disable unwanted settings
-        with self._temporary_attrs(chunks=None, fix=False, datamodel=False, preproc=None):
-            self.logger.debug("Getting sample data through _retrieve_plain()...")
-            data = self.retrieve(history=False, *args, **kwargs)
+        # with self._temporary_attrs(chunks=None, fix=False, datamodel=False, preproc=None):
+        #    self.logger.debug("Getting sample data through _retrieve_plain()...")
+        #    data = self.retrieve(history=False, *args, **kwargs)
 
-        self.sample_data = self._grid_inspector(data)
+        self.sample_data = self.backend.retrieve_plain(startdate=self.startdate)
         return self.sample_data
 
     def _grid_inspector(self, data):

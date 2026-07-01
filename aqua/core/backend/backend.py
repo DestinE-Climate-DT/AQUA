@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import xarray as xr
+from smmregrid import GridInspector
 
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
@@ -25,6 +26,7 @@ class Backend(ABC):
         """
         self.fixer = fixer
         self.datamodel = datamodel
+        self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
 
     @abstractmethod
@@ -37,6 +39,10 @@ class Backend(ABC):
         enddate: str = None,
     ):
         """Open data, apply filters, return xr.Dataset."""
+
+    @abstractmethod
+    def retrieve_plain(self, startdate: str = None):
+        """Open minimal data to fetch the Regridder init."""
 
     def _postprocess_data(
         self,
@@ -66,10 +72,32 @@ class Backend(ABC):
 
         return data
 
-    # @abstractmethod
-    # def _retrieve_plain(self):
-    #     """Open raw data with no filters. Used by Regridder during init."""
-    #     ...
+    def _grid_inspector(self, data):
+        """
+        Use smmregrid GridInspector to get minimal sample data
+
+        Args:
+            data (xarray.Dataset): input data
+
+        Returns:
+            A xarray.Dataset containing the required miminal sample data.
+        """
+
+        # get gridtypes from smrregird
+        gridinspect = GridInspector(data, loglevel=self.loglevel)
+        gridtypes = gridinspect.get_gridtype()
+
+        # get info on time dimensions and variables
+        minimal_variables = gridinspect.get_gridtype_attr(gridtypes, "variables")
+        minimal_time = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
+
+        if minimal_variables:
+            self.logger.debug("Variables found: %s", minimal_variables)
+            data = data[minimal_variables]
+        if minimal_time:
+            self.logger.debug("Time dimensions found: %s", minimal_time)
+            data = data.isel({t: 0 for t in minimal_time})
+        return data
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         """Store date bounds for lazy application."""

@@ -90,6 +90,53 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         # the already-narrowed list produced by the first call.
         self._all_urls = list(self.esmcat.data.url)
 
+    def _setup_xarray_kwargs(self, esmcat):
+        """Setup xarray_kwargs for the intake-xarray reader based on the catalog metadata."""
+
+        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
+        # HACK: forcing to netcdf4 for intake2
+        if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
+            read_kwargs.setdefault("engine", "netcdf4")
+        return read_kwargs
+
+    def _setup_intake_catalog(self, esmcat, startdate: str = None, enddate: str = None):
+        """
+        Setup the intake catalog for data retrieval, applying any necessary filters based on the provided start and end dates.
+        """
+
+        # Only apply year-based file filtering when the catalog explicitly requests it
+        # via the 'filter_key' metadata entry. Unconditional filtering would drop all
+        # files for catalogs whose filenames do not contain year tokens.
+        filter_key = esmcat.metadata.get("filter_key")
+        if filter_key:
+            self.logger.info("Filtering netcdf files in the catalog based on %s", filter_key)
+            esmcat = self._filter_netcdf_files(esmcat, filter_key=filter_key, startdate=startdate, enddate=enddate)
+
+        # The coder introduces the possibility to specify a time decoder for the time axis.
+        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
+        if "time_coder" in esmcat.metadata:
+            self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
+            coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
+        else:
+            coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
+
+        esmcat.xarray_kwargs.update({"decode_times": coder})
+
+        return esmcat
+
+    def retrieve_plain(self, startdate: str = None):
+        """
+        Retrieve minimal data from the catalog to fetch the Regridder init.
+
+        Args:
+            startdate (str, optional): Start date (YYYY-MM-DD). Defaults to None.
+            enddate (str, optional): End date (YYYY-MM-DD). Defaults to None.
+        """
+        read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
+        esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=startdate)
+        data = esmcat.reader.read(**read_kwargs)
+        return self._grid_inspector(data)
+
     def retrieve(
         self,
         var: str | list = None,
@@ -111,31 +158,8 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         Returns:
             xr.Dataset: Dataset with fixes, data model, and date/level selection applied.
         """
-        esmcat = self.esmcat
-        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
-
-        # HACK: forcing to netcdf4 for intake2
-        if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
-            read_kwargs.setdefault("engine", "netcdf4")
-
-        # Only apply year-based file filtering when the catalog explicitly requests it
-        # via the 'filter_key' metadata entry. Unconditional filtering would drop all
-        # files for catalogs whose filenames do not contain year tokens.
-        filter_key = esmcat.metadata.get("filter_key")
-        if filter_key:
-            self.logger.info("Filtering netcdf files in the catalog based on %s", filter_key)
-            esmcat = self._filter_netcdf_files(esmcat, filter_key=filter_key, startdate=startdate, enddate=enddate)
-
-        # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
-        if "time_coder" in esmcat.metadata:
-            self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
-            coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
-        else:
-            coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
-
-        esmcat.xarray_kwargs.update({"decode_times": coder})
-
+        read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
+        esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=enddate)
         data = esmcat.reader.read(**read_kwargs)
 
         data = self._postprocess_data(
