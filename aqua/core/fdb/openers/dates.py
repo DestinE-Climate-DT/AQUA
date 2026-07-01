@@ -2,10 +2,7 @@
 
 This mixin groups every way the available data window can be discovered for a
 DestinE GSV experiment: from an explicit catalog entry, from an ``fdb_info`` file,
-from the bridge STAC API, or by auto-scanning the FDB root. It is kept separate from
-the generic partitioning machinery (:mod:`aqua.core.gsv.partitioned`) because these
-strategies are tied to the DestinE deployment (STAC endpoint, FDB config layout,
-filename conventions) and would differ for another backend.
+from the bridge STAC API, or by auto-scanning the FDB root.
 
 The mixin expects the host class to provide: ``self.logger``, ``self.engine``,
 ``self.dummy_run``, ``self.timestyle``, ``self.fdb_info_file``, ``self.fdbhome``,

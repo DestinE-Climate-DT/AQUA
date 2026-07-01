@@ -1,6 +1,6 @@
-from aqua.core.gsv.base import IntakeFDBSourceAdapter
-from aqua.core.gsv.datatypes import GSV, Polytope
-from aqua.core.gsv.readers import GSVDatasetReader, PolytopeDatasetReader
+from aqua.core.fdb.intake2.base import IntakeFDBSourceAdapter
+from aqua.core.fdb.intake2.datatypes import GSV, Polytope
+from aqua.core.fdb.intake2.readers import GSVDatasetReader, PolytopeDatasetReader
 
 
 class IntakeGSVSource(IntakeFDBSourceAdapter):

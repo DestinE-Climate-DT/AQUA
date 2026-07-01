@@ -8,7 +8,7 @@ subclassing :class:`FDBPartitionedSource` and overriding a single method,
 Responsibilities kept here (all engine-agnostic):
 
 * partition planning: time axis, chunk start/end indices and vertical chunking
-  (delegated to :mod:`aqua.core.gsv.timeutil`);
+  (delegated to :mod:`aqua.core.fdb.openers.timeutil`);
 * MARS/FDB request construction per ``timestyle`` (date / step / yearmonth);
 * the intake ``Schema`` and the dask assembly (``to_dask``, ``read``,
   ``read_chunked``, ``get_part_delayed``);
@@ -41,7 +41,7 @@ class FDBSource(FDBTimeMixin):
 
     Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
     request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-    :class:`aqua.core.gsv.GSVSource` for a reference implementation).
+    :class:`aqua.core.fdb.openers.GSVSource` for a reference implementation).
     """
 
     _ds = None  # _ds and _da will contain samples of the data for dask access

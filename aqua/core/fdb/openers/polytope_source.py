@@ -4,8 +4,8 @@ Everything in this module is specific to the GSV retrieval engine (``gsv.retriev
 the FDB environment setup, the HPC/bridge switching, the pyfdb double-initialisation
 workaround and the ecCodes paramId handling. The backend-agnostic machinery (partition
 planning, request building, schema and dask assembly) lives in
-:mod:`aqua.core.gsv.partitioned`, and the date-resolution strategies in
-:mod:`aqua.core.gsv.dates`.
+:mod:`aqua.core.fdb.openers.fdb_source`, and the date-resolution strategies in
+:mod:`aqua.core.fdb.openers.dates`.
 
 To add a different engine (e.g. Polytope or z3fdb) subclass
 :class:`FDBPartitionedSource` and implement ``_retrieve_partition`` only.
