@@ -47,7 +47,7 @@ class GSVSource(FDBSource, FDBDatesMixin):
 
     #: ``gsv`` holds the (bridge) GSVRetriever handle, which is not picklable and must
     #: never be shipped to dask workers on top of the generic exclusions.
-    _PICKLE_EXCLUDE = FDBSource._PICKLE_EXCLUDE | {"gsv"}
+    # _PICKLE_EXCLUDE = FDBSource._PICKLE_EXCLUDE | {"gsv"}
 
     def __init__(
         self,
