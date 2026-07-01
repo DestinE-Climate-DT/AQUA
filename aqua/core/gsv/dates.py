@@ -22,8 +22,6 @@ from ruamel.yaml import YAML
 
 from aqua.core.util import to_list
 
-from .timeutil import read_bridge_date, todatetime
-
 BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"  # LUMI QUBED STAC API
 
 
@@ -137,8 +135,8 @@ class FDBDatesMixin:
             bridge_end_date (str): End date of the bridge data.
         """
         # deprecated method that guess from text file and fall back
-        self.bridge_start_date = read_bridge_date(bridge_start_date)
-        self.bridge_end_date = read_bridge_date(bridge_end_date)
+        self.bridge_start_date = self._read_bridge_date(bridge_start_date)
+        self.bridge_end_date = self._read_bridge_date(bridge_end_date)
 
     def _adjust_bridge_bounds(self):
         """
@@ -215,8 +213,7 @@ class FDBDatesMixin:
 
         return fdb_info
 
-    @staticmethod
-    def _validate_info_date(fdb_info_file, location="data", kind="start"):
+    def _validate_info_date(self, fdb_info_file, location="data", kind="start"):
 
         if location not in ["data", "bridge"]:
             raise ValueError(f"location {location} should be either data or local")
@@ -224,7 +221,7 @@ class FDBDatesMixin:
         if kind not in ["start", "end"]:
             raise ValueError(f"kind {kind} should be either start or end")
 
-        return todatetime(fdb_info_file[location][f"{location}_{kind}_date"]).strftime("%Y%m%dT%H%M")
+        return self._todatetime(fdb_info_file[location][f"{location}_{kind}_date"]).strftime("%Y%m%dT%H%M")
 
     def parse_fdb(self, start_date, end_date):
         """

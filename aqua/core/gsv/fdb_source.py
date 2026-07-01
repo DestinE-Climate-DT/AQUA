@@ -26,25 +26,15 @@ Engine-specific behaviour is delegated to overridable hooks:
 import datetime
 
 import dask
-import numpy as np
 import xarray as xr
 from intake.source import base
 
 from aqua.core.util import to_list
 
-from .timeutil import (
-    add_offset,
-    check_dates,
-    date2str,
-    date2yyyymm,
-    floor_datetime,
-    make_timeaxis,
-    shift_time_dataset,
-    split_date,
-)
+from .timeutil import FDBTimeMixin
 
 
-class FDBSource(base.DataSource):
+class FDBSource(base.DataSource, FDBTimeMixin):
     """Generic intake source that reads FDB/MARS-like data in time/level partitions.
 
     Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
@@ -106,12 +96,12 @@ class FDBSource(base.DataSource):
         # are read at the right time frequency
         # setting hpc and bridge availability dates
         for attr in ["data_start_date", "data_end_date", "bridge_end_date", "bridge_start_date", "startdate", "enddate"]:
-            setattr(self, attr, floor_datetime(getattr(self, attr), savefreq))
+            setattr(self, attr, self._floor_datetime(getattr(self, attr), savefreq))
 
         if self.timestyle != "yearmonth":
             offset = int(self._request.get("step", 0))  # optional initial offset for steps (in timesteps)
             # special for 6h: set offset startdate if needed
-            self.startdate = add_offset(data_start_date, self.startdate, offset, timestep)
+            self._add_offset(data_start_date, offset, timestep)
 
         if isinstance(chunks, dict):
             chunking_time = chunks.get("time", "S")
@@ -123,33 +113,15 @@ class FDBSource(base.DataSource):
         if chunking_time.upper() == "S":  # special case: time chunking is single saved frame
             chunking_time = savefreq
 
-        self.data_startdate, self.data_starttime = split_date(self.data_start_date)
+        self.data_startdate, self.data_starttime = self._split_date(self.data_start_date)
 
         self._resolve_levels(level)
 
-        timeaxis = make_timeaxis(
-            self.data_start_date,
-            self.startdate,
-            self.enddate,
-            shiftmonth=self.timeshift,
+        self._compute_timeaxis(
             timestep=timestep,
             savefreq=savefreq,
             chunkfreq=chunking_time,
-            bridge_start_date=self.bridge_start_date,
-            bridge_end_date=self.bridge_end_date,
         )
-
-        self.timeaxis = timeaxis["timeaxis"]
-        self.chk_start_idx = timeaxis["start_idx"]
-        self.chk_start_date = timeaxis["start_date"]
-        self.chk_end_idx = timeaxis["end_idx"]
-        self.chk_end_date = timeaxis["end_date"]
-        self.chk_size = timeaxis["size"]
-        self._npartitions = len(self.chk_start_date)
-        self.chk_type = timeaxis["type"]
-
-        if not np.array_equal(self.chk_type, timeaxis["type_end"]):  # sanity check
-            raise ValueError("Chunk size is not aligned with bridge_start_data and bridge_end_data. Fix your catalog!")
 
         self._compute_vertical_chunks(chunking_vertical)
 
@@ -213,7 +185,7 @@ class FDBSource(base.DataSource):
         """
 
         # check if dates are within acceptable range
-        check_dates(self.startdate, self.data_start_date, self.enddate, self.data_end_date)
+        self._check_dates()
 
         if self.dask_access:  # We need a better schema for dask access
             if not self._ds or not self._da:  # we still have to retrieve a sample dataset
@@ -279,8 +251,8 @@ class FDBSource(base.DataSource):
             request["levelist"] = self.chk_vert[j]
 
         if self.timestyle == "date":
-            dds, tts = date2str(self.chk_start_date[i])
-            dde, tte = date2str(self.chk_end_date[i])
+            dds, tts = self._date2str(self.chk_start_date[i])
+            dde, tte = self._date2str(self.chk_end_date[i])
             if ((dds == dde) and (tts == tte)) or first:
                 request["date"] = f"{dds}"
                 request["time"] = f"{tts}"
@@ -299,8 +271,8 @@ class FDBSource(base.DataSource):
                 request["step"] = f"{s0}/to/{s1}"
 
         elif self.timestyle == "yearmonth":  # style is 'yearmonth'
-            yys, mms = date2yyyymm(self.chk_start_date[i])
-            yye, mme = date2yyyymm(self.chk_end_date[i])
+            yys, mms = self._date2yyyymm(self.chk_start_date[i])
+            yye, mme = self._date2yyyymm(self.chk_end_date[i])
             if (yys == yye) or first:
                 request["year"] = f"{yys}"
             else:
@@ -371,7 +343,7 @@ class FDBSource(base.DataSource):
     def _postprocess_partition(self, dataset):
         """Per-partition fixups applied right after retrieval. Default: time shift."""
         if self.timeshift:  # shift time by one month (special case)
-            dataset = shift_time_dataset(dataset)
+            dataset = self._shift_time_dataset(dataset)
         return dataset
 
     def _map_output_variable(self, ds_var):
