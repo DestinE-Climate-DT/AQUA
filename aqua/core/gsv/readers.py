@@ -1,7 +1,7 @@
 from intake import BaseReader
 
 from aqua.core.gsv.datatypes import FDB
-from aqua.core.gsv.open_gsv import open_gsv
+from aqua.core.gsv.openers import open_gsv
 
 
 class GSVDatasetReader(BaseReader):
