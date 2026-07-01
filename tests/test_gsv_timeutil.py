@@ -3,7 +3,9 @@
 import pandas as pd
 import pytest
 
-from aqua.core.gsv.timeutil import floor_datetime
+from aqua.core.fdb.openers.timeutil import FDBTimeMixin
+
+floor_datetime = FDBTimeMixin._floor_datetime
 
 # Assuming floor_datetime is already imported
 

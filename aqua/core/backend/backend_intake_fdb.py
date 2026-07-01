@@ -13,9 +13,9 @@ class BackendIntakeFDB(Backend, CatalogMixin):
     """
     Concrete backend retrieving data from FDB/GSV through the intake ``gsv`` driver.
 
-    The underlying source is an :class:`aqua.core.gsv.GSVSource`. Unlike the xarray-based
+    The underlying source is an :class:`aqua.core.fdb.FDBSource`. Unlike the xarray-based
     backends, date and level selection are pushed *down into the GSV request* (handled by
-    ``GSVSource`` at read time), so they must NOT be re-applied with ``.sel()`` afterwards.
+    ``FDBSource`` at read time), so they must NOT be re-applied with ``.sel()`` afterwards.
     Only variable fixes and the data model are applied on top of the retrieved dataset.
 
     This mirrors the legacy ``Reader.reader_fdb`` flow, see ``aqua/core/reader/reader.py``.

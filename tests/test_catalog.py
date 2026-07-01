@@ -5,7 +5,7 @@ import xarray
 from conftest import LOGLEVEL
 
 from aqua import Reader
-from aqua.core.gsv.intake_gsv import gsv_available
+from aqua.core.fdb.openers.gsv_source import gsv_available
 from aqua.core.reader import show_catalog_content as catalog
 
 
