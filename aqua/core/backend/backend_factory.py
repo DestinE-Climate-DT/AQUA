@@ -104,6 +104,10 @@ class BackendFactory:
         self.machine_paths = None
 
     def select_backend(self):
+        """
+        Select the appropriate backend based on the provided parameters.
+        If a path is provided, the xarray backend is selected.
+        Otherwise, the intake backend is selected."""
         if self.path:
             self._select_backend_xarray()
         else:
@@ -137,13 +141,9 @@ class BackendFactory:
 
     def _select_backend_xarray(self):
         """
-        Create and return a backend instance based on the provided parameters.
+        Activate the driver for xarray
         """
         self.driver = "xarray"
-        # TODO: understand how to populate them
-        self.metadata = None
-        self.catalog = None
-        self.machine_paths = None
 
     def get_metadata(
         self,
@@ -157,12 +157,9 @@ class BackendFactory:
         and datamodel_name based on the provided parameters and metadata.
         """
         fixer_name = fixer_name or self.metadata.get("fixer_name") if self.metadata else None
-        # Catalog template writes 'source_grid_name'; fall back to it when 'src_grid_name' is absent.
-        src_grid_name = (
-            src_grid_name or (self.metadata.get("src_grid_name") or self.metadata.get("source_grid_name"))
-            if self.metadata
-            else None
-        )
+        # Catalog template writes 'source_grid_name'
+        src_grid_name = src_grid_name or self.metadata.get("source_grid_name") if self.metadata else None
+
         convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION) if self.metadata else DEFAULT_CONVENTION
         datamodel_name = (
             datamodel_name or self.metadata.get("data_model", DEFAULT_DATAMODEL) if self.metadata else DEFAULT_DATAMODEL

@@ -51,8 +51,7 @@ class Backend(ABC):
         # The Fixer expects destvar as a list (or None for "fix all"), so coerce a bare string.
         if self.fixer:
             self.logger.debug("Applying variable fixes")
-            fixer_var = to_list(var) if var else None
-            data = self.fixer.fixer(data, fixer_var)
+            data = self.fixer.fixer(data, to_list(var))
             data = self.fixer.fixerdatamodel.apply(data)
         if self.datamodel:
             self.logger.debug("Applying data model")
