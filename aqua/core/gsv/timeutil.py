@@ -1,7 +1,6 @@
 """Utilities for calendar and timestep calculations"""
 
 import os
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -23,10 +22,10 @@ class FDBTimeMixin:
     def _add_offset(self, data_start_date, offset, timestep):
         """Sets initial date based on an offset in steps"""
         if int(offset) != 0:
-            if timestep.upper() in ["H", "D"]:
-                base_date = pd.Timestamp(str(data_start_date)) + pd.Timedelta(int(offset), unit=timestep)
-            else:
-                raise ValueError("Timestep not supported")
+            try:
+                base_date = pd.Timestamp(str(data_start_date)) + int(offset) * pd.to_timedelta(timestep)
+            except ValueError as e:
+                raise ValueError(f"Timestep {timestep} not supported for offset calculation.") from e
 
             startdate_obj = pd.Timestamp(str(self.startdate))
             if startdate_obj > base_date:
@@ -36,30 +35,22 @@ class FDBTimeMixin:
 
     def _check_dates(self):
         """Check if starting and ending dates are within given range"""
-        startdate_fmt = "%Y%m%dT%H%M" if "T" in str(self.startdate) else "%Y%m%d"
-        start_date_fmt = "%Y%m%dT%H%M" if "T" in str(self.data_start_date) else "%Y%m%d"
-        enddate_fmt = "%Y%m%dT%H%M" if "T" in str(self.enddate) else "%Y%m%d"
-        end_date_fmt = "%Y%m%dT%H%M" if "T" in str(self.data_end_date) else "%Y%m%d"
+        startdate = pd.Timestamp(str(self.startdate))
+        start_date = pd.Timestamp(str(self.data_start_date))
+        enddate = pd.Timestamp(str(self.enddate))
+        end_date = pd.Timestamp(str(self.data_end_date))
 
-        if datetime.strptime(str(self.startdate), startdate_fmt) < datetime.strptime(
-            str(self.data_start_date), start_date_fmt
-        ):
-            raise ValueError(
-                f"Starting date {str(self.startdate)} is earlier than the data start at {str(self.data_start_date)}."
-            )
+        if startdate < start_date:
+            raise ValueError(f"Starting date {self.startdate} is earlier than the data start at {self.data_start_date}.")
 
-        if datetime.strptime(str(self.enddate), enddate_fmt) > datetime.strptime(str(self.data_end_date), end_date_fmt):
-            raise ValueError(f"End date {str(self.enddate)} is later than the data end at {str(self.data_end_date)}.")
+        if enddate > end_date:
+            raise ValueError(f"End date {self.enddate} is later than the data end at {self.data_end_date}.")
 
-        if datetime.strptime(str(self.startdate), startdate_fmt) > datetime.strptime(str(self.enddate), enddate_fmt):
-            raise ValueError(f"Start date {str(self.startdate)} is later than the end date at {str(self.enddate)}.")
+        if startdate > enddate:
+            raise ValueError(f"Start date {self.startdate} is later than the end date at {self.enddate}.")
 
-        if datetime.strptime(str(self.data_start_date), start_date_fmt) > datetime.strptime(
-            str(self.data_end_date), end_date_fmt
-        ):
-            raise ValueError(
-                f"Data start date {str(self.data_start_date)} is later than the data end at {str(self.data_end_date)}."
-            )
+        if start_date > end_date:
+            raise ValueError(f"Data start date {self.data_start_date} is later than the data end at {self.data_end_date}.")
 
     @staticmethod
     def _shift_time_dataset(data):
