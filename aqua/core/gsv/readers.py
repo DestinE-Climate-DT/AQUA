@@ -1,7 +1,7 @@
 from intake import BaseReader
 
-from aqua.core.gsv.datatypes import FDB
-from aqua.core.gsv.open_gsv import open_gsv
+from aqua.core.gsv.datatypes import GSV, Polytope
+from aqua.core.gsv.openers import open_gsv, open_polytope
 
 
 class GSVDatasetReader(BaseReader):
@@ -10,31 +10,27 @@ class GSVDatasetReader(BaseReader):
     optional_imports = {}
     func = "open_gsv"
     implements = {
-        FDB,
+        GSV,
     }
 
     def _read(self, data, **kwargs):
 
-        params = dict(
-            data_start_date=data.data_start_date,
-            data_end_date=data.data_end_date,
-            bridge_start_date=data.bridge_start_date,
-            bridge_end_date=data.bridge_end_date,
-            hpc_expver=data.hpc_expver,
-            timestyle=data.timestyle,
-            chunks=data.chunks,
-            savefreq=data.savefreq,
-            timestep=data.timestep,
-            timeshift=data.timeshift,
-            startdate=data.startdate,
-            enddate=data.enddate,
-            var=data.var,
-            metadata=data.metadata,
-            level=data.level,
-            switch_eccodes=data.switch_eccodes,
-            loglevel=data.loglevel,
-            engine=data.engine,
-            databridge=data.databridge,
-        )
+        params = data.to_dict()
         params.update(kwargs)
         return open_gsv(data.request, **params)
+
+
+class PolytopeDatasetReader(BaseReader):
+    output_instance = "xarray:Dataset"
+    imports = {}
+    optional_imports = {}
+    func = "open_polytope"
+    implements = {
+        Polytope,
+    }
+
+    def _read(self, data, **kwargs):
+
+        params = data.to_dict()
+        params.update(kwargs)
+        return open_polytope(data.request, **params)

@@ -1,7 +1,7 @@
 import intake  # Import this first to avoid circular imports during discovery.
 # from intake.container import register_container
 
-from .open_gsv import open_gsv
+from .openers import open_gsv
 from .gsv import IntakeGSVSource
 
 try:

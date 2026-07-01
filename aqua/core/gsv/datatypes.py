@@ -2,15 +2,16 @@ from intake.readers import BaseData
 
 
 class FDB(BaseData):
-    """Datatypes that use a FDB request"""
+    """Datatypes that uses a FDB request"""
 
     structure = {"fdb_request"}
 
     def __init__(
         self,
         request,
-        data_start_date,
-        data_end_date,
+        metadata: dict | None = None,
+        data_start_date=None,
+        data_end_date=None,
         bridge_start_date=None,
         bridge_end_date=None,
         hpc_expver=None,
@@ -23,11 +24,9 @@ class FDB(BaseData):
         enddate=None,
         var=None,
         level=None,
-        switch_eccodes=False,
         loglevel="WARNING",
         engine=None,
         databridge=None,
-        metadata: dict | None = None,
         **kwargs,
     ):
 
@@ -46,9 +45,45 @@ class FDB(BaseData):
         self.enddate = enddate
         self.var = var
         self.level = level
-        self.switch_eccodes = switch_eccodes
         self.loglevel = loglevel
         self.engine = engine
         self.databridge = databridge
 
         super().__init__(metadata)
+
+    def to_dict(self):
+        """Serialize datatype instance attributes to a dict for the openers."""
+        exclude = {"request", "metadata", "structure"}
+        return {k: v for k, v in self.__dict__.items() if k not in exclude and not k.startswith("_")}
+
+
+class GSV(FDB):
+    """Datatypes that uses a GSV request"""
+
+    structure = {"gsv_request"}
+
+    def __init__(
+        self,
+        request,
+        metadata,
+        switch_eccodes=False,
+        **kwargs,
+    ):
+        self.switch_eccodes = switch_eccodes
+
+        super().__init__(request, metadata, **kwargs)
+
+
+class Polytope(FDB):
+    """Datatypes that uses a Polytope request"""
+
+    structure = {"polytope_request"}
+
+    def __init__(
+        self,
+        request,
+        metadata,
+        **kwargs,
+    ):
+
+        super().__init__(request, metadata, **kwargs)
