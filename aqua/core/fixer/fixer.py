@@ -35,8 +35,6 @@ class Fixer:
         metadata=None,
         loglevel="WARNING",
     ):
-
-        self.fixes_dictionary = fixes_dictionary
         self.fixer_name = fixer_name
         self.convention = convention
         self.metadata = metadata
@@ -45,8 +43,9 @@ class Fixer:
 
         # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
-            convention=self.convention, fixes_dictionary=self.fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
+            convention=self.convention, fixes_dictionary=fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
         )
+        self.fixes_dictionary = fixes_dictionary or self.fixerconfigure.fixes_dictionary
         self.fixes = self.fixerconfigure.find_fixes()
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
         self.time_correction = False
@@ -232,6 +231,12 @@ class Fixer:
 
                 # adjust units
                 if tgt_units:
+                    self.logger.warning(
+                        "Variable %s has fixer target units %s, but source units are %s",
+                        var,
+                        tgt_units,
+                        data[source].attrs.get("units", None),
+                    )
                     if tgt_units.count("{"):  # WHAT IS THIS ABOUT?
                         tgt_units = self.fixes_dictionary["defaults"]["units"]["shortname"][
                             tgt_units.replace("{", "").replace("}", "")
