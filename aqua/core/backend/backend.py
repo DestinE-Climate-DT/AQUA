@@ -84,7 +84,7 @@ class Backend(ABC):
         """
 
         # get gridtypes from smrregird
-        gridinspect = GridInspector(data, loglevel=self.loglevel)
+        gridinspect = GridInspector(data, loglevel=self.loglevel, extra_dims={"time": ["valid_time"]})
         gridtypes = gridinspect.get_gridtype()
 
         # get info on time dimensions and variables
