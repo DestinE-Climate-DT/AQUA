@@ -28,7 +28,6 @@ import datetime
 import dask
 import eccodes
 import xarray as xr
-from intake.source import base
 
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
@@ -37,7 +36,7 @@ from aqua.core.util.eccodes import get_eccodes_attr
 from .timeutil import FDBTimeMixin
 
 
-class FDBSource(base.DataSource, FDBTimeMixin):
+class FDBSource(FDBTimeMixin):
     """Generic intake source that reads FDB/MARS-like data in time/level partitions.
 
     Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
@@ -283,6 +282,7 @@ class FDBSource(base.DataSource, FDBTimeMixin):
                     self._npartitions = self._npartitions * len(self.chk_vert)
 
     # ------------------------------------------------------------------ schema
+
     def _get_schema(self):
         """
         Standard method providing data schema.
@@ -310,7 +310,7 @@ class FDBSource(base.DataSource, FDBTimeMixin):
                 self._da = da
 
             metadata = {"dims": self._da.dims, "attrs": self._ds.attrs}
-            schema = base.Schema(
+            schema = Schema(
                 datashape=None,
                 dtype=str(self._da.dtype),
                 shape=self._da.shape,
@@ -319,7 +319,7 @@ class FDBSource(base.DataSource, FDBTimeMixin):
                 extra_metadata=metadata,
             )
         else:
-            schema = base.Schema(
+            schema = Schema(
                 datashape=None,
                 dtype=str(xr.Dataset),
                 shape=None,
@@ -518,10 +518,10 @@ class FDBSource(base.DataSource, FDBTimeMixin):
         """Return a dask xarray dataset for this data source"""
 
         self.dask_access = True  # This is used to tell _get_schema() to load dask info
-        self._load_metadata()
+        schema = self._get_schema()
 
-        shape = self._schema.shape
-        dtype = self._schema.dtype
+        shape = schema.shape
+        dtype = schema.dtype
 
         self.itime = self._da.dims.index("time")
         if self.chunking_vertical:
@@ -543,7 +543,7 @@ class FDBSource(base.DataSource, FDBTimeMixin):
 
             # Create a dask array from a list of delayed get_partition calls
             if not self.chunking_vertical:
-                dalist = [self.get_part_delayed(i, retrieval_var, shape, dtype) for i in range(self.npartitions)]
+                dalist = [self.get_part_delayed(i, retrieval_var, shape, dtype) for i in range(self._npartitions)]
                 darr = dask.array.concatenate(dalist, axis=self.itime)  # This is a lazy dask array
             else:
                 dalist = []
@@ -576,8 +576,8 @@ class FDBSource(base.DataSource, FDBTimeMixin):
     # Overload read_chunked() from base.DataSource
     def read_chunked(self):
         """Return iterator over container fragments of data source"""
-        self._load_metadata()
-        for i in range(self.npartitions):
+        # self._get_schema()
+        for i in range(self._npartitions):
             ds = self._get_partition(i)
             if self.idx_3d:
                 ds = ds.assign_coords(idx_level=("level", self.idx_3d))
@@ -594,3 +594,8 @@ def log_history(data, msg):
         date_now = now.strftime("%Y-%m-%d %H:%M:%S")
         hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
         data.attrs.update({"history": hist})
+
+
+class Schema(dict):
+    def __getattr__(self, item):
+        return self[item]
