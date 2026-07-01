@@ -94,7 +94,7 @@ class Backend(ABC):
 
         if minimal_variables:
             self.logger.debug("Variables found: %s", minimal_variables)
-            data = data[minimal_variables[0]]
+            data = data[minimal_variables]
         if minimal_time:
             self.logger.debug("Time dimensions found: %s", minimal_time)
             if startdate:
@@ -161,7 +161,7 @@ class Backend(ABC):
                 self.logger.warning("Retrieving available variables: %s", matched_var)
                 data = data[matched_var]
             else:
-                self.logger.error(f"None of the requested variables {var} were found in the dataset.")
+                self.logger.error("None of the requested variables %s were found in the dataset.", var)
                 return xr.Dataset()  # Return an empty Dataset if no variables match
 
         return data
