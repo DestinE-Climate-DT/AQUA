@@ -9,6 +9,7 @@ class IntakeGSVSource(IntakeFDBSourceAdapter):
     container = "xarray:Dataset"
     name = "gsv"
     version = ""
+    partition_access = True
 
     def __init__(
         self,
