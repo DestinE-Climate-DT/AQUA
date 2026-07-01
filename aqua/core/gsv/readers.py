@@ -6,7 +6,7 @@ from aqua.core.gsv.open_gsv import open_gsv
 
 class GSVDatasetReader(BaseReader):
     output_instance = "xarray:Dataset"
-    imports = {"aqua.core.gsv.open_gsv:open_gsv"}
+    imports = {}
     optional_imports = {}
     func = "open_gsv"
     implements = {
