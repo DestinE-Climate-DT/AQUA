@@ -7,10 +7,7 @@ class IntakeFDBSourceAdapter(base.DataSource):
     version = ""
 
     def to_dask(self):
-        if "chunks" not in self.reader.kwargs:
-            return self.reader(chunks={}).read()
-        else:
-            return self.reader.read()
+        return self.reader.read()
 
     def __call__(self, *args, **kwargs):
         return self

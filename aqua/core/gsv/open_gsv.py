@@ -58,4 +58,5 @@ def open_gsv(
         *args,
         **kwargs,
     )
+
     return source.to_dask()
