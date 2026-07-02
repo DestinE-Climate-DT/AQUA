@@ -1,3 +1,6 @@
+# Derived from the fdb-xarray library
+# https://github.com/koldunovn/fdb-xarray
+
 import dask.array as da
 import numpy as np
 import pandas as pd
@@ -8,15 +11,11 @@ from z3fdb import SimpleStoreBuilder, AxisDefinition, Chunking, ExtractorType
 
 _FREQ_TO_PANDAS = {"h": "1h", "D": "1D", "MS": "MS"}
 
-def _activity_for(experiment):
-    return "baseline" if experiment == "hist" else "projections"
-
 def _build_mars_and_axes(
-    stream, freq, levels, levtype, model, experiment,
+    stream, freq, activity, levels, levtype, model, experiment,
     years, resolution, variables,
     start_date=None, end_date=None,
 ):
-    activity = _activity_for(experiment)
     vars_list = list(variables)
     param_part = "type=fc,levtype=" + levtype + ",param=" + "/".join(vars_list)
 
@@ -145,41 +144,65 @@ def to_dataset(
     return ds
 
     
-def open_climate_dt(
+def open_z3fdb(
     request,
     years=None,
-    resolution="standard",
     variables=None,
     config_path="./config.yaml",
     start_date=None,
     end_date=None,
     freq="MS"
 ):
-    """Open a Climate DT FDB selection as an xarray.Dataset.
+    """
+    Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
 
-    Reads metadata from destine_portfolio (freq, levels, variable units/long_name)
-    and constructs the MARS request, axis definitions and time coordinate
-    accordingly. Returns a lazy (dask-backed) xr.Dataset.
+    Constructs axis definitions and time coordinate accordingly.
+    Returns a lazy (dask-backed) xr.Dataset.
+
+    Parameters
+    ----------
+    request : dict
+        Dictionary containing the FDB request.
+    years : range, optional
+        Range of years to request.
+    resolution : str, optional
+        Resolution of the data.
+    variables : list, optional
+        List of variables to request.
+    config_path : str, optional
+        Path to the configuration file.
+    start_date : str, optional
+        Start date of the data.
+    end_date : str, optional
+        End date of the data.
+    freq : str, optional
+        Frequency of the data.
+
+    Returns
+    -------
+    xarray.Dataset
+        Lazy (dask-backed) xr.Dataset.
     """
 
-    portfolio=request["stream"]
-    stream=portfolio
+    stream=request["stream"]
     model=request["model"]
     experiment=request["experiment"]
+    resolution=request.get("resolution", "standard")
     levtype=request["levtype"]
     levels=request.get("levelist", None)
-    keys=variables if variables else request.get("param", None)
+    activity=request["activity"]
+    vars=variables if variables else request.get("param", None)
 
+    # The request should be a string of comma separated key=value pairs
     mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
-
+    
     if years is None and (start_date is None or end_date is None):
         raise ValueError("provide either years=range(...) or start_date+end_date")
 
-    # portfolio_name, portfolio_entry, stream, freq, levels, levtype, model, experiment,  years, resolution, variables,
     axes, pd_freq, start = _build_mars_and_axes(
-        stream, freq, levels, levtype, model, experiment, years, resolution, keys, start_date, end_date
+        stream, freq, activity, levels, levtype, model, experiment, years, resolution, vars, start_date, end_date
     )
-    print(pd_freq, start, keys, levels)
+    print(pd_freq, start, vars, levels)
     print(mars)
     
     builder = SimpleStoreBuilder(config_path)
@@ -189,18 +212,15 @@ def open_climate_dt(
 
     ds = to_dataset(
         zarr_arr,
-        keys=keys,
+        keys=vars,
         start_date=start,
         freq=pd_freq,
         scenario_labels=[experiment],
         levels=levels,
     )
     ds.attrs.update({
-        "levtype": levtype,
-        "model": model,
-        "experiment": experiment,
-        "resolution": resolution,
         "mars_request": mars,
     })
+
     return ds
 
