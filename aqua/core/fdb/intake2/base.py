@@ -1,22 +1,15 @@
-from intake.source import base
+"""FDB source adapter built on the shared AQUA intake 2 adapter."""
+
+from aqua.core.intake2 import IntakeSourceAdapter
 
 
-class IntakeFDBSourceAdapter(base.DataSource):
+class IntakeFDBSourceAdapter(IntakeSourceAdapter):
+    """
+    Adapter exposing FDB-based intake 2 readers through the v1 DataSource interface.
+
+    All the interface logic (``to_dask``, ``read``, ``read_chunked``, ``get``)
+    is inherited from :class:`aqua.core.intake2.IntakeSourceAdapter`.
+    """
+
     container = "fdb"
     name = "fdb"
-    version = ""
-
-    def to_dask(self):
-        return self.reader.read()
-
-    def __call__(self, *args, **kwargs):
-        return self
-
-    get = __call__
-
-    def read(self):
-        return self.reader(chunks=None).read()
-
-    discover = read
-
-    read_chunked = to_dask
