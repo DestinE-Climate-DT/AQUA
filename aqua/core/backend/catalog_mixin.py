@@ -67,8 +67,9 @@ class CatalogMixin:
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
 
-        # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
-        # Rebuild esmcat with the filtered (and possibly realization-formatted) kwargs.
+        # Rebuild esmcat with the filtered (and possibly realization-formatted) kwargs:
+        # calling an already-instantiated intake2 source returns self unchanged
+        # (see aqua.core.intake2.IntakeSourceAdapter), so we must go through the entry.
         self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
     @property
