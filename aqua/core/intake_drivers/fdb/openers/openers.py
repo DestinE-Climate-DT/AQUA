@@ -2,9 +2,9 @@
 
 ``open_gsv`` is the stable, intake2-friendly way to open GSV data as a lazy,
 dask-enabled xarray dataset. It is used both by the intake ``gsv`` driver
-(:mod:`aqua.core.fdb.intake.readers`) and directly (e.g. from tests or notebooks without a
-catalog). The heavy lifting lives in :class:`aqua.core.fdb.openers.gsv_source.GSVSource`,
-which builds on the backend-agnostic :class:`aqua.core.openers.fdb_source.FDBSource`.
+(:mod:`aqua.core.intake_drivers.fdb.readers`) and directly (e.g. from tests or notebooks without a
+catalog). The heavy lifting lives in :class:`aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`,
+which builds on the backend-agnostic :class:`aqua.core.intake_drivers.fdb.openers.fdb_source.FDBSource`.
 """
 
 from .gsv_source import GSVSource
