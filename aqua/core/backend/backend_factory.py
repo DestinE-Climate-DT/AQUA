@@ -22,7 +22,7 @@ class BackendFactory:
     }
 
     # Parameters accepted by each driver's backend constructor.
-    # netcdf and zarr share the same intake-xarray signature.
+    # netcdf and zarr share the same intake source signature.
     _BACKEND_PARAMS = {
         "gsv": {
             "model",
