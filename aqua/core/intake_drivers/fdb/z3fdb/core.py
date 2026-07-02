@@ -200,8 +200,6 @@ def open_z3fdb(
     else:
         vars=request.get("param", None)
 
-    print("VARS is ", vars)
-
     # The request should be a string of comma separated key=value pairs
     mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
 
@@ -211,8 +209,8 @@ def open_z3fdb(
     axes, pd_freq, start = _build_mars_and_axes(
         stream, freq, activity, levels, levtype, model, experiment, years, resolution, vars, start_date, end_date
     )
-    print(pd_freq, start, vars, levels)
-    print(mars)
+    #print(pd_freq, start, vars, levels)
+    #print(mars)
     
     builder = SimpleStoreBuilder(config)
     builder.add_part(mars, axes, ExtractorType.GRIB)
