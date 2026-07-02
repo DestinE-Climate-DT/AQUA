@@ -1,8 +1,7 @@
 from intake import BaseReader
 
-from aqua.core.fdb.openers.openers import open_gsv, open_polytope
-
 from .datatypes import GSV, Polytope
+from .openers import open_gsv, open_polytope
 
 
 class GSVDatasetReader(BaseReader):

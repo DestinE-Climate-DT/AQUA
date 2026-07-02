@@ -8,7 +8,7 @@ from metpy.units import units
 from smmregrid import GridInspector
 
 # This is needed to initialize the gsv driver
-import aqua.core.fdb  # noqa: F401
+import aqua.core.intake_drivers  # noqa: F401
 from aqua.core.backend import BackendFactory, BackendIntakeFDB
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
