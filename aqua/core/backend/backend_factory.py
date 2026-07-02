@@ -5,6 +5,7 @@ from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
 
 from .backend_intake_fdb import BackendIntakeFDB
+from .backend_intake_icechunk import BackendIntakeIcechunk
 from .backend_intake_xarray import BackendIntakeXarray
 from .backend_xarray import BackendXarray
 
@@ -16,6 +17,7 @@ class BackendFactory:
 
     BACKEND_TYPES = {
         "gsv": BackendIntakeFDB,
+        "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
         "zarr": BackendIntakeXarray,
         "xarray": BackendXarray,
@@ -49,6 +51,17 @@ class BackendFactory:
             "loglevel",
         },
         "zarr": {
+            "model",
+            "exp",
+            "source",
+            "configurer",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
+        "icechunk": {
             "model",
             "exp",
             "source",
