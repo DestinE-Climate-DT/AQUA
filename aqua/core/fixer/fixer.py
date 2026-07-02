@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 
+from aqua.core.default import DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -11,8 +12,6 @@ from .evaluate_formula import EvaluateFormula
 from .fixer_configure import FixerConfigure
 from .fixer_datamodel import FixerDataModel
 from .fixer_operator import FixerOperator
-
-DEFAULT_DELTAT = 1
 
 
 class Fixer:
@@ -28,9 +27,14 @@ class Fixer:
 
     """
 
-    def __init__(self, fixer_name=None, fixes_dictionary=None, convention=None, metadata=None, loglevel="WARNING"):
-
-        self.fixes_dictionary = fixes_dictionary
+    def __init__(
+        self,
+        fixer_name=None,
+        fixes_dictionary=None,
+        convention="eccodes",
+        metadata=None,
+        loglevel="WARNING",
+    ):
         self.fixer_name = fixer_name
         self.convention = convention
         self.metadata = metadata
@@ -39,8 +43,9 @@ class Fixer:
 
         # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
-            convention=self.convention, fixes_dictionary=self.fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
+            convention=self.convention, fixes_dictionary=fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
         )
+        self.fixes_dictionary = fixes_dictionary or self.fixerconfigure.fixes_dictionary
         self.fixes = self.fixerconfigure.find_fixes()
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
         self.time_correction = False
@@ -226,6 +231,12 @@ class Fixer:
 
                 # adjust units
                 if tgt_units:
+                    self.logger.warning(
+                        "Variable %s has fixer target units %s, but source units are %s",
+                        var,
+                        tgt_units,
+                        data[source].attrs.get("units", None),
+                    )
                     if tgt_units.count("{"):  # WHAT IS THIS ABOUT?
                         tgt_units = self.fixes_dictionary["defaults"]["units"]["shortname"][
                             tgt_units.replace("{", "").replace("}", "")
@@ -295,13 +306,13 @@ class Fixer:
         """
 
         # First case: get from metadata
-        metadata_deltat = self.metadata.get("deltat")
+        metadata_deltat = self.metadata.get("deltat") if self.metadata else None
         if metadata_deltat:
             self.logger.debug("deltat = %s read from metadata", metadata_deltat)
             return metadata_deltat
 
         # Second case if not available: get from fixes
-        fix_deltat = self.fixes.get("deltat")
+        fix_deltat = self.fixes.get("deltat") if self.fixes else None
         if fix_deltat:
             self.logger.debug("deltat = %s read from fixes", fix_deltat)
             return fix_deltat
