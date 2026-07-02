@@ -1,3 +1,3 @@
-from .icechunk_source import IcechunkSource
+from .icechunk import IntakeIcechunkSource
 
-__all__ = ["IcechunkSource"]
+__all__ = ["IntakeIcechunkSource"]
