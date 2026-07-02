@@ -16,7 +16,7 @@ def _build_mars_and_axes(
     years, resolution, variables,
     start_date=None, end_date=None,
 ):
-    vars_list = list(variables)
+    vars_list = [str(v) for v in list(variables)]
     param_part = "type=fc,levtype=" + levtype + ",param=" + "/".join(vars_list)
 
     base = (
@@ -136,6 +136,9 @@ def to_dataset(
                 "scenario": list(scenario_labels),
                 "cell": cell,
             }
+
+        if isinstance(name, int) or name.isdigit():
+            name = "var" + str(name)
         data_vars[name] = xr.DataArray(
             arr, dims=dims, coords=coords, name=name,
         )
@@ -191,7 +194,13 @@ def open_z3fdb(
     levtype=request["levtype"]
     levels=request.get("levelist", None)
     activity=request["activity"]
-    vars=variables if variables else request.get("param", None)
+    if variables:
+        vars=variables 
+        request["param"] = variables
+    else:
+        vars=request.get("param", None)
+
+    print("VARS is ", vars)
 
     # The request should be a string of comma separated key=value pairs
     mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
