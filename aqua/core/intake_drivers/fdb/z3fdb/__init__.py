@@ -1,6 +1,6 @@
-"""fdb_xarray — expose Destination Earth Climate-DT FDB data as xarray.Datasets."""
+"""Expose Destination Earth Climate-DT FDB data as xarray.Datasets using z3fdb."""
 
-from .core import open_climate_dt, to_dataset
+from .core import open_z3fdb
 
-__all__ =  ["open_climate_dt", "to_dataset"]
+__all__ =  ["open_z3fdb"]
 __version__ = "0.1.0"

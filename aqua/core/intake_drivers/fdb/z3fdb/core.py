@@ -148,7 +148,7 @@ def open_z3fdb(
     request,
     years=None,
     variables=None,
-    config_path="./config.yaml",
+    config="./config.yaml",
     start_date=None,
     end_date=None,
     freq="MS"
@@ -169,7 +169,7 @@ def open_z3fdb(
         Resolution of the data.
     variables : list, optional
         List of variables to request.
-    config_path : str, optional
+    config : str, optional
         Path to the configuration file.
     start_date : str, optional
         Start date of the data.
@@ -195,7 +195,7 @@ def open_z3fdb(
 
     # The request should be a string of comma separated key=value pairs
     mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
-    
+
     if years is None and (start_date is None or end_date is None):
         raise ValueError("provide either years=range(...) or start_date+end_date")
 
@@ -205,7 +205,7 @@ def open_z3fdb(
     print(pd_freq, start, vars, levels)
     print(mars)
     
-    builder = SimpleStoreBuilder(config_path)
+    builder = SimpleStoreBuilder(config)
     builder.add_part(mars, axes, ExtractorType.GRIB)
     store = builder.build()
     zarr_arr = zarr.open_array(store, mode="r", zarr_format=3, use_consolidated=False)
