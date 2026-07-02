@@ -27,7 +27,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
           drop-r100:
             driver: icechunk
             args:
-              repo_path: /path/to/archive.zarr
+              urlpath: /path/to/archive.zarr
               branch: main
             metadata:
               source_grid_name: lon-lat
