@@ -34,8 +34,7 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
 
     name = "netcdf"
 
-    def __init__(self, urlpath, xarray_kwargs=None, metadata=None,
-                 storage_options=None, path_as_pattern=None, **kwargs):
+    def __init__(self, urlpath, xarray_kwargs=None, metadata=None, storage_options=None, path_as_pattern=None, **kwargs):
         """
         Initialize the NetCDF source.
 
@@ -53,8 +52,7 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
         # intake would default NetCDF3 data to the scipy/h5netcdf engines:
         # AQUA netcdf data may be in any netCDF flavour, so we default to the netcdf4 engine
         read_kwargs.setdefault("engine", DEFAULT_NETCDF_ENGINE)
-        self.data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options,
-                                              metadata=metadata)
+        self.data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
         self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **read_kwargs)
         super().__init__(metadata=metadata)
 
@@ -69,8 +67,7 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
 
     name = "zarr"
 
-    def __init__(self, urlpath, storage_options=None, metadata=None,
-                 xarray_kwargs=None, **kwargs):
+    def __init__(self, urlpath, storage_options=None, metadata=None, xarray_kwargs=None, **kwargs):
         """
         Initialize the Zarr source.
 
@@ -82,8 +79,6 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
             kwargs: Further parameters forwarded to the xarray reader (e.g. chunks, consolidated).
         """
         self.xarray_kwargs = dict(xarray_kwargs or {})
-        self.data = readers.datatypes.Zarr(urlpath, storage_options=storage_options,
-                                           metadata=metadata)
-        self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata,
-                                                  **self.xarray_kwargs, **kwargs)
+        self.data = readers.datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
+        self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **self.xarray_kwargs, **kwargs)
         super().__init__(metadata=metadata)

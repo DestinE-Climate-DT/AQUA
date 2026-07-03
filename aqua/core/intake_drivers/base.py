@@ -10,6 +10,7 @@ Example usage::
     from intake import readers
     from aqua.core.intake_drivers.base import IntakeSourceAdapter
 
+
     class MySource(IntakeSourceAdapter):
         name = "mysource"
 

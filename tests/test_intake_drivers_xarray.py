@@ -111,11 +111,7 @@ class TestIntakeZarrSource:
 def test_stub_installation(monkeypatch):
     """When intake_xarray is absent, the stub provides the legacy module."""
     real_find_spec = importlib.util.find_spec
-    saved = {
-        k: sys.modules.pop(k)
-        for k in list(sys.modules)
-        if k == "intake_xarray" or k.startswith("intake_xarray.")
-    }
+    saved = {k: sys.modules.pop(k) for k in list(sys.modules) if k == "intake_xarray" or k.startswith("intake_xarray.")}
     monkeypatch.setattr(
         importlib.util,
         "find_spec",
