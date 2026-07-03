@@ -13,7 +13,7 @@ _FREQ_TO_PANDAS = {"h": "1h", "D": "1D", "MS": "MS"}
 
 def _build_axes(
     request,
-    freq, activity, levels, experiment,
+    freq, levels,
     years,
     start_date=None, end_date=None,
 ):
@@ -71,7 +71,6 @@ def _build_axes(
         time_axes
         + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)]
         + level_axes
-        + [AxisDefinition(["activity", "experiment"], Chunking.SINGLE_VALUE)]
     )
     return request, axes, pd_freq, start
 
@@ -81,25 +80,24 @@ def to_dataset(
     keys,
     start_date,
     freq="1h",
-    scenario_labels=None,
     variables=None,
     levels=None,
 ):
     """Wrap a z3fdb zarr array as an xarray.Dataset with one variable per param.
 
-    Zarr shape is (time, param, scenario, cell) or, when levels is given,
-    (time, param, level, scenario, cell). Each param slice becomes its own
+    Zarr shape is (time, param, cell) or, when levels is given,
+    (time, param, level, cell). Each param slice becomes its own
     DataArray; dask keeps everything lazy.
     """
     has_level = levels is not None
     if has_level:
-        nt, nparam, nlev, nscen, ncell = zarr_array.shape
+        nt, nparam, nlev, ncell = zarr_array.shape
         if len(levels) != nlev:
             raise ValueError(
                 f"levels has {len(levels)} entries, level axis has {nlev}"
             )
     else:
-        nt, nparam, nscen, ncell = zarr_array.shape
+        nt, nparam, ncell = zarr_array.shape
 
     if len(keys) != nparam:
         raise ValueError(f"keys has {len(keys)} entries, param axis has {nparam}")
@@ -107,27 +105,22 @@ def to_dataset(
     darr = da.from_zarr(zarr_array)
     time = pd.date_range(start=str(start_date), periods=nt, freq=freq)
     cell = np.arange(ncell, dtype=np.int64)
-    if scenario_labels is None:
-        scenario_labels = [f"s{i}" for i in range(nscen)]
 
     data_vars = {}
     for i, name in enumerate(keys):
         if has_level:
-            # (time, level, scenario, cell) -> (time, scenario, level, cell)
-            arr = darr[:, i, :, :, :].transpose(0, 2, 1, 3)
-            dims = ("time", "scenario", "level", "cell")
+            arr = darr[:, i, :, :]
+            dims = ("time", "level", "cell")
             coords = {
                 "time": time,
-                "scenario": list(scenario_labels),
                 "level": list(levels),
                 "cell": cell,
             }
         else:
-            arr = darr[:, i, :, :]
-            dims = ("time", "scenario", "cell")
+            arr = darr[:, i, :]
+            dims = ("time", "cell")
             coords = {
                 "time": time,
-                "scenario": list(scenario_labels),
                 "cell": cell,
             }
 
@@ -180,9 +173,6 @@ def open_z3fdb(
         Lazy (dask-backed) xr.Dataset.
     """
 
-    experiment=request["experiment"]
-    activity=request["activity"]
-
     if variables:
         request["param"] = variables
     else:
@@ -197,7 +187,7 @@ def open_z3fdb(
         raise ValueError("provide either years=range(...) or start_date+end_date")
 
     request, axes, pd_freq, start = _build_axes(
-        request, freq, activity, levels, experiment, years, start_date, end_date
+        request, freq, levels, years, start_date, end_date
     )
 
     # Create mars request as a string
@@ -210,12 +200,13 @@ def open_z3fdb(
     store = builder.build()
     zarr_arr = zarr.open_array(store, mode="r", zarr_format=3, use_consolidated=False)
 
+    print(zarr_arr.shape)
+
     ds = to_dataset(
         zarr_arr,
         keys=variables,
         start_date=start,
         freq=pd_freq,
-        scenario_labels=[experiment],
         levels=levels,
     )
     ds.attrs.update({
