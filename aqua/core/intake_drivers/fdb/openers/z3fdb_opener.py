@@ -161,6 +161,8 @@ def open_z3fdb(
     years=None,
     startdate=None,
     enddate=None,
+    data_start_date=None,
+    data_end_date=None,
     freq="MS"
 ):
     """
@@ -205,6 +207,16 @@ def open_z3fdb(
     else:
         levels=request.get("levelist", None)
 
+    # if years is not defined and startdate and enddate are not defined
+    # then we use data_start_date to define startdate
+
+    if years is None:
+        if startdate is None:
+            startdate = data_start_date
+        if enddate is None:
+            enddate = data_end_date
+
+    # print("Calling with ", freq, levels, years, startdate, enddate )
     mars, axes, pd_freq, start = _build_axes(
         request, freq, levels, years, startdate, enddate
     )

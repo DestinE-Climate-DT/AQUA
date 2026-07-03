@@ -57,13 +57,7 @@ class Z3FDBDatasetReader(BaseReader):
             config="/home/jvonhar/work/AQUA/aqua/core/intake_drivers/fdb/z3fdb/config-z3fdb.yaml",
             variables=data.var,
             levels=data.level,
-            freq=data.savefreq)
-
-# ds = open_z3fdb(
-#     request=request3d_dict,
-#     # years=range(1990, 2014).
-#     start_date="1990-01-01", end_date="1992-12-31",
-#     config="/home/jvonhar/work/AQUA/aqua/core/intake_drivers/fdb/z3fdb/config-z3fdb.yaml",
-#     variables = variables,
-#     levels=[400, 300],
-#     freq="MS"
+            freq=data.savefreq,
+            data_start_date=data.data_start_date,
+            data_end_date=data.data_end_date
+        )
