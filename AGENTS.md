@@ -43,7 +43,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 | Variable/unit fixing | `from aqua.core.fixer import Fixer` |
 | Regridding | `from aqua.core.regridder import Regridder` |
 | Field statistics | `from aqua.core.fldstat import FldStat` |
-| Data access | `from aqua.core.reader import Reader, Streaming` |
+| Data access | `from aqua.core.reader import Reader` |
 | Errors | `aqua.core.exceptions` |
 
 ---
@@ -67,8 +67,8 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 All data *read paths* must go through Intake catalogs unless explicitly justified:
 
 - Do not hardcode file access patterns already representable in catalog YAML
-- Extend an Intake driver to support new data formats (see `aqua/core/intake2/` for the xarray-based sources and `aqua/core/fdb/` for the FDB/GSV ones); do not bypass Intake
-- AQUA uses intake ≥2 (pinned in `pyproject.toml`) with v1-style YAML catalogs; the `netcdf`, `zarr` and `gsv` drivers are registered by AQUA itself — do not add intake plugin packages (e.g. intake-xarray) as dependencies
+- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope, `icechunk/` for IceChunk); do not bypass Intake
+- AQUA uses intake ≥2 (pinned in `pyproject.toml`) with v1-style YAML catalogs; the `netcdf`, `zarr`, `gsv` and `icechunk` drivers are registered by AQUA itself (see `aqua/core/intake_drivers/__init__.py`) — do not add intake plugin packages (e.g. intake-xarray) as dependencies
 
 ---
 

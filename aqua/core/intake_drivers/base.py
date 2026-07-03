@@ -1,15 +1,16 @@
-"""Minimal v1-style adapters exposing intake 2 readers as intake sources.
+"""Shared v1-style adapter exposing intake 2 readers as intake sources.
 
-These adapters bridge the intake 2 reader interface (``intake.readers``)
+This adapter bridges the intake 2 reader interface (``intake.readers``)
 with the v1 ``DataSource`` interface still used by the AQUA catalogs
 (``to_dask``, ``read``, ``read_chunked``, ``get``). Concrete sources set
 ``self.reader`` in their constructor and inherit the whole contract.
 
 Example usage::
 
-    from aqua.core.intake2 import IntakeXarraySourceAdapter
+    from intake import readers
+    from aqua.core.intake_drivers.base import IntakeSourceAdapter
 
-    class MySource(IntakeXarraySourceAdapter):
+    class MySource(IntakeSourceAdapter):
         name = "mysource"
 
         def __init__(self, urlpath, metadata=None, **kwargs):
@@ -54,23 +55,4 @@ class IntakeSourceAdapter(base.DataSource):
 
     discover = read
 
-    read_chunked = to_dask
-
-
-class IntakeXarraySourceAdapter(IntakeSourceAdapter):
-    """
-    Adapter for xarray-based sources (netcdf, zarr).
-
-    ``to_dask`` guarantees a dask-backed dataset by defaulting to ``chunks={}``
-    when no chunking is configured, preserving the contract of the former
-    ``intake_xarray.base.IntakeXarraySourceAdapter``.
-    """
-
-    def to_dask(self):
-        """Read the data as a dask-backed dataset, defaulting to ``chunks={}``."""
-        if "chunks" not in self.reader.kwargs:
-            return self.reader(chunks={}).read()
-        return self.reader.read()
-
-    # rebind so that read_chunked follows this class' to_dask override
     read_chunked = to_dask

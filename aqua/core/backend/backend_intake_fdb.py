@@ -13,7 +13,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
     """
     Concrete backend retrieving data from FDB/GSV through the intake ``gsv`` driver.
 
-    The underlying source is an :class:`aqua.core.fdb.FDBSource`. Unlike the xarray-based
+    The underlying source is an :class:`aqua.core.intake_drivers.fdb.openers.fdb_source.FDBSource`. Unlike the xarray-based
     backends, date and level selection are pushed *down into the GSV request* (handled by
     ``FDBSource`` at read time), so they must NOT be re-applied with ``.sel()`` afterwards.
     Only variable fixes and the data model are applied on top of the retrieved dataset.
@@ -165,16 +165,9 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         source = self.expcat._entries[self.source](**{**self.kwargs, **retrieve_kwargs})
         data = source.to_dask()
 
-        # Date/level selection was already baked into the GSV source at construction time;
-        # pass None so _postprocess_data does not re-apply .sel() on top.
-        data = self._postprocess_data(
-            data=data,
-            var=var,
-            level=None,
-            level_coord=level_coord,
-            startdate=None,
-            enddate=None,
-        )
+        # Date/level/var selection was already baked into the GSV source;
+        # self._postprocess_data does not re-apply. Only fixer and data model are applied
+        data = self._fixer_and_datamodel(data, var=var)
 
         return data
 

@@ -1,31 +1,30 @@
 """Intake sources for NetCDF and Zarr data built on the intake 2 readers.
 
-These classes replace the external (unmaintained) intake-xarray package:
-they only wire together ``intake.readers`` datatypes and readers from intake
-base, and are registered in the intake driver registry under the same driver
+These classes replace the external (unmaintained) intake-xarray package.
+Unlike the ``fdb`` and ``icechunk`` drivers, this driver has no local
+``datatypes``/``readers``/``openers`` modules: the datatypes
+(``intake.readers.datatypes.NetCDF3`` / ``Zarr``) and the reader
+(``intake.readers.XArrayDatasetReader``) are provided by intake core, so the
+sources here only wire them together. They are registered in the intake
+driver registry (see :mod:`aqua.core.intake_drivers`) under the same driver
 names (``netcdf`` and ``zarr``) used by the catalog entries.
 
 Example usage::
 
-    from aqua.core.intake2 import NetCDFSource
+    from aqua.core.intake_drivers.xarray import IntakeNetCDFSource
 
-    source = NetCDFSource("/path/to/data_*.nc", xarray_kwargs={"engine": "netcdf4"})
+    source = IntakeNetCDFSource("/path/to/data_*.nc", xarray_kwargs={"engine": "netcdf4"})
     data = source.to_dask()
 """
 
-import importlib.util
-import sys
-import types
-
 from intake import readers
-from intake.source import register_driver
 
-from .adapter import IntakeXarraySourceAdapter
+from .base import IntakeXarraySourceAdapter
 
 DEFAULT_NETCDF_ENGINE = "netcdf4"
 
 
-class NetCDFSource(IntakeXarraySourceAdapter):
+class IntakeNetCDFSource(IntakeXarraySourceAdapter):
     """
     Intake source opening NetCDF files with xarray, registered as the ``netcdf`` driver.
 
@@ -60,7 +59,7 @@ class NetCDFSource(IntakeXarraySourceAdapter):
         super().__init__(metadata=metadata)
 
 
-class ZarrSource(IntakeXarraySourceAdapter):
+class IntakeZarrSource(IntakeXarraySourceAdapter):
     """
     Intake source opening Zarr stores with xarray, registered as the ``zarr`` driver.
 
@@ -88,51 +87,3 @@ class ZarrSource(IntakeXarraySourceAdapter):
         self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata,
                                                   **self.xarray_kwargs, **kwargs)
         super().__init__(metadata=metadata)
-
-
-def register_intake_drivers():
-    """
-    Register the AQUA ``netcdf`` and ``zarr`` drivers in the intake registry.
-
-    Runtime registration with ``clobber=True`` takes precedence over the
-    intake-xarray entry points when that package is still installed.
-    """
-    register_driver("netcdf", NetCDFSource, clobber=True)
-    register_driver("zarr", ZarrSource, clobber=True)
-
-
-def install_intake_xarray_stub():
-    """
-    Install a stub ``intake_xarray`` module when the real package is absent.
-
-    Legacy catalog files may still contain a ``plugins: source: - module: intake_xarray``
-    block, which makes intake import that module at catalog-open time. The stub keeps
-    those catalogs working, mapping the old source classes to the AQUA ones.
-
-    Returns:
-        bool: True if the stub was installed, False if the module is already available.
-    """
-    if "intake_xarray" in sys.modules:
-        return False
-    try:
-        if importlib.util.find_spec("intake_xarray") is not None:
-            return False
-    except (ImportError, ValueError):
-        pass
-
-    stub = types.ModuleType("intake_xarray")
-    netcdf_mod = types.ModuleType("intake_xarray.netcdf")
-    netcdf_mod.NetCDFSource = NetCDFSource
-    xzarr_mod = types.ModuleType("intake_xarray.xzarr")
-    xzarr_mod.ZarrSource = ZarrSource
-    stub.netcdf = netcdf_mod
-    stub.xzarr = xzarr_mod
-    stub.__version__ = "0.0.0+aqua_stub"
-    sys.modules["intake_xarray"] = stub
-    sys.modules["intake_xarray.netcdf"] = netcdf_mod
-    sys.modules["intake_xarray.xzarr"] = xzarr_mod
-    return True
-
-
-register_intake_drivers()
-install_intake_xarray_stub()

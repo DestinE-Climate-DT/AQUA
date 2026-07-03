@@ -1,14 +1,14 @@
-"""Concrete GSV/FDB intake source built on top of :class:`FDBPartitionedSource`.
+"""Concrete GSV/FDB intake source built on top of :class:`FDBSource`.
 
 Everything in this module is specific to the GSV retrieval engine (``gsv.retriever``):
 the FDB environment setup, the HPC/bridge switching, the pyfdb double-initialisation
 workaround and the ecCodes paramId handling. The backend-agnostic machinery (partition
 planning, request building, schema and dask assembly) lives in
-:mod:`aqua.core.fdb.openers.fdb_source`, and the date-resolution strategies in
-:mod:`aqua.core.fdb.openers.dates`.
+:mod:`aqua.core.intake_drivers.fdb.openers.fdb_source`, and the date-resolution strategies in
+:mod:`aqua.core.intake_drivers.fdb.openers.dates`.
 
 To add a different engine (e.g. Polytope or z3fdb) subclass
-:class:`FDBPartitionedSource` and implement ``_retrieve_partition`` only.
+:class:`FDBSource` and implement ``_retrieve_partition`` only.
 """
 
 from .dates import FDBDatesMixin

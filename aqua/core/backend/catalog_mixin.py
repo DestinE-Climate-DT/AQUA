@@ -69,7 +69,7 @@ class CatalogMixin:
 
         # Rebuild esmcat with the filtered (and possibly realization-formatted) kwargs:
         # calling an already-instantiated intake2 source returns self unchanged
-        # (see aqua.core.intake2.IntakeSourceAdapter), so we must go through the entry.
+        # (see aqua.core.intake_drivers.base.IntakeSourceAdapter), so we must go through the entry.
         self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
     @property

@@ -2,13 +2,13 @@
 
 This module isolates everything that is **not** specific to the GSV/FDB retrieval
 engine, so that alternative drivers (e.g. Polytope, z3fdb) can be implemented by
-subclassing :class:`FDBPartitionedSource` and overriding a single method,
-:meth:`FDBPartitionedSource._retrieve_partition`.
+subclassing :class:`FDBSource` and overriding a single method,
+:meth:`FDBSource._retrieve_partition`.
 
 Responsibilities kept here (all engine-agnostic):
 
 * partition planning: time axis, chunk start/end indices and vertical chunking
-  (delegated to :mod:`aqua.core.fdb.openers.timeutil`);
+  (delegated to :mod:`aqua.core.intake_drivers.fdb.openers.timeutil`);
 * MARS/FDB request construction per ``timestyle`` (date / step / yearmonth);
 * the intake ``Schema`` and the dask assembly (``to_dask``, ``read``,
   ``read_chunked``, ``get_part_delayed``);
@@ -18,9 +18,16 @@ Responsibilities kept here (all engine-agnostic):
 Engine-specific behaviour is delegated to overridable hooks:
 
 * :meth:`_retrieve_partition` (mandatory) — pull one partition from the backend;
+* :meth:`_check_availability` (optional) — check library availability at init;
+* :meth:`_read_metadata` (optional) — configure engine path parameters;
+* :meth:`_post_init` (optional) — final engine-specific init steps;
 * :meth:`_postprocess_partition` — per-partition fixups (default: time shift);
 * :meth:`_map_output_variable` — map a raw variable to its output name and the
   identifier used to re-request it (default: identity).
+
+Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
+request/date/level attributes before calling :meth:`_compute_partition_plan` (see
+:class:`aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource` for a reference implementation).
 """
 
 import datetime
@@ -41,7 +48,7 @@ class FDBSource(FDBTimeMixin):
 
     Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
     request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-    :class:`aqua.core.fdb.openers.GSVSource` for a reference implementation).
+    :class:`aqua.core.intake_drivers.fdb.openers.GSVSource` for a reference implementation).
     """
 
     _ds = None  # _ds and _da will contain samples of the data for dask access

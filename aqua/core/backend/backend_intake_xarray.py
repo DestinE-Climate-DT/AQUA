@@ -12,7 +12,7 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
-from aqua.core.intake2 import NetCDFSource
+from aqua.core.intake_drivers.xarray import IntakeNetCDFSource
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 
 from .backend import Backend
@@ -22,7 +22,7 @@ from .catalog_mixin import CatalogMixin
 class BackendIntakeXarray(Backend, CatalogMixin):
     """
     Concrete backend retrieving data from NetCDF or Zarr files through the
-    intake ``netcdf`` / ``zarr`` drivers provided by :mod:`aqua.core.intake2`.
+    intake ``netcdf`` / ``zarr`` drivers provided by :mod:`aqua.core.intake_drivers.xarray`.
 
     Example usage::
 
@@ -66,12 +66,12 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
-        # The AQUA intake2 sources expose the data object (url list), metadata and
+        # The AQUA intake 2 sources expose the data object (url list), metadata and
         # xarray_kwargs directly, so no reader introspection is needed here.
         # Manual safety check for local netcdf sources (see #943), we output a more
         # meaningful error message than the xarray one.
         self.esmcat.data.url = to_list(self.esmcat.data.url)
-        if isinstance(self.esmcat, NetCDFSource):
+        if isinstance(self.esmcat, IntakeNetCDFSource):
             self._check_netcdf_files_exist()
 
         # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always

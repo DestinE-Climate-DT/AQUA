@@ -5,7 +5,7 @@ from .graphics import plot_hovmoller
 from .graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
 from .catgen import AquaFDBGenerator
 from .drop import Drop
-from .reader import Reader, Streaming, show_catalog_content
+from .reader import Reader, show_catalog_content
 from .regridder import Regridder
 from .gridbuilder import GridBuilder
 from .fldstat import FldStat
@@ -19,6 +19,6 @@ __all__ = ["plot_single_map", "plot_maps", "plot_single_map_diff", "plot_timeser
            "plot_lat_lon_profiles", "plot_seasonal_lat_lon_profiles",
            "AquaFDBGenerator",
            "Drop",
-           "Reader", "Streaming", "show_catalog_content",
+           "Reader", "show_catalog_content",
            "Regridder", "GridBuilder",
            "Fixer", "FldStat"]

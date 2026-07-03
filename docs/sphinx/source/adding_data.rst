@@ -125,7 +125,7 @@ You can add fixes to your dataset by following examples in the ``aqua/core/confi
     You can find examples in the existing catalog or more information on the
     `intake <https://intake.readthedocs.io/en/stable/>`_ documentation.
     The ``netcdf`` and ``zarr`` drivers are registered by AQUA itself
-    (see :mod:`aqua.core.intake2`), so no ``plugins`` block is needed in the
+    (see :mod:`aqua.core.intake_drivers`), so no ``plugins`` block is needed in the
     catalog files: legacy catalogs still containing a
     ``plugins: source: - module: intake_xarray`` block keep working through a
     compatibility stub.
