@@ -321,7 +321,7 @@ class TestGsv:
         )
         data = reader.retrieve(var="2t")
         assert "databridge" in reader.backend.kwargs
-        assert reader.kwargs["databridge"] == "mn5"
+        assert reader.backend.kwargs["databridge"] == "mn5"
         assert data.isel(time=20)["2t"].values[0] == pytest.approx(301.0878448486328)
 
     def test_fdb_from_file(self) -> None:
