@@ -9,27 +9,37 @@ import zarr
 
 from z3fdb import SimpleStoreBuilder, AxisDefinition, Chunking, ExtractorType
 
-_FREQ_TO_PANDAS = {"h": "1h", "D": "1D", "MS": "MS"}
+def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
+    return str(s).replace("-", "")[:8]
 
 def _build_axes(
     request,
-    freq, levels,
+    freq,
+    levels,
     years,
     start_date=None, end_date=None,
 ):
 
     req = {}
 
-    def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
-        return str(s).replace("-", "")[:8]
+    if years is None and (start_date is None or end_date is None):
+        raise ValueError("provide either years=range(...) or start_date+end_date")
 
     if start_date is not None or end_date is not None:
-        if freq not in ("h", "D"):
-            raise ValueError("start_date/end_date only supported for freq h or D")
         if start_date is None or end_date is None:
             raise ValueError("provide both start_date and end_date")
+
         d0 = _mars_date(start_date)
         d1 = _mars_date(end_date)
+
+        if freq not in ("h", "D"):
+            # recover years from dates. If end_date does not end on 1231, we exclude that year.
+            # TODO allow incomplete years
+            if d1[-4:] != "1231":
+                years = range(int(d0[:4]), int(d1[:4]))
+            else:
+                years = range(int(d0[:4]), int(d1[:4]) + 1)
+
         iso_start = f"{d0[:4]}-{d0[4:6]}-{d0[6:8]}"
     else:
         ys = list(years)
@@ -59,7 +69,7 @@ def _build_axes(
         pd_freq = "MS"
         start = f"{y0}-01-01"
     else:
-        raise ValueError(f"Unknown freq {freq!r} in portfolio entry")
+        raise ValueError(f"Unknown freq {freq!r}")
 
     level_axes = []
     if levels is not None:
@@ -183,9 +193,6 @@ def open_z3fdb(
     else:
         levels=request.get("levelist", None)
 
-    if years is None and (start_date is None or end_date is None):
-        raise ValueError("provide either years=range(...) or start_date+end_date")
-
     request, axes, pd_freq, start = _build_axes(
         request, freq, levels, years, start_date, end_date
     )
@@ -193,14 +200,13 @@ def open_z3fdb(
     # Create mars request as a string
     mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
     print(mars)
+    print(axes)
     
     # Create zarr store
     builder = SimpleStoreBuilder(config)
     builder.add_part(mars, axes, ExtractorType.GRIB)
     store = builder.build()
     zarr_arr = zarr.open_array(store, mode="r", zarr_format=3, use_consolidated=False)
-
-    print(zarr_arr.shape)
 
     ds = to_dataset(
         zarr_arr,
