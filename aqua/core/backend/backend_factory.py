@@ -176,9 +176,6 @@ class BackendFactory:
         # cannot use `or` here (False or "aqua" would wrongly re-enable it).
         if datamodel_name is None:
             datamodel_name = self.metadata.get("data_model", DEFAULT_DATAMODEL) if self.metadata else DEFAULT_DATAMODEL
-        # datamodel_name = (
-        #    datamodel_name or self.metadata.get("data_model", DEFAULT_DATAMODEL) if self.metadata else DEFAULT_DATAMODEL
-        # )
 
         if convention is not None and convention != DEFAULT_CONVENTION:
             raise ValueError(f"Convention {convention} not supported, only 'eccodes' is supported so far.")
