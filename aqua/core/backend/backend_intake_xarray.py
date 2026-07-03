@@ -12,7 +12,6 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
-from aqua.core.intake_drivers.xarray import IntakeNetCDFSource
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 
 from .backend import Backend
@@ -68,11 +67,12 @@ class BackendIntakeXarray(Backend, CatalogMixin):
 
         # The AQUA intake 2 sources expose the data object (url list), metadata and
         # xarray_kwargs directly, so no reader introspection is needed here.
-        # Manual safety check for local netcdf sources (see #943), we output a more
-        # meaningful error message than the xarray one.
+        # The check must run for both netcdf and zarr sources: besides the meaningful
+        # error message for local sources (see #943), its glob expansion is required
+        # because intake only detects globs in plain-string urls, and to_list() has
+        # just turned the url into a list (e.g. DROP-generated zarr entries use globs).
         self.esmcat.data.url = to_list(self.esmcat.data.url)
-        if isinstance(self.esmcat, IntakeNetCDFSource):
-            self._check_netcdf_files_exist()
+        self._check_files_exist()
 
         # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
         # filters from the complete set, not from a previously-filtered subset.
@@ -115,23 +115,23 @@ class BackendIntakeXarray(Backend, CatalogMixin):
 
         return esmcat
 
-    def _check_netcdf_files_exist(self):
+    def _check_files_exist(self):
         """
-        Check if the netcdf files exist in the catalog. Raise NoDataError if any file is missing.
+        Check if the netcdf files or zarr stores exist in the catalog. Raise NoDataError if any is missing.
         """
-        # Manually expand globs to ensure xarray always receives an explicit list of files.
+        # Manually expand globs to ensure xarray always receives an explicit list of files/stores.
         # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
         # We assume all the files in the catalog have the same scheme (e.g., 'file', 'http', 's3', etc.)
-        self.logger.info("Checking existence of netcdf files in the catalog: %s", self.esmcat.data.url)
+        self.logger.info("Checking existence of data files in the catalog: %s", self.esmcat.data.url)
         if urlparse(self.esmcat.data.url[0]).scheme in ["file", ""]:
             if not files_exist(self.esmcat.data.url):
                 raise NoDataError(
-                    f"Some NetCDF files are missing for {self.model} {self.exp} {self.source}, "
+                    f"Some data files are missing for {self.model} {self.exp} {self.source}, "
                     + f"please check the url: {self.esmcat.data.url}"
                 )
             self.esmcat.data.url = sorted([f for x in self.esmcat.data.url for f in glob(x)])
         else:
-            self.logger.info("Remote files detected, skipping existence check for NetCDF files in the catalog.")
+            self.logger.info("Remote files detected, skipping existence check for data files in the catalog.")
 
     def retrieve_plain(self, startdate: str = None):
         """
