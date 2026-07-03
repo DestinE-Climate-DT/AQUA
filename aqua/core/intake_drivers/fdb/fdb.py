@@ -1,5 +1,5 @@
 from .base import IntakeFDBSourceAdapter
-from .datatypes import GSV, Polytope, Z3FDB
+from .datatypes import GSV, Z3FDB, Polytope
 from .readers import GSVDatasetReader, PolytopeDatasetReader, Z3FDBDatasetReader
 
 
