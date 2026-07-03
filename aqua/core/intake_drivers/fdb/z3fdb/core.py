@@ -11,19 +11,14 @@ from z3fdb import SimpleStoreBuilder, AxisDefinition, Chunking, ExtractorType
 
 _FREQ_TO_PANDAS = {"h": "1h", "D": "1D", "MS": "MS"}
 
-def _build_mars_and_axes(
-    stream, freq, activity, levels, levtype, model, experiment,
-    years, resolution, variables,
+def _build_axes(
+    request,
+    freq, activity, levels, experiment,
+    years,
     start_date=None, end_date=None,
 ):
-    vars_list = [str(v) for v in list(variables)]
-    param_part = "type=fc,levtype=" + levtype + ",param=" + "/".join(vars_list)
 
-    base = (
-        f"class=d1,dataset=climate-dt,activity={activity},experiment={experiment},"
-        f"generation=2,realization=1,expver=0001,stream={stream},"
-        f"model={model},resolution={resolution},"
-    )
+    req = {}
 
     def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
         return str(s).replace("-", "")[:8]
@@ -43,35 +38,34 @@ def _build_mars_and_axes(
         iso_start = f"{ys[0]}-01-01"
 
     if freq == "h":
-        time_part = f"date={d0}/to/{d1}/by/1,time=0000/to/2300/by/1,"
+        req["date"] = f"{d0}/to/{d1}/by/1"
+        req["time"] = "0000/to/2300/by/1"
         time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
         pd_freq = "1h"
         start = iso_start
     elif freq == "D":
         # Daily data still uses a time=0000 key with merged (date,time) axis.
-        time_part = f"date={d0}/to/{d1}/by/1,time=0000,"
+        req["date"] = f"{d0}/to/{d1}/by/1"
+        req["time"] = "0000"
         time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
         pd_freq = "1D"
         start = iso_start
     elif freq == "MS":
         years = list(years)
         y0, y1 = years[0], years[-1]
-        year_str = "year=" + "/".join(str(y) for y in years) + ","
-        month_str = "month=1/2/3/4/5/6/7/8/9/10/11/12,"
-        time_part = year_str + month_str
+        req["year"] = "/".join(str(y) for y in years)
+        req["month"] = "1/2/3/4/5/6/7/8/9/10/11/12"
         time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
         pd_freq = "MS"
         start = f"{y0}-01-01"
     else:
         raise ValueError(f"Unknown freq {freq!r} in portfolio entry")
 
-    level_part = ""
     level_axes = []
     if levels is not None:
-        level_part = "levelist=" + "/".join(str(l) for l in levels) + ","
         level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
 
-    mars = base + time_part + level_part + param_part
+    request.update(req)
 
     axes = (
         time_axes
@@ -79,7 +73,7 @@ def _build_mars_and_axes(
         + level_axes
         + [AxisDefinition(["activity", "experiment"], Chunking.SINGLE_VALUE)]
     )
-    return axes, pd_freq, start
+    return request, axes, pd_freq, start
 
 
 def to_dataset(
@@ -149,9 +143,10 @@ def to_dataset(
     
 def open_z3fdb(
     request,
-    years=None,
     variables=None,
+    levels=None,
     config="./config.yaml",
+    years=None,
     start_date=None,
     end_date=None,
     freq="MS"
@@ -168,8 +163,6 @@ def open_z3fdb(
         Dictionary containing the FDB request.
     years : range, optional
         Range of years to request.
-    resolution : str, optional
-        Resolution of the data.
     variables : list, optional
         List of variables to request.
     config : str, optional
@@ -187,31 +180,31 @@ def open_z3fdb(
         Lazy (dask-backed) xr.Dataset.
     """
 
-    stream=request["stream"]
-    model=request["model"]
     experiment=request["experiment"]
-    resolution=request.get("resolution", "standard")
-    levtype=request["levtype"]
-    levels=request.get("levelist", None)
     activity=request["activity"]
+
     if variables:
-        vars=variables 
         request["param"] = variables
     else:
-        vars=request.get("param", None)
+        variables=request.get("param", None)
 
-    # The request should be a string of comma separated key=value pairs
-    mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
+    if levels:
+        request["levelist"] = levels
+    else:
+        levels=request.get("levelist", None)
 
     if years is None and (start_date is None or end_date is None):
         raise ValueError("provide either years=range(...) or start_date+end_date")
 
-    axes, pd_freq, start = _build_mars_and_axes(
-        stream, freq, activity, levels, levtype, model, experiment, years, resolution, vars, start_date, end_date
+    request, axes, pd_freq, start = _build_axes(
+        request, freq, activity, levels, experiment, years, start_date, end_date
     )
-    #print(pd_freq, start, vars, levels)
-    #print(mars)
+
+    # Create mars request as a string
+    mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
+    print(mars)
     
+    # Create zarr store
     builder = SimpleStoreBuilder(config)
     builder.add_part(mars, axes, ExtractorType.GRIB)
     store = builder.build()
@@ -219,7 +212,7 @@ def open_z3fdb(
 
     ds = to_dataset(
         zarr_arr,
-        keys=vars,
+        keys=variables,
         start_date=start,
         freq=pd_freq,
         scenario_labels=[experiment],
