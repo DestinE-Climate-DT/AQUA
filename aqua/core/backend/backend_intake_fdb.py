@@ -165,16 +165,8 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         source = self.expcat._entries[self.source](**{**self.kwargs, **retrieve_kwargs})
         data = source.to_dask()
 
-        # Date/level selection was already baked into the GSV source at construction time;
-        # pass None so _postprocess_data does not re-apply .sel() on top.
-        data = self._postprocess_data(
-            data=data,
-            var=var,
-            level=None,
-            level_coord=level_coord,
-            startdate=None,
-            enddate=None,
-        )
+        # Date/level/var selection was already baked into the GSV source;
+        # self._postprocess_data does not re-apply
 
         return data
 
