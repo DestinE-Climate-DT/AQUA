@@ -288,7 +288,7 @@ class Fixer:
 
         if apply_unit_fix:
             for var in data.data_vars:
-                self.operator.apply_unit_fix(data[var], time_correction=self.time_correction)
+                data[var] = self.operator.apply_unit_fix(data[var], time_correction=self.time_correction)
 
         # apply time shift if necessary
         data = self.operator.timeshifter(data)

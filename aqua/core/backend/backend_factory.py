@@ -5,6 +5,7 @@ from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
 
 from .backend_intake_fdb import BackendIntakeFDB
+from .backend_intake_icechunk import BackendIntakeIcechunk
 from .backend_intake_xarray import BackendIntakeXarray
 from .backend_xarray import BackendXarray
 
@@ -16,6 +17,7 @@ class BackendFactory:
 
     BACKEND_TYPES = {
         "gsv": BackendIntakeFDB,
+        "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
         "zarr": BackendIntakeXarray,
         "xarray": BackendXarray,
@@ -49,6 +51,17 @@ class BackendFactory:
             "loglevel",
         },
         "zarr": {
+            "model",
+            "exp",
+            "source",
+            "configurer",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
+        "icechunk": {
             "model",
             "exp",
             "source",
@@ -106,7 +119,10 @@ class BackendFactory:
         """
         Select the appropriate backend based on the provided parameters.
         If a path is provided, the xarray backend is selected.
-        Otherwise, the intake backend is selected."""
+        Otherwise, the intake backend family is selected.
+
+        Please notiche the _check_required_params method ensures that either a path or model/exp/source are provided.
+        """
         if self.path:
             self._select_backend_xarray()
         else:
@@ -114,7 +130,8 @@ class BackendFactory:
 
     def _select_backend_intake(self):
         """
-        Create and return a backend instance based on the provided parameters.
+        Activate the driver for intake backends (gsv, netcdf, zarr, icechunk).
+        Configure catalogs, machine paths, and metadata based on the provided parameters.
         """
         # Explore the intake catalog
         self.cat, self.catalog_file, self.machine_file = self.configurer.deliver_intake_catalog(
@@ -155,9 +172,10 @@ class BackendFactory:
         src_grid_name = src_grid_name or self.metadata.get("source_grid_name") if self.metadata else None
 
         convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION) if self.metadata else DEFAULT_CONVENTION
-        datamodel_name = (
-            datamodel_name or self.metadata.get("data_model", DEFAULT_DATAMODEL) if self.metadata else DEFAULT_DATAMODEL
-        )
+        # An explicit datamodel=False must be preserved to disable the data model, so we
+        # cannot use `or` here (False or "aqua" would wrongly re-enable it).
+        if datamodel_name is None:
+            datamodel_name = self.metadata.get("data_model", DEFAULT_DATAMODEL) if self.metadata else DEFAULT_DATAMODEL
 
         if convention is not None and convention != DEFAULT_CONVENTION:
             raise ValueError(f"Convention {convention} not supported, only 'eccodes' is supported so far.")
@@ -174,7 +192,8 @@ class BackendFactory:
         loglevel: str = None,
         **kwargs,
     ):
-        """Create and return a backend instance based on the provided parameters.
+        """
+        Create and return a backend instance based on the provided parameters.
 
         Only kwargs accepted by the target backend's constructor are forwarded;
         driver-specific parameters (e.g. engine/databridge for GSV, path for xarray)

@@ -58,6 +58,7 @@ class FixerOperator:
                 data = data + offset
             log_history(data, f"Units changed to {tgt_units} by fixer")
             data.attrs.pop("tgt_units", None)
+        return data
 
     def delete_variables(self, data):
         """

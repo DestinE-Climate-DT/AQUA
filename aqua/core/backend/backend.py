@@ -44,15 +44,14 @@ class Backend(ABC):
     def retrieve_plain(self, startdate: str = None):
         """Open minimal data to fetch the Regridder init."""
 
-    def _postprocess_data(
-        self,
-        data: xr.Dataset,
-        var: str | list = None,
-        level: str | list = None,
-        level_coord: str = None,
-        startdate: str = None,
-        enddate: str = None,
-    ):
+    def _fixer_and_datamodel(self, data: xr.Dataset, var: str | list = None) -> xr.Dataset:
+        """
+        Apply fixer and datamodel transformations to the dataset.
+
+        Args:
+            data (xr.Dataset): The input dataset to be processed.
+            var (str | list, optional): Variable(s) to apply fixes to. Defaults to None.
+        """
         # Apply the fixer first and the datamodel as second.
         # The Fixer expects destvar as a list (or None for "fix all"), so coerce a bare string.
         if self.fixer:
@@ -62,6 +61,18 @@ class Backend(ABC):
         if self.datamodel:
             self.logger.debug("Applying data model")
             data = self.datamodel.apply(data)
+        return data
+
+    def _postprocess_data(
+        self,
+        data: xr.Dataset,
+        var: str | list = None,
+        level: str | list = None,
+        level_coord: str = None,
+        startdate: str = None,
+        enddate: str = None,
+    ):
+        data = self._fixer_and_datamodel(data, var=var)
 
         if var:
             data = self._selvar(data=data, var=var)
@@ -92,14 +103,18 @@ class Backend(ABC):
         minimal_variables = gridinspect.get_gridtype_attr(gridtypes, "variables")
         minimal_time = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
 
+        # HACK: if there are multiple variables, for the retrieve plain we select the first available.
+        # however, this is incorrect if multiple grids are available and might create issues in regridding.
+        # a more proper solution would to select a range of variables covering all the available grids, but it is
+        # likerly that this has to be implemented in smmregrid
         if minimal_variables:
-            self.logger.debug("Variables found: %s", minimal_variables)
-            data = data[minimal_variables]
+            self.logger.debug("Variables found: %s. Selecting the first %s", minimal_variables, minimal_variables[0])
+            data = data[minimal_variables[0]]
         if minimal_time:
             self.logger.debug("Time dimensions found: %s", minimal_time)
             if startdate:
                 self.logger.debug("Selecting startdate: %s", startdate)
-                data = data.sel({minimal_time[0]: startdate})
+                data = data.sel({minimal_time[0]: startdate}, method="nearest")
             else:
                 data = data.isel({minimal_time[0]: 0})
         return data
