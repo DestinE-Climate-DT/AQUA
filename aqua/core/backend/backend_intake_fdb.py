@@ -102,7 +102,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.kwargs["config_z3fdb"] = kwargs["config_z3fdb"]
             self.logger.debug("Adding config_z3fdb=%s to filtered kwargs", kwargs["config_z3fdb"])
             needs_rebuild = True
-            
+
         if needs_rebuild:
             self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 

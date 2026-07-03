@@ -1,6 +1,6 @@
 from intake import BaseReader
 
-from .datatypes import GSV, Polytope, Z3FDB
+from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
 
 
@@ -44,14 +44,14 @@ class Z3FDBDatasetReader(BaseReader):
     optional_imports = {}
     func = "open_z3fdb"
     implements = {
-        Polytope,
+        Z3FDB,
     }
     partition_access = True
 
     def _read(self, data, **kwargs):
 
         config_z3fdb = kwargs.pop("config_z3fdb", "./config-z3fdb.yaml")
-    
+
         return open_z3fdb(
             data.request,
             startdate=data.startdate,
@@ -61,5 +61,5 @@ class Z3FDBDatasetReader(BaseReader):
             levels=data.level,
             freq=data.savefreq,
             data_start_date=data.data_start_date,
-            data_end_date=data.data_end_date
+            data_end_date=data.data_end_date,
         )

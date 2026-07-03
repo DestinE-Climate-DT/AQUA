@@ -98,5 +98,3 @@ class Z3FDB(FDB):
     ):
 
         super().__init__(request, **kwargs)
-
-

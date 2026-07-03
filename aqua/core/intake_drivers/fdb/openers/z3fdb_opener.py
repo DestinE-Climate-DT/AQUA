@@ -1,17 +1,18 @@
 # Derived from the fdb-xarray library
 # https://github.com/koldunovn/fdb-xarray
 
+import astropy_healpix
 import dask.array as da
 import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
-import astropy_healpix
+from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
 
-from z3fdb import SimpleStoreBuilder, AxisDefinition, Chunking, ExtractorType
 
 def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
     return str(s).replace("-", "")[:8]
+
 
 def _build_axes(
     request,
@@ -29,7 +30,7 @@ def _build_axes(
         if not isinstance(years, (list, tuple, range)):
             years = [years]
         years = [str(y) for y in years]
-        
+
     if start_date is not None or end_date is not None:
         if start_date is None or end_date is None:
             raise ValueError("provide both start_date and end_date")
@@ -67,12 +68,11 @@ def _build_axes(
         start = iso_start
     elif freq == "MS":
         years = list(years)
-        y0, y1 = years[0], years[-1]
         req["year"] = "/".join(str(y) for y in years)
         req["month"] = "1/2/3/4/5/6/7/8/9/10/11/12"
         time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
         pd_freq = "MS"
-        start = f"{y0}-01-01"
+        start = iso_start
     else:
         raise ValueError(f"Unknown freq {freq!r}")
 
@@ -82,11 +82,7 @@ def _build_axes(
 
     request.update(req)
 
-    axes = (
-        time_axes
-        + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)]
-        + level_axes
-    )
+    axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
 
     # Create mars request as a string
     mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
@@ -113,9 +109,7 @@ def to_dataset(
     if has_level:
         nt, nparam, nlev, ncell = zarr_array.shape
         if len(levels) != nlev:
-            raise ValueError(
-                f"levels has {len(levels)} entries, level axis has {nlev}"
-            )
+            raise ValueError(f"levels has {len(levels)} entries, level axis has {nlev}")
     else:
         nt, nparam, ncell = zarr_array.shape
 
@@ -147,7 +141,10 @@ def to_dataset(
         if isinstance(name, int) or name.isdigit():
             name = "var" + str(name)
         data_vars[name] = xr.DataArray(
-            arr, dims=dims, coords=coords, name=name,
+            arr,
+            dims=dims,
+            coords=coords,
+            name=name,
         )
 
     ds = xr.Dataset(data_vars)
@@ -156,25 +153,27 @@ def to_dataset(
 
 def add_healpix_coordinates(ds):
     """Add lon, lat and bounds coordinates for HEALPix grid."""
-        
+
     ncell = ds.sizes["cell"]
     nside = int(np.sqrt(ncell / 12))
-    
-    hp = astropy_healpix.HEALPix(nside=nside, order='nested')
+
+    hp = astropy_healpix.HEALPix(nside=nside, order="nested")
     lon, lat = hp.healpix_to_lonlat(np.arange(ncell))
-    lon_vals = lon.to_value('deg')
-    lat_vals = lat.to_value('deg')
-    
+    lon_vals = lon.to_value("deg")
+    lat_vals = lat.to_value("deg")
+
     lon_b, lat_b = hp.boundaries_lonlat(np.arange(ncell), step=1)
-    lon_b_vals = lon_b.to_value('deg')
-    lat_b_vals = lat_b.to_value('deg')
-    
-    ds = ds.assign_coords({
-        "lon": (("cell",), lon_vals, {"units": "degrees_east", "long_name": "longitude"}),
-        "lat": (("cell",), lat_vals, {"units": "degrees_north", "long_name": "latitude"}),
-        "lon_bounds": (("cell", "vertices"), lon_b_vals),
-        "lat_bounds": (("cell", "vertices"), lat_b_vals),
-    })
+    lon_b_vals = lon_b.to_value("deg")
+    lat_b_vals = lat_b.to_value("deg")
+
+    ds = ds.assign_coords(
+        {
+            "lon": (("cell",), lon_vals, {"units": "degrees_east", "long_name": "longitude"}),
+            "lat": (("cell",), lat_vals, {"units": "degrees_north", "long_name": "latitude"}),
+            "lon_bounds": (("cell", "vertices"), lon_b_vals),
+            "lat_bounds": (("cell", "vertices"), lat_b_vals),
+        }
+    )
     return ds
 
 
@@ -186,19 +185,17 @@ def add_coordinates(ds, request):
     else:
         is_healpix = False
 
-    if is_healpix:      
+    if is_healpix:
         ncell = ds.sizes["cell"]
         is_healpix = (
-            ncell % 12 == 0 and 
-            (ncell // 12).bit_length() - 1 == np.log2(ncell // 12) and
-            (ncell // 12).bit_length() % 2 == 1
+            ncell % 12 == 0 and (ncell // 12).bit_length() - 1 == np.log2(ncell // 12) and (ncell // 12).bit_length() % 2 == 1
         )
 
     if not is_healpix:
         raise ValueError("Only HEALPix grids are supported")
 
     return add_healpix_coordinates(ds)
-    
+
 
 def open_z3fdb(
     request,
@@ -210,7 +207,7 @@ def open_z3fdb(
     enddate=None,
     data_start_date=None,
     data_end_date=None,
-    freq="MS"
+    freq="MS",
 ):
     """
     Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
@@ -244,7 +241,7 @@ def open_z3fdb(
     if variables:
         request["param"] = variables
     else:
-        variables=request.get("param", None)
+        variables = request.get("param", None)
 
     if not isinstance(variables, (list, tuple, range)):
         variables = [variables]
@@ -252,7 +249,7 @@ def open_z3fdb(
     if levels:
         request["levelist"] = levels
     else:
-        levels=request.get("levelist", None)
+        levels = request.get("levelist", None)
 
     # if years is not defined and startdate and enddate are not defined
     # then we use data_start_date to define startdate
@@ -264,10 +261,8 @@ def open_z3fdb(
             enddate = data_end_date
 
     # print("Calling with ", freq, levels, years, startdate, enddate )
-    mars, axes, pd_freq, start = _build_axes(
-        request, freq, levels, years, startdate, enddate
-    )
-    
+    mars, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate)
+
     # Create zarr store
     builder = SimpleStoreBuilder(config)
     builder.add_part(mars, axes, ExtractorType.GRIB)
@@ -281,12 +276,13 @@ def open_z3fdb(
         freq=pd_freq,
         levels=levels,
     )
-    
+
     ds = add_coordinates(ds, request)
-    
-    ds.attrs.update({
-        "mars_request": mars,
-    })
+
+    ds.attrs.update(
+        {
+            "mars_request": mars,
+        }
+    )
 
     return ds
-
