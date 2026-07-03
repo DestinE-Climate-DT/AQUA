@@ -44,15 +44,14 @@ class Backend(ABC):
     def retrieve_plain(self, startdate: str = None):
         """Open minimal data to fetch the Regridder init."""
 
-    def _postprocess_data(
-        self,
-        data: xr.Dataset,
-        var: str | list = None,
-        level: str | list = None,
-        level_coord: str = None,
-        startdate: str = None,
-        enddate: str = None,
-    ):
+    def _fixer_and_datamodel(self, data: xr.Dataset, var: str | list = None) -> xr.Dataset:
+        """
+        Apply fixer and datamodel transformations to the dataset.
+
+        Args:
+            data (xr.Dataset): The input dataset to be processed.
+            var (str | list, optional): Variable(s) to apply fixes to. Defaults to None.
+        """
         # Apply the fixer first and the datamodel as second.
         # The Fixer expects destvar as a list (or None for "fix all"), so coerce a bare string.
         if self.fixer:
@@ -62,6 +61,18 @@ class Backend(ABC):
         if self.datamodel:
             self.logger.debug("Applying data model")
             data = self.datamodel.apply(data)
+        return data
+
+    def _postprocess_data(
+        self,
+        data: xr.Dataset,
+        var: str | list = None,
+        level: str | list = None,
+        level_coord: str = None,
+        startdate: str = None,
+        enddate: str = None,
+    ):
+        data = self._fixer_and_datamodel(data, var=var)
 
         if var:
             data = self._selvar(data=data, var=var)

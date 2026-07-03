@@ -166,7 +166,8 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         data = source.to_dask()
 
         # Date/level/var selection was already baked into the GSV source;
-        # self._postprocess_data does not re-apply
+        # self._postprocess_data does not re-apply. Only fixer and data model are applied
+        data = self._fixer_and_datamodel(data, var=var)
 
         return data
 
