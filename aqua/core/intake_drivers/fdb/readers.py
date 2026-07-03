@@ -50,11 +50,13 @@ class Z3FDBDatasetReader(BaseReader):
 
     def _read(self, data, **kwargs):
 
+        config_z3fdb = kwargs.pop("config_z3fdb", "./config-z3fdb.yaml")
+    
         return open_z3fdb(
             data.request,
             startdate=data.startdate,
             enddate=data.enddate,
-            config="/home/jvonhar/work/AQUA/aqua/core/intake_drivers/fdb/z3fdb/config-z3fdb.yaml",
+            config=config_z3fdb,
             variables=data.var,
             levels=data.level,
             freq=data.savefreq,
