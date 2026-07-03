@@ -84,3 +84,19 @@ class Polytope(FDB):
         **kwargs,
     ):
         super().__init__(request, **kwargs)
+
+
+class Z3FDB(FDB):
+    """Derived Datatype from FDB that uses a z3fdb request"""
+
+    structure = {"z3fdb_request"}
+
+    def __init__(
+        self,
+        request,
+        **kwargs,
+    ):
+
+        super().__init__(request, **kwargs)
+
+

@@ -24,8 +24,11 @@ def _build_axes(
     req = {}
 
     if years is None and (start_date is None or end_date is None):
-        raise ValueError("provide either years=range(...) or start_date+end_date")
-
+        years = request["year"]
+        if not isinstance(years, (list, tuple, range)):
+            years = [years]
+        years = [str(y) for y in years]
+        
     if start_date is not None or end_date is not None:
         if start_date is None or end_date is None:
             raise ValueError("provide both start_date and end_date")
@@ -104,6 +107,7 @@ def to_dataset(
     (time, param, level, cell). Each param slice becomes its own
     DataArray; dask keeps everything lazy.
     """
+
     has_level = levels is not None
     if has_level:
         nt, nparam, nlev, ncell = zarr_array.shape
@@ -155,8 +159,8 @@ def open_z3fdb(
     levels=None,
     config="./config.yaml",
     years=None,
-    start_date=None,
-    end_date=None,
+    startdate=None,
+    enddate=None,
     freq="MS"
 ):
     """
@@ -175,9 +179,9 @@ def open_z3fdb(
         List of variables to request.
     config : str, optional
         Path to the configuration file.
-    start_date : str, optional
+    startdate : str, optional
         Start date of the data.
-    end_date : str, optional
+    enddate : str, optional
         End date of the data.
     freq : str, optional
         Frequency of the data.
@@ -193,16 +197,17 @@ def open_z3fdb(
     else:
         variables=request.get("param", None)
 
+    if not isinstance(variables, (list, tuple, range)):
+        variables = [variables]
+
     if levels:
         request["levelist"] = levels
     else:
         levels=request.get("levelist", None)
 
     mars, axes, pd_freq, start = _build_axes(
-        request, freq, levels, years, start_date, end_date
+        request, freq, levels, years, startdate, enddate
     )
-
-    print(mars)
     
     # Create zarr store
     builder = SimpleStoreBuilder(config)
