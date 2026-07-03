@@ -17,7 +17,8 @@ def _build_axes(
     freq,
     levels,
     years,
-    start_date=None, end_date=None,
+    start_date=None,
+    end_date=None,
 ):
 
     req = {}
@@ -82,7 +83,11 @@ def _build_axes(
         + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)]
         + level_axes
     )
-    return request, axes, pd_freq, start
+
+    # Create mars request as a string
+    mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
+
+    return mars, axes, pd_freq, start
 
 
 def to_dataset(
@@ -193,14 +198,11 @@ def open_z3fdb(
     else:
         levels=request.get("levelist", None)
 
-    request, axes, pd_freq, start = _build_axes(
+    mars, axes, pd_freq, start = _build_axes(
         request, freq, levels, years, start_date, end_date
     )
 
-    # Create mars request as a string
-    mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
     print(mars)
-    print(axes)
     
     # Create zarr store
     builder = SimpleStoreBuilder(config)
