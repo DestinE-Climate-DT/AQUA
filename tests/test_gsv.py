@@ -5,7 +5,7 @@ from dask.distributed import Client, LocalCluster
 
 from aqua import Reader
 from aqua.core.configurer import ConfigPath
-from aqua.core.fdb.openers.gsv_source import GSVSource, gsv_available
+from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
     pytest.skip("Skipping GSV tests: FDB5 libraries not available", allow_module_level=True)
@@ -320,8 +320,8 @@ class TestGsv:
             areas=False,
         )
         data = reader.retrieve(var="2t")
-        assert "databridge" in reader.kwargs
-        assert reader.kwargs["databridge"] == "mn5"
+        assert "databridge" in reader.backend.kwargs
+        assert reader.backend.kwargs["databridge"] == "mn5"
         assert data.isel(time=20)["2t"].values[0] == pytest.approx(301.0878448486328)
 
     def test_fdb_from_file(self) -> None:

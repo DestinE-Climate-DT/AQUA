@@ -48,7 +48,7 @@ class FDBSource(FDBTimeMixin):
 
     Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
     request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-    :class:`aqua.core.fdb.openers.GSVSource` for a reference implementation).
+    :class:`aqua.core.intake_drivers.fdb.openers.GSVSource` for a reference implementation).
     """
 
     _ds = None  # _ds and _da will contain samples of the data for dask access
