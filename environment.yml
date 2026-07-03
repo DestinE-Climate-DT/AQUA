@@ -10,7 +10,7 @@ channels:
 # please note that some of these dependencies are made explicit on purpose, but are not directly required by conda/mamba
 dependencies:
   # binaries
-  - python>=3.11,<3.15
+  - python>=3.11,<=3.14.5
   - cdo>=2.5.0,<2.6.1 #for smmregrid compatibility
   - eccodes>=2.41.0,<=2.47.0
   - cartopy>=0.24.1,<=0.25.0
@@ -26,6 +26,7 @@ dependencies:
   - fastparquet<=2025.12.0
   - filelock<=3.25.0
   - gcsfs<=2026.2.0
+  - icechunk<=2.0.5
   - intake>=2.0.9,<=2.0.9
   - intake-xarray<=2.0.0
   - jinja2<=3.1.6
@@ -34,6 +35,7 @@ dependencies:
   - metpy<=1.7.1
   - numpy<=2.4.1
   - pandas>=3.0.0,<=3.0.3
+  - pyogrio<=0.12.1
   - pypdf<=6.7.5
   - pyyaml<=6.0.3
   - regionmask<=0.13.0
@@ -44,7 +46,8 @@ dependencies:
   - typeguard<=4.5.1
   - xarray>=2025.12.0,<=2026.4.0
   - zarr>=3.0,<=3.2.1
-  - icechunk<=2.0.5
+  # HACK to solve regionmask/pyogrio/geopandas issue
+  - libjxl<0.12.0
   - pip
   - pip:
     # pip install -e of AQUA itself

@@ -100,7 +100,9 @@ class TestLevels:
         assert data["plev"].size > 2
 
         # Verify logger.error was called
-        reader_era5.backend.logger.error.assert_any_call("Levels %s not found in vertical coordinate %s!", [50000, 80000], "plev")
+        reader_era5.backend.logger.error.assert_any_call(
+            "Levels %s not found in vertical coordinate %s!", [50000, 80000], "plev"
+        )
 
         # Restore logger
         reader_era5.backend.logger = original_logger
