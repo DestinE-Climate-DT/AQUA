@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from aqua.core.fdb.openers.timeutil import FDBTimeMixin
+from aqua.core.intake_drivers.fdb.openers.timeutil import FDBTimeMixin
 
 floor_datetime = FDBTimeMixin._floor_datetime
 
