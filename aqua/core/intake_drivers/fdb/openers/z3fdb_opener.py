@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
+import astropy_healpix
 
 from z3fdb import SimpleStoreBuilder, AxisDefinition, Chunking, ExtractorType
 
@@ -152,7 +153,53 @@ def to_dataset(
     ds = xr.Dataset(data_vars)
     return ds
 
+
+def add_healpix_coordinates(ds):
+    """Add lon, lat and bounds coordinates for HEALPix grid."""
+        
+    ncell = ds.sizes["cell"]
+    nside = int(np.sqrt(ncell / 12))
     
+    hp = astropy_healpix.HEALPix(nside=nside, order='nested')
+    lon, lat = hp.healpix_to_lonlat(np.arange(ncell))
+    lon_vals = lon.to_value('deg')
+    lat_vals = lat.to_value('deg')
+    
+    lon_b, lat_b = hp.boundaries_lonlat(np.arange(ncell), step=1)
+    lon_b_vals = lon_b.to_value('deg')
+    lat_b_vals = lat_b.to_value('deg')
+    
+    ds = ds.assign_coords({
+        "lon": (("cell",), lon_vals, {"units": "degrees_east", "long_name": "longitude"}),
+        "lat": (("cell",), lat_vals, {"units": "degrees_north", "long_name": "latitude"}),
+        "lon_bounds": (("cell", "vertices"), lon_b_vals),
+        "lat_bounds": (("cell", "vertices"), lat_b_vals),
+    })
+    return ds
+
+
+def add_coordinates(ds, request):
+    """Add coordinates based on grid type."""
+
+    if "cell" in ds.dims:
+        is_healpix = True
+    else:
+        is_healpix = False
+
+    if is_healpix:      
+        ncell = ds.sizes["cell"]
+        is_healpix = (
+            ncell % 12 == 0 and 
+            (ncell // 12).bit_length() - 1 == np.log2(ncell // 12) and
+            (ncell // 12).bit_length() % 2 == 1
+        )
+
+    if not is_healpix:
+        raise ValueError("Only HEALPix grids are supported")
+
+    return add_healpix_coordinates(ds)
+    
+
 def open_z3fdb(
     request,
     variables=None,
@@ -234,6 +281,9 @@ def open_z3fdb(
         freq=pd_freq,
         levels=levels,
     )
+    
+    ds = add_coordinates(ds, request)
+    
     ds.attrs.update({
         "mars_request": mars,
     })
