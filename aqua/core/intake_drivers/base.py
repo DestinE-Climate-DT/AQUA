@@ -1,11 +1,15 @@
-"""Shared v1-style adapter exposing intake 2 readers as intake sources.
+"""Base adapter shared by all the AQUA intake drivers (fdb, icechunk, netcdf/zarr).
 
-This adapter bridges the intake 2 reader interface (``intake.readers``)
-with the v1 ``DataSource`` interface still used by the AQUA catalogs
-(``to_dask``, ``read``, ``read_chunked``, ``get``). Concrete sources set
-``self.reader`` in their constructor and inherit the whole contract.
+It bridges the two intake interfaces: the classic (v1) ``DataSource`` one —
+``to_dask``, ``read``, ``read_chunked``, ``get`` — which is what the AQUA YAML
+catalogs and backends consume, and the intake 2 model (``intake.readers``),
+where the actual reading happens. The adapter is a v1 ``DataSource`` on the
+outside and delegates every read to the intake 2 reader stored in ``self.reader``.
+Concrete sources set ``self.reader`` in their constructor and inherit the whole
+contract.
 
-Example usage::
+Example usage (xarray-based sources should rather subclass
+:class:`aqua.core.intake_drivers.xarray.base.IntakeXarraySourceAdapter`)::
 
     from intake import readers
     from aqua.core.intake_drivers.base import IntakeSourceAdapter
@@ -15,6 +19,7 @@ Example usage::
         name = "mysource"
 
         def __init__(self, urlpath, metadata=None, **kwargs):
+            # self.data is optional, exposed for backend introspection
             self.data = readers.datatypes.NetCDF3(urlpath, metadata=metadata)
             self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **kwargs)
             super().__init__(metadata=metadata)
