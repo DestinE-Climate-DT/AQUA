@@ -468,6 +468,43 @@ def mon_to_quarter_season_name(month):
             return season_name
 
 
+def setup_time_decoding(read_kwargs: dict, time_unit: str = None, loglevel: str = "WARNING") -> dict:
+    """
+    Normalize the time-decoding entries of an xarray open kwargs dict.
+
+    xarray deprecated 'use_cftime' as an open_dataset/open_mfdataset kwarg: a legacy entry is 
+    folded into the coder instead. An explicit 'decode_times: False' (e.g. climatologies with non-CF 
+    time units such as 'months since') and a coder already configured by the caller are respected.
+
+    Args:
+        read_kwargs (dict): Kwargs for the xarray open call. Modified in place.
+        time_unit (str, optional): When provided, always install a CFDatetimeCoder
+            with this datetime64 resolution (unless decoding is disabled or already
+            configured with a coder). When None, a coder is installed only to fold
+            a legacy 'use_cftime' entry.
+        loglevel (str): Logging level for messages. Defaults to 'WARNING'.
+
+    Returns:
+        dict: The same kwargs, with time decoding normalized.
+    """
+    logger = log_configure(loglevel, "setup_time_decoding")
+
+    use_cftime = read_kwargs.pop("use_cftime", None)
+    decode_times = read_kwargs.get("decode_times", True)
+
+    if decode_times is False or isinstance(decode_times, xr.coders.CFDatetimeCoder):
+        if use_cftime is not None:
+            logger.warning("Ignoring use_cftime=%s: decode_times is already set to %s", use_cftime, decode_times)
+        return read_kwargs
+
+    if time_unit is not None:
+        read_kwargs["decode_times"] = xr.coders.CFDatetimeCoder(time_unit=time_unit, use_cftime=use_cftime)
+    elif use_cftime is not None:
+        read_kwargs["decode_times"] = xr.coders.CFDatetimeCoder(use_cftime=use_cftime)
+
+    return read_kwargs
+
+
 def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> xr.Dataset | xr.DataArray:
     """
     Fix calendar attribute in xarray Dataset or DataArray to ensure compatibility.

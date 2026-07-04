@@ -16,7 +16,7 @@ from aqua.core.util import (
     to_list,
 )
 from aqua.core.util.string import lat_to_phrase, strlist_to_phrase
-from aqua.core.util.time import frequency_string_to_pandas
+from aqua.core.util.time import frequency_string_to_pandas, setup_time_decoding
 from aqua.core.util.units import multiply_units
 
 
@@ -311,3 +311,40 @@ def test_frequency_string_to_pandas(input_freq, expected_output):
     """Test the frequency_string_to_pandas function with and without numerical prefixes"""
     result = frequency_string_to_pandas(input_freq)
     assert result == expected_output
+
+
+@pytest.mark.aqua
+class TestSetupTimeDecoding:
+    """Tests for setup_time_decoding: deprecated use_cftime folding and decode_times handling"""
+
+    def test_time_unit_installs_coder(self):
+        kwargs = setup_time_decoding({"decode_times": True}, time_unit="us")
+        coder = kwargs["decode_times"]
+        assert isinstance(coder, xr.coders.CFDatetimeCoder)
+        assert coder.time_unit == "us"
+        assert coder.use_cftime is None
+
+    def test_use_cftime_folded_into_coder(self):
+        kwargs = setup_time_decoding({"decode_times": True, "use_cftime": True}, time_unit="us")
+        assert "use_cftime" not in kwargs
+        assert kwargs["decode_times"].use_cftime is True
+
+    def test_use_cftime_folded_without_time_unit(self):
+        kwargs = setup_time_decoding({"use_cftime": True})
+        assert "use_cftime" not in kwargs
+        assert isinstance(kwargs["decode_times"], xr.coders.CFDatetimeCoder)
+        assert kwargs["decode_times"].use_cftime is True
+
+    def test_no_op_without_use_cftime_and_time_unit(self):
+        kwargs = setup_time_decoding({"decode_times": True})
+        assert kwargs == {"decode_times": True}
+
+    def test_decode_times_false_respected(self):
+        kwargs = setup_time_decoding({"decode_times": False, "use_cftime": True}, time_unit="us")
+        assert kwargs == {"decode_times": False}
+
+    def test_existing_coder_respected(self):
+        coder = xr.coders.CFDatetimeCoder(time_unit="s")
+        kwargs = setup_time_decoding({"decode_times": coder, "use_cftime": True}, time_unit="us")
+        assert kwargs["decode_times"] is coder
+        assert "use_cftime" not in kwargs
