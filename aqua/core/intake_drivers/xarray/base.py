@@ -10,8 +10,7 @@ class IntakeXarraySourceAdapter(IntakeSourceAdapter):
     ``to_dask`` guarantees a dask-backed dataset by defaulting to ``chunks={}``
     when no chunking is configured, preserving the contract of the former
     ``intake_xarray.base.IntakeXarraySourceAdapter``. The rest of the interface
-    (``read``, ``read_chunked``, ``get``) is inherited from
-    :class:`aqua.core.intake_drivers.base.IntakeSourceAdapter`.
+    (``read``, ``read_chunked``, ``get``) is inherited from IntakeSourceAdapter.
     """
 
     def to_dask(self):

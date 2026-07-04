@@ -100,7 +100,18 @@ class BackendIntakeXarray(Backend, CatalogMixin):
 
     def _setup_intake_catalog(self, esmcat, startdate: str = None, enddate: str = None):
         """
-        Setup the intake catalog for data retrieval, applying any necessary filters based on the provided start and end dates.
+        Prepare the intake source for data retrieval, narrowing its file list to the
+        requested date range when the catalog opts in via the 'filter_key' metadata
+        entry (e.g. yearly-split LRA files). Sources without 'filter_key' are
+        returned untouched.
+
+        Args:
+            esmcat: The intake source entry to prepare.
+            startdate (str, optional): Start date (YYYY-MM-DD) for file filtering. Defaults to None.
+            enddate (str, optional): End date (YYYY-MM-DD) for file filtering. Defaults to None.
+
+        Returns:
+            The intake source, with the url list filtered when applicable.
         """
 
         # Only apply year-based file filtering when the catalog explicitly requests it

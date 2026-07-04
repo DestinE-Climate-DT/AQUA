@@ -1,6 +1,5 @@
 """Intake sources for NetCDF and Zarr data built on the intake 2 readers.
 
-These classes replace the external (unmaintained) intake-xarray package.
 Unlike the ``fdb`` and ``icechunk`` drivers, this driver has no local
 ``datatypes``/``readers``/``openers`` modules: the datatypes
 (``intake.readers.datatypes.NetCDF3`` / ``Zarr``) and the reader

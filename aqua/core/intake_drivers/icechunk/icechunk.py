@@ -60,7 +60,7 @@ class IntakeIcechunkSource(IntakeSourceAdapter):
 
         Additional keyword arguments are forwarded to the underlying reader's
         ``read`` method. The rest of the interface (``read``, ``get``) is
-        inherited from :class:`aqua.core.intake_drivers.base.IntakeSourceAdapter`.
+        inherited from IntakeSourceAdapter.
         """
         return self.reader.read(**kwargs)
 
