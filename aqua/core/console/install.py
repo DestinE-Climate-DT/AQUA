@@ -293,6 +293,11 @@ class InstallMixin:
                 os.path.join(self.corepath, "config-aqua.tmpl"), os.path.join(self.configpath, "config-aqua.yaml")
             )
 
+            self.logger.debug("Creating config-z3fdb.yaml configuration file")
+            self._copy_update_folder_file(
+                os.path.join(self.corepath, "config-z3fdb.yaml"), os.path.join(self.configpath, "config-z3fdb.yaml")
+            )
+
         # Install diagnostics if available and not skipped
         if diag_mode:
             if self.diagpath is not None:
