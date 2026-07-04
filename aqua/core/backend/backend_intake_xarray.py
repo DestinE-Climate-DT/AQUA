@@ -6,13 +6,12 @@ from glob import glob
 from urllib.parse import urlparse
 
 import pandas as pd
-import xarray as xr
 
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
-from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
+from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, setup_time_decoding, to_list
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
@@ -84,21 +83,20 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         """
         Build the kwargs for the reader read call from the catalog xarray_kwargs.
 
-        A time decoder for the time axis is added, using the 'time_coder' metadata
-        entry when present and DEFAULT_TIME_UNIT (microseconds) otherwise, unless
-        the catalog explicitly configures cftime decoding via 'use_cftime'.
+        A CFDatetimeCoder is set as time decoder via setup_time_decoding, using the
+        'time_coder' metadata entry when present and DEFAULT_TIME_UNIT (microseconds)
+        otherwise. A legacy 'use_cftime' entry in the catalog xarray_kwargs is folded
+        into the coder, and an explicit 'decode_times: False' from the catalog is respected.
         """
         read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
 
-        if "use_cftime" not in read_kwargs:
-            if "time_coder" in esmcat.metadata:
-                self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
-                coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
-            else:
-                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
-            read_kwargs["decode_times"] = coder
+        if "time_coder" in esmcat.metadata:
+            self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
+            time_unit = esmcat.metadata["time_coder"]
+        else:
+            time_unit = DEFAULT_TIME_UNIT
 
-        return read_kwargs
+        return setup_time_decoding(read_kwargs, time_unit=time_unit, loglevel=self.loglevel)
 
     def _setup_intake_catalog(self, esmcat, startdate: str = None, enddate: str = None):
         """

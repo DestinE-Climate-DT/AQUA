@@ -108,6 +108,28 @@ class TestIntakeZarrSource:
 
 
 @pytest.mark.aqua
+class TestUseCftimeFolding:
+    """The deprecated 'use_cftime' catalog kwarg is folded into a CFDatetimeCoder."""
+
+    def test_use_cftime_folded_into_coder(self):
+        source = IntakeNetCDFSource("dummy.nc", xarray_kwargs={"decode_times": True, "use_cftime": True})
+        assert "use_cftime" not in source.reader.kwargs
+        coder = source.reader.kwargs["decode_times"]
+        assert isinstance(coder, xr.coders.CFDatetimeCoder)
+        assert coder.use_cftime is True
+        # the raw catalog kwargs stay exposed for backend introspection
+        assert source.xarray_kwargs["use_cftime"] is True
+
+    def test_to_dask_decodes_to_cftime(self, tmp_path, sample_dataset):
+        path = tmp_path / "sample.nc"
+        sample_dataset.to_netcdf(path)
+        source = IntakeNetCDFSource(str(path), xarray_kwargs={"use_cftime": True})
+        data = source.to_dask()
+        # cftime decoding produces object-dtype time values, with no FutureWarning
+        assert data.time.dtype == object
+
+
+@pytest.mark.aqua
 def test_stub_installation(monkeypatch):
     """When intake_xarray is absent, the stub provides the legacy module."""
     real_find_spec = importlib.util.find_spec

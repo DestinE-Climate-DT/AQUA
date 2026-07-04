@@ -19,6 +19,8 @@ Example usage::
 
 from intake import readers
 
+from aqua.core.util import setup_time_decoding
+
 from .base import IntakeXarraySourceAdapter
 
 DEFAULT_NETCDF_ENGINE = "netcdf4"
@@ -47,8 +49,11 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
                                                     old intake-xarray catalogs; ignored.
             kwargs: Further parameters forwarded to the xarray reader (e.g. chunks, combine).
         """
+        # self.xarray_kwargs keeps the raw catalog kwargs (use_cftime included) for
+        # backend introspection; the reader kwargs get the legacy entry folded into
+        # a CFDatetimeCoder, since intake merges the stored kwargs into each read call.
         self.xarray_kwargs = dict(xarray_kwargs or {})
-        read_kwargs = {**self.xarray_kwargs, **kwargs}
+        read_kwargs = setup_time_decoding({**self.xarray_kwargs, **kwargs})
         # intake would default NetCDF3 data to the scipy/h5netcdf engines:
         # AQUA netcdf data may be in any netCDF flavour, so we default to the netcdf4 engine
         read_kwargs.setdefault("engine", DEFAULT_NETCDF_ENGINE)
@@ -78,7 +83,9 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
             xarray_kwargs (dict, optional): Additional kwargs for xarray open_dataset.
             kwargs: Further parameters forwarded to the xarray reader (e.g. chunks, consolidated).
         """
+        # same as comment above
         self.xarray_kwargs = dict(xarray_kwargs or {})
+        read_kwargs = setup_time_decoding({**self.xarray_kwargs, **kwargs})
         self.data = readers.datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
-        self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **self.xarray_kwargs, **kwargs)
+        self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **read_kwargs)
         super().__init__(metadata=metadata)
