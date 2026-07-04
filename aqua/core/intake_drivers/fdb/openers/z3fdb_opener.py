@@ -113,6 +113,26 @@ def to_dataset(
     Zarr shape is (time, param, cell) or, when levels is given,
     (time, param, level, cell). Each param slice becomes its own
     DataArray; dask keeps everything lazy.
+
+    Parameters
+    ----------
+    zarr_array : zarr.Array
+        Zarr array containing the data.
+    keys : list
+        List of variable names.
+    start_date : str
+        Start date of the data.
+    freq : str, optional
+        Frequency of the data.
+    variables : list, optional
+        List of variables to request.
+    levels : list, optional
+        List of levels to request.
+
+    Returns
+    -------
+    xarray.Dataset
+        Lazy (dask-backed) xr.Dataset.
     """
 
     has_level = levels is not None
@@ -187,7 +207,7 @@ def add_healpix_coordinates(ds):
     return ds
 
 
-def add_coordinates(ds, request):
+def add_coordinates(ds, levunits=None):
     """Add coordinates based on grid type."""
 
     if "cell" in ds.dims:
@@ -203,6 +223,9 @@ def add_coordinates(ds, request):
 
     if not is_healpix:
         raise ValueError("Only HEALPix grids are supported")
+
+    if levunits:
+        ds.level.attrs["units"] = levunits
 
     return add_healpix_coordinates(ds)
 
@@ -242,6 +265,12 @@ def open_z3fdb(
         End date of the data.
     freq : str, optional
         Frequency of the data.
+    chunks : dict, optional
+        Chunking configuration for the zarr array.
+        At the moment it only supports one key 'level', when this is provided,
+        the level axis is chunked, otherwise it is not chunked.
+        The value of the chunk size for the level axis is ignored.
+        The time axis is always chunked as single values.
 
     Returns
     -------
@@ -263,6 +292,14 @@ def open_z3fdb(
         request["levelist"] = levels
     else:
         levels = request.get("levelist", None)
+
+    levtype = request.get("levtype", None).lower()
+    if levtype == "pl":
+        levunits = "hPa"
+    elif levtype == "o3d" or levtype == "hl":
+        levunits = "m"
+    else:
+        levunits = None
 
     # if years is not defined and startdate and enddate are not defined
     # then we use data_start_date to define startdate
@@ -290,7 +327,7 @@ def open_z3fdb(
         levels=levels,
     )
 
-    ds = add_coordinates(ds, request)
+    ds = add_coordinates(ds, levunits)
 
     ds.attrs.update(
         {
