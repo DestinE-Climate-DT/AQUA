@@ -28,14 +28,7 @@ def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
     return str(s).replace("-", "")[:8]
 
 
-def _build_axes(
-    request,
-    freq,
-    levels,
-    years,
-    start_date=None,
-    end_date=None,
-):
+def _build_axes(request, freq, levels, years, start_date=None, end_date=None, chunks=None):
 
     req = {}
 
@@ -92,7 +85,10 @@ def _build_axes(
 
     level_axes = []
     if levels is not None:
-        level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
+        if isinstance(chunks, dict) and "level" in chunks:
+            level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
+        else:
+            level_axes = [AxisDefinition(["levelist"], Chunking.NONE)]
 
     request.update(req)
 
@@ -222,6 +218,7 @@ def open_z3fdb(
     data_start_date=None,
     data_end_date=None,
     freq="MS",
+    chunks=None,
 ):
     """
     Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
@@ -277,7 +274,7 @@ def open_z3fdb(
             enddate = data_end_date
 
     # print("Calling with ", freq, levels, years, startdate, enddate )
-    mars, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate)
+    mars, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate, chunks)
 
     # Create zarr store
     builder = SimpleStoreBuilder(config)

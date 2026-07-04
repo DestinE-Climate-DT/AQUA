@@ -67,4 +67,5 @@ class Z3FDBDatasetReader(BaseReader):
             freq=data.savefreq,
             data_start_date=data.data_start_date,
             data_end_date=data.data_end_date,
+            chunks=data.chunks,
         )
