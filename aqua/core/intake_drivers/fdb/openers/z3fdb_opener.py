@@ -125,9 +125,9 @@ def to_dataset(
     freq : str, optional
         Frequency of the data.
     variables : list, optional
-        List of variables to request.
+        List of variable names.
     levels : list, optional
-        List of levels to request.
+        List of levels.
 
     Returns
     -------
@@ -242,6 +242,7 @@ def open_z3fdb(
     data_end_date=None,
     freq="MS",
     chunks=None,
+    level_values=None,
 ):
     """
     Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
@@ -271,6 +272,8 @@ def open_z3fdb(
         the level axis is chunked, otherwise it is not chunked.
         The value of the chunk size for the level axis is ignored.
         The time axis is always chunked as single values.
+    level_values : list, optional
+        List of physical values of levels..
 
     Returns
     -------
@@ -301,6 +304,9 @@ def open_z3fdb(
     else:
         levunits = None
 
+    if not level_values:
+        level_values = levels
+
     # if years is not defined and startdate and enddate are not defined
     # then we use data_start_date to define startdate
 
@@ -324,7 +330,7 @@ def open_z3fdb(
         keys=variables,
         start_date=start,
         freq=pd_freq,
-        levels=levels,
+        levels=level_values,
     )
 
     ds = add_coordinates(ds, levunits)

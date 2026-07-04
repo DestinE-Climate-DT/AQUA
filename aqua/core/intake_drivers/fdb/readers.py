@@ -68,4 +68,5 @@ class Z3FDBDatasetReader(BaseReader):
             data_start_date=data.data_start_date,
             data_end_date=data.data_end_date,
             chunks=data.chunks,
+            level_values=data.level_values,
         )

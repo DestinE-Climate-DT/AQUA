@@ -98,3 +98,8 @@ class Z3FDB(FDB):
     ):
 
         super().__init__(request, **kwargs)
+
+        if "levels" in self.metadata:
+            self.level_values = self.metadata["levels"]
+        else:
+            self.level_values = None
