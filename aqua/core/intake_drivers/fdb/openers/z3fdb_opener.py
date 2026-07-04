@@ -7,7 +7,21 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
-from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
+
+# Test if z3fdb module is available
+try:
+    from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
+
+    z3fdb_available = True
+except ImportError:
+    z3fdb_available = False
+    z3fdb_error_cause = "z3fdb cannot be imported."
+
+
+def _check_availability():
+    """Check if z3fdb is available."""
+    if not z3fdb_available:
+        raise ImportError(z3fdb_error_cause)
 
 
 def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
@@ -237,6 +251,8 @@ def open_z3fdb(
     xarray.Dataset
         Lazy (dask-backed) xr.Dataset.
     """
+
+    _check_availability()
 
     if variables:
         request["param"] = variables
