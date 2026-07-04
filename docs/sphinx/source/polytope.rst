@@ -53,6 +53,33 @@ Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge 
       start: '1990'
       machine: mn5
 
+Use z3fdb engine in AQUA
+------------------------
+
+Alternatively, you can use the ``z3fdb`` engine for data access, which allows querying/opening the FDB database via a remote or local catalogue routing and wraps the FDB GRIB messages into a lazy zarr-like interface.
+
+In order to use ``z3fdb`` as the data access engine in AQUA, you need to specify it when instantiating the ``Reader`` class.
+To this end, you will need to specify ``engine="z3fdb"`` when instantiating the ``Reader`` or permanently, by adding the argument ``engine: z3fdb`` in the intake catalog source entry under ``args:``.
+
+.. code-block:: python
+
+    reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="z3fdb")
+    data = reader.retrieve(var='2t')
+
+For this engine, a configuration file ``config-z3fdb.yaml`` is used (which is copied to your configuration folder during installation).
+
+Chunking Logic for z3fdb
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+When using ``engine="z3fdb"``, chunking is configured as follows:
+
+* **Time direction**: Chunking is always ``SINGLEVALUE``.
+* **Level direction**: By default, level chunking is ``NONE`` (i.e. no chunking).
+* **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then ``SINGLEVALUE`` chunking is also done in the level direction.
+
+For example, specifying ``chunks={"level": 1}`` provides single-level chunking (along with time chunking).
+If you pass something like ``chunks={"level": 3}``, the integer value (e.g. 3) is ignored, and the level chunking is still performed as single-value.
+
 .. seealso::
 
    * The `ClimateDT external user guide
