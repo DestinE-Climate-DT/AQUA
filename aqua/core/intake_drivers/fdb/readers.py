@@ -1,4 +1,8 @@
+import os
+
 from intake import BaseReader
+
+from aqua.core.configurer import ConfigPath
 
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
@@ -50,7 +54,8 @@ class Z3FDBDatasetReader(BaseReader):
 
     def _read(self, data, **kwargs):
 
-        config_z3fdb = kwargs.pop("config_z3fdb", "./config-z3fdb.yaml")
+        config_z3fdb = os.path.join(ConfigPath().configdir, "config-z3fdb.yaml")
+        config_z3fdb = kwargs.pop("config_z3fdb", config_z3fdb)
 
         return open_z3fdb(
             data.request,
