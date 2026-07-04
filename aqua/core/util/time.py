@@ -472,8 +472,8 @@ def setup_time_decoding(read_kwargs: dict, time_unit: str = None, loglevel: str 
     """
     Normalize the time-decoding entries of an xarray open kwargs dict.
 
-    xarray deprecated 'use_cftime' as an open_dataset/open_mfdataset kwarg: a legacy entry is 
-    folded into the coder instead. An explicit 'decode_times: False' (e.g. climatologies with non-CF 
+    xarray deprecated 'use_cftime' as an open_dataset/open_mfdataset kwarg: a legacy entry is
+    folded into the coder instead. An explicit 'decode_times: False' (e.g. climatologies with non-CF
     time units such as 'months since') and a coder already configured by the caller are respected.
 
     Args:
