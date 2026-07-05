@@ -20,7 +20,7 @@ from aqua.core.util import dump_yaml, load_yaml, to_list
 TESTFILE = "testfile.txt"
 MACHINE = "github"
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = [pytest.mark.aqua, pytest.mark.console, pytest.mark.xdist_group(name="console")]
 
 
 def set_args(args):
@@ -568,6 +568,15 @@ class TestAquaConsole:
         # getting fixture
         delete_home()
         mydir = str(tmpdir)
+
+        # The session tmpdir is shared with the other console tests on this worker:
+        # drop any leftover installation so that the assert below only checks the
+        # effects of this test (with no HOME, install -p must not create .aqua).
+        leftover = os.path.join(mydir, ".aqua")
+        if os.path.islink(leftover):
+            os.unlink(leftover)
+        else:
+            shutil.rmtree(leftover, ignore_errors=True)
 
         print(f"HOME is set to: {os.environ.get('HOME')}")
 
