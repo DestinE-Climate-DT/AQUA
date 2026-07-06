@@ -85,30 +85,29 @@ class Backend(ABC):
 
     def _select_minimum_sample(self, data, startdate: str = None):
         """
-        Use smmregrid GridInspector to get minimum sample data
+        Use smmregrid GridInspector to get minimum sample data.
+        If a startdate is provided, it will select the nearest time step to that date,
+        otherwise it will select the first time step available in the dataset.
+        Variable selection is done based on the minimal set of variables across all smmregrid gridtypes.
 
         Args:
             data (xarray.Dataset): input data
-            startdate (str, optional): Start date for time selection. Defaults to None.
+            startdate (str, optional): Startdate for time selection. Defaults to None.
 
         Returns:
             A xarray.Dataset containing the required miminal sample data.
         """
 
-        # get gridtypes from smrregird
-        gridinspect = GridInspector(data, loglevel=self.loglevel, extra_dims={"time": ["valid_time"]})
+        # get gridtypes from smmregrid
+        gridinspect = GridInspector(data, loglevel=self.loglevel)
         gridtypes = gridinspect.get_gridtype()
 
         # extract the time dimension and variables
         time_dimension = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
 
-        # extract the minimal set of variables across all the gridtypes
+        # extract the minimal set of variables across all the gridtypes using smmregrid feature
         minimal_variables = gridinspect.get_gridtype_sample_variable(gridtypes)
 
-        # HACK: if there are multiple variables, for the retrieve plain we select the first available.
-        # however, this is incorrect if multiple grids are available and might create issues in regridding.
-        # a more proper solution would to select a range of variables covering all the available grids, but it is
-        # likerly that this has to be implemented in smmregrid
         if minimal_variables:
             self.logger.debug("Selecting variables %s for _retrieve_plain", minimal_variables)
             data = data[minimal_variables]
