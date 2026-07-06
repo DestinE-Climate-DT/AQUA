@@ -40,7 +40,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
         # IntakeFDBSource.instancecount += 1
         # print("Number of FDB source calls = " + str(IntakeFDBSource.instancecount))
 
-        if engine == "polytope-new":
+        if engine == "polytope":
             data = Polytope(
                 request,
                 data_start_date=data_start_date,
@@ -89,6 +89,9 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
             )
             reader = Z3FDBDatasetReader(data, **kwargs)
         else:
+            if engine == "polytope-gsv":
+                engine = "polytope"  # The gsv driver still understands the "polytope" engine
+
             data = GSV(
                 request,
                 data_start_date=data_start_date,
