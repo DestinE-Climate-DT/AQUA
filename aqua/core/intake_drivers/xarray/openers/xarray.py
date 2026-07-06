@@ -20,8 +20,17 @@ DEFAULT_NETCDF_ENGINE = "netcdf4"
 
 # kwargs accepted by xr.open_mfdataset only: dropped when a single file
 # falls back to xr.open_dataset.
-MFDATASET_ONLY_KWARGS = ("combine", "concat_dim", "preprocess", "parallel", "join", "compat", "coords", "data_vars",
-                         "combine_attrs")
+MFDATASET_ONLY_KWARGS = (
+    "combine",
+    "concat_dim",
+    "preprocess",
+    "parallel",
+    "join",
+    "compat",
+    "coords",
+    "data_vars",
+    "combine_attrs",
+)
 
 
 def _is_local(url) -> bool:
