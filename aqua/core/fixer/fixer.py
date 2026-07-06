@@ -149,6 +149,7 @@ class Fixer:
                 source = to_list(varfix.get("source", None))
                 # We want to process a list of sources
                 if source:
+                    # make sure all sources are strings and include also "varXXX" variations of grib codes
                     source_strs = {str(s) for s in source}
                     source_vars = source_strs | {f"var{s}" for s in source_strs if s.isdigit()}
                     match = list(source_vars.intersection(data.data_vars))
