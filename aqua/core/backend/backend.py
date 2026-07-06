@@ -83,9 +83,9 @@ class Backend(ABC):
 
         return data
 
-    def _grid_inspector(self, data, startdate: str = None):
+    def _select_minimum_sample(self, data, startdate: str = None):
         """
-        Use smmregrid GridInspector to get minimal sample data
+        Use smmregrid GridInspector to get minimum sample data
 
         Args:
             data (xarray.Dataset): input data
@@ -99,24 +99,28 @@ class Backend(ABC):
         gridinspect = GridInspector(data, loglevel=self.loglevel, extra_dims={"time": ["valid_time"]})
         gridtypes = gridinspect.get_gridtype()
 
-        # get info on time dimensions and variables
-        minimal_variables = gridinspect.get_gridtype_attr(gridtypes, "variables")
-        minimal_time = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
+        # extract the time dimension and variables
+        time_dimension = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
+
+        # extract the minimal set of variables across all the gridtypes
+        minimal_variables = gridinspect.get_gridtype_sample_variable(gridtypes)
 
         # HACK: if there are multiple variables, for the retrieve plain we select the first available.
         # however, this is incorrect if multiple grids are available and might create issues in regridding.
         # a more proper solution would to select a range of variables covering all the available grids, but it is
         # likerly that this has to be implemented in smmregrid
         if minimal_variables:
-            self.logger.debug("Variables found: %s. Selecting the first %s", minimal_variables, minimal_variables[0])
-            data = data[minimal_variables[0]]
-        if minimal_time:
-            self.logger.debug("Time dimensions found: %s", minimal_time)
+            self.logger.debug("Selecting variables %s for _retrieve_plain", minimal_variables)
+            data = data[minimal_variables]
+        if time_dimension:
+            self.logger.debug("Time dimensions found: %s", time_dimension)
             if startdate:
                 self.logger.debug("Selecting startdate: %s", startdate)
-                data = data.sel({minimal_time[0]: startdate}, method="nearest")
+                data = data.sel({time_dimension[0]: startdate}, method="nearest")
             else:
-                data = data.isel({minimal_time[0]: 0})
+                data = data.isel({time_dimension[0]: 0})
+        if data.size == 0:
+            self.logger.warning("No data available after applying _select_minimum_sample selections.")
         return data
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):

@@ -146,7 +146,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
         esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=startdate)
         data = esmcat.reader.read(**read_kwargs)
-        data = self._grid_inspector(data, startdate)
+        data = self._select_minimum_sample(data, startdate)
         return data
 
     def retrieve(
