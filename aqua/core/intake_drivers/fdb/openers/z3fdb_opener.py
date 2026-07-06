@@ -114,25 +114,16 @@ def to_dataset(
     (time, param, level, cell). Each param slice becomes its own
     DataArray; dask keeps everything lazy.
 
-    Parameters
-    ----------
-    zarr_array : zarr.Array
-        Zarr array containing the data.
-    keys : list
-        List of variable names.
-    start_date : str
-        Start date of the data.
-    freq : str, optional
-        Frequency of the data.
-    variables : list, optional
-        List of variable names.
-    levels : list, optional
-        List of levels.
+    Args:
+        zarr_array (zarr.Array): Zarr array containing the data.
+        keys (list): List of variable names.
+        start_date (str): Start date of the data.
+        freq (str, optional): Frequency of the data. Defaults to "1h".
+        variables (list, optional): List of variable names. Defaults to None.
+        levels (list, optional): List of levels. Defaults to None.
 
-    Returns
-    -------
-    xarray.Dataset
-        Lazy (dask-backed) xr.Dataset.
+    Returns:
+        xarray.Dataset: Lazy (dask-backed) xr.Dataset.
     """
 
     has_level = levels is not None
@@ -244,41 +235,31 @@ def open_z3fdb(
     chunks=None,
     level_values=None,
 ):
-    """
-    Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
+    """Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
 
     Constructs axis definitions and time coordinate accordingly.
     Returns a lazy (dask-backed) xr.Dataset.
 
-    Parameters
-    ----------
-    request : dict
-        Dictionary containing the FDB request.
-    years : range, optional
-        Range of years to request.
-    variables : list, optional
-        List of variables to request.
-    config : str, optional
-        Path to the configuration file.
-    startdate : str, optional
-        Start date of the data.
-    enddate : str, optional
-        End date of the data.
-    freq : str, optional
-        Frequency of the data.
-    chunks : dict, optional
-        Chunking configuration for the zarr array.
-        At the moment it only supports one key 'level', when this is provided,
-        the level axis is chunked, otherwise it is not chunked.
-        The value of the chunk size for the level axis is ignored.
-        The time axis is always chunked as single values.
-    level_values : list, optional
-        List of physical values of levels..
+    Args:
+        request (dict): Dictionary containing the FDB request.
+        variables (list, optional): List of variables to request. Defaults to None.
+        levels (list, optional): List of levels to request. Defaults to None.
+        config (str, optional): Path to the configuration file. Defaults to "./config.yaml".
+        years (range, optional): Range of years to request. Defaults to None.
+        startdate (str, optional): Start date of the data. Defaults to None.
+        enddate (str, optional): End date of the data. Defaults to None.
+        data_start_date (str, optional): Start date of the dataset. Defaults to None.
+        data_end_date (str, optional): End date of the dataset. Defaults to None.
+        freq (str, optional): Frequency of the data. Defaults to "MS".
+        chunks (dict, optional): Chunking configuration for the zarr array.
+            At the moment it only supports one key 'level', when this is provided,
+            the level axis is chunked, otherwise it is not chunked.
+            The value of the chunk size for the level axis is ignored.
+            The time axis is always chunked as single values. Defaults to None.
+        level_values (list, optional): List of physical values of levels. Defaults to None.
 
-    Returns
-    -------
-    xarray.Dataset
-        Lazy (dask-backed) xr.Dataset.
+    Returns:
+        xarray.Dataset: Lazy (dask-backed) xr.Dataset.
     """
 
     _check_availability()
