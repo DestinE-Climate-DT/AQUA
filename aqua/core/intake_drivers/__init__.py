@@ -3,7 +3,7 @@ import intake  # Import this first to avoid circular imports during discovery.
 # from intake.container import register_container
 from .fdb import IntakeFDBSource, open_gsv, open_polytope
 from .icechunk import IntakeIcechunkSource
-from .xarray import IntakeNetCDFSource, IntakeZarrSource, install_intake_xarray_stub
+from .xarray import IntakeNetCDFSource, IntakeZarrSource, install_intake_xarray_stub, open_netcdf, open_zarr
 
 __all__ = [
     "IntakeFDBSource",
@@ -11,7 +11,9 @@ __all__ = [
     "IntakeNetCDFSource",
     "IntakeZarrSource",
     "open_gsv",
+    "open_netcdf",
     "open_polytope",
+    "open_zarr",
 ]
 
 try:

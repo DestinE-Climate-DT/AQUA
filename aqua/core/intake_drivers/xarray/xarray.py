@@ -1,12 +1,10 @@
-"""Intake sources for NetCDF and Zarr data built on the intake 2 readers.
+"""Intake sources for NetCDF and Zarr data, structured like the other AQUA drivers.
 
-Unlike the ``fdb`` and ``icechunk`` drivers, this driver has no local
-``datatypes``/``readers``/``openers`` modules: the datatypes
-(``intake.readers.datatypes.NetCDF3`` / ``Zarr``) and the reader
-(``intake.readers.XArrayDatasetReader``) are provided by intake core, so the
-sources here only wire them together. They are registered in the intake
-driver registry (see :mod:`aqua.core.intake_drivers`) under the same driver
-names (``netcdf`` and ``zarr``) used by the catalog entries.
+The actual opening logic lives in :mod:`aqua.core.intake_drivers.xarray.openers` (``open_netcdf``,
+``open_zarr``), the intake 2 readers in :mod:`aqua.core.intake_drivers.xarray.readers`, while the
+ datatypes are the ``intake.readers.datatypes`` ones (``NetCDF3``/``Zarr``), which already fit the
+pattern.
+names (``netcdf`` and ``zarr``) used by the catalog entries (see :mod:`aqua.core.intake_drivers`).
 
 Example usage::
 
@@ -16,13 +14,13 @@ Example usage::
     data = source.to_dask()
 """
 
-from intake import readers
+from intake.readers import datatypes
 
 from aqua.core.util import setup_time_decoding
 
 from .base import IntakeXarraySourceAdapter
-
-DEFAULT_NETCDF_ENGINE = "netcdf4"
+from .openers import DEFAULT_NETCDF_ENGINE
+from .readers import NetCDFDatasetReader, ZarrDatasetReader
 
 
 class IntakeNetCDFSource(IntakeXarraySourceAdapter):
@@ -53,11 +51,11 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
         # a CFDatetimeCoder, since intake merges the stored kwargs into each read call.
         self.xarray_kwargs = dict(xarray_kwargs or {})
         read_kwargs = setup_time_decoding({**self.xarray_kwargs, **kwargs})
-        # intake would default NetCDF3 data to the scipy/h5netcdf engines:
-        # AQUA netcdf data may be in any netCDF flavour, so we default to the netcdf4 engine
+        # make the engine explicit in the reader kwargs: AQUA netcdf data may be
+        # in any netCDF flavour, so we default to the netcdf4 engine
         read_kwargs.setdefault("engine", DEFAULT_NETCDF_ENGINE)
-        self.data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
-        self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **read_kwargs)
+        self.data = datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
+        self.reader = NetCDFDatasetReader(self.data, metadata=metadata, **read_kwargs)
         super().__init__(metadata=metadata)
 
 
@@ -82,9 +80,9 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
             xarray_kwargs (dict, optional): Additional kwargs for xarray open_dataset.
             kwargs: Further parameters forwarded to the xarray reader (e.g. chunks, consolidated).
         """
-        # same as comment above
+        # same as the comment in IntakeNetCDFSource
         self.xarray_kwargs = dict(xarray_kwargs or {})
         read_kwargs = setup_time_decoding({**self.xarray_kwargs, **kwargs})
-        self.data = readers.datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
-        self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **read_kwargs)
+        self.data = datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
+        self.reader = ZarrDatasetReader(self.data, metadata=metadata, **read_kwargs)
         super().__init__(metadata=metadata)

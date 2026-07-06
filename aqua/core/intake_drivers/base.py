@@ -8,20 +8,23 @@ outside and delegates every read to the intake 2 reader stored in ``self.reader`
 Concrete sources set ``self.reader`` in their constructor and inherit the whole
 contract.
 
-Example usage (xarray-based sources should rather subclass
+Example usage, wiring the driver's own datatype and reader as in the fdb,
+icechunk and xarray drivers (xarray-based sources should rather subclass
 :class:`aqua.core.intake_drivers.xarray.base.IntakeXarraySourceAdapter`)::
 
-    from intake import readers
     from aqua.core.intake_drivers.base import IntakeSourceAdapter
 
+    from .datatypes import MyData
+    from .readers import MyDatasetReader
 
-    class MySource(IntakeSourceAdapter):
+
+    class IntakeMySource(IntakeSourceAdapter):
         name = "mysource"
 
         def __init__(self, urlpath, metadata=None, **kwargs):
             # self.data is optional, exposed for backend introspection
-            self.data = readers.datatypes.NetCDF3(urlpath, metadata=metadata)
-            self.reader = readers.XArrayDatasetReader(self.data, metadata=metadata, **kwargs)
+            self.data = MyData(urlpath, metadata=metadata)
+            self.reader = MyDatasetReader(self.data, metadata=metadata, **kwargs)
             super().__init__(metadata=metadata)
 """
 

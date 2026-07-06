@@ -11,6 +11,12 @@ class IntakeXarraySourceAdapter(IntakeSourceAdapter):
     when no chunking is configured, preserving the contract of the former
     ``intake_xarray.base.IntakeXarraySourceAdapter``. The rest of the interface
     (``read``, ``read_chunked``, ``get``) is inherited from IntakeSourceAdapter.
+
+    This override is specific to file-based xarray openers (``open_dataset`` is
+    eager by default, unlike the fdb/icechunk readers) and is shared by the two
+    sources of this driver (netcdf and zarr), hence a dedicated base class —
+    mirroring ``fdb/base.py``; the single-source icechunk driver keeps its
+    customization inline instead.
     """
 
     def to_dask(self):

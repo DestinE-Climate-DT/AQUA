@@ -8,7 +8,13 @@ import pytest
 import xarray as xr
 from intake.source import get_plugin_class
 
-from aqua.core.intake_drivers.xarray import IntakeNetCDFSource, IntakeZarrSource, install_intake_xarray_stub
+from aqua.core.intake_drivers.xarray import (
+    IntakeNetCDFSource,
+    IntakeZarrSource,
+    install_intake_xarray_stub,
+    open_netcdf,
+    open_zarr,
+)
 
 
 @pytest.fixture
@@ -153,3 +159,35 @@ def test_stub_installation(monkeypatch):
             if key == "intake_xarray" or key.startswith("intake_xarray."):
                 sys.modules.pop(key)
         sys.modules.update(saved)
+
+
+@pytest.mark.aqua
+class TestOpeners:
+    """The functional openers, mirroring the fdb/icechunk driver layout."""
+
+    def test_open_netcdf_single_file_eager(self, tmp_path, sample_dataset):
+        path = tmp_path / "sample.nc"
+        sample_dataset.to_netcdf(path)
+        # mfdataset-only kwargs must be tolerated on the single-file path
+        data = open_netcdf(str(path), combine="by_coords")
+        assert data["tas"].chunks is None  # open_dataset: eager-capable
+        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+
+    def test_open_netcdf_glob(self, tmp_path, sample_dataset):
+        sample_dataset.isel(time=slice(0, 2)).to_netcdf(tmp_path / "sample_a.nc")
+        sample_dataset.isel(time=slice(2, 4)).to_netcdf(tmp_path / "sample_b.nc")
+        data = open_netcdf(str(tmp_path / "sample_*.nc"))
+        assert data.sizes["time"] == 4
+        assert data["tas"].chunks is not None  # open_mfdataset: dask-backed
+
+    def test_open_netcdf_missing(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            open_netcdf(str(tmp_path / "nothing_*.nc"))
+
+    def test_open_zarr_glob_multiple_stores(self, tmp_path, sample_dataset):
+        # DROP-generated entries point to multiple stores through a glob urlpath
+        sample_dataset.isel(time=slice(0, 2)).to_zarr(tmp_path / "sample_a.zarr")
+        sample_dataset.isel(time=slice(2, 4)).to_zarr(tmp_path / "sample_b.zarr")
+        data = open_zarr(str(tmp_path / "sample_*.zarr"))
+        assert data.sizes["time"] == 4
+        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
