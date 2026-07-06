@@ -54,14 +54,14 @@ class Z3FDBDatasetReader(BaseReader):
 
     def _read(self, data, **kwargs):
 
-        config_z3fdb = os.path.join(ConfigPath().configdir, "config-z3fdb.yaml")
-        config_z3fdb = kwargs.pop("config_z3fdb", config_z3fdb)
+        config_fdb = os.path.join(ConfigPath().configdir, "config-z3fdb.yaml")
+        config_fdb = kwargs.pop("config_fdb", config_fdb)
 
         return open_z3fdb(
             data.request,
             startdate=data.startdate,
             enddate=data.enddate,
-            config=config_z3fdb,
+            config=config_fdb,
             variables=data.var,
             levels=data.level,
             freq=data.savefreq,

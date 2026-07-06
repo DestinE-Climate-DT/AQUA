@@ -240,6 +240,11 @@ Some of the parameters are here described:
     To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"``
     when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
 
+.. option:: config_fdb
+
+    This optional parameter is used to specify a custom configuration file path for the ``z3fdb`` engine.
+    If not set, the default ``config-z3fdb.yaml`` file in the user's config folder will be used.
+
 .. option:: chunks
 
     The chunks parameter is essential, whether you are using Dask or a generator.
@@ -276,9 +281,9 @@ Some of the parameters are here described:
     .. note::
         When using the ``z3fdb`` engine, chunking is supported differently:
 
-        * Chunking in the time direction is always ``SINGLEVALUE``.
-        * Chunking in the level direction is by default ``NONE`` (no chunking).
-        * If ``chunks`` is defined as a dictionary with a ``'level'`` key, then ``SINGLEVALUE`` chunking is also done in the level direction. For example, ``chunks={"level": 1}`` provides single-level chunking (along with time chunking).
+        * **Time direction**: Chunking is always by single time steps.
+        * **Level direction**: By default, level chunking is not performed.
+        * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
         * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
 
 .. option:: timestep
