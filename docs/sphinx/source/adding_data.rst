@@ -236,8 +236,9 @@ Some of the parameters are here described:
 .. option:: engine
 
     This optional parameter is used to specify the data retrieval engine.
-    The default is ``fdb``. Alternatives are ``polytope`` (see :ref:`polytope`) and ``z3fdb``.
-    To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"`` when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
+    The default is ``gsv``. Alternatives are ``polytope`` (see :ref:`polytope`), ``polytope-gsv`` (functionally identical to ``polytope``at the moment) and ``z3fdb``.
+    To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"``
+    when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
 
 .. option:: chunks
 

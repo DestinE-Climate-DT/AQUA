@@ -33,6 +33,8 @@ Use Polytope engine in AQUA
 In order to use Polytope as data access engine in AQUA, you need to specify it when instantiating the `Reader` class.
 To this end you will need to specify ``engine="polytope"`` when instantiating the `Reader` or permanently, adding
 the argument ``engine: polytope`` as an additional argument in the intake catalog source entry in the corresponding yaml file, under `args:`.
+``engine="polytope-gsv"`` is an alternative which at the moment is functionally identical to ``polytope``.
+The two will be separated in the future.
 
 .. code-block:: python
 
