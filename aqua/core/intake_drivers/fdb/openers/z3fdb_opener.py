@@ -222,7 +222,7 @@ def add_coordinates(ds, levunits=None):
         )
 
     if not is_healpix:
-        raise ValueError("Only HEALPix grids are supported")
+        raise NotImplementedError("Only HEALPix grids are supported")
 
     if levunits:
         ds.level.attrs["units"] = levunits
