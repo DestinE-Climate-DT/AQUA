@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import dask.array as da
 import xarray as xr
 from smmregrid import GridInspector
 
@@ -203,7 +204,15 @@ class Backend(ABC):
 
         return data
 
+    # @staticmethod
+    # def is_dask(dataset: xr.Dataset) -> bool:
+    #    """Verify that the dataset is backed by dask arrays."""
+    #    return bool(dataset.chunks)
     @staticmethod
-    def is_dask(dataset: xr.Dataset) -> bool:
-        """Verify that the dataset is backed by dask arrays."""
-        return bool(dataset.chunks)
+    def is_dask(dataset: xr.Dataset | xr.DataArray) -> bool:
+        """Verify that the xarray object is backed by dask arrays."""
+        if isinstance(dataset, xr.Dataset):
+            return any(isinstance(var.data, da.Array) for var in dataset.variables.values())
+        if isinstance(dataset, xr.DataArray):
+            return isinstance(dataset.data, da.Array)
+        return False
