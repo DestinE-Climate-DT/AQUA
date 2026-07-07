@@ -2,8 +2,6 @@ import os
 
 from intake import BaseReader
 
-from aqua.core.configurer import ConfigPath
-
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
 
@@ -54,8 +52,23 @@ class Z3FDBDatasetReader(BaseReader):
 
     def _read(self, data, **kwargs):
 
-        config_fdb = os.path.join(ConfigPath().configdir, "config-z3fdb.yaml")
-        config_fdb = kwargs.pop("config_fdb", config_fdb)
+        # Establish wehere to find the config.yaml file in this order:
+        # 1. if config_fdb passed as a kwarg use that.
+        # 2. if data.metadata has a key fdb_home_bridge use that.
+        # 3. if FDB_HOME_BRIDGE set as an environment variable use that.
+
+        config_fdb = None
+        if "config_fdb" in kwargs:
+            config_fdb = kwargs.pop("config_fdb")
+        elif "fdb_home_bridge" in data.metadata and (
+            data.bridge_start_date == "complete" or data.bridge_end_date == "complete"
+        ):
+            config_fdb = data.metadata.pop("fdb_home_bridge")
+            config_fdb = config_fdb if config_fdb.endswith("yaml") else os.path.join(config_fdb, "etc/fdb/config.yaml")
+        else:
+            raise ValueError(
+                "Could not find FDB config.yaml. Please pass it as a kwarg or set the key fdb_home_bridge in the catalog."
+            )
 
         return open_z3fdb(
             data.request,

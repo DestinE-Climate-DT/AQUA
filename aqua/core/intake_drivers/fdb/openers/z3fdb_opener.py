@@ -328,7 +328,8 @@ def open_z3fdb(
         levels = request.get("levelist", None)
 
     # Set level units based on level type
-    levtype = request.get("levtype", None).lower()
+    levtype = request.get("levtype", None)
+    levtype = levtype.lower() if levtype else None
     if levtype == "pl":
         levunits = "hPa"
     elif levtype == "o3d" or levtype == "hl":

@@ -78,6 +78,12 @@ class FDBSource(FDBTimeMixin):
         databridge=None,
         **kwargs,
     ):
+        config_fdb = kwargs.pop("config_fdb", None)
+        if config_fdb:
+            if metadata is None:
+                metadata = {}
+            metadata["fdb_home_bridge"] = config_fdb
+
         self.engine = engine
         self.dummy_run = engine is None
 
