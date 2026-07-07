@@ -144,6 +144,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             enddate (str, optional): End date (YYYY-MM-DD). Defaults to None.
         """
         read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
+        startdate = startdate or self.esmcat.metadata.get("startdate")
         esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=startdate)
         data = esmcat.reader.read(**read_kwargs)
         data = self._select_minimum_sample(data, startdate)
@@ -171,6 +172,8 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             xr.Dataset: Dataset with fixes, data model, and date/level selection applied.
         """
         read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
+        startdate = startdate or self.esmcat.metadata.get("startdate")
+        enddate = enddate or self.esmcat.metadata.get("enddate")
         esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=enddate)
         data = esmcat.reader.read(**read_kwargs)
 

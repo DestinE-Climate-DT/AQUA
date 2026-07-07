@@ -72,6 +72,13 @@ class Backend(ABC):
         startdate: str = None,
         enddate: str = None,
     ):
+        """
+        Apply post-processing steps to the dataset, variable selection,
+        fixing and data model application, date selection, and level selection
+        """
+        if not self.is_dask(data):
+            self.logger.warning("Dataset is not a dask-backed array.")
+
         data = self._fixer_and_datamodel(data, var=var)
 
         if var:
@@ -118,7 +125,8 @@ class Backend(ABC):
                 data = data.sel({time_dimension[0]: startdate}, method="nearest")
             else:
                 data = data.isel({time_dimension[0]: 0})
-        if data.size == 0:
+        # check if variables, coords and dimensions are still present after selection, if not log a warning
+        if not data.data_vars or not data.coords or 0 in data.sizes.values():
             self.logger.warning("No data available after applying _select_minimum_sample selections.")
         return data
 
@@ -183,3 +191,8 @@ class Backend(ABC):
                 return xr.Dataset()  # Return an empty Dataset if no variables match
 
         return data
+
+    @staticmethod
+    def is_dask(dataset: xr.Dataset) -> bool:
+        """Verify that the dataset is backed by dask arrays."""
+        return bool(dataset.chunks)
