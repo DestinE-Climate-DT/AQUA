@@ -115,6 +115,7 @@ class Backend(ABC):
         # extract the minimal set of variables across all the gridtypes using smmregrid feature
         minimal_variables = gridinspect.get_gridtype_sample_variable(gridtypes)
 
+        # get the minimal sample data based on the extracted time dimension and variables
         if minimal_variables:
             self.logger.debug("Selecting variables %s for _retrieve_plain", minimal_variables)
             data = data[minimal_variables]
@@ -125,6 +126,16 @@ class Backend(ABC):
                 data = data.sel({time_dimension[0]: startdate}, method="nearest")
             else:
                 data = data.isel({time_dimension[0]: 0})
+
+            # safety check for long time chunks, if present log a warning
+            # assume time is the first dimension
+            for var in data.data_vars:
+                chunks = data[var].encoding.get("chunks", None)
+                if chunks and chunks[0] > 1:
+                    self.logger.warning(
+                        "Variable %s has time chunks: %s. This might slowdown areas/weights generation", var, chunks[0]
+                    )
+
         # check if variables, coords and dimensions are still present after selection, if not log a warning
         if not data.data_vars or not data.coords or 0 in data.sizes.values():
             self.logger.warning("No data available after applying _select_minimum_sample selections.")
