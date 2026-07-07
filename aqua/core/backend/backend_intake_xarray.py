@@ -14,6 +14,7 @@ from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
+from aqua.core.util.cds import get_cdsapi_key
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
@@ -90,6 +91,13 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         # HACK: forcing to netcdf4 for intake2
         if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
             read_kwargs.setdefault("engine", "netcdf4")
+
+        # if the catalog uses CDS api, get the key from user configuration
+        if "cds" in self.esmcat.metadata.get("key"):
+            cdsapi_key = get_cdsapi_key()
+            self.logger.warning("CDS API %s", cdsapi_key)
+            read_kwargs["storage_options"] = {"headers": {"Authorization": f"Bearer {cdsapi_key}"}}
+
         return read_kwargs
 
     def _setup_intake_catalog(self, esmcat, startdate: str = None, enddate: str = None):
