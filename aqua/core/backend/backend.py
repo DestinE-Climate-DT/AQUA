@@ -138,7 +138,7 @@ class Backend(ABC):
 
         # check if variables, coords and dimensions are still present after selection, if not log a warning
         if not data.data_vars or not data.coords or 0 in data.sizes.values():
-            self.logger.warning("No data available after applying _select_minimum_sample selections.")
+            self.logger.error("No data available after applying _select_minimum_sample selections.")
         return data
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
