@@ -95,7 +95,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         # if the catalog uses CDS api, get the key from user configuration
         if "cds" in self.esmcat.metadata.get("key"):
             cdsapi_key = get_cdsapi_key()
-            self.logger.warning("CDS API %s", cdsapi_key)
+            self.logger.debug("CDS API %s", cdsapi_key)
             read_kwargs["storage_options"] = {"headers": {"Authorization": f"Bearer {cdsapi_key}"}}
 
         return read_kwargs
