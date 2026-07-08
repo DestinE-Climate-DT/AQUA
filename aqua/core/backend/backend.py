@@ -78,7 +78,7 @@ class Backend(ABC):
         fixing and data model application, date selection, and level selection
         """
         if not self.is_dask(data):
-            self.logger.error("Dataset is not a dask-backed array.")
+            self.logger.error("Dataset is not a dask-backed array. Please verify the data access.")
 
         data = self._fixer_and_datamodel(data, var=var)
 
