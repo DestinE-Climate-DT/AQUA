@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+
+AQUA diagnostics complete list:
+
+## [v0.19.13]
+
+AQUA core complete list:
 - Updated the AQUA development container to FDB 5.19.0, Metkit 1.15.10, eccodes 2.41.0 and eckit 1.32.5 (#2945)
 
 AQUA diagnostics complete list:
@@ -1284,7 +1290,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.12
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.13
+[v0.19.13]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.12...v0.19.13
 [v0.19.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.11...v0.19.12
 [v0.19.11]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.10...v0.19.11
 [v0.19.10]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.9...v0.19.10
