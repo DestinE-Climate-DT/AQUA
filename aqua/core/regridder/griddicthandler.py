@@ -58,7 +58,7 @@ class GridDictHandler:
         """
 
         grid_dict = self._normalize_grid_dict(grid_name)
-        grid_dict["path"] = self._normalize_grid_path(grid_dict)
+        grid_dict["path"] = self._normalize_grid_path(grid_dict, grid_name)
         return grid_dict
 
     def _normalize_grid_dict(self, grid_name):
@@ -108,7 +108,7 @@ class GridDictHandler:
         # if the grid dict is a dictionary, return it
         return grid_dict
 
-    def _normalize_grid_path(self, grid_dict):
+    def _normalize_grid_path(self, grid_dict, grid_name):
         """
         Normalize the grid path to a dictionary with the self.default_dimension key.
         3 cases handled:
@@ -117,8 +117,8 @@ class GridDictHandler:
             - a dictionary with a dictionary of path, one for each vertical coordinate
 
         Args:
-            path (str, dict): The grid path.
-            data (xarray.Dataset): The dataset to extract grid information from.
+            grid_dict (dict): The grid dictionary.
+            grid_name (str): The grid name, for loggin purposes.
 
         Returns:
             dict: The normalized grid path dictionary. "self.default_dimension" key is mandatory.
@@ -132,12 +132,15 @@ class GridDictHandler:
         # case path is a string: check if it is a valid CDO grid name or a file path
         if isinstance(path, str):
             if CdoGrid(path).grid_kind:
-                self.logger.debug("Grid path %s is a valid CDO grid name.", path)
+                self.logger.debug("Grid path %s for grid '%s' is a valid CDO grid name.", path, grid_name)
                 return {self.default_dimension: path}
             if check_existing_file(path):
-                self.logger.debug("Grid path %s is a valid file path.", path)
+                self.logger.debug("Grid path %s for grid '%s' is a valid file path.", path, grid_name)
                 return {self.default_dimension: path}
-            raise FileNotFoundError(f"Grid file '{path}' does not exist.")
+            raise FileNotFoundError(
+                f"Grid file '{path}' does not exist for grid '{grid_name}', please check the path. "
+                f"Try running in terminal  'aqua grids deploy {grid_name}' to deploy the grid file."
+            )
 
         # case path is a dictionary: check if the values are valid file paths
         # (could extend to CDO names?)
@@ -145,7 +148,7 @@ class GridDictHandler:
             for _, value in path.items():
                 if not (CdoGrid(value).grid_kind or check_existing_file(value)):
                     raise ValueError(f"Grid path '{value}' is not a valid CDO grid name nor a file path.")
-            self.logger.debug("Grid path %s is a valid dictionary of file paths.", path)
+            self.logger.debug("Grid path %s for grid '%s' is a valid dictionary of file paths.", path, grid_name)
             return path
 
-        raise TypeError(f"Grid path '{path}' is not a valid type.")
+        raise TypeError(f"Grid path '{path}' for grid '{grid_name}' is not a valid type.")

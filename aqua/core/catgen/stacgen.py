@@ -9,7 +9,9 @@ hierarchical facet tree, producing deterministic FDB-like request dicts.
 
 import os
 import re
+import urllib.request
 from dataclasses import dataclass, field
+from html.parser import HTMLParser
 from typing import Any, Iterator
 
 import requests
@@ -19,7 +21,7 @@ from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure
 from aqua.core.util import dump_yaml, load_yaml
 
-BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"
+DEPTH_URL = "https://platform.destine.eu/docs/climate-dt-user-guide/doc/data/ocean_model_levels.html"
 
 
 @dataclass
@@ -223,20 +225,88 @@ class CatalogNode:
         return node
 
 
+class _TableExtractor(HTMLParser):
+    """Extract the depth top table from the HTML page for ocean model levels."""
+
+    def __init__(self):
+        super().__init__()
+        self.sections = []  # list of (heading_text, [[cell, cell, ...], ...])
+        self._in_h2 = False
+        self._in_table = False
+        self._in_cell = False
+        self._cur_heading = ""
+        self._cur_table = []
+        self._cur_row = []
+        self._cur_cell = ""
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "h2":
+            self._in_h2 = True
+            self._cur_heading = ""
+        elif tag == "table":
+            self._in_table = True
+            self._cur_table = []
+        elif tag == "tr" and self._in_table:
+            self._cur_row = []
+        elif tag in ("td", "th") and self._in_table:
+            self._in_cell = True
+            self._cur_cell = ""
+
+    def handle_endtag(self, tag):
+        if tag == "h2":
+            self._in_h2 = False
+        elif tag == "table":
+            self._in_table = False
+            if self._cur_heading:
+                self.sections.append((self._cur_heading.strip(), self._cur_table))
+                self._cur_heading = ""  # only attach table to nearest preceding h2
+        elif tag == "tr" and self._in_table:
+            if self._cur_row:
+                self._cur_table.append(self._cur_row)
+        elif tag in ("td", "th") and self._in_table:
+            self._in_cell = False
+            self._cur_row.append(self._cur_cell.strip())
+
+    def handle_data(self, data):
+        if self._in_h2:
+            self._cur_heading += data
+        elif self._in_cell:
+            self._cur_cell += data
+
+
+def get_depth_top(model: str, url: str = DEPTH_URL) -> list[float]:
+    """
+    Return the list of 'Depth top (m)' values (indexed by level, 0-based)
+    for a given ocean model: 'ICON', 'IFS-NEMO', or 'IFS-FESOM'.
+    """
+    html = urllib.request.urlopen(url, timeout=30).read().decode("utf-8")
+
+    parser = _TableExtractor()
+    parser.feed(html)
+
+    for heading, table in parser.sections:
+        if heading.lower().startswith(model.lower()):
+            header = [c.lower() for c in table[0]]
+            idx = next(i for i, h in enumerate(header) if "depth top" in h)
+            return [float(re.sub(r"[^\d.\-]", "", row[idx])) for row in table[1:]]
+
+    raise ValueError(f"Model '{model}' not found on page")
+
+
 class AquaSTACGenerator:
     """STAC-based catalog generator for AQUA."""
 
-    def __init__(self, catalog, stac_url=BRIDGE_API_URL, loglevel="WARNING"):
+    def __init__(self, catalog: str, bridge_url: str, loglevel="WARNING"):
         """
         Args:
             catalog (str): Catalog identifier, e.g. "climate-dt-gen2".
-            stac_url (str, optional): STAC API base URL. Defaults to BRIDGE_API_URL.
+            bridge_url (str): STAC API URL for the bridge node.
             loglevel (str, optional): Logging level. Defaults to "WARNING".
         """
-        self.catalog = catalog
-        self.stac_url = stac_url
         self.logger = log_configure(log_level=loglevel, log_name="AquaSTACGenerator")
         self.loglevel = loglevel
+        self.catalog = catalog
+        self.stac_url = bridge_url
         self.tree = None
         self.full_request = None
         self.logger.info("Initializing STAC catalog generator for %s", catalog)
@@ -312,12 +382,26 @@ class AquaSTACGenerator:
         Raises:
             ValueError: If resolution value is not recognized.
         """
+        # HACK: resolution is hard-coded
         # Validate resolution first — it is not stored as a key so KeyError won't catch it
         resolution = request.get("resolution")
+        activity = request.get("activity", "").lower()
         if resolution == "standard":
-            healpix, km = "hpz7", 10  # km not recoverable from request
+            if activity in ["baseline", "projections"]:
+                healpix, km = "hpz7", 5  # km not recoverable from request
+            elif activity == "story-nudging":
+                healpix, km = "hpz7", 10
+            else:
+                self.logger.warning("Unrecognized activity '%s' for standard resolution; defaulting to hpz7/5km", activity)
+                healpix, km = "hpz7", 5
         elif resolution == "high":
-            healpix, km = "hpz10", 10
+            if activity in ["baseline", "projections"]:
+                healpix, km = "hpz10", 5
+            elif activity == "story-nudging":
+                healpix, km = "hpz9", 10
+            else:
+                self.logger.warning("Unrecognized activity '%s' for high resolution; defaulting to hpz10/5km", activity)
+                healpix, km = "hpz10", 5
         else:
             raise ValueError(f"Unrecognized resolution value: {resolution!r}")
         return healpix, km
@@ -551,6 +635,10 @@ class AquaSTACGenerator:
         context["chunks"] = chunks
         context["variables"] = request.get("param", [])
         context["grid"] = grid
+        context["levels"] = get_depth_top(request.get("model").upper()) if levtype == "o3d" else None
+        context["description"] = (
+            f"STAC-derived catalog entry for {context['source']} ({request.get('model')}, {request.get('experiment')})"
+        )
 
         return context
 
@@ -689,6 +777,15 @@ class AquaSTACGenerator:
         # Update catalog.yaml
         catalog_yaml_path = os.path.join(catalog_dir_path, "catalogs", catalog_name, "catalog.yaml")
         self._update_catalog_yaml(catalog_yaml_path, grouped.keys())
+
+        # generate a machine file default
+        machine_file_path = os.path.join(catalog_dir_path, "catalogs", catalog_name, "machine.yaml")
+        machine_content = {
+            "default": {
+                "paths": {"grids": "./AQUA_tests/grids", "weights": "./AQUA_tests/weights", "areas": "./AQUA_tests/weights"}
+            }
+        }
+        dump_yaml(machine_file_path, machine_content)
 
     def _update_main_yaml(self, main_yaml_path: str, experiment: str, sources: dict):
         """Update main.yaml with a source entry for the experiment (thread-safe).

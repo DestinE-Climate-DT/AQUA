@@ -19,6 +19,7 @@ from .files import FilesMixin
 # this are used to check existence of aqua.diagnostics
 from .install import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES, InstallMixin
 from .parser import parse_arguments
+from .stacgen import stacgen_execute
 
 
 class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
@@ -64,6 +65,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             "analysis": self.analysis,
             "drop": self.drop,
             "catgen": self.catgen,
+            "stacgen": self.stacgen,
         }
 
     def execute(self):
@@ -129,6 +131,17 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
 
         print("Running the catalog generator")
         catgen_execute(args)
+
+    def stacgen(self, args):
+        """
+        Run the STAC catalog generator
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+
+        print("Running the STAC catalog generator")
+        stacgen_execute(args)
 
     def grids_build(self, args):
         """Build grids from data sources
