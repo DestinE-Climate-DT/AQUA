@@ -95,16 +95,18 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             cdsapi_key = get_cdsapi_key()
             self.logger.debug("CDS API %s", cdsapi_key)
             xarray_kwargs["storage_options"] = {"headers": {"Authorization": f"Bearer {cdsapi_key}"}}
-        # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the catalog metadata
-        time_coder = self.metadata.get("time_coder")
-        if time_coder:
-            self.logger.info("Using custom pandas/xarray time coder: %s", time_coder)
-            coder = xr.coders.CFDatetimeCoder(time_unit=time_coder)
-        else:
-            coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
-        xarray_kwargs.update({"decode_times": coder})
+        # The coder introduces the possibility to specify a time decoder for the time axis.
+        # Skip custom coder if user explicitly sets use_cftime (respects user choice).
+        # Otherwise, use our custom time_unit (DEFAULT_TIME_UNIT or from catalog metadata).
+        if "use_cftime" not in xarray_kwargs:
+            time_coder = self.metadata.get("time_coder")
+            if time_coder:
+                self.logger.info("Using custom pandas/xarray time coder: %s", time_coder)
+                coder = xr.coders.CFDatetimeCoder(time_unit=time_coder)
+            else:
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
+            xarray_kwargs.update({"decode_times": coder})
 
         return xarray_kwargs
 
