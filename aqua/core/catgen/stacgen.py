@@ -506,7 +506,7 @@ class AquaSTACGenerator:
         self,
         params: dict,
         stac_response: dict,
-        keys: tuple[str, ...] = ("realization", "date", "time", "param"),
+        keys: tuple[str, ...] = ("realization", "date", "time", "param", "levelist"),
     ):
         """Add date/time/param enums from STAC response links into params (in-place).
 
@@ -609,7 +609,7 @@ class AquaSTACGenerator:
         times = request.get("time", [])
         levtype = request.get("levtype", "")
 
-        healpix, km = self._get_resolution(request)
+        healpix, _ = self._get_resolution(request)
         grid = self._get_grid_from_config(request)
 
         # savefreq and chunks derived from number of time steps per day
@@ -639,52 +639,55 @@ class AquaSTACGenerator:
         context["description"] = (
             f"STAC-derived catalog entry for {context['source']} ({request.get('model')}, {request.get('experiment')})"
         )
+        context.pop("date")
+
+        self.logger.debug("Context for source %s: %s", context["source"], context)
 
         return context
 
-    def generate_source(self, output_path: str, extra_context: dict | None = None):
-        """Render catalog_entry.j2 for every request in full_request and dump to YAML.
+    # def generate_source(self, output_path: str, extra_context: dict | None = None):
+    #     """Render catalog_entry.j2 for every request in full_request and dump to YAML.
 
-        Merges variables across requests with the same source name (same
-        frequency-healpix-levtype). Applies extra_context to each rendered context
-        before template rendering.
+    #     Merges variables across requests with the same source name (same
+    #     frequency-healpix-levtype). Applies extra_context to each rendered context
+    #     before template rendering.
 
-        Args:
-            output_path: Destination YAML file path.
-            extra_context: Optional dict with extra keys for all templates
-                (e.g. grid, description, expid, fixer_name, fdb_home).
+    #     Args:
+    #         output_path: Destination YAML file path.
+    #         extra_context: Optional dict with extra keys for all templates
+    #             (e.g. grid, description, expid, fixer_name, fdb_home).
 
-        Returns:
-            None. Writes YAML file to output_path.
+    #     Returns:
+    #         None. Writes YAML file to output_path.
 
-        Raises:
-            RuntimeError: If called before explore_tree() + complete_request().
-        """
-        if not self.full_request:
-            raise RuntimeError("Call explore_tree() and complete_request() before generate_source().")
+    #     Raises:
+    #         RuntimeError: If called before explore_tree() + complete_request().
+    #     """
+    #     if not self.full_request:
+    #         raise RuntimeError("Call explore_tree() and complete_request() before generate_source().")
 
-        template = os.path.join(ConfigPath().configdir, "catgen", "catalog_entry.j2")
-        extra_context = extra_context or {}
-        all_sources = {}
+    #     template = os.path.join(ConfigPath().configdir, "catgen", "catalog_entry.j2")
+    #     extra_context = extra_context or {}
+    #     all_sources = {}
 
-        for request in self.full_request:
-            context = {**self.get_context(request), **extra_context}
-            source_name = context["source"]
-            self.logger.debug("Rendering template for source: %s", source_name)
-            try:
-                rendered = load_yaml(template, definitions=context, catgen=True)
-                if source_name in all_sources:
-                    # merge variables into existing entry rather than overwriting
-                    all_sources[source_name]["metadata"]["variables"].extend(context["variables"])
-                    self.logger.debug("Merged variables into existing source %s", source_name)
-                else:
-                    all_sources[source_name] = rendered[source_name]
-            except Exception as e:
-                self.logger.error("Error rendering template for source %s: %s", source_name, e)
+    #     for request in self.full_request:
+    #         context = {**self.get_context(request), **extra_context}
+    #         source_name = context["source"]
+    #         self.logger.debug("Rendering template for source: %s", source_name)
+    #         try:
+    #             rendered = load_yaml(template, definitions=context, catgen=True)
+    #             if source_name in all_sources:
+    #                 # merge variables into existing entry rather than overwriting
+    #                 all_sources[source_name]["metadata"]["variables"].extend(context["variables"])
+    #                 self.logger.debug("Merged variables into existing source %s", source_name)
+    #             else:
+    #                 all_sources[source_name] = rendered[source_name]
+    #         except Exception as e:
+    #             self.logger.error("Error rendering template for source %s: %s", source_name, e)
 
-        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-        dump_yaml(output_path, {"sources": all_sources})
-        self.logger.info("Catalog written to %s (%d sources)", output_path, len(all_sources))
+    #     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    #     dump_yaml(output_path, {"sources": all_sources})
+    #     self.logger.info("Catalog written to %s (%d sources)", output_path, len(all_sources))
 
     def generate_catalog(
         self,

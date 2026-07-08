@@ -12,21 +12,21 @@
         expver: {{ expver }}  # To be overwritten by workflow/config file
         {%- if expid -%}
         expid: {{ expid }}
-        {%- endif -%}
+        {%- endif %}
         type: fc
         stream: {{ stream }}
-        {% if stream == 'clmn' %}
+        {%- if stream == 'clmn' %}
         year: {{ data_start_date[:4] }}
         month: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        {% else %}
+        {%- else %}
         date: {{ data_start_date }}
         time: {{ time }}
-        {% endif %}
+        {%- endif %}
         param: {{ param }}
         levtype: {{ levtype }}
-        {%- if levelist -%}
+        {%- if levelist %}
         levelist: {{ levelist }}
-        {% endif %}
+        {%- endif %}
       data_start_date: {{ data_start_date }}T0000
       data_end_date: {{ data_end_date if data_end_date else 'auto' }}
       {%- if bridge_end_date %}
