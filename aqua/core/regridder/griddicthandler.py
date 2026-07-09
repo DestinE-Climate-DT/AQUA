@@ -2,6 +2,7 @@
 
 from smmregrid import CdoGrid
 
+from aqua.core.gridbuilder import GridDeployer
 from aqua.core.logger import log_configure
 
 from .regridder_util import check_existing_file
@@ -14,6 +15,7 @@ class GridDictHandler:
     that can be used to define a grid.
     It covers many cases (it might seem overdetailed), and can be used also
     in absence of a cfg_grid_dict dictionary.
+    It also checks if the grid path is a valid CDO grid name or a file path, and if not, it tries to deploy the grid file.
     """
 
     def __init__(self, cfg_grid_dict, default_dimension="2d", loglevel="WARNING"):
@@ -137,10 +139,20 @@ class GridDictHandler:
             if check_existing_file(path):
                 self.logger.debug("Grid path %s for grid '%s' is a valid file path.", path, grid_name)
                 return {self.default_dimension: path}
-            raise FileNotFoundError(
-                f"Grid file '{path}' does not exist for grid '{grid_name}', please check the path. "
-                f"Try running in terminal  'aqua grids deploy {grid_name}' to deploy the grid file."
-            )
+            try:
+                self.logger.warning(
+                    "Grid path %s for grid '%s' is not a valid CDO grid name nor a file path. "
+                    "Attempting to deploy the grid file.",
+                    path,
+                    grid_name,
+                )
+                grid_deployer = GridDeployer(loglevel=self.loglevel)
+                grid_deployer.deploy(source_grid_name=grid_name)
+            except Exception as e:
+                raise ValueError(
+                    f"Grid path '{path}' for grid '{grid_name}' is not a valid CDO grid name"
+                    f"nor a file path, and deployment failed: {e}"
+                )
 
         # case path is a dictionary: check if the values are valid file paths
         # (could extend to CDO names?)

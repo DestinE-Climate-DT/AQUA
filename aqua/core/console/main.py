@@ -18,6 +18,8 @@ from .files import FilesMixin
 
 # this are used to check existence of aqua.diagnostics
 from .install import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES, InstallMixin
+
+# parser
 from .parser import parse_arguments
 from .stacgen import stacgen_execute
 
