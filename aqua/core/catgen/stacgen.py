@@ -500,6 +500,8 @@ class AquaSTACGenerator:
         if not match:
             raise ValueError(f"Cannot parse catalog identifier: {self.catalog!r}")
         name, gen = match.groups()
+        if name == "climatedt":
+            name = "climate-dt"  # normalize legacy name
         return name.lower(), int(gen)
 
     def _enrich_params(

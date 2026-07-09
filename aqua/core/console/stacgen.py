@@ -11,10 +11,7 @@ import sys
 from aqua import AquaSTACGenerator
 from aqua.core.util import get_arg
 
-BRIDGE_API_URL = {
-    "lumi": "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac",
-    "MN5": None,
-}
+BRIDGE_API_URL = {"lumi": "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac", "MN5": None, "leonardo": None}
 
 DEFAULT_LAYERS = ["activity", "experiment", "model", "realization", "expver", "stream", "resolution", "levtype"]
 
@@ -45,7 +42,7 @@ def stacgen_execute(args):
     """Useful wrapper for the STAC catalog generator class"""
 
     bridge = get_arg(args, "bridge", "lumi")
-    catalog = get_arg(args, "catalog", "climate-dt-gen2")
+    catalog = get_arg(args, "catalog", "climatedt-gen2")
     loglevel = get_arg(args, "loglevel", "INFO")
     output = get_arg(args, "output", ".")
     model = get_arg(args, "model", DEFAULT_FILTERS["model"])
