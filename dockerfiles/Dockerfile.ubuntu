@@ -1,14 +1,14 @@
-# Custom Ubuntu 24.04 Docker image with recent FDB5, ECCODES, for the DestinE ClimateDT project
+# Custom Ubuntu 26.04 LTS Docker image with recent FDB5, ECCODES, for the DestinE ClimateDT project
 
 #-----IMPORTANT-----
 # # IMPORTANT: the filename of the docker is defined in the action, and include the name of the branch
 # to keep a level of consistence, please name the branch as "aqua-base-container"
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 LABEL maintainer="jost.hardenberg@polito.it"
-LABEL version="0.8"
-LABEL description="Custom docker image based ion Ubuntu 24.04 with FDB5 and ECCODES for DestinE ClimateDT"
+LABEL version="0.9"
+LABEL description="Custom docker image based on Ubuntu 26.04 LTS with FDB5 and ECCODES for DestinE ClimateDT"
 
 #ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME_FDB: ubuntu24.04-fdb5.19.0-eccodes2.47.0-aqua
+  IMAGE_NAME_FDB: ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,5 +28,7 @@ jobs:
           [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
+          docker tag $IMAGE_NAME_FDB $IMAGE_ID:aqua-base-container
           docker tag $IMAGE_NAME_FDB $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:aqua-base-container
           docker push $IMAGE_ID:$VERSION
