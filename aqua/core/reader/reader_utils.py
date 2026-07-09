@@ -1,6 +1,51 @@
 """Common functions for the Reader"""
 
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
 import xarray as xr
+
+
+class _Unset:
+    """Sentinel marking 'no value provided' -- distinct from False/None/{}."""
+
+    def __repr__(self) -> str:
+        return "UNSET"
+
+
+UNSET = _Unset()
+
+
+@dataclass(frozen=True, slots=True)
+class ReaderArgument:
+    enabled: bool
+    name: str | None = None
+    options: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def parse(cls, value: bool | str | dict[str, Any], *, arg_name: str = "argument") -> "ReaderArgument":
+        if value is True:
+            return cls(enabled=True)
+        if value is False:
+            return cls(enabled=False)
+        if isinstance(value, str):
+            return cls(enabled=True, name=value)
+        if isinstance(value, dict):
+            return cls(enabled=True, options=dict(value))
+        raise TypeError(f"{arg_name} must be bool, str, or dict, got {type(value).__name__}")
+
+    def update(
+        self,
+        provided: bool | str | dict[str, Any] | _Unset,
+        *,
+        arg_name: str = "argument",
+    ) -> "ReaderArgument":
+        """Return a new spec: `provided` wins if given, otherwise keep self unchanged."""
+        if provided is UNSET:
+            return self
+        return ReaderArgument.parse(provided, arg_name=arg_name)
 
 
 def check_catalog_source(cat, model, exp, source, name="dictionary"):
