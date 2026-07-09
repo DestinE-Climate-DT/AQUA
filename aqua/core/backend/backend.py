@@ -4,9 +4,10 @@ import xarray as xr
 from smmregrid import GridInspector
 
 from aqua.core.data_model import DataModel
+from aqua.core.data_model.coordidentifier import CoordIdentifier
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
-from aqua.core.util import find_vert_coord, to_list
+from aqua.core.util import to_list
 
 
 class Backend(ABC):
@@ -125,20 +126,24 @@ class Backend(ABC):
 
     def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
         """Store level selection for lazy application."""
-        # find the vertical coordinate, which can be the smmregrid one or
-        # any other with a dimension compatible (Pa, cm, etc)
-        full_vert_coord = find_vert_coord(data)
 
-        if level_coord:
-            if level_coord not in full_vert_coord:
-                self.logger.error("Specified vertical coordinate %s not found in data!", level_coord)
-                return data
-            full_vert_coord = [level_coord]
+        # use data model to identify vertical coordinates (isobaric, depth and height)
+        # TODO: modify data model so that this info is available without instantiating the data model class
+        coords = CoordIdentifier(data.coords).identify_coords()
+        full_vert_coord = [y["name"] for x, y in coords.items() if y is not None and x in ["isobaric", "depth", "height"]]
 
         # return if no vertical coordinate is found
         if not full_vert_coord:
             self.logger.error("Levels selected but no vertical coordinate found in data!")
             return data
+
+        if level_coord:
+            if level_coord not in full_vert_coord:
+                self.logger.error(
+                    "Specified vertical coordinate %s not found in data! No vertical selection will be applied.", level_coord
+                )
+                return data
+            full_vert_coord = to_list(level_coord)
 
         # ensure that level is a list
         level = to_list(level)
