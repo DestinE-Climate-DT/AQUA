@@ -144,8 +144,8 @@ class Backend(ABC):
             # return if no vertical coordinate is found
             if not data_level_coord:
                 self.logger.error(
-                    "Levels selected but no level coordinate found in data!"
-                    "Try specifying the vertical coordinate with the 'level_coord' argument."
+                    "Levels selected but no level coordinate found in data! "
+                    "Try specifying the coordinate with the 'level_coord' argument."
                 )
                 return data
 
