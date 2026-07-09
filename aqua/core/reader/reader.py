@@ -360,7 +360,7 @@ class Reader:
 
     # TODO: sample is not used, so no sampling is done for retrieve_plain and all the vars are loaded.
     # also chunking can be specified to reduce the amount of data.
-    def retrieve(self, var=None, level=None, startdate=None, enddate=None, history=True, sample=False):
+    def retrieve(self, var=None, level=None, startdate=None, enddate=None, level_coord=None, history=True):
         """
         Perform a data retrieve.
 
@@ -369,6 +369,7 @@ class Reader:
             level (list, float, int): Levels to be read, overriding default in catalog source.
             startdate (str): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
+            level_coord (str): The coordinate name for the vertical levels. Defaults to None.
             history (bool): If you want to add to the metadata history information about retrieve. Defaults to True.
             sample (bool): read only one default variable (used only if var is not specified). Defaults to False.
 
@@ -383,7 +384,7 @@ class Reader:
 
         ffdb = isinstance(self.backend, BackendIntakeFDB)
 
-        data = self.backend.retrieve(var=var, level=level, startdate=startdate, enddate=enddate)
+        data = self.backend.retrieve(var=var, level=level, startdate=startdate, enddate=enddate, level_coord=level_coord)
 
         # if retrieve history is required (disable for retrieve_plain)
         if history:
