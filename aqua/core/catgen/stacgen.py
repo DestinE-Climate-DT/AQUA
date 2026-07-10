@@ -586,6 +586,21 @@ class AquaSTACGenerator:
                 return element["variables"][key]["enum"]
         return []
 
+    def _get_cached_depth_top(self, model: str) -> list[float]:
+        """Get depth_top for model, caching results to avoid repeated scraping.
+
+        Args:
+            model: Model name (e.g. "ICON", "IFS-NEMO").
+
+        Returns:
+            list[float]: Cached or newly scraped depth_top values.
+        """
+        if not hasattr(self, "_depth_top_cache"):
+            self._depth_top_cache = {}
+        if model not in self._depth_top_cache:
+            self._depth_top_cache[model] = get_depth_top(model)
+        return self._depth_top_cache[model]
+
     def get_context(self, request: dict) -> dict:
         """Build the Jinja2 rendering context for one STAC request.
 
@@ -637,7 +652,7 @@ class AquaSTACGenerator:
         context["chunks"] = chunks
         context["variables"] = request.get("param", [])
         context["grid"] = grid
-        context["levels"] = get_depth_top(request.get("model").upper()) if levtype == "o3d" else None
+        context["levels"] = self._get_cached_depth_top(request.get("model").upper()) if levtype == "o3d" else None
         context["description"] = (
             f"STAC-derived catalog entry for {context['source']} ({request.get('model')}, {request.get('experiment')})"
         )
