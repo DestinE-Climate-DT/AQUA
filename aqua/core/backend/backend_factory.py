@@ -1,3 +1,5 @@
+"""Factory class to create backend instances based on the provided parameters."""
+
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DATAMODEL

@@ -87,7 +87,7 @@ class BackendXarray(Backend):
 
         # Add info metadata in each dataset
         info_metadata = {
-            "AQUA_version": aqua_version,
+            "version": aqua_version,
         }
         data = self._set_metadata(data, info_metadata)
 

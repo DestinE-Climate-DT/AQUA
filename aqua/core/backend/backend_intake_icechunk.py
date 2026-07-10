@@ -10,8 +10,6 @@ from aqua.core.version import __version__ as aqua_version
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
 
-xr.set_options(keep_attrs=True)
-
 
 class BackendIntakeIcechunk(Backend, CatalogMixin):
     """
@@ -142,11 +140,11 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
 
         # Add info metadata in each dataset
         info_metadata = {
-            "AQUA_model": self.model,
-            "AQUA_exp": self.exp,
-            "AQUA_source": self.source,
-            "AQUA_catalog": self.catalog,
-            "AQUA_version": aqua_version,
+            "model": self.model,
+            "exp": self.exp,
+            "source": self.source,
+            "catalog": self.catalog,
+            "version": aqua_version,
             **self.kwargs,
         }
 

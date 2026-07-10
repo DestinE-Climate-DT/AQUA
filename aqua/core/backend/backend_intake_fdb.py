@@ -180,11 +180,11 @@ class BackendIntakeFDB(Backend, CatalogMixin):
 
         # Add info metadata in each dataset
         info_metadata = {
-            "AQUA_model": self.model,
-            "AQUA_exp": self.exp,
-            "AQUA_source": self.source,
-            "AQUA_catalog": self.catalog,
-            "AQUA_version": aqua_version,
+            "model": self.model,
+            "exp": self.exp,
+            "source": self.source,
+            "catalog": self.catalog,
+            "version": aqua_version,
             **self.kwargs,
         }
         data = self._set_metadata(data, info_metadata)
