@@ -19,9 +19,8 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import fix_calendar, load_multi_yaml
+from aqua.core.util import fix_calendar, load_multi_yaml, set_attrs
 
-from .reader_utils import set_attrs
 from .trender import Trender
 
 # set default options for xarray
@@ -370,6 +369,13 @@ class Reader:
         Returns:
             A xarray.Dataset containing the required data.
         """
+
+        # fallback to reader-init stardate and enddate
+        if not startdate:
+            startdate = self.startdate
+        if not enddate:
+            enddate = self.enddate
+
         data = self.backend.retrieve(var=var, level=level, level_coord=level_coord, startdate=startdate, enddate=enddate)
 
         # Time threatment: we want to ensure that time is always in Gregorian calendar
@@ -382,18 +388,9 @@ class Reader:
             # Fix the calendar to Gregorian if needed
             data = fix_calendar(data, loglevel=self.loglevel)
 
-        # log an error if some variables have no units
-        if isinstance(data, xr.Dataset) and self.fix:
-            for variable in data.data_vars:
-                if not hasattr(data[variable], "units"):
-                    self.logger.warning("Variable %s has no units!", variable)
-
-        else:
-            if data is None or len(data.data_vars) == 0:
-                self.logger.error("Retrieved empty dataset for var=%s. First, check its existence in the data catalog.", var)
-
+        # This links the dataset accessor to this instance of the Reader class
         if isinstance(data, xr.Dataset):
-            data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
+            data.aqua.set_default(self)
 
         # Preprocessing function
         if self.preproc:

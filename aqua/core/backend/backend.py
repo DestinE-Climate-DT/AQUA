@@ -6,7 +6,7 @@ from smmregrid import GridInspector
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
-from aqua.core.util import find_vert_coord, to_list
+from aqua.core.util import find_vert_coord, set_attrs, to_list
 
 
 class Backend(ABC):
@@ -45,7 +45,7 @@ class Backend(ABC):
         """Open minimal data to fetch the Regridder init."""
 
     @abstractmethod
-    def log_history(self, data: xr.Dataset, message: str) -> xr.Dataset:
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
         """Log a message in the dataset's history attribute."""
 
     def _fixer_and_datamodel(self, data: xr.Dataset, var: str | list = None) -> xr.Dataset:
@@ -65,6 +65,12 @@ class Backend(ABC):
         if self.datamodel:
             self.logger.debug("Applying data model")
             data = self.datamodel.apply(data)
+        return data
+
+    def _set_metadata(self, data: xr.Dataset, metadata: dict) -> xr.Dataset:
+        """Set AQUA-specific metadata on the dataset."""
+        aqua_metadata = {f"AQUA_{key}": str(value) for key, value in metadata.items()}
+        data = set_attrs(data, aqua_metadata)
         return data
 
     def _postprocess_data(

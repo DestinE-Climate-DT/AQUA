@@ -14,7 +14,6 @@ from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
-from aqua.core.reader.reader_utils import set_attrs
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 from aqua.core.version import __version__ as aqua_version
 
@@ -66,7 +65,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional keyword arguments forwarded to the intake catalog source entry.
         """
-        Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
+        super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
         # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
@@ -195,11 +194,9 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             "AQUA_source": self.source,
             "AQUA_catalog": self.catalog,
             "AQUA_version": aqua_version,
+            **self.kwargs,
         }
-        for kwarg in self.kwargs:
-            info_metadata[f"AQUA_{kwarg}"] = str(self.kwargs[kwarg])
-
-        data = set_attrs(data, info_metadata)
+        data = self._set_metadata(data, info_metadata)
 
         return data
 

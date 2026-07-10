@@ -79,7 +79,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             kwargs: Additional keyword arguments forwarded to the intake catalog
                 source entry.
         """
-        Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
+        super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
     def retrieve_plain(self, startdate: str = None):
@@ -137,6 +137,20 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             startdate=startdate,
             enddate=enddate,
         )
+
+        data = self.log_history(data)
+
+        # Add info metadata in each dataset
+        info_metadata = {
+            "AQUA_model": self.model,
+            "AQUA_exp": self.exp,
+            "AQUA_source": self.source,
+            "AQUA_catalog": self.catalog,
+            "AQUA_version": aqua_version,
+            **self.kwargs,
+        }
+
+        data = self._set_metadata(data, info_metadata)
 
         return data
 

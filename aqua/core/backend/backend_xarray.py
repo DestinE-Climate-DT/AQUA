@@ -82,13 +82,22 @@ class BackendXarray(Backend):
             enddate=enddate,
         )
 
+        # add history
+        data = self.log_history(data)
+
+        # Add info metadata in each dataset
+        info_metadata = {
+            "AQUA_version": aqua_version,
+        }
+        data = self._set_metadata(data, info_metadata)
+
         return data
 
     def log_history(self, data: xr.Dataset) -> xr.Dataset:
         """
         Log a message in the dataset's history attribute.
         """
-        return log_history(data, f"Retrieved from {self.path} using AQUA v{aqua_version.__version__} with native xarray")
+        return log_history(data, f"Retrieved from {self.path} using AQUA v{aqua_version} with native xarray")
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         return super()._seldate(data=data, startdate=startdate, enddate=enddate)
