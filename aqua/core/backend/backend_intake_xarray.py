@@ -186,7 +186,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             enddate=enddate,
         )
 
-        data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using intake-xarray")
+        data = self.log_history(data)
 
         # Add info metadata in each dataset
         info_metadata = {
@@ -202,6 +202,16 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         data = set_attrs(data, info_metadata)
 
         return data
+
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Log a message in the dataset's history attribute.
+        """
+        return log_history(
+            data,
+            f"Retrieved from {self.catalog} {self.model} {self.exp} {self.source} "
+            f"using AQUA v{aqua_version} with IntakeXarray",
+        )
 
     def _filter_netcdf_files(self, esmcat, filter_key="year", startdate=None, enddate=None):
         """

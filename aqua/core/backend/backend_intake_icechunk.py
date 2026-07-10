@@ -4,6 +4,8 @@ import xarray as xr
 
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
+from aqua.core.logger import log_history
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
@@ -137,3 +139,13 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
         )
 
         return data
+
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Log a message in the dataset's history attribute.
+        """
+        return log_history(
+            data,
+            f"Retrieved from {self.catalog} {self.model} {self.exp} {self.source} "
+            f"using AQUA v{aqua_version} with IntakeIcechunk",
+        )

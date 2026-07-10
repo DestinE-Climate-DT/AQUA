@@ -37,12 +37,16 @@ class Backend(ABC):
         level_coord: str = None,
         startdate: str = None,
         enddate: str = None,
-    ):
+    ) -> xr.Dataset:
         """Open data, apply filters, return xr.Dataset."""
 
     @abstractmethod
-    def retrieve_plain(self, startdate: str = None):
+    def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
         """Open minimal data to fetch the Regridder init."""
+
+    @abstractmethod
+    def log_history(self, data: xr.Dataset, message: str) -> xr.Dataset:
+        """Log a message in the dataset's history attribute."""
 
     def _fixer_and_datamodel(self, data: xr.Dataset, var: str | list = None) -> xr.Dataset:
         """

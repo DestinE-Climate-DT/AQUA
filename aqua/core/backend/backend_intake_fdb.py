@@ -1,8 +1,12 @@
 """Backend realization using the intake 'gsv' driver (FDB/GSV) for data handling."""
 
+import xarray as xr
+
+import aqua.core.version as aqua_version
 from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
+from aqua.core.logger import log_history
 from aqua.core.util import to_list
 
 from .backend import Backend
@@ -104,7 +108,10 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         # default list of variables (paramids) available in this source, read from catalog metadata
         self.fdb_var = to_list(self.esmcat.metadata.get("variables"))
 
-    def retrieve_plain(self, startdate: str = None):
+    def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
+        """
+        Retrieve minimal data from the catalog to initialize the Regridder.
+        """
         # get the first variable available from metadata in the FDB catalog
         loadvar = self._resolve_loadvar(var=None)[0]
 
@@ -126,7 +133,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         level_coord: str = None,
         startdate: str = None,
         enddate: str = None,
-    ):
+    ) -> xr.Dataset:
         """
         Retrieve data from FDB/GSV as a lazy (dask-backed) xarray.Dataset.
 
@@ -169,7 +176,19 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         # self._postprocess_data does not re-apply. Only fixer and data model are applied
         data = self._fixer_and_datamodel(data, var=var)
 
+        data = self.log_history(data)
+
         return data
+
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Log a message in the dataset's history attribute.
+        """
+        return log_history(
+            data,
+            f"Retrieved from {self.catalog} {self.model} {self.exp} {self.source} "
+            f"using AQUA v{aqua_version} with IntakeFDB with engine={self.engine}",
+        )
 
     def _resolve_loadvar(self, var: str | list = None):
         """
