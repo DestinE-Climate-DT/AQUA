@@ -13,7 +13,10 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
+from aqua.core.logger import log_history
+from aqua.core.reader.reader_utils import set_attrs
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
@@ -182,6 +185,21 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             startdate=startdate,
             enddate=enddate,
         )
+
+        data = log_history(data, f"Retrieved from {self.model}_{self.exp}_{self.source} using intake-xarray")
+
+        # Add info metadata in each dataset
+        info_metadata = {
+            "AQUA_model": self.model,
+            "AQUA_exp": self.exp,
+            "AQUA_source": self.source,
+            "AQUA_catalog": self.catalog,
+            "AQUA_version": aqua_version,
+        }
+        for kwarg in self.kwargs:
+            info_metadata[f"AQUA_{kwarg}"] = str(self.kwargs[kwarg])
+
+        data = set_attrs(data, info_metadata)
 
         return data
 
