@@ -19,7 +19,7 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import fix_calendar, load_multi_yaml, set_attrs
+from aqua.core.util import load_multi_yaml, set_attrs
 
 from .trender import Trender
 
@@ -377,16 +377,6 @@ class Reader:
             enddate = self.enddate
 
         data = self.backend.retrieve(var=var, level=level, level_coord=level_coord, startdate=startdate, enddate=enddate)
-
-        # Time threatment: we want to ensure that time is always in Gregorian calendar
-        # and to change the default numpy datetime64 resolution to microseconds
-        if "time" in data.coords:
-            # TODO: Check, the commented code is probably not needed
-            # Convert time to datetime64 microsecond resolution by default
-            # if np.issubdtype(data.time.dtype, np.datetime64) and 'time_coder' not in self.esmcat.metadata:
-            #     data['time'] = data.time.astype(f"datetime64[{DEFAULT_TIME_UNIT}]")
-            # Fix the calendar to Gregorian if needed
-            data = fix_calendar(data, loglevel=self.loglevel)
 
         # This links the dataset accessor to this instance of the Reader class
         if isinstance(data, xr.Dataset):

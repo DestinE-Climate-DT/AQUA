@@ -6,7 +6,7 @@ from smmregrid import GridInspector
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
-from aqua.core.util import find_vert_coord, set_attrs, to_list
+from aqua.core.util import find_vert_coord, fix_calendar, set_attrs, to_list
 
 
 class Backend(ABC):
@@ -65,6 +65,11 @@ class Backend(ABC):
         if self.datamodel:
             self.logger.debug("Applying data model")
             data = self.datamodel.apply(data)
+            # Time threatment: we want to ensure that time is always in Gregorian calendar
+            # and to change the default numpy datetime64 resolution to microseconds
+            if "time" in data.coords:
+                # Fix the calendar to Gregorian if needed
+                data = fix_calendar(data, loglevel=self.loglevel)
         return data
 
     def _set_metadata(self, data: xr.Dataset, metadata: dict) -> xr.Dataset:
