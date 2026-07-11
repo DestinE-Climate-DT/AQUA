@@ -1,6 +1,7 @@
 # Derived from the fdb-xarray library
 # https://github.com/koldunovn/fdb-xarray
 
+import copy
 import copyreg
 
 import astropy_healpix
@@ -38,7 +39,13 @@ def rebuild_fdb_zarr_store(config, mars, serialized_axes, extractor_type_str):
         chunking = getattr(Chunking, chunking_str)
         axes.append(AxisDefinition(keys, chunking))
     extractor_type = getattr(ExtractorType, extractor_type_str)
-    builder.add_part(mars, axes, extractor_type)
+    if isinstance(mars, list):
+        for m in mars:
+            builder.add_part(m, axes, extractor_type)
+        if len(mars) > 1:
+            builder.extend_on_axis(0)
+    else:
+        builder.add_part(mars, axes, extractor_type)
     store = builder.build()
 
     # Attach serialization attributes to the rebuilt store as well
@@ -80,8 +87,6 @@ def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
 
 def _build_axes(request, freq, levels, years, start_date=None, end_date=None, chunks=None):
 
-    req = {}
-
     if years is None and (start_date is None or end_date is None):
         years = request["year"]
         if not isinstance(years, (list, tuple, range)):
@@ -91,45 +96,123 @@ def _build_axes(request, freq, levels, years, start_date=None, end_date=None, ch
     if start_date is not None or end_date is not None:
         if start_date is None or end_date is None:
             raise ValueError("provide both start_date and end_date")
-
-        d0 = _mars_date(start_date)
-        d1 = _mars_date(end_date)
-
-        if freq not in ("h", "D"):
-            # recover years from dates. If end_date does not end on 1231, we exclude that year.
-            # TODO allow incomplete years
-            if d1[-4:] != "1231":
-                years = range(int(d0[:4]), int(d1[:4]))
-            else:
-                years = range(int(d0[:4]), int(d1[:4]) + 1)
-
-        iso_start = f"{d0[:4]}-{d0[4:6]}-{d0[6:8]}"
+        ts_start = pd.Timestamp(str(start_date))
+        ts_end = pd.Timestamp(str(end_date))
     else:
-        ys = list(years)
-        d0 = f"{ys[0]}0101"
-        d1 = f"{ys[-1]}1231"
-        iso_start = f"{ys[0]}-01-01"
+        ys = sorted(list(int(y) for y in years))
+        ts_start = pd.Timestamp(f"{ys[0]}-01-01T00:00:00")
+        ts_end = pd.Timestamp(f"{ys[-1]}-12-31T23:00:00")
+
+    parts = []
 
     if freq == "h":
-        req["date"] = f"{d0}/to/{d1}/by/1"
-        req["time"] = "0000/to/2300/by/1"
+        if ts_start == ts_end:
+            parts.append({
+                "date": ts_start.strftime("%Y%m%d"),
+                "time": f"{ts_start.hour:02d}00"
+            })
+        else:
+            day_start = ts_start.floor("D")
+            day_end = ts_end.floor("D")
+
+            if day_start == day_end:
+                parts.append({
+                    "date": ts_start.strftime("%Y%m%d"),
+                    "time": (
+                        f"{ts_start.hour:02d}00/to/{ts_end.hour:02d}00/by/1"
+                        if ts_start.hour != ts_end.hour
+                        else f"{ts_start.hour:02d}00"
+                    )
+                })
+            else:
+                # First day partial part
+                if ts_start.hour > 0:
+                    parts.append({
+                        "date": ts_start.strftime("%Y%m%d"),
+                        "time": f"{ts_start.hour:02d}00/to/2300/by/1"
+                    })
+                    day_start_full = day_start + pd.Timedelta(days=1)
+                else:
+                    day_start_full = day_start
+
+                # Last day partial part
+                if ts_end.hour < 23:
+                    day_end_full = day_end - pd.Timedelta(days=1)
+                    end_part = {
+                        "date": ts_end.strftime("%Y%m%d"),
+                        "time": f"0000/to/{ts_end.hour:02d}00/by/1"
+                    }
+                else:
+                    day_end_full = day_end
+                    end_part = None
+
+                # Mid-range full days
+                if day_start_full <= day_end_full:
+                    if day_start_full == day_end_full:
+                        date_val = day_start_full.strftime("%Y%m%d")
+                    else:
+                        date_val = f"{day_start_full.strftime('%Y%m%d')}/to/{day_end_full.strftime('%Y%m%d')}/by/1"
+                    parts.append({
+                        "date": date_val,
+                        "time": "0000/to/2300/by/1"
+                    })
+
+                if end_part is not None:
+                    parts.append(end_part)
+
         time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
         pd_freq = "1h"
-        start = iso_start
+        start = ts_start.isoformat()
+
     elif freq == "D":
-        # Daily data still uses a time=0000 key with merged (date,time) axis.
-        req["date"] = f"{d0}/to/{d1}/by/1"
-        req["time"] = "0000"
+        if ts_start.date() == ts_end.date():
+            date_val = ts_start.strftime("%Y%m%d")
+        else:
+            date_val = f"{ts_start.strftime('%Y%m%d')}/to/{ts_end.strftime('%Y%m%d')}/by/1"
+
+        parts.append({
+            "date": date_val,
+            "time": request.get("time", "0000")
+        })
         time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
         pd_freq = "1D"
-        start = iso_start
+        start = ts_start.strftime("%Y-%m-%d")
+
     elif freq == "MS":
-        years = list(years)
-        req["year"] = "/".join(str(y) for y in years)
-        req["month"] = "1/2/3/4/5/6/7/8/9/10/11/12"
+        months_range = pd.date_range(start=ts_start, end=ts_end, freq="MS")
+
+        from collections import defaultdict
+        year_months = defaultdict(list)
+        for dt in months_range:
+            year_months[dt.year].append(dt.month)
+
+        groups = []
+        current_months = None
+        current_years = []
+
+        for year in sorted(year_months.keys()):
+            months = tuple(sorted(year_months[year]))
+            if current_months is None:
+                current_months = months
+                current_years = [year]
+            elif months == current_months:
+                current_years.append(year)
+            else:
+                groups.append((current_years, current_months))
+                current_months = months
+                current_years = [year]
+        if current_years:
+            groups.append((current_years, current_months))
+
+        for years_list, months_tuple in groups:
+            parts.append({
+                "year": "/".join(str(y) for y in years_list) if len(years_list) > 1 else str(years_list[0]),
+                "month": "/".join(str(m) for m in months_tuple)
+            })
+
         time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
         pd_freq = "MS"
-        start = iso_start
+        start = ts_start.strftime("%Y-%m-%d")
     else:
         raise ValueError(f"Unknown freq {freq!r}")
 
@@ -140,14 +223,24 @@ def _build_axes(request, freq, levels, years, start_date=None, end_date=None, ch
         else:
             level_axes = [AxisDefinition(["levelist"], Chunking.NONE)]
 
-    request.update(req)
-
     axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
 
-    # Create mars request as a string
-    mars = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in request.items())
+    # Create list of mars requests
+    mars_list = []
+    for part in parts:
+        req_copy = copy.deepcopy(request)
+        req_copy.update(part)
+        if freq in ("h", "D"):
+            req_copy.pop("year", None)
+            req_copy.pop("month", None)
+        elif freq == "MS":
+            req_copy.pop("date", None)
+            req_copy.pop("time", None)
 
-    return mars, axes, pd_freq, start
+        m_str = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in req_copy.items())
+        mars_list.append(m_str)
+
+    return mars_list, axes, pd_freq, start
 
 
 def to_dataset(
@@ -350,16 +443,19 @@ def open_z3fdb(
             enddate = data_end_date
 
     # print("Calling with ", freq, levels, years, startdate, enddate )
-    mars, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate, chunks)
+    mars_list, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate, chunks)
 
     # Create zarr store
     builder = SimpleStoreBuilder(config)
-    builder.add_part(mars, axes, ExtractorType.GRIB)
+    for mars in mars_list:
+        builder.add_part(mars, axes, ExtractorType.GRIB)
+    if len(mars_list) > 1:
+        builder.extend_on_axis(0)
     store = builder.build()
 
     # Attach serialization attributes for pickling/Dask support
     store._config = config
-    store._mars = mars
+    store._mars = mars_list
     store._serialized_axes = [(axis.keys, axis.chunking.name) for axis in axes]
     store._extractor_type_str = ExtractorType.GRIB.name
 
@@ -377,7 +473,7 @@ def open_z3fdb(
 
     ds.attrs.update(
         {
-            "mars_request": mars,
+            "mars_request": "; ".join(mars_list) if len(mars_list) > 1 else mars_list[0],
         }
     )
 
