@@ -459,10 +459,17 @@ def open_z3fdb(
     if not isinstance(variables, (list, tuple, range)):
         variables = [variables]
 
+    levelist = request.get("levelist")
     if levels:
         request["levelist"] = levels
     else:
-        levels = request.get("levelist", None)
+        levels = levelist
+
+    if not level_values:
+        level_values = levels
+
+    if level_values and levelist:
+        level_values = [level_values[levelist.index(l)] for l in levels]
 
     # Set level units based on level type
     levtype = request.get("levtype", None)
@@ -473,9 +480,6 @@ def open_z3fdb(
         levunits = "m"
     else:
         levunits = None
-
-    if not level_values:
-        level_values = levels
 
     # if years is not defined and startdate and enddate are not defined
     # then we use data_start_date to define startdate
