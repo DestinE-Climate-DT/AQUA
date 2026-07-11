@@ -79,6 +79,11 @@ class Z3FDBDatasetReader(BaseReader):
         if not data.startdate and data.bridge_start_date and data.bridge_start_date != "complete":
             data.data_start_date = data.bridge_start_date
 
+        if "source_grid_name" in data.metadata:
+            grid = data.metadata.pop("source_grid_name")
+        else:
+            grid = None
+
         return open_z3fdb(
             data.request,
             startdate=data.startdate,
@@ -91,4 +96,5 @@ class Z3FDBDatasetReader(BaseReader):
             data_end_date=data.data_end_date,
             chunks=data.chunks,
             level_values=data.level_values,
+            grid=grid
         )

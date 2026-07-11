@@ -349,29 +349,31 @@ def add_healpix_coordinates(ds):
     return ds
 
 
-def add_coordinates(ds, levunits=None):
+def add_lonlat_coordinates(ds):
+    """Add coordinates for lonlat grids."""
+    # TODO: Implement lonlat coordinates addition
+    return ds
+
+
+def add_coordinates(ds, levunits=None, grid_type=None):
     """Add coordinates based on grid type."""
-
-    if "cell" in ds.dims:
-        is_healpix = True
-    else:
-        is_healpix = False
-
-    if is_healpix:
-        ncell = ds.sizes["cell"]
-        is_healpix = (
-            ncell % 12 == 0 and (ncell // 12).bit_length() - 1 == np.log2(ncell // 12) and (ncell // 12).bit_length() % 2 == 1
-        )
-
-    if not is_healpix:
-        #raise NotImplementedError("Only HEALPix grids are supported")
-        print("Only HEALPix grids are supported")
-        return ds
-
     if levunits:
         ds.level.attrs["units"] = levunits
 
-    return add_healpix_coordinates(ds)
+    if grid_type == "healpix_unstructured":
+        grid_type = "unknown"
+        if "cell" in ds.dims:
+            ncell = ds.sizes["cell"]
+            nside = int(np.round(np.sqrt(ncell / 12)))
+            if 12 * nside**2 == ncell and (nside & (nside - 1)) == 0:
+                grid_type = "healpix"
+
+    if grid_type == "healpix":
+        return add_healpix_coordinates(ds)
+    elif grid_type == "lonlat":
+        return add_lonlat_coordinates(ds)
+
+    return ds
 
 
 def open_z3fdb(
@@ -387,6 +389,7 @@ def open_z3fdb(
     freq="MS",
     chunks=None,
     level_values=None,
+    grid=None,
 ):
     """Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
 
@@ -410,12 +413,18 @@ def open_z3fdb(
             The value of the chunk size for the level axis is ignored.
             The time axis is always chunked as single values. Defaults to None.
         level_values (list, optional): List of physical values of levels. Defaults to None.
+        grid (str, optional): Name of the grid. Defaults to None.
 
     Returns:
         xarray.Dataset: Lazy (dask-backed) xr.Dataset.
     """
 
     _check_availability()
+
+    if grid and "lon-lat" in grid:
+        grid_type = "lonlat"
+    else:
+        grid_type = "healpix_unstructured"
 
     if variables:
         request["param"] = variables
@@ -452,7 +461,6 @@ def open_z3fdb(
         if enddate is None:
             enddate = data_end_date
 
-    # print("Calling with ", freq, levels, years, startdate, enddate )
     mars_list, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate, chunks)
 
     # Create zarr store
@@ -486,7 +494,7 @@ def open_z3fdb(
         levels=level_values,
     )
 
-    ds = add_coordinates(ds, levunits)
+    ds = add_coordinates(ds, levunits=levunits, grid_type=grid_type)
 
     ds.attrs.update(
         {
