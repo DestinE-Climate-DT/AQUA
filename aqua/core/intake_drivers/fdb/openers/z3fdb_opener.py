@@ -351,7 +351,32 @@ def add_healpix_coordinates(ds):
 
 def add_lonlat_coordinates(ds):
     """Add coordinates for lonlat grids."""
-    # TODO: Implement lonlat coordinates addition
+
+    if "cell" not in ds.dims:
+        return ds
+
+    # Guess dimensions from the idea that
+    # 1) the number of lons is even,
+    # 2) the number of lats is approximately half of the number of lons
+
+    ncell = ds.sizes["cell"]
+    nlon = int(np.sqrt(ncell/2))*2
+    nlat = int(ncell/nlon)
+    if nlon * nlat != ncell:
+        return ds  # abort and do not add coordinates
+
+    lon_vals = np.linspace(0, 360, nlon, endpoint=False)
+    lat_vals = np.linspace(90, -90, nlat)
+
+    index = pd.MultiIndex.from_product([lat_vals, lon_vals], names=["lat", "lon"])
+    mindex_coords = xr.Coordinates.from_pandas_multiindex(index, "cell")
+    ds = ds.assign_coords(mindex_coords)
+    ds = ds.unstack("cell")
+
+    # Add attributes to coordinates
+    ds.lon.attrs.update({"units": "degrees_east", "long_name": "longitude"})
+    ds.lat.attrs.update({"units": "degrees_north", "long_name": "latitude"})
+
     return ds
 
 
