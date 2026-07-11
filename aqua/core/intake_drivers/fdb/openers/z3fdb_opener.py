@@ -275,7 +275,7 @@ def open_z3fdb(
     request,
     variables=None,
     levels=None,
-    config="./config.yaml",
+    config=None,
     years=None,
     startdate=None,
     enddate=None,

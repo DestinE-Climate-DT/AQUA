@@ -54,25 +54,25 @@ class Z3FDBDatasetReader(BaseReader):
 
         # Establish wehere to find the config.yaml file in this order:
         # 1. if config_fdb passed as a kwarg use that.
-        # 2. if data.metadata has a key fdb_home_bridge use that.
-        # 3. if FDB_HOME_BRIDGE set as an environment variable use that.
+        # 2. if data.metadata has a key fdb_home_bridge or fdb_path_bridge use that.
 
         config_fdb = None
         if data.config_fdb:
             config_fdb = data.config_fdb
-        elif "fdb_home_bridge" in data.metadata and (
-            data.bridge_start_date == "complete" or data.bridge_end_date == "complete"
-        ):
+        elif "fdb_home_bridge" in data.metadata:
             config_fdb = data.metadata.pop("fdb_home_bridge")
             config_fdb = os.path.join(config_fdb, "etc/fdb/config.yaml")
-        elif "fdb_path_bridge" in data.metadata and (
-            data.bridge_start_date == "complete" or data.bridge_end_date == "complete"
-        ):
+        elif "fdb_path_bridge" in data.metadata:
             config_fdb = data.metadata.pop("fdb_path_bridge")
         else:
-            raise ValueError(
-                "Could not find FDB config.yaml. Please pass it with keyword config_fdb or set it in the catalog metadata."
-            )
+            config_fdb = None  # No config defined. In theory FDB will try to use env variables
+
+        # With z3fdb we can apparently only read data from the bridge
+        if not data.enddate and data.bridge_end_date and data.bridge_end_date != "complete":
+            data.data_end_date = data.bridge_end_date
+
+        if not data.startdate and data.bridge_start_date and data.bridge_start_date != "complete":
+            data.data_start_date = data.bridge_start_date
 
         return open_z3fdb(
             data.request,
