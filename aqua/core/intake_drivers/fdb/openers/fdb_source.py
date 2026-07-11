@@ -85,15 +85,6 @@ class FDBSource(FDBTimeMixin):
         self.fdbhome_bridge = None
         self.fdbpath_bridge = None
 
-        if config_fdb:
-            if metadata is None:
-                metadata = {}
-            metadata["fdb_path"] = config_fdb
-            metadata["fdb_path_bridge"] = config_fdb
-            self.fdbhome_bridge = config_fdb
-            self.fdbpath_bridge = config_fdb
-            self.fdbpath = config_fdb
-
         self.engine = engine
         self.dummy_run = engine is None
 

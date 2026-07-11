@@ -107,27 +107,35 @@ class GSVSource(FDBSource, FDBDatesMixin):
 
     def _read_metadata(self, metadata):
         """Extract the FDB/eccodes/level paths from the catalog metadata."""
-        if metadata:
-            self.fdbhome = metadata.get("fdb_home", None)
-            self.fdbpath = metadata.get("fdb_path", None)
-            self.fdbhome_bridge = metadata.get("fdb_home_bridge", None)
-            self.fdbpath_bridge = metadata.get("fdb_path_bridge", None)
-            if self.switch_eccodes:
-                self.eccodes_path = metadata.get("eccodes_path", None)
-                self.logger.info("ECCODES switching to %s", self.eccodes_path)
-            else:
-                self.logger.debug("ECCODES switching is off")
-                self.eccodes_path = None
-            self.levels = metadata.get("levels", None)
-            self.fdb_info_file = metadata.get("fdb_info_file", None)
+        if metadata is None:
+            metadata = {}
+
+        config_is_path = False
+        if self.config_fdb:
+            config_is_path = self.config_fdb.endswith((".yaml", ".yml"))
+
+        self.fdbhome = (
+            self.config_fdb if (self.config_fdb and not config_is_path) else metadata.get("fdb_home", None)
+        )
+        self.fdbpath = (
+            self.config_fdb if (self.config_fdb and config_is_path) else metadata.get("fdb_path", None)
+        )
+        self.fdbhome_bridge = (
+            self.config_fdb if (self.config_fdb and not config_is_path) else metadata.get("fdb_home_bridge", None)
+        )
+        self.fdbpath_bridge = (
+            self.config_fdb if (self.config_fdb and config_is_path) else metadata.get("fdb_path_bridge", None)
+        )
+
+        if self.switch_eccodes:
+            self.eccodes_path = metadata.get("eccodes_path", None)
+            self.logger.info("ECCODES switching to %s", self.eccodes_path)
         else:
-            self.fdbpath = None
-            self.fdbhome = None
-            self.fdbhome_bridge = None
-            self.fdbpath_bridge = None
-            self.fdb_info_file = None
+            self.logger.debug("ECCODES switching is off")
             self.eccodes_path = None
-            self.levels = None
+
+        self.levels = metadata.get("levels", None)
+        self.fdb_info_file = metadata.get("fdb_info_file", None)
 
     def _post_init(self):
         # GSV/FDB-specific validation of the configured FDB paths (needs chk_type from the plan)
