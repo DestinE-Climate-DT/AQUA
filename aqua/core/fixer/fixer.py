@@ -234,12 +234,6 @@ class Fixer:
 
                 # adjust units
                 if tgt_units:
-                    self.logger.warning(
-                        "Variable %s has fixer target units %s, but source units are %s",
-                        var,
-                        tgt_units,
-                        data[source].attrs.get("units", None),
-                    )
                     if tgt_units.count("{"):  # WHAT IS THIS ABOUT?
                         tgt_units = self.fixes_dictionary["defaults"]["units"]["shortname"][
                             tgt_units.replace("{", "").replace("}", "")
