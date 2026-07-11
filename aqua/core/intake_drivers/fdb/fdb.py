@@ -33,6 +33,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
         loglevel="WARNING",
         engine=None,
         databridge=None,
+        config_fdb=None,
         **kwargs,
     ):
 
@@ -61,6 +62,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
                 loglevel=loglevel,
                 engine=engine,
                 databridge=databridge,
+                config_fdb=config_fdb,
                 **kwargs,
             )
             reader = PolytopeDatasetReader(data, **kwargs)
@@ -85,6 +87,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
                 loglevel=loglevel,
                 engine=engine,
                 databridge=databridge,
+                config_fdb=config_fdb,
                 **kwargs,
             )
             reader = Z3FDBDatasetReader(data, **kwargs)
@@ -113,6 +116,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
                 loglevel=loglevel,
                 engine=engine,
                 databridge=databridge,
+                config_fdb=config_fdb,
                 **kwargs,
             )
             reader = GSVDatasetReader(data, **kwargs)

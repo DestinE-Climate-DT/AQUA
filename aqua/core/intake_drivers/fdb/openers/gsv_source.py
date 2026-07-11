@@ -184,8 +184,8 @@ class GSVSource(FDBSource, FDBDatesMixin):
                 os.environ["FDB_HOME"] = self.fdbhome_bridge
                 self.logger.debug("Access is BRIDGE and FDB_HOME is set to %s", self.fdbhome_bridge)
             if self.fdbpath_bridge:
-                os.environ["FDB5_CONFIG_FILE"] = self.fdbpath_bridge
-                self.logger.debug("Access is BRIDGE and FDB5_CONFIG_FILE is set to %s", self.fdbpath_bridge)
+                os.environ["FDB_CONFIG_FILE"] = self.fdbpath_bridge  # The old env var FDB5_CONFG_FILE is now deprecated
+                self.logger.debug("Access is BRIDGE and FDB_CONFIG_FILE is set to %s", self.fdbpath_bridge)
             fstream_iterator = True
         else:
             # HPC FDB type
@@ -193,8 +193,8 @@ class GSVSource(FDBSource, FDBDatesMixin):
                 os.environ["FDB_HOME"] = self.fdbhome
                 self.logger.debug("Access is HPC and FDB_HOME is set to %s", self.fdbhome)
             if self.fdbpath:  # if fdbpath provided, use it, since we are creating a new gsv
-                os.environ["FDB5_CONFIG_FILE"] = self.fdbpath
-                self.logger.debug("Access is HPC and FDB5_CONFIG_FILE is set to %s", self.fdbpath)
+                os.environ["FDB_CONFIG_FILE"] = self.fdbpath  # The old env var FDB5_CONFG_FILE is now deprecated
+                self.logger.debug("Access is HPC and FDB_CONFIG_FILE is set to %s", self.fdbpath)
             if self.hpc_expver:
                 request["expver"] = self.hpc_expver
 

@@ -58,16 +58,20 @@ class Z3FDBDatasetReader(BaseReader):
         # 3. if FDB_HOME_BRIDGE set as an environment variable use that.
 
         config_fdb = None
-        if "config_fdb" in kwargs:
-            config_fdb = kwargs.pop("config_fdb")
+        if data.config_fdb:
+            config_fdb = data.config_fdb
         elif "fdb_home_bridge" in data.metadata and (
             data.bridge_start_date == "complete" or data.bridge_end_date == "complete"
         ):
             config_fdb = data.metadata.pop("fdb_home_bridge")
-            config_fdb = config_fdb if config_fdb.endswith("yaml") else os.path.join(config_fdb, "etc/fdb/config.yaml")
+            config_fdb = os.path.join(config_fdb, "etc/fdb/config.yaml")
+        elif "fdb_path_bridge" in data.metadata and (
+            data.bridge_start_date == "complete" or data.bridge_end_date == "complete"
+        ):
+            config_fdb = data.metadata.pop("fdb_path_bridge")
         else:
             raise ValueError(
-                "Could not find FDB config.yaml. Please pass it as a kwarg or set the key fdb_home_bridge in the catalog."
+                "Could not find FDB config.yaml. Please pass it with keyword config_fdb or set it in the catalog metadata."
             )
 
         return open_z3fdb(
