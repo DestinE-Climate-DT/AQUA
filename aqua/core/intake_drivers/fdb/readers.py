@@ -59,13 +59,18 @@ class Z3FDBDatasetReader(BaseReader):
         config_fdb = None
         if data.config_fdb:
             config_fdb = data.config_fdb
-        elif "fdb_home_bridge" in data.metadata:
-            config_fdb = data.metadata.pop("fdb_home_bridge")
-            config_fdb = os.path.join(config_fdb, "etc/fdb/config.yaml")
-        elif "fdb_path_bridge" in data.metadata:
-            config_fdb = data.metadata.pop("fdb_path_bridge")
+        elif data.bridge_start_date or data.bridge_end_date:
+            if "fdb_home_bridge" in data.metadata:
+                config_fdb = data.metadata.pop("fdb_home_bridge")
+                config_fdb = os.path.join(config_fdb, "etc/fdb/config.yaml")
+            elif "fdb_path_bridge" in data.metadata:
+                config_fdb = data.metadata.pop("fdb_path_bridge")
         else:
-            config_fdb = None  # No config defined. In theory FDB will try to use env variables
+            if "fdb_home" in data.metadata:
+                config_fdb = data.metadata.pop("fdb_home")
+                config_fdb = os.path.join(config_fdb, "etc/fdb/config.yaml")
+            elif "fdb_path" in data.metadata:
+                config_fdb = data.metadata.pop("fdb_path")
 
         # With z3fdb we can apparently only read data from the bridge
         if not data.enddate and data.bridge_end_date and data.bridge_end_date != "complete":
