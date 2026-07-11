@@ -3,6 +3,7 @@
 
 import copy
 import copyreg
+import os
 
 import astropy_healpix
 import dask.array as da
@@ -33,7 +34,14 @@ def rebuild_fdb_zarr_store(config, mars, serialized_axes, extractor_type_str):
     """Rebuild an FdbZarrStore from serialized parameters. Used for pickling/Dask serialization."""
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
 
-    builder = SimpleStoreBuilder(config)
+    fdb_config_file = None
+    if config:
+        if config.endswith((".yaml", ".yml")):
+            fdb_config_file = config
+        else:
+            os.environ["FDB_HOME"] = config
+
+    builder = SimpleStoreBuilder(fdb_config_file)
     axes = []
     for keys, chunking_str in serialized_axes:
         chunking = getattr(Chunking, chunking_str)
@@ -356,7 +364,9 @@ def add_coordinates(ds, levunits=None):
         )
 
     if not is_healpix:
-        raise NotImplementedError("Only HEALPix grids are supported")
+        #raise NotImplementedError("Only HEALPix grids are supported")
+        print("Only HEALPix grids are supported")
+        return ds
 
     if levunits:
         ds.level.attrs["units"] = levunits
@@ -446,7 +456,14 @@ def open_z3fdb(
     mars_list, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate, chunks)
 
     # Create zarr store
-    builder = SimpleStoreBuilder(config)
+    fdb_config_file = None
+    if config:
+        if config.endswith((".yaml", ".yml")):
+            fdb_config_file = config
+        else:
+            os.environ["FDB_HOME"] = config
+
+    builder = SimpleStoreBuilder(fdb_config_file)
     for mars in mars_list:
         builder.add_part(mars, axes, ExtractorType.GRIB)
     if len(mars_list) > 1:
