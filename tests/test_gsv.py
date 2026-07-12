@@ -438,6 +438,13 @@ def test_fdb_home_bridge_logs(capsys):
     source._get_partition(ii=0)
 
 
+CMIP6_MARS_REQ = (
+    "class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,"
+    "model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,"
+    "stream=clte,date=19900101,time=0000,param=164,levtype=sfc"
+)
+
+
 def test_z3fdb_store_pickling() -> None:
     """Test FdbZarrStore custom pickling and unpickling."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import z3fdb_available
@@ -447,16 +454,12 @@ def test_z3fdb_store_pickling() -> None:
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
     builder = SimpleStoreBuilder(None)
     axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
-    builder.add_part(
-        "class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,stream=clte,date=19900101,time=0000,param=164,levtype=sfc",
-        axes,
-        ExtractorType.GRIB
-    )
+    builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
     store = builder.build()
 
     # Attach serialization attributes to verify pickling
     store._config = None
-    store._mars = ["class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,stream=clte,date=19900101,time=0000,param=164,levtype=sfc"]
+    store._mars = [CMIP6_MARS_REQ]
     store._serialized_axes = [(axis.keys, axis.chunking.name) for axis in axes]
     store._extractor_type_str = ExtractorType.GRIB.name
 
@@ -475,7 +478,7 @@ def test_z3fdb_rebuild_parameters() -> None:
     # Test with mars as string
     store1 = rebuild_fdb_zarr_store(
         config=None,
-        mars="class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,stream=clte,date=19900101,time=0000,param=164,levtype=sfc",
+        mars=CMIP6_MARS_REQ,
         serialized_axes=serialized_axes,
         extractor_type_str="GRIB"
     )
@@ -484,7 +487,7 @@ def test_z3fdb_rebuild_parameters() -> None:
     # Test with config path and mars as list
     store2 = rebuild_fdb_zarr_store(
         config=FDB_HOME,
-        mars=["class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,stream=clte,date=19900101,time=0000,param=164,levtype=sfc"],
+        mars=[CMIP6_MARS_REQ],
         serialized_axes=serialized_axes,
         extractor_type_str="GRIB"
     )
@@ -500,11 +503,7 @@ def test_z3fdb_missing_attrs_raise() -> None:
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
     builder = SimpleStoreBuilder(None)
     axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
-    builder.add_part(
-        "class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,stream=clte,date=19900101,time=0000,param=164,levtype=sfc",
-        axes,
-        ExtractorType.GRIB
-    )
+    builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
     store = builder.build()
 
     with pytest.raises(TypeError, match="Cannot pickle FdbZarrStore: missing serialization attributes"):
@@ -547,10 +546,21 @@ def test_z3fdb_reader_before_bridge_period() -> None:
     }
     data = Z3FDB(
         request={
-            "class": "d1", "dataset": "climate-dt", "activity": "CMIP6", "experiment": "hist",
-            "generation": 1, "model": "IFS-NEMO", "realization": 1, "resolution": "standard",
-            "expver": "a0h3", "type": "fc", "stream": "clte", "date": 19900101, "time": "0000",
-            "param": 164, "levtype": "sfc"
+            "class": "d1",
+            "dataset": "climate-dt",
+            "activity": "CMIP6",
+            "experiment": "hist",
+            "generation": 1,
+            "model": "IFS-NEMO",
+            "realization": 1,
+            "resolution": "standard",
+            "expver": "a0h3",
+            "type": "fc",
+            "stream": "clte",
+            "date": 19900101,
+            "time": "0000",
+            "param": 164,
+            "levtype": "sfc",
         },
         metadata=metadata,
         data_start_date="19900101T0000",

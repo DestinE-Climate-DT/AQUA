@@ -1,7 +1,7 @@
 import os
+
 import pandas as pd
 import xarray as xr
-
 from intake import BaseReader
 
 from .datatypes import GSV, Z3FDB, Polytope

@@ -101,7 +101,7 @@ def get_eccodes_attr(sn, loglevel="WARNING"):
     logger = log_configure(log_level=loglevel, log_name="eccodes")
 
     # If sn is an integer or a string that can be converted to an integer, treat it as a paramId
-    
+
     grib = None
     if isinstance(sn, int) or (isinstance(sn, str) and sn.isdigit()):
         logger.debug("Input is a paramId: %s", sn)
