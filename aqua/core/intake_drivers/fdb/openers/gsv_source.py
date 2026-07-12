@@ -114,12 +114,8 @@ class GSVSource(FDBSource, FDBDatesMixin):
         if self.config_fdb:
             config_is_path = self.config_fdb.endswith((".yaml", ".yml"))
 
-        self.fdbhome = (
-            self.config_fdb if (self.config_fdb and not config_is_path) else metadata.get("fdb_home", None)
-        )
-        self.fdbpath = (
-            self.config_fdb if (self.config_fdb and config_is_path) else metadata.get("fdb_path", None)
-        )
+        self.fdbhome = self.config_fdb if (self.config_fdb and not config_is_path) else metadata.get("fdb_home", None)
+        self.fdbpath = self.config_fdb if (self.config_fdb and config_is_path) else metadata.get("fdb_path", None)
         self.fdbhome_bridge = (
             self.config_fdb if (self.config_fdb and not config_is_path) else metadata.get("fdb_home_bridge", None)
         )

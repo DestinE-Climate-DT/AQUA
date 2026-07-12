@@ -115,30 +115,26 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
 
     if freq == "h":
         if ts_start == ts_end:
-            parts.append({
-                "date": ts_start.strftime("%Y%m%d"),
-                "time": f"{ts_start.hour:02d}00"
-            })
+            parts.append({"date": ts_start.strftime("%Y%m%d"), "time": f"{ts_start.hour:02d}00"})
         else:
             day_start = ts_start.floor("D")
             day_end = ts_end.floor("D")
 
             if day_start == day_end:
-                parts.append({
-                    "date": ts_start.strftime("%Y%m%d"),
-                    "time": (
-                        f"{ts_start.hour:02d}00/to/{ts_end.hour:02d}00/by/1"
-                        if ts_start.hour != ts_end.hour
-                        else f"{ts_start.hour:02d}00"
-                    )
-                })
+                parts.append(
+                    {
+                        "date": ts_start.strftime("%Y%m%d"),
+                        "time": (
+                            f"{ts_start.hour:02d}00/to/{ts_end.hour:02d}00/by/1"
+                            if ts_start.hour != ts_end.hour
+                            else f"{ts_start.hour:02d}00"
+                        ),
+                    }
+                )
             else:
                 # First day partial part
                 if ts_start.hour > 0:
-                    parts.append({
-                        "date": ts_start.strftime("%Y%m%d"),
-                        "time": f"{ts_start.hour:02d}00/to/2300/by/1"
-                    })
+                    parts.append({"date": ts_start.strftime("%Y%m%d"), "time": f"{ts_start.hour:02d}00/to/2300/by/1"})
                     day_start_full = day_start + pd.Timedelta(days=1)
                 else:
                     day_start_full = day_start
@@ -146,10 +142,7 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
                 # Last day partial part
                 if ts_end.hour < 23:
                     day_end_full = day_end - pd.Timedelta(days=1)
-                    end_part = {
-                        "date": ts_end.strftime("%Y%m%d"),
-                        "time": f"0000/to/{ts_end.hour:02d}00/by/1"
-                    }
+                    end_part = {"date": ts_end.strftime("%Y%m%d"), "time": f"0000/to/{ts_end.hour:02d}00/by/1"}
                 else:
                     day_end_full = day_end
                     end_part = None
@@ -160,10 +153,7 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
                         date_val = day_start_full.strftime("%Y%m%d")
                     else:
                         date_val = f"{day_start_full.strftime('%Y%m%d')}/to/{day_end_full.strftime('%Y%m%d')}/by/1"
-                    parts.append({
-                        "date": date_val,
-                        "time": "0000/to/2300/by/1"
-                    })
+                    parts.append({"date": date_val, "time": "0000/to/2300/by/1"})
 
                 if end_part is not None:
                     parts.append(end_part)
@@ -177,10 +167,7 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
         else:
             date_val = f"{ts_start.strftime('%Y%m%d')}/to/{ts_end.strftime('%Y%m%d')}/by/1"
 
-        parts.append({
-            "date": date_val,
-            "time": request.get("time", "0000")
-        })
+        parts.append({"date": date_val, "time": request.get("time", "0000")})
         pd_freq = "1D"
         start = ts_start.strftime("%Y-%m-%d")
 
@@ -188,6 +175,7 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
         months_range = pd.date_range(start=ts_start, end=ts_end, freq="MS")
 
         from collections import defaultdict
+
         year_months = defaultdict(list)
         for dt in months_range:
             year_months[dt.year].append(dt.month)
@@ -211,10 +199,12 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
             groups.append((current_years, current_months))
 
         for years_list, months_tuple in groups:
-            parts.append({
-                "year": "/".join(str(y) for y in years_list) if len(years_list) > 1 else str(years_list[0]),
-                "month": "/".join(str(m) for m in months_tuple)
-            })
+            parts.append(
+                {
+                    "year": "/".join(str(y) for y in years_list) if len(years_list) > 1 else str(years_list[0]),
+                    "month": "/".join(str(m) for m in months_tuple),
+                }
+            )
 
         pd_freq = "MS"
         start = ts_start.strftime("%Y-%m-%d")
@@ -368,8 +358,8 @@ def add_lonlat_coordinates(ds):
     # 2) the number of lats is approximately half of the number of lons
 
     ncell = ds.sizes["cell"]
-    nlon = int(np.sqrt(ncell/2))*2
-    nlat = int(ncell/nlon)
+    nlon = int(np.sqrt(ncell / 2)) * 2
+    nlat = int(ncell / nlon)
     if nlon * nlat != ncell:
         return ds  # abort and do not add coordinates
 

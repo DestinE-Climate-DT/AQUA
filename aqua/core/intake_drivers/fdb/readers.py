@@ -98,6 +98,7 @@ class Z3FDBDatasetReader(BaseReader):
         periods = []
 
         if has_bridge:
+
             def get_bridge_date(val, default_val):
                 if val is None or val == "complete":
                     return pd.Timestamp(str(default_val))
@@ -162,7 +163,7 @@ class Z3FDBDatasetReader(BaseReader):
                 data_end_date=p_end_str,
                 chunks=data.chunks,
                 level_values=data.level_values,
-                grid=grid
+                grid=grid,
             )
             datasets.append(ds)
 

@@ -448,10 +448,12 @@ CMIP6_MARS_REQ = (
 def test_z3fdb_store_pickling() -> None:
     """Test FdbZarrStore custom pickling and unpickling."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import z3fdb_available
+
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
+
     builder = SimpleStoreBuilder(None)
     axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
     builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
@@ -471,25 +473,20 @@ def test_z3fdb_store_pickling() -> None:
 def test_z3fdb_rebuild_parameters() -> None:
     """Test rebuild_fdb_zarr_store parameters and path logic."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import rebuild_fdb_zarr_store, z3fdb_available
+
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
     serialized_axes = [(["date", "time"], "SINGLE_VALUE")]
     # Test with mars as string
     store1 = rebuild_fdb_zarr_store(
-        config=None,
-        mars=CMIP6_MARS_REQ,
-        serialized_axes=serialized_axes,
-        extractor_type_str="GRIB"
+        config=None, mars=CMIP6_MARS_REQ, serialized_axes=serialized_axes, extractor_type_str="GRIB"
     )
     assert store1 is not None
 
     # Test with config path and mars as list
     store2 = rebuild_fdb_zarr_store(
-        config=FDB_HOME,
-        mars=[CMIP6_MARS_REQ],
-        serialized_axes=serialized_axes,
-        extractor_type_str="GRIB"
+        config=FDB_HOME, mars=[CMIP6_MARS_REQ], serialized_axes=serialized_axes, extractor_type_str="GRIB"
     )
     assert store2 is not None
 
@@ -497,10 +494,12 @@ def test_z3fdb_rebuild_parameters() -> None:
 def test_z3fdb_missing_attrs_raise() -> None:
     """Test reduce_fdb_zarr_store raises TypeError on missing attrs."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import reduce_fdb_zarr_store, z3fdb_available
+
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
+
     builder = SimpleStoreBuilder(None)
     axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
     builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
@@ -513,6 +512,7 @@ def test_z3fdb_missing_attrs_raise() -> None:
 def test_z3fdb_healpix_unstructured_coordinate_checking() -> None:
     """Test healpix unstructured detection logic."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_coordinates
+
     # ds with cell dimension of 48 (12 * 2^2) -> valid healpix count
     ds_valid = xr.Dataset(coords={"cell": np.arange(48)})
     try:
@@ -530,6 +530,7 @@ def test_z3fdb_healpix_unstructured_coordinate_checking() -> None:
 def test_z3fdb_lonlat_mismatch_aborts() -> None:
     """Test add_lonlat_coordinates aborts on mismatching shape."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_lonlat_coordinates
+
     ds = xr.Dataset(coords={"cell": np.arange(5)})
     ds_out = add_lonlat_coordinates(ds)
     assert ds_out.equals(ds)
@@ -576,4 +577,3 @@ def test_z3fdb_reader_before_bridge_period() -> None:
     reader = Z3FDBDatasetReader(data)
     ds = reader._read(data)
     assert "time" in ds.dims
-
