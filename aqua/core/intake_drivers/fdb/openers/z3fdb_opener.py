@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
+from collections import defaultdict
 
 # Test if z3fdb module is available
 try:
@@ -32,7 +33,6 @@ except ImportError:
 
 def rebuild_fdb_zarr_store(config, mars, serialized_axes, extractor_type_str):
     """Rebuild an FdbZarrStore from serialized parameters. Used for pickling/Dask serialization."""
-    from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
 
     fdb_config_file = None
     if config:
@@ -173,8 +173,6 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
 
     elif freq == "MS":
         months_range = pd.date_range(start=ts_start, end=ts_end, freq="MS")
-
-        from collections import defaultdict
 
         year_months = defaultdict(list)
         for dt in months_range:
