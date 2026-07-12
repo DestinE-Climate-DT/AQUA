@@ -4,6 +4,7 @@
 import copy
 import copyreg
 import os
+from collections import defaultdict
 
 import astropy_healpix
 import dask.array as da
@@ -11,7 +12,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
-from collections import defaultdict
 
 # Test if z3fdb module is available
 try:
