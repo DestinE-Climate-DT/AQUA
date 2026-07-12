@@ -220,10 +220,12 @@ class Fixer:
                         # Already adjust all attributes but not yet units
                         if att == "units":
                             tgt_units = value
-                            # If units are not present and we know what they should be, let's set them
+                            # If units are not present in source let's find them
                             if "units" not in data[source].attrs:
-                                data[source].attrs["units"] = value
-                                self.logger.debug("Setting units for %s: %s", source, value)
+                                att, sn = self._get_variables_grib_attributes(source)
+                                if "units" in att:
+                                    data[source].attrs["units"] = att["units"]
+                                    self.logger.debug("Setting units for %s: %s", source, att["units"])
                         else:
                             data[source].attrs[att] = value
 
