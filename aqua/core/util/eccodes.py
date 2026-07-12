@@ -133,7 +133,7 @@ def get_eccodes_attr(sn, loglevel="WARNING"):
             )
             attributes = _get_attrs_from_shortname(sn, **strategy)
             logger.debug("Attributes for %s are: %s", sn, attributes)
-            if attributes.get("paramId") and int(attributes.get("paramId")) == grib:
+            if grib is None or (attributes.get("paramId") and int(attributes.get("paramId")) == grib):
                 return attributes
         except CodesInternalError as e:
             if strategy["grib_version"] == "GRIB1":
