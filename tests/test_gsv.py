@@ -274,13 +274,13 @@ class TestGsv:
         assert data.tcc.isel(time=15).values.mean() == pytest.approx(65.62109108718757)  # This is from the bridge
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.87973267265382)  # This is from HPC again
 
-    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
-    def test_reader_auto(self, engine) -> None:
+    # The auto option is not implemented for z3fdb
+    def test_reader_auto(self) -> None:
         """
         Reading from a datasource using new operational schema and auto dates
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel, engine="fdb")
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
