@@ -90,23 +90,6 @@ class Z3FDBDatasetReader(BaseReader):
         effective_start = data.startdate if data.startdate is not None else data.data_start_date
         effective_end = data.enddate if data.enddate is not None else data.data_end_date
 
-        if effective_start == "auto" or effective_end == "auto":
-            config_fdb = config_bridge if (data.bridge_start_date or data.bridge_end_date) else config_hpc
-            return open_z3fdb(
-                data.request,
-                startdate=data.startdate,
-                enddate=data.enddate,
-                config=config_fdb,
-                variables=data.var,
-                levels=data.level,
-                freq=data.savefreq,
-                data_start_date=data.data_start_date,
-                data_end_date=data.data_end_date,
-                chunks=data.chunks,
-                level_values=data.level_values,
-                grid=grid
-            )
-
         start_ts = pd.Timestamp(str(effective_start))
         end_ts = pd.Timestamp(str(effective_end))
 

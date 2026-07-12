@@ -93,8 +93,8 @@ def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
     return str(s).replace("-", "")[:8]
 
 
-def _build_axes(request, freq, levels, years, start_date=None, end_date=None, chunks=None):
-
+def _build_mars_requests(request, freq, levels, years, start_date=None, end_date=None):
+    """Build the list of MARS request strings based on start/end dates and frequency."""
     if years is None and (start_date is None or end_date is None):
         years = request["year"]
         if not isinstance(years, (list, tuple, range)):
@@ -168,7 +168,6 @@ def _build_axes(request, freq, levels, years, start_date=None, end_date=None, ch
                 if end_part is not None:
                     parts.append(end_part)
 
-        time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
         pd_freq = "1h"
         start = ts_start.isoformat()
 
@@ -182,7 +181,6 @@ def _build_axes(request, freq, levels, years, start_date=None, end_date=None, ch
             "date": date_val,
             "time": request.get("time", "0000")
         })
-        time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
         pd_freq = "1D"
         start = ts_start.strftime("%Y-%m-%d")
 
@@ -218,20 +216,10 @@ def _build_axes(request, freq, levels, years, start_date=None, end_date=None, ch
                 "month": "/".join(str(m) for m in months_tuple)
             })
 
-        time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
         pd_freq = "MS"
         start = ts_start.strftime("%Y-%m-%d")
     else:
         raise ValueError(f"Unknown freq {freq!r}")
-
-    level_axes = []
-    if levels is not None:
-        if isinstance(chunks, dict) and "level" in chunks:
-            level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
-        else:
-            level_axes = [AxisDefinition(["levelist"], Chunking.NONE)]
-
-    axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
 
     # Create list of mars requests
     mars_list = []
@@ -248,7 +236,27 @@ def _build_axes(request, freq, levels, years, start_date=None, end_date=None, ch
         m_str = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in req_copy.items())
         mars_list.append(m_str)
 
-    return mars_list, axes, pd_freq, start
+    return mars_list, pd_freq, start
+
+
+def _build_zarr_axes(freq, levels, chunks=None):
+    """Build the AxisDefinition objects representing the layout of the virtual Zarr store."""
+    if freq in ("h", "D"):
+        time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
+    elif freq == "MS":
+        time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
+    else:
+        raise ValueError(f"Unknown freq {freq!r}")
+
+    level_axes = []
+    if levels is not None:
+        if isinstance(chunks, dict) and "level" in chunks:
+            level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
+        else:
+            level_axes = [AxisDefinition(["levelist"], Chunking.NONE)]
+
+    axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
+    return axes
 
 
 def to_dataset(
@@ -490,7 +498,8 @@ def open_z3fdb(
         if enddate is None:
             enddate = data_end_date
 
-    mars_list, axes, pd_freq, start = _build_axes(request, freq, levels, years, startdate, enddate, chunks)
+    mars_list, pd_freq, start = _build_mars_requests(request, freq, levels, years, startdate, enddate)
+    axes = _build_zarr_axes(freq, levels, chunks)
 
     # Create zarr store
     fdb_config_file = None
