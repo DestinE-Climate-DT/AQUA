@@ -1,4 +1,3 @@
-
 import pytest
 import xarray as xr
 from conftest import LOGLEVEL
@@ -434,9 +433,6 @@ def test_fdb_home_bridge_logs(capsys):
 
     source.chk_type = [0]
     source._get_partition(ii=0)
-
-
-
 
 
 def test_z3fdb_reader_before_bridge_period() -> None:

@@ -122,7 +122,6 @@ class Z3FDBDatasetReader(BaseReader):
         periods = []
 
         if has_bridge:
-
             b_start_ts = self._get_bridge_date(data.bridge_start_date, data.data_start_date)
             b_end_ts = self._get_bridge_date(data.bridge_end_date, data.data_end_date)
 
