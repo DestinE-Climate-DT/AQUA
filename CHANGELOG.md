@@ -14,6 +14,7 @@ Complete list:
 - More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+- fldmean: matching the data and area longitudes is working (#2957)
 
 ## [v1.0.0a5]
 
