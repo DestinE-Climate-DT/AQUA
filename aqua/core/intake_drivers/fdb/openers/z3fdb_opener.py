@@ -89,10 +89,6 @@ def _check_availability():
         raise ImportError(z3fdb_error_cause)
 
 
-def _mars_date(s):  # "2014-01-15" or "20140115" -> "20140115"
-    return str(s).replace("-", "")[:8]
-
-
 def _build_mars_requests(request, freq, levels, years, start_date=None, end_date=None):
     """Build the list of MARS request strings based on start/end dates and frequency."""
     if years is None and (start_date is None or end_date is None):

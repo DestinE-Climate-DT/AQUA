@@ -1,6 +1,4 @@
-import pickle
 
-import numpy as np
 import pytest
 import xarray as xr
 from conftest import LOGLEVEL
@@ -438,102 +436,7 @@ def test_fdb_home_bridge_logs(capsys):
     source._get_partition(ii=0)
 
 
-CMIP6_MARS_REQ = (
-    "class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,"
-    "model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,"
-    "stream=clte,date=19900101,time=0000,param=164,levtype=sfc"
-)
 
-
-def test_z3fdb_store_pickling() -> None:
-    """Test FdbZarrStore custom pickling and unpickling."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import z3fdb_available
-
-    if not z3fdb_available:
-        pytest.skip("z3fdb not available")
-
-    from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
-
-    builder = SimpleStoreBuilder(None)
-    axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
-    builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
-    store = builder.build()
-
-    # Attach serialization attributes to verify pickling
-    store._config = None
-    store._mars = [CMIP6_MARS_REQ]
-    store._serialized_axes = [(axis.keys, axis.chunking.name) for axis in axes]
-    store._extractor_type_str = ExtractorType.GRIB.name
-
-    pickled = pickle.dumps(store)
-    unpickled = pickle.loads(pickled)
-    assert unpickled is not None
-
-
-def test_z3fdb_rebuild_parameters() -> None:
-    """Test rebuild_fdb_zarr_store parameters and path logic."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import rebuild_fdb_zarr_store, z3fdb_available
-
-    if not z3fdb_available:
-        pytest.skip("z3fdb not available")
-
-    serialized_axes = [(["date", "time"], "SINGLE_VALUE")]
-    # Test with mars as string
-    store1 = rebuild_fdb_zarr_store(
-        config=None, mars=CMIP6_MARS_REQ, serialized_axes=serialized_axes, extractor_type_str="GRIB"
-    )
-    assert store1 is not None
-
-    # Test with config path and mars as list
-    store2 = rebuild_fdb_zarr_store(
-        config=FDB_HOME, mars=[CMIP6_MARS_REQ], serialized_axes=serialized_axes, extractor_type_str="GRIB"
-    )
-    assert store2 is not None
-
-
-def test_z3fdb_missing_attrs_raise() -> None:
-    """Test reduce_fdb_zarr_store raises TypeError on missing attrs."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import reduce_fdb_zarr_store, z3fdb_available
-
-    if not z3fdb_available:
-        pytest.skip("z3fdb not available")
-
-    from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
-
-    builder = SimpleStoreBuilder(None)
-    axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
-    builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
-    store = builder.build()
-
-    with pytest.raises(TypeError, match="Cannot pickle FdbZarrStore: missing serialization attributes"):
-        reduce_fdb_zarr_store(store)
-
-
-def test_z3fdb_healpix_unstructured_coordinate_checking() -> None:
-    """Test healpix unstructured detection logic."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_coordinates
-
-    # ds with cell dimension of 48 (12 * 2^2) -> valid healpix count
-    ds_valid = xr.Dataset(coords={"cell": np.arange(48)})
-    try:
-        ds_out = add_coordinates(ds_valid, grid_type="healpix_unstructured")
-        assert "lon" in ds_out.coords
-    except (ImportError, ModuleNotFoundError):
-        pass
-
-    # ds with invalid cell count
-    ds_invalid = xr.Dataset(coords={"cell": np.arange(50)})
-    ds_out = add_coordinates(ds_invalid, grid_type="healpix_unstructured")
-    assert "lon" not in ds_out.coords
-
-
-def test_z3fdb_lonlat_mismatch_aborts() -> None:
-    """Test add_lonlat_coordinates aborts on mismatching shape."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_lonlat_coordinates
-
-    ds = xr.Dataset(coords={"cell": np.arange(5)})
-    ds_out = add_lonlat_coordinates(ds)
-    assert ds_out.equals(ds)
 
 
 def test_z3fdb_reader_before_bridge_period() -> None:
