@@ -371,10 +371,8 @@ class Reader:
         """
 
         # fallback to reader-init stardate and enddate
-        if not startdate:
-            startdate = self.startdate
-        if not enddate:
-            enddate = self.enddate
+        startdate = startdate if startdate is not None else self.startdate
+        enddate = enddate if enddate is not None else self.enddate
 
         data = self.backend.retrieve(var=var, level=level, level_coord=level_coord, startdate=startdate, enddate=enddate)
 
@@ -639,30 +637,18 @@ class Reader:
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        if self._check_if_regridded(data) and self.tgt_fldstat is not None:
-            data = self.tgt_fldstat.fldstat(
-                data,
-                stat=stat,
-                lon_limits=lon_limits,
-                lat_limits=lat_limits,
-                region=region,
-                region_sel=region_sel,
-                mask_kwargs=mask_kwargs,
-                dims=dims,
-                **kwargs,
-            )
-        else:
-            data = self.src_fldstat.fldstat(
-                data,
-                stat=stat,
-                lon_limits=lon_limits,
-                lat_limits=lat_limits,
-                region=region,
-                region_sel=region_sel,
-                mask_kwargs=mask_kwargs,
-                dims=dims,
-                **kwargs,
-            )
+        fldstat = self.tgt_fldstat if self._check_if_regridded(data) and self.tgt_fldstat is not None else self.src_fldstat
+        data = fldstat.fldstat(
+            data,
+            stat=stat,
+            lon_limits=lon_limits,
+            lat_limits=lat_limits,
+            region=region,
+            region_sel=region_sel,
+            mask_kwargs=mask_kwargs,
+            dims=dims,
+            **kwargs,
+        )
 
         data.aqua.set_default(self)
         return data
