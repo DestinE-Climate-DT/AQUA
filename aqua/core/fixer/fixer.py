@@ -149,7 +149,11 @@ class Fixer:
                 source = to_list(varfix.get("source", None))
                 # We want to process a list of sources
                 if source:
-                    match = list(set(source) & set(data.variables))
+                    # make sure all sources are strings and include also "varXXX" variations of grib codes
+                    source_strs = {str(s) for s in source}
+                    source_vars = source_strs | {f"var{s}" for s in source_strs if s.isdigit()}
+                    match = list(source_vars.intersection(data.data_vars))
+
                     if match:
                         # Having more than a match should be a problem for a dataset, we do not raise an error
                         # but we warn the user
@@ -159,11 +163,6 @@ class Fixer:
                             )
                         # Even if we have only a match, we make sure that source is a string
                         source = match[0]
-
-                        # If a gribcode is the source match, convert it to shortname to access it
-                        if str(source).isdigit():
-                            self.logger.info("The source %s is a grib code, need to convert it", source)
-                            source = get_eccodes_attr(f"var{source}", loglevel=self.loglevel)["shortName"]
 
                         # Here we update the fixd dictionary with the source and the variable
                         # The rename is done as {source: var} and at the end of the function
@@ -221,6 +220,12 @@ class Fixer:
                         # Already adjust all attributes but not yet units
                         if att == "units":
                             tgt_units = value
+                            # If units are not present in source let's find them
+                            if "units" not in data[source].attrs:
+                                att, sn = self._get_variables_grib_attributes(source)
+                                if "units" in att:
+                                    data[source].attrs["units"] = att["units"]
+                                    self.logger.debug("Setting units for %s: %s", source, att["units"])
                         else:
                             data[source].attrs[att] = value
 

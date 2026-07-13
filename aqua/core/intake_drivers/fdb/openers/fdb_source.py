@@ -76,8 +76,15 @@ class FDBSource(FDBTimeMixin):
         loglevel="WARNING",
         engine=None,
         databridge=None,
+        config_fdb=None,
         **kwargs,
     ):
+        self.config_fdb = config_fdb
+        self.fdbhome = None
+        self.fdbpath = None
+        self.fdbhome_bridge = None
+        self.fdbpath_bridge = None
+
         self.engine = engine
         self.dummy_run = engine is None
 

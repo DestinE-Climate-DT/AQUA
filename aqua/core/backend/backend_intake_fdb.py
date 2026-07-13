@@ -98,6 +98,11 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.kwargs["databridge"] = effective_databridge
             self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
             needs_rebuild = True
+        if (engine == "z3fdb" or engine == "fdb") and "config_fdb" not in self.kwargs and "config_fdb" in kwargs:
+            self.kwargs["config_fdb"] = kwargs["config_fdb"]
+            self.logger.debug("Adding config_fdb=%s to filtered kwargs", kwargs["config_fdb"])
+            needs_rebuild = True
+
         if needs_rebuild:
             self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
