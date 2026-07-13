@@ -54,6 +54,30 @@ class Z3FDBDatasetReader(BaseReader):
     }
     partition_access = True
 
+    def _get_bridge_date(self, val, default_val):
+        """Get bridge date as a pandas Timestamp."""
+        if val is None or val == "complete":
+            return pd.Timestamp(str(default_val))
+        return pd.Timestamp(str(val))
+
+    def _get_frequency_offset(self, freq):
+        """Normalize frequency offset and return pandas offset or Timedelta."""
+        if freq == "h":
+            offset_freq = "1h"
+        elif freq == "D":
+            offset_freq = "1D"
+        else:
+            offset_freq = freq
+
+        try:
+            offset = pd.to_timedelta(offset_freq)
+        except ValueError:
+            if offset_freq in ("MS", "M"):
+                offset = pd.DateOffset(months=1)
+            else:
+                offset = pd.Timedelta(days=1)
+        return offset
+
     def _read(self, data, **kwargs):
 
         # Pop keys from metadata to keep behavior consistent and extract configuration values
@@ -99,30 +123,10 @@ class Z3FDBDatasetReader(BaseReader):
 
         if has_bridge:
 
-            def get_bridge_date(val, default_val):
-                if val is None or val == "complete":
-                    return pd.Timestamp(str(default_val))
-                return pd.Timestamp(str(val))
+            b_start_ts = self._get_bridge_date(data.bridge_start_date, data.data_start_date)
+            b_end_ts = self._get_bridge_date(data.bridge_end_date, data.data_end_date)
 
-            b_start_ts = get_bridge_date(data.bridge_start_date, data.data_start_date)
-            b_end_ts = get_bridge_date(data.bridge_end_date, data.data_end_date)
-
-            # Normalize frequency offset
-            freq = data.savefreq
-            if freq == "h":
-                offset_freq = "1h"
-            elif freq == "D":
-                offset_freq = "1D"
-            else:
-                offset_freq = freq
-
-            try:
-                offset = pd.to_timedelta(offset_freq)
-            except ValueError:
-                if offset_freq in ("MS", "M"):
-                    offset = pd.DateOffset(months=1)
-                else:
-                    offset = pd.Timedelta(days=1)
+            offset = self._get_frequency_offset(data.savefreq)
 
             # Define intersection of bridge with requested range
             bridge_intersect_start = max(start_ts, b_start_ts)
