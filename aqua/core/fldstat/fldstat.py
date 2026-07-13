@@ -361,4 +361,3 @@ class FldStat:
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
 
         return self.area
-

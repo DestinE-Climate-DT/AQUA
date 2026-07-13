@@ -32,6 +32,7 @@ pytestmark = pytest.mark.aqua
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
 
+
 def _regular_dataset(lat_values=None, lon_values=None, lat_decreasing=False):
     """1D lat/lon on separate dims -> CoordTransformer._info_grid() = 'Regular'."""
     lat_values = lat_values if lat_values is not None else np.array([-90.0, -30.0, 30.0, 90.0])
@@ -90,6 +91,7 @@ def _get_coord(transformer, coord_type):
 # __init__ / _info_grid
 # ---------------------------------------------------------------------------
 
+
 class TestInitAndGridType:
     def test_init_rejects_non_xarray(self):
         with pytest.raises(TypeError, match="data must be an Xarray Dataset or DataArray object."):
@@ -124,6 +126,7 @@ class TestInitAndGridType:
 # ---------------------------------------------------------------------------
 # rename_coordinate / _rename_bounds
 # ---------------------------------------------------------------------------
+
 
 class TestRenameCoordinate:
     def test_renames_when_names_differ(self):
@@ -180,6 +183,7 @@ class TestRenameCoordinate:
 # ---------------------------------------------------------------------------
 # flip_coordinate
 # ---------------------------------------------------------------------------
+
 
 class TestFlipCoordinate:
     """
@@ -243,6 +247,7 @@ class TestFlipCoordinate:
 # ---------------------------------------------------------------------------
 # convert_units / _convert_bounds
 # ---------------------------------------------------------------------------
+
 
 class TestConvertUnits:
     def test_converts_radians_to_degrees(self):
@@ -350,6 +355,7 @@ class TestConvertUnits:
 #  CoordTransformer, and to test it alongside the rest of the class's methods)
 # ---------------------------------------------------------------------------
 
+
 class TestNormalizeLongitudeRange:
     def test_wraps_into_declared_range(self):
         ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
@@ -392,6 +398,7 @@ class TestNormalizeLongitudeRange:
 # assign_attributes
 # ---------------------------------------------------------------------------
 
+
 class TestAssignAttributes:
     def test_adds_extra_attributes(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
@@ -432,6 +439,7 @@ class TestAssignAttributes:
 # ---------------------------------------------------------------------------
 # transform_coords (integration of all the above through the real data model)
 # ---------------------------------------------------------------------------
+
 
 class TestTransformCoordsIntegration:
     def test_full_pipeline_on_regular_grid(self):
@@ -480,6 +488,7 @@ class TestTransformCoordsIntegration:
 # ---------------------------------------------------------------------------
 # counter_reverse_coordinate (module-level helper)
 # ---------------------------------------------------------------------------
+
 
 class TestCounterReverseCoordinate:
     def test_reverses_flipped_coordinate_and_clears_marker(self):
