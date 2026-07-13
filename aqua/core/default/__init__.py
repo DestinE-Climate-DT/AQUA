@@ -4,7 +4,7 @@ DEFAULT_REALIZATION = "r1"
 # Reader/backend defaults
 DEFAULT_DATAMODEL = "aqua"
 DEFAULT_CONVENTION = "eccodes"
-DEFAULT_REGRID_METHOD = "ycon"
+DEFAULT_REGRID_METHOD = "ycon" #used also in regridder
 DEFAULT_ENGINE = "fdb"
 DEFAULT_NPROC = 4
 
@@ -32,6 +32,5 @@ DEFAULT_DROP_GRID = "lon-lat-r100"
 
 # Regridder defaults
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
-DEFAULT_GRID_METHOD = "ycon"
 DEFAULT_DIMENSION = "2d"
 DEFAULT_DIMENSION_MASK = "2dm"
