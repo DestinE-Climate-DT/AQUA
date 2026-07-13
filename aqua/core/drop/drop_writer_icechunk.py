@@ -176,7 +176,7 @@ class IcechunkWriter(BaseWriter):
         """Not used: IcechunkWriter fully overrides write_variable()."""
         raise NotImplementedError("IcechunkWriter does not use concat; write_variable() is fully overridden")
 
-    def concat_year_files(self, var, year):
+    def concat_year_files(self, var, year, level=None):
         """
         Icechunk override: no concatenation needed.
 
@@ -185,6 +185,7 @@ class IcechunkWriter(BaseWriter):
         Args:
             var: Variable name
             year: Year
+            level: Level (optional, for filename generation)
 
         Returns:
             bool: Always True
@@ -236,7 +237,7 @@ class IcechunkWriter(BaseWriter):
         read_session = repo.readonly_session("main")
         return xr.open_zarr(read_session.store, consolidated=False)
 
-    def check_integrity(self, var, overwrite=False, end_date=None):
+    def check_integrity(self, var, level=None, overwrite=False, end_date=None):
         """
         Check variable integrity by querying repo metadata.
 
@@ -248,6 +249,7 @@ class IcechunkWriter(BaseWriter):
 
         Args:
             var: Variable name
+            level: Optional level information (unused for icechunk; single repo)
             overwrite: If True, always report incomplete
             end_date: Optional upper bound of the requested time range
                 (numpy datetime64, pandas Timestamp, or any value accepted
@@ -292,6 +294,8 @@ class IcechunkWriter(BaseWriter):
 
             last_record = pd.to_datetime(times[-1]).strftime("%Y%m%d")
 
+            # TODO: We would like to check for level as well, but we do not have info on the level name.
+
             # When an expected end date is provided, verify coverage.
             # Keep last_record so write_variable can resume from the right point.
             if end_date is not None:
@@ -317,6 +321,7 @@ class IcechunkWriter(BaseWriter):
         self,
         data,
         var,
+        level=None,
         overwrite=False,
         definitive=True,
         dask=False,
@@ -337,6 +342,7 @@ class IcechunkWriter(BaseWriter):
         Args:
             data: xarray DataArray with processed data (history already applied)
             var: Variable name
+            level: Optional level information
             overwrite: If True, clobber existing data and restart from scratch.
                        If False, skip completed variables and resume from the last committed record.
             definitive: Actually write files (vs dry-run)
@@ -443,7 +449,7 @@ class IcechunkWriter(BaseWriter):
 
         return True
 
-    def get_filename(self, var, year=None, month=None, tmp=False):
+    def get_filename(self, var, year=None, month=None, level=None, tmp=False):
         """
         Get filename/store name for variable.
 
@@ -451,6 +457,7 @@ class IcechunkWriter(BaseWriter):
             var: Variable name
             year: Year (unused for icechunk; single repo)
             month: Month (unused for icechunk; single repo)
+            level: Optional level information (unused for icechunk; single repo)
             tmp: Unused (no tmpfiles in icechunk)
 
         Returns:

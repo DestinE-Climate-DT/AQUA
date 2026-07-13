@@ -42,7 +42,7 @@ on:
         description: 'Container image to use (empty string = ubuntu-latest, default = FDB container)'
         required: false
         type: string
-        default: 'ghcr.io/destine-climate-dt/ubuntu24.04-fdb5.17.3-eccodes2.41.0-aqua:aqua-base-container'
+        default: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
       enable-fdb:
         description: 'Enable FDB dependencies and setup'
         required: false
@@ -122,19 +122,19 @@ jobs:
       # 1. CHECKOUT REPOSITORIES
       # ========================================
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: AQUA
 
       - name: Checkout Climate-DT-catalog repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
           token: ${{ secrets.AQUA_GITHUB_PAT }}
 
       - name: Checkout DVC repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: DestinE-Climate-DT/aqua-dvc
           path: aqua-dvc

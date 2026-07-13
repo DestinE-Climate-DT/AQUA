@@ -24,7 +24,6 @@ class CatalogEntryBuilder:
         frequency=None,
         stat=None,
         region=None,
-        level=None,
         loglevel="WARNING",
         **kwargs,
     ):
@@ -40,7 +39,6 @@ class CatalogEntryBuilder:
             frequency (str, optional): Frequency of the data. Defaults to 'native'.
             stat (str, optional): Statistic type. Defaults to 'nostat'.
             region (str, optional): Region. Defaults to 'global'.
-            level (str, optional): Level. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             **kwargs: Additional keyword arguments for flexibility.
         """
@@ -56,7 +54,6 @@ class CatalogEntryBuilder:
         self.stat = stat if stat is not None else "nostat"
         self.region = region if region is not None else "global"
 
-        self.level = level
         self.kwargs = kwargs
         self.opt = OutputPathBuilder(
             catalog=catalog,
@@ -67,7 +64,6 @@ class CatalogEntryBuilder:
             frequency=self.frequency,
             stat=self.stat,
             region=self.region,
-            level=self.level,
             **self.kwargs,
         )
         self.logger = log_configure(log_level=loglevel, log_name="CatalogEntryBuilder")
