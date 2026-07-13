@@ -36,7 +36,7 @@ DROP's architecture enables various data processing tasks:
 **Data Management:**
 
 - Automatic catalog entry generation for DROP-generated outputs
-- Zarr reference creation for faster access
+- Output in NetCDF, Zarr, and icechunk formats for flexible access
 - Parallel processing with configurable workers
 - Memory-efficient chunked processing
 
@@ -49,6 +49,10 @@ DROP's architecture enables various data processing tasks:
 
 DROP can be explored in the `DROP notebook <https://github.com/DestinE-Climate-DT/AQUA/blob/main/notebooks/drop/drop.ipynb>`_.
 
+.. note ::
+
+    DROP is designed to be flexible and can be used for a wide range of data reduction tasks beyond the specific use cases mentioned above.
+    However, the processing window and output file are always based on monthly chunks.
 
 The Low Resolution Archive (LRA) Context
 ----------------------------------------
@@ -143,20 +147,17 @@ interface using the automatically created catalog sources.
 
 **Zarr access for faster performance:**
 
-You can access data using Zarr reference files for improved performance, when available:
+You can access data using Zarr stores files for improved performance, when available:
 
 .. code-block:: python
 
     # Faster access using Zarr references
-    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="r100-monthly-zarr")
+    reader = Reader(model="IFS-NEMO", exp="historical-1990", source="lra-r100-monthly-zarr")
     data = reader.retrieve()
 
 .. note ::
     The specific source names depend on the resolution and frequency you configured when
     running DROP. See the "Source Naming Convention" section above for details.
-
-.. warning ::
-    Zarr reference access is experimental and may not work with all experiment configurations.
 
 Using DROP to process data
 --------------------------
@@ -212,8 +213,10 @@ The ``target`` section defines the primary output characteristics for the DROP p
         name: Europe
         lat: [35, 70]
         lon: [-10, 40]
+      level: [850, 500]
       stat: mean
       stat_kwargs: {}
+      regrid_first: False
 
 - **resolution** (string, required): Target spatial resolution for regridding.
 
@@ -247,6 +250,11 @@ The ``target`` section defines the primary output characteristics for the DROP p
   - **name** (string): Region identifier (e.g., ``Europe``, ``Tropics``)
   - **lat** (list): Latitude range as ``[min, max]`` (e.g., ``[35, 70]``)
   - **lon** (list): Longitude range as ``[min, max]`` (e.g., ``[-10, 40]``)
+  - **drop** (bool, optional): Whether to drop missing values in the region selection. Default: ``False``
+
+- **level** (int, float or list, optional): Vertical levels to select (e.g., pressure levels like ``[850, 500]`` or model-specific levels). Default: ``None``
+
+   - If specified, only these levels will be processed. If omitted, all levels are included.
 
 - **stat** (string, optional): Statistical operator for temporal aggregation. Default: ``mean``
 
@@ -261,6 +269,11 @@ The ``target`` section defines the primary output characteristics for the DROP p
 
   - For ``histogram`` e.g.: ``{bins: 20, range: [0, 100]}``
   - Empty dict or missing line for other statistics that don't require additional arguments
+
+- **regrid_first** (bool, optional): Whether to apply regridding (and region selection) before time statistics. Default: ``False``
+
+  - For some statistics (e.g., histogram), it may be necessary to regrid the data before applying the statistic
+  because the statistic can disrupt the spatial dimensions required for regridding.
 
 **Paths Section**
 
@@ -291,13 +304,10 @@ Controls processing behavior and performance settings:
     options:
       engine: fdb
       loglevel: INFO
-      zarr: False
-      verify_zarr: False
+      driver: netcdf
       overwrite: False
-      exclude_incomplete: False
       rebuild: False
-      compact: xarray
-      cdo_options: ["-f", "nc4", "-z", "zip_1"]
+      compact: cdo
       performance_reporting: False
 
 - **engine** (string, optional): Data retrieval engine. Default: ``fdb``
@@ -310,16 +320,23 @@ Controls processing behavior and performance settings:
 
   - Available levels: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``
 
-- **zarr** (bool, optional): Create Zarr reference files for faster subsequent access. Default: ``False``
+- **driver** (string, optional): Format for the output files. Default: ``netcdf``
 
-  - ``True``: Generate Zarr references after processing
-  - ``False``: Only create NetCDF files, default behavior
+  - ``netcdf``: Create NetCDF files.
+    Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
+  - ``zarr``: Create Zarr datasets files for faster subsequent access. Test feature under development, use with caution.
+    Monthly files are created and then concatenated into yearly consolidate files, and monthly files are removed. This is suboptimal but provides safety against incomplete or corrupted files.
+  - ``icechunk``: Write all data into a single git-like versioned Zarr repository using `icechunk <https://icechunk.io>`_.
+    Every month is committed as an atomic snapshot; failed writes are automatically rolled back to the last clean commit.
+    A post-commit integrity check is performed after each month.
 
-- **verify_zarr** (bool, optional): Verify Zarr references after creation. Default: ``False``
+  .. warning::
 
-  - ``True``: Test Zarr references by loading data
-  - ``False``: Skip verification
-  - Only relevant when ``zarr: True``
+      **Experimental feature.** ``icechunk`` output is experimental and **not compatible with AQUA catalog integration**.
+      Running ``aqua drop`` with ``--driver icechunk`` (or ``driver: icechunk`` in the config file) will
+      skip the automatic ``create_catalog_entry`` step, meaning the output **cannot be accessed via** ``Reader``
+      using a catalog source name. Direct access via ``icechunk.Repository.open`` and ``xr.open_zarr`` is required.
+      Do not use in production pipelines until this limitation is resolved.
 
 - **overwrite** (bool, optional): Overwrite existing output files. Default: ``False``
 
@@ -338,17 +355,11 @@ Controls processing behavior and performance settings:
   - ``False``: Use cached weights if available
   - Set to ``True`` if you suspect weights are outdated (e.g., after a major update to CDO or AQUA)
 
-- **compact** (string, optional): Method for concatenating monthly files into yearly files. Default: ``xarray``
+- **compact** (string, optional): Method for concatenating monthly files into yearly files. Only relevant when ``driver: netcdf``. Default: ``cdo``
 
   - ``xarray``: Use xarray for concatenation
   - ``cdo``: Use Climate Data Operators
   - ``null`` or omit: No compacting, keep monthly files
-
-- **cdo_options** (list, optional): Options passed to CDO when ``compact: cdo``. Default: ``["-f", "nc4", "-z", "zip_1"]``
-
-  - ``-f nc4``: NetCDF4 format
-  - ``-z zip_1``: Compression level 1
-  - Add additional CDO flags as list elements
 
 - **performance_reporting** (bool, optional): Generate Dask performance HTML report. Default: ``False``
 
@@ -415,6 +426,8 @@ Each source configuration supports the following parameters:
   - If omitted, processes the default realization (r1)
   - Only applicable to ensemble datasets
 
+- **zoom** (int, optional): Zoom level for HEALPix sources (e.g., ``zoom: 8``). Passed directly to the Reader.
+
 - **resolution** (string, optional): Override target resolution for this specific source.
 
 - **frequency** (string, optional): Override target frequency for this specific source.
@@ -477,6 +490,13 @@ Usage
 
 **Options:** these override the configuration file options.
 
+.. note::
+
+    The configuration file (``-c/--config``) is optional. When omitted, DROP runs in CLI-only mode
+    and requires ``--outdir``, ``--model``, ``--exp``, ``--source``, and ``--var`` to be provided
+    on the command line. Parameters that accept complex structures (``region``, ``stat_kwargs``,
+    ``compact``, ``exclude_incomplete``) are available only through the configuration file.
+
 .. option:: -c CONFIG, --config CONFIG
 
     Set up a specific configuration file
@@ -505,9 +525,13 @@ Usage
 
     Enable a single chunk run to produce the html dask performance report. Dask should be activated.
 
-.. option:: --only-catalog
+.. option:: --catalog-entry {yes,no,only}
 
-    Will generate/update only the catalog entry for DROP, without running the code for generating DROP output itself
+    Controls catalog entry behaviour (default: ``yes``):
+
+    - ``yes``: write data **and** create/update the catalog entry (default behaviour).
+    - ``no``: write data but **skip** catalog creation (useful when catalog management is handled separately or for icechunk-based runs).
+    - ``only``: **skip data writing** and only create/update the catalog entry (replaces the former ``--only-catalog`` flag).
 
 .. option:: --rebuild
 
@@ -516,7 +540,7 @@ Usage
 
 .. option:: --stat
 
-    Statistic to be computed (default: 'mean')
+    Statistic to be computed (default: 'mean'). Options: 'mean', 'std', 'max', 'min', 'sum', 'histogram'.
 
 .. option:: --frequency
 
@@ -525,6 +549,12 @@ Usage
 .. option:: --resolution
 
     Resolution of the DROP output (default: as the original data)
+
+.. option:: --regrid_first
+
+    Whether to apply regridding (and region selection) before time statistics (default: False)
+    For some statistics (e.g., histogram), it may be necessary to regrid the data before applying the statistic
+    because the statistic can disrupt the spatial dimensions required for regridding.
 
 .. option:: --realization
 
@@ -540,9 +570,55 @@ Usage
     End date for the DROP output (default: as the original data).
     Accepted format: 'YYYY-MM-DDT23:00:00'
 
+.. option:: --level
+
+    Vertical levels to select. Default: None
+    Can be a single level (int or float) or a list of levels separated by commas (e.g. '1000,850,500').
+    If specified, only these levels will be processed. If omitted, all levels are included.
+
 .. option:: --engine
 
     The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'.
+
+.. option:: --driver
+
+    Output format for DROP files: ``netcdf`` (default), ``zarr``, or ``icechunk``.
+    ``icechunk`` is experimental and does not support catalog integration.
+
+.. option:: --outdir OUTDIR
+
+    Output directory. Overrides ``paths.outdir`` from the configuration file.
+    Required when running without a configuration file.
+
+.. option:: --tmpdir TMPDIR
+
+    Temporary directory. Overrides ``paths.tmpdir`` from the configuration file.
+    Falls back to ``--outdir`` when not specified.
+
+.. option:: --no-validate
+
+    Skip the pre-run integrity check on existing output files. Speeds up startup for large datasets.
+
+.. option:: --catalog CATALOG
+
+    Catalog to process. Use together with ``--model``, ``--exp`` and ``--source`` to narrow the run
+    to a specific triplet instead of looping over the full ``data`` section.
+
+.. option:: -m MODEL, --model MODEL
+
+    Model to process. Use together with ``--exp`` and ``--source``.
+
+.. option:: -e EXP, --exp EXP
+
+    Experiment to process. Use together with ``--model`` and ``--source``.
+
+.. option:: -s SOURCE, --source SOURCE
+
+    Source to process. Use together with ``--model`` and ``--exp``.
+
+.. option:: -v VAR, --var VAR
+
+    Single variable to process. Use together with ``--source``.
 
 **Examples:**
 

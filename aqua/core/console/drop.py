@@ -21,6 +21,8 @@ def drop_parser(parser=None):
 
     Args:
         Optional part to be extended with DROP options
+
+    Important: defaults are controlled by the _cfg approach below, not set in the parser
     """
 
     if parser is None:
@@ -40,8 +42,11 @@ def drop_parser(parser=None):
                         help='log level [default: WARNING]')
     parser.add_argument('--monitoring', action="store_true",
                         help='enable the dask performance monitoring. Will run a single chunk')
-    parser.add_argument('--only-catalog', action="store_true",
-                        help='To not run DROP but simply create the catalog entries for netcdf and zarr')
+    parser.add_argument('--catalog-entry', type=str, choices=['yes', 'no', 'only'],
+                        help="Catalog entry behaviour [default: yes, or options.catalog_entry from config]: "
+                             "'yes' writes data and creates catalog; "
+                             "'no' writes data but skips catalog creation; "
+                             "'only' skips data writing and only creates/updates the catalog entry.")
     parser.add_argument('--catalog', type=str,
                         help='catalog to be processed. Use with coherence with --model, -exp and --source')
     parser.add_argument('-m', '--model', type=str,
@@ -52,27 +57,71 @@ def drop_parser(parser=None):
                         help='source to be processed. Use with coherence with --exp and --var')
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
+    parser.add_argument('--no-validate', action="store_true",
+                        help='skip pre-run integrity check on existing output files (speeds up startup)')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
     parser.add_argument('--realization', type=str,
                         help='realization to be processed. Use with coherence with --model, --exp and --source')
     parser.add_argument('--stat', type=str,
-                        help="statistic to be computed. Can be one of ['min', 'max', 'mean', 'std'].")
+                        help="statistic to be computed. Can be one of ['mean', 'std', 'max', 'min', 'sum', 'histogram'].")
     parser.add_argument('--frequency', type=str,
                         help="Frequency of the DROP output. Can be anything in the AQUA frequency.")
     parser.add_argument('--resolution', type=str,
                         help="Resolution of the DROP output. Can be anything in the AQUA resolution.")
+    parser.add_argument('--regrid_first', action="store_true",
+                        help="Whether to apply regridding before time statistics (default is False)")
     parser.add_argument('--startdate', type=str,
                         help="Start date to subset the data. Format YYYY-MM-DD")
     parser.add_argument('--enddate', type=str,
                         help="End date to subset the data. Format YYYY-MM-DD")
+    parser.add_argument('--level', type=str,
+                        help="Level(s) to be included in the filename. Can be a single level (int or float) or a list of levels separated by commas (e.g. '1000,850,500').") # noqa: E501
     parser.add_argument('--engine', type=str,
                         help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
-    parser.add_argument('--zarr', action="store_true",
-                        help='Create zarr')
-    parser.add_argument('--verify-zarr', action="store_true",
-                        help='Verify the created zarr')
+    parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'],
+                        help='Output format for DROP files [default: netcdf, or options.driver from config]: '
+                             'netcdf, zarr or icechunk '
+                             '(icechunk is preliminary and does not support catalog integration).')
+    parser.add_argument('--outdir', type=str,
+                        help='Output directory. Required when running without a config file.')
+    parser.add_argument('--tmpdir', type=str,
+                        help='Temporary directory. Required when running without a config file.')
     # fmt: on
     return parser
+
+
+def _cfg(config, section, key, default=None):
+    """Read a value from a nested two-level config dict without raising on missing keys.
+
+    Args:
+        config (dict): top-level configuration dictionary
+        section (str): top-level key (e.g. 'target', 'options', 'paths')
+        key (str): key inside the section
+        default: value to return when the section or key is absent. Defaults to None.
+
+    Returns:
+        The value at ``config[section][key]``, or ``default`` if absent.
+    """
+    return config.get(section, {}).get(key, default)
+
+
+def _validate_drop_args(config, outdir):
+    """Validate mandatory arguments when no config file is loaded.
+
+    Args:
+        config (dict): configuration dictionary (may be empty when no config file was loaded)
+        outdir (str or None): output directory resolved from CLI or config
+    """
+    errors = []
+    if not outdir:
+        errors.append("  --outdir   output directory")
+    if not config.get("data"):
+        errors.append("  --model, --exp, --source, --var   data selection")
+    if errors:
+        print("ERROR: the following mandatory arguments are missing (required when running without a config file):")
+        for e in errors:
+            print(e)
+        sys.exit(1)
 
 
 def drop_execute(args):
@@ -83,62 +132,86 @@ def drop_execute(args):
     print("AQUA version is: " + version)
 
     file = get_arg(args, "config", "drop_config.yaml")
-    print("Reading configuration yaml file..")
+    explicit_config = bool(getattr(args, "config", None))
 
-    # basic from configuration
-    config = load_yaml(file)
+    # Load config - optional unless explicitly requested with --config
+    try:
+        print("Reading configuration yaml file..")
+        config = load_yaml(file)
+        config_loaded = True
+    except FileNotFoundError:
+        if explicit_config:
+            raise
+        print(f"Configuration file '{file}' not found, running in CLI-only mode.")
+        config = {}
+        config_loaded = False
 
-    # safety check
-    for item in ["target", "paths", "data", "options"]:
-        if item not in config:
-            raise KeyError(
-                f'Configuration file {file} does not have the "{item}" key, please modify it according to the template'
-            )
+    # paths: CLI args take priority, fall back to config file
+    outdir = get_arg(args, "outdir", _cfg(config, "paths", "outdir"))
+    tmpdir = get_arg(args, "tmpdir", _cfg(config, "paths", "tmpdir")) or outdir
 
-    # paths
-    paths = config["paths"]
-    outdir = paths["outdir"]
-    tmpdir = paths["tmpdir"]
+    # main arguments, only from config file
+    region = _cfg(config, "target", "region")
 
-    # main arguments, ony from config file
-    region = config["target"].get("region", None)
+    # Command line arguments override config file
+    # from target block
+    catalog = get_arg(args, "catalog", _cfg(config, "target", "catalog"))
+    stat = get_arg(args, "stat", _cfg(config, "target", "stat", "mean"))
+    stat_kwargs = _cfg(config, "target", "stat_kwargs", {})
+    frequency = get_arg(args, "frequency", _cfg(config, "target", "frequency"))
+    resolution = get_arg(args, "resolution", _cfg(config, "target", "resolution"))
+    regrid_first = get_arg(args, "regrid_first", _cfg(config, "target", "regrid_first", False))
+    startdate = get_arg(args, "startdate", _cfg(config, "target", "startdate"))
+    enddate = get_arg(args, "enddate", _cfg(config, "target", "enddate"))
+    level = get_arg(args, "level", _cfg(config, "target", "level"))
+    # Convert comma-separated level string to list if necessary
+    if isinstance(level, str) and level:
+        level = [float(lev) if "." in lev else int(lev) for lev in level.split(",")]
 
-    # Command line argumens override config file
-    catalog = get_arg(args, "catalog", config["target"].get("catalog"))
-    stat = get_arg(args, "stat", config["target"].get("stat", "mean"))
-    stat_kwargs = config["target"].get("stat_kwargs", {})
-    frequency = get_arg(args, "frequency", config["target"].get("frequency"))
-    resolution = get_arg(args, "resolution", config["target"].get("resolution"))
-    startdate = get_arg(args, "startdate", config["target"].get("startdate"))
-    enddate = get_arg(args, "enddate", config["target"].get("enddate"))
-    engine = get_arg(args, "engine", config["options"].get("engine", "fdb"))
-
-    loglevel = get_arg(args, "loglevel", config["options"].get("loglevel", "WARNING"))
-    compact = config["options"].get("compact", "cdo")
-    do_zarr = get_arg(args, "zarr", config["options"].get("zarr", False))
-    verify_zarr = get_arg(args, "verify_zarr", config["options"].get("verify_zarr", False))
+    # options
+    engine = get_arg(args, "engine", _cfg(config, "options", "engine", "fdb"))
+    loglevel = get_arg(args, "loglevel", _cfg(config, "options", "loglevel", "WARNING"))
+    compact = _cfg(config, "options", "compact", "cdo")
+    driver = get_arg(args, "driver", _cfg(config, "options", "driver", "netcdf"))
 
     # Other options, only from command line
     definitive = get_arg(args, "definitive", False)
-    monitoring = get_arg(args, "monitoring", False)
-    overwrite = get_arg(args, "overwrite", False)
-    rebuild = get_arg(args, "rebuild", False)
-    only_catalog = get_arg(args, "only_catalog", False)
-    if only_catalog:
-        print("--only-catalog selected, doing a lot of noise but in the end producing only catalog update!")
+    monitoring = get_arg(args, "monitoring", _cfg(config, "options", "performance_reporting", False))
+    overwrite = get_arg(args, "overwrite", _cfg(config, "options", "overwrite", False))
+    rebuild = get_arg(args, "rebuild", _cfg(config, "options", "rebuild", False))
+    exclude_incomplete = _cfg(config, "options", "exclude_incomplete", True)
+    no_validate = get_arg(args, "no_validate", False)
+    catalog_entry = get_arg(args, "catalog_entry", _cfg(config, "options", "catalog_entry", "yes"))
+    if catalog_entry == "only":
+        print("--catalog-entry only: skipping data generation, updating catalog entry only.")
     fix = get_arg(args, "fix", True)
 
     default_workers = get_arg(args, "workers", 1)
+
+    # When no config was loaded, synthesize config["data"] from CLI args
+    if "data" not in config:
+        model_arg = getattr(args, "model", None)
+        exp_arg = getattr(args, "exp", None)
+        source_arg = getattr(args, "source", None)
+        var_arg = getattr(args, "var", None)
+        if model_arg and exp_arg and source_arg and var_arg:
+            config["data"] = {model_arg: {exp_arg: {source_arg: {"vars": var_arg}}}}
+
+    # In CLI-only mode validate that all mandatory arguments are present
+    if not config_loaded:
+        _validate_drop_args(config, outdir)
 
     drop_cli(
         args=args,
         config=config,
         catalog=catalog,
         resolution=resolution,
+        regrid_first=regrid_first,
         frequency=frequency,
         fix=fix,
         enddate=enddate,
         startdate=startdate,
+        level=level,
         outdir=outdir,
         tmpdir=tmpdir,
         loglevel=loglevel,
@@ -149,12 +222,13 @@ def drop_execute(args):
         definitive=definitive,
         overwrite=overwrite,
         rebuild=rebuild,
+        no_validate=no_validate,
         default_workers=default_workers,
         engine=engine,
         monitoring=monitoring,
-        do_zarr=do_zarr,
-        verify_zarr=verify_zarr,
-        only_catalog=only_catalog,
+        catalog_entry=catalog_entry,
+        driver=driver,
+        exclude_incomplete=exclude_incomplete,
     )
 
 
@@ -163,10 +237,12 @@ def drop_cli(
     config,
     catalog=None,
     resolution=None,
+    regrid_first=False,
     frequency=None,
     fix=None,
     startdate=None,
     enddate=None,
+    level=None,
     outdir=None,
     tmpdir=None,
     loglevel=None,
@@ -176,13 +252,14 @@ def drop_cli(
     definitive=False,
     overwrite=False,
     rebuild=False,
+    no_validate=False,
     monitoring=False,
     engine="fdb",
     default_workers=1,
-    do_zarr=False,
-    verify_zarr=False,
+    driver="netcdf",
     compact="cdo",
-    only_catalog=False,
+    catalog_entry="yes",
+    exclude_incomplete=True,
 ):
     """
     Running the default DROP from CLI, looping on all the configuration model/exp/source/var combination
@@ -194,8 +271,12 @@ def drop_cli(
         config: configuration dictionary
         catalog: catalog to be processed
         resolution: resolution of the DROP output
+        regrid_first: whether to apply regridding before time statistics (default is False)
         frequency: frequency of the DROP output
         fix: fixer option
+        startdate: start date to subset the data
+        enddate: end date to subset the data
+        level: level(s) to be included in the filename
         outdir: output directory
         tmpdir: temporary directory
         loglevel: log level
@@ -205,12 +286,13 @@ def drop_cli(
         definitive: bool flag to create definitive files
         overwrite: bool flag to overwrite existing files
         rebuild: bool flag to rebuild the areas and weights
+        no_validate: bool flag to skip pre-run integrity check on existing output files
         default_workers: default number of workers
         monitoring: bool flag to enable the dask monitoring
-        do_zarr: bool flag to create zarr
-        verify_zarr: bool flag to verify zarr
+        driver: output format driver
         compact: compaction method
-        only_catalog: bool flag to only update the catalog
+        catalog_entry: catalog entry behaviour ('yes', 'no', 'only')
+        exclude_incomplete: bool flag to exclude incomplete temporal chunks when averaging
     """
 
     models = to_list(get_arg(args, "model", config["data"]))
@@ -230,11 +312,15 @@ def drop_cli(
                 # get the number of workers for this specific configuration
                 workers = config["data"][model][exp][source].get("workers", default_workers)
 
+                # per-source overrides: resolution, frequency, stat fall back to global values
+                src_resolution = config["data"][model][exp][source].get("resolution", resolution)
+                src_frequency = config["data"][model][exp][source].get("frequency", frequency)
+                src_stat = config["data"][model][exp][source].get("stat", stat)
+
                 # loop in realizations
                 for realization in loop_realizations:
                     # define realization as extra args only if this is found in the configuration file
                     extra_args = {"realization": realization} if realizations else {}
-                    print(varnames)
                     for varname in varnames:
                         # get the zoom level - this might need some tuning for extra kwargs
                         zoom = config["data"][model][exp][source].get("zoom", None)
@@ -251,40 +337,45 @@ def drop_cli(
                             exp=exp,
                             source=source,
                             var=varname,
-                            resolution=resolution,
+                            resolution=src_resolution,
+                            regrid_first=regrid_first,
                             startdate=startdate,
                             enddate=enddate,
-                            frequency=frequency,
+                            level=level,
+                            frequency=src_frequency,
                             fix=fix,
                             outdir=outdir,
                             tmpdir=tmpdir,
                             nproc=workers,
                             loglevel=loglevel,
                             region=region,
-                            stat=stat,
+                            stat=src_stat,
                             stat_kwargs=stat_kwargs,
                             definitive=definitive,
                             overwrite=overwrite,
                             rebuild=rebuild,
                             compact=compact,
                             performance_reporting=monitoring,
-                            exclude_incomplete=True,
+                            exclude_incomplete=exclude_incomplete,
+                            output_format=driver,
                             engine=engine,
                             **extra_args,
                         )
 
-                        if not only_catalog:
+                        if catalog_entry != "only":
                             # check that your DROP output is not already there (it will not work in streaming mode)
-                            drop.check_integrity(varname)
+                            if not no_validate:
+                                drop.check_integrity(varname, level=level)
 
                             # retrieve and generate
                             drop.retrieve()
                             drop.drop_generator()
 
             # create the catalog once the loop is over
-            drop.create_catalog_entry()
-            if do_zarr:
-                drop.create_zarr_entry(verify=verify_zarr)
+            if catalog_entry != "no" and driver != "icechunk":
+                drop.create_catalog_entry()
+            elif driver == "icechunk":
+                print("Skipping catalog entry creation: not supported for icechunk output format.")
 
     print("CLI DROP run completed. Have yourself a tasty pint of beer!")
 

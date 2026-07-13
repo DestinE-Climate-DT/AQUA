@@ -6,10 +6,38 @@ from string import Template as DefaultTemplate
 from tempfile import TemporaryDirectory
 
 import yaml  # This is needed to allow YAML override in intake
-from jinja2 import Template
+from jinja2 import Environment, StrictUndefined
 from ruamel.yaml import YAML
 
 from aqua.core.logger import log_configure
+
+
+def _create_jinja_env(strict: bool = False, preserve_formatting: bool = False):
+    """Create a Jinja2 Environment with the given settings.
+
+    Args:
+        strict: If True, raise UndefinedError on missing template variables.
+                Default False (silently renders as empty string).
+        preserve_formatting: If True, preserve template formatting (no trim/lstrip).
+                            Default False (trim and lstrip for cleaner YAML).
+
+    Returns:
+        A configured Jinja2 Environment.
+    """
+    kwargs = {
+        "trim_blocks": not preserve_formatting,
+        "lstrip_blocks": not preserve_formatting,
+        "keep_trailing_newline": True,
+    }
+    if strict:
+        kwargs["undefined"] = StrictUndefined
+    return Environment(**kwargs)
+
+
+# Pre-create common Jinja2 environments for efficiency
+_JINJA_ENV_BASE = _create_jinja_env()  # Default: trim blocks, soft undefined
+_JINJA_ENV_STRICT = _create_jinja_env(strict=True)  # Strict: raise on missing vars
+_JINJA_ENV_CATGEN = _create_jinja_env(preserve_formatting=True)  # Preserve: for catalog_entry.j2
 
 
 def construct_yaml_merge(loader, node):
@@ -72,7 +100,9 @@ def load_multi_yaml(
     return yaml_dict
 
 
-def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = True):
+def load_yaml(
+    infile: str, definitions: str | dict | None = None, jinja: bool = True, strict: bool = False, catgen: bool = False
+):
     """
     Load yaml file with template substitution
 
@@ -80,7 +110,11 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
         infile (str): a file path to the yaml
         definitions (str or dict, optional): name of the section containing string template
                                              definitions or a dictionary with the same content
-        jinja: (bool): jinja2 templating is used instead of standard python templating. Default is true.
+        jinja (bool): jinja2 templating is used instead of standard python templating. Default is True.
+        strict (bool): if True, raises UndefinedError on missing template variables instead of
+                       silently rendering them as empty strings. Default is False.
+        catgen (bool): if True, use the Jinja environment configured to preserve formatting.
+
     Returns:
         A dictionary with the yaml file keys
     """
@@ -95,14 +129,20 @@ def load_yaml(infile: str, definitions: str | dict | None = None, jinja: bool = 
     with open(infile, "r", encoding="utf-8") as file:
         yaml_text = file.read()
 
-    if isinstance(definitions, str):  # if it is a string extract from original yaml, else it is directly a dict
+    # if it is a string extract from original yaml, else it is directly a dict
+    if isinstance(definitions, str):
         cfg = yaml.load(yaml_text)
         definitions = cfg.get(definitions)
 
     if definitions:
         # perform template substitution with jinja
         if jinja:
-            template = Template(yaml_text)
+            if strict:
+                template = _JINJA_ENV_STRICT.from_string(yaml_text)
+            elif catgen:
+                template = _JINJA_ENV_CATGEN.from_string(yaml_text)
+            else:
+                template = _JINJA_ENV_BASE.from_string(yaml_text)
             rendered_yaml = template.render(definitions)
             cfg = yaml.load(rendered_yaml)
         # use default python templating
@@ -192,14 +232,14 @@ def _load_merge(
         raise ValueError("ERROR: at least one between folder_path or filenames must be provided")
 
     if filenames:  # Merging a list of files
-        logger.debug(f"Files to be merged: {filenames}")
+        logger.debug("Files to be merged: %s", filenames)
         for filename in filenames:
             yaml_dict = load_yaml(filename, definitions)
             for key, value in yaml_dict.items():
                 merged_dict[key].update(value)
 
     if folder_path:  # Merging all the files in a folder
-        logger.debug(f"Folder to be merged: {folder_path}")
+        logger.debug("Folder to be merged: %s", folder_path)
         if not os.path.exists(folder_path):
             raise FileNotFoundError(f"ERROR: {folder_path} not found: it is required to have this folder!")
         for filename in os.listdir(folder_path):
@@ -210,6 +250,6 @@ def _load_merge(
                     merged_dict[key].update(value)
 
     logger.debug("Dictionary updated")
-    logger.debug(f"Keys: {merged_dict.keys()}")
+    logger.debug("Keys: %s", merged_dict.keys())
 
     return merged_dict

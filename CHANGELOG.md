@@ -6,15 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+Complete list:
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
+- Update submit_aqua_web tool to support kind and separate templates (#2921)
+- DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
+- Remove bold from graphics functions (#2916)
+- More info on the origin of a push to lumi-o in the logs (#2910)
+- DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
+- DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+
+## [v1.0.0a5]
+
 ClimateDT workflow modifications:
-- removed dependency on imagemagick
-- removed the --no-convert option from `push_analysis.sh`
+- Removed dependency on imagemagick
+- Removed the `--no-convert` option from `push_analysis.sh`
+- Added the `--format <FORMAT>` option to `push_analysis.sh` to select output formats to be uploaded (`png,pdf,svg` by default)
 
 Main changes:
+- Base AQUA is now shipped without FDB/GSV/polytope dependencies, 
+  available with [fdb] optional installation argument (#2818)
+- Add support for Python 3.13 and 3.14, with new default 3.14 (#2853)
+- Switch to astropy-healpix due to licensing issues with healpy (#2844)
+- Extend DROP: `--no-validate` flag, execution time/memory
+  report, and zarr/icechunk store support (#2824)
+- Apply jinja templating to diagnostic config files via the new
+  `--kind` option in AQUA analysis (#2834)
 
 Complete list:
+- Refactor of the `catgen` to have it as a separate module (#2894)
+- DROP: resolution is now always present in paths and filenames as a string, with "native" as default value if not specified (#2898)
+- Add references to climatedt-community-resources in getting_started.rst and polytope.rst (#2854)
+- Introduce a `aqua grids deploy` command to deploy target grids from a bucket to the local file system (#2865)
+- AQUA analysis accept a `--kind` option to apply jinja templating for diagnostic configuration files (#2834)
+- Introduce a report txt file for monitoring DROP execution time and memory occupation (#2824)
+- Introducing a `--no-validate` flag to disable file validation on reading and speed up DROP (#2824)
+- Refactor for writing capabilities of Drop now allowing also for zarr/icechunk store (#2824)
+- Improve Catalog Generator tests (#2842)
+- Automatically initialize regridders with loaded weights in the Regridder class (#2700)
+- Add AQUA attributes for source and target grid (#2869)
+- Solve `areas=True` and `src_grd_name=False` conflict (#2871)
 - Fallback test download from wilma (#2867)
-- push_analysis png metadata support and remove imagemagick dependency (#2866)
+- push_analysis png, pdf and svg metadata support and remove imagemagick dependency (#2866, #2872)
 - Support for python 3.13 and 3.14, with new default from 3.12 to 3.14 (#2853)
 - Update intake and intake-xarray to >=2.0.0 (#2843)
 - Unlock binding to `eccodes==2.41.0` and allow more recent versions (#2847)
@@ -1419,7 +1451,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...HEAD
+[v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
 [v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
 [v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
 [v1.0.0a2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a1...v1.0.0a2

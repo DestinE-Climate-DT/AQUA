@@ -1,7 +1,18 @@
 # List of experiments to analyze in the format
-# catalog model exp realization [source]
+# catalog model exp realization kind [source]
 
-climatedt-phase1 IFS-NEMO  ssp370 r1
-climatedt-phase1 IFS-NEMO historical-1990 r1
-climatedt-phase1 ICON historical-1990 r1
-climatedt-phase1 ICON ssp370 r1
+#climatedt-gen2 IFS-FESOM-5km baseline-hist r1 default
+#climatedt-gen2 IFS-FESOM-5km projections-ssp370 r1 scenario
+#climatedt-gen2 IFS-FESOM-5km baseline-cont r1 default
+
+#climatedt-gen2 IFS-NEMO-5km baseline-hist r1 default
+#climatedt-gen2 IFS-NEMO-5km projections-ssp370 r1 scenario
+#climatedt-gen2 IFS-NEMO-5km baseline-cont r1 default
+
+climatedt-gen2 ICON-5km baseline-hist r1 default
+#climatedt-gen2 ICON-5km projections-ssp370 r1 scenario
+#climatedt-gen2 ICON-5km baseline-cont r1 default
+
+#climatedt-gen2 IFS-FESOM-10km story-nudging-Tplus2K r1 storyline
+#climatedt-gen2 IFS-FESOM-10km story-nudging-cont r1 storyline
+#climatedt-gen2 IFS-FESOM-10km story-nudging-hist r1 storyline

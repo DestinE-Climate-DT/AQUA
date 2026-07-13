@@ -131,6 +131,8 @@ class TestRegridder:
         reader = Reader(model=model, exp=exp, source=source, regrid="r200", fix=True, loglevel=LOGLEVEL)
         data = reader.retrieve()
         rgd = reader.regrid(data[variable])
+        assert getattr(rgd, "AQUA_regridded") == 1
+        assert getattr(rgd, "AQUA_target_grid") == "r200"
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         assert ratio == pytest.approx((rgd.isnull().sum() / rgd.size).values, rel=APPROX_REL)  # land fraction
@@ -328,6 +330,31 @@ class TestRegridder:
 
         # Verify logger.error was called
         regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
+
+    def test_regridder_weights(self):
+        """Test regridding using explicitly the Regridder class and the weights method."""
+
+        # Create a simple dataarray
+        da = xr.DataArray(
+            np.random.rand(10, 20),
+            coords={"lat": np.arange(-90, 90, 18), "lon": np.arange(0, 360, 18)},
+            dims=("lat", "lon"),
+            name="temp",
+        )
+        da.lat.attrs.update({"standard_name": "latitude", "units": "degrees_north"})
+        da.lon.attrs.update({"standard_name": "longitude", "units": "degrees_east"})
+
+        regridder = Regridder(data=da)
+        regridder.logger = MagicMock()  # Mock the logger
+        regridder.weights(tgt_grid_name="r30x15", regrid_method="bil", initialize=False)
+        _ = regridder.regrid(da)
+        regridder.logger.error.assert_called()  # this should fail
+
+        regridder = Regridder(data=da)
+        regridder.logger = MagicMock()  # Mock the logger
+        regridder.weights(tgt_grid_name="r30x15", regrid_method="bil", initialize=True)
+        _ = regridder.regrid(da)
+        regridder.logger.error.assert_not_called()  # this should not fail
 
     def test_regridder_invalid_data_type(self):
         """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""

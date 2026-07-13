@@ -9,7 +9,7 @@ from importlib import resources as pypath
 
 from dask.distributed import LocalCluster
 
-from aqua.core.analysis import get_aqua_paths, run_command, run_diagnostic_func
+from aqua.core.analysis import configure_experiment_kind, get_aqua_paths, run_command, run_diagnostic_collection
 from aqua.core.configurer import ConfigPath
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
@@ -29,23 +29,38 @@ def analysis_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Run AQUA diagnostics.")
     # fmt: off
+    # sources
+    parser.add_argument("-c", "--catalog", type=str, help="Catalog")
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
     parser.add_argument("--source_oce", type=str,
         help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
     parser.add_argument("--realization", type=str, help="Realization (default: None)")
-    parser.add_argument("-d", "--outputdir", type=str, help="Output directory")
-    parser.add_argument("-f", "--config", type=str, help="Configuration file")
-    parser.add_argument("-c", "--catalog", type=str, help="Catalog")
-    parser.add_argument("--regrid", type=str, default="False",
-                        help="Regrid option (Target grid/False). If False, no regridding will be performed.")
-    parser.add_argument("--local_clusters", action="store_true",
-                        help="Use separate local clusters instead of single global one")
-    parser.add_argument("-p", "--parallel", action="store_true", help="Run diagnostics in parallel with a cluster")
-    parser.add_argument("-t", "--threads", type=int, default=-1, help="Maximum number of threads")
+
+    # default options for diagnostics
     parser.add_argument("--startdate", type=str, help="Start date (YYYY-MM-DD)")
     parser.add_argument("--enddate", type=str, help="End date (YYYY-MM-DD)")
+    parser.add_argument("--regrid", type=str, default="False",
+                        help="Regrid option (Target grid/False). If False, no regridding will be performed.")
+
+    # configuration
+    parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
+    parser.add_argument("--config", type=str, help="Configuration file")
+    parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
+
+    # computation
+    parser.add_argument("--local_clusters", action="store_true",
+                        help="Use separate local clusters instead of single global one (deprecated)")
+    parser.add_argument("--serial", action="store_true", help="Disable dask parallel execution with a cluster")
+    parser.add_argument("--nworkers", type=int, default=None,
+                        help="Number of workers to use in the cluster (overrides config file)")
+    parser.add_argument("--nthreads", type=int, default=None,
+                        help="Number of threads per worker to use in the cluster (overrides config file)")
+    parser.add_argument("--nmaxprocesses", type=int, default=-1,
+                        help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
+
+    # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                         default="INFO", help="Log level")
@@ -105,10 +120,11 @@ def analysis_execute(args):
             sys.exit(1)
 
     outputdir = os.path.expandvars(args.outputdir or config.get("job", {}).get("outputdir", "./output"))
-    max_threads = args.threads
+    nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
 
     logger.debug("outputdir: %s", outputdir)
-    logger.debug("max_threads: %d", max_threads)
+    if nmaxprocesses is not None:
+        logger.debug("nmaxprocesses: %d", nmaxprocesses)
 
     # Format the realization string by prepending 'r' if it is a digit or setting a default `r1`.
     realization = format_realization(realization)
@@ -136,6 +152,11 @@ def analysis_execute(args):
 
     # expand the environment variables in the entire config
     config = expand_env_vars(config)
+
+    # read the experiment kind
+    exp_kind_file = config.get("job", {}).get("experiment_kind")
+    exp_kind = args.kind
+    exp_kind_dict = configure_experiment_kind(exp_kind, exp_kind_file, logger)
 
     run_checker = config.get("job", {}).get("run_checker", False)
     if run_checker:
@@ -167,15 +188,23 @@ def analysis_execute(args):
         logger.error("No run block found in configuration.")
         sys.exit(1)
 
-    if args.parallel:
+    if args.serial:
+        if args.local_clusters or args.nworkers or args.nthreads:
+            logger.warning("Serial execution selected, ignoring local cluster and worker/thread settings.")
+
+        logger.info("Running diagnostic collections without a dask cluster.")
+        cluster = None
+        cluster_address = None
+    else:
         if args.local_clusters:
-            logger.info("Running diagnostics in parallel with separate local clusters.")
+            logger.info("Running diagnostic collections in parallel with separate local clusters.")
             cluster = None
             cluster_address = None
         else:
-            nthreads = config.get("cluster", {}).get("threads", 2)
-            nworkers = config.get("cluster", {}).get("workers", 64)
+            nthreads = args.nthreads if args.nthreads is not None else config.get("cluster", {}).get("threads", 2)
+            nworkers = args.nworkers if args.nworkers is not None else config.get("cluster", {}).get("workers", 32)
             mem_limit = config.get("cluster", {}).get("memory_limit", "3.1GiB")
+            logger.debug("Cluster configuration - nthreads: %d, nworkers: %d, memory_limit: %s", nthreads, nworkers, mem_limit)
 
             # silence_logs to avoids excessive logging (see https://github.com/dask/dask/issues/9888)
             cluster = LocalCluster(
@@ -183,10 +212,6 @@ def analysis_execute(args):
             )
             cluster_address = cluster.scheduler_address
             logger.info("Initialized global dask cluster %s providing %d workers.", cluster_address, len(cluster.workers))
-    else:
-        logger.info("Running diagnostics without a dask cluster.")
-        cluster = None
-        cluster_address = None
 
     # read cli definitions and prepend script path
     cli = config.get("cli", {})
@@ -196,23 +221,23 @@ def analysis_execute(args):
             cli[diag] = os.path.join(script_dir, cli[diag])
 
     # Internal naming scheme:
-    # diagnostic: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
+    # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
     # tool: the name of the individual command-line tool being run, e.g. biases, ecmean, etc.
-    for diag_group in run:
-        with ThreadPoolExecutor(max_workers=max_threads if max_threads > 0 else None) as executor:
+    for collections in run:
+        with ThreadPoolExecutor(max_workers=nmaxprocesses) as executor:
             futures = []
-            for diagnostic in diag_group:
-                logger.info("Starting diagnostic: %s", diagnostic)
-                diag_config = config.get("diagnostics", {}).get(diagnostic)
+            for collection in collections:
+                logger.info("Starting diagnostic collection: %s", collection)
+                diag_config = config.get("diagnostics", {}).get(collection)
                 if diag_config is None:
-                    logger.error("Diagnostic '%s' not found in the configuration, skipping.", diagnostic)
+                    logger.error("Diagnostic collection '%s' not found in the configuration, skipping.", collection)
                     continue
 
                 futures.append(
                     executor.submit(
-                        run_diagnostic_func,
-                        diagnostic=diagnostic,
-                        parallel=args.parallel,
+                        run_diagnostic_collection,
+                        collection=collection,
+                        serial=args.serial,
                         diag_config=diag_config,
                         cli=cli,
                         catalog=catalog,
@@ -228,6 +253,7 @@ def analysis_execute(args):
                         loglevel=loglevel,
                         logger=logger,
                         cluster=cluster_address,
+                        exp_kind_dict=exp_kind_dict,
                     )
                 )
 
@@ -235,13 +261,13 @@ def analysis_execute(args):
                 try:
                     result = future.result()
                 except Exception as e:
-                    logger.error("Diagnostic raised an exception: %s", e)
+                    logger.error("Diagnostic collection raised an exception: %s", e)
 
     if cluster:
         cluster.close()
         logger.info("Dask cluster closed.")
 
-    logger.info("All diagnostics finished.")
+    logger.info("All diagnostic collections finished.")
 
 
 if __name__ == "__main__":

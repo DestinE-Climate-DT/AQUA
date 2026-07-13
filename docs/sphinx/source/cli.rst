@@ -25,32 +25,6 @@ Grids management
 This section describes the tools available to manage the grids used in AQUA,
 from the download and validation to the synchronization between different HPC platforms.
 
-.. _grids-downloader:
-
-Grids downloader
-^^^^^^^^^^^^^^^^
-
-The grids used in AQUA are available for download.
-A script in the ``cli/grids-downloader/`` folder is available
-
-Basic usage:
-
-.. code-block:: bash
-
-    bash grids-downloader.sh -o <outputdir> all | model
-
-This will download the grids to the ``<outputdir>`` used in AQUA.
-The output directory will be created if it does not exist.
-For the ClimateDT machines, the target folders are commented in the code for documentation.
-It is possible to specify if to download all the available grids or to download only a subset of the grids,
-by specifying the group of grids to download (usually one per model).
-
-.. warning::
-
-    From September 2025, the grids are stored and versioned using DVC (Data Version Control).
-    Grids downloader script still works but it will be deprecated in the near future.
-    Please refer to :ref:`aqua-dvc` for more information on how to access the data.
-
 .. _grid-from-data:
 
 Generation of grid from data
@@ -72,56 +46,6 @@ Basic usage:
 
     ./hpx-from-source.py -c config-hpx-nemo.yaml -l INFO
 
-.. _grids-sync:
-
-Grids synchronization
-^^^^^^^^^^^^^^^^^^^^^
-
-Since the upload of the grids to the SWIFT platform used to store the grids is available only from Levante,
-a simple script to synchronize the grids from Levante to LUMI and viceversa is available in the ``cli/grids-downloader/`` folder.
-You will need to be logged to the destination platform to run the script and to have
-passwordless ssh access to the source platform.
-
-Basic usage:
-
-.. code-block:: bash
-
-    bash grids-sync.sh [levante_to_lumi | lumi_to_levante]
-
-This will synchronize the grids from Levante to LUMI or viceversa.
-
-.. warning::
-
-    If more grids are added to the Levante platform, the SWIFT database should be updated.
-    Please contact the AQUA team to upload new relevant grids to the SWIFT platform.
-    From September 2025, the grids are stored and versioned using DVC (Data Version Control).
-    Grids synchronization script still works but it will be deprecated in the near future.
-    Please refer to :ref:`aqua-dvc` for more information on how to access the data.
-
-Grids uploader
-^^^^^^^^^^^^^^
-
-A script to upload the grids to the SWIFT platform is available in the ``cli/grids-downloader/`` folder.
-You will need to be on levante and to have the access to the SWIFT platform to run the script.
-With the automatic setup updated folders will be uploaded in the same location on the SWIFT platform and
-no updates of the links in the `grids-downloader.sh` script will be needed.
-
-Basic usage:
-
-.. code-block:: bash
-
-    bash grids-uploader.sh [all | modelname]
-
-.. note::
-
-    The script will check that a valid SWIFT token is available before starting the upload.
-    If the token is not available, the script will ask the user to login to the SWIFT platform to obtain a new token.
-
-.. warning::
-
-    From September 2025, the grids are stored and versioned using DVC (Data Version Control).
-    Grids uploader script still works but it will be deprecated in the near future.
-    Please refer to :ref:`aqua-dvc` for more information on how to access the data.
 
 .. _orca:
 

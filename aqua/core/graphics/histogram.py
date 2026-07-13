@@ -172,7 +172,7 @@ def plot_histogram(
 
     # Set title if provided
     if title:
-        ax.set_title(title, fontsize=13, fontweight="bold")
+        ax.set_title(title, fontsize=13)
 
     return fig, ax
 
