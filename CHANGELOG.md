@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Remove the intake-xarray dependency (#2958)
 - z3fdb intake driver (#2940)
 - Update submit_aqua_web tool to support kind and separate templates (#2921))
 - DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
