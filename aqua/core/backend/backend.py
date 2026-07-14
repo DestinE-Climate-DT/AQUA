@@ -124,8 +124,25 @@ class Backend(ABC):
         """Store date bounds for lazy application."""
         return data.sel(time=slice(startdate, enddate))
 
-    def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
-        """Store level selection for lazy application."""
+    def _sellevel(
+        self,
+        data: xr.Dataset,
+        level: str | list = None,
+        level_coord: str = None,
+        vertical_coords: list = ["isobaric", "depth", "height"],
+    ):
+        """
+        Vertical level selection based on provided level(s) and optional vertical coordinate name.
+        Args:
+            data (xr.Dataset): The input dataset to be processed.
+            level (str | list, optional): Level(s) to select. Defaults to None.
+            level_coord (str, optional): Name of the vertical coordinate. Defaults to None.
+            vertical_coords (list, optional): List of recognized vertical coordinate from data model.
+                                              Defaults to ["isobaric", "depth", "height"].
+        """
+        if level is None:
+            self.logger.error("No level(s) provided, no vertical selection applied.")
+            return data
 
         if level_coord:
             if level_coord not in data.coords:
@@ -139,7 +156,7 @@ class Backend(ABC):
             # use data model to identify vertical coordinates (isobaric, depth and height)
             # TODO: modify data model so that this info is available without instantiating the data model class
             coords = CoordIdentifier(data.coords).identify_coords()
-            data_level_coord = [y["name"] for x, y in coords.items() if y is not None and x in ["isobaric", "depth", "height"]]
+            data_level_coord = [y["name"] for x, y in coords.items() if y is not None and x in vertical_coords]
 
             # return if no vertical coordinate is found
             if not data_level_coord:
@@ -153,7 +170,7 @@ class Backend(ABC):
 
         # error for multiple vertical coordinates found or provided
         if len(select_coord) > 1:
-            self.logger.error("Multiple vertical coordinates found in data: %s. No selection will be applied")
+            self.logger.error("Multiple vertical coordinates found in data: %s. No selection will be applied", select_coord)
             return data
 
         # pick only one coordinate
@@ -163,14 +180,14 @@ class Backend(ABC):
         level = to_list(level)
 
         # check if levels are among the values in the coordinate
-        if not all(l in data[select_coord].values for l in level):
-            self.logger.error("Levels %s not found in vertical coordinate %s!", level, select_coord)
-        else:
-            self.logger.debug("Selecting vertical coordinate %s = %s", select_coord, level)
-            data = data.sel(**{select_coord: level})
-            # data = log_history(data, f"Selecting levels {level} from vertical coordinate {select_coord}")
+        available = data[select_coord].values
+        missing = [lev for lev in level if lev not in available]
+        if missing:
+            self.logger.error("Levels %s not found in vertical coordinate %s!", missing, select_coord)
+            return data
 
-        return data
+        self.logger.debug("Selecting vertical coordinate %s = %s", select_coord, level)
+        return data.sel(**{select_coord: level})
 
     def _selvar(self, data: xr.Dataset, var: str | list = None):
         if isinstance(var, str):

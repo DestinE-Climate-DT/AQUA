@@ -7,7 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
-- Update submit_aqua_web tool to support kind and separate templates (#2921))
+- Backend: vertical coordinate detection is done through DataModel (#2950)
+- Update submit_aqua_web tool to support kind and separate templates (#2921)
 - DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
 - Remove bold from graphics functions (#2916)
 - More info on the origin of a push to lumi-o in the logs (#2910)
