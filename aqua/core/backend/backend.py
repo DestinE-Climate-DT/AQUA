@@ -183,9 +183,12 @@ class Backend(ABC):
         available = data[select_coord].values
         missing = [lev for lev in level if lev not in available]
         if missing:
-            self.logger.error("Levels %s not found in vertical coordinate %s!", missing, select_coord)
+            self.logger.error(
+                "Levels %s not found in vertical coordinate %s! Returning unfiltered data!", missing, select_coord
+            )
             return data
 
+        # return selection of any levels that are available in the coordinate
         self.logger.debug("Selecting vertical coordinate %s = %s", select_coord, level)
         return data.sel(**{select_coord: level})
 
