@@ -137,7 +137,7 @@ def _load_generated_sources(config):
     model = config["model"]
     exp = config["exp"]
 
-    catalog_entry_dir = catalog_path / "catalogs" / catalog_dir / "catalog" / model.upper()
+    catalog_entry_dir = catalog_path / "catalogs" / catalog_dir / "catalog" / model
     entry_file = catalog_entry_dir / f"{exp}.yaml"
     main_yaml_file = catalog_entry_dir / "main.yaml"
 
@@ -153,9 +153,9 @@ def _load_generated_sources(config):
     [
         ("IFS-NEMO", "minimal", "lowres", 4, NEMO_OCEAN_LEVELS, 5),
         ("IFS-NEMO", "reduced", "intermediate", 9, NEMO_OCEAN_LEVELS, 5),
-        ("IFS-NEMO", "full", "production", 28, NEMO_OCEAN_LEVELS, 1),
+        ("IFS-NEMO-5km", "full", "production", 28, NEMO_OCEAN_LEVELS, 1),
         ("IFS-FESOM", "full", "production", 31, FESOM_OCEAN_LEVELS, 1),
-        ("ICON", "full", "production", 27, ICON_OCEAN_LEVELS, 1),
+        ("ICON-10km", "full", "production", 27, ICON_OCEAN_LEVELS, 1),
     ],
 )
 @pytest.mark.catgen
