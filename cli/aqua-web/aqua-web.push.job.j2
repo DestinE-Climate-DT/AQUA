@@ -2,8 +2,8 @@
 #SBATCH --job-name={{ job_name }}
 #SBATCH --partition={{ partition }}
 #SBATCH --account={{ account }}
-#SBATCH --nodes={{ nodes }}
-#SBATCH --ntasks-per-node={{ ntasks_per_node }}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
 #SBATCH --time={{ time }}
 #SBATCH --error={{ logdir_error }}/{{ error }}
 #SBATCH --output={{ logdir_output }}/{{ output }}
@@ -23,17 +23,17 @@ unset SINGULARITY_BIND  # Lumi specific fix for singularity
 
 if [[ "{{ nativeaqua }}" == "true" ]]; then
     if [[ "{{ ensemble }}" == "true" ]]; then
-        aqua analysis -l debug -c $catalog -m $model -e $exp --realization {{ realization }} -s $source {{ kind }} -o $OUTDIR {{ serial }}
+        bash $AQUA/cli/aqua-web/push_analysis.sh $OUTDIR {{ explist }}
     else
-        aqua analysis -l debug -c $catalog -m $model -e $exp -s $source {{ kind }} -o $OUTDIR {{ serial }}
+        bash $AQUA/cli/aqua-web/push_analysis.sh --no-ensemble $OUTDIR {{ explist }}
     fi
 else
     bash $AQUA/cli/aqua-container/load-aqua-container.sh {{ machine }} <<EOF
 #!/bin/bash
     if [[ "{{ ensemble }}" == "true" ]]; then
-        aqua analysis -l debug -c $catalog -m $model -e $exp --realization {{ realization }} -s $source {{ kind }} -o $OUTDIR {{ serial }}
+        bash $AQUA/cli/aqua-web/push_analysis.sh $OUTDIR {{ explist }}
     else
-        aqua analysis -l debug -c $catalog -m $model -e $exp -s $source {{ kind }} -o $OUTDIR {{ serial }}
+        bash $AQUA/cli/aqua-web/push_analysis.sh --no-ensemble $OUTDIR {{ explist }}
     fi
 EOF
 fi

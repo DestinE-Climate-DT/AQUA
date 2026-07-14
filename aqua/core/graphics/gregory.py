@@ -120,7 +120,7 @@ def plot_gregory_monthly(
 
         # Optimized text rendering
         for m, x, y in zip(range(1, 13), t2m_ref.values[:-1], net_toa_ref.values[:-1]):
-            ax.annotate(str(m), (x, y), color="white", fontsize=8, ha="center", va="center", fontweight="bold", zorder=4)
+            ax.annotate(str(m), (x, y), color="white", fontsize=8, ha="center", va="center", zorder=4)
 
     return fig, ax
 

@@ -92,6 +92,7 @@ def analysis_execute(args):
     # maximum parallel processes for the ThreadPoolExecutor
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
     logger.debug("nmaxprocesses: %d", nmaxprocesses)
+
     # read the experiment kind and configure
     exp_kind_file = job_config.get("experiment_kind")
     analyzer.configure_experiment_kind(args.kind, exp_kind_file)

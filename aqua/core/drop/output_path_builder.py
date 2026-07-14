@@ -5,7 +5,7 @@ DROP Output Path Builder
 import os
 from typing import Optional
 
-from aqua.core.util import format_realization
+from aqua.core.util import format_realization, to_list
 
 
 class OutputPathBuilder:
@@ -23,7 +23,6 @@ class OutputPathBuilder:
         frequency: Optional[str] = None,
         stat: Optional[str] = None,
         region: Optional[str] = None,
-        level: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -37,7 +36,6 @@ class OutputPathBuilder:
             frequency (str): Frequency. Default is None.
             stat (str): Statistic type. Default is 'nostat'.
             region (str): Region. Default is 'global'.
-            level (str): Level. Default is None.
             kwargs: Additional keyword arguments for flexibility.
         """
 
@@ -54,15 +52,15 @@ class OutputPathBuilder:
         self.stat = stat if stat is not None else "nostat"
         self.region = region if region is not None else "global"
 
-        self.level = level
         self.kwargs = kwargs or {}
 
-    def build_path(self, basedir, var, year=None, month=None, day=None, output_format=".nc"):
+    def build_path(self, basedir, var, level=None, year=None, month=None, day=None, output_format=".nc"):
         """Ceate the full path to the output file.
 
         Args:
             basedir (str): Base directory for the output files.
             var (str): Variable name to include in the filename. Can be a wildcard.
+            level (str or list, optional): Level(s) to include in the filename. Defaults to None.
             year (int, optional): Year to include in the filename. Defaults to None.
                                   Can be a wildcard.
             month (int, optional): Month to include in the filename. Defaults to None.
@@ -74,7 +72,7 @@ class OutputPathBuilder:
             str: The full path to the output file.
         """
         folder = self.build_directory()
-        filename = self.build_filename(var, year, month, day, output_format=output_format)
+        filename = self.build_filename(var, level, year, month, day, output_format=output_format)
         return os.path.join(basedir, folder, filename)
 
     def build_directory(self):
@@ -88,7 +86,7 @@ class OutputPathBuilder:
         folder = os.path.join(*[p for p in parts if p])
         return folder
 
-    def build_filename(self, var=None, year=None, month=None, day=None, output_format=".nc"):
+    def build_filename(self, var=None, level=None, year=None, month=None, day=None, output_format=".nc"):
         """
         Create the filename based on the class parameters.
         Variable and year are set as wildcards by default if not provided.
@@ -96,6 +94,7 @@ class OutputPathBuilder:
 
         Args:
             var (str, optional): Variable name to include in the filename. Defaults to None. Can be a wildcard.
+            level (int or float or list, optional): Level(s) to include in the filename. Defaults to None.
             year (int, optional): Year to include in the filename. Defaults to None. Can be a wildcard.
             month (int, optional): Month to include in the filename. Defaults to None. Can be a wildcard.
             day (int, optional): Day to include in the filename. Defaults to None. Can be a wildcard.
@@ -108,8 +107,9 @@ class OutputPathBuilder:
         var = "*" if var is None else var
         year = "*" if year is None else year
 
-        # specific case for potential levels
-        varname = f"{var}{self.level}" if self.level else var
+        # specific case for a specific list of levels
+        level = to_list(str(level)) if level is not None else None
+        varname = f"{var}_{'_'.join(level)}" if level else var
 
         components = [
             varname,

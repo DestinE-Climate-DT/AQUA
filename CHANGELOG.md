@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.0.0):
 
 Complete list:
+- Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2925)
+- Update submit_aqua_web tool to support kind and separate templates (#2921))
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
+- Update submit_aqua_web tool to support kind and separate templates (#2921)
+- DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
+- Remove bold from graphics functions (#2916)
+- More info on the origin of a push to lumi-o in the logs (#2910)
+- DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
 - AQUA analysis refactored as a class, cleaned up parser, config files templates and extended tests (#2897)
 - Introduced a `DaskCluster` class to centralize dask setup and shutdown (#2897)

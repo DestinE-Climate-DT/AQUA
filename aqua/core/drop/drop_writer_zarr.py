@@ -128,19 +128,22 @@ class ZarrWriter(BaseWriter):
         """Open one or more Zarr stores."""
         return xr.open_mfdataset(filepaths, engine="zarr", combine="by_coords", consolidated=False)
 
-    def concat_year_files(self, var, year):
+    def concat_year_files(self, var, year, level=None):
         """
         Concatenate monthly zarr stores into a single yearly store.
 
         Args:
             var: Variable name
             year: Year to concatenate
+            level: Level (optional, for filename generation)
 
         Returns:
             bool: True if successful
         """
         # Prepare monthly stores for concatenation (Zarr requires 12 like NetCDF for consistency)
-        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=12)
+        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(
+            var, year, level=level, minimum_required=12
+        )
 
         if tmp_monthly_files is None:
             return False

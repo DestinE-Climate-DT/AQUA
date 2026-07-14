@@ -109,7 +109,7 @@ class NetCDFWriter(BaseWriter):
         """Open one or more NetCDF files."""
         return xr.open_mfdataset(filepaths, combine="by_coords", parallel=True)
 
-    def concat_year_files(self, var, year):
+    def concat_year_files(self, var, year, level=None):
         """
         Concatenate monthly files into a single yearly file.
 
@@ -118,6 +118,7 @@ class NetCDFWriter(BaseWriter):
         Args:
             var: Variable name
             year: Year to concatenate
+            level: Level (optional, for filename generation)
 
         Returns:
             bool: True if successful

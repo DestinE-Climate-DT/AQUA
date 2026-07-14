@@ -110,7 +110,7 @@ def plot_seasonal_lat_lon_profiles(
 
     # Add overall title if provided
     if title:
-        fig.suptitle(title, fontsize=14, fontweight="bold", y=0.98)
+        fig.suptitle(title, fontsize=14, y=0.98)
 
     fig.set_layout_engine("tight")
 

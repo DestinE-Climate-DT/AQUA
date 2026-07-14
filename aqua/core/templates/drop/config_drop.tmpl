@@ -13,6 +13,7 @@ target:
   startdate: {{ startdate }}  # Optional: starting date for Drop analysis
   enddate: {{ enddate }}      # Optional: ending date for Drop analysis
   stat: mean                  # Optional: Statistical operator (default: mean). Options: mean, std, max, min, sum, histogram
+  # level: [500, 700] # int, float or list # Optional: Level(s) to be analysed
   # Additional option: kwargs for the statistical callable function can be set
   # here as a dictionary
   stat_kwargs: {}
@@ -25,6 +26,7 @@ target:
   #  name: Europe        # Region identifier
   #  lat: [35, 70]       # Latitude range [min, max]
   #  lon: [-10, 40]      # Longitude range [min, max]
+  #  drop: False         # Wether to drop Nan in the regional selection
 
 
 # Output paths
