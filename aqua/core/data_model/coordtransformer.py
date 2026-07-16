@@ -7,6 +7,8 @@ from aqua.core.logger import log_configure, log_history
 from .coord_utils import get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
+IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
+
 
 class CoordTransformer:
     """
@@ -312,7 +314,6 @@ class CoordTransformer:
             return data
         if coord_name not in data.coords:
             return data
-
         lon_range = tgt_coord.get("range")
         if lon_range is None:
             self.logger.debug(
@@ -320,11 +321,21 @@ class CoordTransformer:
                 coord_name,
             )
             return data
-        if not (isinstance(lon_range, (list, tuple)) and len(lon_range) == 2):
-            self.logger.warning("Invalid 'range' for coordinate %s: %s. Skipping.", coord_name, lon_range)
+
+        if isinstance(lon_range, str):
+            if lon_range == "0_360":
+                lo, hi = 0.0, 360.0
+            elif lon_range in ["180_180", "-180_180"]:
+                lo, hi = -180.0, 180.0
+            else:
+                self.logger.warning("Unknown string 'range' for coordinate %s: %s. Skipping.", coord_name, lon_range)
+                return data
+        elif isinstance(lon_range, (list, tuple)) and len(lon_range) == 2:
+            lo, hi = lon_range[0], lon_range[1]
+        else:
+            self.logger.warning("Invalid 'range' format for coordinate %s: %s. Skipping.", coord_name, lon_range)
             return data
 
-        lo, hi = lon_range
         span = hi - lo
         if span <= 0:
             self.logger.warning("Invalid 'range' span for coordinate %s: %s. Skipping.", coord_name, lon_range)
@@ -360,7 +371,7 @@ class CoordTransformer:
         Assign attributes to the coordinate.
         """
         for key, value in tgt_coord.items():
-            if key not in ["name", "units", "positive", "stored_direction", "bounds", "range"]:
+            if key not in IGNORED_ATTRIBUTES:
                 if key not in data.coords[tgt_coord["name"]].attrs:
                     self.logger.debug("Adding attribute %s to coordinate %s", key, tgt_coord["name"])
                     data.coords[tgt_coord["name"]].attrs[key] = value

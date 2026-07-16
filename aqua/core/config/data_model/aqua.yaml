@@ -19,7 +19,7 @@ data_model:
     long_name: longitude
     stored_direction: increasing
     units: degrees_east
-    range: [0, 360]
+    range: "0_360"
     axis: X
 
   isobaric:

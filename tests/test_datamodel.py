@@ -225,7 +225,7 @@ class TestLongitudeRangeNormalization:
         ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
         transformer = CoordTransformer(self._lon_dataset(np.array([0.0])), loglevel="debug")
 
-        tgt_coord = {"name": "lon", "range": [0, 360]}
+        tgt_coord = {"name": "lon", "range": "0_360"}
         result = transformer.normalize_longitude_range(ds, tgt_coord)
 
         np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
@@ -240,7 +240,7 @@ class TestLongitudeRangeNormalization:
         )
         transformer = CoordTransformer(self._lon_dataset(np.array([0.0])), loglevel="debug")
 
-        tgt_coord = {"name": "lon", "range": [0, 360], "bounds": "lon_bnds"}
+        tgt_coord = {"name": "lon", "range": "0_360", "bounds": "lon_bnds"}
         result = transformer.normalize_longitude_range(ds, tgt_coord)
 
         assert result.lon_bnds.values.min() >= 0
@@ -267,7 +267,7 @@ class TestLongitudeRangeNormalization:
         transformer = CoordTransformer(self._lon_dataset(np.array([0.0])), loglevel="debug")
 
         # even with a 'range' declared, a non-longitude coord must be left alone
-        tgt_coord = {"name": "latitude", "range": [0, 360]}
+        tgt_coord = {"name": "latitude", "range": "0_360"}
         result = transformer.normalize_longitude_range(ds, tgt_coord)
 
         np.testing.assert_array_equal(result.latitude.values, [-180.0, 0.0, 90.0])
@@ -277,7 +277,7 @@ class TestLongitudeRangeNormalization:
         ds = xr.Dataset(coords={"lat": [0.0, 10.0]})
         transformer = CoordTransformer(self._lon_dataset(np.array([0.0])), loglevel="debug")
 
-        tgt_coord = {"name": "lon", "range": [0, 360]}
+        tgt_coord = {"name": "lon", "range": "0_360"}
         result = transformer.normalize_longitude_range(ds, tgt_coord)
 
         assert "lon" not in result.coords

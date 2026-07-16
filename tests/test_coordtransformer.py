@@ -361,7 +361,7 @@ class TestNormalizeLongitudeRange:
         ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": [0, 360]}
+        tgt = {"name": "lon", "range": "0_360"}
         result = transformer.normalize_longitude_range(ds, tgt)
 
         np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
@@ -379,19 +379,25 @@ class TestNormalizeLongitudeRange:
         ds = xr.Dataset(coords={"lat": [-170.0, 10.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lat", "range": [0, 360]}
+        tgt = {"name": "lat", "range": "0_360"}
         result = transformer.normalize_longitude_range(ds, tgt)
 
         np.testing.assert_array_equal(result.lat.values, [-170.0, 10.0])
 
-    def test_invalid_range_shape_is_noop(self):
+    def test_invalid_range_format_is_noop(self):
+        """Malformed ranges (lists with wrong length or unknown strings) should be a no-op."""
         ds = xr.Dataset(coords={"lon": [-170.0, 10.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": [0, 180, 360]}  # malformed: 3 elements
-        result = transformer.normalize_longitude_range(ds, tgt)
+        # 1. Test malformed list (3 elements)
+        tgt_list = {"name": "lon", "range": [0, 180, 360]}
+        result_list = transformer.normalize_longitude_range(ds, tgt_list)
+        np.testing.assert_array_equal(result_list.lon.values, [-170.0, 10.0])
 
-        np.testing.assert_array_equal(result.lon.values, [-170.0, 10.0])
+        # 2. Test unknown string format
+        tgt_str = {"name": "lon", "range": "0_180_360"}
+        result_str = transformer.normalize_longitude_range(ds, tgt_str)
+        np.testing.assert_array_equal(result_str.lon.values, [-170.0, 10.0])
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +425,7 @@ class TestAssignAttributes:
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": [0, 360], "axis": "X"}
+        tgt = {"name": "lon", "range": "0_360", "axis": "X"}
         result = transformer.assign_attributes(ds, tgt)
 
         assert "range" not in result.lon.attrs
