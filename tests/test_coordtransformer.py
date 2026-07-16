@@ -390,6 +390,41 @@ class TestNormalizeLongitudeRange:
         result_str = transformer.normalize_longitude_range(ds, tgt_str)
         np.testing.assert_array_equal(result_str.lon.values, [-170.0, 10.0])
 
+    def test_regional_data_crossing_boundary_is_noop(self):
+        """
+        If wrapping regional data (span < 350) crosses the map boundary, its
+        mathematical span will artificially explode (e.g., -20 to 40 becomes 340 to 40,
+        changing the span from 60 to 340). This should be caught and aborted.
+        """
+        # Regional array crossing the prime meridian (span = 60)
+        lon = np.array([-20.0, 0.0, 20.0, 40.0])
+        ds = xr.Dataset(coords={"lon": lon})
+        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+
+        tgt = {"name": "lon", "range": "0_360"}
+        result = transformer.normalize_longitude_range(ds, tgt)
+
+        # Because wrapping shatters the array (span jumps from 60 to 340),
+        # the transformation must be skipped.
+        np.testing.assert_array_equal(result.lon.values, lon)
+
+    def test_regional_data_not_crossing_boundary_wraps_safely(self):
+        """
+        If wrapping regional data does NOT shatter it across a boundary,
+        the wrap should proceed normally.
+        """
+        # Regional array entirely in the western hemisphere (span = 20)
+        lon = np.array([-100.0, -90.0, -80.0])
+        ds = xr.Dataset(coords={"lon": lon})
+        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+
+        tgt = {"name": "lon", "range": "0_360"}
+        result = transformer.normalize_longitude_range(ds, tgt)
+
+        # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
+        # It should succeed.
+        np.testing.assert_allclose(result.lon.values, [260.0, 270.0, 280.0])
+
 
 # ---------------------------------------------------------------------------
 # assign_attributes

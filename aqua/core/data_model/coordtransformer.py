@@ -338,21 +338,17 @@ class CoordTransformer:
         lon = data[coord_name]
         wrapped = ((lon - lo) % span) + lo
 
-        # Regional Data/Monotonicity Safety Check
-        # If the original coordinate is strictly sorted, but the wrapped one isn't,
-        # we've created a discontinuity (likely regional data crossing the wrap boundary).
-        # In this case, we must abort the wrap to avoid breaking xarray operations.
-        is_increasing = bool((lon.diff(dim=lon.dims[0]) > 0).all())
-        is_decreasing = bool((lon.diff(dim=lon.dims[0]) < 0).all())
+        # Regional Data Safety Check
+        # If the data is regional (span < 350 degrees), wrapping it across a boundary
+        # will shatter it into two pieces, artificially exploding its mathematical span.
+        lon_min, lon_max = float(lon.min()), float(lon.max())
+        data_span = lon_max - lon_min
 
-        if is_increasing or is_decreasing:
-            wrap_is_increasing = bool((wrapped.diff(dim=wrapped.dims[0]) > 0).all())
-            wrap_is_decreasing = bool((wrapped.diff(dim=wrapped.dims[0]) < 0).all())
-
-            if not (wrap_is_increasing or wrap_is_decreasing):
+        if data_span < 350:
+            wrap_min, wrap_max = float(wrapped.min()), float(wrapped.max())
+            if (wrap_max - wrap_min) > (data_span + 10):
                 self.logger.warning(
-                    "Wrapping longitude breaks monotonicity (likely regional data crossing boundary). Skipping wrap for %s.",
-                    coord_name,
+                    "Wrapping would shatter regional data across the map boundary. Skipping wrap for %s.", coord_name
                 )
                 return data
 
