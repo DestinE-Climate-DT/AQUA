@@ -315,12 +315,6 @@ class CoordTransformer:
         if coord_name not in data.coords:
             return data
         lon_range = tgt_coord.get("range")
-        if lon_range is None:
-            self.logger.debug(
-                "No 'range' declared in target data model for %s. Skipping longitude wrap.",
-                coord_name,
-            )
-            return data
 
         if isinstance(lon_range, str):
             if lon_range == "0_360":

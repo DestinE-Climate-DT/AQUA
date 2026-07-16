@@ -366,15 +366,6 @@ class TestNormalizeLongitudeRange:
 
         np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
 
-    def test_noop_without_range_key(self):
-        ds = xr.Dataset(coords={"lon": [-170.0, 10.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
-
-        tgt = {"name": "lon"}
-        result = transformer.normalize_longitude_range(ds, tgt)
-
-        np.testing.assert_array_equal(result.lon.values, [-170.0, 10.0])
-
     def test_ignores_non_longitude_coordinates(self):
         ds = xr.Dataset(coords={"lat": [-170.0, 10.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
