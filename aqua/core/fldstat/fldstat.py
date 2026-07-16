@@ -10,6 +10,8 @@ from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
 
+ATOL_FACTOR = 1.5
+
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
@@ -347,7 +349,7 @@ class FldStat:
                 # from sub-1e-6 representation noise, even though they are
                 # physically identical. np.isclose with an absolute+relative
                 # tolerance avoids this instability.
-                atol = 1.5 * 10 ** (-decimals)
+                atol = ATOL_FACTOR * 10 ** (-decimals)
                 if np.allclose(area_coord, data_coord, atol=atol, rtol=0):
                     self.logger.warning(
                         "Coordinate '%s' aligned within tolerance %.1e (differences below float precision noise).",
