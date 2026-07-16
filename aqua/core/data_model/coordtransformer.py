@@ -7,6 +7,8 @@ from aqua.core.logger import log_configure, log_history
 from .coord_utils import get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
+IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
+
 
 class CoordTransformer:
     """
@@ -94,6 +96,7 @@ class CoordTransformer:
                 if flip_coords:
                     data = self.flip_coordinate(data, src_coord, tgt_coord)
                 data = self.convert_units(data, src_coord, tgt_coord)
+                data = self.normalize_longitude_range(data, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
                 self.logger.info("Coordinate %s not found in source coordinates.", coord)
@@ -286,12 +289,97 @@ class CoordTransformer:
             data[tgt_coord["bounds"]].attrs["units"] = tgt_coord["units"]
         return data
 
+    def normalize_longitude_range(self, data, tgt_coord):
+        """
+        Wrap the longitude coordinate (and its bounds, if present) into the
+        numeric range declared by the target data model, e.g. "0_360" or "-180_180".
+
+        This is independent from convert_units: units bring lon into degrees_east,
+        this brings it into a specific wrap-around convention. Without this step
+        two datasets both correctly labelled "degrees_east" can still disagree
+        pointwise (0..360 vs -180..180) even though they describe the same cells.
+
+        Args:
+            data (xr.Dataset or xr.DataArray): The Xarray object.
+            tgt_coord (dict): Target coordinate dictionary, as defined in the
+                data model YAML. Only acts on the longitude coordinate, and only
+                if a "range": [lo, hi] key is present; otherwise a no-op so this
+                stays fully backward compatible with data models that don't set it.
+
+        Returns:
+            xr.Dataset or xr.DataArray: The Xarray object with longitude wrapped.
+        """
+        coord_name = tgt_coord.get("name")
+        if coord_name not in ("lon", "longitude"):
+            return data
+        if coord_name not in data.coords:
+            return data
+        lon_range = tgt_coord.get("range")
+
+        if isinstance(lon_range, str):
+            if lon_range == "0_360":
+                lo, hi = 0.0, 360.0
+            elif lon_range in ["180_180", "-180_180"]:
+                lo, hi = -180.0, 180.0
+            else:
+                self.logger.warning("Unknown string 'range' for coordinate %s: %s. Skipping.", coord_name, lon_range)
+                return data
+        elif isinstance(lon_range, (list, tuple)) and len(lon_range) == 2:
+            lo, hi = lon_range[0], lon_range[1]
+        else:
+            self.logger.warning("Invalid 'range' format for coordinate %s: %s. Skipping.", coord_name, lon_range)
+            return data
+
+        span = hi - lo
+        if span <= 0:
+            self.logger.warning("Invalid 'range' span for coordinate %s: %s. Skipping.", coord_name, lon_range)
+            return data
+
+        lon = data[coord_name]
+        wrapped = ((lon - lo) % span) + lo
+
+        # Regional Data Safety Check
+        # If the data is regional (span < 350 degrees), wrapping it across a boundary
+        # will shatter it into two pieces, artificially exploding its mathematical span.
+        lon_min, lon_max = float(lon.min()), float(lon.max())
+        data_span = lon_max - lon_min
+
+        if data_span < 350:
+            wrap_min, wrap_max = float(wrapped.min()), float(wrapped.max())
+            if (wrap_max - wrap_min) > (data_span + 10):
+                self.logger.warning(
+                    "Wrapping would shatter regional data across the map boundary. Skipping wrap for %s.", coord_name
+                )
+                return data
+
+        # only touch things if there is actually something to fix, and only log/attrs then
+        if bool((wrapped != lon).any()):
+            self.logger.info(
+                "Wrapping coordinate %s into range [%s, %s]",
+                coord_name,
+                lo,
+                hi,
+            )
+            data = data.assign_coords({coord_name: wrapped})
+
+            bounds_name = tgt_coord.get("bounds")
+            if bounds_name and bounds_name in data:
+                self.logger.info("Wrapping bounds %s into range [%s, %s]", bounds_name, lo, hi)
+                data[bounds_name] = ((data[bounds_name] - lo) % span) + lo
+
+            log_history(
+                data,
+                f"Longitude coordinate {coord_name} wrapped into range [{lo}, {hi}] by datamodel",
+            )
+
+        return data
+
     def assign_attributes(self, data, tgt_coord):
         """
         Assign attributes to the coordinate.
         """
         for key, value in tgt_coord.items():
-            if key not in ["name", "units", "positive", "stored_direction", "bounds"]:
+            if key not in IGNORED_ATTRIBUTES:
                 if key not in data.coords[tgt_coord["name"]].attrs:
                     self.logger.debug("Adding attribute %s to coordinate %s", key, tgt_coord["name"])
                     data.coords[tgt_coord["name"]].attrs[key] = value

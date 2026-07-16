@@ -1,5 +1,6 @@
 """Testing if fldmean method works"""
 
+import numpy as np
 import pytest
 from conftest import LOGLEVEL
 
@@ -347,3 +348,105 @@ class TestAccessorFldStat:
         reader_result = reader_ifs.fldstat(data_var, stat=stat_name)
 
         assert accessor_result.equals(reader_result)
+
+
+@pytest.mark.aqua
+class TestAlignAreaCoordinates:
+    """
+    Unit tests for FldStat.align_area_coordinates().
+    Covers the fix for a rounding-boundary comparison bug on grids whose
+    spacing is a power-of-two fraction of 360 (e.g. reduced Gaussian grids).
+    """
+
+    @staticmethod
+    def _make_area_and_data(lon_area, lon_data, lat=None):
+        import xarray as xr
+
+        lat = lat if lat is not None else np.array([0.0, 10.0, 20.0])
+
+        area = xr.DataArray(
+            np.ones((len(lat), len(lon_area))),
+            dims=["lat", "lon"],
+            coords={"lat": lat, "lon": lon_area},
+            name="cell_area",
+        )
+        data = xr.DataArray(
+            np.ones((2, len(lat), len(lon_data))),
+            dims=["time", "lat", "lon"],
+            coords={"time": [0, 1], "lat": lat, "lon": lon_data},
+            name="var",
+        )
+        return area, data
+
+    def test_exact_match_fast_path(self):
+        """Coordinates identical: fast path, no change needed."""
+        lon = np.array([0.0, 30.0, 60.0, 90.0])
+        area, data = self._make_area_and_data(lon, lon.copy())
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        aligned = fld.align_area_coordinates(data)
+
+        np.testing.assert_array_equal(aligned.lon.values, data.lon.values)
+
+    def test_reversed_coordinate_alignment(self):
+        """Area lon reversed relative to data: should reindex, not raise."""
+        lon_data = np.array([0.0, 30.0, 60.0, 90.0])
+        lon_area = lon_data[::-1].copy()
+        area, data = self._make_area_and_data(lon_area, lon_data)
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        aligned = fld.align_area_coordinates(data)
+
+        np.testing.assert_array_equal(aligned.lon.values, lon_data)
+
+    def test_floating_point_noise_within_tolerance_aligns(self):
+        """Reproduces the float noise bug landing exactly on a rounding boundary."""
+        lon_data = np.array([28.828125, 45.703125, 55.546875, 61.171875])
+        lon_area = lon_data + np.array([0.0, 0.0, -4e-7, 3e-7])
+        area, data = self._make_area_and_data(lon_area, lon_data)
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        aligned = fld.align_area_coordinates(data)
+
+        np.testing.assert_array_equal(aligned.lon.values, lon_data)
+
+    def test_tolerance_boundary_just_within_aligns(self):
+        """A difference just under the tolerance threshold must still align."""
+        lon_data = np.array([50.0])
+        lon_area = np.array([50.0 + 1.4e-5])  # atol is 1.5e-5
+        area, data = self._make_area_and_data(lon_area, lon_data, lat=np.array([0.0]))
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        aligned = fld.align_area_coordinates(data)
+
+        np.testing.assert_array_equal(aligned.lon.values, lon_data)
+
+    def test_tolerance_boundary_just_outside_raises(self):
+        """A difference clearly beyond the tolerance must still raise."""
+        lon_data = np.array([50.0])
+        lon_area = np.array([50.0 + 5e-5])
+        area, data = self._make_area_and_data(lon_area, lon_data, lat=np.array([0.0]))
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        with pytest.raises(ValueError, match="Mismatch in values for coordinate 'lon'"):
+            fld.align_area_coordinates(data)
+
+    def test_genuine_convention_mismatch_still_raises(self):
+        """A real longitude-convention mismatch (0-360 vs -180/180) must still raise."""
+        lon_data = np.array([0.0, 18.0, 36.0, 342.0])
+        lon_area = np.array([0.0, 18.0, 36.0, -18.0])
+        area, data = self._make_area_and_data(lon_area, lon_data)
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        with pytest.raises(ValueError, match="Mismatch in values for coordinate 'lon'"):
+            fld.align_area_coordinates(data)
+
+    def test_size_mismatch_raises(self):
+        """A genuine length mismatch must raise before any value comparison is attempted."""
+        lon_data = np.array([0.0, 30.0, 60.0, 90.0])
+        lon_area = np.array([0.0, 30.0, 60.0])
+        area, data = self._make_area_and_data(lon_area, lon_data)
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        with pytest.raises(ValueError, match="lon has a mismatch in length"):
+            fld.align_area_coordinates(data)

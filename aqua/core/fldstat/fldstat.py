@@ -10,6 +10,8 @@ from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
 
+ATOL_FACTOR = 1.5
+
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
@@ -338,12 +340,23 @@ class FldStat:
                     self.area = self.area.reindex({coord: area_coord[::-1]})
                     continue
 
-                # Try alignment by rounding to specified decimals
-                area_rounded = np.round(area_coord, decimals=decimals)
-                data_rounded = np.round(data_coord, decimals=decimals)
-                if np.array_equal(area_rounded, data_rounded):
-                    self.logger.warning("Coordinate '%s' aligned by rounding to %d decimals.", coord, decimals)
-                    # assign the rounded coordinates to the area (matching data's rounded values)
+                # Tolerance-based check. This replaces a fragile round-then-compare
+                # approach: on grids whose spacing is a power-of-two fraction of 360
+                # (e.g. reduced Gaussian grids like tco1279), many coordinate values
+                # land exactly on a decimal rounding boundary (e.g. ...875 at 5
+                # decimals). Two independently-computed float64 representations of
+                # the "same" value can then round to different neighbours purely
+                # from sub-1e-6 representation noise, even though they are
+                # physically identical. np.isclose with an absolute+relative
+                # tolerance avoids this instability.
+                atol = ATOL_FACTOR * 10 ** (-decimals)
+                if np.allclose(area_coord, data_coord, atol=atol, rtol=0):
+                    self.logger.warning(
+                        "Coordinate '%s' aligned within tolerance %.1e (differences below float precision noise).",
+                        coord,
+                        atol,
+                    )
+                    # assign data's coordinate values (treated as the reference)
                     self.area = self.area.assign_coords({coord: data_coord})
                     continue
 
