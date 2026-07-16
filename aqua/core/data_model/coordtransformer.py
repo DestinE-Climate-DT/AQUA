@@ -292,7 +292,7 @@ class CoordTransformer:
     def normalize_longitude_range(self, data, tgt_coord):
         """
         Wrap the longitude coordinate (and its bounds, if present) into the
-        numeric range declared by the target data model, e.g. [0, 360] or [-180, 180].
+        numeric range declared by the target data model, e.g. "0_360" or "-180_180".
 
         This is independent from convert_units: units bring lon into degrees_east,
         this brings it into a specific wrap-around convention. Without this step
@@ -343,6 +343,24 @@ class CoordTransformer:
 
         lon = data[coord_name]
         wrapped = ((lon - lo) % span) + lo
+
+        # Regional Data/Monotonicity Safety Check
+        # If the original coordinate is strictly sorted, but the wrapped one isn't,
+        # we've created a discontinuity (likely regional data crossing the wrap boundary).
+        # In this case, we must abort the wrap to avoid breaking xarray operations.
+        is_increasing = bool((lon.diff(dim=lon.dims[0]) > 0).all())
+        is_decreasing = bool((lon.diff(dim=lon.dims[0]) < 0).all())
+
+        if is_increasing or is_decreasing:
+            wrap_is_increasing = bool((wrapped.diff(dim=wrapped.dims[0]) > 0).all())
+            wrap_is_decreasing = bool((wrapped.diff(dim=wrapped.dims[0]) < 0).all())
+
+            if not (wrap_is_increasing or wrap_is_decreasing):
+                self.logger.warning(
+                    "Wrapping longitude breaks monotonicity (likely regional data crossing boundary). Skipping wrap for %s.",
+                    coord_name,
+                )
+                return data
 
         # only touch things if there is actually something to fix, and only log/attrs then
         if bool((wrapped != lon).any()):
