@@ -7,7 +7,7 @@ import sys
 import pytest
 
 from aqua import __path__ as aqua_pkg_path
-from aqua.core.analysis.cli_checker import parse_arguments
+from aqua.core.analysis.cli_checker import build_reader_kwargs, parse_arguments
 
 pytestmark = pytest.mark.aqua
 
@@ -26,6 +26,8 @@ def test_cli_checker_parse_arguments():
             "--no-rebuild",
             "--realization", "r1",
             "--regrid", "r200",
+            "--engine", "polytope",
+            "--config", "/tmp/config.yaml",
         ]
     )
     # fmt: on
@@ -37,6 +39,8 @@ def test_cli_checker_parse_arguments():
     assert args.rebuild is False  # --no-rebuild sets rebuild=False
     assert args.realization == "r1"
     assert args.regrid == "r200"
+    assert args.engine == "polytope"
+    assert args.config == "/tmp/config.yaml"
 
     # Test defaults when flags are not provided
     args_defaults = parse_arguments(["--model", "IFS", "--exp", "test-tco79", "--source", "short"])
@@ -45,6 +49,74 @@ def test_cli_checker_parse_arguments():
     assert args_defaults.read is True  # Default is True (read data)
     assert args_defaults.rebuild is True  # Default is True (rebuild areas)
     assert args_defaults.realization is None
+    assert args_defaults.engine is None
+
+
+def test_build_reader_kwargs_from_cli(tmp_path):
+    """Test build_reader_kwargs uses CLI engine and realization."""
+    args = parse_arguments(
+        [
+            "--model",
+            "IFS",
+            "--exp",
+            "test-tco79",
+            "--source",
+            "short",
+            "--engine",
+            "polytope",
+            "--realization",
+            "r2",
+        ]
+    )
+    engine, reader_kwargs = build_reader_kwargs(args)
+    assert engine == "polytope"
+    assert reader_kwargs == {"realization": "r2"}
+
+
+def test_build_reader_kwargs_from_config(tmp_path):
+    """Test build_reader_kwargs merges job.reader_kwargs from config and CLI overrides."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("job:\n  reader_kwargs:\n    engine: polytope\n    zoom: 10\n")
+    args = parse_arguments(
+        [
+            "--model",
+            "IFS",
+            "--exp",
+            "test-tco79",
+            "--source",
+            "short",
+            "--config",
+            str(config_path),
+            "--realization",
+            "r1",
+        ]
+    )
+    engine, reader_kwargs = build_reader_kwargs(args)
+    assert engine == "polytope"
+    assert reader_kwargs == {"zoom": 10, "realization": "r1"}
+
+
+def test_build_reader_kwargs_cli_engine_overrides_config(tmp_path):
+    """Test CLI --engine overrides engine from config reader_kwargs."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("job:\n  reader_kwargs:\n    engine: polytope\n")
+    args = parse_arguments(
+        [
+            "--model",
+            "IFS",
+            "--exp",
+            "test-tco79",
+            "--source",
+            "short",
+            "--config",
+            str(config_path),
+            "--engine",
+            "fdb",
+        ]
+    )
+    engine, reader_kwargs = build_reader_kwargs(args)
+    assert engine == "fdb"
+    assert reader_kwargs == {}
 
 
 @pytest.mark.slow

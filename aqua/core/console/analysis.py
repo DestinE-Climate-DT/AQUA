@@ -172,6 +172,7 @@ def analysis_execute(args):
             command += f" --catalog {catalog}"
         if realization:
             command += f" --realization {realization}"
+        command += f" --config {aqua_config_path}"
         logger.debug("Command: %s", command)
         result = run_command(command, log_file=output_log_path, logger=logger)
 

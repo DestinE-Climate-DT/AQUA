@@ -10,7 +10,7 @@ import argparse
 import os
 import sys
 
-from aqua.core.util import template_parse_arguments
+from aqua.core.util import expand_env_vars, get_arg, load_yaml, template_parse_arguments
 
 
 def parse_arguments(args):
@@ -41,8 +41,35 @@ def parse_arguments(args):
         required=False,
         help="by default rebuild of areas is forced, this prevents it",
     )
+    parser.add_argument(
+        "--engine",
+        type=str,
+        default=None,
+        help="GSV engine to use for data retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.",
+    )
 
     return parser.parse_args(args)
+
+
+def build_reader_kwargs(args):
+    """Build Reader engine and kwargs from CLI args and optional analysis config.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        tuple[str, dict]: Engine name and remaining Reader keyword arguments.
+    """
+    reader_kwargs = {}
+    config_file = get_arg(args, "config", None)
+    if config_file:
+        config = expand_env_vars(load_yaml(config_file))
+        reader_kwargs.update(config.get("job", {}).get("reader_kwargs") or {})
+    realization = get_arg(args, "realization", None)
+    if realization:
+        reader_kwargs["realization"] = realization
+    engine = get_arg(args, "engine", None) or reader_kwargs.pop("engine", "fdb")
+    return engine, reader_kwargs
 
 
 if __name__ == "__main__":
@@ -76,8 +103,7 @@ if __name__ == "__main__":
     # which is 1 degree for the regrid. The user can override it
     # with the --regrid argument.
     regrid = get_arg(args, "regrid", "r100")
-    realization = get_arg(args, "realization", None)
-    reader_kwargs = {"realization": realization} if realization else {}
+    engine, reader_kwargs = build_reader_kwargs(args)
     yamldir = get_arg(args, "yaml", None)
     fread = getattr(args, "read", True)  # --no-read means fread=False, default is to read data
     frebuild = getattr(args, "rebuild", True)  # --no-rebuild means frebuild=False, default is to rebuild areas
@@ -96,6 +122,7 @@ if __name__ == "__main__":
             loglevel=loglevel,
             rebuild=frebuild,
             regrid=regrid,
+            engine=engine,
             **reader_kwargs,
         )
 
