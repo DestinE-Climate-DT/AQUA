@@ -26,7 +26,6 @@ def test_cli_checker_parse_arguments():
             "--no-rebuild",
             "--realization", "r1",
             "--regrid", "r200",
-            "--engine", "polytope",
             "--config", "/tmp/config.yaml",
         ]
     )
@@ -39,7 +38,6 @@ def test_cli_checker_parse_arguments():
     assert args.rebuild is False  # --no-rebuild sets rebuild=False
     assert args.realization == "r1"
     assert args.regrid == "r200"
-    assert args.engine == "polytope"
     assert args.config == "/tmp/config.yaml"
 
     # Test defaults when flags are not provided
