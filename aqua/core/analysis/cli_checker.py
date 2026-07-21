@@ -10,7 +10,7 @@ import argparse
 import os
 import sys
 
-from aqua.core.util import expand_env_vars, get_arg, load_yaml, template_parse_arguments
+from aqua.core.util import get_arg, template_parse_arguments
 
 
 def parse_arguments(args):
@@ -45,31 +45,6 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 
-def build_reader_kwargs(args):
-    """Build the Reader keyword arguments from CLI args and optional analysis config.
-
-    Keyword arguments declared under ``job.reader_kwargs`` in the analysis config
-    (e.g. ``engine: polytope``, ``databridge``) are forwarded to the Reader as-is,
-    so that the checker instantiates the Reader exactly like the analysis does.
-    Values given on the command line take precedence over the config.
-
-    Args:
-        args: Parsed command-line arguments.
-
-    Returns:
-        dict: Reader keyword arguments.
-    """
-    reader_kwargs = {}
-    config_file = get_arg(args, "config", None)
-    if config_file:
-        config = expand_env_vars(load_yaml(config_file)) or {}
-        reader_kwargs.update(config.get("job", {}).get("reader_kwargs") or {})
-    realization = get_arg(args, "realization", None)
-    if realization:
-        reader_kwargs["realization"] = realization
-    return reader_kwargs
-
-
 if __name__ == "__main__":
     args = parse_arguments(sys.argv[1:])
 
@@ -101,7 +76,8 @@ if __name__ == "__main__":
     # which is 1 degree for the regrid. The user can override it
     # with the --regrid argument.
     regrid = get_arg(args, "regrid", "r100")
-    reader_kwargs = build_reader_kwargs(args)
+    realization = get_arg(args, "realization", None)
+    reader_kwargs = {"realization": realization} if realization else {}
     yamldir = get_arg(args, "yaml", None)
     fread = getattr(args, "read", True)  # --no-read means fread=False, default is to read data
     frebuild = getattr(args, "rebuild", True)  # --no-rebuild means frebuild=False, default is to rebuild areas
