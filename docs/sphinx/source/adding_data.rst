@@ -233,6 +233,18 @@ Some of the parameters are here described:
     This optional parameter is used to specify the expver of the data on the HPC FDB.
     If not set, the expver is assumed to be the same for all data.
 
+.. option:: engine
+
+    This optional parameter is used to specify the data retrieval engine.
+    The default is ``gsv``. Alternatives are ``polytope`` (see :ref:`polytope`), ``polytope-gsv`` (functionally identical to ``polytope``at the moment) and ``z3fdb``.
+    To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"``
+    when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
+
+.. option:: config_fdb
+
+    This optional parameter is used to specify a custom configuration file path for the ``z3fdb`` engine.
+    If not set, the default ``config-z3fdb.yaml`` file in the user's config folder will be used.
+
 .. option:: chunks
 
     The chunks parameter is essential, whether you are using Dask or a generator.
@@ -252,10 +264,10 @@ Some of the parameters are here described:
     It is possible to choose a smaller chunks value, but keep in mind that each worker has its own overhead,
     and it is usually more efficient to retrieve as much data as possible from the FDB for each worker.
 
-    By the ``chunks`` argument is a string and refers to time-chunking.
+    By default, the ``chunks`` argument is a string and refers to time-chunking.
     In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
     by passing a dictionary to chunks with the keys ``time`` and ``vertical``.
-    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maxmimum number of vertical levels
+    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maximum number of vertical levels
     in each chunk.
 
     An example would be:
@@ -265,6 +277,14 @@ Some of the parameters are here described:
     chunks:
       time: D  # Default time chunk size
       vertical: 3  # Three vertical levels in each chunk
+
+    .. note::
+        When using the ``z3fdb`` engine, chunking is supported differently:
+
+        * **Time direction**: Chunking is always by single time steps.
+        * **Level direction**: By default, level chunking is not performed.
+        * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
+        * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
 
 .. option:: timestep
 

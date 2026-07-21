@@ -355,7 +355,7 @@ class Reader:
 
     # TODO: sample is not used, so no sampling is done for retrieve_plain and all the vars are loaded.
     # also chunking can be specified to reduce the amount of data.
-    def retrieve(self, var=None, startdate=None, enddate=None, level=None, level_coord=None):
+    def retrieve(self, var=None, level=None, startdate=None, enddate=None, level_coord=None, history=True):
         """
         Perform a data retrieve.
 
@@ -365,6 +365,9 @@ class Reader:
             level_coord (str): The name of the vertical coordinate. Defaults to None.
             startdate (str): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
+            level_coord (str): The coordinate name for the vertical levels. Defaults to None.
+            history (bool): If you want to add to the metadata history information about retrieve. Defaults to True.
+            sample (bool): read only one default variable (used only if var is not specified). Defaults to False.
 
         Returns:
             A xarray.Dataset containing the required data.

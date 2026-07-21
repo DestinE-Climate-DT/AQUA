@@ -27,6 +27,13 @@ convention_name:
           - tas # cmor
           - t2m
         grib: 167
+      10si: # 10 metre wind speed
+        source:
+          - 207 # original GRIB2 code
+          - 10si
+          - avg_10si  # future proof, does not exist yet
+          - sfcwind # cmor
+        grib: 207
       10u: # 10 meter U wind component
         source:
           - 165 # original GRIB2 code
@@ -189,6 +196,13 @@ convention_name:
           - T # AQUA ERA5
           - ta # cmor
         grib: 130
+      tcw: # Total column water
+        source:
+          - 136 # original GRIB2 code
+          - 235136 # avg_tcw
+          - tcw
+          - avg_tcw
+        grib: 136
       tcc: # Total cloud cover
         source:
           - 164 # original GRIB2 code
