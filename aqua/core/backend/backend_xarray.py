@@ -2,8 +2,10 @@
 
 import xarray as xr
 
+import aqua.core.version as aqua_version
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
+from aqua.core.logger import log_history
 
 from .backend import Backend
 
@@ -51,7 +53,10 @@ class BackendXarray(Backend):
         # TODO: method to validate xarray kwargs
         # self.xr_kwargs = new_kwargs
 
-    def retrieve_plain(self, startdate: str = None):
+    def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
+        """
+        Retrieve minimal data from the path to initialize the Regridder.
+        """
         pass
 
     def retrieve(
@@ -61,7 +66,10 @@ class BackendXarray(Backend):
         level_coord: str = None,
         startdate: str = None,
         enddate: str = None,
-    ):
+    ) -> xr.Dataset:
+        """
+        Retrieve data from the specified path as a lazy (dask-backed) xarray.Dataset.
+        """
         # TODO: Add kwargs to pass to xarray open_dataset or open_zarr
         data = xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine)
 
@@ -74,7 +82,22 @@ class BackendXarray(Backend):
             enddate=enddate,
         )
 
+        # add history
+        data = self.log_history(data)
+
+        # Add info metadata in each dataset
+        info_metadata = {
+            "version": aqua_version,
+        }
+        data = self._set_metadata(data, info_metadata)
+
         return data
+
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Log a message in the dataset's history attribute.
+        """
+        return log_history(data, f"Retrieved from {self.path} using AQUA v{aqua_version} with native xarray")
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         return super()._seldate(data=data, startdate=startdate, enddate=enddate)
