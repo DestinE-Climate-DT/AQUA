@@ -13,8 +13,10 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
+from aqua.core.logger import log_history
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
 from aqua.core.util.cds import get_cdsapi_key
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
@@ -64,7 +66,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional keyword arguments forwarded to the intake catalog source entry.
         """
-        Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
+        super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
         # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
@@ -182,7 +184,30 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             enddate=enddate,
         )
 
+        data = self.log_history(data)
+
+        # Add info metadata in each dataset
+        info_metadata = {
+            "model": self.model,
+            "exp": self.exp,
+            "source": self.source,
+            "catalog": self.catalog,
+            "version": aqua_version,
+            **self.kwargs,
+        }
+        data = self._set_metadata(data, info_metadata)
+
         return data
+
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Log a message in the dataset's history attribute.
+        """
+        return log_history(
+            data,
+            f"Retrieved from {self.catalog} {self.model} {self.exp} {self.source} "
+            f"using AQUA v{aqua_version} with IntakeXarray",
+        )
 
     def _filter_netcdf_files(self, startdate=None, enddate=None):
         """

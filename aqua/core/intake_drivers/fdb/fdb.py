@@ -1,6 +1,6 @@
 from .base import IntakeFDBSourceAdapter
-from .datatypes import GSV, Polytope
-from .readers import GSVDatasetReader, PolytopeDatasetReader
+from .datatypes import GSV, Z3FDB, Polytope
+from .readers import GSVDatasetReader, PolytopeDatasetReader, Z3FDBDatasetReader
 
 
 class IntakeFDBSource(IntakeFDBSourceAdapter):
@@ -33,6 +33,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
         loglevel="WARNING",
         engine=None,
         databridge=None,
+        config_fdb=None,
         **kwargs,
     ):
 
@@ -61,10 +62,39 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
                 loglevel=loglevel,
                 engine=engine,
                 databridge=databridge,
+                config_fdb=config_fdb,
                 **kwargs,
             )
             reader = PolytopeDatasetReader(data, **kwargs)
+        elif engine == "z3fdb":
+            data = Z3FDB(
+                request,
+                data_start_date=data_start_date,
+                data_end_date=data_end_date,
+                bridge_start_date=bridge_start_date,
+                bridge_end_date=bridge_end_date,
+                hpc_expver=hpc_expver,
+                timestyle=timestyle,
+                chunks=chunks,
+                savefreq=savefreq,
+                timestep=timestep,
+                timeshift=timeshift,
+                startdate=startdate,
+                enddate=enddate,
+                var=var,
+                metadata=metadata,
+                level=level,
+                loglevel=loglevel,
+                engine=engine,
+                databridge=databridge,
+                config_fdb=config_fdb,
+                **kwargs,
+            )
+            reader = Z3FDBDatasetReader(data, **kwargs)
         else:
+            if engine == "polytope-gsv":
+                engine = "polytope"  # The gsv driver still understands the "polytope" engine
+
             data = GSV(
                 request,
                 data_start_date=data_start_date,
@@ -86,9 +116,11 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
                 loglevel=loglevel,
                 engine=engine,
                 databridge=databridge,
+                config_fdb=config_fdb,
                 **kwargs,
             )
             reader = GSVDatasetReader(data, **kwargs)
+
         self.reader = reader
         self.reader.metadata = metadata
         super(IntakeFDBSource, self).__init__(metadata=metadata)

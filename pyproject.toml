@@ -75,7 +75,8 @@ dependencies = [
 fdb = [
     "pyfdb",
     "polytope-client",
-    "gsv-interface==2.13.1"
+    "gsv-interface==2.13.1",
+    "z3fdb>=5.21.4"
 ]
 docs = [
     "sphinx",
@@ -94,7 +95,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.15.20"
+    "ruff==0.15.21"
 ]
 all = [
     "aqua-core[docs]",

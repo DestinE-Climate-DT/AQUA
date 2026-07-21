@@ -101,12 +101,16 @@ def get_eccodes_attr(sn, loglevel="WARNING"):
     logger = log_configure(log_level=loglevel, log_name="eccodes")
 
     # If sn is an integer or a string that can be converted to an integer, treat it as a paramId
+
+    grib = None
     if isinstance(sn, int) or (isinstance(sn, str) and sn.isdigit()):
         logger.debug("Input is a paramId: %s", sn)
+        grib = int(sn)
         sn = _get_shortname_from_paramid(sn)
     # extract the short name from the variable name if it starts with 'var'
     if sn.startswith("var"):
         logger.debug("Input is a variable name, extracting short name from: %s", sn)
+        grib = int(sn[3:])
         sn = _get_shortname_from_paramid(sn[3:])
 
     # warning at wrapper level to avoid duplication of logger
@@ -127,7 +131,10 @@ def get_eccodes_attr(sn, loglevel="WARNING"):
             logger.debug(
                 "Trying short name %s with GRIB version %s and table %s", sn, strategy["grib_version"], strategy["table"]
             )
-            return _get_attrs_from_shortname(sn, **strategy)
+            attributes = _get_attrs_from_shortname(sn, **strategy)
+            logger.debug("Attributes for %s are: %s", sn, attributes)
+            if grib is None or (attributes.get("paramId") and int(attributes.get("paramId")) == grib):
+                return attributes
         except CodesInternalError as e:
             if strategy["grib_version"] == "GRIB1":
                 logger.warning("No GRIB2 codes found, trying GRIB1 for shortName %s", sn)
