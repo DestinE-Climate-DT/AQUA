@@ -3,17 +3,16 @@
 from intake import readers
 
 from .base import IntakeXarraySourceAdapter
-from .readers import NetCDFZarrDatasetReader, fold_use_cftime
 
 
 class IntakeNetCDFSource(IntakeXarraySourceAdapter):
     """Open one or more NetCDF files with xarray, registered as the ``netcdf`` driver.
 
-    Port of ``intake_xarray.netcdf.NetCDFSource`` (intake-xarray 2.0.0). AQUA deltas:
-    ``self.data``, ``self.metadata`` and ``self.xarray_kwargs`` are exposed for the
-    backend (``data`` is the same object the reader reads from, so its ``url`` can be
-    filtered between reads); the engine defaults to netcdf4; reads go through
-    :class:`NetCDFZarrDatasetReader`; a legacy ``use_cftime`` is folded into a coder.
+    Port of ``intake_xarray.netcdf.NetCDFSource`` (intake-xarray 2.0.0), with the
+    xarray engine defaulting to netcdf4. The rest of the AQUA deltas (attributes
+    exposed for the backend, reads through
+    :class:`~.readers.NetCDFZarrDatasetReader`, ``use_cftime`` folding) is shared
+    with the zarr source in :meth:`~.base.IntakeXarraySourceAdapter._setup`.
 
     Example usage::
 
@@ -33,14 +32,16 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
     name = "netcdf"
 
     def __init__(self, urlpath, xarray_kwargs=None, metadata=None, path_as_pattern=True, storage_options=None, **kwargs):
-        self.xarray_kwargs = xarray_kwargs = fold_use_cftime(dict(xarray_kwargs or {}))
+        xarray_kwargs = dict(xarray_kwargs or {})
+        # intake infers engine="scipy" from the NetCDF3 datatype, and scipy fails on any
+        # other flavour: netcdf4 reads them all (the backend used to force it downstream)
         xarray_kwargs.setdefault("engine", "netcdf4")
         data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
-        self.data = data
+
         if (path_as_pattern is True and "{" in urlpath) or isinstance(path_as_pattern, str):
-            self.reader = readers.XArrayPatternReader(
-                data, **xarray_kwargs, metadata=metadata, pattern=path_as_pattern, **kwargs
+            # ``{field}`` patterns become output coordinates: intake has its own reader for that
+            super().__init__(
+                data, xarray_kwargs, metadata, reader_class=readers.XArrayPatternReader, pattern=path_as_pattern, **kwargs
             )
         else:
-            self.reader = NetCDFZarrDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
-        super().__init__(metadata=metadata)
+            super().__init__(data, xarray_kwargs, metadata, **kwargs)
