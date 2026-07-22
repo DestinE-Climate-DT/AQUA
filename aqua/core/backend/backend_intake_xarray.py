@@ -1,11 +1,10 @@
-"""Backend realization using intake-xarray for data handling."""
+"""Backend realization using the intake ``netcdf`` / ``zarr`` drivers for data handling."""
 
 import os
 import re
 from glob import glob
 from urllib.parse import urlparse
 
-import intake_xarray
 import pandas as pd
 import xarray as xr
 
@@ -68,11 +67,8 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
-        # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
-        # This provides direct access to the intake data object and is xarray-specific.
-        self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
-        self.esmcat.metadata = self.esmcat.reader.metadata
-        self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
+        # The AQUA netcdf/zarr sources expose .data (holding the url), .metadata and
+        # .xarray_kwargs directly (see aqua.core.intake_drivers.xarray).
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         # We exclude url path to remote storage from the check
@@ -86,12 +82,9 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         self._all_urls = list(self.esmcat.data.url)
 
     def _setup_xarray_kwargs(self, esmcat):
-        """Setup xarray_kwargs for the intake-xarray reader based on the catalog metadata."""
+        """Setup xarray_kwargs for the xarray reader based on the catalog metadata."""
 
         read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
-        # HACK: forcing to netcdf4 for intake2
-        if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
-            read_kwargs.setdefault("engine", "netcdf4")
         return read_kwargs
 
     def _setup_intake_catalog(self, esmcat, startdate: str = None, enddate: str = None):
@@ -115,7 +108,10 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         else:
             coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
 
-        esmcat.xarray_kwargs.update({"decode_times": coder})
+        # setdefault: a decode_times already set by the catalog wins over the default
+        # coder (e.g. 'decode_times: False', or the coder folded from 'use_cftime'),
+        # as on main where the coder was skipped when use_cftime was present.
+        esmcat.xarray_kwargs.setdefault("decode_times", coder)
 
         return esmcat
 

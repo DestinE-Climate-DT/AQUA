@@ -51,7 +51,6 @@ dependencies = [
     "gcsfs", # Google Cloud Storage File System: required by ARCO
     "icechunk",
     "intake>=2.0.9", # Version 2 is a major refactor, 2.0.8 had a vulnerability
-    "intake-xarray>=2.0.0", # Version 2 is a major refactor
     "jinja2",
     "kerchunk",
     "matplotlib",
