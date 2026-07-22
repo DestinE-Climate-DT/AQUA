@@ -8,8 +8,6 @@ Unreleased in the current development version (target v1.0.0):
 
 Complete list:
 - Remove intake-xarray dependency (#2958)
-- z3fdb intake driver (#2940)
-- Update submit_aqua_web tool to support kind and separate templates (#2921))
 - Backend: vertical coordinate detection is done through DataModel (#2950)
 - Update submit_aqua_web tool to support kind and separate templates (#2921)
 - Backend refactor: z3fdb intake driver (#2940)
