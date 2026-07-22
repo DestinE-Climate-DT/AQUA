@@ -71,6 +71,8 @@ class TestIntakeNetCDFSource:
     def test_engine_defaults_to_netcdf4(self):
         source = IntakeNetCDFSource("dummy.nc")
         assert source.reader.kwargs["engine"] == "netcdf4"
+        # the exposed dict is the effective one: what the backend re-reads with
+        assert source.xarray_kwargs["engine"] == "netcdf4"
 
     def test_engine_override_from_xarray_kwargs(self):
         source = IntakeNetCDFSource("dummy.nc", xarray_kwargs={"engine": "h5netcdf"})
