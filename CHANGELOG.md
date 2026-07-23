@@ -6,9 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.0.0):
 
+ClimateDT workflow modifications:
+
 Complete list:
 
+## [v1.0.0a6]
+
+ClimateDT workflow modifications:
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
+- Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2925)
+- More info on the origin of a push to lumi-o in the logs (#2910)
+
+Main changes:
+- Update submit_aqua_web tool to support kind and separate templates (#2921)
+- DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
+- DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
+- DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+
+Complete list:
 - Backend: vertical coordinate detection is done through DataModel (#2950)
+- Hack to fix nemo model level data model identification (#2909)
+- Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2925)
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
 - Update submit_aqua_web tool to support kind and separate templates (#2921)
 - Backend refactor: z3fdb intake driver (#2940)
 - Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
@@ -1454,7 +1473,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...HEAD
+[v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6
 [v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
 [v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
 [v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3
