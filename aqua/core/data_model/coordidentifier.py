@@ -26,6 +26,7 @@ class CoordIdentifier:
     # Scoring weights for coordinate identification
     SCORE_WEIGHTS = {
         "name": 100,
+        "name_partial": 50,
         "standard_name": 100,
         "axis": 50,
         "units": 50,
@@ -415,6 +416,9 @@ class CoordIdentifier:
         if coord.name in self.default_coords["time"]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
+        elif "time" in coord.name.lower():
+            score += self.SCORE_WEIGHTS["name_partial"]  # Partial match
+            matched.append("name_partial")
         if coord.attrs.get("axis") == "T":
             score += self.SCORE_WEIGHTS["axis"]
             matched.append("axis")

@@ -10,21 +10,17 @@ from smmregrid import CdoGenerate, GridInspector
 from smmregrid import Regridder as SMMRegridder
 from smmregrid.util import check_gridfile
 
+from aqua.core.default import (
+    DEFAULT_DIMENSION,
+    DEFAULT_DIMENSION_MASK,
+    DEFAULT_REGRID_METHOD,
+    DEFAULT_WEIGHTS_AREAS_PARAMETERS,
+)
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
 
 from .griddicthandler import GridDictHandler
 from .regridder_util import check_existing_file, validate_reader_kwargs
-
-# parameters which will affect the weights and areas name
-DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
-
-# default CDO regrid method
-DEFAULT_GRID_METHOD = "ycon"
-
-# default dimension for the weights and areas
-DEFAULT_DIMENSION = "2d"
-DEFAULT_DIMENSION_MASK = "2dm"  # masked grid
 
 # please notice: check_gridfile is a function from smmregrid.util
 # to check and if a grid is a cdo grid,
@@ -327,9 +323,9 @@ class Regridder:
         """
 
         # define regrid method
-        default_regrid_method = self.src_grid_dict.get("regrid_method", DEFAULT_GRID_METHOD)
+        default_regrid_method = self.src_grid_dict.get("regrid_method", DEFAULT_REGRID_METHOD)
         regrid_method = regrid_method if regrid_method else default_regrid_method
-        if regrid_method is not DEFAULT_GRID_METHOD:
+        if regrid_method is not DEFAULT_REGRID_METHOD:
             self.logger.info("Regrid method: %s", regrid_method)
 
         # normalize the tgt grid dictionary and path
