@@ -45,6 +45,7 @@ def test_cli_checker_parse_arguments():
     assert args_defaults.read is True  # Default is True (read data)
     assert args_defaults.rebuild is True  # Default is True (rebuild areas)
     assert args_defaults.realization is None
+    assert args_defaults.engine is None
 
 
 @pytest.mark.slow

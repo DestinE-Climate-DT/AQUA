@@ -10,7 +10,7 @@ import argparse
 import os
 import sys
 
-from aqua.core.util import template_parse_arguments
+from aqua.core.util import get_arg, template_parse_arguments
 
 
 def parse_arguments(args):
