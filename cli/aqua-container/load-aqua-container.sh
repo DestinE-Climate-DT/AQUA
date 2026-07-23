@@ -138,7 +138,7 @@ function setup_container_path(){
     machine=$1
     case "$machine" in
         "lumi")
-            AQUA_folder="/project/project_465000454/containers/aqua"
+            AQUA_folder="/pfs/lustrep4/projappl/project_465002727/containers/aqua"
             ;;
 
         "levante")
@@ -160,12 +160,12 @@ function setup_container_path(){
 
     if [ ${version} == "latest" ] ; then
         echo "Asking for latest AQUA version, detecting the more recent available in ${AQUA_folder}" >&2
-        available_versions=$(find ${AQUA_folder}/ -type f -name 'aqua_*.sif' -exec basename {} .sif \; | sed 's/^aqua_//')
+        available_versions=$(find ${AQUA_folder}/ -type f -name 'aqua-core_*.sif' -exec basename {} .sif \; | sed 's/^aqua-core_//')
         version=$(printf "%s\n" "${available_versions[@]}" | sort -V -r | head -n 1 )
         echo "AQUA v${version} selected! If you are not happy, please specify your version with -v flag" >&2
     fi
 
-    AQUA_container="$AQUA_folder/aqua_${version}.sif"
+    AQUA_container="$AQUA_folder/aqua-core_${version}.sif"
 
     if [ ! -f "$AQUA_container" ]; then
         echo "ERROR: The AQUA container does not exist at: $AQUA_container" >&2
