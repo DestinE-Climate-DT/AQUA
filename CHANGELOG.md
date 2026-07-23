@@ -10,6 +10,14 @@ ClimateDT workflow modifications:
 
 Complete list:
 
+## [v1.0.0]
+
+Main changes:
+- No changes respect with v1.0.0a6
+
+Complete list:
+- No changes respect with v1.0.0a6
+
 ## [v1.0.0a6]
 
 ClimateDT workflow modifications:
@@ -1470,7 +1478,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...HEAD
+[v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
 [v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6
 [v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
 [v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
