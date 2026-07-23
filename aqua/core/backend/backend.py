@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import dask.array as da
 import xarray as xr
 from smmregrid import GridInspector
 
@@ -88,6 +89,13 @@ class Backend(ABC):
         startdate: str = None,
         enddate: str = None,
     ):
+        """
+        Apply post-processing steps to the dataset, variable selection,
+        fixing and data model application, date selection, and level selection
+        """
+        if not self.is_dask(data):
+            self.logger.error("Dataset is not a dask-backed array. Please verify the data access.")
+
         data = self._fixer_and_datamodel(data, var=var)
 
         if var:
@@ -99,40 +107,55 @@ class Backend(ABC):
 
         return data
 
-    def _grid_inspector(self, data, startdate: str = None):
+    def _select_minimum_sample(self, data, startdate: str = None):
         """
-        Use smmregrid GridInspector to get minimal sample data
+        Use smmregrid GridInspector to get minimum sample data.
+        If a startdate is provided, it will select the nearest time step to that date,
+        otherwise it will select the first time step available in the dataset.
+        Variable selection is done based on the minimal set of variables across all smmregrid gridtypes.
 
         Args:
             data (xarray.Dataset): input data
-            startdate (str, optional): Start date for time selection. Defaults to None.
+            startdate (str, optional): Startdate for time selection. Defaults to None.
 
         Returns:
             A xarray.Dataset containing the required miminal sample data.
         """
 
-        # get gridtypes from smrregird
-        gridinspect = GridInspector(data, loglevel=self.loglevel, extra_dims={"time": ["valid_time"]})
+        # get gridtypes from smmregrid
+        gridinspect = GridInspector(data, loglevel=self.loglevel)
         gridtypes = gridinspect.get_gridtype()
 
-        # get info on time dimensions and variables
-        minimal_variables = gridinspect.get_gridtype_attr(gridtypes, "variables")
-        minimal_time = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
+        # extract the time dimension and variables
+        time_dimension = gridinspect.get_gridtype_attr(gridtypes, "time_dims")
 
-        # HACK: if there are multiple variables, for the retrieve plain we select the first available.
-        # however, this is incorrect if multiple grids are available and might create issues in regridding.
-        # a more proper solution would to select a range of variables covering all the available grids, but it is
-        # likerly that this has to be implemented in smmregrid
+        # extract the minimal set of variables across all the gridtypes using smmregrid feature
+        minimal_variables = gridinspect.get_gridtype_sample_variable(gridtypes)
+
+        # get the minimal sample data based on the extracted time dimension and variables
         if minimal_variables:
-            self.logger.debug("Variables found: %s. Selecting the first %s", minimal_variables, minimal_variables[0])
-            data = data[minimal_variables[0]]
-        if minimal_time:
-            self.logger.debug("Time dimensions found: %s", minimal_time)
+            self.logger.debug("Selecting variables %s for _retrieve_plain", minimal_variables)
+            data = data[minimal_variables]
+        if time_dimension:
+            self.logger.debug("Time dimensions found: %s", time_dimension)
             if startdate:
                 self.logger.debug("Selecting startdate: %s", startdate)
-                data = data.sel({minimal_time[0]: startdate}, method="nearest")
+                data = data.sel({time_dimension[0]: startdate}, method="nearest")
             else:
-                data = data.isel({minimal_time[0]: 0})
+                data = data.isel({time_dimension[0]: 0})
+
+            # safety check for long time chunks, if present log a warning
+            # assume time is the first dimension
+            for var in data.data_vars:
+                chunks = data[var].encoding.get("chunks", None)
+                if chunks and chunks[0] > 1:
+                    self.logger.warning(
+                        "Variable %s has time chunks: %s. This might slowdown areas/weights generation", var, chunks[0]
+                    )
+
+        # check if variables, coords and dimensions are still present after selection, if not log a warning
+        if not data.data_vars or not data.coords or 0 in data.sizes.values():
+            self.logger.error("No data available after applying _select_minimum_sample selections.")
         return data
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
@@ -229,3 +252,16 @@ class Backend(ABC):
                 return xr.Dataset()  # Return an empty Dataset if no variables match
 
         return data
+
+    # @staticmethod
+    # def is_dask(dataset: xr.Dataset) -> bool:
+    #    """Verify that the dataset is backed by dask arrays."""
+    #    return bool(dataset.chunks)
+    @staticmethod
+    def is_dask(dataset: xr.Dataset | xr.DataArray) -> bool:
+        """Verify that the xarray object is backed by dask arrays."""
+        if isinstance(dataset, xr.Dataset):
+            return any(isinstance(var.data, da.Array) for var in dataset.variables.values())
+        if isinstance(dataset, xr.DataArray):
+            return isinstance(dataset.data, da.Array)
+        return False

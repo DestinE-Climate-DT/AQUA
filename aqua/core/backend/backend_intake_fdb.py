@@ -111,7 +111,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.esmcat = self.expcat._entries[self.source](**self.kwargs)
 
         # default list of variables (paramids) available in this source, read from catalog metadata
-        self.fdb_var = to_list(self.esmcat.metadata.get("variables"))
+        self.fdb_var = to_list(self.metadata.get("variables"))
 
     def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
         """

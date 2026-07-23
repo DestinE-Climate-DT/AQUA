@@ -15,6 +15,7 @@ from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
 from aqua.core.util import DEFAULT_TIME_UNIT, files_exist, to_list
+from aqua.core.util.cds import get_cdsapi_key
 from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
@@ -70,13 +71,10 @@ class BackendIntakeXarray(Backend, CatalogMixin):
 
         # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
         # This provides direct access to the intake data object and is xarray-specific.
-        self.esmcat.data = self.esmcat.reader.kwargs["args"][0]
-        self.esmcat.metadata = self.esmcat.reader.metadata
-        self.esmcat.xarray_kwargs = self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
+        self.esmcat.data = self._get_source_urls()
+        self.esmcat.xarray_kwargs = self._get_xarray_kwargs_from_catalog()
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
-        # We exclude url path to remote storage from the check
-        self.esmcat.data.url = to_list(self.esmcat.data.url)
         self._check_netcdf_files_exist()
 
         # Snapshot the full (glob-expanded) URL list so that _filter_netcdf_files always
@@ -85,44 +83,42 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         # the already-narrowed list produced by the first call.
         self._all_urls = list(self.esmcat.data.url)
 
-    def _setup_xarray_kwargs(self, esmcat):
+    def _setup_xarray_kwargs(self):
         """Setup xarray_kwargs for the intake-xarray reader based on the catalog metadata."""
 
-        read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
+        xarray_kwargs = getattr(self.esmcat, "xarray_kwargs", {}).copy()
+
         # HACK: forcing to netcdf4 for intake2
-        if isinstance(esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
-            read_kwargs.setdefault("engine", "netcdf4")
-        return read_kwargs
+        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in xarray_kwargs:
+            xarray_kwargs.setdefault("engine", "netcdf4")
 
-    def _setup_intake_catalog(self, esmcat, startdate: str = None, enddate: str = None):
-        """
-        Setup the intake catalog for data retrieval, applying any necessary filters based on the provided start and end dates.
-        """
-
-        # Only apply year-based file filtering when the catalog explicitly requests it
-        # via the 'filter_key' metadata entry. Unconditional filtering would drop all
-        # files for catalogs whose filenames do not contain year tokens.
-        filter_key = esmcat.metadata.get("filter_key")
-        if filter_key:
-            self.logger.info("Filtering netcdf files in the catalog based on %s", filter_key)
-            esmcat = self._filter_netcdf_files(esmcat, filter_key=filter_key, startdate=startdate, enddate=enddate)
+        # if the catalog uses CDS api, get the key from user configuration
+        if "cds" == self.metadata.get("key"):
+            cdsapi_key = get_cdsapi_key()
+            self.logger.debug("CDS API %s", cdsapi_key)
+            xarray_kwargs["storage_options"] = {"headers": {"Authorization": f"Bearer {cdsapi_key}"}}
 
         # The coder introduces the possibility to specify a time decoder for the time axis.
-        # Default is set to DEFAULT_TIME_UNIT (microseconds) if not specified in the esmcat.xarray_kwargs
-        if "time_coder" in esmcat.metadata:
-            self.logger.info("Using custom pandas/xarray time coder: %s", esmcat.metadata["time_coder"])
-            coder = xr.coders.CFDatetimeCoder(time_unit=esmcat.metadata["time_coder"])
-        else:
-            coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
+        # Skip custom coder if user explicitly sets use_cftime (respects user choice).
+        # Otherwise, use our custom time_unit (DEFAULT_TIME_UNIT or from catalog metadata).
+        if "use_cftime" not in xarray_kwargs:
+            time_coder = self.metadata.get("time_coder")
+            if time_coder:
+                self.logger.info("Using custom pandas/xarray time coder: %s", time_coder)
+                coder = xr.coders.CFDatetimeCoder(time_unit=time_coder)
+            else:
+                coder = xr.coders.CFDatetimeCoder(time_unit=DEFAULT_TIME_UNIT)
+            xarray_kwargs.update({"decode_times": coder})
 
-        esmcat.xarray_kwargs.update({"decode_times": coder})
-
-        return esmcat
+        return xarray_kwargs
 
     def _check_netcdf_files_exist(self):
         """
         Check if the netcdf files exist in the catalog. Raise NoDataError if any file is missing.
         """
+        # Convert to list to ensure we have a list of URLs (not a single value)
+        self.esmcat.data.url = to_list(self.esmcat.data.url)
+
         # HACK: Manually expand globs to ensure xarray/intake2 always receives an explicit list of files.
         # This avoids issues where xarray fails on a list of glob strings or single globs in lists.
         # We assume all the files in the catalog have the same scheme (e.g., 'file', 'http', 's3', etc.)
@@ -145,10 +141,11 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             startdate (str, optional): Start date (YYYY-MM-DD). Defaults to None.
             enddate (str, optional): End date (YYYY-MM-DD). Defaults to None.
         """
-        read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
-        esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=startdate)
-        data = esmcat.reader.read(**read_kwargs)
-        data = self._grid_inspector(data, startdate)
+        xarray_kwargs = self._setup_xarray_kwargs()
+        startdate = startdate or self.metadata.get("startdate")
+        self._filter_netcdf_files(startdate=startdate, enddate=startdate)
+        data = self.esmcat.reader.read(**xarray_kwargs)
+        data = self._select_minimum_sample(data, startdate)
         return data
 
     def retrieve(
@@ -172,9 +169,11 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         Returns:
             xr.Dataset: Dataset with fixes, data model, and date/level selection applied.
         """
-        read_kwargs = self._setup_xarray_kwargs(esmcat=self.esmcat)
-        esmcat = self._setup_intake_catalog(esmcat=self.esmcat, startdate=startdate, enddate=enddate)
-        data = esmcat.reader.read(**read_kwargs)
+        xarray_kwargs = self._setup_xarray_kwargs()
+        startdate = startdate or self.metadata.get("startdate")
+        enddate = enddate or self.metadata.get("enddate")
+        self._filter_netcdf_files(startdate=startdate, enddate=enddate)
+        data = self.esmcat.reader.read(**xarray_kwargs)
 
         data = self._postprocess_data(
             data=data,
@@ -210,7 +209,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             f"using AQUA v{aqua_version} with IntakeXarray",
         )
 
-    def _filter_netcdf_files(self, esmcat, filter_key="year", startdate=None, enddate=None):
+    def _filter_netcdf_files(self, startdate=None, enddate=None):
         """
         Filter the esmcat to include only netcdf files based on specific filter_key.
 
@@ -218,14 +217,22 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         repeated calls with different date ranges always start from the complete file list.
 
         Args:
-            esmcat (intake.catalog.Catalog): your catalog
-            filter_key (str): type of filter to apply (default is "year")
             startdate (str): start date in format YYYY-MM-DD
             enddate (str): end date in format YYYY-MM-DD
 
         Returns:
-            intake.catalog.Catalog: filtered catalog
+            intake.catalog.Catalog: filtered catalog (or self.esmcat if no filtering needed)
         """
+
+        # Only apply year-based file filtering when the catalog explicitly requests it
+        # via the 'filter_key' metadata entry. Unconditional filtering would drop all
+        # files for catalogs whose filenames do not contain year tokens.
+        filter_key = self.metadata.get("filter_key")
+        if not filter_key:
+            return self.esmcat
+
+        self.logger.info("Filtering netcdf files in the catalog based on %s", filter_key)
+
         # Filter from the immutable snapshot saved at init, not from esmcat.data.url
         # which may already be narrowed by a previous retrieve() call.
         files = list(self._all_urls)
@@ -243,17 +250,17 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             raise ValueError(f"Filter type {filter_key} not recognized.")
 
         # replace the url with the expanded/filtered list
-        esmcat.data.url = files
-        self.logger.debug("Total files after filtering: %s", len(esmcat.data.url))
+        self.esmcat.data.url = files
+        self.logger.debug("Total files after filtering: %s", len(self.esmcat.data.url))
 
-        if len(esmcat.data.url) == 0:
+        if len(self.esmcat.data.url) == 0:
             raise NoDataError("No files found after filtering the catalog!")
 
         self.logger.debug(
             "Selected: %s files from %s to %s",
-            len(esmcat.data.url),
-            esmcat.data.url[0],
-            esmcat.data.url[-1],
+            len(self.esmcat.data.url),
+            self.esmcat.data.url[0],
+            self.esmcat.data.url[-1],
         )
 
-        return esmcat
+        return self.esmcat

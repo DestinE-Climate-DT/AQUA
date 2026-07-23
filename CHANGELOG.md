@@ -24,12 +24,10 @@ Main changes:
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
 
 Complete list:
-- Backend: vertical coordinate detection is done through DataModel (#2950)
 - Hack to fix nemo model level data model identification (#2909)
 - Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2925)
 - Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
 - Update submit_aqua_web tool to support kind and separate templates (#2921)
-- Backend refactor: z3fdb intake driver (#2940)
 - Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
 - DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
 - Remove bold from graphics functions (#2916)

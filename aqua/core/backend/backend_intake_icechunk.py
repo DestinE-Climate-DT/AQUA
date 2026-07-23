@@ -84,7 +84,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
         """
         Retrieve minimal data from the catalog to initialize the Regridder.
 
-        Opens the full lazy dataset and uses ``_grid_inspector`` to return the
+        Opens the full lazy dataset and uses ``_select_minimum_sample`` to return the
         smallest representative sample needed for grid detection.
 
         Args:
@@ -95,7 +95,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             xr.Dataset: Minimal sample dataset for grid inspection.
         """
         data = self.esmcat.to_dask()
-        return self._grid_inspector(data, startdate)
+        return self._select_minimum_sample(data, startdate)
 
     def retrieve(
         self,
