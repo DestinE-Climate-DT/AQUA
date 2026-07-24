@@ -33,6 +33,8 @@ Complete list:
 - More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+- AQUA analysis refactored as a class, cleaned up parser, config files templates and extended tests (#2897)
+- Introduced a `DaskCluster` class to centralize dask setup and shutdown (#2897)
 
 ## [v1.0.0a5]
 
