@@ -9,7 +9,7 @@ import os
 import re
 from typing import Any, Dict, Optional
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.lock.safelock import SafeFileLock
 from aqua.core.logger import log_configure
 from aqua.core.util import dump_yaml, load_yaml
@@ -39,7 +39,7 @@ class GridEntryManager:
             loglevel (str): The logging level for the logger.
         """
         # get useful paths
-        conf = ConfigPath()
+        conf = ConfigContext()
         self.configpath = conf.get_config_dir()
         self.gridpath = os.path.join(self.configpath, "grids")
 

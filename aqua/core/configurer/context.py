@@ -7,13 +7,15 @@ It knows nothing about catalogs - that responsibility lives entirely in
 
 import os
 
+from jinja2 import Template
+
 from aqua.core.logger import log_configure
 from aqua.core.util.yaml import load_yaml
 
 from .locator import ConfigLocator
 
 
-class ConfigPaths:
+class ConfigContext:
     """
     Resolves the AQUA configuration directory/file and the machine name.
     Has no knowledge of catalogs or intake.
@@ -21,7 +23,7 @@ class ConfigPaths:
 
     def __init__(self, configdir=None, filename="config-aqua.yaml", loglevel="warning", locator=None):
         """
-        Initialize the ConfigPaths instance.
+        Initialize the ConfigContext instance.
 
         Args:
             configdir (str | None): The directory where the configuration file is located.
@@ -32,7 +34,7 @@ class ConfigPaths:
         """
 
         # set up logger
-        self.logger = log_configure(log_level=loglevel, log_name="ConfigPaths")
+        self.logger = log_configure(log_level=loglevel, log_name="ConfigContext")
 
         # get the configuration directory and its file
         self.filename = filename
@@ -78,3 +80,22 @@ class ConfigPaths:
         # warning for unknown machine
         self.logger.warning("No machine entry found in configuration file, set to %s", machine)
         return machine
+
+    def get_reader_folders(self):
+        """
+        Extract the filenames for the reader for regrid and fixer
+
+        Returns:
+            Two strings for the path of the fixer and regrid folders
+        """
+
+        fixer_folder = self.config_dict["reader"]["fixer"]
+        fixer_folder = Template(fixer_folder).render(configdir=self.configdir)
+        if not os.path.exists(fixer_folder):
+            raise FileNotFoundError(f"Cannot find the fixer folder in {fixer_folder}")
+        grids_folder = self.config_dict["reader"]["regrid"]
+        grids_folder = Template(grids_folder).render(configdir=self.configdir)
+        if not os.path.exists(grids_folder):
+            raise FileNotFoundError(f"Cannot find the regrid folder in {grids_folder}")
+
+        return fixer_folder, grids_folder

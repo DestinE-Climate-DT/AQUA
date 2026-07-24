@@ -1,4 +1,4 @@
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigCatalog, ConfigContext
 
 from .util import to_list
 
@@ -16,7 +16,7 @@ def replace_intake_vars(path: str, catalog: str | None = None) -> str:
     """
 
     # We exploit of configurerto get info on intake_vars so that we can replace them in the urlpath
-    configurer = ConfigPath(catalog=catalog)
+    configurer = ConfigCatalog(paths=ConfigContext(), catalog=catalog)
     _, intake_vars = configurer.get_machine_info()
 
     # loop on available intake_vars, replace them in the urlpath

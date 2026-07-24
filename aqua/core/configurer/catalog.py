@@ -5,7 +5,7 @@ available, which one is selected, where their files live on disk, and
 browsing/inspecting their intake content. It is the only class in this
 package that imports `intake`.
 
-It depends on a `ConfigPaths` instance for the few non-catalog things it
+It depends on a `ConfigContext` instance for the few non-catalog things it
 still needs (the main config file/dict, the config directory, the machine
 name, and a logger) but owns everything else itself.
 """
@@ -18,13 +18,15 @@ from aqua.core.logger import log_configure
 from aqua.core.util.util import to_list
 from aqua.core.util.yaml import load_yaml
 
+from .context import ConfigContext
+
 
 class ConfigCatalog:
     """
     Manages catalog discovery, selection, file resolution, and browsing.
 
     Args:
-        paths (ConfigPaths): provides config_file, config_dict, configdir,
+        paths (ConfigContext): provides config_file, config_dict, configdir,
             machine, and logger.
         catalog (str | list | None): Specific catalog(s) to use. If None,
             all available catalogs (as declared in the main config file)
@@ -33,9 +35,9 @@ class ConfigCatalog:
             for this class; otherwise reuses `paths.logger`.
     """
 
-    def __init__(self, paths, catalog=None, loglevel=None):
-        self.paths = paths
-        self.logger = paths.logger if loglevel is None else log_configure(log_level=loglevel, log_name="ConfigCatalog")
+    def __init__(self, paths=None, catalog=None, loglevel=None):
+        self.paths = paths if paths is not None else ConfigContext(loglevel=loglevel)
+        self.logger = log_configure(log_level=loglevel, log_name="ConfigCatalog")
 
         # if no catalog are provided, get all available
         if catalog is None:
@@ -124,25 +126,6 @@ class ConfigCatalog:
             raise FileNotFoundError(f"Cannot find machine file for {catalog} in {machine_file}")
 
         return catalog_file, machine_file
-
-    def get_reader_filenames(self, catalog=None):
-        """
-        Extract the filenames for the reader for catalog, regrid and fixer
-
-        Returns:
-            Two strings for the path of the fixer and regrid folders
-        """
-        if catalog is None:
-            catalog = self.catalog
-
-        fixer_folder = self.base_available[catalog]["reader"]["fixer"]
-        if not os.path.exists(fixer_folder):
-            raise FileNotFoundError(f"Cannot find the fixer folder in {fixer_folder}")
-        grids_folder = self.base_available[catalog]["reader"]["regrid"]
-        if not os.path.exists(grids_folder):
-            raise FileNotFoundError(f"Cannot find the regrid folder in {grids_folder}")
-
-        return fixer_folder, grids_folder
 
     def get_machine_info(self):
         """

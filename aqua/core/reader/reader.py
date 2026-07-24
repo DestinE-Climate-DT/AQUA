@@ -7,7 +7,7 @@ from smmregrid import GridInspector
 
 # This is needed to initialize the gsv driver
 from aqua.core.backend import BackendFactory
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 
 # set default data model
@@ -147,8 +147,8 @@ class Reader:
 
         # define configuration file and paths
         # TODO: revisit configpath to allow xarray backend. define a behaviour without catalog.
-        configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
-        self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
+        configurer = ConfigContext(loglevel=loglevel)
+        self.fixer_folder, self.grids_folder = configurer.get_reader_folders()
 
         # extend the unit registry
         units_extra_definition()

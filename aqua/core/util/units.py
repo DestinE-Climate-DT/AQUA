@@ -3,7 +3,7 @@ import os
 import xarray as xr
 from metpy.units import units
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure, log_history
 
 from .yaml import load_yaml
@@ -19,7 +19,7 @@ def normalize_units(src, loglevel="WARNING"):
     logger = log_configure(loglevel, "normalize_units")
     src = str(src)
 
-    config_folder = ConfigPath().get_config_dir()
+    config_folder = ConfigContext().get_config_dir()
     config_folder = os.path.join(config_folder, "fixes")
     default_file = os.path.join(config_folder, "default.yaml")
 

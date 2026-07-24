@@ -4,12 +4,12 @@ import os
 
 import matplotlib.pyplot as plt
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
 from aqua.core.util import load_yaml
 
 
-class ConfigStyle(ConfigPath):
+class ConfigStyle(ConfigContext):
     """Class to load the choosen style for graphical utilities."""
 
     def __init__(

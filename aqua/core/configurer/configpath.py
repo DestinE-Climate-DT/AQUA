@@ -6,22 +6,22 @@ without any changes - including direct attribute access like
 `config_path.catalog`, `config_path.catalog_available`, or
 `config_path.catalog_file`.
 
-Internally, `ConfigPath` is just `ConfigPaths` (config dir/machine
+Internally, `ConfigPath` is just `ConfigContext` (config dir/machine
 resolution) composed with `ConfigCatalog` (all catalog handling, including
 intake). Catalog-related attributes are forwarded via properties so reads
 AND writes (e.g. `config_path.catalog = "some_other_catalog"`) still behave
 exactly as before.
 
-New code should use `ConfigPaths` and `ConfigCatalog` directly. `ConfigPath`
+New code should use `ConfigContext` and `ConfigCatalog` directly. `ConfigPath`
 exists purely for migration and could be deprecated once call sites are
 updated.
 """
 
-from .config_catalog import ConfigCatalog
-from .config_paths import ConfigPaths
+from .catalog import ConfigCatalog
+from .context import ConfigContext
 
 
-class ConfigPath(ConfigPaths):
+class ConfigPath(ConfigContext):
     """
     Backward-compatible class preserving the full original `ConfigPath` API.
     """

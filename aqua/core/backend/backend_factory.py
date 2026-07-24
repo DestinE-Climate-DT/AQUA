@@ -2,7 +2,7 @@
 
 # Register custom intake drivers (gsv, icechunk, etc.)
 import aqua.core.intake_drivers  # noqa: F401
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigCatalog, ConfigContext
 from aqua.core.data_model import DataModel
 from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DATAMODEL
 from aqua.core.fixer import Fixer
@@ -47,7 +47,7 @@ class BackendFactory:
             "model",
             "exp",
             "source",
-            "configurer",
+            "configurer_catalog",
             "catalog",
             "chunks",
             "fixer",
@@ -58,7 +58,7 @@ class BackendFactory:
             "model",
             "exp",
             "source",
-            "configurer",
+            "configurer_catalog",
             "catalog",
             "chunks",
             "fixer",
@@ -69,7 +69,7 @@ class BackendFactory:
             "model",
             "exp",
             "source",
-            "configurer",
+            "configurer_catalog",
             "catalog",
             "chunks",
             "fixer",
@@ -88,7 +88,7 @@ class BackendFactory:
 
     def __init__(
         self,
-        configurer: ConfigPath,
+        configurer: ConfigContext,
         model: str = None,
         exp: str = None,
         source: str = None,
@@ -97,6 +97,7 @@ class BackendFactory:
         loglevel: str = "WARNING",
     ):
         # Set the provided parameters as instance attributes
+        self.catalog = catalog
         self.model = model
         self.exp = exp
         self.source = source
@@ -105,7 +106,6 @@ class BackendFactory:
 
         self.configurer = configurer
         self.loglevel = loglevel
-
         self.logger = log_configure(log_level=loglevel, log_name="BackendFactory")
 
         self._check_required_params()
@@ -118,6 +118,7 @@ class BackendFactory:
         self.driver = None
         self.metadata = None
         self.machine_paths = None
+        self.configurer_catalog = None
 
     def select_backend(self):
         """
@@ -130,6 +131,7 @@ class BackendFactory:
         if self.path:
             self._select_backend_xarray()
         else:
+            self.configurer_catalog = ConfigCatalog(self.configurer, catalog=self.catalog, loglevel=self.loglevel)
             self._select_backend_intake()
 
     def _select_backend_intake(self):
@@ -138,13 +140,13 @@ class BackendFactory:
         Configure catalogs, machine paths, and metadata based on the provided parameters.
         """
         # Explore the intake catalog
-        self.cat, self.catalog_file, self.machine_file = self.configurer.deliver_intake_catalog(
+        self.cat, self.catalog_file, self.machine_file = self.configurer_catalog.deliver_intake_catalog(
             catalog=self.catalog, model=self.model, exp=self.exp, source=self.source
         )
         # Replace the catalog name if it was not provided
         self.catalog = self.cat.name
         # Extract the machine paths and intake variables
-        self.machine_paths, intake_vars = self.configurer.get_machine_info()
+        self.machine_paths, intake_vars = self.configurer_catalog.get_machine_info()
 
         # Extract the source catalog and explore it
         self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
@@ -209,6 +211,7 @@ class BackendFactory:
             source=self.source,
             path=self.path,
             configurer=self.configurer,
+            configurer_catalog=self.configurer_catalog,
             catalog=self.catalog,
             chunks=chunks,
             fixer=fixer,
