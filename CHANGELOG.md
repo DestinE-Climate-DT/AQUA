@@ -10,6 +10,8 @@ ClimateDT workflow modifications:
 
 Complete list:
 
+- Area selection can be correctly performed with `areas=False` in the Reader (#2960)
+
 ## [v1.0.0a6]
 
 ClimateDT workflow modifications:
