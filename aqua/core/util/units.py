@@ -19,8 +19,7 @@ def normalize_units(src, loglevel="WARNING"):
     logger = log_configure(loglevel, "normalize_units")
     src = str(src)
 
-    config_folder = ConfigContext().get_config_dir()
-    config_folder = os.path.join(config_folder, "fixes")
+    config_folder = ConfigContext().get_folder("fixes")
     default_file = os.path.join(config_folder, "default.yaml")
 
     if not os.path.exists(default_file):

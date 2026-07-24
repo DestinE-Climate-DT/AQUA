@@ -56,8 +56,8 @@ if __name__ == "__main__":
     reader = Reader(model=model, exp=exp, source=source, areas=False, fix=False, loglevel=loglevel)
     data = reader.retrieve(var=var)
 
-    configdir = ConfigContext().get_config_dir()
-    grid_definition = load_yaml(os.path.join(configdir, "grids", "default.yaml"))
+    grids_folder = ConfigContext().get_folder("grids")
+    grid_definition = load_yaml(os.path.join(grids_folder, "default.yaml"))
 
     # multio grids are staggered, adding a final if the grid has not it
     if not resolution.endswith("s"):

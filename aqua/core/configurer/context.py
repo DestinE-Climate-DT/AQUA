@@ -21,7 +21,7 @@ class ConfigContext:
     Has no knowledge of catalogs or intake.
     """
 
-    def __init__(self, configdir=None, filename="config-aqua.yaml", loglevel="warning", locator=None):
+    def __init__(self, configdir: str | None, filename: str = "config-aqua.yaml", loglevel: str = "warning", locator=None):
         """
         Initialize the ConfigContext instance.
 
@@ -99,3 +99,15 @@ class ConfigContext:
             raise FileNotFoundError(f"Cannot find the regrid folder in {grids_folder}")
 
         return fixer_folder, grids_folder
+
+    def get_folder(self, name: str):
+        """
+        Extract the filenames for the configuration folders
+
+        Args:
+            folder_name (str): name of the folder to be extracted
+        """
+        config_folder = os.path.join(self.configdir, name)
+        if not os.path.exists(config_folder):
+            raise FileNotFoundError(f"Cannot find the {name} folder in {self.configdir}")
+        return config_folder

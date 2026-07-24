@@ -39,9 +39,7 @@ class GridEntryManager:
             loglevel (str): The logging level for the logger.
         """
         # get useful paths
-        conf = ConfigContext()
-        self.configpath = conf.get_config_dir()
-        self.gridpath = os.path.join(self.configpath, "grids")
+        self.gridpath = ConfigContext().get_folder("grids")
 
         # try to keep model and grid names as lowercase
         self.model_name = model_name.lower() if model_name else None
