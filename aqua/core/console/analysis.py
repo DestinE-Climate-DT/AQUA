@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from aqua.core.analysis import Analysis
 from aqua.core.logger import log_configure
-from aqua.core.util import get_arg
+from aqua.core.util import expand_env_vars, get_arg
 
 
 def analysis_parser(parser=None):
@@ -77,6 +77,13 @@ def analysis_execute(args):
     config = analyzer.get_config()
     aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
+    # TODO: make a function or move it into the class
+    os.environ["OUTPUT"] = analyzer.output_dir
+    os.environ["AQUA_CORE"] = aqua_core_path
+    os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
+    os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
+    config = expand_env_vars(config)  # expand environment variables in the config
+
     # extract default
     job_config = config.get("job", {})
     cluster_config = config.get("cluster", {})
@@ -96,12 +103,6 @@ def analysis_execute(args):
     # read the experiment kind and configure
     exp_kind_file = job_config.get("experiment_kind")
     analyzer.configure_experiment_kind(args.kind, exp_kind_file)
-
-    # TODO: make a function or move it into the class
-    os.environ["OUTPUT"] = analyzer.output_dir
-    os.environ["AQUA_CORE"] = aqua_core_path
-    os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
-    os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
 
     # cli checker setup and run
     run_checker = get_arg(args, "checker", False, config=job_config, key="run_checker")
