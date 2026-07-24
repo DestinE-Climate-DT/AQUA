@@ -18,11 +18,16 @@ from .locator import ConfigLocator
 class ConfigContext:
     """
     Resolves the AQUA configuration directory/file and the machine name.
-    Has no knowledge of catalogs or intake.
+    Provides access to configuration folders for AQUA utilities (e.g., reader, fixer, regrid).
+    This class is intended to be used by all AQUA utilities that need to know the configuration context
     """
 
     def __init__(
-        self, configdir: str | None = None, filename: str = "config-aqua.yaml", loglevel: str = "warning", locator=None
+        self,
+        configdir: str | None = None,
+        filename: str = "config-aqua.yaml",
+        loglevel: str = "warning",
+        locator: ConfigLocator | None = None,
     ):
         """
         Initialize the ConfigContext instance.
@@ -39,7 +44,6 @@ class ConfigContext:
         self.logger = log_configure(log_level=loglevel, log_name="ConfigContext")
 
         # get the configuration directory and its file
-        self.filename = filename
         if locator is None:
             locator = ConfigLocator(filename=filename, configdir=configdir, logger=self.logger)
         self.locator = locator
@@ -47,19 +51,13 @@ class ConfigContext:
         self.config_file = self.locator.config_file
         self.logger.debug("Configuration file found in %s", self.config_file)
         self.config_dict = load_yaml(self.config_file)
-
-        # get info on machine on init
-        self.machine = self.get_machine()
+        self.machine = None
 
     def get_config_dir(self):
         """
         Return the path to the configuration directory.
-
-        Notes:
-            This method delegates to `ConfigLocator` and is kept for backward
-            compatibility.
         """
-        return self.locator.configdir
+        return self.configdir
 
     def get_machine(self):
         """
@@ -68,20 +66,35 @@ class ConfigContext:
         Returns:
             str | None: resolved machine name from the configuration file, or None when detection fails.
         """
-        if not os.path.exists(self.config_file):
-            raise FileNotFoundError(f"Cannot find the basic configuration file {self.config_file}!")
 
-        base = load_yaml(self.config_file)
         # if we do not know the machine we assume is "unknown"
         machine = "unknown"
         # if the configuration file has a machine entry, use it
-        if "machine" in base:
+        if "machine" in self.config_dict:
             self.logger.debug("Machine found in configuration file, set to %s", machine)
-            return base["machine"]
+            return self.config_dict.get("machine")
 
         # warning for unknown machine
         self.logger.warning("No machine entry found in configuration file, set to %s", machine)
         return machine
+
+    def _get_reader_folder(self, folder_name: str):
+        """
+        Extract the filenames for the reader for regrid and fixer
+
+        Args:
+            folder_name (str): name of the folder to be extracted
+
+        Returns:
+            str: path of the folder
+        """
+        folder_path = self.config_dict["reader"].get(folder_name)
+        if folder_path is None:
+            raise KeyError(f"Folder name '{folder_name}' not found in reader configuration.")
+        folder_path = Template(folder_path).render(configdir=self.configdir)
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError(f"Cannot find the {folder_name} folder in {folder_path}")
+        return folder_path
 
     def get_reader_folders(self):
         """
@@ -91,23 +104,17 @@ class ConfigContext:
             Two strings for the path of the fixer and regrid folders
         """
 
-        fixer_folder = self.config_dict["reader"]["fixer"]
-        fixer_folder = Template(fixer_folder).render(configdir=self.configdir)
-        if not os.path.exists(fixer_folder):
-            raise FileNotFoundError(f"Cannot find the fixer folder in {fixer_folder}")
-        grids_folder = self.config_dict["reader"]["regrid"]
-        grids_folder = Template(grids_folder).render(configdir=self.configdir)
-        if not os.path.exists(grids_folder):
-            raise FileNotFoundError(f"Cannot find the regrid folder in {grids_folder}")
-
-        return fixer_folder, grids_folder
+        return self._get_reader_folder("fixer"), self._get_reader_folder("regrid")
 
     def get_folder(self, name: str):
         """
         Extract the filenames for the configuration folders
 
         Args:
-            folder_name (str): name of the folder to be extracted
+            name (str): name of the folder to be extracted
+
+        Returns:
+            str: path of the folder
         """
         config_folder = os.path.join(self.configdir, name)
         if not os.path.exists(config_folder):

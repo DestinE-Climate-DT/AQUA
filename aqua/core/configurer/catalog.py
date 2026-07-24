@@ -35,7 +35,7 @@ class ConfigCatalog:
             for this class; otherwise reuses `paths.logger`.
     """
 
-    def __init__(self, paths=None, catalog=None, loglevel=None):
+    def __init__(self, paths: ConfigContext | None = None, catalog: str | list | None = None, loglevel: str | None = None):
         self.paths = paths if paths is not None else ConfigContext(loglevel=loglevel)
         self.logger = log_configure(log_level=loglevel, log_name="ConfigCatalog")
 
@@ -95,7 +95,7 @@ class ConfigCatalog:
             return base
         raise FileNotFoundError(f"Cannot find the basic configuration file {self.paths.config_file}!")
 
-    def get_catalog_filenames(self, catalog=None):
+    def get_catalog_filenames(self, catalog: str | None = None):
         """
         Extract the catalog and machine file paths for the selected catalog.
 

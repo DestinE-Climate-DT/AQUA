@@ -26,7 +26,7 @@ class ConfigStyle(ConfigContext):
             loglevel (str): logging level. Default is 'WARNING'
         """
 
-        # Initialize the ConfigPath class
+        # Initialize the ConfigContext class
         super().__init__(configdir=configdir, filename=filename, loglevel=loglevel)
         self.logger = log_configure(log_level=loglevel, log_name="ConfigStyle")
 

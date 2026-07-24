@@ -36,7 +36,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 | Provenance / history | `from aqua.core.logger import log_history` |
 | List coercion | `from aqua.core.util import to_list` |
 | Env vars, attrs, username | `from aqua.core.util import expand_env_vars, extract_attrs, username` |
-| Paths & catalog config | `from aqua.core.configurer import ConfigPath` |
+| Paths & catalog config | `from aqua.core.configurer import ConfigContext, ConfigCatalog` |
 | YAML load/merge/dump | `from aqua.core.util import load_yaml, load_multi_yaml, dump_yaml` |
 | Lock shared config writes | `from aqua.core.lock import SafeFileLock` |
 | Coordinate standardization | `from aqua.core.data_model import DataModel` |
@@ -52,7 +52,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 
 - **Modularity over monoliths**: when not possible to delegate to specialized (`FixerConfigure`, `FixerOperator`, `FixerDataModel`) sub-classes, use mixins (`InstallMixin`, `CatalogMixin`, `FilesMixin`)
 - **No `print()`**: use `self.logger = log_configure(log_level=loglevel, log_name="ClassName")` and pass `loglevel` through every constructor *(existing user-facing `print()` calls in `aqua/core/console/` may remain; update only in files already being modified for functional changes)*
-- **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigPath` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua` *(some legacy install/config flows still use explicit defaults — route new logic through `ConfigPath` but do not refactor existing flows unless already touching them)*
+- **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigContext`, `ConfigContext` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua` *(some legacy install/config flows still use explicit defaults — route new logic through `ConfigContext` but do not refactor existing flows unless already touching them)*
 - **Configuration is declarative**: define grids, fixes, data models, catalogs, and analyses in YAML first; add Python `if/else` only when config cannot express the behaviour
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first

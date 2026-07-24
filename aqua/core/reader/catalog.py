@@ -15,10 +15,10 @@ def show_catalog_content(
 ):
     """
     Display the catalog content structure (model/exp/source) without requiring
-    manual ConfigPath instantiation.
+    manual ConfigCatalog instantiation.
 
-    This is a convenience wrapper around ConfigPath.show_catalog_content() that
-    handles the ConfigPath initialization internally.
+    This is a convenience wrapper around ConfigCatalog.show_catalog_content() that
+    handles the ConfigCatalog initialization internally.
 
     Args:
         catalog (str | list | None): Specific catalog(s) to scan. If None, loops over all available catalogs.
