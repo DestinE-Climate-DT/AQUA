@@ -17,6 +17,8 @@ exists purely for migration and could be deprecated once call sites are
 updated.
 """
 
+import warnings
+
 from .catalog import ConfigCatalog
 from .context import ConfigContext
 
@@ -27,6 +29,14 @@ class ConfigPath(ConfigContext):
     """
 
     def __init__(self, configdir=None, filename="config-aqua.yaml", catalog=None, loglevel="warning", locator=None):
+
+        warnings.warn(
+            "ConfigPath() is deprecated and will be removed in a future release. "
+            "Use ConfigContext() and ConfigCatalog() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         super().__init__(configdir=configdir, filename=filename, loglevel=loglevel, locator=locator)
         self._catalog = ConfigCatalog(self, catalog=catalog)
 
