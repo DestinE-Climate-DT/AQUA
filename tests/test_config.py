@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pytest
 
@@ -20,7 +21,7 @@ def test_config_paths():
     configdir = ConfigPath().get_config_dir()
 
     # Copy the file to the config directory
-    os.system(f"cp {configfile} {configdir}")
+    shutil.copy(configfile, configdir)
 
     config = ConfigPath(catalog="ci", filename="config-aqua-custom.yaml", configdir=configdir)
     paths, _ = config.get_machine_info()
@@ -28,7 +29,7 @@ def test_config_paths():
     assert paths["paths"]["grids"] == "pluto"
 
     # Remove the copied file
-    os.system(f"rm {configdir}/config-aqua-custom.yaml")
+    os.remove(f"{configdir}/config-aqua-custom.yaml")
 
 
 @pytest.mark.aqua
