@@ -10,7 +10,7 @@ import re
 
 from ruamel.yaml import YAML
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure
 from aqua.core.util import dump_yaml, load_yaml
@@ -43,7 +43,7 @@ class AquaFDBGenerator:
         self.logger = log_configure(self.loglevel, "FDB catalog generator")
 
         # get the templates and config files from the AQUA installation
-        self.catgendir = os.path.join(ConfigPath().configdir, "catgen")
+        self.catgendir = ConfigContext().get_folder("catgen")
         self.logger.debug("Reading configuration files from %s", self.catgendir)
         # self.template = self.load_jinja_template(os.path.join(self.catgendir, "catalog_entry.j2"))
         self.template = os.path.join(self.catgendir, "catalog_entry.j2")

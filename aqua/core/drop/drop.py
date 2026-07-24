@@ -23,7 +23,7 @@ import dask
 import pandas as pd
 from dask.distributed import Client, LocalCluster
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -203,11 +203,11 @@ class Drop:
 
         # configure tmpdir
         self.tmpdir = self._configure_tmpdir(tmpdir, self.basedir)
-        configpath = ConfigPath(configdir=configdir)
-        self.configdir = configpath.configdir
+        configpath = ConfigContext(configdir=configdir)
+        self.configdir = configpath.get_config_dir()
 
         # get default grids
-        _, grids_path = configpath.get_reader_filenames()
+        _, grids_path = configpath.get_reader_folders()
         self.default_grids = load_yaml(os.path.join(grids_path, "default.yaml"))
 
         # add the performance report

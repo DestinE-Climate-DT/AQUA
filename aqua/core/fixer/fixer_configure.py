@@ -1,8 +1,6 @@
 """Class for fixer configuration and loading"""
 
-import os
-
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
 from aqua.core.util import load_multi_yaml
 
@@ -61,9 +59,8 @@ class FixerConfigure:
         Returns:
             The default fixes dictionary
         """
-        configurer = ConfigPath().get_config_dir()
-        fixer_folder = os.path.join(configurer, "fixes")
-        fixes_dictionary = load_multi_yaml(fixer_folder)
+        fixes_folder = ConfigContext().get_folder("fixes")
+        fixes_dictionary = load_multi_yaml(fixes_folder)
 
         return fixes_dictionary
 

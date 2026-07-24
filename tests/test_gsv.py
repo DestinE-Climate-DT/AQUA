@@ -4,7 +4,7 @@ from conftest import LOGLEVEL
 from dask.distributed import Client, LocalCluster
 
 from aqua import Reader
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
@@ -40,7 +40,7 @@ loglevel = LOGLEVEL
 FDB_HOME = "/app"
 
 # to enable for local testing on Lumi
-if ConfigPath().machine == "lumi":
+if ConfigContext().get_machine() == "lumi":
     FDB_HOME = "/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST"
 
 

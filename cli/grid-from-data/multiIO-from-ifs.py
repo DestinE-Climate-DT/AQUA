@@ -11,7 +11,7 @@ import sys
 from cdo import *  # noqa: F403 (cdo-python: Cdo and operators only exposed via star import)
 
 from aqua import Reader
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, get_arg, load_yaml
 
@@ -56,8 +56,8 @@ if __name__ == "__main__":
     reader = Reader(model=model, exp=exp, source=source, areas=False, fix=False, loglevel=loglevel)
     data = reader.retrieve(var=var)
 
-    configdir = ConfigPath().get_config_dir()
-    grid_definition = load_yaml(os.path.join(configdir, "grids", "default.yaml"))
+    grids_folder = ConfigContext().get_folder("grids")
+    grid_definition = load_yaml(os.path.join(grids_folder, "default.yaml"))
 
     # multio grids are staggered, adding a final if the grid has not it
     if not resolution.endswith("s"):
