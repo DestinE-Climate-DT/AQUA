@@ -78,7 +78,6 @@ def analysis_execute(args):
     aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
     # TODO: make a function or move it into the class
-    os.environ["OUTPUT"] = analyzer.output_dir
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
@@ -95,6 +94,9 @@ def analysis_execute(args):
     analyzer.set_regrid_option(args, job_config)
     analyzer.set_output_directory(args, job_config)
     analyzer.set_serial_or_parallel(args)
+
+    # TODO: understand if this is used somewhere by diagnostics
+    os.environ["OUTPUT"] = analyzer.output_dir
 
     # maximum parallel processes for the ThreadPoolExecutor
     nmaxprocesses = args.nmaxprocesses if args.nmaxprocesses > 0 else None
