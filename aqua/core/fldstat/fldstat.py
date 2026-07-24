@@ -40,6 +40,9 @@ class FldStat:
             self.logger.warning("No horizontal dimensions provided, will try to guess from data when provided!")
         self.horizontal_dims = horizontal_dims
 
+        # Initialize area selection
+        self.area_selection = AreaSelection(loglevel=loglevel)
+
         if self.area is None:
             self.logger.warning("No area provided, no weighted area can be provided.")
             return
@@ -49,9 +52,6 @@ class FldStat:
             raise ValueError("Area must be an xarray DataArray or Dataset.")
 
         self.grid_name = grid_name
-
-        # Initialize area selection
-        self.area_selection = AreaSelection(loglevel=loglevel)
 
     @property
     def available_fldstats(self):

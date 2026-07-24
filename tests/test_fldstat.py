@@ -63,6 +63,11 @@ def reader_ifs(ifs_tco79_short_reader):
 
 
 @pytest.fixture(scope="module")
+def reader_ifs_noarea(ifs_tco79_long_areasfalse_fixfalse_reader):
+    return ifs_tco79_long_areasfalse_fixfalse_reader
+
+
+@pytest.fixture(scope="module")
 def data_ifs(ifs_tco79_short_data_2t):
     return ifs_tco79_short_data_2t
 
@@ -189,6 +194,12 @@ class TestFldmean:
         avg_reg = reader.fldmean(regrid["2t"])
         assert regrid.lat[0] > regrid.lat[1]  # verify lat decreasing
         assert avg_reg.values == pytest.approx(285.426661)  # verify fldmean value
+
+    def test_areasel_areasfalse(self, reader_ifs_noarea):
+        """Area selection test for IFS long source with areas=False"""
+        data_ifs = reader_ifs_noarea.retrieve(var="2t")
+        area_sel = reader_ifs_noarea.select_area(data_ifs, lon=[0, 360], lat=[-80, 80], drop=True)
+        assert area_sel.lat.min().values == pytest.approx(-67.5)
 
 
 @pytest.mark.aqua

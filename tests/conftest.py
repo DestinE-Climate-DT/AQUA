@@ -188,6 +188,11 @@ def ifs_tco79_long_fixfalse_reader():
 
 
 @pytest.fixture(scope="session")
+def ifs_tco79_long_areasfalse_fixfalse_reader():
+    return Reader(model="IFS", exp="test-tco79", source="long", areas=False, fix=False, loglevel=LOGLEVEL)
+
+
+@pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_reader():
     return Reader(model="IFS", exp="test-tco79", source="long400", fix=False, loglevel=LOGLEVEL)
 
