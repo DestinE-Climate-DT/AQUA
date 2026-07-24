@@ -21,7 +21,9 @@ class ConfigContext:
     Has no knowledge of catalogs or intake.
     """
 
-    def __init__(self, configdir: str | None, filename: str = "config-aqua.yaml", loglevel: str = "warning", locator=None):
+    def __init__(
+        self, configdir: str | None = None, filename: str = "config-aqua.yaml", loglevel: str = "warning", locator=None
+    ):
         """
         Initialize the ConfigContext instance.
 

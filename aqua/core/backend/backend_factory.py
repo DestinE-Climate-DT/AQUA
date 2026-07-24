@@ -34,7 +34,7 @@ class BackendFactory:
             "model",
             "exp",
             "source",
-            "configurer",
+            "configurer_catalog",
             "catalog",
             "chunks",
             "fixer",
