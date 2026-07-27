@@ -12,7 +12,7 @@ and in isolation from the rest of the framework. They complement:
 
 This file focuses on unit-level coverage of each CoordTransformer method:
 __init__/_info_grid, rename_coordinate, flip_coordinate, convert_units,
-normalize_longitude_range, assign_attributes, transform_coords (integration
+normalize_range_convention, assign_attributes, transform_coords (integration
 of the above), and the module-level counter_reverse_coordinate().
 """
 
@@ -349,20 +349,20 @@ class TestConvertUnits:
 
 
 # ---------------------------------------------------------------------------
-# normalize_longitude_range
+# normalize_range_convention
 # (core coverage also lives in test_datamodel.py::TestLongitudeRangeNormalization;
 #  kept here too since this file is the canonical unit-test home for
 #  CoordTransformer, and to test it alongside the rest of the class's methods)
 # ---------------------------------------------------------------------------
 
 
-class TestNormalizeLongitudeRange:
+class TestNormalizeRangeConvention:
     def test_wraps_into_declared_range(self):
         ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
         tgt = {"name": "lon", "range": "0_to_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        result = transformer.normalize_range_convention(ds, tgt)
 
         np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
 
@@ -371,7 +371,7 @@ class TestNormalizeLongitudeRange:
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
         tgt = {"name": "lat", "range": "0_to_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        result = transformer.normalize_range_convention(ds, tgt)
 
         np.testing.assert_array_equal(result.lat.values, [-170.0, 10.0])
 
@@ -382,12 +382,12 @@ class TestNormalizeLongitudeRange:
 
         # 1. Test malformed list (3 elements)
         tgt_list = {"name": "lon", "range": [0, 180, 360]}
-        result_list = transformer.normalize_longitude_range(ds, tgt_list)
+        result_list = transformer.normalize_range_convention(ds, tgt_list)
         np.testing.assert_array_equal(result_list.lon.values, [-170.0, 10.0])
 
         # 2. Test unknown string format
         tgt_str = {"name": "lon", "range": "0_180_360"}
-        result_str = transformer.normalize_longitude_range(ds, tgt_str)
+        result_str = transformer.normalize_range_convention(ds, tgt_str)
         np.testing.assert_array_equal(result_str.lon.values, [-170.0, 10.0])
 
     def test_regional_data_crossing_boundary_is_noop(self):
@@ -402,7 +402,7 @@ class TestNormalizeLongitudeRange:
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
         tgt = {"name": "lon", "range": "0_to_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        result = transformer.normalize_range_convention(ds, tgt)
 
         # Because wrapping shatters the array (span jumps from 60 to 340),
         # the transformation must be skipped.
@@ -419,7 +419,7 @@ class TestNormalizeLongitudeRange:
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
         tgt = {"name": "lon", "range": "0_to_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        result = transformer.normalize_range_convention(ds, tgt)
 
         # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
         # It should succeed.
@@ -476,9 +476,9 @@ class TestAssignAttributes:
 class TestTransformCoordsIntegration:
     def test_full_pipeline_on_regular_grid(self):
         """
-        This checks that normalize_longitude_range is actually wired into the
+        This checks that normalize_range_convention is actually wired into the
         real transform_coords() call (via the real aqua.yaml 'range' key), not
-        just correct in isolation (see TestNormalizeLongitudeRange above).
+        just correct in isolation (see TestNormalizeRangeConvention above).
         Flip mechanics themselves are already covered end-to-end, with real
         data reordering, by test_coord_flipping.py -- so only a light check
         is kept here to confirm flip and lon-wrap don't interfere with each

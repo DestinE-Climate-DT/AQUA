@@ -313,15 +313,15 @@ class CoordTransformer:
         """
 
         # we assume this runs after the rename step, so the coordinate name is already the target name
-        coord_name = tgt_coord['name']
+        coord_name = tgt_coord["name"]
 
         # ignore cases where we do not have longitudes
         if coord_name not in data.coords:
             return data
-        
+
         # extract ranges and verify they are aligned
         tgt_range = tgt_coord.get("range_convention")
-        src_range = self.src_coords['longitude'].get("range_convention")
+        src_range = self.src_coords["longitude"].get("range_convention")
         if src_range == tgt_range:
             self.logger.info(
                 "Longitude coordinate %s already in range convention %s. No wrapping needed.",
@@ -337,7 +337,9 @@ class CoordTransformer:
             elif tgt_range in ["180_to_180", "-180_to_180"]:
                 lo, hi = -180.0, 180.0
             else:
-                self.logger.warning("Unknown string 'range_convention' for coordinate %s: %s. Skipping.", coord_name, tgt_range)
+                self.logger.warning(
+                    "Unknown string 'range_convention' for coordinate %s: %s. Skipping.", coord_name, tgt_range
+                )
                 return data
         else:
             self.logger.error("Invalid 'range_convention' format for coordinate %s: %s. Skipping.", coord_name, tgt_range)
@@ -374,7 +376,7 @@ class CoordTransformer:
                 self.logger.info("Wrapping bounds %s into range [%s, %s]", bounds_name, lo, hi)
                 data[bounds_name] = ((data[bounds_name] - lo) % span) + lo
 
-            data = data.assign_attrs({"longitude": {"range_convention": tgt_range}})
+            # data = data.assign_attrs({"longitude": {"range_convention": tgt_range}})
 
             log_history(
                 data,
@@ -385,7 +387,7 @@ class CoordTransformer:
 
     def assign_attributes(self, data, tgt_coord):
         """
-        Assign attributes to the coordinate.
+        Assign attributes to the coordinate when not part of IGNORE_ATTRIBUTES.
         """
         for key, value in tgt_coord.items():
             if key not in IGNORED_ATTRIBUTES:
