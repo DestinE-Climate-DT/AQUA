@@ -96,7 +96,9 @@ class CoordTransformer:
                 if flip_coords:
                     data = self.flip_coordinate(data, src_coord, tgt_coord)
                 data = self.convert_units(data, src_coord, tgt_coord)
-                data = self.normalize_longitude_range(data, tgt_coord)
+                # only langitude needs range normalization
+                if "longitude" in coord:
+                    data = self.normalize_range_convention(data, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
                 self.logger.info("Coordinate %s not found in source coordinates.", coord)
@@ -289,7 +291,7 @@ class CoordTransformer:
             data[tgt_coord["bounds"]].attrs["units"] = tgt_coord["units"]
         return data
 
-    def normalize_longitude_range(self, data, tgt_coord):
+    def normalize_range_convention(self, data, tgt_coord):
         """
         Wrap the longitude coordinate (and its bounds, if present) into the
         numeric range declared by the target data model, e.g. "0_to_360" or "-180_to_180".
@@ -310,15 +312,16 @@ class CoordTransformer:
             xr.Dataset or xr.DataArray: The Xarray object with longitude wrapped.
         """
 
-        # we assume this run after the rename step, so the coordinate name is already the target name
-        coord_name = tgt_coord['longitude']['name']
+        # we assume this runs after the rename step, so the coordinate name is already the target name
+        coord_name = tgt_coord['name']
 
         # ignore cases where we do not have longitudes
         if coord_name not in data.coords:
             return data
         
+        # extract ranges and verify they are aligned
         tgt_range = tgt_coord.get("range_convention")
-        src_range = self.src_coords.get("longitude", {}).get("range_convention")
+        src_range = self.src_coords['longitude'].get("range_convention")
         if src_range == tgt_range:
             self.logger.info(
                 "Longitude coordinate %s already in range convention %s. No wrapping needed.",
@@ -327,6 +330,7 @@ class CoordTransformer:
             )
             return data
 
+        # extract the numeric range from the target data model, either as a string or a list of two numbers
         if isinstance(tgt_range, str):
             if tgt_range == "0_to_360":
                 lo, hi = 0.0, 360.0
@@ -339,6 +343,7 @@ class CoordTransformer:
             self.logger.error("Invalid 'range_convention' format for coordinate %s: %s. Skipping.", coord_name, tgt_range)
             return data
 
+        # compute the span and wrap the longitudes into the target range
         span = hi - lo
         longitudes = data[coord_name]
         wrapped = ((longitudes - lo) % span) + lo
