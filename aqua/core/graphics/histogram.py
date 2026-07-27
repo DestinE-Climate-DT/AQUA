@@ -162,7 +162,7 @@ def plot_histogram(
             # For PDF, try to get the inverse units from center_of_bin
             if hasattr(first_data, "center_of_bin") and hasattr(first_data.center_of_bin, "units"):
                 bin_units = first_data.center_of_bin.units
-                ylabel = f"Probability Density [1/{unit_to_latex(bin_units)}]"
+                ylabel = f"Probability Density [1/({unit_to_latex(bin_units)})]"
             else:
                 ylabel = "Probability Density"
         else:
