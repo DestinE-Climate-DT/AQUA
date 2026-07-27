@@ -86,7 +86,7 @@ class ConfigPath(ConfigContext):
 
     def get_catalog_filenames(self, catalog=None):
         """See `ConfigCatalog.get_catalog_filenames`."""
-        return self._catalog.get_catalog_filenames(catalog)
+        return self._catalog.get_catalog_filename(catalog), self._catalog.get_machine_filename(catalog)
 
     def get_machine_info(self):
         """See `ConfigCatalog.get_machine_info`."""

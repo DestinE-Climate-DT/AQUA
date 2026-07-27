@@ -13,6 +13,7 @@ from aqua.core.logger import log_configure
 from aqua.core.util.yaml import load_yaml
 
 from .locator import ConfigLocator
+from .packages import ConfigPackages
 
 
 class ConfigContext:
@@ -28,6 +29,7 @@ class ConfigContext:
         filename: str = "config-aqua.yaml",
         loglevel: str = "warning",
         locator: ConfigLocator | None = None,
+        packages: ConfigPackages | None = None,
     ):
         """
         Initialize the ConfigContext instance.
@@ -46,7 +48,10 @@ class ConfigContext:
         # get the configuration directory and its file
         if locator is None:
             locator = ConfigLocator(filename=filename, configdir=configdir, logger=self.logger)
+        if packages is None:
+            packages = ConfigPackages(logger=self.logger)
         self.locator = locator
+        self.packages = packages
         self.configdir = self.locator.configdir
         self.config_file = self.locator.config_file
         self.logger.debug("Configuration file found in %s", self.config_file)

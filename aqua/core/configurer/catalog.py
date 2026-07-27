@@ -13,6 +13,7 @@ name, and a logger) but owns everything else itself.
 import os
 
 import intake
+from jinja2 import Template
 
 from aqua.core.logger import log_configure
 from aqua.core.util.util import to_list
@@ -49,14 +50,13 @@ class ConfigCatalog:
         if not self.catalog_available:
             self.logger.warning("No available catalogs found")
             self.catalog = None
-            self.base_available = None
             self.catalog_file = None
             self.machine_file = None
         else:
             self.catalog = self.catalog_available[0]
-            self.base_available = self.get_base()
             self.logger.debug("Default catalog will be %s", self.catalog)
-            self.catalog_file, self.machine_file = self.get_catalog_filenames(self.catalog)
+            self.catalog_file = self.get_catalog_filename(self.catalog)
+            self.machine_file = self.get_machine_filename(self.catalog)
 
     def get_catalog(self):
         """
@@ -66,36 +66,46 @@ class ConfigCatalog:
             list[str] | None: the catalog names from the main config file or
             None when the `catalog` entry is present but empty.
         """
-        if os.path.exists(self.paths.config_file):
-            base = load_yaml(self.paths.config_file)
-            if "catalog" not in base:
-                raise KeyError(f"Cannot find catalog information in {self.paths.config_file}")
+        if "catalog" not in self.paths.config_dict:
+            raise KeyError(f"Cannot find catalog information in {self.paths.config_file}")
 
-            # particular case of an empty list
-            if not base["catalog"]:
-                return None
+        # particular case of an empty list
+        if not self.paths.config_dict["catalog"]:
+            return None
 
-            self.logger.debug("Catalog found in %s file are %s", self.paths.config_file, base["catalog"])
-            return base["catalog"]
+        self.logger.debug("Catalog found in %s file are %s", self.paths.config_file, self.paths.config_dict["catalog"])
+        return self.paths.config_dict["catalog"]
 
-        raise FileNotFoundError(f"Cannot find the basic configuration file {self.paths.config_file}!")
-
-    def get_base(self):
+    def _get_catalog_filename(self, catalog: str | None = None, filename_key: str = "catalog"):
         """
-        Get all the possible base configurations available
+        Extract the catalog or machine file path for the selected catalog.
+
+        Args:
+            catalog (str | None): override catalog to inspect; defaults to the
+            current `self.catalog`.
+            filename_key (str): either "catalog" or "machine" to select which
+                file to extract.
 
         Returns:
-            dict[str, dict]: map of catalog name to rendered configuration.
+            str: the path to the catalog or machine file
         """
-        if os.path.exists(self.paths.config_file):
-            base = {}
-            for catalog in self.catalog_available:
-                definitions = {"catalog": catalog, "configdir": self.paths.configdir}
-                base[catalog] = load_yaml(infile=self.paths.config_file, definitions=definitions, jinja=True)
-            return base
-        raise FileNotFoundError(f"Cannot find the basic configuration file {self.paths.config_file}!")
+        if self.catalog is None:
+            raise KeyError('No AQUA catalog is installed. Please run "aqua add CATALOG_NAME"')
 
-    def get_catalog_filenames(self, catalog: str | None = None):
+        if catalog is None:
+            catalog = self.catalog
+
+        definitions = {"catalog": catalog, "configdir": self.paths.configdir}
+        file_path = Template(self.paths.config_dict["reader"][filename_key]).render(**definitions)
+        self.logger.debug("%s file is %s", filename_key, file_path)
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(
+                f'Cannot find {filename_key} file in {file_path}. Did you install it with "aqua add {catalog}"?'
+            )
+
+        return file_path
+
+    def get_catalog_filename(self, catalog: str | None = None):
         """
         Extract the catalog and machine file paths for the selected catalog.
 
@@ -107,25 +117,21 @@ class ConfigCatalog:
             catalog_file (str): the path to the catalog file
             machine_file (str): the path to the machine file
         """
-        if self.catalog is None:
-            raise KeyError('No AQUA catalog is installed. Please run "aqua add CATALOG_NAME"')
 
-        if catalog is None:
-            catalog = self.catalog
+        return self._get_catalog_filename(catalog=catalog, filename_key="catalog")
 
-        catalog_file = self.base_available[catalog]["reader"]["catalog"]
-        self.logger.debug("Catalog file is %s", catalog_file)
-        if not os.path.exists(catalog_file):
-            raise FileNotFoundError(
-                f'Cannot find catalog file in {catalog_file}. Did you install it with "aqua add {catalog}"?'
-            )
+    def get_machine_filename(self, catalog: str | None = None):
+        """
+        Extract the machine file path for the selected catalog.
 
-        machine_file = self.base_available[catalog]["reader"]["machine"]
-        self.logger.debug("Machine file is %s", machine_file)
-        if not os.path.exists(machine_file):
-            raise FileNotFoundError(f"Cannot find machine file for {catalog} in {machine_file}")
+        Args:
+            catalog (str | None): override catalog to inspect; defaults to the
+                current `self.catalog`.
 
-        return catalog_file, machine_file
+        Returns:
+            str: the path to the machine file
+        """
+        return self._get_catalog_filename(catalog=catalog, filename_key="machine")
 
     def get_machine_info(self):
         """
@@ -154,7 +160,7 @@ class ConfigCatalog:
                         machine_paths["paths"] = {}
                     machine_paths["paths"][path] = self.paths.config_dict["paths"][path]
         else:
-            self.logger.debug("No paths found in the main configuration file %s", self.base_available)
+            self.logger.debug("No paths found in the main configuration file %s", self.paths.config_file)
         if machine_paths == {}:
             self.logger.error(
                 "Cannot find machine paths for %s, regridding and areas feature will not work", self.paths.machine
@@ -183,7 +189,7 @@ class ConfigCatalog:
 
         for catalog in self.catalog_available:
             self.logger.debug("Browsing catalog %s ...", catalog)
-            catalog_file, _ = self.get_catalog_filenames(catalog)
+            catalog_file = self.get_catalog_filename(catalog)
             cat = intake.open_catalog(catalog_file)
             check, level, avail = self.scan_catalog(cat, model=model, exp=exp, source=source)
             if check:
@@ -220,7 +226,8 @@ class ConfigCatalog:
             self.catalog = matched[0]
 
         self.logger.debug("Final catalog to be used is %s", self.catalog)
-        self.catalog_file, self.machine_file = self.get_catalog_filenames(self.catalog)
+        self.catalog_file = self.get_catalog_filename(self.catalog)
+        self.machine_file = self.get_machine_filename(self.catalog)
         return intake.open_catalog(self.catalog_file), self.catalog_file, self.machine_file
 
     @staticmethod
@@ -282,7 +289,7 @@ class ConfigCatalog:
 
         for cat_name in catalogs_to_scan:
             try:
-                catalog_file, _ = self.get_catalog_filenames(catalog=cat_name)
+                catalog_file = self.get_catalog_filename(catalog=cat_name)
                 cat = intake.open_catalog(catalog_file)
             except (KeyError, FileNotFoundError, Exception) as exc:
                 self.logger.warning("Cannot open/scan catalog %s: %s", cat_name, exc)
