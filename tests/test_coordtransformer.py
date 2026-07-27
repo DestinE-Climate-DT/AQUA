@@ -361,7 +361,7 @@ class TestNormalizeLongitudeRange:
         ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_360"}
+        tgt = {"name": "lon", "range": "0_to_360"}
         result = transformer.normalize_longitude_range(ds, tgt)
 
         np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
@@ -370,7 +370,7 @@ class TestNormalizeLongitudeRange:
         ds = xr.Dataset(coords={"lat": [-170.0, 10.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lat", "range": "0_360"}
+        tgt = {"name": "lat", "range": "0_to_360"}
         result = transformer.normalize_longitude_range(ds, tgt)
 
         np.testing.assert_array_equal(result.lat.values, [-170.0, 10.0])
@@ -401,7 +401,7 @@ class TestNormalizeLongitudeRange:
         ds = xr.Dataset(coords={"lon": lon})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_360"}
+        tgt = {"name": "lon", "range": "0_to_360"}
         result = transformer.normalize_longitude_range(ds, tgt)
 
         # Because wrapping shatters the array (span jumps from 60 to 340),
@@ -418,7 +418,7 @@ class TestNormalizeLongitudeRange:
         ds = xr.Dataset(coords={"lon": lon})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_360"}
+        tgt = {"name": "lon", "range": "0_to_360"}
         result = transformer.normalize_longitude_range(ds, tgt)
 
         # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
@@ -451,7 +451,7 @@ class TestAssignAttributes:
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_360", "axis": "X"}
+        tgt = {"name": "lon", "range": "0_to_360", "axis": "X"}
         result = transformer.assign_attributes(ds, tgt)
 
         assert "range" not in result.lon.attrs
