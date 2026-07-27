@@ -153,24 +153,15 @@ class TestIntakeZarrSource:
 
 
 @pytest.mark.aqua
-class TestUseCftimeFolding:
-    """The deprecated 'use_cftime' catalog kwarg is folded into a CFDatetimeCoder."""
+class TestXarrayKwargsPassthrough:
+    """Catalog xarray_kwargs are exposed verbatim; time decoding is handled by the backend."""
 
-    def test_use_cftime_folded_into_coder(self):
+    def test_xarray_kwargs_exposed_verbatim(self):
+        # use_cftime and other kwargs are passed through untouched: the backend
+        # (BackendIntakeXarray._setup_xarray_kwargs) is what decides time decoding
         source = IntakeNetCDFSource("dummy.nc", xarray_kwargs={"use_cftime": True})
-        assert "use_cftime" not in source.reader.kwargs
-        assert "use_cftime" not in source.xarray_kwargs
-        coder = source.xarray_kwargs["decode_times"]
-        assert isinstance(coder, xr.coders.CFDatetimeCoder)
-        assert coder.use_cftime is True
-
-    def test_to_dask_decodes_to_cftime(self, tmp_path, sample_dataset):
-        path = tmp_path / "sample.nc"
-        sample_dataset.to_netcdf(path)
-        source = IntakeNetCDFSource(str(path), xarray_kwargs={"use_cftime": True})
-        data = source.to_dask()
-        # cftime decoding produces object-dtype time values, with no FutureWarning
-        assert data.time.dtype == object
+        assert source.xarray_kwargs["use_cftime"] is True
+        assert source.reader.kwargs["use_cftime"] is True
 
 
 @pytest.mark.aqua

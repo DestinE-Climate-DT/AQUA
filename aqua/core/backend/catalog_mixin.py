@@ -79,6 +79,43 @@ class CatalogMixin:
             self.logger.debug("Intake user parameters: %s", self._intake_user_parameters)
         return self._intake_user_parameters
 
+    @property
+    def metadata(self):
+        """Uniform metadata accessor - returns metadata dict safely.
+
+        Falls back to reader.metadata if esmcat.metadata is not available.
+        """
+        metadata = getattr(self.esmcat, "metadata", None)
+        if metadata is not None:
+            return metadata
+        # Fallback to reader.metadata if available
+        try:
+            return self.esmcat.reader.metadata
+        except (AttributeError, KeyError):
+            return {}
+
+    def _get_xarray_kwargs_from_catalog(self):
+        """Safely extract xarray_kwargs from catalog definition.
+
+        Encapsulates intake2 hack: self.esmcat._entry._captured_init_kwargs
+        Only used by BackendIntakeXarray.
+        """
+        try:
+            return self.esmcat._entry._captured_init_kwargs.get("args", {}).get("xarray_kwargs", {})
+        except (AttributeError, KeyError, TypeError):
+            return {}
+
+    def _get_source_urls(self):
+        """Safely extract URL list from netcdf/zarr source.
+
+        Encapsulates intake2 hack: self.esmcat.reader.kwargs["args"][0]
+        Only used by BackendIntakeXarray for glob expansion.
+        """
+        try:
+            return self.esmcat.reader.kwargs["args"][0]
+        except (AttributeError, KeyError, IndexError, TypeError):
+            return []
+
     def _filter_kwargs(self, kwargs: dict = {}, intake_vars: dict = {}) -> dict:
         """
         Filter kwargs to only include parameters defined in the intake source.

@@ -4,11 +4,11 @@ import xarray as xr
 
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
+from aqua.core.logger import log_history
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
-
-xr.set_options(keep_attrs=True)
 
 
 class BackendIntakeIcechunk(Backend, CatalogMixin):
@@ -77,14 +77,14 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             kwargs: Additional keyword arguments forwarded to the intake catalog
                 source entry.
         """
-        Backend.__init__(self, fixer=fixer, datamodel=datamodel, loglevel=loglevel)
+        super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
 
     def retrieve_plain(self, startdate: str = None):
         """
         Retrieve minimal data from the catalog to initialize the Regridder.
 
-        Opens the full lazy dataset and uses ``_grid_inspector`` to return the
+        Opens the full lazy dataset and uses ``_select_minimum_sample`` to return the
         smallest representative sample needed for grid detection.
 
         Args:
@@ -95,7 +95,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             xr.Dataset: Minimal sample dataset for grid inspection.
         """
         data = self.esmcat.to_dask()
-        return self._grid_inspector(data, startdate)
+        return self._select_minimum_sample(data, startdate)
 
     def retrieve(
         self,
@@ -136,4 +136,28 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             enddate=enddate,
         )
 
+        data = self.log_history(data)
+
+        # Add info metadata in each dataset
+        info_metadata = {
+            "model": self.model,
+            "exp": self.exp,
+            "source": self.source,
+            "catalog": self.catalog,
+            "version": aqua_version,
+            **self.kwargs,
+        }
+
+        data = self._set_metadata(data, info_metadata)
+
         return data
+
+    def log_history(self, data: xr.Dataset) -> xr.Dataset:
+        """
+        Log a message in the dataset's history attribute.
+        """
+        return log_history(
+            data,
+            f"Retrieved from {self.catalog} {self.model} {self.exp} {self.source} "
+            f"using AQUA v{aqua_version} with IntakeIcechunk",
+        )

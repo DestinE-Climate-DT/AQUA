@@ -445,6 +445,53 @@ def apply_circular_window(ax, extent=None, apply_black_circle=False):
     return ax
 
 
+def prettify_levels(vmin: float, vmax: float, nlevels: int) -> np.ndarray:
+    """
+    Generate visually clean contour levels using rounded 'nice' numbers.
+    Prefer multiples of 1, 2, 2.5, 5, 10, 25, 50, ... depending on the range.
+
+    Args:
+        vmin (float):    Minimum value.
+        vmax (float):    Maximum value.
+        nlevels (int):   Approximate number of levels desired.
+
+    Returns:
+        np.ndarray: Array of pretty level values.
+    """
+    data_range = vmax - vmin
+    if data_range == 0:
+        return np.array([vmin])
+
+    raw_step = data_range / nlevels
+
+    # Candidate "nice" multipliers
+    nice_multipliers = [1, 2, 2.5, 5, 10]
+    magnitude = 10 ** np.floor(np.log10(abs(raw_step)))
+
+    best_step = None
+    for m in nice_multipliers:
+        candidate = m * magnitude
+        if candidate >= raw_step:
+            best_step = candidate
+            break
+
+    if best_step is None:
+        best_step = 10 * magnitude
+
+    # Build levels aligned to zero if possible (cleaner grid)
+    start = np.floor(vmin / best_step) * best_step
+    levels = np.arange(start, vmax + best_step * 0.5, best_step)
+
+    return np.round(levels, decimals=get_decimals(best_step))
+
+
+def get_decimals(step: float) -> int:
+    """Return the number of decimal places needed for a given step size."""
+    if step >= 1:
+        return 0
+    return max(0, int(np.ceil(-np.log10(step))))
+
+
 """
 Following functions are taken and adjusted from the easygems package,
 on this repository:

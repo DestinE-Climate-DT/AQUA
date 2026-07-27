@@ -13,7 +13,7 @@ from smmregrid.util import check_gridfile
 from aqua.core.default import (
     DEFAULT_DIMENSION,
     DEFAULT_DIMENSION_MASK,
-    DEFAULT_GRID_METHOD,
+    DEFAULT_REGRID_METHOD,
     DEFAULT_WEIGHTS_AREAS_PARAMETERS,
 )
 from aqua.core.logger import log_configure
@@ -323,9 +323,9 @@ class Regridder:
         """
 
         # define regrid method
-        default_regrid_method = self.src_grid_dict.get("regrid_method", DEFAULT_GRID_METHOD)
+        default_regrid_method = self.src_grid_dict.get("regrid_method", DEFAULT_REGRID_METHOD)
         regrid_method = regrid_method if regrid_method else default_regrid_method
-        if regrid_method is not DEFAULT_GRID_METHOD:
+        if regrid_method is not DEFAULT_REGRID_METHOD:
             self.logger.info("Regrid method: %s", regrid_method)
 
         # normalize the tgt grid dictionary and path

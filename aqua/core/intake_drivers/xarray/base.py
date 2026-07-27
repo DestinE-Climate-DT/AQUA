@@ -1,4 +1,3 @@
-import xarray as xr
 from intake.source import base
 
 from .readers import NetCDFZarrDatasetReader
@@ -20,11 +19,6 @@ class IntakeXarraySourceAdapter(base.DataSource):
             kwargs: Further parameters forwarded to the reader (e.g. chunks).
         """
         xarray_kwargs = dict(xarray_kwargs or {})
-        # 'use_cftime' is deprecated as an xarray kwarg (and a TypeError together with a
-        # decode_times coder), but legacy catalog entries still carry it: fold it into a coder
-        if "use_cftime" in xarray_kwargs:
-            xarray_kwargs["decode_times"] = xr.coders.CFDatetimeCoder(use_cftime=xarray_kwargs.pop("use_cftime"))
-
         self.xarray_kwargs = xarray_kwargs
         self.data = data
         self.reader = reader_class(data, **xarray_kwargs, metadata=metadata, **kwargs)
