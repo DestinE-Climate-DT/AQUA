@@ -32,12 +32,13 @@ class ConfigCatalog:
         catalog (str | list | None): Specific catalog(s) to use. If None,
             all available catalogs (as declared in the main config file)
             are considered, and the first one becomes the selected catalog.
-        loglevel (str | None): if provided, sets up an independent logger
-            for this class; otherwise reuses `paths.logger`.
+        loglevel (str | None): configure logging level.
     """
 
-    def __init__(self, paths: ConfigContext | None = None, catalog: str | list | None = None, loglevel: str | None = None):
-        self.paths = paths if paths is not None else ConfigContext(loglevel=loglevel)
+    def __init__(
+        self, configcontext: ConfigContext | None = None, catalog: str | list | None = None, loglevel: str | None = None
+    ):
+        self.paths = configcontext if configcontext is not None else ConfigContext(loglevel=loglevel)
         self.logger = log_configure(log_level=loglevel, log_name="ConfigCatalog")
 
         # if no catalog are provided, get all available
@@ -76,7 +77,7 @@ class ConfigCatalog:
         self.logger.debug("Catalog found in %s file are %s", self.paths.config_file, self.paths.config_dict["catalog"])
         return self.paths.config_dict["catalog"]
 
-    def _get_catalog_filename(self, catalog: str | None = None, filename_key: str = "catalog"):
+    def _get_filename(self, catalog: str | None = None, filename_key: str = "catalog"):
         """
         Extract the catalog or machine file path for the selected catalog.
 
@@ -114,11 +115,10 @@ class ConfigCatalog:
                 current `self.catalog`.
 
         Returns:
-            catalog_file (str): the path to the catalog file
-            machine_file (str): the path to the machine file
+            str: the path to the catalog file
         """
 
-        return self._get_catalog_filename(catalog=catalog, filename_key="catalog")
+        return self._get_filename(catalog=catalog, filename_key="catalog")
 
     def get_machine_filename(self, catalog: str | None = None):
         """
@@ -131,7 +131,7 @@ class ConfigCatalog:
         Returns:
             str: the path to the machine file
         """
-        return self._get_catalog_filename(catalog=catalog, filename_key="machine")
+        return self._get_filename(catalog=catalog, filename_key="machine")
 
     def get_machine_info(self):
         """

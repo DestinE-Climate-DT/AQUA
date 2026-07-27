@@ -23,7 +23,7 @@ def test_config_paths():
     # Copy the file to the config directory
     shutil.copy(configfile, configdir)
 
-    config = ConfigCatalog(catalog="ci", paths=ConfigContext(filename="config-aqua-custom.yaml", configdir=configdir))
+    config = ConfigCatalog(catalog="ci", configcontext=ConfigContext(filename="config-aqua-custom.yaml", configdir=configdir))
     paths, _ = config.get_machine_info()
 
     assert paths["paths"]["grids"] == "pluto"

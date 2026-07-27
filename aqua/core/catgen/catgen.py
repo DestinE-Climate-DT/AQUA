@@ -32,7 +32,19 @@ def get_nested(cfg, key):
 class AquaFDBGenerator:
     """Class for generating FDB catalog entries based on a given configuration and data portfolio."""
 
-    def __init__(self, data_portfolio, config_path, loglevel="INFO"):
+    def __init__(
+        self, data_portfolio: str, config_path: str, configcontext: ConfigContext | None = None, loglevel: str = "INFO"
+    ):
+        """
+        Initialize the AquaFDBGenerator with the specified data portfolio and configuration.
+
+        Args:
+            data_portfolio (str): The name of the data portfolio to use.
+            config_path (str): Path to the configuration YAML file.
+            configcontext (ConfigContext, optional): An instance of ConfigContext for configuration management.
+                                                     Defaults to None.
+            loglevel (str, optional): Logging level. Defaults to "INFO".
+        """
 
         # config reading
         self.config = load_yaml(config_path)
@@ -43,7 +55,8 @@ class AquaFDBGenerator:
         self.logger = log_configure(self.loglevel, "FDB catalog generator")
 
         # get the templates and config files from the AQUA installation
-        self.catgendir = ConfigContext().get_folder("catgen")
+        configcontext = configcontext or ConfigContext()
+        self.catgendir = configcontext.get_folder("catgen")
         self.logger.debug("Reading configuration files from %s", self.catgendir)
         # self.template = self.load_jinja_template(os.path.join(self.catgendir, "catalog_entry.j2"))
         self.template = os.path.join(self.catgendir, "catalog_entry.j2")
