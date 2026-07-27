@@ -10,10 +10,10 @@ from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
 
-ATOL_FACTOR = 1.5
-
 # set default options for xarray
 xr.set_options(keep_attrs=True)
+
+AREA_TOLERANCE = 1.5e-5  # tolerance for coordinate alignment
 
 
 class FldStat:
@@ -134,10 +134,10 @@ class FldStat:
                 return getattr(data, stat)(dim=self.horizontal_dims)
 
         # align dimensions naming of area to match data
-        self.area = self.align_area_dimensions(data)
+        self.area = self.align_area_dimensions(data, area=self.area)
 
         # align coordinates values of area to match data
-        self.area = self.align_area_coordinates(data)
+        self.area = self.align_area_coordinates(data, area=self.area)
 
         if lon_limits is not None or lat_limits is not None or region is not None:
             self.logger.debug("Selecting area for field stat calculation.")
@@ -233,8 +233,9 @@ class FldStat:
             merged_attrs["units"] = multiply_units(data.attrs["units"], areacell.attrs["units"])
         else:
             self.logger.warning(
-                f"Data units: {data.attrs.get('units', 'None')}; "
-                f"Area units: {areacell.attrs.get('units', 'None')}, cannot multiply units using Metpy."
+                "Data units: %s; Area units: %s, cannot multiply units using Metpy.",
+                data.attrs.get("units", "None"),
+                areacell.attrs.get("units", "None"),
             )
 
         if "long_name" in data.attrs:
@@ -270,25 +271,26 @@ class FldStat:
             log_history(summed_area, f"Area summed from {self.grid_name} grid")
         return summed_area
 
-    def align_area_dimensions(self, data: xr.Dataset | xr.DataArray):
+    def align_area_dimensions(self, data: xr.Dataset | xr.DataArray, area: xr.Dataset | xr.DataArray):
         """
         Align the area dimensions with the data dimensions.
         If the area and data have different number of horizontal dimensions, try to rename them.
 
         Args:
             data (xr.DataArray or xr.Dataset): The input data to align with the area.
+            area (xr.DataArray or xr.Dataset): The area data.
         """
 
         # verify that horizontal dimensions area the same in the two datasets.
         # If not, try to rename them. Use gridtype to get the horizontal dimensions
         # TODO: "rgrid" is not a default dimension in smmregrid, it should be added.
         # please notice GridInspector always return a list of GridType objects
-        area_gridtype = GridInspector(self.area, extra_dims={"horizontal": ["rgrid"]}).get_gridtype()
+        area_gridtype = GridInspector(area, extra_dims={"horizontal": ["rgrid"]}).get_gridtype()
         area_horizontal_dims = area_gridtype[0].horizontal_dims
         self.logger.debug("Area horizontal dimensions are %s", area_horizontal_dims)
 
         if set(area_horizontal_dims) == set(self.horizontal_dims):
-            return self.area
+            return area
 
         # check if area and data have the same number of horizontal dimensions
         if len(area_horizontal_dims) != len(self.horizontal_dims):
@@ -301,29 +303,30 @@ class FldStat:
             self.horizontal_dims,
         )
         # create a dictionary for renaming matching dimensions have the same length
-        matching_dims = {
-            a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims) if self.area.sizes[a] == data.sizes[d]
-        }
+        matching_dims = {a: d for a, d in zip(area_horizontal_dims, self.horizontal_dims) if area.sizes[a] == data.sizes[d]}
         self.logger.info("Area dimensions has been renamed with %s", matching_dims)
-        return self.area.rename(matching_dims)
+        return area.rename(matching_dims)
 
-    def align_area_coordinates(self, data: xr.Dataset | xr.DataArray, decimals: int = 5):
+    def align_area_coordinates(
+        self, data: xr.Dataset | xr.DataArray, area: xr.Dataset | xr.DataArray, tolerance: int = AREA_TOLERANCE
+    ):
         """
         Check if the coordinates of the area and data are aligned.
         If they are not aligned, try to flip the coordinates.
 
         Args:
             data (xr.DataArray or xr.Dataset): The input data to align with the area.
-            decimals (int): Number of decimals to use for rounding when aligning coordinates.
+            area (xr.DataArray or xr.Dataset): The area data.
+            tolerance (float): Tolerance for coordinate alignment.
 
         Returns:
             xr.DataArray or xr.Dataset: The area with aligned coordinates.
         """
 
         # area.coords should be only lon-lat
-        for coord in self.area.coords:
+        for coord in area.coords:
             if coord in data.coords and coord != "time":
-                area_coord = self.area[coord]
+                area_coord = area[coord]
                 data_coord = data[coord]
 
                 # verify coordinates has the same sizes
@@ -337,29 +340,21 @@ class FldStat:
                 # Fast check for reversed coordinates: use slicing
                 if np.array_equal(area_coord[::-1], data_coord):
                     self.logger.warning("Reversing coordinate '%s' for alignment.", coord)
-                    self.area = self.area.reindex({coord: area_coord[::-1]})
+                    area = area.reindex({coord: area_coord[::-1]})
                     continue
 
-                # Tolerance-based check. This replaces a fragile round-then-compare
-                # approach: on grids whose spacing is a power-of-two fraction of 360
-                # (e.g. reduced Gaussian grids like tco1279), many coordinate values
-                # land exactly on a decimal rounding boundary (e.g. ...875 at 5
-                # decimals). Two independently-computed float64 representations of
-                # the "same" value can then round to different neighbours purely
-                # from sub-1e-6 representation noise, even though they are
-                # physically identical. np.isclose with an absolute+relative
+                # Tolerance-based check np.isclose with an absolute+relative
                 # tolerance avoids this instability.
-                atol = ATOL_FACTOR * 10 ** (-decimals)
-                if np.allclose(area_coord, data_coord, atol=atol, rtol=0):
+                if np.allclose(area_coord, data_coord, atol=tolerance, rtol=0):
                     self.logger.warning(
                         "Coordinate '%s' aligned within tolerance %.1e (differences below float precision noise).",
                         coord,
-                        atol,
+                        tolerance,
                     )
                     # assign data's coordinate values (treated as the reference)
-                    self.area = self.area.assign_coords({coord: data_coord})
+                    area = area.assign_coords({coord: data_coord})
                     continue
 
                 raise ValueError(f"Mismatch in values for coordinate '{coord}' between data and areas.")
 
-        return self.area
+        return area

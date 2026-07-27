@@ -395,7 +395,7 @@ class TestAlignAreaCoordinates:
         area, data = self._make_area_and_data(lon, lon.copy())
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
-        aligned = fld.align_area_coordinates(data)
+        aligned = fld.align_area_coordinates(data, area=area)
 
         np.testing.assert_array_equal(aligned.lon.values, data.lon.values)
 
@@ -406,7 +406,7 @@ class TestAlignAreaCoordinates:
         area, data = self._make_area_and_data(lon_area, lon_data)
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
-        aligned = fld.align_area_coordinates(data)
+        aligned = fld.align_area_coordinates(data, area=area)
 
         np.testing.assert_array_equal(aligned.lon.values, lon_data)
 
@@ -417,7 +417,7 @@ class TestAlignAreaCoordinates:
         area, data = self._make_area_and_data(lon_area, lon_data)
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
-        aligned = fld.align_area_coordinates(data)
+        aligned = fld.align_area_coordinates(data, area=area)
 
         np.testing.assert_array_equal(aligned.lon.values, lon_data)
 
@@ -428,7 +428,7 @@ class TestAlignAreaCoordinates:
         area, data = self._make_area_and_data(lon_area, lon_data, lat=np.array([0.0]))
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
-        aligned = fld.align_area_coordinates(data)
+        aligned = fld.align_area_coordinates(data, area=area)
 
         np.testing.assert_array_equal(aligned.lon.values, lon_data)
 
@@ -440,7 +440,7 @@ class TestAlignAreaCoordinates:
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
         with pytest.raises(ValueError, match="Mismatch in values for coordinate 'lon'"):
-            fld.align_area_coordinates(data)
+            fld.align_area_coordinates(data, area=area)
 
     def test_genuine_convention_mismatch_still_raises(self):
         """A real longitude-convention mismatch (0-360 vs -180/180) must still raise."""
@@ -450,7 +450,7 @@ class TestAlignAreaCoordinates:
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
         with pytest.raises(ValueError, match="Mismatch in values for coordinate 'lon'"):
-            fld.align_area_coordinates(data)
+            fld.align_area_coordinates(data, area=area)
 
     def test_size_mismatch_raises(self):
         """A genuine length mismatch must raise before any value comparison is attempted."""
@@ -460,4 +460,4 @@ class TestAlignAreaCoordinates:
 
         fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
         with pytest.raises(ValueError, match="lon has a mismatch in length"):
-            fld.align_area_coordinates(data)
+            fld.align_area_coordinates(data, area=area)
