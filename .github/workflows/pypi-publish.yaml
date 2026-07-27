@@ -48,7 +48,7 @@ jobs:
         ref: ${{ inputs.tag }}
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: '3.x'
 
@@ -92,7 +92,7 @@ jobs:
         ls -lh dist/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.14.0
+      uses: pypa/gh-action-pypi-publish@v1.14.1
       with:
         print-hash: true
 
