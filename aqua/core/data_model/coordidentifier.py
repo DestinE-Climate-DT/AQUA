@@ -328,7 +328,7 @@ class CoordIdentifier:
             attributes["positive"] = positive
 
         if coord_name == "longitude":
-            attributes["convention"] = self._guess_longitude_range(coord)
+            attributes["range_convention"] = self._guess_longitude_range(coord)
 
         if confidence_score is not None:
             attributes["confidence_score"] = confidence_score
@@ -346,11 +346,11 @@ class CoordIdentifier:
 
         # Guess the longitude range
         if np.any(longitude.values < 0):
-            return "centered"
+            return "-180_to_180"
         elif np.any(longitude.values > 180):
-            return "positive"
+            return "0_to_360"
         else:
-            return "ambigous"
+            return "ambiguous"
 
     def _score_latitude(self, coord):
         """
