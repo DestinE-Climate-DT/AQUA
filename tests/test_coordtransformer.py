@@ -358,19 +358,19 @@ class TestConvertUnits:
 
 class TestNormalizeRangeConvention:
     def test_wraps_into_declared_range(self):
-        ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        ds = _regular_dataset(lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
+        transformer = CoordTransformer(ds, loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_to_360"}
+        tgt = {"name": "lon", "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
-        np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
+        np.testing.assert_allclose(result.longitude.values, [190.0, 350.0, 10.0, 170.0])
 
     def test_ignores_non_longitude_coordinates(self):
         ds = xr.Dataset(coords={"lat": [-170.0, 10.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lat", "range": "0_to_360"}
+        tgt = {"name": "lat", "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
         np.testing.assert_array_equal(result.lat.values, [-170.0, 10.0])
@@ -381,12 +381,12 @@ class TestNormalizeRangeConvention:
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
         # 1. Test malformed list (3 elements)
-        tgt_list = {"name": "lon", "range": [0, 180, 360]}
+        tgt_list = {"name": "lon", "range_convention": "0_to_360"}
         result_list = transformer.normalize_range_convention(ds, tgt_list)
         np.testing.assert_array_equal(result_list.lon.values, [-170.0, 10.0])
 
         # 2. Test unknown string format
-        tgt_str = {"name": "lon", "range": "0_180_360"}
+        tgt_str = {"name": "lon", "range_convention": "0_180_360"}
         result_str = transformer.normalize_range_convention(ds, tgt_str)
         np.testing.assert_array_equal(result_str.lon.values, [-170.0, 10.0])
 
@@ -401,7 +401,7 @@ class TestNormalizeRangeConvention:
         ds = xr.Dataset(coords={"lon": lon})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_to_360"}
+        tgt = {"name": "lon", "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
         # Because wrapping shatters the array (span jumps from 60 to 340),
@@ -418,7 +418,7 @@ class TestNormalizeRangeConvention:
         ds = xr.Dataset(coords={"lon": lon})
         transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
 
-        tgt = {"name": "lon", "range": "0_to_360"}
+        tgt = {"name": "lon", "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
         # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
