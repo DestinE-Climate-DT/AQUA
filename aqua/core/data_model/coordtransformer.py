@@ -321,6 +321,13 @@ class CoordTransformer:
 
         # extract ranges and verify they are aligned
         tgt_range = tgt_coord.get("range_convention")
+        if tgt_range is None:
+            self.logger.info(
+                "No 'range_convention' declared for coordinate %s in target data model. Skipping.",
+                coord_name,
+            )
+            return data
+
         src_range = self.src_coords[AQUA_LONGITUDE].get("range_convention")
         if src_range == tgt_range:
             self.logger.info(
