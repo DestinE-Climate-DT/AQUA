@@ -12,11 +12,11 @@ Complete list:
 
 ## [v1.0.0]
 
-Main changes:
-- No changes respect with v1.0.0a6
+ClimateDT workflow modifications:
 
 Complete list:
-- No changes respect with v1.0.0a6
+- Graphics: minor aesthetic adjustments (#2969)
+- Area selection can be correctly performed with `areas=False` in the Reader (#2960)
 
 ## [v1.0.0a6]
 
