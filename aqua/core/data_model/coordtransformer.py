@@ -4,7 +4,7 @@ import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
 
-from .coord_utils import get_data_model, units_conversion_factor
+from .coord_utils import AQUA_LATITUDE, AQUA_LONGITUDE, get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
 IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
@@ -48,8 +48,8 @@ class CoordTransformer:
             It can be Regular, Curvilinear or Unstructured.
         """
 
-        lonname = self.src_coords.get("latitude")
-        latname = self.src_coords.get("longitude")
+        lonname = self.src_coords.get(AQUA_LONGITUDE)
+        latname = self.src_coords.get(AQUA_LATITUDE)
         if lonname is None or latname is None:
             return "Unknown"
 
@@ -97,7 +97,7 @@ class CoordTransformer:
                     data = self.flip_coordinate(data, src_coord, tgt_coord)
                 data = self.convert_units(data, src_coord, tgt_coord)
                 # only langitude needs range normalization
-                if "longitude" in coord:
+                if AQUA_LONGITUDE in coord:
                     data = self.normalize_range_convention(data, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
@@ -321,10 +321,11 @@ class CoordTransformer:
 
         # extract ranges and verify they are aligned
         tgt_range = tgt_coord.get("range_convention")
-        src_range = self.src_coords["longitude"].get("range_convention")
+        src_range = self.src_coords[AQUA_LONGITUDE].get("range_convention")
         if src_range == tgt_range:
             self.logger.info(
-                "Longitude coordinate %s already in range convention %s. No wrapping needed.",
+                "%s coordinate %s already in range convention %s. No wrapping needed.",
+                AQUA_LONGITUDE,
                 coord_name,
                 tgt_range,
             )
@@ -380,7 +381,7 @@ class CoordTransformer:
 
             log_history(
                 data,
-                f"Longitude coordinate {coord_name} reordered into {tgt_range} convention range by datamodel",
+                f"{AQUA_LONGITUDE} coordinate {coord_name} reordered into {tgt_range} convention range by datamodel",
             )
 
         return data
