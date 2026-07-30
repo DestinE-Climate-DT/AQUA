@@ -10,6 +10,7 @@ from .analysis import analysis_execute
 from .builder import builder_execute
 from .catalog import CatalogMixin
 from .catgen import catgen_execute
+from .components import discover_aqua_components
 from .drop import drop_execute
 from .files import FilesMixin
 
@@ -72,7 +73,11 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
 
         self.logger = log_configure(self.loglevel, "AQUA")
 
-        self.components = self.discover_aqua_components()
+        self.components = discover_aqua_components()
+        self.logger.debug(
+            "Using aqua components: %s",
+            [c for c in self.components if self.components[c]["installed"]],
+        )
         self.aquapath = {name: info["path"] for name, info in self.components.items()}
 
         command = args.command
