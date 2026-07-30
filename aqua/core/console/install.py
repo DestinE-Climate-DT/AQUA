@@ -7,10 +7,6 @@ AQUA installation operations mixin - includes also listing
 import os
 import shutil
 import sys
-import warnings
-from importlib import import_module
-from importlib import resources as pypath
-from importlib.metadata import entry_points
 
 from aqua.core.configurer import ConfigLocator, ConfigPath
 from aqua.core.lock import SafeFileLock
@@ -21,88 +17,9 @@ from .util import query_yes_no
 # folder used for reading/storing catalogs
 CATPATH = "catalogs"
 
-# directories to be installed in the AQUA config folder
-CORE_CONFIG_DIRECTORIES = ["catgen", "data_model", "fixes", "grids", "styles"]
-CORE_TEMPLATE_DIRECTORIES = ["catgen", "drop", "gridbuilder"]
-
 
 class InstallMixin:
     """Mixin for AQUA installation operations"""
-
-    def discover_aqua_components(self):
-        """
-        All installed aqua components: core (resolved directly, not a plugin)
-        plus any aqua.plugins entry points.
-        """
-        components = {"core": self._resolve_component_info(name="core")}
-
-        for ep in entry_points(group="aqua.plugins"):
-            if ep.name == "core":
-                warnings.warn("Ignoring unexpected 'core' entry point in aqua.plugins group")
-                continue
-            try:
-                data = ep.load()()
-            except Exception as e:
-                warnings.warn(f"Could not load aqua plugin '{ep.name}': {e}")
-                components[ep.name] = {"installed": False, "config_dirs": [], "template_dirs": [], "path": None}
-                continue
-            components[ep.name] = self._resolve_component_info(ep.name, data)
-
-        self.logger.debug("Discovered aqua components: %s", [c for c in components if components[c]["installed"]])
-        return components
-
-    def _resolve_component_info(self, name, data=None):
-        """
-        Build a uniform info dict for an aqua component (core or plugin).
-
-        Args:
-            name (str): component name, e.g. "core", "diagnostics", "emulators"
-            data (dict, optional): pre-loaded {"config": [...], "templates": [...]}
-                already obtained from an entry point call. Used for plugins.
-                Not used for "core", which is resolved directly below.
-
-        Returns:
-            dict: {
-                "installed": bool,
-                "config_dirs": list,
-                "template_dirs": list,
-                "path": str or None,
-            }
-        """
-        module_name = f"aqua.{name}"
-        empty = {"installed": False, "config_dirs": [], "template_dirs": [], "path": None}
-
-        if name == "core":
-            # core is not a plugin: no get_install_dirs() contract, just read
-            # its known constants directly.
-            config_dirs = CORE_CONFIG_DIRECTORIES
-            template_dirs = CORE_TEMPLATE_DIRECTORIES
-        elif data is not None:
-            config_dirs = data.get("config", [])
-            template_dirs = data.get("templates", [])
-        else:
-            try:
-                module = import_module(module_name)
-                data = module.get_install_dirs()
-                config_dirs = data.get("config", [])
-                template_dirs = data.get("templates", [])
-            except (ImportError, AttributeError) as e:
-                warnings.warn(f"Could not resolve aqua component '{name}': {e}")
-                return empty
-
-        path = None
-        if config_dirs and template_dirs:
-            try:
-                path = os.path.join(pypath.files(module_name), "config")
-            except ModuleNotFoundError:
-                return empty
-
-        return {
-            "installed": path is not None,
-            "config_dirs": config_dirs,
-            "template_dirs": template_dirs,
-            "path": path,
-        }
 
     def _component_summary(self):
         return {
