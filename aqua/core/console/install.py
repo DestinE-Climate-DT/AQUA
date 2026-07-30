@@ -7,19 +7,16 @@ AQUA installation operations mixin - includes also listing
 import os
 import shutil
 import sys
+import warnings
+from importlib import import_module
+from importlib import resources as pypath
+from importlib.metadata import entry_points
 
 from aqua.core.configurer import ConfigLocator, ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
 from .util import query_yes_no
-
-# check if aqua.diagnostics is installed
-try:
-    from aqua.diagnostics import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES
-except ImportError:
-    DIAGNOSTIC_CONFIG_DIRECTORIES = []
-    DIAGNOSTIC_TEMPLATE_DIRECTORIES = []
 
 # folder used for reading/storing catalogs
 CATPATH = "catalogs"
@@ -31,6 +28,90 @@ CORE_TEMPLATE_DIRECTORIES = ["catgen", "drop", "gridbuilder"]
 
 class InstallMixin:
     """Mixin for AQUA installation operations"""
+
+    def discover_aqua_components(self):
+        """
+        All installed aqua components: core (resolved directly, not a plugin)
+        plus any aqua.plugins entry points.
+        """
+        components = {"core": self._resolve_component_info(name="core")}
+
+        for ep in entry_points(group="aqua.plugins"):
+            if ep.name == "core":
+                warnings.warn("Ignoring unexpected 'core' entry point in aqua.plugins group")
+                continue
+            try:
+                data = ep.load()()
+            except Exception as e:
+                warnings.warn(f"Could not load aqua plugin '{ep.name}': {e}")
+                components[ep.name] = {"installed": False, "config_dirs": [], "template_dirs": [], "path": None}
+                continue
+            components[ep.name] = self._resolve_component_info(ep.name, data)
+
+        self.logger.debug("Discovered aqua components: %s", [c for c in components if components[c]["installed"]])
+        return components
+
+    def _resolve_component_info(self, name, data=None):
+        """
+        Build a uniform info dict for an aqua component (core or plugin).
+
+        Args:
+            name (str): component name, e.g. "core", "diagnostics", "emulators"
+            data (dict, optional): pre-loaded {"config": [...], "templates": [...]}
+                already obtained from an entry point call. Used for plugins.
+                Not used for "core", which is resolved directly below.
+
+        Returns:
+            dict: {
+                "installed": bool,
+                "config_dirs": list,
+                "template_dirs": list,
+                "path": str or None,
+            }
+        """
+        module_name = f"aqua.{name}"
+        empty = {"installed": False, "config_dirs": [], "template_dirs": [], "path": None}
+
+        if name == "core":
+            # core is not a plugin: no get_install_dirs() contract, just read
+            # its known constants directly.
+            config_dirs = CORE_CONFIG_DIRECTORIES
+            template_dirs = CORE_TEMPLATE_DIRECTORIES
+        elif data is not None:
+            config_dirs = data.get("config", [])
+            template_dirs = data.get("templates", [])
+        else:
+            try:
+                module = import_module(module_name)
+                data = module.get_install_dirs()
+                config_dirs = data.get("config", [])
+                template_dirs = data.get("templates", [])
+            except (ImportError, AttributeError) as e:
+                warnings.warn(f"Could not resolve aqua component '{name}': {e}")
+                return empty
+
+        path = None
+        if config_dirs and template_dirs:
+            try:
+                path = os.path.join(pypath.files(module_name), "config")
+            except ModuleNotFoundError:
+                return empty
+
+        return {
+            "installed": path is not None,
+            "config_dirs": config_dirs,
+            "template_dirs": template_dirs,
+            "path": path,
+        }
+
+    def _component_summary(self):
+        return {
+            name: {
+                "installed": self._check_component_installed(name),
+                "mode": self._get_component_mode(name),
+            }
+            for name in self.components
+        }
 
     def _check(self, silent=False, return_info=False):
         """
@@ -45,8 +126,12 @@ class InstallMixin:
                 {
                     'installed': bool,
                     'configpath': str or None,
-                    'core': {'installed': bool, 'mode': str},
-                    'diagnostics': {'installed': bool, 'mode': str}
+                    'components': {
+                        'core': {'installed': bool, 'mode': str},
+                        'diagnostics': {'installed': bool, 'mode': str},
+                        'emulators': {'installed': bool, 'mode': str},
+                        ...
+                    }
                 }
         """
         checklevel = "ERROR" if silent else self.loglevel
@@ -59,25 +144,18 @@ class InstallMixin:
             self.logger.debug("AQUA found in %s", self.configpath)
 
             if return_info:
-                # Gather detailed installation information
-                info = {
+                return {
                     "installed": True,
                     "configpath": self.configpath,
-                    "core": {"installed": self._check_component_installed("core"), "mode": self._get_component_mode("core")},
-                    "diagnostics": {
-                        "installed": self._check_component_installed("diagnostics"),
-                        "mode": self._get_component_mode("diagnostics"),
-                    },
+                    "components": self._component_summary(),
                 }
-                return info
 
         except FileNotFoundError:
             if return_info:
                 return {
                     "installed": False,
                     "configpath": None,
-                    "core": {"installed": False, "mode": "not_installed"},
-                    "diagnostics": {"installed": False, "mode": "not_installed"},
+                    "components": {name: {"installed": False, "mode": "not_installed"} for name in self.components},
                 }
 
             locator = ConfigLocator(logger=self.logger)
@@ -162,6 +240,10 @@ class InstallMixin:
             config_dirs (list): List of config directories to install
             template_dirs (list): List of template directories to install
         """
+        self.logger.debug(
+            f"Installing component '{component}' with mode: {mode}, "
+            f"source_path: {source_path}, config_dirs: {config_dirs}, template_dirs: {template_dirs}"
+        )
         install_mode = mode["mode"]
         custom_path = mode["path"]
 
@@ -196,32 +278,26 @@ class InstallMixin:
             if os.path.exists(source):
                 self._copy_update_folder_file(source, target, link=link)
 
-    def _determine_component_mode(self, core_arg, diag_arg, component):
+    def _determine_component_mode(self, args, name):
         """
-        Determine installation mode for a component based on CLI arguments.
+        Determine the installation mode for a single component, given the
+        full args namespace. Handles the "no component flags at all -> install
+        everything in standard mode" fallback centrally.
 
         Args:
-            core_arg: CLI argument for --core
-            diag_arg: CLI argument for --diagnostics
-            component (str): 'core' or 'diagnostics' - which component to check
+            args (argparse.Namespace): CLI arguments
+            name (str): component name, e.g. "core", "diagnostics", "emulators"
 
         Returns:
-            dict or False: Installation mode dict {'mode': str, 'path': str|None}
-                          or False to skip component
+            dict or None: same shape as _get_install_mode's return value.
         """
-        if component == "core":
-            if core_arg is not None:
-                return self._get_install_mode(core_arg)
-            if diag_arg is not None:
-                return False
-        else:  # diagnostics
-            if diag_arg is not None:
-                return self._get_install_mode(diag_arg)
-            if core_arg is not None:
-                return False
+        requested = {n: getattr(args, n, None) for n in self.components}
 
-        # Neither specified: full install in standard mode
-        return {"mode": "standard", "path": None}
+        if not any(v is not None for v in requested.values()):
+            # bare `aqua install`: install every known component, standard mode
+            return {"mode": "standard", "path": None}
+
+        return self._get_install_mode(requested.get(name))
 
     def install(self, args):
         """Install AQUA, find the folders and then install
@@ -243,72 +319,88 @@ class InstallMixin:
         # Check current installation status
         install_info = self._check(silent=True, return_info=True)
 
-        # Determine installation mode for each component
-        core_mode = self._determine_component_mode(args.core, args.diagnostics, "core")
-        diag_mode = self._determine_component_mode(args.core, args.diagnostics, "diagnostics")
-        self.logger.debug("Installation modes - core: %s, diagnostics: %s", core_mode, diag_mode)
+        # Determine installation mode for every known component (core + all plugins)
+        modes = {name: self._determine_component_mode(args, name) for name in self.components}
+        self.logger.debug("Installation modes: %s", modes)
+
+        core_mode = modes.get("core")
+        other_requested = {name: mode for name, mode in modes.items() if name != "core" and mode}
 
         if install_info["installed"]:
             self.logger.warning("AQUA installation found in %s", self.configpath)
             if core_mode:
+                other_installed = [n for n in install_info["components"] if n != "core"]
                 self.logger.warning("Proceeding will remove the existing installation and all catalogs.")
-                self.logger.warning("It will remove the diagnostics component if already installed.")
+                if other_installed:
+                    self.logger.warning(
+                        "It will remove the following components if already installed: %s",
+                        ", ".join(other_installed),
+                    )
                 if not self._remove_installation(confirm=True):
                     sys.exit()
 
-            if core_mode is False and diag_mode:
-                if not install_info["core"]["installed"]:
-                    self.logger.error("Cannot install diagnostics without core. Install core first or use full installation.")
-                    sys.exit(1)
-                if install_info["diagnostics"]["installed"]:
+        # Validation: installing non-core components requires core to already be installed
+        if not core_mode and other_requested:
+            if not install_info["components"]["core"]["installed"]:
+                self.logger.error(
+                    "Cannot install %s without core. Install core first or use full installation.",
+                    ", ".join(other_requested),
+                )
+                sys.exit(1)
+            for name in other_requested:
+                if install_info["components"].get(name, {}).get("installed"):
                     self.logger.error(
-                        "Diagnostics component is already installed. "
-                        "We cannot add it again, please use 'aqua uninstall' before"
+                        "%s component is already installed. We cannot add it again, please use 'aqua uninstall' before",
+                        name,
                     )
                     sys.exit(1)
-                self.logger.info(
-                    "Core already installed (%s mode), adding diagnostics component", install_info["core"]["mode"]
-                )
+            self.logger.info(
+                "Core already installed (%s mode), adding component(s): %s",
+                install_info["components"]["core"]["mode"],
+                ", ".join(other_requested),
+            )
 
-        # Validation: if installing only diagnostics, core must already be installed
-        if core_mode is False and diag_mode:
-            if not install_info["core"]["installed"]:
-                self.logger.error("Cannot install diagnostics without core. Install core first or use full installation.")
-                sys.exit(1)
-            self.logger.info("Core already installed (%s mode), adding diagnostics component", install_info["core"]["mode"])
-
-        # Install core
+        # Install core first, always, if requested
         if core_mode:
             self.logger.debug("Installing core component")
+            core_info = self.components["core"]
             self._install_component(
                 component="core",
                 mode=core_mode,
-                source_path=self.corepath,
-                config_dirs=CORE_CONFIG_DIRECTORIES,
-                template_dirs=CORE_TEMPLATE_DIRECTORIES,
+                source_path=core_info["path"],
+                config_dirs=core_info["config_dirs"],
+                template_dirs=core_info["template_dirs"],
             )
 
             self.logger.debug("Creating config-aqua.yaml configuration file")
             self._copy_update_folder_file(
-                os.path.join(self.corepath, "config-aqua.tmpl"), os.path.join(self.configpath, "config-aqua.yaml")
+                os.path.join(core_info["path"], "config-aqua.tmpl"),
+                os.path.join(self.configpath, "config-aqua.yaml"),
             )
 
-        # Install diagnostics if available and not skipped
-        if diag_mode:
-            if self.diagpath is not None:
-                self.logger.debug("Installing diagnostics component")
+        # Install every other requested component (diagnostics, emulators, ecearth, climatedt, ...)
+        for name, mode in modes.items():
+            if name == "core" or not mode:
+                continue
+
+            info = self.components.get(name, {})
+            if info.get("path") is not None:
+                self.logger.debug("Installing %s component", name)
                 self._install_component(
-                    component="diagnostics",
-                    mode=diag_mode,
-                    source_path=self.diagpath,
-                    config_dirs=DIAGNOSTIC_CONFIG_DIRECTORIES,
-                    template_dirs=DIAGNOSTIC_TEMPLATE_DIRECTORIES,
+                    component=name,
+                    mode=mode,
+                    source_path=info["path"],
+                    config_dirs=info["config_dirs"],
+                    template_dirs=info["template_dirs"],
                 )
             else:
+                msg = f"aqua.{name} package not found. Skipping {name} installation."
                 if core_mode:
-                    self.logger.warning("aqua.diagnostics package not found. Skipping diagnostics installation.")
+                    # full install: missing optional component is just a warning
+                    self.logger.warning(msg)
                 else:
-                    self.logger.error("aqua.diagnostics package not found. Skipping diagnostics installation.")
+                    # explicit request for a missing component is a hard error
+                    self.logger.error(msg)
                     sys.exit(1)
 
         # Create catalogs directory
@@ -441,21 +533,16 @@ class InstallMixin:
         else:
             self.logger.info("Updating AQUA installation...")
 
-            # Update core if not in editable mode
-            self._update_component(
-                source_path=self.corepath,
-                config_dirs=CORE_CONFIG_DIRECTORIES,
-                template_dirs=CORE_TEMPLATE_DIRECTORIES,
-                component_name="core",
-            )
-
-            # Update diagnostics if available and not in editable mode
-            if self.diagpath is not None:
+            # Update every discovered component (core + all installed plugins)
+            # that isn't in editable mode
+            for name, info in self.components.items():
+                if info.get("path") is None:
+                    continue
                 self._update_component(
-                    source_path=self.diagpath,
-                    config_dirs=DIAGNOSTIC_CONFIG_DIRECTORIES,
-                    template_dirs=DIAGNOSTIC_TEMPLATE_DIRECTORIES,
-                    component_name="diagnostics",
+                    source_path=info["path"],
+                    config_dirs=info["config_dirs"],
+                    template_dirs=info["template_dirs"],
+                    component_name=name,
                 )
 
     def _update_component(self, source_path, config_dirs, template_dirs, component_name):
@@ -535,9 +622,10 @@ class InstallMixin:
         self._list_folder(cdir)
 
         if args.all:
-            for content in CORE_CONFIG_DIRECTORIES + DIAGNOSTIC_CONFIG_DIRECTORIES:
-                print(f"AQUA current installed {content} in {self.configpath}:")
-                self._list_folder(os.path.join(self.configpath, content))
+            for _, info in self.components.items():
+                for content in info["config_dirs"]:
+                    print(f"AQUA current installed {content} in {self.configpath}:")
+                    self._list_folder(os.path.join(self.configpath, content))
 
     @staticmethod
     def _list_folder(mydir, return_list=False, silent=False):
@@ -569,22 +657,19 @@ class InstallMixin:
         if return_list:
             return list_files
 
-    @staticmethod
-    def _get_config_dirs(component):
+    def _get_config_dirs(self, component):
         """
         Get the config directories for a component
 
         Args:
-            component (str): 'core' or 'diagnostics'
+            component (str): component name, e.g. 'core', 'diagnostics', 'emulators'
 
         Returns:
             list: List of config directories
         """
-        if component == "core":
-            return CORE_CONFIG_DIRECTORIES
-        if component == "diagnostics":
-            return DIAGNOSTIC_CONFIG_DIRECTORIES
-        raise ValueError(f"Unknown component: {component}")
+        if component not in self.components:
+            raise ValueError(f"Unknown component: {component}. Available components: {', '.join(self.components)}")
+        return self.components[component]["config_dirs"]
 
     @staticmethod
     def _get_install_mode(specific_arg):

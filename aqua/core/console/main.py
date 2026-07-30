@@ -4,9 +4,6 @@
 AQUA command line main functions
 """
 
-import os
-from importlib import resources as pypath
-
 from aqua.core.logger import log_configure
 
 from .analysis import analysis_execute
@@ -17,7 +14,7 @@ from .drop import drop_execute
 from .files import FilesMixin
 
 # this are used to check existence of aqua.diagnostics
-from .install import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES, InstallMixin
+from .install import InstallMixin
 from .parser import parse_arguments
 
 
@@ -28,12 +25,6 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
     def __init__(self):
         """The main AQUA command line interface"""
 
-        # NOTE: self.corepath points to $AQUA/aqua/core/config folder
-        self.corepath = os.path.join(pypath.files("aqua.core"), "config")
-        if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATE_DIRECTORIES:
-            self.diagpath = os.path.join(pypath.files("aqua.diagnostics"), "config")
-        else:
-            self.diagpath = None
         # The configurer contains the ConfigPath class, while the configpath
         # will be populated by the configdir path by the _check method
         self.configurer = None
@@ -80,6 +71,9 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             self.loglevel = "INFO"
 
         self.logger = log_configure(self.loglevel, "AQUA")
+
+        self.components = self.discover_aqua_components()
+        self.aquapath = {name: info["path"] for name, info in self.components.items()}
 
         command = args.command
         method = self.command_map.get(command, parser.print_help)
