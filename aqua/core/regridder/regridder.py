@@ -670,6 +670,10 @@ class Regridder:
                 path_id = regridder_metadata.get_path_identifier()
                 return f"cell_area_path_{path_id}.nc"
             else:
+                self.logger.warning(
+                    "No regridder_metadata or src_grid_name available for area filename generation. "
+                    "Using 'cell_area_unknown.nc'. Consider providing RegridderMetadata."
+                )
                 return "cell_area_unknown.nc"
         else:
             # Weights fallback
@@ -683,6 +687,13 @@ class Regridder:
             elif self.src_grid_name:
                 return f"weights_{self.src_grid_name}_{method}_{targetgrid}_l{level}.nc"
             else:
+                self.logger.warning(
+                    "No regridder_metadata or src_grid_name available for weights filename generation. "
+                    "Using 'weights_unknown_%s_%s_l%s.nc'. Consider providing RegridderMetadata.",
+                    method,
+                    targetgrid,
+                    level,
+                )
                 return f"weights_unknown_{method}_{targetgrid}_l{level}.nc"
 
     def _insert_metadata_params(self, filename, regridder_metadata):
