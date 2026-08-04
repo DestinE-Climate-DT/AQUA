@@ -200,7 +200,7 @@ class Reader:
 
         # create the backend: this is the interface that access the data
         self.backend = backend_factory.create_backend(
-            fixer=self.fixer if self.fix else None,
+            fixer=self.fixer,
             datamodel=self.datamodel,
             chunks=self.chunks,
             engine=engine,
