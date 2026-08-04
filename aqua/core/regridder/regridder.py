@@ -20,7 +20,7 @@ from aqua.core.logger import log_configure
 from aqua.core.util import to_list
 
 from .griddicthandler import GridDictHandler
-from .regridder_util import check_existing_file, validate_reader_kwargs
+from .regridder_util import check_existing_file
 
 # please notice: check_gridfile is a function from smmregrid.util
 # to check and if a grid is a cdo grid,
@@ -184,7 +184,7 @@ class Regridder:
             self.src_grid_dict = {"path": {vdim: data}}
             self.src_grid_path = self.src_grid_dict.get("path")
 
-    def areas(self, tgt_grid_name=None, rebuild=False, reader_kwargs=None):
+    def areas(self, tgt_grid_name=None, rebuild=False, regridder_metadata=None):
         """
         Load or generate regridding areas for the source or target grid.
 
@@ -192,12 +192,11 @@ class Regridder:
             tgt_grid_name (str, optional): Name of the target grid.
                                            If None, the self.src_grid_name is used.
             rebuild (bool, optional): If True, forces regeneration of the area.
-            reader_kwargs (dict, optional): Additional parameters for the reader.
+            regridder_metadata (RegridderMetadata, optional): Metadata for filename generation.
 
         Returns:
             xr.Dataset: The computed grid area.
         """
-
         # normalize dictionaries for target grid
         if tgt_grid_name:
             grid_dict = self.handler.normalize_grid_dict(tgt_grid_name)
@@ -205,7 +204,9 @@ class Regridder:
             grid_dict = self.src_grid_dict
 
         # generate the area
-        grid_area = self._load_area(grid_name=tgt_grid_name, grid_dict=grid_dict, reader_kwargs=reader_kwargs, rebuild=rebuild)
+        grid_area = self._load_area(
+            grid_name=tgt_grid_name, grid_dict=grid_dict, regridder_metadata=regridder_metadata, rebuild=rebuild
+        )
 
         # assign the area to the correct attribute
         if tgt_grid_name:
@@ -240,20 +241,19 @@ class Regridder:
             data.to_netcdf(tmp_file)
             os.replace(tmp_file, filename)
 
-    def _load_area(self, grid_name, grid_dict, reader_kwargs, rebuild=False):
+    def _load_area(self, grid_name, grid_dict, regridder_metadata, rebuild=False):
         """
         Load or generate the grid area.
 
         Args:
             grid_name (str): The grid name. If None, roll back to src_grid_name.
             grid_dict (dict): The normalized grid dictionary.
-            reader_kwargs (dict): Additional reader parameters.
-            target (bool): Whether this is for the target grid (default: False).
+            regridder_metadata (RegridderMetadata): Metadata for filename generation.
             rebuild (bool): If True, forces regeneration of the area.
 
             xr.Dataset: The computed grid area.
         """
-        area_filename = self._area_filename(grid_name if grid_name else None, reader_kwargs)
+        area_filename = self._area_filename(grid_name if grid_name else None, regridder_metadata)
         area_type = "target" if grid_name else "source"
 
         # if file exists, load it
@@ -305,7 +305,7 @@ class Regridder:
             loglevel=self.loglevel,
         ).areas(target=bool(grid_name))
 
-    def weights(self, tgt_grid_name, regrid_method=None, nproc=1, rebuild=False, reader_kwargs=None, initialize=True):
+    def weights(self, tgt_grid_name, regrid_method=None, nproc=1, rebuild=False, regridder_metadata=None, initialize=True):
         """
         Load or generate regridding weights by calling smmregrid
 
@@ -314,8 +314,7 @@ class Regridder:
             regrid_method (str): The regrid method.
             nproc (int): The number of processors to use.
             rebuild (bool): If True, rebuild the weights.
-            reader_kwargs (dict): The reader kwargs for filename definition,
-                                  including info on model, exp, source, etc.
+            regridder_metadata (RegridderMetadata): Metadata for filename generation.
             initialize (bool): If True, initialize the regridders with the loaded weights.
 
         Returns:
@@ -341,7 +340,7 @@ class Regridder:
             # define the vertical coordinate in the smmregrid world
             smm_mask_dim = None if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
 
-            weights_filename = self._weights_filename(tgt_grid_name, regrid_method, mask_dim, reader_kwargs)
+            weights_filename = self._weights_filename(tgt_grid_name, regrid_method, mask_dim, regridder_metadata)
 
             # check if weights already exist, if not, generate them
             if rebuild or not check_existing_file(weights_filename):
@@ -402,13 +401,16 @@ class Regridder:
                 loglevel=self.loglevel,
             )
 
-    def _area_filename(self, tgt_grid_name, reader_kwargs):
-        """ "
-        Generate the area filename.
+    def _area_filename(self, tgt_grid_name, regridder_metadata):
+        """
+        Generate the area filename with intelligent fallback for path-based backends.
 
         Args:
-            tgt_grid_name (str): The destination grid name.
-            reader_kwargs (dict): The reader kwargs, including info on model, exp, source, etc.
+            tgt_grid_name (str): The destination grid name (None for source grid).
+            regridder_metadata (RegridderMetadata): Metadata for filename generation.
+
+        Returns:
+            str: The area filename
         """
 
         area_dict = self.cfg_grid_dict.get("areas")
@@ -417,37 +419,38 @@ class Regridder:
             self.logger.warning("Areas block not found in the configuration file, using fallback naming scheme.")
             if tgt_grid_name:
                 return f"cell_area_{tgt_grid_name}.nc"
-            return f"cell_area_{self.src_grid_name}.nc"
+            return self._fallback_filename(regridder_metadata, kind="area")
 
-        # destination grid name is provided, use grid template
+        # Target grid: always use grid template
         if tgt_grid_name:
             filename = area_dict["template_grid"].format(grid=tgt_grid_name)
             self.logger.debug("Using grid-based template for target grid. Filename: %s", filename)
-        # source grid name is provided, check if it is data
+        # Source grid: check if it's a file or data
         else:
             if check_gridfile(self._get_grid_path(self.src_grid_path)) != "xarray":
+                # Grid file: use grid name
                 filename = area_dict["template_grid"].format(grid=self.src_grid_name)
                 self.logger.debug("Using grid-based template for source grid. Filename: %s", filename)
             else:
-                reader_kwargs = validate_reader_kwargs(reader_kwargs)
-                filename = area_dict["template_default"].format(
-                    model=reader_kwargs["model"], exp=reader_kwargs["exp"], source=reader_kwargs["source"]
-                )
-                self.logger.debug("Using source-based template for source grid. Filename: %s", filename)
+                # Grid from data: use metadata
+                filename = self._resolve_source_filename(area_dict, regridder_metadata, kind="area")
 
-        filename = self._insert_kwargs(filename, reader_kwargs)
+        filename = self._insert_metadata_params(filename, regridder_metadata)
         filename = self._filename_prepend_path(filename, kind="areas")
         return filename
 
-    def _weights_filename(self, tgt_grid_name, regrid_method, mask_dim, reader_kwargs):
+    def _weights_filename(self, tgt_grid_name, regrid_method, mask_dim, regridder_metadata):
         """
-        Generate the weights filename.
+        Generate the weights filename with intelligent fallback for path-based backends.
 
         Args:
             tgt_grid_name (str): The destination grid name.
             regrid_method (str): The regrid method.
             mask_dim (str): The vertical dimension.
-            reader_kwargs (dict): The reader kwargs, including info on model, exp, source, etc.
+            regridder_metadata (RegridderMetadata): Metadata for filename generation.
+
+        Returns:
+            str: The weights filename
         """
 
         levname = mask_dim if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else f"3d-{mask_dim}"
@@ -458,25 +461,20 @@ class Regridder:
             self.logger.warning("Weights block not found in the configuration file, using fallback naming scheme.")
             return f"weights_{tgt_grid_name}_{regrid_method}_l{levname}.nc"
 
-        # destination grid name is provided, use grid template
+        # Check if grid is from file or data
         if check_gridfile(self.src_grid_path[mask_dim]) != "xarray":
+            # Grid file: use grid-based template
             filename = weights_dict["template_grid"].format(
                 sourcegrid=self.src_grid_name, method=regrid_method, targetgrid=tgt_grid_name, level=levname
             )
-            self.logger.debug("Using grid-based template for target grid. Filename: %s", filename)
+            self.logger.debug("Using grid-based template for weights. Filename: %s", filename)
         else:
-            reader_kwargs = validate_reader_kwargs(reader_kwargs)
-            filename = weights_dict["template_default"].format(
-                model=reader_kwargs["model"],
-                exp=reader_kwargs["exp"],
-                source=reader_kwargs["source"],
-                method=regrid_method,
-                targetgrid=tgt_grid_name,
-                level=levname,
+            # Grid from data: use unified resolution logic
+            filename = self._resolve_source_filename(
+                weights_dict, regridder_metadata, kind="weights", method=regrid_method, targetgrid=tgt_grid_name, level=levname
             )
-            self.logger.debug("Using source-based template for target grid. Filename: %s", filename)
 
-        filename = self._insert_kwargs(filename, reader_kwargs)
+        filename = self._insert_metadata_params(filename, regridder_metadata)
         filename = self._filename_prepend_path(filename, kind="weights")
         return filename
 
@@ -604,10 +602,118 @@ class Regridder:
             raise ValueError("Data must be an xarray Dataset or DataArray.")
         return data
 
+    def _resolve_source_filename(self, config_dict, regridder_metadata, kind="area", **extra_params):
+        """Resolve filename for data-based grids with smart fallback.
+
+        Works for both areas and weights by accepting extra template parameters.
+
+        Args:
+            config_dict: Config section (areas or weights)
+            regridder_metadata: RegridderMetadata instance
+            kind: "area" or "weights" (for logging and fallback)
+            **extra_params: Extra params for template (e.g., method, targetgrid, level)
+
+        Returns:
+            Resolved filename string
+        """
+        if regridder_metadata and regridder_metadata.is_catalog_based():
+            # Catalog-based: use template_default
+            template = config_dict.get("template_default")
+            if not template:
+                raise ValueError(f"template_default missing in {kind} config")
+
+            self.logger.debug("Using catalog-based template for %s", kind)
+            # Merge metadata dict with extra params
+            template_vars = regridder_metadata.to_template_dict()
+            template_vars.update(extra_params)
+            return template.format(**template_vars)
+
+        elif regridder_metadata and regridder_metadata.is_path_based():
+            # Path-based: try template_path or use fallback
+            template_path = config_dict.get("template_path")
+
+            if template_path:
+                # Config has path-specific templa
+                self.logger.debug("Using path-based template for %s", kind)
+                path_id = regridder_metadata.get_path_identifier()
+                template_vars = {"path_id": path_id}
+                template_vars.update(extra_params)
+                return template_path.format(**template_vars)
+            else:
+                # No path template: use identifier fallback
+                self.logger.warning("No template_path in config, using fallback for %s", kind)
+                return self._fallback_filename(regridder_metadata, kind, **extra_params)
+
+        else:
+            # No metadata or invalid metadata
+            self.logger.warning("No valid regridder metadata, using fallback")
+            return self._fallback_filename(regridder_metadata, kind, **extra_params)
+
+    def _fallback_filename(self, regridder_metadata, kind="area", **extra_params):
+        """Generate fallback filename when templates unavailable.
+
+        Works for both areas and weights.
+
+        Args:
+            regridder_metadata: RegridderMetadata instance or None
+            kind: "area" or "weights" (for filename generation)
+            **extra_params: Extra params (e.g., method, targetgrid, level for weights)
+
+        Returns:
+            Fallback filename string
+        """
+        if kind == "area":
+            # Area fallback
+            if self.src_grid_name:
+                return f"cell_area_{self.src_grid_name}.nc"
+            elif regridder_metadata and regridder_metadata.path:
+                path_id = regridder_metadata.get_path_identifier()
+                return f"cell_area_path_{path_id}.nc"
+            else:
+                return "cell_area_unknown.nc"
+        else:
+            # Weights fallback
+            method = extra_params.get("method", "unknown")
+            targetgrid = extra_params.get("targetgrid", "unknown")
+            level = extra_params.get("level", "2d")
+
+            if regridder_metadata and regridder_metadata.path:
+                path_id = regridder_metadata.get_path_identifier()
+                return f"weights_path_{path_id}_{method}_{targetgrid}_l{level}.nc"
+            elif self.src_grid_name:
+                return f"weights_{self.src_grid_name}_{method}_{targetgrid}_l{level}.nc"
+            else:
+                return f"weights_unknown_{method}_{targetgrid}_l{level}.nc"
+
+    def _insert_metadata_params(self, filename, regridder_metadata):
+        """Insert extra parameters from DEFAULT_WEIGHTS_AREAS_PARAMETERS into filename.
+
+        Replaces _insert_kwargs() with RegridderMetadata-aware version.
+
+        Args:
+            filename: The filename to modify
+            regridder_metadata: RegridderMetadata instance
+
+        Returns:
+            Modified filename with parameters inserted
+        """
+        if not regridder_metadata:
+            return filename
+
+        for param in DEFAULT_WEIGHTS_AREAS_PARAMETERS:
+            value = getattr(regridder_metadata, param, None)
+            if value is not None:
+                filename = re.sub(r"\.nc", f"_{param}{value}.nc", filename)
+
+        return filename
+
     @staticmethod
     def _insert_kwargs(filename, reader_kwargs):
         """
         Insert the DEFAULT_WEIGHTS_AREAS_PARAMETERS in the filename template.
+
+        DEPRECATED: Use _insert_metadata_params() instead.
+        Kept for backward compatibility only.
         """
         # add the kwargs naming in the template file
         if isinstance(reader_kwargs, dict):
