@@ -12,29 +12,43 @@ from aqua.core.logger import log_configure
 class DaskCluster:
     """Manages the lifecycle of a Dask LocalCluster for parallel diagnostic execution."""
 
-    def __init__(self, loglevel="WARNING"):
+    def __init__(self, loglevel: str = "WARNING"):
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="ClusterManager")
         self._cluster = None
-        self._address = None
 
     @property
     def address(self):
         """Return the scheduler address, or None if the cluster is not running."""
-        return self._address
+        return self._cluster.scheduler_address if self.active else None
 
     @property
     def active(self):
         """Return True if the cluster is active."""
         return self._cluster is not None
 
-    def setup(self, nworkers: int, nthreads: int, mem_limit: str, connect_timeout: float = None, tcp_timeout: float = None):
+    def setup(
+        self,
+        nworkers: int,
+        nthreads: int,
+        mem_limit: str = None,
+        connect_timeout: float = None,
+        tcp_timeout: float = None,
+        **kwargs,
+    ):
         """
-        Spin up a LocalCluster with the specified configuration if not already running.
+        Setup a LocalCluster with the specified configuration if not already running.
+
+        Args:
+            nworkers (int): Number of dask workers to start.
+            nthreads (int): Number of dask threads per worker.
+            mem_limit (str): Memory limit per worker.
+            connect_timeout (float, optional): Connection timeout for Dask communications.
+            tcp_timeout (float, optional): TCP timeout for Dask communications.
 
         """
         if self.active:
-            self.logger.warning("Cluster already running at %s, skipping reconfiguration.", self._address)
+            self.logger.warning("Cluster already running at %s, skipping reconfiguration.", self.address)
             return
 
         self.logger.debug(
@@ -44,20 +58,20 @@ class DaskCluster:
             mem_limit,
         )
 
+        # configure environment variables for Dask timeouts if provided
+        # TODO: this permanently sets environment variables, which may not be ideal for all use cases.
+        # Consider a more flexible approach in the future.
+        self._configure_timeouts(connect_timeout=connect_timeout, tcp_timeout=tcp_timeout)
+
+        # spinup cluster
         self._cluster = LocalCluster(
-            threads_per_worker=nthreads,
-            n_workers=nworkers,
-            memory_limit=mem_limit,
-            silence_logs=logging.ERROR,
+            threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR, **kwargs
         )
-        self._address = self._cluster.scheduler_address
         self.logger.info(
             "Initialized dask cluster at %s with %d workers.",
-            self._address,
+            self.address,
             len(self._cluster.workers),
         )
-
-        self._configure_timeouts(connect_timeout=connect_timeout, tcp_timeout=tcp_timeout)
 
     def close(self):
         """Shut down the cluster if running. Safe to call even if never started."""
@@ -65,16 +79,17 @@ class DaskCluster:
             self.logger.debug("No active cluster to close.")
             return
 
-        self.logger.info("Closing dask cluster at %s.", self._address)
+        self.logger.info("Closing dask cluster at %s.", self.address)
         self._cluster.close()
         self._cluster = None
-        self._address = None
 
     def _configure_timeouts(self, connect_timeout: float = None, tcp_timeout: float = None):
-        """Set Dask timeout environment variables if not already set.
+        """
+        Set Dask timeout environment variables
 
         Args:
-            cluster_config (dict): Cluster configuration dictionary loaded from YAML.
+            connect_timeout (float, optional): Connection timeout for Dask communications.
+            tcp_timeout (float, optional): TCP timeout for Dask communications.
         """
         timeouts = {
             "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT": connect_timeout,
