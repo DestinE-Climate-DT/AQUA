@@ -2,10 +2,10 @@
 
 import xarray as xr
 
-import aqua.core.version as aqua_version
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 
@@ -57,7 +57,7 @@ class BackendXarray(Backend):
         """
         Retrieve minimal data from the path to initialize the Regridder.
         """
-        pass
+        return xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine)
 
     def retrieve(
         self,
