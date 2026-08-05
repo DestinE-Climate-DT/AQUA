@@ -6,6 +6,7 @@ It knows nothing about catalogs - that responsibility lives entirely in
 """
 
 import os
+from functools import cached_property
 
 from jinja2 import Template
 
@@ -46,44 +47,48 @@ class ConfigContext:
         self.logger = log_configure(log_level=loglevel, log_name="ConfigContext")
 
         # get the configuration directory and its file
-        if locator is None:
-            locator = ConfigLocator(filename=filename, configdir=configdir, logger=self.logger)
-        if packages is None:
-            packages = ConfigPackages(logger=self.logger)
-        self.locator = locator
-        self.packages = packages
+        self.locator = locator or ConfigLocator(filename=filename, configdir=configdir, logger=self.logger)
+        self.packages = packages or ConfigPackages(logger=self.logger)
         self.configdir = self.locator.configdir
         self.config_file = self.locator.config_file
         self.logger.debug("Configuration file found in %s", self.config_file)
         self.config_dict = load_yaml(self.config_file)
         self.machine = None
 
-    def get_config_dir(self):
+    def get_config_dir(self) -> str:
         """
         Return the path to the configuration directory.
         """
         return self.configdir
 
-    def get_machine(self):
+    @cached_property
+    def machine(self) -> str:
         """
-        Extract the name of the machine from the configuration file
+        Extract the name of the machine from the configuration file.
+        Cached automatically on first access.
 
         Returns:
-            str | None: resolved machine name from the configuration file, or None when detection fails.
+            str: Resolved machine name, or "unknown" when detection fails.
         """
+        machine_name = self.config_dict.get("machine")
 
-        # if we do not know the machine we assume is "unknown"
-        machine = "unknown"
-        # if the configuration file has a machine entry, use it
-        if "machine" in self.config_dict:
-            self.logger.debug("Machine found in configuration file, set to %s", machine)
-            return self.config_dict.get("machine")
+        if machine_name:
+            self.logger.debug("Machine found in configuration file, set to %s", machine_name)
+            return machine_name
 
-        # warning for unknown machine
-        self.logger.warning("No machine entry found in configuration file, set to %s", machine)
-        return machine
+        self.logger.warning("No machine entry found in configuration file, set to unknown")
+        return "unknown"
 
-    def _get_reader_folder(self, folder_name: str):
+    def get_machine(self) -> str:
+        """
+        Convenience getter for machine name to maintain backwards compatibility.
+
+        Returns:
+            str: Resolved machine name or "unknown".
+        """
+        return self.machine
+
+    def _get_reader_folder(self, folder_name: str) -> str:
         """
         Extract the filenames for the reader for regrid and fixer
 
@@ -101,7 +106,7 @@ class ConfigContext:
             raise FileNotFoundError(f"Cannot find the {folder_name} folder in {folder_path}")
         return folder_path
 
-    def get_reader_folders(self):
+    def get_reader_folders(self) -> tuple[str, str]:
         """
         Extract the filenames for the reader for regrid and fixer
 
@@ -111,7 +116,7 @@ class ConfigContext:
 
         return self._get_reader_folder("fixer"), self._get_reader_folder("regrid")
 
-    def get_folder(self, name: str):
+    def get_folder(self, name: str) -> str:
         """
         Extract the filenames for the configuration folders
 

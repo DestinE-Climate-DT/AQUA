@@ -55,10 +55,6 @@ class ConfigPath(ConfigContext):
         return self._catalog.catalog_available
 
     @property
-    def base_available(self):
-        return self._catalog.base_available
-
-    @property
     def catalog_file(self):
         return self._catalog.catalog_file
 
@@ -79,10 +75,6 @@ class ConfigPath(ConfigContext):
     def get_catalog(self):
         """See `ConfigCatalog.get_catalog`."""
         return self._catalog.get_catalog()
-
-    def get_base(self):
-        """See `ConfigCatalog.get_base`."""
-        return self._catalog.get_base()
 
     def get_catalog_filenames(self, catalog=None):
         """See `ConfigCatalog.get_catalog_filenames`."""
