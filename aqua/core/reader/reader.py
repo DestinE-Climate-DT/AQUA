@@ -23,7 +23,7 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import default_time_unit, files_exist, find_vert_coord, fix_calendar, load_multi_yaml, to_list
+from aqua.core.util import default_time_unit, files_exist, find_vert_coord, fix_calendar, load_multi_yaml, to_list, open_netcdf_files_via_kerchunk, get_kerchunk_cache_dir    
 from aqua.core.version import __version__ as aqua_version
 
 from .reader_utils import set_attrs
@@ -64,6 +64,7 @@ class Reader:
         preproc=None,
         convention="eccodes",
         engine="fdb",
+        virtual_zarr=False,
         **kwargs,
     ):
         """
@@ -149,7 +150,7 @@ class Reader:
 
         self.startdate = startdate
         self.enddate = enddate
-
+        self.virtual_zarr = virtual_zarr
         self.sample_data = None  # used to avoid multiple calls of retrieve_plain
 
         # define configuration file and paths
@@ -1176,12 +1177,19 @@ class Reader:
 
         read_kwargs = getattr(esmcat, "xarray_kwargs", {}).copy()
 
-        # HACK: forcing to netcdf4 for intake2
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
-            read_kwargs.setdefault("engine", "netcdf4")
-            self.logger.debug("Forcing netcdf4 engine")
+        if self.virtual_zarr and isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource):
+            filelist = to_list(esmcat.data.url)
+            cache_dir = get_kerchunk_cache_dir(
+                filelist, self.configdir, self.model, self.exp, self.source
+                )
+            data = open_netcdf_files_via_kerchunk(filelist, cache_dir, loglevel=self.loglevel)
+        else:
+            # HACK: forcing to netcdf4 for intake2
+            if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in read_kwargs:
+                read_kwargs.setdefault("engine", "netcdf4")
+                self.logger.debug("Forcing netcdf4 engine")
 
-        data = esmcat.reader.read(**read_kwargs)
+            data = esmcat.reader.read(**read_kwargs)
 
         if loadvar:
             loadvar = to_list(loadvar)

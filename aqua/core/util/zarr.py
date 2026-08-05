@@ -54,3 +54,46 @@ def create_zarr_reference(filelist, outfile, loglevel="WARNING"):
         json.dump(out, file)
 
     return outfile
+
+def get_kerchunk_cache_dir(filelist, configdir, model, exp, source):
+    import hashlib
+    from pathlib import Path
+    key = hashlib.md5("\n".join(sorted(map(str, filelist))).encode()).hexdigest()[:12]
+    cache = Path(configdir) / "kerchunk_cache" / f"{model}_{exp}_{source}_{key}"
+    cache.mkdir(parents=True, exist_ok=True)
+    return str(cache)
+
+def create_single_zarr_reference(filepath, outfile, loglevel="WARNING"):
+    """One NetCDF4/HDF5 file → one kerchunk JSON."""
+    ref = SingleHdf5ToZarr(filepath, inline_threshold=0).translate()
+    with open(outfile, "w") as f:
+        json.dump(ref, f)
+    return outfile
+    
+def open_zarr_reference(json_path, chunks=None):
+    """Open kerchunk JSON as xarray Dataset (virtual Zarr)."""
+    import fsspec
+    mapper = fsspec.get_mapper(
+        "reference://",
+        fo=json_path,
+        target_protocol="file",
+        remote_protocol="file",
+    )
+    return xr.open_dataset(
+        mapper,
+        engine="zarr",
+        consolidated=False,
+        chunks=chunks if chunks is not None else {},
+    )
+
+def open_netcdf_files_via_kerchunk(filelist, cache_dir, loglevel="WARNING", chunks=None):
+    os.makedirs(cache_dir, exist_ok=True)
+    datasets = []
+    for f in sorted(filelist):
+        json_path = os.path.join(cache_dir, os.path.basename(f) + ".json")
+        if not os.path.exists(json_path):
+            create_single_zarr_reference(f, json_path, loglevel=loglevel)
+        datasets.append(open_zarr_reference(json_path, chunks=chunks))
+    return xr.merge(datasets) if len(datasets) > 1 else datasets[0]
+
+    
