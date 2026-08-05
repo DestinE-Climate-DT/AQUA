@@ -38,12 +38,13 @@ class ConfigCatalog:
     def __init__(
         self, configcontext: ConfigContext | None = None, catalog: str | list | None = None, loglevel: str | None = None
     ):
-        self.paths = configcontext if configcontext is not None else ConfigContext(loglevel=loglevel)
+
         self.logger = log_configure(log_level=loglevel, log_name="ConfigCatalog")
 
+        self.paths = configcontext if configcontext is not None else ConfigContext(loglevel=loglevel)
+
         # if no catalog are provided, get all available
-        if catalog is None:
-            catalog = self.get_catalog()
+        catalog = catalog or self.get_catalog()
         self.catalog_available = to_list(catalog)
         self.logger.debug("Available catalogs are %s", self.catalog_available)
 
@@ -93,9 +94,7 @@ class ConfigCatalog:
         if self.catalog is None:
             raise KeyError('No AQUA catalog is installed. Please run "aqua add CATALOG_NAME"')
 
-        if catalog is None:
-            catalog = self.catalog
-
+        catalog = catalog or self.catalog
         definitions = {"catalog": catalog, "configdir": self.paths.configdir}
         file_path = Template(self.paths.config_dict["reader"][filename_key]).render(**definitions)
         self.logger.debug("%s file is %s", filename_key, file_path)
@@ -148,9 +147,8 @@ class ConfigCatalog:
         # get information on paths
         if self.paths.machine in machine_file:
             machine_paths = machine_file[self.paths.machine]
-        else:
-            if "default" in machine_file:
-                machine_paths = machine_file["default"]
+        elif "default" in machine_file:
+            machine_paths = machine_file["default"]
 
         # The main config file has priority
         if "paths" in self.paths.config_dict:
