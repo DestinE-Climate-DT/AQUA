@@ -57,7 +57,9 @@ class BackendXarray(Backend):
         """
         Retrieve minimal data from the path to initialize the Regridder.
         """
-        return xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine)
+        data = xr.open_mfdataset(self.path, chunks=self.chunks, engine=self.engine)
+        data = self._select_minimum_sample(data, startdate=startdate)
+        return data
 
     def retrieve(
         self,
