@@ -5,7 +5,7 @@ from dask.distributed import Client, LocalCluster
 
 from aqua import Reader
 from aqua.core.configurer import ConfigPath
-from aqua.core.gsv.intake_gsv import GSVSource, gsv_available
+from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
     pytest.skip("Skipping GSV tests: FDB5 libraries not available", allow_module_level=True)
@@ -174,6 +174,8 @@ class TestGsv:
         assert len(dd) > 0, "GSVSource could not load data"
 
     # High-level, integrated test
+
+    # z3fdb does not use GRIB_paramId, so no need to run it with this test
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
@@ -188,10 +190,11 @@ class TestGsv:
         data = reader.retrieve()
         assert data.t.GRIB_paramId == 130, "Wrong GRIB param in data"
 
-    def test_reader_xarray(self) -> None:
+    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    def test_reader_xarray(self, engine) -> None:
         """Reading directly into xarray"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel, engine=engine)
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
@@ -208,10 +211,24 @@ class TestGsv:
         data = reader.retrieve(var=130)  # test numeric argument
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
 
-    def test_reader_3d(self) -> None:
+    # z3fdb does not convert codes to shortnames
+    def test_reader_paramid_z3fdb(self) -> None:
+        """
+        Reading with the variable paramid, we use '130' instead of 't'
+        """
+
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel, engine="z3fdb")
+        data = reader.retrieve(var="130")
+        assert isinstance(data, xr.Dataset), "Does not return a Dataset"
+        assert data.var130.mean().data == pytest.approx(279.3509), "Field values incorrect"
+        data = reader.retrieve(var=130)  # test numeric argument
+        assert data.var130.mean().data == pytest.approx(279.3509), "Field values incorrect"
+
+    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    def test_reader_3d(self, engine) -> None:
         """Testing 3D access"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels", loglevel=loglevel, engine=engine)
         data = reader.retrieve()
         # coordinates read from levels key
         assert all(data.t.coords["plev"].data == [99999.0, 89999.0, 79999.0]), "Wrong coordinates from levels metadata key"
@@ -221,17 +238,18 @@ class TestGsv:
         data = reader.retrieve(level=[900, 800])  # Read only two levels
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-nolevels", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-nolevels", loglevel=loglevel, engine=engine)
         data = reader.retrieve()
         # coordinates read from levels key
         assert all(data.t.coords["plev"].data == [100000, 90000, 80000]), "Wrong level info"
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
-    def test_reader_3d_chunks(self) -> None:
+    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    def test_reader_3d_chunks(self, engine) -> None:
         """Testing 3D access with vertical chunking"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels-chunks", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels-chunks", loglevel=loglevel, engine=engine)
         data = reader.retrieve()
 
         # can read second level
@@ -240,12 +258,13 @@ class TestGsv:
         data = reader.retrieve(level=[900, 800])  # Read only two levels
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
-    def test_reader_bridge(self) -> None:
+    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    def test_reader_bridge(self, engine) -> None:
         """
         Reading from a datasource using bridge
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=loglevel, engine=engine)
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -255,12 +274,13 @@ class TestGsv:
         assert data.tcc.isel(time=15).values.mean() == pytest.approx(65.62109108718757)  # This is from the bridge
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.87973267265382)  # This is from HPC again
 
+    # The auto option is not implemented for z3fdb
     def test_reader_auto(self) -> None:
         """
         Reading from a datasource using new operational schema and auto dates
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel, engine="fdb")
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -320,8 +340,8 @@ class TestGsv:
             areas=False,
         )
         data = reader.retrieve(var="2t")
-        assert "databridge" in reader.kwargs
-        assert reader.kwargs["databridge"] == "mn5"
+        assert "databridge" in reader.backend.kwargs
+        assert reader.backend.kwargs["databridge"] == "mn5"
         assert data.isel(time=20)["2t"].values[0] == pytest.approx(301.0878448486328)
 
     def test_fdb_from_file(self) -> None:
@@ -360,21 +380,22 @@ class TestGsv:
         assert source.data_start_date == "19900101T0000"
         assert source.data_end_date == "19900103T2300"
 
-    def test_reader_dask(self) -> None:
+    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    def test_reader_dask(self, engine) -> None:
         """
         Reading in parallel with a dask cluster
         LocalCluster is created with dashboard_address=None to avoid dashboard port conflicts under pytest-xdist
         """
         with LocalCluster(threads_per_worker=1, n_workers=2, dashboard_address=None) as cluster:
             with Client(cluster):
-                reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel)
+                reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=loglevel, engine=engine)
                 data = reader.retrieve()
                 # Test if the correct dates have been found
                 assert "1990-01-01T00:00" in str(data.time[0].values)
-                assert "1990-01-01T23:00" in str(data.time[-1].values)
+                assert "1990-01-02T00:00" in str(data.time[-1].values)
                 # Test if the data can actually be read and contain the expected values
-                assert data.tcc.isel(time=0).mean().compute().item() == pytest.approx(65.30221138649116)
-                assert data.tcc.isel(time=-1).mean().compute().item() == pytest.approx(66.79689864974151)
+                assert data.tcc.isel(time=0).mean().compute().item() == pytest.approx(65.30221138649115)
+                assert data.tcc.isel(time=-1).mean().compute().item() == pytest.approx(66.8797378540039)
 
 
 # Additional tests for the GSVSource class
@@ -412,3 +433,46 @@ def test_fdb_home_bridge_logs(capsys):
 
     source.chk_type = [0]
     source._get_partition(ii=0)
+
+
+def test_z3fdb_reader_before_bridge_period() -> None:
+    """Test Z3FDBDatasetReader period splitting with a start date before the bridge."""
+    from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
+    from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
+
+    metadata = {
+        "fdb_home": FDB_HOME,
+        "fdb_home_bridge": FDB_HOME,
+    }
+    data = Z3FDB(
+        request={
+            "class": "d1",
+            "dataset": "climate-dt",
+            "activity": "CMIP6",
+            "experiment": "hist",
+            "generation": 1,
+            "model": "IFS-NEMO",
+            "realization": 1,
+            "resolution": "standard",
+            "expver": "a0h3",
+            "type": "fc",
+            "stream": "clte",
+            "date": 19900101,
+            "time": "0000",
+            "param": 164,
+            "levtype": "sfc",
+        },
+        metadata=metadata,
+        data_start_date="19900101T0000",
+        data_end_date="19900103T2300",
+        bridge_start_date="19900102T0000",
+        bridge_end_date="19900102T2300",
+        startdate="19900101T0000",
+        enddate="19900102T2300",
+        var=["tcc"],
+        level=None,
+        engine="z3fdb",
+    )
+    reader = Z3FDBDatasetReader(data)
+    ds = reader._read(data)
+    assert "time" in ds.dims

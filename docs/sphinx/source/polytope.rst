@@ -33,6 +33,8 @@ Use Polytope engine in AQUA
 In order to use Polytope as data access engine in AQUA, you need to specify it when instantiating the `Reader` class.
 To this end you will need to specify ``engine="polytope"`` when instantiating the `Reader` or permanently, adding
 the argument ``engine: polytope`` as an additional argument in the intake catalog source entry in the corresponding yaml file, under `args:`.
+``engine="polytope-gsv"`` is an alternative which at the moment is functionally identical to ``polytope``.
+The two will be separated in the future.
 
 .. code-block:: python
 
@@ -52,6 +54,34 @@ Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge 
       forcing: historical
       start: '1990'
       machine: mn5
+
+Use z3fdb engine in AQUA
+------------------------
+
+Alternatively, you can use the ``z3fdb`` engine for data access, which allows querying/opening the FDB database via a remote or local catalogue routing and wraps the FDB GRIB messages into a lazy zarr-like interface.
+
+In order to use ``z3fdb`` as the data access engine in AQUA, you need to specify it when instantiating the ``Reader`` class.
+To this end, you will need to specify ``engine="z3fdb"`` when instantiating the ``Reader`` or permanently, by adding the argument ``engine: z3fdb`` in the intake catalog source entry under ``args:``.
+
+.. code-block:: python
+
+    reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="z3fdb")
+    data = reader.retrieve(var='2t')
+
+For this engine, a configuration file ``config-z3fdb.yaml`` is used (which is copied to your configuration folder during installation).
+If you want to use a different configuration file, you can pass its path using the ``config_fdb`` argument when instantiating the ``Reader`` class (e.g. ``Reader(..., config_fdb="/path/to/config.yaml")``).
+
+Chunking Logic for z3fdb
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+When using ``engine="z3fdb"``, chunking is configured as follows:
+
+* **Time direction**: Chunking is always by single time steps.
+* **Level direction**: By default, level chunking is not performed.
+* **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
+
+For example, specifying ``chunks={"level": 1}`` provides single-level chunking (along with time chunking).
+If you pass something like ``chunks={"level": 3}``, the integer value (e.g. 3) is ignored, and the level chunking is still performed as single-value.
 
 .. seealso::
 

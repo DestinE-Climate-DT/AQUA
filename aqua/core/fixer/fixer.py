@@ -4,6 +4,7 @@ import re
 
 import numpy as np
 
+from aqua.core.default import DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -11,8 +12,6 @@ from .evaluate_formula import EvaluateFormula
 from .fixer_configure import FixerConfigure
 from .fixer_datamodel import FixerDataModel
 from .fixer_operator import FixerOperator
-
-DEFAULT_DELTAT = 1
 
 
 class Fixer:
@@ -28,9 +27,14 @@ class Fixer:
 
     """
 
-    def __init__(self, fixer_name=None, fixes_dictionary=None, convention=None, metadata=None, loglevel="WARNING"):
-
-        self.fixes_dictionary = fixes_dictionary
+    def __init__(
+        self,
+        fixer_name=None,
+        fixes_dictionary=None,
+        convention="eccodes",
+        metadata=None,
+        loglevel="WARNING",
+    ):
         self.fixer_name = fixer_name
         self.convention = convention
         self.metadata = metadata
@@ -39,8 +43,9 @@ class Fixer:
 
         # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
-            convention=self.convention, fixes_dictionary=self.fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
+            convention=self.convention, fixes_dictionary=fixes_dictionary, fixer_name=self.fixer_name, loglevel=loglevel
         )
+        self.fixes_dictionary = fixes_dictionary or self.fixerconfigure.fixes_dictionary
         self.fixes = self.fixerconfigure.find_fixes()
         self.deltat = self._define_deltat(default=DEFAULT_DELTAT)
         self.time_correction = False
@@ -144,7 +149,11 @@ class Fixer:
                 source = to_list(varfix.get("source", None))
                 # We want to process a list of sources
                 if source:
-                    match = list(set(source) & set(data.variables))
+                    # make sure all sources are strings and include also "varXXX" variations of grib codes
+                    source_strs = {str(s) for s in source}
+                    source_vars = source_strs | {f"var{s}" for s in source_strs if s.isdigit()}
+                    match = list(source_vars.intersection(data.data_vars))
+
                     if match:
                         # Having more than a match should be a problem for a dataset, we do not raise an error
                         # but we warn the user
@@ -154,11 +163,6 @@ class Fixer:
                             )
                         # Even if we have only a match, we make sure that source is a string
                         source = match[0]
-
-                        # If a gribcode is the source match, convert it to shortname to access it
-                        if str(source).isdigit():
-                            self.logger.info("The source %s is a grib code, need to convert it", source)
-                            source = get_eccodes_attr(f"var{source}", loglevel=self.loglevel)["shortName"]
 
                         # Here we update the fixd dictionary with the source and the variable
                         # The rename is done as {source: var} and at the end of the function
@@ -216,6 +220,12 @@ class Fixer:
                         # Already adjust all attributes but not yet units
                         if att == "units":
                             tgt_units = value
+                            # If units are not present in source let's find them
+                            if "units" not in data[source].attrs:
+                                att, sn = self._get_variables_grib_attributes(source)
+                                if "units" in att:
+                                    data[source].attrs["units"] = att["units"]
+                                    self.logger.debug("Setting units for %s: %s", source, att["units"])
                         else:
                             data[source].attrs[att] = value
 
@@ -277,7 +287,7 @@ class Fixer:
 
         if apply_unit_fix:
             for var in data.data_vars:
-                self.operator.apply_unit_fix(data[var], time_correction=self.time_correction)
+                data[var] = self.operator.apply_unit_fix(data[var], time_correction=self.time_correction)
 
         # apply time shift if necessary
         data = self.operator.timeshifter(data)
@@ -295,13 +305,13 @@ class Fixer:
         """
 
         # First case: get from metadata
-        metadata_deltat = self.metadata.get("deltat")
+        metadata_deltat = self.metadata.get("deltat") if self.metadata else None
         if metadata_deltat:
             self.logger.debug("deltat = %s read from metadata", metadata_deltat)
             return metadata_deltat
 
         # Second case if not available: get from fixes
-        fix_deltat = self.fixes.get("deltat")
+        fix_deltat = self.fixes.get("deltat") if self.fixes else None
         if fix_deltat:
             self.logger.debug("deltat = %s read from fixes", fix_deltat)
             return fix_deltat
