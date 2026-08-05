@@ -53,7 +53,6 @@ class ConfigContext:
         self.config_file = self.locator.config_file
         self.logger.debug("Configuration file found in %s", self.config_file)
         self.config_dict = load_yaml(self.config_file)
-        self.machine = None
 
     def get_config_dir(self) -> str:
         """

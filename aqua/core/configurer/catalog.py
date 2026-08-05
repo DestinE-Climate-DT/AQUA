@@ -145,8 +145,8 @@ class ConfigCatalog:
         machine_paths = {}
 
         # get information on paths
-        if self.paths.machine in machine_file:
-            machine_paths = machine_file[self.paths.machine]
+        if self.paths.get_machine() in machine_file:
+            machine_paths = machine_file[self.paths.get_machine()]
         elif "default" in machine_file:
             machine_paths = machine_file["default"]
 
@@ -161,7 +161,7 @@ class ConfigCatalog:
             self.logger.debug("No paths found in the main configuration file %s", self.paths.config_file)
         if machine_paths == {}:
             self.logger.error(
-                "Cannot find machine paths for %s, regridding and areas feature will not work", self.paths.machine
+                "Cannot find machine paths for %s, regridding and areas feature will not work", self.paths.get_machine()
             )
 
         # extract potential intake variables
