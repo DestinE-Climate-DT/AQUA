@@ -95,11 +95,11 @@ jobs:
       group: ${{ inputs.pr-number != '' && format('aqua-pr-{0}-py{1}', inputs.pr-number, matrix.python-version) || format('aqua-{0}-py{1}', github.run_id, matrix.python-version) }}
       cancel-in-progress: ${{ inputs.pr-number != '' }}
 
-    container:
+    #container:
       # To run FDB tests we need to use a Docker image with FDB installed.
       # Pass container-image: '' from the caller to use plain ubuntu-latest (no container).
-      image: ${{ inputs.container-image }}
-      options: --user root
+      #image: ${{ inputs.container-image }}
+      #options: --user root
 
     permissions:
       contents: read
@@ -179,7 +179,7 @@ jobs:
           uname -a
           echo "OS:"
           cat /etc/os-release
-          
+
       - name: Set up Micromamba (local mode)
         if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v3
