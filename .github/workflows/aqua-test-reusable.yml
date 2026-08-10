@@ -171,6 +171,15 @@ jobs:
               -e '/^    - -e \.\[all\]$/d' \
               AQUA/environment.yml > AQUA/environment-stripped.yml
 
+      - name: Debug platform
+        run: |
+          echo "Architecture:"
+          uname -m
+          echo "Kernel:"
+          uname -a
+          echo "OS:"
+          cat /etc/os-release
+          
       - name: Set up Micromamba (local mode)
         if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v3
