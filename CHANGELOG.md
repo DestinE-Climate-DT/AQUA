@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Specify min and max allowed versions for all dependencies (#2984)
 
 ## [v1.0.0]
 
