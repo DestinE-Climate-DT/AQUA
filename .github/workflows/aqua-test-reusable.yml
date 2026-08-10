@@ -175,7 +175,7 @@ jobs:
         if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v3
         with:
-          micromamba-version: 'latest'
+          micromamba-version: 2.8.1-0
           environment-file: AQUA/environment-stripped.yml
           environment-name: aqua
           cache-downloads: true
@@ -187,7 +187,7 @@ jobs:
         if: ${{ inputs.install-mode == 'pypi' }}
         uses: mamba-org/setup-micromamba@v3
         with:
-          micromamba-version: 'latest'
+          micromamba-version: 2.8.1-0
           environment-file: AQUA/environment-pypi.yml
           environment-name: aqua
           cache-downloads: true
