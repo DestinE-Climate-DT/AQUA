@@ -4,7 +4,7 @@ import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
 
-from .coord_utils import get_data_model, units_conversion_factor
+from .coord_utils import AQUA_LATITUDE, AQUA_LONGITUDE, get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
 IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
@@ -48,8 +48,8 @@ class CoordTransformer:
             It can be Regular, Curvilinear or Unstructured.
         """
 
-        lonname = self.src_coords.get("latitude")
-        latname = self.src_coords.get("longitude")
+        lonname = self.src_coords.get(AQUA_LONGITUDE)
+        latname = self.src_coords.get(AQUA_LATITUDE)
         if lonname is None or latname is None:
             return "Unknown"
 
@@ -96,7 +96,9 @@ class CoordTransformer:
                 if flip_coords:
                     data = self.flip_coordinate(data, src_coord, tgt_coord)
                 data = self.convert_units(data, src_coord, tgt_coord)
-                data = self.normalize_longitude_range(data, tgt_coord)
+                # only langitude needs range normalization
+                if AQUA_LONGITUDE in coord:
+                    data = self.normalize_range_convention(data, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
                 self.logger.info("Coordinate %s not found in source coordinates.", coord)
@@ -289,10 +291,10 @@ class CoordTransformer:
             data[tgt_coord["bounds"]].attrs["units"] = tgt_coord["units"]
         return data
 
-    def normalize_longitude_range(self, data, tgt_coord):
+    def normalize_range_convention(self, data, tgt_coord):
         """
         Wrap the longitude coordinate (and its bounds, if present) into the
-        numeric range declared by the target data model, e.g. "0_360" or "-180_180".
+        numeric range declared by the target data model, e.g. "0_to_360" or "-180_to_180".
 
         This is independent from convert_units: units bring lon into degrees_east,
         this brings it into a specific wrap-around convention. Without this step
@@ -309,39 +311,57 @@ class CoordTransformer:
         Returns:
             xr.Dataset or xr.DataArray: The Xarray object with longitude wrapped.
         """
-        coord_name = tgt_coord.get("name")
-        if coord_name not in ("lon", "longitude"):
-            return data
+
+        # we assume this runs after the rename step, so the coordinate name is already the target name
+        coord_name = tgt_coord["name"]
+
+        # ignore cases where we do not have longitudes
         if coord_name not in data.coords:
             return data
-        lon_range = tgt_coord.get("range")
 
-        if isinstance(lon_range, str):
-            if lon_range == "0_360":
+        # extract ranges and verify they are aligned
+        tgt_range = tgt_coord.get("range_convention")
+        if tgt_range is None:
+            self.logger.info(
+                "No 'range_convention' declared for coordinate %s in target data model. Skipping.",
+                coord_name,
+            )
+            return data
+
+        src_range = self.src_coords[AQUA_LONGITUDE].get("range_convention")
+        if src_range == tgt_range:
+            self.logger.info(
+                "%s coordinate %s already in range convention %s. No wrapping needed.",
+                AQUA_LONGITUDE,
+                coord_name,
+                tgt_range,
+            )
+            return data
+
+        # extract the numeric range from the target data model, either as a string or a list of two numbers
+        if isinstance(tgt_range, str):
+            if tgt_range == "0_to_360":
                 lo, hi = 0.0, 360.0
-            elif lon_range in ["180_180", "-180_180"]:
+            elif tgt_range in ["180_to_180", "-180_to_180"]:
                 lo, hi = -180.0, 180.0
             else:
-                self.logger.warning("Unknown string 'range' for coordinate %s: %s. Skipping.", coord_name, lon_range)
+                self.logger.warning(
+                    "Unknown string 'range_convention' for coordinate %s: %s. Skipping.", coord_name, tgt_range
+                )
                 return data
-        elif isinstance(lon_range, (list, tuple)) and len(lon_range) == 2:
-            lo, hi = lon_range[0], lon_range[1]
         else:
-            self.logger.warning("Invalid 'range' format for coordinate %s: %s. Skipping.", coord_name, lon_range)
+            self.logger.error("Invalid 'range_convention' format for coordinate %s: %s. Skipping.", coord_name, tgt_range)
             return data
 
+        # compute the span and wrap the longitudes into the target range
         span = hi - lo
-        if span <= 0:
-            self.logger.warning("Invalid 'range' span for coordinate %s: %s. Skipping.", coord_name, lon_range)
-            return data
-
-        lon = data[coord_name]
-        wrapped = ((lon - lo) % span) + lo
+        longitudes = data[coord_name]
+        wrapped = ((longitudes - lo) % span) + lo
 
         # Regional Data Safety Check
         # If the data is regional (span < 350 degrees), wrapping it across a boundary
         # will shatter it into two pieces, artificially exploding its mathematical span.
-        lon_min, lon_max = float(lon.min()), float(lon.max())
+        lon_min, lon_max = float(longitudes.min()), float(longitudes.max())
         data_span = lon_max - lon_min
 
         if data_span < 350:
@@ -353,13 +373,10 @@ class CoordTransformer:
                 return data
 
         # only touch things if there is actually something to fix, and only log/attrs then
-        if bool((wrapped != lon).any()):
-            self.logger.info(
-                "Wrapping coordinate %s into range [%s, %s]",
-                coord_name,
-                lo,
-                hi,
-            )
+        # (reuses lon_min/lon_max instead of a second full-array reduction, which
+        # matters if data is dask-backed and we want to avoid an extra eager compute)
+        if lon_min < lo or lon_max > hi:
+            self.logger.info("Wrapping coordinate %s into range [%s, %s]", coord_name, lo, hi)
             data = data.assign_coords({coord_name: wrapped})
 
             bounds_name = tgt_coord.get("bounds")
@@ -367,16 +384,18 @@ class CoordTransformer:
                 self.logger.info("Wrapping bounds %s into range [%s, %s]", bounds_name, lo, hi)
                 data[bounds_name] = ((data[bounds_name] - lo) % span) + lo
 
+            # data = data.assign_attrs({"longitude": {"range_convention": tgt_range}})
+
             log_history(
                 data,
-                f"Longitude coordinate {coord_name} wrapped into range [{lo}, {hi}] by datamodel",
+                f"{AQUA_LONGITUDE} coordinate {coord_name} reordered into {tgt_range} convention range by datamodel",
             )
 
         return data
 
     def assign_attributes(self, data, tgt_coord):
         """
-        Assign attributes to the coordinate.
+        Assign attributes to the coordinate when not part of IGNORE_ATTRIBUTES.
         """
         for key, value in tgt_coord.items():
             if key not in IGNORED_ATTRIBUTES:

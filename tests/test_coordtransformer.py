@@ -12,7 +12,7 @@ and in isolation from the rest of the framework. They complement:
 
 This file focuses on unit-level coverage of each CoordTransformer method:
 __init__/_info_grid, rename_coordinate, flip_coordinate, convert_units,
-normalize_longitude_range, assign_attributes, transform_coords (integration
+normalize_range_convention, assign_attributes, transform_coords (integration
 of the above), and the module-level counter_reverse_coordinate().
 """
 
@@ -24,7 +24,6 @@ from conftest import LOGLEVEL
 from aqua.core.data_model import CoordTransformer
 from aqua.core.data_model.coordtransformer import counter_reverse_coordinate
 
-loglevel = LOGLEVEL
 pytestmark = pytest.mark.aqua
 
 
@@ -99,27 +98,27 @@ class TestInitAndGridType:
 
     def test_accepts_dataarray(self):
         ds = _regular_dataset()
-        transformer = CoordTransformer(ds["var"], loglevel=loglevel)
+        transformer = CoordTransformer(ds["var"], loglevel=LOGLEVEL)
         assert transformer.gridtype in ("Regular", "Unstructured", "Curvilinear", "Unknown")
 
     def test_grid_type_regular(self):
         ds = _regular_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         assert transformer.gridtype == "Regular"
 
     def test_grid_type_unstructured(self):
         ds = _unstructured_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         assert transformer.gridtype == "Unstructured"
 
     def test_grid_type_curvilinear(self):
         ds = _curvilinear_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         assert transformer.gridtype == "Curvilinear"
 
     def test_grid_type_unknown_when_no_lat_lon(self):
         ds = xr.Dataset({"var": (["x"], [1, 2, 3])}, coords={"x": [0, 1, 2]})
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         assert transformer.gridtype == "Unknown"
 
 
@@ -131,7 +130,7 @@ class TestInitAndGridType:
 class TestRenameCoordinate:
     def test_renames_when_names_differ(self):
         ds = _regular_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = _get_coord(transformer, "latitude")
         tgt = {"name": "lat"}
 
@@ -143,7 +142,7 @@ class TestRenameCoordinate:
     def test_noop_when_names_already_match(self):
         ds = _regular_dataset()
         ds = ds.rename({"latitude": "lat", "longitude": "lon"})
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = _get_coord(transformer, "latitude")
         tgt = {"name": "lat"}
 
@@ -159,7 +158,7 @@ class TestRenameCoordinate:
         )
         ds["latitude"].attrs["bounds"] = "latitude_bnds"
 
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = _get_coord(transformer, "latitude")
         tgt = {"name": "lat"}
 
@@ -171,7 +170,7 @@ class TestRenameCoordinate:
 
     def test_missing_bounds_does_not_raise(self):
         ds = _regular_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = _get_coord(transformer, "latitude")
         tgt = {"name": "lat"}
 
@@ -200,7 +199,7 @@ class TestFlipCoordinate:
             lon_values=np.array([0.0, 90.0, 180.0]),
         )
         ds = ds.rename({"latitude": "lat", "longitude": "lon"})
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = dict(_get_coord(transformer, "latitude"))
         tgt = {"name": "lat", "stored_direction": "increasing"}
 
@@ -213,7 +212,7 @@ class TestFlipCoordinate:
     def test_missing_tgt_direction_is_noop(self):
         ds = _regular_dataset(lat_decreasing=True)
         ds = ds.rename({"latitude": "lat", "longitude": "lon"})
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = dict(_get_coord(transformer, "latitude"))
         tgt = {"name": "lat"}  # no stored_direction key
 
@@ -223,7 +222,7 @@ class TestFlipCoordinate:
     def test_invalid_tgt_direction_raises(self):
         ds = _regular_dataset()
         ds = ds.rename({"latitude": "lat", "longitude": "lon"})
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = dict(_get_coord(transformer, "latitude"))
         tgt = {"name": "lat", "stored_direction": "sideways"}
 
@@ -233,7 +232,7 @@ class TestFlipCoordinate:
     def test_invalid_src_direction_warns_and_noop(self):
         ds = _regular_dataset(lat_decreasing=True)
         ds = ds.rename({"latitude": "lat", "longitude": "lon"})
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         src = dict(_get_coord(transformer, "latitude"))
         src["stored_direction"] = "unknown"
         tgt = {"name": "lat", "stored_direction": "increasing"}
@@ -253,7 +252,7 @@ class TestConvertUnits:
     def test_converts_radians_to_degrees(self):
         ds = xr.Dataset(coords={"lon": np.array([0.0, np.pi / 2, np.pi])})
         ds["lon"].attrs = {"units": "radian"}
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lon", "units": "radian"}
         tgt = {"name": "lon", "units": "degrees_east"}
@@ -266,7 +265,7 @@ class TestConvertUnits:
     def test_noop_when_tgt_has_no_units(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         ds["lon"].attrs = {"units": "radian"}
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lon", "units": "radian"}
         tgt = {"name": "lon"}  # no "units" key
@@ -277,7 +276,7 @@ class TestConvertUnits:
     def test_noop_when_src_has_no_units(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         ds["lon"].attrs = {"units": "radian"}
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lon"}  # no "units" key
         tgt = {"name": "lon", "units": "degrees_east"}
@@ -287,7 +286,7 @@ class TestConvertUnits:
 
     def test_noop_when_data_missing_units_attr(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})  # no attrs at all
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lon", "units": "radian"}
         tgt = {"name": "lon", "units": "degrees_east"}
@@ -307,7 +306,7 @@ class TestConvertUnits:
         """
         ds = xr.Dataset(coords={"lat": [0.0, 45.0]})
         ds["lat"].attrs = {"units": "degree north"}
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lat", "units": "degree north"}
         tgt = {"name": "lat", "units": "degrees_north"}
@@ -322,7 +321,7 @@ class TestConvertUnits:
     def test_incompatible_units_skips_conversion(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         ds["lon"].attrs = {"units": "kelvin"}
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lon", "units": "kelvin"}
         tgt = {"name": "lon", "units": "degrees_east"}
@@ -337,7 +336,7 @@ class TestConvertUnits:
             coords={"lon": np.array([0.0, np.pi / 2])},
         )
         ds["lon"].attrs = {"units": "radian", "bounds": "lon_bnds"}
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         src = {"name": "lon", "units": "radian", "bounds": "lon_bnds"}
         tgt = {"name": "lon", "units": "degrees_east", "bounds": "lon_bnds"}
@@ -349,46 +348,49 @@ class TestConvertUnits:
 
 
 # ---------------------------------------------------------------------------
-# normalize_longitude_range
+# normalize_range_convention
 # (core coverage also lives in test_datamodel.py::TestLongitudeRangeNormalization;
 #  kept here too since this file is the canonical unit-test home for
 #  CoordTransformer, and to test it alongside the rest of the class's methods)
 # ---------------------------------------------------------------------------
 
 
-class TestNormalizeLongitudeRange:
+class TestNormalizeRangeConvention:
+    longitude = "longitude"
+    latitude = "latitude"
+
     def test_wraps_into_declared_range(self):
-        ds = xr.Dataset(coords={"lon": [-170.0, -10.0, 10.0, 170.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        ds = _regular_dataset(lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
-        tgt = {"name": "lon", "range": "0_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        tgt = {"name": self.longitude, "range_convention": "0_to_360"}
+        result = transformer.normalize_range_convention(ds, tgt)
 
-        np.testing.assert_allclose(result.lon.values, [190.0, 350.0, 10.0, 170.0])
+        np.testing.assert_allclose(result[self.longitude].values, [190.0, 350.0, 10.0, 170.0])
 
     def test_ignores_non_longitude_coordinates(self):
-        ds = xr.Dataset(coords={"lat": [-170.0, 10.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]))
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
-        tgt = {"name": "lat", "range": "0_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        tgt = {"name": self.latitude, "range_convention": "0_to_360"}
+        result = transformer.normalize_range_convention(ds, tgt)
 
-        np.testing.assert_array_equal(result.lat.values, [-170.0, 10.0])
+        np.testing.assert_array_equal(result[self.latitude].values, [-170.0, 10.0])
 
     def test_invalid_range_format_is_noop(self):
         """Malformed ranges (lists with wrong length or unknown strings) should be a no-op."""
-        ds = xr.Dataset(coords={"lon": [-170.0, 10.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        ds = _regular_dataset(lon_values=np.array([-170.0, 10.0]))
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
         # 1. Test malformed list (3 elements)
-        tgt_list = {"name": "lon", "range": [0, 180, 360]}
-        result_list = transformer.normalize_longitude_range(ds, tgt_list)
-        np.testing.assert_array_equal(result_list.lon.values, [-170.0, 10.0])
+        tgt_list = {"name": self.longitude, "range_convention": "0_360"}
+        result_list = transformer.normalize_range_convention(ds, tgt_list)
+        np.testing.assert_array_equal(result_list[self.longitude].values, [-170.0, 10.0])
 
         # 2. Test unknown string format
-        tgt_str = {"name": "lon", "range": "0_180_360"}
-        result_str = transformer.normalize_longitude_range(ds, tgt_str)
-        np.testing.assert_array_equal(result_str.lon.values, [-170.0, 10.0])
+        tgt_str = {"name": self.longitude, "range_convention": "0_180_360"}
+        result_str = transformer.normalize_range_convention(ds, tgt_str)
+        np.testing.assert_array_equal(result_str[self.longitude].values, [-170.0, 10.0])
 
     def test_regional_data_crossing_boundary_is_noop(self):
         """
@@ -398,15 +400,15 @@ class TestNormalizeLongitudeRange:
         """
         # Regional array crossing the prime meridian (span = 60)
         lon = np.array([-20.0, 0.0, 20.0, 40.0])
-        ds = xr.Dataset(coords={"lon": lon})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        ds = _regular_dataset(lon_values=lon)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
-        tgt = {"name": "lon", "range": "0_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        tgt = {"name": self.longitude, "range_convention": "0_to_360"}
+        result = transformer.normalize_range_convention(ds, tgt)
 
         # Because wrapping shatters the array (span jumps from 60 to 340),
         # the transformation must be skipped.
-        np.testing.assert_array_equal(result.lon.values, lon)
+        np.testing.assert_array_equal(result[self.longitude].values, lon)
 
     def test_regional_data_not_crossing_boundary_wraps_safely(self):
         """
@@ -415,15 +417,15 @@ class TestNormalizeLongitudeRange:
         """
         # Regional array entirely in the western hemisphere (span = 20)
         lon = np.array([-100.0, -90.0, -80.0])
-        ds = xr.Dataset(coords={"lon": lon})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        ds = _regular_dataset(lon_values=lon)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
-        tgt = {"name": "lon", "range": "0_360"}
-        result = transformer.normalize_longitude_range(ds, tgt)
+        tgt = {"name": self.longitude, "range_convention": "0_to_360"}
+        result = transformer.normalize_range_convention(ds, tgt)
 
         # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
         # It should succeed.
-        np.testing.assert_allclose(result.lon.values, [260.0, 270.0, 280.0])
+        np.testing.assert_allclose(result[self.longitude].values, [260.0, 270.0, 280.0])
 
 
 # ---------------------------------------------------------------------------
@@ -434,7 +436,7 @@ class TestNormalizeLongitudeRange:
 class TestAssignAttributes:
     def test_adds_extra_attributes(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         tgt = {"name": "lon", "units": "degrees_east", "axis": "X", "standard_name": "longitude"}
         result = transformer.assign_attributes(ds, tgt)
@@ -449,9 +451,9 @@ class TestAssignAttributes:
     def test_range_key_never_leaks_into_attrs(self):
         """Regression test: 'range' is a wrap-convention control key, not a CF attribute."""
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
-        tgt = {"name": "lon", "range": "0_360", "axis": "X"}
+        tgt = {"name": "lon", "range": "0_to_360", "axis": "X"}
         result = transformer.assign_attributes(ds, tgt)
 
         assert "range" not in result.lon.attrs
@@ -460,7 +462,7 @@ class TestAssignAttributes:
     def test_does_not_overwrite_existing_attribute(self):
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         ds["lon"].attrs["axis"] = "custom_value"
-        transformer = CoordTransformer(_regular_dataset(), loglevel=loglevel)
+        transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
         tgt = {"name": "lon", "axis": "X"}
         result = transformer.assign_attributes(ds, tgt)
@@ -476,16 +478,16 @@ class TestAssignAttributes:
 class TestTransformCoordsIntegration:
     def test_full_pipeline_on_regular_grid(self):
         """
-        This checks that normalize_longitude_range is actually wired into the
+        This checks that normalize_range_convention is actually wired into the
         real transform_coords() call (via the real aqua.yaml 'range' key), not
-        just correct in isolation (see TestNormalizeLongitudeRange above).
+        just correct in isolation (see TestNormalizeRangeConvention above).
         Flip mechanics themselves are already covered end-to-end, with real
         data reordering, by test_coord_flipping.py -- so only a light check
         is kept here to confirm flip and lon-wrap don't interfere with each
         other when run together through the same pipeline.
         """
         ds = _regular_dataset(lat_decreasing=True, lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
         result = transformer.transform_coords(name="aqua")
 
@@ -495,7 +497,7 @@ class TestTransformCoordsIntegration:
 
     def test_flip_coords_false_disables_flipping_but_not_lon_wrap(self):
         ds = _regular_dataset(lat_decreasing=True, lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
         result = transformer.transform_coords(name="aqua", flip_coords=False)
 
@@ -506,13 +508,13 @@ class TestTransformCoordsIntegration:
 
     def test_invalid_name_type_raises(self):
         ds = _regular_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         with pytest.raises(TypeError, match="name must be a string."):
             transformer.transform_coords(name=42)
 
     def test_unknown_data_model_raises(self):
         ds = _regular_dataset()
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         with pytest.raises(FileNotFoundError):
             transformer.transform_coords(name="this_data_model_does_not_exist")
 
@@ -525,7 +527,7 @@ class TestTransformCoordsIntegration:
 class TestCounterReverseCoordinate:
     def test_reverses_flipped_coordinate_and_clears_marker(self):
         ds = _regular_dataset(lat_decreasing=True)
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         result = transformer.transform_coords(name="aqua")
         assert result.lat.attrs.get("flipped") == 1
 
@@ -537,7 +539,7 @@ class TestCounterReverseCoordinate:
 
     def test_noop_when_nothing_flipped(self):
         ds = _regular_dataset(lat_decreasing=False)
-        transformer = CoordTransformer(ds, loglevel=loglevel)
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         result = transformer.transform_coords(name="aqua")
         assert result.lat.attrs.get("flipped") is None
 
