@@ -5,8 +5,8 @@ AQUA command line main functions
 """
 
 import os
-from importlib import resources as pypath
 
+from aqua.core.configurer import ConfigPackages
 from aqua.core.logger import log_configure
 
 from .analysis import analysis_execute
@@ -29,12 +29,13 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         """The main AQUA command line interface"""
 
         # NOTE: self.corepath points to $AQUA/aqua/core/config folder
-        self.corepath = os.path.join(pypath.files("aqua.core"), "config")
+        aqua_paths = ConfigPackages()
+        self.corepath = os.path.join(aqua_paths.aqua_core_path, "config")
         if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATE_DIRECTORIES:
-            self.diagpath = os.path.join(pypath.files("aqua.diagnostics"), "config")
+            self.diagpath = os.path.join(aqua_paths.get_package_path("aqua.diagnostics"), "config")
         else:
             self.diagpath = None
-        # The configurer contains the ConfigPath class, while the configpath
+        # The configurer contains the ConfigContext class, while the configpath
         # will be populated by the configdir path by the _check method
         self.configurer = None
         self.configpath = None
@@ -128,7 +129,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         """
 
         print("Running the catalog generator")
-        catgen_execute(args)
+        catgen_execute(args, configcontext=self.configurer)
 
     def grids_build(self, args):
         """Build grids from data sources

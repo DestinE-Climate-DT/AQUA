@@ -3,7 +3,7 @@
 import xarray as xr
 
 import aqua.core.version as aqua_version
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
@@ -41,7 +41,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         model: str,
         exp: str,
         source: str,
-        configurer: ConfigPath,
+        configurer_catalog: ConfigCatalog,
         catalog: str = None,
         chunks: str | dict = None,
         fixer: Fixer = None,
@@ -58,7 +58,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             model (str): Model name.
             exp (str): Experiment name.
             source (str): Data source.
-            configurer (ConfigPath): An instance of ConfigPath to manage configuration paths.
+            configurer_catalog (ConfigCatalog): An instance of ConfigCatalog to manage configuration paths.
             catalog (str, optional): Catalog name. Defaults to None.
             chunks (str | dict, optional): Time/vertical chunking forwarded to the GSV request.
                                            Defaults to None (use the catalog default).
@@ -74,7 +74,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         self.engine = engine
         self.databridge = databridge
 
-        self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
+        self.setup_catalog(model, exp, source, configurer_catalog, catalog, chunks, **kwargs)
 
         # Check machine compatibility
         self.machine_from_catalog = self.expcat.metadata.get("machine")

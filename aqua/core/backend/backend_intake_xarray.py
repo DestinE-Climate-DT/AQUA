@@ -9,7 +9,7 @@ import intake_xarray
 import pandas as pd
 import xarray as xr
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
 from aqua.core.exceptions import NoDataError
 from aqua.core.fixer import Fixer
@@ -43,7 +43,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         model: str,
         exp: str,
         source: str,
-        configurer: ConfigPath,
+        configurer_catalog: ConfigCatalog = None,
         catalog: str = None,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
@@ -58,7 +58,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             model (str): Model name.
             exp (str): Experiment name.
             source (str): Data source.
-            configurer (ConfigPath): An instance of ConfigPath to manage configuration paths.
+            configurer_catalog (ConfigCatalog): An instance of ConfigCatalog to manage the catalog.
             catalog (str, optional): Catalog name. Defaults to None.
             chunks (str | dict, optional): Chunking strategy for xarray. Defaults to "auto".
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
@@ -67,7 +67,7 @@ class BackendIntakeXarray(Backend, CatalogMixin):
             kwargs: Additional keyword arguments forwarded to the intake catalog source entry.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
-        self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
+        self.setup_catalog(model, exp, source, configurer_catalog, catalog, chunks, **kwargs)
 
         # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
         # This provides direct access to the intake data object and is xarray-specific.

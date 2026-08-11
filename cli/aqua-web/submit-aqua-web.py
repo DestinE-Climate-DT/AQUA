@@ -15,7 +15,7 @@ from tempfile import NamedTemporaryFile
 from jinja2 import Template
 from ruamel.yaml import YAML
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
 from aqua.core.util import get_arg
 
@@ -269,10 +269,10 @@ class Submitter:
         """
 
         # Find the AQUA config directory
-        configurer = ConfigPath()
+        configurer = ConfigContext()
 
         script_location = os.path.dirname(os.path.abspath(__file__))
-        search_paths = [configurer.configdir, ".", script_location]
+        search_paths = [configurer.get_config_dir(), ".", script_location]
 
         # If the config file does not exists find it either in the AQUA config dir, the location of the script or here
         if not os.path.isfile(config):

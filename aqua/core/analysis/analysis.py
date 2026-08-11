@@ -10,7 +10,7 @@ import sys
 import tempfile
 from importlib import resources as pypath
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.util import create_folder, dump_yaml, load_yaml, to_list
 
 
@@ -283,7 +283,7 @@ def get_aqua_paths(*, args, logger):
     logger.debug(f"AQUA core path: {aqua_core_path}")
     logger.debug(f"AQUA diagnostics path: {aqua_diagnostics_path}")
 
-    aqua_configdir = ConfigPath().configdir
+    aqua_configdir = ConfigContext().get_config_dir()
     logger.debug(f"AQUA config dir: {aqua_configdir}")
 
     aqua_analysis_config_path = (

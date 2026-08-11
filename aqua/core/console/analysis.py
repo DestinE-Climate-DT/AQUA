@@ -10,7 +10,7 @@ from importlib import resources as pypath
 from dask.distributed import LocalCluster
 
 from aqua.core.analysis import configure_experiment_kind, get_aqua_paths, run_command, run_diagnostic_collection
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigCatalog
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, expand_env_vars, format_realization, load_yaml
 
@@ -109,7 +109,7 @@ def analysis_execute(args):
     if catalog:
         logger.info("Requested catalog: %s", catalog)
     else:
-        cat, _ = ConfigPath().browse_catalogs(model, exp, source)
+        cat, _ = ConfigCatalog(loglevel=loglevel).browse_catalogs(model, exp, source)
         if cat:
             catalog = cat[0]
             logger.info("Automatically determined catalog: %s", catalog)
