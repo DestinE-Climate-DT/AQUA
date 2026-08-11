@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Specify min and max allowed versions for all dependencies (#2984)
 - CI/CD: fix micromamba setup broken by setup-micromamba v3.2.0 (#2985)
 
 ## [v1.0.0]
