@@ -9,7 +9,14 @@ Unreleased in the current development version (target v1.0.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Specify min and max allowed versions for all dependencies (#2984)
+- CI/CD: fix micromamba setup broken by setup-micromamba v3.2.0 (#2985)
 
+## [v1.0.0]
+
+ClimateDT workflow modifications:
+
+Complete list:
 - Graphics: minor aesthetic adjustments (#2969)
 - Area selection can be correctly performed with `areas=False` in the Reader (#2960)
 
@@ -1474,7 +1481,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...HEAD
+[v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
 [v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6
 [v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
 [v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
