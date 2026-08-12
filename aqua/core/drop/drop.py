@@ -27,6 +27,7 @@ from aqua.core.configurer import ConfigPath
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
+from aqua.core.timstat import TimStat
 from aqua.core.util import dump_yaml, load_yaml
 from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
@@ -37,8 +38,8 @@ from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
 
-# available statistics
-available_stats = ["mean", "std", "max", "min", "sum", "histogram"]
+# available statistics are synchronized with the TimStat class
+available_stats = TimStat().available_stats
 
 
 class Drop:
