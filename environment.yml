@@ -41,7 +41,7 @@ dependencies:
   - scipy>=1.17.0,<=1.17.0
   - seaborn>=0.13.2,<=0.13.2
   - smmregrid==0.1.5
-  - typeguard>=4.5.1,<=4.5.1
+  - typeguard>=4.5.1,<=4.6.0
   - xarray>=2025.12.0,<=2026.7.0
   - zarr>=3.0,<=3.3.0
   - icechunk>=2.0.5,<=2.0.5
