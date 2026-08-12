@@ -30,7 +30,7 @@ dependencies:
   - intake-xarray>=2.0.0,<=2.0.0
   - jinja2>=3.1.6,<=3.1.6
   - kerchunk>=0.2.9,<=0.2.9
-  - matplotlib>=3.10.8,<=3.10.8
+  - matplotlib>=3.10.8,<=3.11.1
   - metpy>=1.7.1,<=1.7.1
   - numpy>=2.4.1,<=2.4.1
   - pandas>=3.0.0,<=3.0.5
