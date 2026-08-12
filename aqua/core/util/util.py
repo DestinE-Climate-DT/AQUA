@@ -31,19 +31,24 @@ def to_list(arg):
     return [arg]
 
 
-def get_arg(args, arg, default):
+def get_arg(args, arg, default, config=None, key=None):
     """
-    Support function to get arguments
+    Support function to get arguments:
+    - First tries to get the argument from the command line arguments (args).
+    - If not found, tries to get it from the configuration dictionary (config) using the provided key or the argument name.
+    - If still not found, returns the default value.
 
     Args:
         args: the arguments
         arg: the argument to get
         default: the default value
+        config: the (optional) configuration dictionary
+        key: the key (optional) to use in the configuration dictionary
 
     Returns:
         The argument value or the default value
     """
-    return getattr(args, arg, None) or default
+    return getattr(args, arg, None) or (config.get(key or arg, default) if config else default)
 
 
 def extract_attrs(data, attr):
