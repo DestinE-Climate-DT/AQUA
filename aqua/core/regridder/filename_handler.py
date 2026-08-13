@@ -117,7 +117,7 @@ class FilenameHandler:
         for param in DEFAULT_WEIGHTS_AREAS_PARAMETERS:
             value = getattr(regridder_metadata, param, None)
             if value is not None:
-                filename = re.sub(r"\.nc", f"_{param}{value}.nc", filename)
+                filename = re.sub(r".nc$", f"_{param}{value}.nc", filename)
         return filename
 
     def _prepend_path(self, filename, kind="weights"):
