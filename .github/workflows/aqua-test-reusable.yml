@@ -252,6 +252,7 @@ jobs:
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
         id: dvc-pull
         continue-on-error: ${{ inputs.test-data-source == 'auto' }}
+        timeout-minutes: 5
         run: |
           cd aqua-dvc
           git checkout main

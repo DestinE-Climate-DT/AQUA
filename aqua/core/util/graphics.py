@@ -156,7 +156,8 @@ def cbar_get_label(data: xr.DataArray, cbar_label: str = None, loglevel="WARNING
 
         units = getattr(data, "units", None)
 
-        if units:
+        # Dimensionless quantities (e.g. correlation, units "1") get no unit bracket.
+        if units and str(units).strip() not in ("1", "dimensionless"):
             cbar_label = f"{cbar_label} [{unit_to_latex(units)}]"
             logger.debug("Adding units to colorbar label")
 

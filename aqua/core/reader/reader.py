@@ -7,7 +7,7 @@ from smmregrid import GridInspector
 
 # This is needed to initialize the gsv driver
 from aqua.core.backend import BackendFactory
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 
 # set default data model
@@ -16,12 +16,13 @@ from aqua.core.exceptions import NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
 from aqua.core.histogram import histogram
-from aqua.core.logger import log_configure, log_history
+from aqua.core.logger import log_configure
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
 from aqua.core.util import load_multi_yaml, set_attrs
 
 from .trender import Trender
+from .vertinterpolator import VertInterpolator
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
@@ -147,8 +148,8 @@ class Reader:
 
         # define configuration file and paths
         # TODO: revisit configpath to allow xarray backend. define a behaviour without catalog.
-        configurer = ConfigPath(catalog=catalog, loglevel=loglevel)
-        self.fixer_folder, self.grids_folder = configurer.get_reader_filenames()
+        configurer = ConfigContext(loglevel=loglevel)
+        self.fixer_folder, self.grids_folder = configurer.get_reader_folders()
 
         # extend the unit registry
         units_extra_definition()
@@ -199,7 +200,7 @@ class Reader:
 
         # create the backend: this is the interface that access the data
         self.backend = backend_factory.create_backend(
-            fixer=self.fixer if self.fix else None,
+            fixer=self.fixer,
             datamodel=self.datamodel,
             chunks=self.chunks,
             engine=engine,
@@ -238,6 +239,7 @@ class Reader:
             )
 
         self.trender = Trender(loglevel=self.loglevel)
+        self.vertinterpolator = VertInterpolator(loglevel=self.loglevel)
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False, rebuild=False, reader_kwargs=None):
         """
@@ -353,9 +355,7 @@ class Reader:
                 new_weights[coords[0]] = fixed
         return new_weights
 
-    # TODO: sample is not used, so no sampling is done for retrieve_plain and all the vars are loaded.
-    # also chunking can be specified to reduce the amount of data.
-    def retrieve(self, var=None, level=None, startdate=None, enddate=None, level_coord=None, history=True):
+    def retrieve(self, var=None, level=None, startdate=None, enddate=None, level_coord=None):
         """
         Perform a data retrieve.
 
@@ -366,8 +366,6 @@ class Reader:
             startdate (str): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
             enddate (str): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
             level_coord (str): The coordinate name for the vertical levels. Defaults to None.
-            history (bool): If you want to add to the metadata history information about retrieve. Defaults to True.
-            sample (bool): read only one default variable (used only if var is not specified). Defaults to False.
 
         Returns:
             A xarray.Dataset containing the required data.
@@ -380,8 +378,9 @@ class Reader:
         data = self.backend.retrieve(var=var, level=level, level_coord=level_coord, startdate=startdate, enddate=enddate)
 
         # This links the dataset accessor to this instance of the Reader class
-        if isinstance(data, xr.Dataset):
-            data.aqua.set_default(self)
+        # retrieve should always return a new dataset, so we set the default to this instance of the Reader class
+        # TODO: remove this -> if isinstance(data, xr.Dataset):
+        data.aqua.set_default(self)
 
         # Preprocessing function
         if self.preproc:
@@ -400,7 +399,7 @@ class Reader:
         """
         # We're keeping the fldstat call separate, however at the current stage there is
         # no difference in behavior between the src and tgt fldstat calls.
-        if self._check_if_regridded(data) and self.tgt_fldstat:
+        if _check_if_regridded(data) and self.tgt_fldstat:
             return self.tgt_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
         return self.src_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
 
@@ -459,28 +458,11 @@ class Reader:
         final.aqua.set_default(self)
         return final
 
-    def _check_if_regridded(self, data):
-        """
-        Checks if a dataset or Datarray has been regridded.
-
-        Arguments:
-            data (xr.DataArray or xarray.DataDataset):  the input data
-        Returns:
-            A boolean value
-        """
-
-        if isinstance(data, xr.Dataset):
-            att = list(data.data_vars.values())[0].attrs
-        else:
-            att = data.attrs
-
-        return att.get("AQUA_regridded", False)
-
-    def vertinterp(self, data, levels=None, vert_coord="plev", units=None, method="linear"):
+    def vertinterp(self, data, levels=None, level_coord="plev", units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
         of xarray within AQUA. Given an xarray object, will interpolate the
-        vertical dimension along the vert_coord.
+        vertical dimension along the level_coord.
         If it is a Dataset, only variables with the required vertical
         coordinate will be interpolated.
 
@@ -488,60 +470,17 @@ class Reader:
             data (DataArray, Dataset): your dataset
             levels (float, or list): The level you want to interpolate the vertical coordinate
             units (str, optional, ): The units of your vertical axis. Default 'Pa'
-            vert_coord (str, optional): The name of the vertical coordinate. Default 'plev'
+            level_coord (str, optional): The name of the vertical coordinate. Default 'plev'
             method (str, optional): The type of interpolation method supported by interp()
 
         Return
             A DataArray or a Dataset with the new interpolated vertical dimension
         """
 
-        if levels is None:
-            raise KeyError("Levels for interpolation must be specified")
+        data = self.vertinterpolator.vertinterp(data=data, levels=levels, level_coord=level_coord, units=units, method=method)
+        data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
-        # error if vert_coord is not there
-        if vert_coord not in data.coords:
-            raise KeyError(f"The vert_coord={vert_coord} is not in the data!")
-
-        # if you not specified the units, guessing from the data
-        if units is None:
-            if hasattr(data[vert_coord], "units"):
-                self.logger.warning("Units of vert_coord=%s has not defined, reading from the data", vert_coord)
-                units = data[vert_coord].units
-            else:
-                raise ValueError("Original dataset has not unit on the vertical axis, failing!")
-
-        if isinstance(data, xr.DataArray):
-            final = self._vertinterp(data=data, levels=levels, units=units, vert_coord=vert_coord, method=method)
-
-        elif isinstance(data, xr.Dataset):
-            selected_vars = [da for da in data.data_vars if vert_coord in data[da].coords]
-            final = data[selected_vars].map(
-                self._vertinterp, keep_attrs=True, levels=levels, units=units, vert_coord=vert_coord, method=method
-            )
-        else:
-            raise ValueError("This is not an xarray object!")
-
-        final = log_history(
-            final,
-            f"Interpolated from original levels {data[vert_coord].values} "
-            f"{data[vert_coord].units} to level {levels} using {method} method.",
-        )
-
-        final.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
-
-        return final
-
-    def _vertinterp(self, data, levels=None, units="Pa", vert_coord="plev", method="linear"):
-
-        # verify units are good
-        if data[vert_coord].units != units:
-            self.logger.warning("Converting vert_coord units to interpolate from %s to %s", data[vert_coord].units, units)
-            data = data.metpy.convert_coordinate_units(vert_coord, units)
-
-        # very simple interpolation
-        final = data.interp({vert_coord: levels}, method=method)
-
-        return final
+        return data
 
     # def reader_esm(self, esmcat, var):
     #     """
@@ -640,7 +579,7 @@ class Reader:
             **kwargs: additional arguments passed to fldstat
         """
         # Handle regridding logic - use appropriate fldstat module
-        fldstat = self.tgt_fldstat if self._check_if_regridded(data) and self.tgt_fldstat is not None else self.src_fldstat
+        fldstat = self.tgt_fldstat if _check_if_regridded(data) and self.tgt_fldstat is not None else self.src_fldstat
         data = fldstat.fldstat(
             data,
             stat=stat,
@@ -780,6 +719,24 @@ class Reader:
         Wrapper for the histogram function
         """
         return histogram(data, **kwargs)
+
+
+def _check_if_regridded(data):
+    """
+    Checks if a dataset or Datarray has been regridded.
+
+    Arguments:
+        data (xr.DataArray or xarray.DataDataset):  the input data
+    Returns:
+        A boolean value
+    """
+
+    if isinstance(data, xr.Dataset):
+        att = list(data.data_vars.values())[0].attrs
+    else:
+        att = data.attrs
+
+    return att.get("AQUA_regridded", False)
 
 
 def units_extra_definition():

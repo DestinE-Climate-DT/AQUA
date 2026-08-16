@@ -4,7 +4,7 @@ import re
 
 import requests
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, load_multi_yaml, load_yaml, to_list
 
@@ -25,8 +25,8 @@ class GridDeployer:
         """
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name="GridDeployer")
-        self.configurer = ConfigPath(loglevel=self.loglevel)
-        self.configpath = self.configurer.configdir
+        self.configurer = ConfigContext(loglevel=self.loglevel)
+        self.configpath = self.configurer.get_config_dir()
         self.configfile = os.path.join(self.configpath, "config-aqua.yaml")
 
     def deploy(self, source_grid_name: str):
@@ -53,7 +53,7 @@ class GridDeployer:
             self.logger.info("Deploying grids to the grids path set in %s: %s", self.configfile, grids_path)
 
         # Load the grids yaml file to scan for the source_grid_name and deploy the matching grids
-        _, grids_folder = self.configurer.get_reader_filenames()
+        _, grids_folder = self.configurer.get_reader_folders()
 
         # Load the grids information from the auxiliary file.
         grids_dict = load_multi_yaml(folder_path=grids_folder, loglevel=self.loglevel)

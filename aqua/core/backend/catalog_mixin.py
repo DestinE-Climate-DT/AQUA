@@ -1,6 +1,6 @@
 """Mixin providing intake catalog setup for concrete backend classes."""
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigCatalog
 
 
 class CatalogMixin:
@@ -26,7 +26,7 @@ class CatalogMixin:
         model: str,
         exp: str,
         source: str,
-        configurer: ConfigPath,
+        configurer_catalog: ConfigCatalog,
         catalog: str = None,
         chunks=None,
         **kwargs,
@@ -42,7 +42,7 @@ class CatalogMixin:
             model (str): Model name.
             exp (str): Experiment name.
             source (str): Data source identifier.
-            configurer (ConfigPath): Manages catalog and machine configuration paths.
+            configurer_catalog (ConfigCatalog): Manages catalog and machine configuration paths.
             catalog (str, optional): Catalog name. Defaults to None (auto-detect).
             chunks (str | dict, optional): Chunking strategy forwarded to the source. Defaults to None.
             **kwargs: Additional intake parameters forwarded to the catalog source entry.
@@ -52,12 +52,12 @@ class CatalogMixin:
         self.source = source
         self.chunks = chunks
 
-        self.cat, self.catalog_file, self.machine_file = configurer.deliver_intake_catalog(
+        self.cat, self.catalog_file, self.machine_file = configurer_catalog.deliver_intake_catalog(
             catalog=catalog, model=model, exp=exp, source=source
         )
         self.catalog = self.cat.name
-        self.machine = configurer.get_machine()
-        machine_paths, intake_vars = configurer.get_machine_info()
+        self.machine = configurer_catalog.paths.get_machine()
+        machine_paths, intake_vars = configurer_catalog.get_machine_info()
         self.expcat = self.cat(**intake_vars)[self.model][self.exp]
 
         # First plain instantiation — needed to read _entry._user_parameters for _filter_kwargs.

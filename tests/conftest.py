@@ -13,7 +13,7 @@ import pytest
 from utils_tests import TestCleanupRegistry
 
 from aqua import Reader
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 
 matplotlib.use("Agg")  # Non-interactive backend
 
@@ -37,7 +37,7 @@ def pytest_configure(config):
     Set per-worker TMPDIR to avoid CDO/temp contention in parallel runs.
     """
     try:
-        config_path = ConfigPath()
+        config_path = ConfigContext()
         config._stored_configdir = config_path.configdir
     except (FileNotFoundError, KeyError):
         config._stored_configdir = None
@@ -61,10 +61,10 @@ def pytest_sessionfinish(session, exitstatus):
     # Get stored configdir from session.config (same object as config in pytest_configure)
     stored_configdir = getattr(session.config, "_stored_configdir", None)
 
-    # Prefer current configdir, but fall back to stored one if ConfigPath() fails (e.g. HOME was deleted)
+    # Prefer current configdir, but fall back to stored one if ConfigContext() fails (e.g. HOME was deleted)
     cleanup_configdir = stored_configdir
     try:
-        config_path = ConfigPath()
+        config_path = ConfigContext()
         cleanup_configdir = config_path.configdir
     except (FileNotFoundError, KeyError):
         # If HOME was deleted, rely on the stored configdir from pytest_configure
@@ -185,6 +185,11 @@ def ifs_tco79_short_r200_data(ifs_tco79_short_r200_reader):
 @pytest.fixture(scope="session")
 def ifs_tco79_long_fixfalse_reader():
     return Reader(model="IFS", exp="test-tco79", source="long", fix=False, loglevel=LOGLEVEL)
+
+
+@pytest.fixture(scope="session")
+def ifs_tco79_long_areasfalse_fixfalse_reader():
+    return Reader(model="IFS", exp="test-tco79", source="long", areas=False, fix=False, loglevel=LOGLEVEL)
 
 
 @pytest.fixture(scope="session")
