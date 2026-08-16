@@ -174,6 +174,8 @@ jobs:
       - name: Set up Micromamba (local mode)
         if: ${{ inputs.install-mode == 'local' }}
         uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/environment-stripped.yml
@@ -186,6 +188,8 @@ jobs:
       - name: Set up Micromamba (PyPI mode)
         if: ${{ inputs.install-mode == 'pypi' }}
         uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/environment-pypi.yml
