@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Remove intake-xarray dependency (#2958)
 
 ## [v1.0.0]
 
