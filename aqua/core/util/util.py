@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import sys
 
+from ruamel.yaml.comments import CommentedSeq
+
 
 def to_list(arg):
     """
@@ -22,6 +24,8 @@ def to_list(arg):
     """
     if arg is None:  # Preserve None
         return []
+    if isinstance(arg, CommentedSeq):  # Convert ruamel YAML sequences to a plain list
+        return list(arg)
     if isinstance(arg, list):  # Already a list
         return arg
     if isinstance(arg, (tuple, set)):  # Convert tuples and sets to a list
