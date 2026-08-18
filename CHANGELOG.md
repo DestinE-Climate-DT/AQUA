@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.0.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix and rewrite get_eccodes_attr for paramId case (#3008)
 - Add memory option to submit-aqua-web (#3006)
 - Synchronize the available statistics in DROP with the TimStat class (#2991)
 - Specify min and max allowed versions for all dependencies (#2984)
