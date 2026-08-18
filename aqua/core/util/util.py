@@ -15,6 +15,7 @@ def to_list(arg):
     - Returns the list itself if input is already a list.
     - Converts tuples, sets, and dictionaries to a list.
     - Wraps other types in a single-element list.
+    - Converts ruamel.yaml CommentedSeq to a plain list.
 
     Parameters:
     arg: The input object to convert.
