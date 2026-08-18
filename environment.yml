@@ -29,7 +29,7 @@ dependencies:
   - intake>=2.0.9,<=2.0.9
   - intake-xarray>=2.0.0,<=2.0.0
   - jinja2>=3.1.6,<=3.1.6
-  - kerchunk>=0.2.9,<=0.2.9
+  - kerchunk>=0.2.9,<=0.2.10
   - matplotlib>=3.10.8,<=3.11.1
   - metpy>=1.7.1,<=1.7.1
   - numpy>=2.4.1,<=2.5.2
