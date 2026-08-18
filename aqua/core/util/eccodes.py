@@ -93,7 +93,7 @@ def get_eccodes_attr(sn, loglevel="WARNING"):
     if isinstance(sn, str) and sn.startswith("var"):
         sn = sn[3:]
     if isinstance(sn, int) or (isinstance(sn, str) and sn.isdigit()):
-        pid = int(sn)
+        pid = str(sn)
         sn = None
     else:
         pid = None

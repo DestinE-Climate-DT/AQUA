@@ -13,7 +13,7 @@ from aqua.core.util import get_eccodes_attr
         (
             235288,
             {
-                "paramId": 235288,
+                "paramId": "235288",
                 "long_name": "Time-mean total cloud cover",
                 "units": "%",
                 "shortName": "avg_tcc",
@@ -33,7 +33,7 @@ from aqua.core.util import get_eccodes_attr
         (
             164,
             {
-                "paramId": 164,
+                "paramId": "164",
                 "long_name": "Total cloud cover",
                 "units": "(0 - 1)",
                 "shortName": "tcc",
@@ -53,7 +53,7 @@ from aqua.core.util import get_eccodes_attr
         (
             228164,
             {
-                "paramId": 228164,
+                "paramId": "228164",
                 "long_name": "Total Cloud Cover",
                 "units": "%",
                 "shortName": "tcc",
@@ -73,7 +73,7 @@ from aqua.core.util import get_eccodes_attr
         (
             72,
             {
-                "paramId": 72,
+                "paramId": "72",
                 "long_name": "Instantaneous surface solar radiation downwards",
                 "units": "W m**-2",
                 "shortName": "issrd",
