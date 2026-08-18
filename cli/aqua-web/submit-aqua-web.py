@@ -153,6 +153,7 @@ class Submitter:
         definitions["nodes"] = definitions["analysis"]["nodes"]
         definitions["ntasks_per_node"] = definitions["analysis"]["ntasks_per_node"]
         definitions["time"] = definitions["analysis"]["time"]
+        definitions["memory"] = definitions["analysis"]["memory"]
 
         definitions["output"] = full_job_name + "_%j.out"
         definitions["error"] = full_job_name + "_%j.err"
