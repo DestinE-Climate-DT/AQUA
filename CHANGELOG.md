@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.0.0):
+Unreleased in the current development version (target v1.1.0):
 
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix level selection in DROP when a list of levels is provided (#3005)
 - Synchronize the available statistics in DROP with the TimStat class (#2991)
 - Specify min and max allowed versions for all dependencies (#2984)
 - CI/CD: fix micromamba setup broken by setup-micromamba v3.2.0 (#2985)
