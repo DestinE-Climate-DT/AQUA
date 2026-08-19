@@ -509,11 +509,6 @@ class TestAquaConsole:
         # getting fixture
         delete_home()
         mydir = str(tmpdir)
-        aqua_link = os.path.join(mydir, ".aqua")
-        if os.path.islink(aqua_link) or os.path.isfile(aqua_link):
-            os.unlink(aqua_link)
-        elif os.path.isdir(aqua_link):
-            shutil.rmtree(aqua_link)
 
         print(f"HOME is set to: {os.environ.get('HOME')}")
 
