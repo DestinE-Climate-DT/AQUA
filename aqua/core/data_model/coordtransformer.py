@@ -4,8 +4,10 @@ import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
 
-from .coord_utils import get_data_model, units_conversion_factor
+from .coord_utils import AQUA_LATITUDE, AQUA_LONGITUDE, get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
+
+IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
 
 
 class CoordTransformer:
@@ -46,8 +48,8 @@ class CoordTransformer:
             It can be Regular, Curvilinear or Unstructured.
         """
 
-        lonname = self.src_coords.get("latitude")
-        latname = self.src_coords.get("longitude")
+        lonname = self.src_coords.get(AQUA_LONGITUDE)
+        latname = self.src_coords.get(AQUA_LATITUDE)
         if lonname is None or latname is None:
             return "Unknown"
 
@@ -94,6 +96,9 @@ class CoordTransformer:
                 if flip_coords:
                     data = self.flip_coordinate(data, src_coord, tgt_coord)
                 data = self.convert_units(data, src_coord, tgt_coord)
+                # only langitude needs range normalization
+                if AQUA_LONGITUDE in coord:
+                    data = self.normalize_range_convention(data, tgt_coord)
                 data = self.assign_attributes(data, tgt_coord)
             else:
                 self.logger.info("Coordinate %s not found in source coordinates.", coord)
@@ -286,12 +291,114 @@ class CoordTransformer:
             data[tgt_coord["bounds"]].attrs["units"] = tgt_coord["units"]
         return data
 
+    def normalize_range_convention(self, data, tgt_coord):
+        """
+        Wrap the longitude coordinate (and its bounds, if present) into the
+        numeric range declared by the target data model, e.g. "0_to_360" or "-180_to_180".
+
+        This is independent from convert_units: units bring lon into degrees_east,
+        this brings it into a specific wrap-around convention. Without this step
+        two datasets both correctly labelled "degrees_east" can still disagree
+        pointwise (0..360 vs -180..180) even though they describe the same cells.
+
+        Args:
+            data (xr.Dataset or xr.DataArray): The Xarray object.
+            tgt_coord (dict): Target coordinate dictionary, as defined in the
+                data model YAML. Only acts on the longitude coordinate, and only
+                if a "range": [lo, hi] key is present; otherwise a no-op so this
+                stays fully backward compatible with data models that don't set it.
+
+        Returns:
+            xr.Dataset or xr.DataArray: The Xarray object with longitude wrapped.
+        """
+
+        # we assume this runs after the rename step, so the coordinate name is already the target name
+        coord_name = tgt_coord["name"]
+
+        # ignore cases where we do not have longitudes
+        if coord_name not in data.coords:
+            return data
+
+        # extract ranges and verify they are aligned
+        tgt_range = tgt_coord.get("range_convention")
+        if tgt_range is None:
+            self.logger.info(
+                "No 'range_convention' declared for coordinate %s in target data model. Skipping.",
+                coord_name,
+            )
+            return data
+
+        src_range = self.src_coords[AQUA_LONGITUDE].get("range_convention")
+        if src_range == tgt_range:
+            self.logger.info(
+                "%s coordinate %s already in range convention %s. No wrapping needed.",
+                AQUA_LONGITUDE,
+                coord_name,
+                tgt_range,
+            )
+            return data
+
+        # extract the numeric range from the target data model, either as a string or a list of two numbers
+        if isinstance(tgt_range, str):
+            if tgt_range == "0_to_360":
+                lo, hi = 0.0, 360.0
+            elif tgt_range in ["180_to_180", "-180_to_180"]:
+                lo, hi = -180.0, 180.0
+            else:
+                self.logger.warning(
+                    "Unknown string 'range_convention' for coordinate %s: %s. Skipping.", coord_name, tgt_range
+                )
+                return data
+        else:
+            self.logger.error("Invalid 'range_convention' format for coordinate %s: %s. Skipping.", coord_name, tgt_range)
+            return data
+
+        # compute the span and wrap the longitudes into the target range
+        span = hi - lo
+        longitudes = data[coord_name]
+        wrapped = ((longitudes - lo) % span) + lo
+
+        # Regional Data Safety Check
+        # If the data is regional (span < 350 degrees), wrapping it across a boundary
+        # will shatter it into two pieces, artificially exploding its mathematical span.
+        lon_min, lon_max = float(longitudes.min()), float(longitudes.max())
+        data_span = lon_max - lon_min
+
+        if data_span < 350:
+            wrap_min, wrap_max = float(wrapped.min()), float(wrapped.max())
+            if (wrap_max - wrap_min) > (data_span + 10):
+                self.logger.warning(
+                    "Wrapping would shatter regional data across the map boundary. Skipping wrap for %s.", coord_name
+                )
+                return data
+
+        # only touch things if there is actually something to fix, and only log/attrs then
+        # (reuses lon_min/lon_max instead of a second full-array reduction, which
+        # matters if data is dask-backed and we want to avoid an extra eager compute)
+        if lon_min < lo or lon_max > hi:
+            self.logger.info("Wrapping coordinate %s into range [%s, %s]", coord_name, lo, hi)
+            data = data.assign_coords({coord_name: wrapped})
+
+            bounds_name = tgt_coord.get("bounds")
+            if bounds_name and bounds_name in data:
+                self.logger.info("Wrapping bounds %s into range [%s, %s]", bounds_name, lo, hi)
+                data[bounds_name] = ((data[bounds_name] - lo) % span) + lo
+
+            # data = data.assign_attrs({"longitude": {"range_convention": tgt_range}})
+
+            log_history(
+                data,
+                f"{AQUA_LONGITUDE} coordinate {coord_name} reordered into {tgt_range} convention range by datamodel",
+            )
+
+        return data
+
     def assign_attributes(self, data, tgt_coord):
         """
-        Assign attributes to the coordinate.
+        Assign attributes to the coordinate when not part of IGNORE_ATTRIBUTES.
         """
         for key, value in tgt_coord.items():
-            if key not in ["name", "units", "positive", "stored_direction", "bounds"]:
+            if key not in IGNORED_ATTRIBUTES:
                 if key not in data.coords[tgt_coord["name"]].attrs:
                     self.logger.debug("Adding attribute %s to coordinate %s", key, tgt_coord["name"])
                     data.coords[tgt_coord["name"]].attrs[key] = value

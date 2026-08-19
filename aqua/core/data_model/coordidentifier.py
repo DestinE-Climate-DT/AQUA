@@ -2,12 +2,21 @@
 Module to identify the nature of coordinates of an Xarray object.
 """
 
-import numpy as np
 import xarray as xr
 
 from aqua.core.logger import log_configure
 
-from .coord_utils import get_coord_defaults, is_meter, is_pressure
+from .coord_utils import (
+    AQUA_DEPTH,
+    AQUA_HEIGHT,
+    AQUA_ISOBARIC,
+    AQUA_LATITUDE,
+    AQUA_LONGITUDE,
+    AQUA_TIME,
+    get_coord_defaults,
+    is_meter,
+    is_pressure,
+)
 
 
 class CoordIdentifier:
@@ -45,32 +54,32 @@ class CoordIdentifier:
 
         # internal name definition for the coordinates
         self.coord_dict = {
-            "latitude": [],
-            "longitude": [],
-            "time": [],
-            "isobaric": [],
-            "depth": [],
-            "height": [],
+            AQUA_LATITUDE: [],
+            AQUA_LONGITUDE: [],
+            AQUA_TIME: [],
+            AQUA_ISOBARIC: [],
+            AQUA_DEPTH: [],
+            AQUA_HEIGHT: [],
         }
 
         # Score methods for each internal coordinate
         self.score_methods = {
-            "latitude": self._score_latitude,
-            "longitude": self._score_longitude,
-            "isobaric": self._score_isobaric,
-            "depth": self._score_depth,
-            "time": self._score_time,
-            "height": self._score_height,
+            AQUA_LATITUDE: self._score_latitude,
+            AQUA_LONGITUDE: self._score_longitude,
+            AQUA_ISOBARIC: self._score_isobaric,
+            AQUA_DEPTH: self._score_depth,
+            AQUA_TIME: self._score_time,
+            AQUA_HEIGHT: self._score_height,
         }
 
         # default coordinate values from config
         self.default_coords = {
-            "latitude": get_coord_defaults("latitude"),
-            "longitude": get_coord_defaults("longitude"),
-            "time": get_coord_defaults("time"),
-            "isobaric": get_coord_defaults("isobaric"),
-            "depth": get_coord_defaults("depth"),
-            "height": get_coord_defaults("height"),
+            AQUA_LATITUDE: get_coord_defaults(AQUA_LATITUDE),
+            AQUA_LONGITUDE: get_coord_defaults(AQUA_LONGITUDE),
+            AQUA_TIME: get_coord_defaults(AQUA_TIME),
+            AQUA_ISOBARIC: get_coord_defaults(AQUA_ISOBARIC),
+            AQUA_DEPTH: get_coord_defaults(AQUA_DEPTH),
+            AQUA_HEIGHT: get_coord_defaults(AQUA_HEIGHT),
         }
 
     def identify_coords(self):
@@ -131,7 +140,7 @@ class CoordIdentifier:
         for coord_name, coord in self.coords.items():
             for coord_type, (score, matched_attrs) in scores[coord_name].items():
                 if score > 0:  # Only consider coordinates with positive scores
-                    if coord_type == "time":
+                    if coord_type == AQUA_TIME:
                         coord_info = self._get_time_attributes(coord, score, matched_attrs)
                     else:
                         coord_info = self._get_attributes(
@@ -277,7 +286,7 @@ class CoordIdentifier:
     def _get_attributes(
         self,
         coord,
-        coord_name="longitude",
+        coord_name=AQUA_LONGITUDE,
         confidence_score=None,
         matched_attributes=None,
     ):
@@ -286,7 +295,7 @@ class CoordIdentifier:
 
         Args:
             coord (xarray.Coordinates): The coordinate to define the attributes.
-            coord_name (str): The type of coordinate ("longitude", "latitude", "isobaric", "depth").
+            coord_name (str): The type of coordinate (AQUA_LONGITUDE, AQUA_LATITUDE, AQUA_ISOBARIC, AQUA_DEPTH).
             confidence_score (int): The confidence score from identification.
             matched_attributes (list): List of attributes that matched in scoring.
 
@@ -296,8 +305,8 @@ class CoordIdentifier:
         coord_range = (coord.values.min(), coord.values.max())
         direction = None
         positive = None
-        horizontal = ["latitude", "longitude"]
-        vertical = ["isobaric", "depth", "height"]
+        horizontal = [AQUA_LATITUDE, AQUA_LONGITUDE]
+        vertical = [AQUA_ISOBARIC, AQUA_DEPTH, AQUA_HEIGHT]
 
         if coord.ndim == 1 and coord_name in horizontal:
             direction = "increasing" if coord.values[-1] > coord.values[0] else "decreasing"
@@ -327,8 +336,8 @@ class CoordIdentifier:
         elif coord_name in vertical:
             attributes["positive"] = positive
 
-        if coord_name == "longitude":
-            attributes["convention"] = self._guess_longitude_range(coord)
+        if coord_name == AQUA_LONGITUDE:
+            attributes["range_convention"] = self._guess_longitude_range(coord)
 
         if confidence_score is not None:
             attributes["confidence_score"] = confidence_score
@@ -339,18 +348,8 @@ class CoordIdentifier:
 
     @staticmethod
     def _guess_longitude_range(longitude) -> str:
-        """
-        Guess if the longitude range is from 0 to 360 or from -180 to 180,
-        ensuring the grid is global.
-        """
-
-        # Guess the longitude range
-        if np.any(longitude.values < 0):
-            return "centered"
-        elif np.any(longitude.values > 180):
-            return "positive"
-        else:
-            return "ambigous"
+        """Guess the range convention for longitude coordinates."""
+        return "-180_to_180" if float(longitude.min()) < 0 else "0_to_360"
 
     def _score_latitude(self, coord):
         """
@@ -362,7 +361,7 @@ class CoordIdentifier:
         score = 0
         matched = []
 
-        if coord.name in self.default_coords["latitude"]:
+        if coord.name in self.default_coords[AQUA_LATITUDE]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
         if coord.attrs.get("standard_name") == "latitude":
@@ -387,7 +386,7 @@ class CoordIdentifier:
         score = 0
         matched = []
 
-        if coord.name in self.default_coords["longitude"]:
+        if coord.name in self.default_coords[AQUA_LONGITUDE]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
         if coord.attrs.get("standard_name") == "longitude":
@@ -412,7 +411,7 @@ class CoordIdentifier:
         score = 0
         matched = []
 
-        if coord.name in self.default_coords["time"]:
+        if coord.name in self.default_coords[AQUA_TIME]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
         if coord.attrs.get("axis") == "T":
@@ -435,7 +434,7 @@ class CoordIdentifier:
         score = 0
         matched = []
 
-        if coord.name in self.default_coords["isobaric"]:
+        if coord.name in self.default_coords[AQUA_ISOBARIC]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
         if coord.attrs.get("standard_name") == "air_pressure":
@@ -458,7 +457,7 @@ class CoordIdentifier:
         score = 0
         matched = []
 
-        if coord.name in self.default_coords["depth"]:
+        if coord.name in self.default_coords[AQUA_DEPTH]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
         if coord.attrs.get("standard_name") == "depth":
@@ -488,7 +487,7 @@ class CoordIdentifier:
         score = 0
         matched = []
 
-        if coord.name in self.default_coords["height"]:
+        if coord.name in self.default_coords[AQUA_HEIGHT]:
             score += self.SCORE_WEIGHTS["name"]
             matched.append("name")
         if coord.attrs.get("standard_name") in ["height_above_ground", "height"]:
