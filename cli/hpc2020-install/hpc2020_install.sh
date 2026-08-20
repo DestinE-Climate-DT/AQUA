@@ -52,7 +52,7 @@ install_aqua() {
   # Fix environment.yml
   SCRIPTDIR="${AQUA}/cli/hpc2020-install"
   cp $AQUA/environment.yml $SCRIPTDIR/environment_hpc2020.yml
-  sed -i.bak "s;- -e .[all];- -e ${AQUA}[all];" $SCRIPTDIR/environment_hpc2020.yml  # replace relative paths with $AQUA
+  sed -i.bak "s;- -e .\[all\];- -e ${AQUA}\[all\];" $SCRIPTDIR/environment_hpc2020.yml  # replace relative paths with $AQUA
 
   # install AQUA framework and diagnostics
   conda-containerize new --prefix "${INSTALLATION_PATH}" $SCRIPTDIR/environment_hpc2020.yml
