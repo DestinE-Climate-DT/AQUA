@@ -8,10 +8,12 @@ import argparse
 from importlib import resources as pypath
 
 from aqua import __version__ as version
-from aqua.core.console.analysis import analysis_parser
-from aqua.core.console.builder import builder_parser
-from aqua.core.console.catgen import catgen_parser
-from aqua.core.console.drop import drop_parser
+
+from .analysis import analysis_parser
+from .builder import builder_parser
+from .catgen import catgen_parser
+from .drop import drop_parser
+from .stacgen import stacgen_parser
 
 
 def parse_arguments():
@@ -51,6 +53,9 @@ def parse_arguments():
 
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
     catgen_subparser = catgen_parser(parser=catgen_subparser)
+
+    stacgen_subparser = subparsers.add_parser("stacgen", description="STAC catalog generator")
+    stacgen_subparser = stacgen_parser(parser=stacgen_subparser)
 
     # subparser with no arguments
     subparsers.add_parser("uninstall", description="Remove the current AQUA installation")
