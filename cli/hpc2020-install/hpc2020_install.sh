@@ -11,11 +11,11 @@ set -e
 
 # Check if AQUA is set and the file exists
 if [[ -z "$AQUA" ]]; then
+    export AQUA=$(realpath "$(pwd)/../..")
     echo -e "\033[0;31mWarning: The AQUA environment variable is not defined."
-    echo -e "\033[0;31mWarning: We are assuming AQUA is installed in your HPCPERM, i.e. $HPCPERM/AQUA"
+    echo -e "\033[0;31mWarning: We are guessing the position of AQUA from that of this script, i.e. $AQUA"
     echo -e "\x1b[38;2;255;165;0mAlternatively, define the AQUA environment variable with the path to your 'AQUA' directory."
     echo -e "For example: export AQUA=/path/to/aqua\033[0m"
-    AQUA=$HPCPERM/AQUA
 fi
 
 if [[ ! -d  $AQUA ]] ; then
@@ -37,7 +37,7 @@ log_message WARNING "NOTE: If this is the first time that you use ecinteractive,
 # Begin of user input
 
 # define installation path
-export INSTALLATION_PATH="$HPCPERM/tykky/aqua"
+export INSTALLATION_PATH="$HPCPERM/tykky/aqua-core"
 
 # End of user input
 #####################################################################
@@ -51,15 +51,15 @@ install_aqua() {
 
   # Fix environment.yml
   SCRIPTDIR="${AQUA}/cli/hpc2020-install"
-  sed -i.bak "s;- -e .;- -e $AQUA;" $SCRIPTDIR/environment_hpc2020.yml  # replace relative paths with $AQUA
+  cp $AQUA/environment.yml $SCRIPTDIR/environment_hpc2020.yml
+  sed -i.bak "s;- -e .[all];- -e ${AQUA}[all];" $SCRIPTDIR/environment_hpc2020.yml  # replace relative paths with $AQUA
 
   # install AQUA framework and diagnostics
-  conda-containerize new --post-install --prefix "${INSTALLATION_PATH}" $SCRIPTDIR/environment_hpc2020.yml
+  conda-containerize new --prefix "${INSTALLATION_PATH}" $SCRIPTDIR/environment_hpc2020.yml
 
   rm $SCRIPTDIR/environment_hpc2020.yml $SCRIPTDIR/environment_hpc2020.yml.bak
-  log_message INFO "AQUA framework and diagnostics have been installed."
+  log_message INFO "AQUA framework has been installed."
 }
-
 # if INSTALLATION_PATH does not exist, create it
 if [[ ! -d "${INSTALLATION_PATH}" ]]; then
   mkdir -p "${INSTALLATION_PATH}"
@@ -70,7 +70,7 @@ fi
 
 # if INSTALLATION_PATH is empty, install AQUA
 if [[ -z "$(ls -A ${INSTALLATION_PATH})" ]]; then
-  log_message INFO "Installing AQUA..."
+  log_message INFO "Installing AQUA ..."
   # install AQUA
   install_aqua
 else
