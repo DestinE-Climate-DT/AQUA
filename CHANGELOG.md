@@ -9,6 +9,11 @@ Unreleased in the current development version (target v1.0.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix and rewrite get_eccodes_attr for paramId case (#3008)
+- Add memory option to submit-aqua-web (#3006)
+- Synchronize the available statistics in DROP with the TimStat class (#2991)
+- Specify min and max allowed versions for all dependencies (#2984)
+- CI/CD: fix micromamba setup broken by setup-micromamba v3.2.0 (#2985)
 
 ## [v1.0.0]
 
@@ -42,6 +47,8 @@ Complete list:
 - More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+- AQUA analysis refactored as a class, cleaned up parser, config files templates and extended tests (#2897)
+- Introduced a `DaskCluster` class to centralize dask setup and shutdown (#2897)
 
 ## [v1.0.0a5]
 
