@@ -10,6 +10,7 @@ ClimateDT workflow modifications:
 
 Complete list:
 - Fix level selection in DROP when a list of levels is provided (#3005)
+- Explicit bokeh version in environment.yml to avoid issues with python 3.14 (#3021)
 - Fix and rewrite get_eccodes_attr for paramId case (#3008)
 - Add memory option to submit-aqua-web (#3006)
 - Synchronize the available statistics in DROP with the TimStat class (#2991)
