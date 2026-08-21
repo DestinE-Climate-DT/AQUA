@@ -330,7 +330,7 @@ class TestGsv:
         First test with a file that contains both data and bridge dates.
         Second test with a file that contains only data dates.
         """
-        
+
         # test the dummy_run situation for intake_gsv
         source = GSVSource(
             DEFAULT_GSV_PARAMS["request"],
