@@ -4,12 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.0.0):
+Unreleased in the current development version (target v1.1.0):
 
 ClimateDT workflow modifications:
 
 Complete list:
 - Update hpc2020 installation script (#3017)
+- Fix level selection in DROP when a list of levels is provided (#3005)
+- Explicit bokeh version in environment.yml to avoid issues with python 3.14 (#3021)
 - Fix and rewrite get_eccodes_attr for paramId case (#3008)
 - Add memory option to submit-aqua-web (#3006)
 - Synchronize the available statistics in DROP with the TimStat class (#2991)
