@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.1.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Update hpc2020 installation script (#3017)
 - Fix intake_gsv fdb_info_file treatment (#3020)
 - Fix level selection in DROP when a list of levels is provided (#3005)
 - Explicit bokeh version in environment.yml to avoid issues with python 3.14 (#3021)

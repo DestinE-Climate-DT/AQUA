@@ -300,9 +300,9 @@ Then run the the installation script:
     cd $AQUA/cli/hpc2020-install
     ./hpc2020-install.sh
 
-The script installs by default the AQUA tykky environment in the directory ``$HPCPERM/tykky/aqua``.
+The script installs by default the AQUA tykky environment in the directory ``$HPCPERM/tykky/aqua-core``.
 
-The script will ask the user if they wish to add the AQUA environment  permanently to their ``$PATH`` in the ``.bash_profile`` file at the end of the installation.
+The script will ask the user if they wish to add the AQUA environment permanently to their ``$PATH`` in the ``.bash_profile`` file at the end of the installation.
 Please note that adding AQUA to your PATH will make you use the aqua environment for all activities on HPC2020, so this is not really recommended.
 
 Instead, the recommended way to use AQUA is by loading the environment with a conda-like syntax:
@@ -310,9 +310,12 @@ Instead, the recommended way to use AQUA is by loading the environment with a co
 .. code-block:: bash
 
     module load tykky
-    tykky activate aqua
+    tykky activate aqua-core
 
 You can later also use ``tykky deactivate`` to deactivate the environment.
+
+Please notice that AQUA-diagnostics has a similar installer which will allow to install both AQUA and AQUA-diagnostics together.
+The one described here is only for the case that you wish to install AQUA alone.
 
 In case you plan to use Visual Studio Code, you can add a kernel pointing to the containerized AQUA by running also the following command:
 
