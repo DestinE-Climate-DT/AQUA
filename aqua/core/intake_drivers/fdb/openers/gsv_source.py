@@ -70,6 +70,7 @@ class GSVSource(FDBSource, FDBDatesMixin):
         **kwargs,
     ):
         self.switch_eccodes = switch_eccodes
+        self.dummy_run = engine is None
         engine = engine or "fdb"
 
         if engine == "polytope":
