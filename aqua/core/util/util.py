@@ -6,6 +6,7 @@ import os
 import sys
 
 import xarray as xr
+from ruamel.yaml.comments import CommentedSeq
 
 
 def to_list(arg):
@@ -15,6 +16,7 @@ def to_list(arg):
     - Returns the list itself if input is already a list.
     - Converts tuples, sets, and dictionaries to a list.
     - Wraps other types in a single-element list.
+    - Converts ruamel.yaml CommentedSeq to a plain list.
 
     Parameters:
     arg: The input object to convert.
@@ -24,6 +26,8 @@ def to_list(arg):
     """
     if arg is None:  # Preserve None
         return []
+    if isinstance(arg, CommentedSeq):  # Convert ruamel YAML sequences to a plain list
+        return list(arg)
     if isinstance(arg, list):  # Already a list
         return arg
     if isinstance(arg, (tuple, set)):  # Convert tuples and sets to a list
