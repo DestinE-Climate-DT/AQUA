@@ -251,7 +251,7 @@ jobs:
           echo "${{ secrets.AQUA_DVC_PEM }}" > $HOME/.aws/harica-root.pem
           chmod 600 $HOME/.aws/harica-root.pem
           cd aqua-dvc
-          dvc remote modify --local ecmwf_climatedt cert $HOME/.aws/harica-root.pem
+          dvc remote modify --local ecmwf_climatedt ssl_verify "$HOME/.aws/harica-root.pem"
 
       - name: Configure AWS credentials for DVC
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
