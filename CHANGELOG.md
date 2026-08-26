@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.1.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Implement new DVC remote from ECMWF (#3031)
 
 ## [v1.0.1]
 
