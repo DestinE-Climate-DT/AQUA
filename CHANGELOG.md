@@ -9,13 +9,13 @@ Unreleased in the current development version (target v1.1.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- No-kind fix for aqua analysis (#3032)
 
 ## [v1.0.1]
 
 ClimateDT workflow modifications:
 
 Complete list:
-- No-kind fix for aqua analysis (#3032)
 - Update hpc2020 installation script (#3017)
 - Fix intake_gsv fdb_info_file treatment (#3020)
 - Fix level selection in DROP when a list of levels is provided (#3005)
