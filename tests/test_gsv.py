@@ -4,7 +4,7 @@ from conftest import LOGLEVEL
 from dask.distributed import Client, LocalCluster
 
 from aqua import Reader
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
@@ -40,7 +40,7 @@ loglevel = LOGLEVEL
 FDB_HOME = "/app"
 
 # to enable for local testing on Lumi
-if ConfigPath().machine == "lumi":
+if ConfigContext().get_machine() == "lumi":
     FDB_HOME = "/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST"
 
 
@@ -350,6 +350,18 @@ class TestGsv:
         First test with a file that contains both data and bridge dates.
         Second test with a file that contains only data dates.
         """
+
+        # test the dummy_run situation for intake_gsv
+        source = GSVSource(
+            DEFAULT_GSV_PARAMS["request"],
+            "20080101",
+            "20080101",
+            metadata={"fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
+            loglevel=loglevel,
+        )
+
+        assert source.data_start_date == "19900101T0000"
+
         source = GSVSource(
             DEFAULT_GSV_PARAMS["request"],
             "20080101",

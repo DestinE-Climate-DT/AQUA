@@ -2,6 +2,7 @@
 
 import xarray as xr
 
+from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
@@ -49,7 +50,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
         model: str,
         exp: str,
         source: str,
-        configurer,
+        configurer_catalog: ConfigCatalog,
         catalog: str = None,
         chunks: "str | dict" = "auto",
         fixer: Fixer = None,
@@ -64,7 +65,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
             model (str): Model name.
             exp (str): Experiment name.
             source (str): Data source identifier.
-            configurer (ConfigPath): An instance of ConfigPath to manage
+            configurer_catalog (ConfigCatalog): An instance of ConfigCatalog to manage
                 configuration paths.
             catalog (str, optional): Catalog name. Defaults to None (auto-detect).
             chunks (str | dict, optional): Chunking strategy for xarray.
@@ -78,7 +79,7 @@ class BackendIntakeIcechunk(Backend, CatalogMixin):
                 source entry.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
-        self.setup_catalog(model, exp, source, configurer, catalog, chunks, **kwargs)
+        self.setup_catalog(model, exp, source, configurer_catalog, catalog, chunks, **kwargs)
 
     def retrieve_plain(self, startdate: str = None):
         """

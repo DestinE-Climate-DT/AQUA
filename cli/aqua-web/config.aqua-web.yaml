@@ -4,11 +4,12 @@ username: jvonhar
 
 analysis:
     job_name: aqua-web
-    emplate: aqua-web.job.j2
+    template: aqua-web.job.j2
     partition: small
     nodes: 1
     ntasks_per_node: 128
     time: 04:30:00
+    memory: 224G
 push:
     job_name: aqua-web.push
     template: aqua-web.push.job.j2
