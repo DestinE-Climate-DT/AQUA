@@ -19,7 +19,7 @@ from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure
 from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
-from aqua.core.util import load_multi_yaml, set_attrs
+from aqua.core.util import RegridderMetadata, load_multi_yaml, set_attrs
 
 from .trender import Trender
 from .vertinterpolator import VertInterpolator
@@ -113,9 +113,8 @@ class Reader:
         # xarray native argument
         self.path = path
 
-        # these infos are used by the regridder to correct define areas/weights name
-        # TODO: find an alterantive approah when path is used, and possibly rename to avoid confusion
-        reader_kwargs = {"model": model, "exp": exp, "source": source}
+        # Create regridder metadata for filename templating (supports both catalog and path-based backends)
+        self.regridder_metadata = RegridderMetadata.from_reader(model=model, exp=exp, source=source, path=path, **kwargs)
         self.kwargs = kwargs
 
         # regridding
@@ -214,9 +213,7 @@ class Reader:
 
         # init the regridder and the areas
         self.regridder = None
-        areas, regrid = self._configure_regridder(
-            self.machine_paths, regrid=regrid, areas=areas, rebuild=rebuild, reader_kwargs=reader_kwargs
-        )
+        areas, regrid = self._configure_regridder(self.machine_paths, regrid=regrid, areas=areas, rebuild=rebuild)
 
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
@@ -241,7 +238,7 @@ class Reader:
         self.trender = Trender(loglevel=self.loglevel)
         self.vertinterpolator = VertInterpolator(loglevel=self.loglevel)
 
-    def _configure_regridder(self, machine_paths, regrid=False, areas=False, rebuild=False, reader_kwargs=None):
+    def _configure_regridder(self, machine_paths, regrid=False, areas=False, rebuild=False):
         """
         Configure the regridder and generate areas and weights.
 
@@ -250,7 +247,6 @@ class Reader:
             regrid (bool): If regrid is required. Defaults to False.
             areas (bool): If areas are required. Defaults to False.
             rebuild (bool): If weights and areas should be rebuilt. Defaults to False.
-            reader_kwargs (dict): The reader kwargs.
         """
 
         # load and check the regrid
@@ -287,8 +283,8 @@ class Reader:
                 return False, False
 
         if areas:
-            # generate source areas and expose them in the reader
-            self.src_grid_area = self.regridder.areas(rebuild=rebuild, reader_kwargs=reader_kwargs)
+            # generate source areas and expose them in the reader: uses regridder_metadata for filename templating
+            self.src_grid_area = self.regridder.areas(rebuild=rebuild, regridder_metadata=self.regridder_metadata)
             # apply optional fixes to areas
             if self.fix:
                 self.src_grid_area = self.fixer.fixerdatamodel.apply(self.src_grid_area)
@@ -303,7 +299,7 @@ class Reader:
                 rebuild=rebuild,
                 tgt_grid_name=self.tgt_grid_name,
                 regrid_method=self.regrid_method,
-                reader_kwargs=reader_kwargs,
+                regridder_metadata=self.regridder_metadata,
                 initialize=False,
             )
             if self.fix:

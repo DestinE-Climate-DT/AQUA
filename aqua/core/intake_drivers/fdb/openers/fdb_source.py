@@ -86,7 +86,6 @@ class FDBSource(FDBTimeMixin):
         self.fdbpath_bridge = None
 
         self.engine = engine
-        self.dummy_run = engine is None
 
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
 
