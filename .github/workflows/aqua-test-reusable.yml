@@ -250,12 +250,12 @@ jobs:
           mkdir -p $HOME/.aws
           echo "${{ secrets.AQUA_DVC_PEM }}" > $HOME/.aws/harica-root.pem
           chmod 600 $HOME/.aws/harica-root.pem
+          cd aqua-dvc
           dvc remote modify --local ecmwf_climatedt cert $HOME/.aws/harica-root.pem
 
       - name: Configure AWS credentials for DVC
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
         run: |
-          mkdir -p $HOME/.aws
           cat >$HOME/.aws/credentials << EOF
           [ecmwf_climatedt]
           aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
