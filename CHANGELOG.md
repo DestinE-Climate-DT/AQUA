@@ -4,11 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.0.0):
+Unreleased in the current development version (target v1.1.0):
 
 ClimateDT workflow modifications:
 
 Complete list:
+
+## [v1.0.1]
+
+ClimateDT workflow modifications:
+
+Complete list:
+- Update hpc2020 installation script (#3017)
+- Fix intake_gsv fdb_info_file treatment (#3020)
+- Fix level selection in DROP when a list of levels is provided (#3005)
+- Explicit bokeh version in environment.yml to avoid issues with python 3.14 (#3021)
+- Fix and rewrite get_eccodes_attr for paramId case (#3008)
+- Add memory option to submit-aqua-web (#3006)
+- Synchronize the available statistics in DROP with the TimStat class (#2991)
 - Specify min and max allowed versions for all dependencies (#2984)
 - CI/CD: fix micromamba setup broken by setup-micromamba v3.2.0 (#2985)
 
@@ -1483,7 +1496,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...HEAD
+[v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
 [v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6
 [v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
