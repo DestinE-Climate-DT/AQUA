@@ -161,6 +161,10 @@ class BackendFactory:
         Activate the driver for xarray
         """
         self.driver = "xarray"
+        self.logger.warning("Using default path in local folder for areas, weights, and grids.")
+        # TODO: this is a temporary solution to avoid errors when using the xarray backend without a catalog.
+        #       Notice that a path could be defined in config-aqua.yaml and used when solving the TODO above.
+        self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
     def get_metadata(
         self,

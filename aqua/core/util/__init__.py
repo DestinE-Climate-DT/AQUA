@@ -3,6 +3,7 @@
 from .catalog_entry import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
 from .cli_util import template_parse_arguments
 from .eccodes import get_eccodes_attr
+from .metadata import RegridderMetadata
 from .graphics import add_cyclic_lon, plot_box, minmax_maps
 from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
 from .graphics import coord_names, ticks_round, set_ticks, generate_colorbar_ticks
@@ -29,6 +30,7 @@ from .zarr import create_zarr_reference
 __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard',
            'template_parse_arguments',
            'get_eccodes_attr',
+           'RegridderMetadata',
            'add_cyclic_lon', 'plot_box', 'minmax_maps',
            'evaluate_colorbar_limits', 'cbar_get_label', 'set_map_title',
            'coord_names', 'ticks_round', 'set_ticks', 'generate_colorbar_ticks',

@@ -8,7 +8,7 @@ import xarray as xr
 from conftest import APPROX_REL, LOGLEVEL
 
 from aqua import Reader, Regridder
-from aqua.core.regridder.griddicthandler import GridDictHandler
+from aqua.core.regridder.grid_dict_handler import GridDictHandler
 
 
 @pytest.fixture(
