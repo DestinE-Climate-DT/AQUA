@@ -13,20 +13,25 @@ from aqua.core.util import load_yaml
 pressure_dim = units.pascal.dimensionality
 meter_dim = units.meter.dimensionality
 
-# module logger
-# logger = log_configure(log_level='INFO', log_name='coord_utils')
+# Define internal names for coordinates
+AQUA_LONGITUDE = "longitude"
+AQUA_LATITUDE = "latitude"
+AQUA_TIME = "time"
+AQUA_ISOBARIC = "isobaric"
+AQUA_DEPTH = "depth"
+AQUA_HEIGHT = "height"
 
 # Possible basic names for coordinates
 DEFAULT_COORD_NAMES = {
-    "latitude": [
+    AQUA_LATITUDE: [
         "latitude",
         "lat",
     ],
-    "longitude": ["longitude", "lon"],
-    "time": ["time", "time_counter"],
-    "isobaric": ["plev"],
-    "depth": ["depth"],
-    "height": ["height"],
+    AQUA_LONGITUDE: ["longitude", "lon"],
+    AQUA_TIME: ["time", "time_counter"],
+    AQUA_ISOBARIC: ["plev"],
+    AQUA_DEPTH: ["depth"],
+    AQUA_HEIGHT: ["height"],
 }
 
 
