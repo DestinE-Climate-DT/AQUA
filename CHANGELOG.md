@@ -17,6 +17,7 @@ Complete list:
 ClimateDT workflow modifications:
 
 Complete list:
+- Introduce `scan_coord()` function to retrieve the coordinate name from the data model (#3038)
 - Update hpc2020 installation script (#3017)
 - Fix intake_gsv fdb_info_file treatment (#3020)
 - Fix level selection in DROP when a list of levels is provided (#3005)
