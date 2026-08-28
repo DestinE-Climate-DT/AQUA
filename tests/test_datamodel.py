@@ -182,5 +182,5 @@ class TestDataModel:
         assert none_name is None
 
         # Test a non existing data model, returns default
-        default_name_model = scan_coord("latitude", model="nonexistent_model", default="default_coord")
+        default_name_model = scan_coord("latitude", data_model="nonexistent_model", default="default_coord")
         assert default_name_model == "default_coord"
