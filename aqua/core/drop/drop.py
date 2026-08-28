@@ -21,9 +21,9 @@ from time import time
 
 import dask
 import pandas as pd
-from dask.distributed import Client, LocalCluster
 
 from aqua.core.configurer import ConfigPath
+from aqua.core.dask.daskcluster import DaskCluster
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -235,8 +235,7 @@ class Drop:
 
         # Initialize variables used by methods
         self.data = None
-        self.cluster = None
-        self.client = None
+        self.dask_cluster = DaskCluster(loglevel=loglevel)
         self.reader = None
 
         # Initialize writer (dask_client will be set later if needed)
@@ -419,8 +418,13 @@ class Drop:
         """
         self.logger.info("Generating DROP output...")
 
-        # Set up dask cluster
-        self._set_dask()
+        # Set up dask cluster if parallel execution
+        if self.dask:  # self.nproc > 1
+            self.logger.info("Setting up dask cluster with %s workers", self.nproc)
+            self.dask_cluster.setup(nworkers=self.nproc, nthreads=1, tmpdir=self.tmpdir)
+            self.dask_cluster.activate_client()
+        else:
+            dask.config.set(scheduler="synchronous")
 
         # Write stats file header
         self._write_stats_header()
@@ -438,7 +442,9 @@ class Drop:
 
         # Cleaning
         self.data.close()
-        self._close_dask()
+        if self.dask:  # self.nproc > 1
+            self.dask_cluster.close()
+            self.logger.info("Dask cluster closed")
         self._remove_tmpdir()
 
         self.logger.info("Finished generating DROP output.")
@@ -514,29 +520,6 @@ class Drop:
                 loglevel=self.loglevel,
             )
             self.logger.info("Using IcechunkWriter (git-like versioning, single-store zarr)")
-
-    def _set_dask(self):
-        """
-        Set up dask cluster
-        """
-        if self.dask:  # self.nproc > 1
-            self.logger.info("Setting up dask cluster with %s workers", self.nproc)
-            dask.config.set({"temporary_directory": self.tmpdir})
-            self.logger.info("Temporary directory: %s", self.tmpdir)
-            self.cluster = LocalCluster(n_workers=self.nproc, threads_per_worker=1)
-            self.client = Client(self.cluster)
-        else:
-            self.client = None
-            dask.config.set(scheduler="synchronous")
-
-    def _close_dask(self):
-        """
-        Close dask cluster
-        """
-        if self.dask:  # self.nproc > 1
-            self.client.shutdown()
-            self.cluster.close()
-            self.logger.info("Dask cluster closed")
 
     def _remove_tmpdir(self):
         """
