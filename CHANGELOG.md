@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.1.0):
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix no kind case for aqua analysis (#3032)
 - Implement new DVC remote from ECMWF (#3031)
 
 ## [v1.0.1]
