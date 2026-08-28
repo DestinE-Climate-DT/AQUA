@@ -24,14 +24,20 @@ def catgen_parser(parser=None):
     return parser
 
 
-def catgen_execute(args):
-    """Useful wrapper for the FDB catalog generator class"""
+def catgen_execute(args, configurer=None):
+    """
+    Useful wrapper for the FDB catalog generator class
+
+    Args:
+        args (argparse.Namespace): arguments from the command line
+        configurer (ConfigPath, optional): An instance of ConfigPath for configuration management. Defaults to None.
+    """
 
     dp_version = get_arg(args, "portfolio", "full")
     config_file = get_arg(args, "config", "config.yaml")
     loglevel = get_arg(args, "loglevel", "INFO")
 
-    generator = AquaFDBGenerator(dp_version, config_file, loglevel)
+    generator = AquaFDBGenerator(data_portfolio=dp_version, config_path=config_file, configurer=configurer, loglevel=loglevel)
     generator.generate_catalog()
 
 

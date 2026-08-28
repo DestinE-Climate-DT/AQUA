@@ -128,7 +128,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         """
 
         print("Running the catalog generator")
-        catgen_execute(args)
+        catgen_execute(args, configurer=self.configurer)
 
     def grids_build(self, args):
         """Build grids from data sources
