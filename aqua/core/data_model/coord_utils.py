@@ -91,6 +91,26 @@ def get_data_model(name: str = "aqua"):
     return _load_data_model(name)
 
 
+def scan_coord(internal_name: str, default: str = None, model: str = "aqua") -> str:
+    """
+    Get the coordinate name used by a given data model for an internal coordinate type
+    (e.g. 'depth', 'isobaric'), so that diagnostics do not need to hard-code coordinate names.
+
+    Args:
+        internal_name (str): Internal coordinate type (e.g. 'depth', 'isobaric', 'latitude').
+        default (str): Fallback name returned if the coordinate is not defined in the data model.
+        model (str): Data model name. Default is 'aqua'.
+
+    Returns:
+        str: Coordinate name as defined by the data model, or the default if not found.
+    """
+    try:
+        coord = get_data_model(model)["data_model"][internal_name]
+    except (FileNotFoundError, KeyError):
+        return default
+    return coord.get("name", default)
+
+
 # Function to get the conversion factor
 def units_conversion_factor(from_unit_str, to_unit_str):
     """
