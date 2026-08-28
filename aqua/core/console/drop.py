@@ -32,8 +32,10 @@ def drop_parser(parser=None):
                         help='yaml configuration file')
     parser.add_argument('-f', '--fix', action="store_true",
                         help='fixer on existing data')
-    parser.add_argument('-w', '--workers', type=str,
-                        help='number of dask workers')
+    parser.add_argument("-w", "--nworkers", type=int, default=None,
+                        help="Number of workers to use in the cluster")
+    parser.add_argument("--nthreads", type=int, default=None,
+                        help="Number of threads per worker to use in the cluster")
     parser.add_argument('-d', '--definitive', action="store_true",
                         help='definitive run with files creation')
     parser.add_argument('-o', '--overwrite', action="store_true",
@@ -186,7 +188,8 @@ def drop_execute(args):
         print("--catalog-entry only: skipping data generation, updating catalog entry only.")
     fix = get_arg(args, "fix", True)
 
-    default_workers = get_arg(args, "workers", 1)
+    default_nworkers = get_arg(args, "nworkers", 1)
+    default_nthreads = get_arg(args, "nthreads", 1)
 
     # When no config was loaded, synthesize config["data"] from CLI args
     if "data" not in config:
@@ -223,7 +226,8 @@ def drop_execute(args):
         overwrite=overwrite,
         rebuild=rebuild,
         no_validate=no_validate,
-        default_workers=default_workers,
+        default_nworkers=default_nworkers,
+        default_nthreads=default_nthreads,
         engine=engine,
         monitoring=monitoring,
         catalog_entry=catalog_entry,
@@ -255,7 +259,8 @@ def drop_cli(
     no_validate=False,
     monitoring=False,
     engine="fdb",
-    default_workers=1,
+    default_nworkers=1,
+    default_nthreads=1,
     driver="netcdf",
     compact="cdo",
     catalog_entry="yes",
@@ -287,7 +292,8 @@ def drop_cli(
         overwrite: bool flag to overwrite existing files
         rebuild: bool flag to rebuild the areas and weights
         no_validate: bool flag to skip pre-run integrity check on existing output files
-        default_workers: default number of workers
+        default_nworkers: default number of workers
+        default_nthreads: default number of threads per worker
         monitoring: bool flag to enable the dask monitoring
         driver: output format driver
         compact: compaction method
@@ -310,7 +316,8 @@ def drop_cli(
                 varnames = to_list(get_arg(args, "var", config["data"][model][exp][source]["vars"]))
 
                 # get the number of workers for this specific configuration
-                workers = config["data"][model][exp][source].get("workers", default_workers)
+                nworkers = config["data"][model][exp][source].get("workers", default_nworkers)
+                nthreads = config["data"][model][exp][source].get("nthreads", default_nthreads)
 
                 # per-source overrides: resolution, frequency, stat fall back to global values
                 src_resolution = config["data"][model][exp][source].get("resolution", resolution)
@@ -346,7 +353,8 @@ def drop_cli(
                             fix=fix,
                             outdir=outdir,
                             tmpdir=tmpdir,
-                            nproc=workers,
+                            nworkers=nworkers,
+                            nthreads=nthreads,
                             loglevel=loglevel,
                             region=region,
                             stat=src_stat,

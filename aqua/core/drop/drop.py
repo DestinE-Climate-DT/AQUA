@@ -50,7 +50,7 @@ class Drop:
     @property
     def dask(self):
         """Check if dask is needed"""
-        return self.nproc > 1
+        return self.nworkers > 1
 
     def __init__(
         self,
@@ -68,7 +68,8 @@ class Drop:
         level=None,
         outdir=None,
         tmpdir=None,
-        nproc=1,
+        nworkers=1,
+        nthreads=1,
         loglevel=None,
         region=None,
         drop=False,
@@ -112,7 +113,8 @@ class Drop:
                                      Necessary for dask.distributed
             configdir (string):      Configuration directory where the catalog
                                      are found
-            nproc (int, opt):        Number of processors to use. default is 1
+            nworkers (int, opt):     Number of workers to use. default is 1
+            nthreads (int, opt):     Number of threads per worker to use. default is 1
             loglevel (string, opt):  Logging level
             region (dict, opt):      Region to be processed, default is None,
                                      meaning 'global'.
@@ -161,7 +163,8 @@ class Drop:
         self.overwrite = overwrite
         self.exclude_incomplete = exclude_incomplete
         self.definitive = definitive
-        self.nproc = int(nproc)
+        self.nworkers = int(nworkers)
+        self.nthreads = int(nthreads)
         self.rebuild = rebuild
         self.kwargs = kwargs
         self.fix = fix
@@ -301,7 +304,9 @@ class Drop:
             self.logger.warning("IMPORTANT: no file will be created, this is a dry run")
 
         if self.dask:
-            self.logger.info("Running dask.distributed with %s workers", self.nproc)
+            self.logger.info(
+                "Running dask.distributed with %s workers and %s threads per worker", self.nworkers, self.nthreads
+            )
 
         if self.rebuild:
             self.logger.info("rebuild=True! DROP will rebuild weights and areas!")
@@ -419,8 +424,8 @@ class Drop:
         self.logger.info("Generating DROP output...")
 
         # Set up dask cluster if parallel execution
-        if self.dask:  # self.nproc > 1
-            self.dask_cluster.setup(nworkers=self.nproc, nthreads=1, tmpdir=self.tmpdir)
+        if self.dask:  # self.nworkers > 1
+            self.dask_cluster.setup(nworkers=self.nworkers, nthreads=self.nthreads, tmpdir=self.tmpdir)
             self.dask_cluster.activate_client()
         else:
             dask.config.set(scheduler="synchronous")
@@ -441,7 +446,7 @@ class Drop:
 
         # Cleaning
         self.data.close()
-        if self.dask:  # self.nproc > 1
+        if self.dask:  # self.nworkers > 1
             self.dask_cluster.close()
         self._remove_tmpdir()
 
@@ -649,7 +654,7 @@ class Drop:
         header = (
             "\n=== DROP Performance Stats ===\n"
             f"Model: {self.model} | Exp: {self.exp} | Source: {self.source} |"
-            f"Stat: {self.stat} | Started: {now} | Workers: {self.nproc}\n"
+            f"Stat: {self.stat} | Started: {now} | Workers: {self.nworkers} | Threads: {self.nthreads}\n"
             "================================================\n"
         )
         with open(self.stats_file, "a", encoding="utf-8") as fh:
