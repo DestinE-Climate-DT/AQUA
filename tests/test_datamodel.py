@@ -5,7 +5,7 @@ import pytest
 import xarray as xr
 
 from aqua import Reader
-from aqua.core.data_model import CoordIdentifier, CoordTransformer
+from aqua.core.data_model import CoordIdentifier, CoordTransformer, scan_coord
 
 
 @pytest.mark.aqua
@@ -166,3 +166,21 @@ class TestDataModel:
         # No coordinate should be identified due to same score
         assert coord_dict["longitude"] is None
         assert coord_dict["latitude"] is None
+
+    def test_scan_coord(self):
+        """Test for the scan_coord function."""
+        # Test with a known coordinate
+        lat_name = scan_coord("latitude")
+        assert lat_name == "lat"
+
+        # Test with a non-existent coordinate, should return default
+        default_name = scan_coord("nonexistent", default="default_coord")
+        assert default_name == "default_coord"
+
+        # Test with a non-existent coordinate without default, should return None
+        none_name = scan_coord("nonexistent")
+        assert none_name is None
+
+        # Test a non existing data model, returns default
+        default_name_model = scan_coord("latitude", model="nonexistent_model", default="default_coord")
+        assert default_name_model == "default_coord"
