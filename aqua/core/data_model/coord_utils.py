@@ -106,8 +106,10 @@ def scan_coord(internal_name: str, default: str = None, data_model: str = "aqua"
     """
     try:
         coord = get_data_model(data_model)["data_model"][internal_name]
-    except (FileNotFoundError, KeyError):
+    except FileNotFoundError:
         return default
+    except KeyError:
+        raise KeyError(f"Coordinate '{internal_name}' not found in data model '{data_model}'.")
     return coord.get("name", default)
 
 

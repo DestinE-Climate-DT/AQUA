@@ -173,13 +173,9 @@ class TestDataModel:
         lat_name = scan_coord("latitude")
         assert lat_name == "lat"
 
-        # Test with a non-existent coordinate, should return default
-        default_name = scan_coord("nonexistent", default="default_coord")
-        assert default_name == "default_coord"
-
-        # Test with a non-existent coordinate without default, should return None
-        none_name = scan_coord("nonexistent")
-        assert none_name is None
+        # Test with a non-existent coordinate, raise a KeyError
+        with pytest.raises(KeyError):
+            scan_coord("nonexistent")
 
         # Test a non existing data model, returns default
         default_name_model = scan_coord("latitude", data_model="nonexistent_model", default="default_coord")
