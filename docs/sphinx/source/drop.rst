@@ -396,7 +396,8 @@ Defines the hierarchical structure of data to process. They have all to be insid
         EXPERIMENT_NAME:
           SOURCE_NAME:
             vars: ['var1', 'var2', 'var3']
-            workers: 12
+            nworkers: 12
+            nthreads: 1
             realizations: [0, 1, 2]
             zoom: 8
             resolution: r25
@@ -415,7 +416,7 @@ Each source configuration supports the following parameters:
 
   - Example: ``['2t', 'tprate', 'msl']``
 
-- **workers** (int, optional): Number of Dask workers for parallel processing. Default: 1
+- **nworkers** (int, optional): Number of Dask workers for parallel processing. Default: 1
 
   - Typical range: 4-16 depending on available memory and vertical levels
   - 1 worker disables parallel processing
@@ -443,21 +444,22 @@ Each source configuration supports the following parameters:
         historical-1990:
           hourly-hpz10-atm2d:
             vars: ['2t', 'tp', 'msl']
-            workers: 12
+            nworkers: 12
             resolution: r100
             frequency: daily
             stat: mean
 
           daily-hpz10-oce2d:
             vars: ['avg_sithick', 'avg_siconc']
-            workers: 16
+            nworkers: 16
             frequency: monthly
 
       IFS-NEMO:
         historical-1950:
           daily:
             vars: ['2t', 'tp']
-            workers: 8
+            nworkers: 8
+            nthreads: 1
             stat: max
             region:
               name: Europe
@@ -509,9 +511,13 @@ Usage
 
     Set up the Reader fixing capabilities (default: True)
 
-.. option:: -w, --workers
+.. option:: -w, --nworkers N
 
     Set up the number of dask workers (default: 1, i.e. dask disabled)
+
+.. option:: --nthreads N
+
+    Set up the number of dask threads per worker (default: 1)
 
 .. option:: -l, --loglevel
 
