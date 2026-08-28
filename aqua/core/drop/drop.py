@@ -23,7 +23,7 @@ import dask
 import pandas as pd
 
 from aqua.core.configurer import ConfigPath
-from aqua.core.dask.daskcluster import DaskCluster
+from aqua.core.dask import DaskCluster
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -420,7 +420,6 @@ class Drop:
 
         # Set up dask cluster if parallel execution
         if self.dask:  # self.nproc > 1
-            self.logger.info("Setting up dask cluster with %s workers", self.nproc)
             self.dask_cluster.setup(nworkers=self.nproc, nthreads=1, tmpdir=self.tmpdir)
             self.dask_cluster.activate_client()
         else:
@@ -444,7 +443,6 @@ class Drop:
         self.data.close()
         if self.dask:  # self.nproc > 1
             self.dask_cluster.close()
-            self.logger.info("Dask cluster closed")
         self._remove_tmpdir()
 
         self.logger.info("Finished generating DROP output.")

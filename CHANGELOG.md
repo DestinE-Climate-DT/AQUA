@@ -11,6 +11,7 @@ ClimateDT workflow modifications:
 Complete list:
 - Fix no kind case for aqua analysis (#3032)
 - Implement new DVC remote from ECMWF (#3031)
+- Expand use of `DaskCluster()` class to `Drop()` to control dask (#3037)
 
 ## [v1.0.1]
 
