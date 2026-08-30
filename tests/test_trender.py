@@ -7,7 +7,6 @@ import xarray as xr
 from conftest import LOGLEVEL
 
 from aqua import Reader
-from aqua.core.reader.trender import dynamic_inferred_freq
 
 loglevel = LOGLEVEL
 
@@ -89,30 +88,3 @@ class TestTrender:
 
         assert list(det2.data_vars) == ["2t", "skt"]
         assert pytest.approx(det2["skt"].isel(time=10, lon=2, lat=2).values) == -0.098381225331
-
-    @pytest.mark.parametrize(
-        "freq_str, expected",
-        [
-            ("YS", "YS"),
-            ("MS", "MS"),
-            ("W", "W"),
-            ("D", "D"),
-            ("6h", "6h"),
-            ("h", "h"),
-            ("30min", "30min"),
-            ("min", "min"),
-        ],
-    )
-    def test_dynamic_inferred_freq(self, freq_str, expected):
-        """Test dynamic_inferred_freq with various standard frequencies."""
-        dates = pd.date_range("2020-01-01", periods=5, freq=freq_str)
-        da = xr.DataArray(np.arange(len(dates)), coords={"time": dates}, dims=["time"])
-        assert dynamic_inferred_freq(da["time"]) == expected
-        assert dynamic_inferred_freq(dates) == expected
-
-    def test_dynamic_inferred_freq_edge_cases(self):
-        """Test dynamic_inferred_freq with edge cases."""
-        single_date = pd.DatetimeIndex(["2020-01-01"])
-        assert dynamic_inferred_freq(single_date) is None
-        empty_date = pd.DatetimeIndex([])
-        assert dynamic_inferred_freq(empty_date) is None

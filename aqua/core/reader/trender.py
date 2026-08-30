@@ -5,61 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
-
-
-def dynamic_inferred_freq(time_coord: xr.DataArray | pd.Index) -> str | None:
-    """
-    Infer the time frequency dynamically from irregular or regular time coordinates.
-
-    Args:
-        time_coord (xr.DataArray or pd.Index): Time coordinate or index to infer frequency from.
-
-    Returns:
-        str or None: Inferred frequency string compliant with pandas, or None if it cannot be determined.
-    """
-    if hasattr(time_coord, "to_index"):
-        time_index = time_coord.to_index()
-    elif isinstance(time_coord, pd.Index):
-        time_index = time_coord
-    else:
-        time_index = pd.Index(time_coord)
-
-    diffs = pd.Series(time_index).diff().dropna()
-    if diffs.empty:
-        return None
-
-    delta = diffs.median()
-    if pd.isna(delta):
-        return None
-
-    if not isinstance(delta, pd.Timedelta):
-        delta = pd.Timedelta(delta)
-
-    # Calendar-scale intervals
-    if delta >= pd.Timedelta(days=350):
-        return "YS"
-    if pd.Timedelta(days=25) <= delta <= pd.Timedelta(days=35):
-        return "MS"
-    if pd.Timedelta(days=6) <= delta <= pd.Timedelta(days=8):
-        return "W"
-    if pd.Timedelta(hours=20) <= delta <= pd.Timedelta(hours=28):
-        return "D"
-
-    # Sub-daily intervals
-    hours = int(delta.round("h").total_seconds() // 3600)
-    if hours >= 1:
-        return "h" if hours == 1 else f"{hours}h"
-
-    # Sub-hourly intervals
-    minutes = int(delta.round("min").total_seconds() // 60)
-    if minutes >= 1:
-        return "min" if minutes == 1 else f"{minutes}min"
-
-    seconds = int(delta.round("s").total_seconds())
-    if seconds >= 1:
-        return "s" if seconds == 1 else f"{seconds}s"
-
-    return None
+from aqua.core.util.time import xarray_to_pandas_freq
 
 
 class Trender:
@@ -154,7 +100,7 @@ class Trender:
             self.logger.debug("Normalizing coefficients for time dimension.")
             # get the inferred frequency of the time dimension and convert to pandas offset
             time_values = data[dim].to_index()
-            inferred_freq = dynamic_inferred_freq(time_values)
+            inferred_freq = xarray_to_pandas_freq(time_values)
             self.logger.debug("Inferred frequency for 'time' dimension: %s", inferred_freq)
             if inferred_freq is None:
                 raise ValueError(

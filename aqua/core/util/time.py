@@ -2,7 +2,6 @@
 Module including time utilities for AQUA
 """
 
-import math
 import re
 
 import cftime
@@ -77,35 +76,81 @@ def frequency_string_to_pandas(freq):
     return new_freq
 
 
-def xarray_to_pandas_freq(xdataset: xr.Dataset | xr.DataArray):
+def xarray_to_pandas_freq(
+    xdataset: xr.Dataset | xr.DataArray | pd.Index,
+    dim: str = "time",
+) -> str | None:
     """
-    Given a Xarray Dataset, estimate the time frequency and convert
-    it as a Pandas frequency string
+    Given an xarray object or pandas Index, dynamically estimate the time frequency
+    and convert it to a pandas-compliant frequency string.
 
     Args:
-        xdataset (xr.Dataset | xr.DataArray): The input xarray object.
+        xdataset (xr.Dataset | xr.DataArray | pd.Index): The input xarray object, coordinate, or index.
+        dim (str, optional): Name of the time dimension. Defaults to 'time'.
 
     Returns:
-        str: The inferred time frequency as a string, pandas compliant.
+        str or None: The inferred time frequency as a string, pandas compliant, or None.
     """
-    # to check if this is necessary
-    timedelta = pd.Timedelta(xdataset.time.diff("time").mean().values)
-
-    hours = math.floor(timedelta.total_seconds() / 3600)
-    days = math.floor(hours / 24)
-    months = math.floor(days / 28)  # Minimum month has around 28 days
-    years = math.floor(days / 365)  # Assuming an average year has around 365 days
-
-    # print([hours, days, months, years])
-
-    if years >= 1:
-        return f"{years}Y"
-    elif months >= 1:
-        return f"{months}MS"
-    elif days >= 1:
-        return f"{days}D"
+    if isinstance(xdataset, xr.Dataset):
+        if dim not in xdataset.coords:
+            return None
+        time_coord = xdataset[dim]
+    elif isinstance(xdataset, xr.DataArray):
+        if dim in xdataset.coords:
+            time_coord = xdataset[dim]
+        else:
+            time_coord = xdataset
     else:
-        return f"{hours}h"
+        time_coord = xdataset
+
+    if hasattr(time_coord, "to_index"):
+        time_index = time_coord.to_index()
+    elif isinstance(time_coord, pd.Index):
+        time_index = time_coord
+    else:
+        time_index = pd.to_datetime(time_coord)
+
+    diffs = pd.Series(time_index).diff().dropna()
+    if diffs.empty:
+        return None
+
+    delta = diffs.median()
+    if pd.isna(delta):
+        return None
+
+    if not isinstance(delta, pd.Timedelta):
+        delta = pd.Timedelta(delta)
+
+    if delta <= pd.Timedelta(0):
+        return None
+
+    # Calendar-scale intervals
+    if delta >= pd.Timedelta(days=350):
+        years = int(round(delta.total_seconds() / (365.25 * 86400)))
+        return "YS" if years <= 1 else f"{years}YS"
+    if pd.Timedelta(days=25) <= delta <= pd.Timedelta(days=35):
+        return "MS"
+    if pd.Timedelta(days=6) <= delta <= pd.Timedelta(days=8):
+        return "W"
+    if delta >= pd.Timedelta(hours=20):
+        days = int(delta.round("D").total_seconds() // 86400)
+        return "D" if days <= 1 else f"{days}D"
+
+    # Sub-daily intervals
+    hours = int(delta.round("h").total_seconds() // 3600)
+    if hours >= 1:
+        return "h" if hours == 1 else f"{hours}h"
+
+    # Sub-hourly intervals
+    minutes = int(delta.round("min").total_seconds() // 60)
+    if minutes >= 1:
+        return "min" if minutes == 1 else f"{minutes}min"
+
+    seconds = int(delta.round("s").total_seconds())
+    if seconds >= 1:
+        return "s" if seconds == 1 else f"{seconds}s"
+
+    return None
 
 
 def pandas_freq_to_string(freq: str) -> str:
