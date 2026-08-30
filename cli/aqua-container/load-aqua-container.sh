@@ -59,6 +59,7 @@ parse_machine() {
     mode=""    # Container mode: none, script or bash
     container_type=aqua-core # type of container: diagnostics (default) or core
     container_dir=aqua  # where the containers are stored
+    aqua_title=AQUA-core
     list=0
 
     # Use getopt to parse options
@@ -72,7 +73,7 @@ parse_machine() {
     while true; do
         case "$1" in
             -d|--diagnostics)
-                container_type=aqua-diagnostics; container_dir=aqua-diagnostics; shift ;;
+                container_type=aqua-diagnostics; container_dir=aqua-diagnostics; aqua_title=AQUA-diagnostics; shift ;;
             -n|--native)
                 native_mode=1; shift ;;
             -l|--list)
@@ -103,10 +104,10 @@ parse_machine() {
     if [[ "$native_mode" -eq 0 ]]; then
         export AQUA="/app/AQUA"
         echo "Selecting the AQUA path $AQUA from the container."
-        echo "AQUA version is set to: $version"
+        echo "$aqua_title version is set to: $version"
     else
         if [ -z $AQUA ]; then
-            echo "ERROR: AQUA directory is not set!"
+            echo "ERROR: $aqua_title directory is not set!"
             exit 1
         fi
         # Check if AQUA is set and the file exists
@@ -114,7 +115,7 @@ parse_machine() {
         echo "Please use this with caution since it is not how the container is meant to be used!"
         echo "Remember to run: pip install -e `$AQUA` once you are in the container"
         if [ ! -d "$AQUA" ]; then
-            echo "ERROR: The AQUA directory does not exist at: $AQUA"
+            echo "ERROR: The $AQUA_title directory does not exist at: $AQUA"
             exit 1
         fi
         branch_name=$(git -C "$AQUA" rev-parse --abbrev-ref HEAD)
@@ -176,13 +177,13 @@ function setup_container_path(){
         echo "Asking for latest AQUA version, detecting the more recent available in ${AQUA_folder}" >&2
         available_versions=$(find ${AQUA_folder}/ -type f -name "${container_type}_*.sif" -exec basename {} .sif \; | sed "s/^${container_type}_//")
         version=$(printf "%s\n" "${available_versions[@]}" | sort -V -r | head -n 1 )
-        echo "AQUA v${version} selected! If you are not happy, please specify your version with -v flag" >&2
+        echo "$aqua_title v${version} selected! If you are not happy, please specify your version with -v flag" >&2
     fi
 
     AQUA_container="$AQUA_folder/${container_type}_${version}.sif"
 
     if [ ! -f "$AQUA_container" ]; then
-        echo "ERROR: The AQUA container does not exist at: $AQUA_container" >&2
+        echo "ERROR: The $aqua_title container does not exist at: $AQUA_container" >&2
         return 1
     fi
 
