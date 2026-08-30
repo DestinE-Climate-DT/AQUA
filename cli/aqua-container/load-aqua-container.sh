@@ -24,7 +24,7 @@ usage() {
     Options:
         -n, --native             Enable native mode: AQUA will read from native env variable.
         -r, --core               Load aqua-core container instead of aqua-diagnostics (default)
-        -l, --list               List available containers     
+        -l, --list               List available containers
         -s, --script <script>    Execute an executable bash or python script.
         -c, --command <command>  Execute a shell command.
         -v, --version <version>  Specify the AQUA container version (default: "latest").
@@ -57,12 +57,12 @@ parse_machine() {
     script=""     # Script to be read as argument
     cmd="shell"   # Standard container init
     mode=""    # Container mode: none, script or bash
-    container_type=aqua-diagnostics # type of container: diagnostics (default) or core
-    container_dir=aqua-diagnostics  # where the containers are stored
+    container_type=aqua-core # type of container: diagnostics (default) or core
+    container_dir=aqua  # where the containers are stored
     list=0
 
     # Use getopt to parse options
-    OPTIONS=$(getopt -o hnlrc:s:v: --long help,native,list,core,version:,command:,script: -n "$0" -- "$@")
+    OPTIONS=$(getopt -o hnldc:s:v: --long help,native,list,diagnostics,version:,command:,script: -n "$0" -- "$@")
     if [ $? -ne 0 ]; then
         usage
     fi
@@ -71,8 +71,8 @@ parse_machine() {
     # Process each option
     while true; do
         case "$1" in
-            -r|--core)
-                container_type=aqua-core; container_dir=aqua; shift ;;
+            -d|--diagnostics)
+                container_type=aqua-diagnostics; container_dir=aqua-diagnostics; shift ;;
             -n|--native)
                 native_mode=1; shift ;;
             -l|--list)
@@ -171,7 +171,7 @@ function setup_folder(){
 function setup_container_path(){
     machine=$1
     AQUA_folder=$2
-    
+
     if [ ${version} == "latest" ] ; then
         echo "Asking for latest AQUA version, detecting the more recent available in ${AQUA_folder}" >&2
         available_versions=$(find ${AQUA_folder}/ -type f -name "${container_type}_*.sif" -exec basename {} .sif \; | sed "s/^${container_type}_//")
