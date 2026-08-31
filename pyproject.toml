@@ -93,7 +93,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.16.4"
+    "ruff==0.16.5"
 ]
 all = [
     "aqua-core[docs]",
