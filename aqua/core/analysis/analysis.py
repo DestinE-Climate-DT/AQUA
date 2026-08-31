@@ -440,6 +440,10 @@ class Analysis:
             exp_kind (str): The experiment kind to configure (e.g "historical").
             exp_kind_file (str): YAML file containing kind configurations (e.g. "startdate").
         """
+
+        if exp_kind_file and not exp_kind:
+            exp_kind = "default"
+
         if exp_kind is None:
             return None
 
