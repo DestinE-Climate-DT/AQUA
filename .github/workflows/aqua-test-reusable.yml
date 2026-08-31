@@ -300,7 +300,7 @@ jobs:
             mkdir -p /app
           fi
           # FDB for GSV
-          rm -rf /app/
+          rm -rf /app/*
           cp -r ./AQUA/AQUA_tests/fdb/ /app/
           cat /app/etc/fdb/config.yaml
           mkdir -pv /app/localroot/
