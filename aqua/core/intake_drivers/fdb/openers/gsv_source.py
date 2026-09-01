@@ -13,7 +13,6 @@ To add a different engine (e.g. Polytope or z3fdb) subclass
 
 import os
 
-import eccodes
 import numpy as np
 
 from .dates import FDBDatesMixin
@@ -63,15 +62,13 @@ class GSVSource(FDBSource, FDBDatesMixin):
         var=None,
         metadata=None,
         level=None,
-        switch_eccodes=False,
         loglevel="WARNING",
         engine=None,
         databridge=None,
         **kwargs,
     ):
-        self.switch_eccodes = switch_eccodes
         self.dummy_run = engine is None
-        engine = engine or "fdb"
+        engine = engine or "gsv"
 
         if engine == "polytope":
             self.databridge = "lumi" if databridge is None else databridge
@@ -107,7 +104,7 @@ class GSVSource(FDBSource, FDBDatesMixin):
             raise ImportError(gsv_error_cause)
 
     def _read_metadata(self, metadata):
-        """Extract the FDB/eccodes/level paths from the catalog metadata."""
+        """Extract the FDB/level paths from the catalog metadata."""
         if metadata is None:
             metadata = {}
 
@@ -124,24 +121,16 @@ class GSVSource(FDBSource, FDBDatesMixin):
             self.config_fdb if (self.config_fdb and config_is_path) else metadata.get("fdb_path_bridge", None)
         )
 
-        if self.switch_eccodes:
-            self.eccodes_path = metadata.get("eccodes_path", None)
-            self.logger.info("ECCODES switching to %s", self.eccodes_path)
-        else:
-            self.logger.debug("ECCODES switching is off")
-            self.eccodes_path = None
-
         self.levels = metadata.get("levels", None)
         self.fdb_info_file = metadata.get("fdb_info_file", None)
 
     def _post_init(self):
         # GSV/FDB-specific validation of the configured FDB paths (needs chk_type from the plan)
         self._check_fdb_paths()
-        self._switch_eccodes()
 
     def _check_fdb_paths(self):
         """Validate the configured HPC/bridge FDB paths against the partition types."""
-        if self.engine == "fdb" and not self.dummy_run:
+        if self.engine == "gsv" and not self.dummy_run:
             # We run the checks only on the real init, to avoid issues with the probe call of intake
             if np.any(self.chk_type == 0):  # We have HPC chunks
                 if not self.fdbpath and not self.fdbhome:
@@ -160,17 +149,6 @@ class GSVSource(FDBSource, FDBDatesMixin):
                     raise FileNotFoundError(f"fdbhome_bridge path {self.fdbhome_bridge} does not exist!")
                 if self.fdbpath_bridge and not os.path.exists(self.fdbpath_bridge):
                     raise FileNotFoundError(f"fdbpath_bridge path {self.fdbpath_bridge} does not exist!")
-
-    # --------------------------------------------------------------- ecCodes
-    def _switch_eccodes(self):
-        """
-        Internal method to switch ECCODES version if needed.
-        """
-        if self.eccodes_path:  # if needed switch eccodes path
-            # unless we have already switched
-            if self.eccodes_path and (self.eccodes_path != eccodes.codes_definition_path()):
-                eccodes.codes_context_delete()  # flush old definitions in cache
-                eccodes.codes_set_definitions_path(self.eccodes_path)
 
     # -------------------------------------------------------------- retrieval
     def _retrieve_partition(self, request, chunk_type, first=False):
@@ -203,8 +181,6 @@ class GSVSource(FDBSource, FDBDatesMixin):
             if self.hpc_expver:
                 request["expver"] = self.hpc_expver
 
-        self._switch_eccodes()
-
         # The following is a hack around a pyfdb/fdb5 bug which requires a double initialization when reading from bridge
         # See https://github.com/DestinE-Climate-DT/AQUA/issues/1715
         # Notice also that for some mysterious reason this works only if the
@@ -212,7 +188,11 @@ class GSVSource(FDBSource, FDBDatesMixin):
         # if chunk_type:
         #    self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
 
-        gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
+        engine = self.engine
+        if self.engine == "gsv":
+            engine = "fdb"  # GSVRetriever needs this
+
+        gsv = GSVRetriever(engine=engine, source=self.databridge, logging_level=self.gsv_log_level)
 
         self.logger.debug("Request %s", request)
         dataset = gsv.request_data(

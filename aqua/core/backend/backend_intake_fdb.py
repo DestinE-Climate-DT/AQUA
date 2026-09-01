@@ -78,7 +78,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
 
         # Check machine compatibility
         self.machine_from_catalog = self.expcat.metadata.get("machine")
-        if engine != "polytope":
+        if engine != "polytope" and engine != "polytope-gsv":
             if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
                 self.logger.warning(
                     "The machine configured (%s) is different from the machine in the catalog (%s). "

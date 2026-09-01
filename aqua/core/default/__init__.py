@@ -5,7 +5,7 @@ DEFAULT_REALIZATION = "r1"
 DEFAULT_DATAMODEL = "aqua"
 DEFAULT_CONVENTION = "eccodes"
 DEFAULT_REGRID_METHOD = "ycon" #used also in regridder
-DEFAULT_ENGINE = "fdb"
+DEFAULT_ENGINE = "gsv"
 DEFAULT_NPROC = 4
 
 # Spatial defaults

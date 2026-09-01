@@ -466,9 +466,7 @@ class FDBSource(FDBTimeMixin):
         We consider the paramId stable between ecCodes versions, not the short name.
         So we read the ``GRIB_paramId`` attribute and derive the short name from the
         current ecCodes definitions; if it differs from the retrieved short name a
-        warning is issued (this only affects the final name when ``fix=False``). Set
-        ``switch_eccodes=True`` in the catalog to read short names from a pinned
-        ecCodes version instead.
+        warning is issued (this only affects the final name when ``fix=False``).
         """
         original_paramid = self._ds[ds_var].attrs.get("GRIB_paramId", ds_var)
         updated_var = get_eccodes_attr(original_paramid)["shortName"]
