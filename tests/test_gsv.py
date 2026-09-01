@@ -5,13 +5,11 @@ from dask.distributed import Client, LocalCluster
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
-from aqua.core.intake_drivers.fdb.openers import open_gsv, open_polytope
+from aqua.core.intake_drivers.fdb.openers import open_gsv
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
     pytest.skip("Skipping GSV tests: FDB5 libraries not available", allow_module_level=True)
-else:
-    from pyfdb.pyfdb import FDBException
 
 # pytestmark groups tests that run sequentially on the same worker to avoid conflicts
 pytestmark = [pytest.mark.gsv, pytest.mark.xdist_group(name="dask_operations")]
@@ -72,7 +70,7 @@ class TestGsv:
             chunks="S",
             var="167",
             metadata={"fdb_home": FDB_HOME},
-            engine="fdb",
+            engine="gsv",
         )
         assert source is not None
 
@@ -88,14 +86,14 @@ class TestGsv:
             var="167",
             bridge_end_date="complete",
             metadata={"fdb_home_bridge": FDB_HOME},
-            engine="fdb",
+            engine="gsv",
         )
         assert source is not None
 
     def test_gsv_constructor_raise(self) -> None:
         """Test raise for missing fdbhome"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(FDBException):
+        with pytest.raises(ValueError):
             open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
@@ -103,14 +101,14 @@ class TestGsv:
                 timestep="h",
                 chunks="S",
                 var="167",
-                engine="fdb",
+                engine="gsv",
             )
 
     def test_gsv_constructor_raise_bridge(self) -> None:
         """Test raise for missing fdbhome"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(FDBException):
-            open_polytope(
+        with pytest.raises(ValueError):
+            open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
                 data_end_date="20080101",
@@ -118,13 +116,13 @@ class TestGsv:
                 chunks="S",
                 var="167",
                 bridge_end_date="complete",
-                engine="fdb",
+                engine="gsv",
             )
 
     def test_gsv_constructor_raise_path_not_exists(self) -> None:
         """Test raise when fdbhome path is specified but does not exist"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(FDBException, match="fdbhome path .* does not exist"):
+        with pytest.raises(FileNotFoundError, match="fdbhome path .* does not exist"):
             open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
@@ -132,15 +130,15 @@ class TestGsv:
                 timestep="h",
                 chunks="S",
                 var="167",
-                engine="fdb",
+                engine="gsv",
                 metadata={"fdb_home": "/path/that/does/not/exist"},
             )
 
     def test_gsv_constructor_raise_bridge_path_not_exists(self) -> None:
         """Test raise when bridge path is specified but does not exist"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(FDBException, match="fdbhome_bridge path .* does not exist"):
-            open_polytope(
+        with pytest.raises(FileNotFoundError, match="fdbhome_bridge path .* does not exist"):
+            open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
                 data_end_date="20080101",
@@ -148,7 +146,7 @@ class TestGsv:
                 chunks="S",
                 var="167",
                 bridge_end_date="complete",
-                engine="fdb",
+                engine="gsv",
                 metadata={"fdb_home_bridge": "/path/that/does/not/exist"},
             )
 
@@ -201,7 +199,7 @@ class TestGsv:
         data = reader.retrieve()
         assert data.t.GRIB_paramId == 130, "Wrong GRIB param in data"
 
-    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_xarray(self, engine) -> None:
         """Reading directly into xarray"""
 
@@ -235,7 +233,7 @@ class TestGsv:
         data = reader.retrieve(var=130)  # test numeric argument
         assert data.var130.mean().data == pytest.approx(279.3509), "Field values incorrect"
 
-    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_3d(self, engine) -> None:
         """Testing 3D access"""
 
@@ -256,7 +254,7 @@ class TestGsv:
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
-    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_3d_chunks(self, engine) -> None:
         """Testing 3D access with vertical chunking"""
 
@@ -269,7 +267,7 @@ class TestGsv:
         data = reader.retrieve(level=[900, 800])  # Read only two levels
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
-    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_bridge(self, engine) -> None:
         """
         Reading from a datasource using bridge
@@ -291,7 +289,7 @@ class TestGsv:
         Reading from a datasource using new operational schema and auto dates
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel, engine="fdb")
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel, engine="gsv")
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -378,7 +376,7 @@ class TestGsv:
             "20080101",
             "20080101",
             metadata={"fdb_home": FDB_HOME, "fdb_home_bridge": FDB_HOME, "fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
-            engine="fdb",
+            engine="gsv",
             loglevel=loglevel,
         )
 
@@ -396,14 +394,14 @@ class TestGsv:
                 "fdb_home_bridge": FDB_HOME,
                 "fdb_info_file": "tests/catgen/fdb_info_hpc-only.yaml",
             },
-            engine="fdb",
+            engine="gsv",
             loglevel=loglevel,
         )
 
         assert source.data_start_date == "19900101T0000"
         assert source.data_end_date == "19900103T2300"
 
-    @pytest.mark.parametrize("engine", ["fdb", "z3fdb"])
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_dask(self, engine) -> None:
         """
         Reading in parallel with a dask cluster
