@@ -145,7 +145,11 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
         # if chunk_type:
         #    self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
 
-        gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
+        engine = self.engine
+        if self.engine == "gsv":
+            engine = "fdb"  # GSVRetriever needs this
+
+        gsv = GSVRetriever(engine=engine, source=self.databridge, logging_level=self.gsv_log_level)
 
         self.logger.debug("Request %s", request)
         dataset = gsv.request_data(
