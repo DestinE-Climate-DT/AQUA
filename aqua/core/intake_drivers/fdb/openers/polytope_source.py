@@ -11,9 +11,6 @@ To add a different engine (e.g. Polytope or z3fdb) subclass
 :class:`FDBSource` and implement ``_retrieve_partition`` only.
 """
 
-import logging
-import warnings
-
 from aqua.core.logger import _check_loglevel
 
 from .dates import FDBDatesMixin
@@ -74,9 +71,9 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
         """
 
         # HACK: Silence verbose output from polytope internals
-        for _ln in ("polytope", "polytope.api"):
-            logging.getLogger(_ln).setLevel(_check_loglevel(loglevel))
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        # for _ln in ("polytope", "polytope.api"):
+        #    logging.getLogger(_ln).setLevel(_check_loglevel(loglevel))
+        # warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         engine = engine or "polytope"
 
