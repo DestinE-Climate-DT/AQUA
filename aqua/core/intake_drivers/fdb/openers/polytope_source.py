@@ -107,6 +107,8 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
             **kwargs,
         )
 
+        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
+
     # ------------------------------------------------------------ init helpers
     def _check_availability(self):
         if not gsv_available:
