@@ -2,9 +2,11 @@ import pytest
 import xarray as xr
 from conftest import LOGLEVEL
 from dask.distributed import Client, LocalCluster
+from pyfdb.pyfdb import FDBException
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
+from aqua.core.intake_drivers.fdb.openers import open_gsv
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
@@ -92,8 +94,16 @@ class TestGsv:
     def test_gsv_constructor_raise(self) -> None:
         """Test raise for missing fdbhome"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(ValueError):
-            GSVSource(DEFAULT_GSV_PARAMS["request"], "20080101", "20080101", timestep="h", chunks="S", var="167", engine="fdb")
+        with pytest.raises(FDBException):
+            open_gsv(
+                DEFAULT_GSV_PARAMS["request"],
+                data_start_date="20080101",
+                data_end_date="20080101",
+                timestep="h",
+                chunks="S",
+                var="167",
+                engine="fdb",
+            )
 
     def test_gsv_constructor_raise_bridge(self) -> None:
         """Test raise for missing fdbhome"""
