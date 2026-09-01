@@ -86,8 +86,8 @@ class FixerConfigure:
         if convention_dictionary is None:
             self.logger.error("No convention dictionary found for %s", convention_name)
             return None
-        else:
-            self.logger.info("Convention dictionary: %s", convention_name)
+
+        self.logger.info("Convention dictionary: %s", convention_name)
 
         return convention_dictionary
 
@@ -186,18 +186,16 @@ class FixerConfigure:
             if fixes is None:
                 self.logger.error("The requested fixer_name %s does not exist in fixes files", self.fixer_name)
                 return None
-            else:
-                self.logger.info("Fix names %s found in fixes files", self.fixer_name)
 
-                if "parent" in fixes:
-                    parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes["parent"])
-                    if parent_fixes is not None:
-                        self.logger.info(
-                            "Parent fix %s found! Mergin with fixer_name fixes %s!", fixes["parent"], self.fixer_name
-                        )
-                        fixes = self._merge_fixes(parent_fixes, fixes)
-                    else:
-                        self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes["parent"])
+            self.logger.info("Fix names %s found in fixes files", self.fixer_name)
+
+            if "parent" in fixes:
+                parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes["parent"])
+                if parent_fixes is not None:
+                    self.logger.info("Parent fix %s found! Mergin with fixer_name fixes %s!", fixes["parent"], self.fixer_name)
+                    fixes = self._merge_fixes(parent_fixes, fixes)
+                else:
+                    self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes["parent"])
 
             return fixes
 
