@@ -91,7 +91,6 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
             level=level,
             loglevel=loglevel,
             engine=engine,
-            databridge=self.databridge,
             **kwargs,
         )
 
