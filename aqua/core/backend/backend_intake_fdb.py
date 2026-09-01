@@ -92,12 +92,13 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         # we mirror the legacy Reader._filter_kwargs GSV logic here.
         # Use the catalog 'machine' metadata as the polytope databridge target when
         # the caller has not supplied one explicitly (mirrors Reader.machine_from_catalog).
+        # The machine name is striped of any partition info (e.g. "lumi-44" -> "lumi").
         needs_rebuild = False
         if "engine" not in self.kwargs:
             self.kwargs["engine"] = engine
             self.logger.debug("Adding engine=%s to filtered kwargs", engine)
             needs_rebuild = True
-        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine")
+        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine").split("-")[0]
         if engine == "polytope" and effective_databridge is not None and "databridge" not in self.kwargs:
             self.kwargs["databridge"] = effective_databridge
             self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
