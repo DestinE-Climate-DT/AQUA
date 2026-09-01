@@ -56,47 +56,49 @@ class Reader:
         engine=DEFAULT_ENGINE,
         **kwargs,
     ):
-        """
-        TODO: adapt types and docstring
-        Initializes the Reader class, which uses the catalog
-        `config/config.yaml` to identify the required data.
+        """Initialize the Reader class to identify, retrieve, fix, and regrid climate data.
+
+        Data access can be configured either via intake catalogs (specifying `model`, `exp`,
+        and `source`) or directly from local/remote files using `path`.
 
         Args:
-            model (str): Model ID. Mandatory
-            exp (str): Experiment ID. Mandatory.
-            source (str): Source ID. Mandatory
-            catalog (str, optional): Catalog where to search for the triplet.  Default to None will allow for autosearch in
-                                     the installed catalogs.
-            datamodel (str, optional): Data model to apply for coordinate transformations (e.g., 'aqua'). Defaults to 'aqua'.
-            regrid (str, optional): Perform regridding to grid `regrid`, as defined in `config/regrid.yaml`. Defaults to None.
-            regrid_method (str, optional): CDO Regridding regridding method. Read from grid configuration.
-                                           If not specified anywhere, using "ycon".
-            fix (bool, optional): Activate data fixing
-            areas (bool, optional): Compute pixel areas if needed. Defaults to True.
-            startdate (str, optional): The starting date for reading/streaming the data (e.g. '2020-02-25'). Defaults to None.
-            enddate (str, optional): The final date for reading/streaming the data (e.g. '2020-03-25'). Defaults to None.
-            rebuild (bool, optional): Force rebuilding of area and weight files. Defaults to False.
-            loglevel (str, optional): Level of logging according to logging module.
-                                      Defaults to log_level_default of loglevel().
-            nproc (int, optional): Number of processes to use for weights generation. Defaults to 4.
-            chunks (str or dict, optional): chunking to be used for data access.
-                                            Defaults to None (using default from catalog, recommended).
-                                            If it is a string time chunking is assumed.
-                                            If it is a dictionary the keys 'time' and 'vertical' are looked for.
-                                            Time chunking can be one of S (step), 10M, 15M, 30M, h, 1h, 3h, 6h, D, 5D, W, M, Y.
-                                            Vertical chunking is expressed as the number of vertical levels to be used.
-            preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
-            convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
-                                        (Only one supported so far)
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to 'gsv'.
+            model (str, optional): Model ID. Mandatory if `path` is not provided. Defaults to None.
+            exp (str, optional): Experiment ID. Mandatory if `path` is not provided. Defaults to None.
+            source (str, optional): Source ID. Mandatory if `path` is not provided. Defaults to None.
+            catalog (str, optional): Catalog name or path to search for the triplet. Defaults to None
+                (automatically searches installed catalogs).
+            path (str, optional): Path or glob pattern for direct data access via xarray backend,
+                bypassing intake catalogs. Defaults to None.
+            fix (bool, optional): Activate data and variable fixing. Defaults to True.
+            datamodel (str or bool, optional): Data model to apply for coordinate transformations
+                (e.g., 'aqua'). Set to False to disable. Defaults to None (uses catalog default or 'aqua').
+            convention (str, optional): Convention to be used for reading data (e.g. 'eccodes').
+                Defaults to None (uses catalog default or 'eccodes').
+            regrid (str, optional): Target grid name for regridding as defined in grid configuration.
+                Defaults to None (no regridding).
+            regrid_method (str, optional): Regridding method (e.g. 'ycon', 'con', 'bil').
+                Defaults to None (uses grid configuration or 'ycon').
+            areas (bool, optional): Compute and attach pixel cell areas if available. Defaults to True.
+            startdate (str, optional): Starting date for reading data (e.g. '2020-02-25'). Defaults to None.
+            enddate (str, optional): Final date for reading data (e.g. '2020-03-25'). Defaults to None.
+            rebuild (bool, optional): Force rebuilding of area and regridding weight files. Defaults to False.
+            loglevel (str, optional): Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR').
+                Defaults to 'WARNING'.
+            nproc (int, optional): Number of processes to use for weights generation. Defaults to DEFAULT_NPROC (4).
+            chunks (str or dict, optional): Chunking strategy to be used for data access.
+                If string, time chunking is assumed (e.g. 'S', 'h', '6h', 'D', '5D', 'W', 'M', 'Y').
+                If dict, dimension-specific chunking is specified (e.g. keys 'time' and 'vertical').
+                Defaults to None (uses catalog default).
+            preproc (callable, optional): Preprocessing function to apply to the dataset upon retrieval.
+                Defaults to None.
+            engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope' or 'gsv'.
+                Defaults to DEFAULT_ENGINE ('gsv').
+            **kwargs: Additional keyword arguments forwarded to the catalog entry or backend.
 
         Keyword Args:
-            zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
-            realization (int, optional): The ensemble realization number.
-            **kwargs: Additional arbitrary keyword arguments to be passed as additional parameters to the intake catalog entry.
-
-        Returns:
-            Reader: A `Reader` class object.
+            zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 for h1024).
+            realization (int, optional): Ensemble realization number.
+            databridge (str, optional): Databridge machine target for Polytope retrieval.
         """
 
         Reader.instance = self  # record the latest instance of the class (used for accessor)

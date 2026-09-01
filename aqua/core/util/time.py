@@ -17,8 +17,6 @@ from aqua.core.logger import log_configure
 from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
 from aqua.core.util.string import get_quarter_anchor_month
 
-# default_time_unit = "us"  # default to microseconds for datetime64 for a wider dates range
-
 
 def frequency_string_to_pandas(freq):
     """
@@ -479,8 +477,7 @@ def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> 
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    # default_calendar = "gregorian"
-    # default_calendar_start = 'microseconds since 1850-01-01'
+
     unit = DEFAULT_TIME_UNIT
 
     logger = log_configure(loglevel, "fix_calendar")
