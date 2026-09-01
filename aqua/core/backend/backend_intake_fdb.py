@@ -98,8 +98,8 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.kwargs["engine"] = engine
             self.logger.debug("Adding engine=%s to filtered kwargs", engine)
             needs_rebuild = True
-        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine").split("-")[0]
-        if engine == "polytope" and effective_databridge is not None and "databridge" not in self.kwargs:
+        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine", "").split("-")[0]
+        if engine == "polytope" and effective_databridge and "databridge" not in self.kwargs:
             self.kwargs["databridge"] = effective_databridge
             self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
             needs_rebuild = True
