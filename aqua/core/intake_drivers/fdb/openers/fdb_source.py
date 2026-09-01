@@ -30,13 +30,11 @@ request/date/level attributes before calling :meth:`_compute_partition_plan` (se
 :class:`aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource` for a reference implementation).
 """
 
-import datetime
-
 import dask
 import eccodes
 import xarray as xr
 
-from aqua.core.logger import log_configure
+from aqua.core.logger import log_configure, log_history
 from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
 
@@ -570,7 +568,7 @@ class FDBSource(FDBTimeMixin):
                 coords=coords,
             )
 
-            log_history(da, "Dataset retrieved by GSV interface")
+            log_history(da, "Dataset retrieved by intake FDB driver")
 
             ds[output_var] = da
 
@@ -589,18 +587,6 @@ class FDBSource(FDBTimeMixin):
             if self.idx_3d:
                 ds = ds.assign_coords(idx_level=("level", self.idx_3d))
             yield ds
-
-
-# This function is repeated here in order not to create a cross dependency between the gsv
-# subpackage and the rest of AQUA.
-def log_history(data, msg):
-    """Elementary provenance logger in the history attribute"""
-
-    if isinstance(data, (xr.DataArray, xr.Dataset)):
-        now = datetime.datetime.now()
-        date_now = now.strftime("%Y-%m-%d %H:%M:%S")
-        hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
-        data.attrs.update({"history": hist})
 
 
 class Schema(dict):
