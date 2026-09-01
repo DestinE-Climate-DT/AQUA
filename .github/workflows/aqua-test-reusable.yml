@@ -180,7 +180,8 @@ jobs:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/environment-stripped.yml
+          environment-file: AQUA/conda-lock.yml
+          #environment-file: AQUA/environment-stripped.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -204,17 +205,17 @@ jobs:
       # ========================================
       # 4. INSTALL AQUA (local mode)
       # ========================================
-      - name: Install AQUA with FDB dependencies (local mode)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
-        run: |
-          cd AQUA
-          python -m pip install -e ".[tests,fdb]"
+      # - name: Install AQUA with FDB dependencies (local mode)
+      #   if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
+      #   run: |
+      #     cd AQUA
+      #     python -m pip install -e ".[tests,fdb]"
 
-      - name: Install AQUA without FDB dependencies (local mode)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
-        run: |
-          cd AQUA
-          python -m pip install -e ".[tests]"
+      # - name: Install AQUA without FDB dependencies (local mode)
+      #  if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+      #  run: |
+      #    cd AQUA
+      #    python -m pip install -e ".[tests]"
 
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
