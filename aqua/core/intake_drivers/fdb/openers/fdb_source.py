@@ -1,33 +1,34 @@
-"""Backend-agnostic partitioned source for FDB/MARS-like data access.
+"""Abstract base class for partitioned FDB/MARS-like data access.
 
-This module isolates everything that is **not** specific to the GSV/FDB retrieval
-engine, so that alternative drivers (e.g. Polytope, z3fdb) can be implemented by
-subclassing :class:`FDBSource` and overriding a single method,
-:meth:`FDBSource._retrieve_partition`.
+This module provides :class:`FDBSource`, an abstract intake source that encapsulates
+all engine-agnostic logic for partitioned data retrieval from FDB/MARS-like backends.
+Concrete retrieval engines are implemented as subclasses:
 
-Responsibilities kept here (all engine-agnostic):
+* :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`: for direct FDB5/bridge access via GSV/pyfdb.
+* :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource`: for access via the Polytope API.
 
-* partition planning: time axis, chunk start/end indices and vertical chunking
-  (delegated to :mod:`aqua.core.intake_drivers.fdb.openers.timeutil`);
-* MARS/FDB request construction per ``timestyle`` (date / step / yearmonth);
-* the intake ``Schema`` and the dask assembly (``to_dask``, ``read``,
-  ``read_chunked``, ``get_part_delayed``);
-* robust pickling for dask workers (snapshot of ``__dict__`` minus transient
-  state), so ``__init__`` is *not* re-executed on the workers.
+Responsibilities handled by :class:`FDBSource` (engine-agnostic):
 
-Engine-specific behaviour is delegated to overridable hooks:
+* Partition planning across time and vertical dimensions (delegated to
+  :mod:`aqua.core.intake_drivers.fdb.openers.timeutil`).
+* MARS/FDB request construction per ``timestyle`` (``date``, ``step``, or ``yearmonth``).
+* Intake ``Schema`` generation and lazy dask assembly (``to_dask``, ``read``,
+  ``read_chunked``, ``get_part_delayed``).
+* Serialization and pickling state management for dask distributed workers.
 
-* :meth:`_retrieve_partition` (mandatory) — pull one partition from the backend;
-* :meth:`_check_availability` (optional) — check library availability at init;
-* :meth:`_read_metadata` (optional) — configure engine path parameters;
-* :meth:`_post_init` (optional) — final engine-specific init steps;
-* :meth:`_postprocess_partition` — per-partition fixups (default: time shift);
-* :meth:`_map_output_variable` — map a raw variable to its output name and the
-  identifier used to re-request it (default: identity).
+Engine-specific lifecycle and retrieval hooks:
 
-Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
-request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-:class:`aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource` for a reference implementation).
+* :meth:`_retrieve_partition` (mandatory): pull a single partition from the target backend.
+* :meth:`_check_availability` (optional): verify client library/dependency availability during init.
+* :meth:`_read_metadata` (optional): configure engine-specific parameters from catalog metadata.
+* :meth:`_post_init` (optional): finalize engine-specific setup.
+* :meth:`_postprocess_partition` (optional): per-partition fixups (e.g., time shifting).
+* :meth:`_map_output_variable` (optional): map raw variables to standard output names.
+
+Concrete subclasses such as :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`
+and :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource` must implement
+:meth:`_retrieve_partition` and set up request/date/level attributes before calling
+:meth:`_compute_partition_plan`.
 """
 
 import dask
@@ -42,11 +43,12 @@ from .timeutil import FDBTimeMixin
 
 
 class FDBSource(FDBTimeMixin):
-    """Generic intake source that reads FDB/MARS-like data in time/level partitions.
+    """Abstract intake source that reads FDB/MARS-like data in time/level partitions.
 
-    Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
-    request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-    :class:`aqua.core.intake_drivers.fdb.openers.GSVSource` for a reference implementation).
+    Concrete subclasses (e.g. :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`
+    and :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource`) must
+    implement :meth:`_retrieve_partition` and populate request/date/level attributes before
+    computing the partition plan.
     """
 
     _ds = None  # _ds and _da will contain samples of the data for dask access
