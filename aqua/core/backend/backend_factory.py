@@ -207,7 +207,6 @@ class BackendFactory:
         datamodel: DataModel = None,
         chunks: str | dict = None,
         engine: str = None,
-        databridge: str = None,
         loglevel: str = None,
         **kwargs,
     ):
@@ -231,7 +230,6 @@ class BackendFactory:
             datamodel=datamodel,
             engine=engine,
             xarray_engine=None,
-            databridge=databridge,
             loglevel=loglevel,
             **kwargs,
         )

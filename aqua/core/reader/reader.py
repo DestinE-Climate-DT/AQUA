@@ -203,7 +203,6 @@ class Reader:
             datamodel=self.datamodel,
             chunks=self.chunks,
             engine=engine,
-            databridge=None,
             loglevel=self.loglevel,
             **kwargs,
         )
