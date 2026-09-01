@@ -31,6 +31,8 @@ and :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource
 :meth:`_compute_partition_plan`.
 """
 
+from abc import ABC, abstractmethod
+
 import dask
 import eccodes
 import xarray as xr
@@ -42,7 +44,7 @@ from aqua.core.util.eccodes import get_eccodes_attr
 from .timeutil import FDBTimeMixin
 
 
-class FDBSource(FDBTimeMixin):
+class FDBSource(ABC, FDBTimeMixin):
     """Abstract intake source that reads FDB/MARS-like data in time/level partitions.
 
     Concrete subclasses (e.g. :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`
@@ -130,13 +132,17 @@ class FDBSource(FDBTimeMixin):
 
         self._post_init()
 
+    @abstractmethod
     def _check_availability(self):
         """Hook for checking external library availability."""
-        pass
 
+    @abstractmethod
     def _read_metadata(self, metadata):
         """Hook for reading metadata."""
-        pass
+
+    @abstractmethod
+    def _post_init(self):
+        """Hook for any subclass-specific post-init logic."""
 
     def _resolve_paramids(self, request, var):
         """Resolve the requested variables into a list of ecCodes paramIds."""
@@ -154,10 +160,6 @@ class FDBSource(FDBTimeMixin):
                 self._var[i] = int(get_eccodes_attr(v)["paramId"])
 
         self.logger.debug("List of paramid to retrieve %s", self._var)
-
-    def _post_init(self):
-        """Hook for any subclass-specific post-init logic."""
-        pass
 
     #: Instance attributes that must never be pickled to dask workers. They are
     #: either heavy (data samples) or hold non-serialisable backend handles. Anything
