@@ -73,7 +73,6 @@ class FDBSource(FDBTimeMixin):
         level=None,
         loglevel="WARNING",
         engine=None,
-        databridge=None,
         config_fdb=None,
         **kwargs,
     ):
@@ -87,9 +86,6 @@ class FDBSource(FDBTimeMixin):
 
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
 
-        from aqua.core.logger import _check_loglevel
-
-        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
         self.logger.debug("Init of the %s class", self.__class__.__name__)
 
         self._check_availability()

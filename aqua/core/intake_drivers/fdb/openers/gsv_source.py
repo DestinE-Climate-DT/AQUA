@@ -15,6 +15,8 @@ import os
 
 import numpy as np
 
+from aqua.core.logger import _check_loglevel
+
 from .dates import FDBDatesMixin
 from .fdb_source import FDBSource
 
@@ -94,9 +96,10 @@ class GSVSource(FDBSource, FDBDatesMixin):
             level=level,
             loglevel=loglevel,
             engine=engine,
-            databridge=self.databridge,
             **kwargs,
         )
+
+        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
 
     # ------------------------------------------------------------ init helpers
     def _check_availability(self):
