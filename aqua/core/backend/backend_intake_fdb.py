@@ -31,7 +31,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             exp="test",
             source="long",
             configurer=configurer,
-            engine="fdb",
+            engine="gsv",
         )
         data = backend.retrieve(var="2t", startdate="2020-01-01", enddate="2020-01-31")
     """
@@ -46,7 +46,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         chunks: str | dict = None,
         fixer: Fixer = None,
         datamodel: DataModel = None,
-        engine: str = "fdb",
+        engine: str = "gsv",
         databridge: str = None,
         loglevel: str = "WARNING",
         **kwargs,
@@ -64,7 +64,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                                            Defaults to None (use the catalog default).
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to standardize coordinates. Defaults to None.
-            engine (str, optional): Engine used for GSV retrieval, 'fdb' or 'polytope'. Defaults to 'fdb'.
+            engine (str, optional): Engine used for GSV retrieval, 'gsv' or 'polytope'. Defaults to 'gsv'.
             databridge (str, optional): Only for the polytope engine: 'lumi' or 'mn5'. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional intake parameters forwarded to the catalog source entry.
@@ -103,7 +103,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.kwargs["databridge"] = effective_databridge
             self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
             needs_rebuild = True
-        if (engine == "z3fdb" or engine == "fdb") and "config_fdb" not in self.kwargs and "config_fdb" in kwargs:
+        if (engine == "z3fdb" or engine == "gsv") and "config_fdb" not in self.kwargs and "config_fdb" in kwargs:
             self.kwargs["config_fdb"] = kwargs["config_fdb"]
             self.logger.debug("Adding config_fdb=%s to filtered kwargs", kwargs["config_fdb"])
             needs_rebuild = True
