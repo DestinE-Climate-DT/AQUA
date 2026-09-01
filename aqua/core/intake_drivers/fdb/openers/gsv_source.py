@@ -69,6 +69,15 @@ class GSVSource(FDBSource, FDBDatesMixin):
         databridge=None,
         **kwargs,
     ):
+        """Initialize the GSV/FDB intake source.
+
+        For all other arguments, see :class:`~aqua.core.intake_drivers.fdb.openers.fdb_source.FDBSource`.
+
+        Args:
+            databridge (str, optional): Target databridge machine (e.g. 'lumi') when using a bridge engine.
+                Defaults to None.
+            engine (str, optional): Retrieval engine name ('gsv' or 'polytope'). Defaults to 'gsv'.
+        """
         self.dummy_run = engine is None
         engine = engine or "gsv"
 

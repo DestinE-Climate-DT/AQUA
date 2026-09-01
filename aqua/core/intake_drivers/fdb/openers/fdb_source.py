@@ -80,6 +80,31 @@ class FDBSource(ABC, FDBTimeMixin):
         config_fdb=None,
         **kwargs,
     ):
+        """Initialize the abstract partitioned FDB intake source.
+
+        Args:
+            request (dict): Base MARS/FDB request dictionary defining data to retrieve.
+            data_start_date (str, optional): Start date of available data on HPC/FDB. Defaults to None.
+            data_end_date (str, optional): End date of available data on HPC/FDB. Defaults to None.
+            bridge_start_date (str, optional): Start date of data available on bridge storage. Defaults to None.
+            bridge_end_date (str, optional): End date of data available on bridge storage. Defaults to None.
+            hpc_expver (str, optional): Experiment version override for HPC partition requests. Defaults to None.
+            timestyle (str, optional): Request time format style ('date', 'step', or 'yearmonth'). Defaults to 'date'.
+            chunks (str or dict, optional): Chunking frequency ('S' for single, 'D', 'M', 'Y', or dict). Defaults to 'S'.
+            savefreq (str, optional): Frequency at which data was saved (e.g. 'h', '6h', 'D', 'M'). Defaults to 'h'.
+            timestep (str, optional): Integration or sampling timestep (e.g. 'h', '15min'). Defaults to 'h'.
+            timeshift (bool or int, optional): Shift applied to time coordinate (e.g. for monthly accumulations).
+                Defaults to None.
+            startdate (str, optional): Start date of the requested retrieval window. Defaults to None.
+            enddate (str, optional): End date of the requested retrieval window. Defaults to None.
+            var (str, int, list, optional): Variable name(s) or paramId(s) to retrieve. Defaults to None.
+            metadata (dict, optional): Catalog entry metadata with FDB paths, info files, or levels. Defaults to None.
+            level (int, float, list, optional): Vertical level(s) to retrieve. Defaults to None.
+            loglevel (str, optional): Logging level. Defaults to 'WARNING'.
+            engine (str, optional): Retrieval engine name (e.g. 'gsv', 'polytope'). Defaults to None.
+            config_fdb (str, optional): Path to FDB configuration YAML or FDB root directory override. Defaults to None.
+            **kwargs: Additional engine-specific keyword arguments.
+        """
         self.config_fdb = config_fdb
         self.fdbhome = None
         self.fdbpath = None
