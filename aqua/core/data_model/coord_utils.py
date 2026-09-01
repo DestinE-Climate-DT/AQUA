@@ -6,7 +6,10 @@ from functools import cache
 from metpy.units import units
 from pint.errors import DimensionalityError, UndefinedUnitError
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
+
+# Possible basic names for coordinates
+from aqua.core.default import DEFAULT_COORD_NAMES
 from aqua.core.util import load_yaml
 
 # Define the target dimensionality (pressure)
@@ -16,26 +19,13 @@ meter_dim = units.meter.dimensionality
 # module logger
 # logger = log_configure(log_level='INFO', log_name='coord_utils')
 
-# Possible basic names for coordinates
-DEFAULT_COORD_NAMES = {
-    "latitude": [
-        "latitude",
-        "lat",
-    ],
-    "longitude": ["longitude", "lon"],
-    "time": ["time", "time_counter"],
-    "isobaric": ["plev"],
-    "depth": ["depth"],
-    "height": ["height"],
-}
-
 
 @cache
 def _load_coord_config():
     """
     Load coordinate configuration from YAML file (cached once).
     """
-    data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
+    data_model_dir = ConfigContext().get_folder("data_model")
     config_path = os.path.join(data_model_dir, "coords_default.yaml")
 
     try:
@@ -72,7 +62,7 @@ def _load_data_model(name: str = "aqua"):
         dict: Target coordinates dictionary.
         str: Name of the target data model.
     """
-    data_model_dir = os.path.join(ConfigPath().get_config_dir(), "data_model")
+    data_model_dir = ConfigContext().get_folder("data_model")
     data_model_file = os.path.join(data_model_dir, f"{name}.yaml")
     if not os.path.exists(data_model_file):
         raise FileNotFoundError(f"Data model file {data_model_file} not found.")
