@@ -68,7 +68,6 @@ To this end, you will need to specify ``engine="z3fdb"`` when instantiating the 
     reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="z3fdb")
     data = reader.retrieve(var='2t')
 
-For this engine, a configuration file ``config-z3fdb.yaml`` is used (which is copied to your configuration folder during installation).
 If you want to use a different configuration file, you can pass its path using the ``config_fdb`` argument when instantiating the ``Reader`` class (e.g. ``Reader(..., config_fdb="/path/to/config.yaml")``).
 
 Chunking Logic for z3fdb
