@@ -11,6 +11,9 @@ To add a different engine (e.g. Polytope or z3fdb) subclass
 :class:`FDBSource` and implement ``_retrieve_partition`` only.
 """
 
+import logging
+import warnings
+
 from aqua.core.logger import _check_loglevel
 
 from .dates import FDBDatesMixin
@@ -18,6 +21,7 @@ from .fdb_source import FDBSource
 
 # Test if FDB5 binary library is available
 try:
+    import polytope.api  # NOQA: F401
     from gsv.retriever import GSVRetriever
 
     gsv_available = True
@@ -70,11 +74,6 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
         This a derived class from FDBSource, which implements the GSV/FDB retrieval engine through the gsv.retriever package.
         """
 
-        # HACK: Silence verbose output from polytope internals
-        # for _ln in ("polytope", "polytope.api"):
-        #    logging.getLogger(_ln).setLevel(_check_loglevel(loglevel))
-        # warnings.filterwarnings("ignore", category=DeprecationWarning)
-
         engine = engine or "polytope"
 
         if engine == "polytope":
@@ -103,6 +102,11 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
             engine=engine,
             **kwargs,
         )
+
+        # HACK: Silence verbose output from polytope internals
+        for _ln in ("polytope", "polytope.api"):
+            logging.getLogger(_ln).setLevel(_check_loglevel(loglevel))
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
 
