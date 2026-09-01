@@ -4,7 +4,7 @@ import re
 
 import numpy as np
 
-from aqua.core.default import DEFAULT_DELTAT
+from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -31,7 +31,7 @@ class Fixer:
         self,
         fixer_name=None,
         fixes_dictionary=None,
-        convention="eccodes",
+        convention=DEFAULT_CONVENTION,
         metadata=None,
         loglevel="WARNING",
     ):
