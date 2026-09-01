@@ -75,7 +75,7 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
 
         # HACK: Silence verbose output from polytope internals
         for _ln in ("polytope", "polytope.api"):
-            logging.getLogger(_ln).setLevel(loglevel=_check_loglevel(loglevel))
+            logging.getLogger(_ln).setLevel(_check_loglevel(loglevel))
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
         engine = engine or "polytope"
