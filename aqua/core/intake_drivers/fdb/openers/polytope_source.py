@@ -120,6 +120,9 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
             self.fdb_info_file = None
             self.levels = None
 
+    def _post_init(self):
+        pass
+
     # -------------------------------------------------------------- retrieval
     def _retrieve_partition(self, request, chunk_type=None, first=False):
         """Retrieve a single partition through Polytope."""
