@@ -2,12 +2,12 @@
 
 import xarray as xr
 
-import aqua.core.version as aqua_version
 from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
 from aqua.core.util import to_list
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
