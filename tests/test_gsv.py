@@ -2,15 +2,16 @@ import pytest
 import xarray as xr
 from conftest import LOGLEVEL
 from dask.distributed import Client, LocalCluster
-from pyfdb.pyfdb import FDBException
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
-from aqua.core.intake_drivers.fdb.openers import open_gsv
+from aqua.core.intake_drivers.fdb.openers import open_gsv, open_polytope
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
 
 if not gsv_available:
     pytest.skip("Skipping GSV tests: FDB5 libraries not available", allow_module_level=True)
+else:
+    from pyfdb.pyfdb import FDBException
 
 # pytestmark groups tests that run sequentially on the same worker to avoid conflicts
 pytestmark = [pytest.mark.gsv, pytest.mark.xdist_group(name="dask_operations")]
@@ -108,11 +109,11 @@ class TestGsv:
     def test_gsv_constructor_raise_bridge(self) -> None:
         """Test raise for missing fdbhome"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(ValueError):
-            GSVSource(
+        with pytest.raises(FDBException):
+            open_polytope(
                 DEFAULT_GSV_PARAMS["request"],
-                "20080101",
-                "20080101",
+                data_start_date="20080101",
+                data_end_date="20080101",
                 timestep="h",
                 chunks="S",
                 var="167",
