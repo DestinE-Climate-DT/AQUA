@@ -12,11 +12,12 @@ import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from xarray.coding.times import cftime_to_nptime
 
+from aqua.core.default import DEFAULT_CALENDAR, DEFAULT_TIME_UNIT
 from aqua.core.logger import log_configure
 from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
 from aqua.core.util.string import get_quarter_anchor_month
 
-default_time_unit = "us"  # default to microseconds for datetime64 for a wider dates range
+# default_time_unit = "us"  # default to microseconds for datetime64 for a wider dates range
 
 
 def frequency_string_to_pandas(freq):
@@ -478,9 +479,9 @@ def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> 
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    default_calendar = "gregorian"
+    # default_calendar = "gregorian"
     # default_calendar_start = 'microseconds since 1850-01-01'
-    unit = default_time_unit
+    unit = DEFAULT_TIME_UNIT
 
     logger = log_configure(loglevel, "fix_calendar")
     cal = data.time.encoding.get("calendar", "standard") if "time" in data.coords else "standard"
@@ -491,14 +492,14 @@ def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> 
             unit = np.datetime_data(data.time.values.dtype)[0]
             logger.debug(f"Time units detected as {unit} from datetime64 dtype")
 
-        logger.info(f"Converting calendar from {cal} to {default_calendar} for data retrieval...")
-        data = data.convert_calendar(default_calendar, align_on="year")
+        logger.info(f"Converting calendar from {cal} to {DEFAULT_CALENDAR} for data retrieval...")
+        data = data.convert_calendar(DEFAULT_CALENDAR, align_on="year")
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
         if data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime):
-            logger.info(f"Rolling back cftime to datetime64[{default_time_unit}] after calendar conversion")
+            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_TIME_UNIT}] after calendar conversion")
 
-            np_time = cftime_to_nptime(data.time.values, time_unit=default_time_unit)
+            np_time = cftime_to_nptime(data.time.values, time_unit=DEFAULT_TIME_UNIT)
             logger.debug(f"Time axis is now of type {np_time.dtype}, first step {np_time[0]}")
             data = data.assign_coords(time=np_time)
         else:  # Still datetime64, ensure we keep original precision
