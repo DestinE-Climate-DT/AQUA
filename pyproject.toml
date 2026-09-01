@@ -173,3 +173,11 @@ known-first-party = ["aqua"]
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[tool.conda-lock]
+default-non-conda-source = "pip"
+platforms = [
+    "linux-64",
+    "osx-64",
+    "osx-arm64",
+]
