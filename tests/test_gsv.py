@@ -124,7 +124,7 @@ class TestGsv:
     def test_gsv_constructor_raise_path_not_exists(self) -> None:
         """Test raise when fdbhome path is specified but does not exist"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(FileNotFoundError, match="fdbhome path .* does not exist"):
+        with pytest.raises(FDBException, match="fdbhome path .* does not exist"):
             open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
@@ -139,7 +139,7 @@ class TestGsv:
     def test_gsv_constructor_raise_bridge_path_not_exists(self) -> None:
         """Test raise when bridge path is specified but does not exist"""
         print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(FileNotFoundError, match="fdbhome_bridge path .* does not exist"):
+        with pytest.raises(FDBException, match="fdbhome_bridge path .* does not exist"):
             open_polytope(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
