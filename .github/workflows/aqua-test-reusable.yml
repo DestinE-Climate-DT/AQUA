@@ -265,6 +265,12 @@ jobs:
           echo "Installed PyPI version: $PYPI_VERSION"
           git checkout "v${PYPI_VERSION}"
 
+      - name: Install tests for conda mode
+        if: ${{ inputs.install-mode == 'conda' }}
+        run: |
+          cd AQUA
+          python -m pip install --no-deps -e .[tests]
+
       # ========================================
       # 6. SETUP DVC AND TEST DATA
       # ========================================
