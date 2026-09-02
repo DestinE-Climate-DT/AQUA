@@ -224,6 +224,8 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             aqua-core
+            dvc
+            dvc-s3
 
       # ========================================
       # 4. INSTALL AQUA (local mode)
