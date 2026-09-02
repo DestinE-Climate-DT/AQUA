@@ -77,7 +77,6 @@ class AreaSelection:
             if region_sel is None:
                 raise ValueError("`region_sel` must be specified when using region argument.")
 
-            working_data = data
             lon_max = float(data[lon_name].max(skipna=True).values)
 
             # Regions crossing Greenwich (e.g. Europe) end up split
@@ -86,9 +85,9 @@ class AreaSelection:
             # renders as a band across the globe. Convert to [-180, 180]
             # and sort first, as already done for box-based selection.
             if to_180 and lon_max > 180:
-                working_data = self._to_180_and_sort(data, lon_name)
+                data = self._to_180_and_sort(data, lon_name)
 
-            mask = region.mask(working_data[lon_name], working_data[lat_name], **mask_kwargs)
+            mask = region.mask(data[lon_name], data[lat_name], **mask_kwargs)
 
             # Normalize input to list
             region_sel = to_list(region_sel)
@@ -103,7 +102,7 @@ class AreaSelection:
 
             reg_mask = reg_mask.fillna(False)  # handle NaNs from regionmask
 
-            selected = working_data.where(reg_mask, drop=drop)
+            selected = data.where(reg_mask, drop=drop)
 
             region_sel = [region.names[rs] if isinstance(rs, int) else rs for rs in region_sel]
             region_str = ", ".join([str(rs) for rs in region_sel])
