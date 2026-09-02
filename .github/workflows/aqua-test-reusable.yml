@@ -196,7 +196,7 @@ jobs:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/conda-linux-64.lock
+          environment-file: AQUA/conda-linux-64.nofdb.lock
           #environment-file: AQUA/conda-lock-fdb.yml
           #environment-file: AQUA/environment-stripped.yml
           environment-name: aqua
@@ -223,10 +223,19 @@ jobs:
       # 4. INSTALL AQUA (local mode)
       # ========================================
       - name: Install AQUA with FDB dependencies (local mode)
-        if: ${{ inputs.install-mode == 'local' }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
+          # python -m pip install --no-deps -e ".[tests]"
+          # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
+          python -m pip install --no-deps -e .
+
+      - name: Install AQUA without FDB dependencies (local, no fdb)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+        run: |
+          cd AQUA
+          sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
           # python -m pip install --no-deps -e ".[tests]"
           # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
           python -m pip install --no-deps -e .
