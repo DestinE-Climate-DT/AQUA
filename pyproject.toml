@@ -64,7 +64,7 @@ dependencies = [
     "ruamel.yaml",
     "scipy",
     "seaborn",
-    "smmregrid>=0.1.4",
+    "smmregrid==0.1.6",
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "xarray>=2025.12.0",
     "zarr>=3.0"
@@ -90,7 +90,8 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo"
+    "cdo",
+    "dvc[s3]"
 ]
 style = [
     "pre-commit",
