@@ -15,9 +15,9 @@
 version: 1
 metadata:
   content_hash:
-    osx-arm64: c2aa45268e778dbc1afccc06ca9c433a819e7f6c2f4d8cfa8082a31bfd203e4e
     linux-64: ec55448fa10ac29817d0d73f4781f32b048f5ab64cc7815d24a0b93425b225d4
     osx-64: dd4a580a63450a08d11e637f7923df683ff66d859f4c805ca82ec7215f0327a0
+    osx-arm64: c2aa45268e778dbc1afccc06ca9c433a819e7f6c2f4d8cfa8082a31bfd203e4e
   channels:
   - url: conda-forge
     used_env_vars: []
@@ -7089,81 +7089,81 @@ package:
   category: docs
   optional: true
 - name: boto3
-  version: 1.43.85
+  version: 1.43.86
   manager: pip
   platform: linux-64
   dependencies:
-    botocore: '>=1.43.85,<1.44.0'
+    botocore: '>=1.43.86,<1.44.0'
     jmespath: '>=0.7.1,<2.0.0'
     s3transfer: '>=0.19.0,<0.20.0'
-  url: https://files.pythonhosted.org/packages/fb/57/a58073f8659d7673b0b629987ab4295b56f44759c1b1f79b3c87330e452a/boto3-1.43.85-py3-none-any.whl
+  url: https://files.pythonhosted.org/packages/f9/dd/f4874f7bab882a778178b03965b1474c63f2e8bd2eea5dd714f06b0e8713/boto3-1.43.86-py3-none-any.whl
   hash:
-    sha256: f11bdaca18e59f53ec0529f4d6203dd1f0bb7ff165e51559d62fd863024abc9b
+    sha256: 94543a5ce482df8bb6a0bf8a944bf5ccf6625889b1df0d7886dfc3311ebd4169
   category: main
   optional: false
 - name: boto3
-  version: 1.43.85
+  version: 1.43.86
   manager: pip
   platform: osx-64
   dependencies:
-    botocore: '>=1.43.85,<1.44.0'
+    botocore: '>=1.43.86,<1.44.0'
     jmespath: '>=0.7.1,<2.0.0'
     s3transfer: '>=0.19.0,<0.20.0'
-  url: https://files.pythonhosted.org/packages/fb/57/a58073f8659d7673b0b629987ab4295b56f44759c1b1f79b3c87330e452a/boto3-1.43.85-py3-none-any.whl
+  url: https://files.pythonhosted.org/packages/f9/dd/f4874f7bab882a778178b03965b1474c63f2e8bd2eea5dd714f06b0e8713/boto3-1.43.86-py3-none-any.whl
   hash:
-    sha256: f11bdaca18e59f53ec0529f4d6203dd1f0bb7ff165e51559d62fd863024abc9b
+    sha256: 94543a5ce482df8bb6a0bf8a944bf5ccf6625889b1df0d7886dfc3311ebd4169
   category: main
   optional: false
 - name: boto3
-  version: 1.43.85
+  version: 1.43.86
   manager: pip
   platform: osx-arm64
   dependencies:
-    botocore: '>=1.43.85,<1.44.0'
+    botocore: '>=1.43.86,<1.44.0'
     jmespath: '>=0.7.1,<2.0.0'
     s3transfer: '>=0.19.0,<0.20.0'
-  url: https://files.pythonhosted.org/packages/fb/57/a58073f8659d7673b0b629987ab4295b56f44759c1b1f79b3c87330e452a/boto3-1.43.85-py3-none-any.whl
+  url: https://files.pythonhosted.org/packages/f9/dd/f4874f7bab882a778178b03965b1474c63f2e8bd2eea5dd714f06b0e8713/boto3-1.43.86-py3-none-any.whl
   hash:
-    sha256: f11bdaca18e59f53ec0529f4d6203dd1f0bb7ff165e51559d62fd863024abc9b
+    sha256: 94543a5ce482df8bb6a0bf8a944bf5ccf6625889b1df0d7886dfc3311ebd4169
   category: main
   optional: false
 - name: botocore
-  version: 1.43.85
+  version: 1.43.86
   manager: pip
   platform: linux-64
   dependencies:
     jmespath: '>=0.7.1,<2.0.0'
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<2.2.0 || >2.2.0,<3'
-  url: https://files.pythonhosted.org/packages/20/4b/bb053aec2a9902df4cdbf9301dd5a41dd197c1cef0c085a32f5d04eeb3e3/botocore-1.43.85-py3-none-any.whl
+  url: https://files.pythonhosted.org/packages/41/59/eb95d57ea576feaf1693f5e914f9f27ff9961429cf9ecbc85cef610a6d84/botocore-1.43.86-py3-none-any.whl
   hash:
-    sha256: 685510e5f4c0f321806c815a60f121a176c0969665f053c4a336209cbe62b1d5
+    sha256: 4efc7fbd6e7616edbd55623bb585a044906149b9a5d3d8558420506526e5a5ac
   category: main
   optional: false
 - name: botocore
-  version: 1.43.85
+  version: 1.43.86
   manager: pip
   platform: osx-64
   dependencies:
     jmespath: '>=0.7.1,<2.0.0'
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<2.2.0 || >2.2.0,<3'
-  url: https://files.pythonhosted.org/packages/20/4b/bb053aec2a9902df4cdbf9301dd5a41dd197c1cef0c085a32f5d04eeb3e3/botocore-1.43.85-py3-none-any.whl
+  url: https://files.pythonhosted.org/packages/41/59/eb95d57ea576feaf1693f5e914f9f27ff9961429cf9ecbc85cef610a6d84/botocore-1.43.86-py3-none-any.whl
   hash:
-    sha256: 685510e5f4c0f321806c815a60f121a176c0969665f053c4a336209cbe62b1d5
+    sha256: 4efc7fbd6e7616edbd55623bb585a044906149b9a5d3d8558420506526e5a5ac
   category: main
   optional: false
 - name: botocore
-  version: 1.43.85
+  version: 1.43.86
   manager: pip
   platform: osx-arm64
   dependencies:
     jmespath: '>=0.7.1,<2.0.0'
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<2.2.0 || >2.2.0,<3'
-  url: https://files.pythonhosted.org/packages/20/4b/bb053aec2a9902df4cdbf9301dd5a41dd197c1cef0c085a32f5d04eeb3e3/botocore-1.43.85-py3-none-any.whl
+  url: https://files.pythonhosted.org/packages/41/59/eb95d57ea576feaf1693f5e914f9f27ff9961429cf9ecbc85cef610a6d84/botocore-1.43.86-py3-none-any.whl
   hash:
-    sha256: 685510e5f4c0f321806c815a60f121a176c0969665f053c4a336209cbe62b1d5
+    sha256: 4efc7fbd6e7616edbd55623bb585a044906149b9a5d3d8558420506526e5a5ac
   category: main
   optional: false
 - name: cdo
