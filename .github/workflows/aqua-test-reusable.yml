@@ -133,6 +133,7 @@ jobs:
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
+          ref: main
           token: ${{ secrets.AQUA_GITHUB_PAT }}
 
       - name: Checkout DVC repo
@@ -140,6 +141,7 @@ jobs:
         with:
           repository: DestinE-Climate-DT/aqua-dvc
           path: aqua-dvc
+          ref: main
           token: ${{ secrets.AQUA_DVC_PAT }}
 
       # ========================================
@@ -165,22 +167,29 @@ jobs:
       # ========================================
       # 3. SETUP ENVIRONMENT
       # ========================================
-      - name: Strip pip install from environment file (local mode)
-        if: ${{ inputs.install-mode == 'local' }}
-        run: |
-          sed -e '/^  - pip:$/d' \
-              -e '/^    # pip install/d' \
-              -e '/^    - -e \.\[all\]$/d' \
-              AQUA/environment.yml > AQUA/environment-stripped.yml
 
-      - name: Set up Micromamba (local mode)
-        if: ${{ inputs.install-mode == 'local' }}
+      - name: Set up Micromamba (local mode with fdb)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/environment-stripped.yml
+          environment-file: AQUA/conda-linux-64.lock
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          create-args: >-
+            python=${{ matrix.python-version }}
+
+      - name: Set up Micromamba (local mode without fdb)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+        uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
+        with:
+          micromamba-version: 'latest'
+          environment-file: AQUA/conda-linux-64.nofdb.lock
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -201,6 +210,23 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
+      - name: Set up Micromamba (conda mode)
+        if: ${{ inputs.install-mode == 'conda' }}
+        uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
+        with:
+          micromamba-version: 'latest'
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          channels: conda-forge
+          create-args: >-
+            python=${{ matrix.python-version }}
+            aqua-core
+            dvc
+            dvc-s3
+
       # ========================================
       # 4. INSTALL AQUA (local mode)
       # ========================================
@@ -208,13 +234,15 @@ jobs:
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
         run: |
           cd AQUA
-          python -m pip install -e ".[tests,fdb]"
+          sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
+          python -m pip install --no-deps -e .
 
-      - name: Install AQUA without FDB dependencies (local mode)
+      - name: Install AQUA without FDB dependencies (local, no fdb)
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
         run: |
           cd AQUA
-          python -m pip install -e ".[tests]"
+          sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
+          python -m pip install --no-deps -e .
 
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
@@ -229,7 +257,7 @@ jobs:
           python -m pip install aqua-core[tests] --pre
 
       - name: Checkout the tag for PyPI mode
-        if: ${{ inputs.install-mode == 'pypi' }}
+        if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
         run: |
           cd AQUA
           PYPI_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('aqua-core'))")
@@ -237,12 +265,18 @@ jobs:
           echo "Installed PyPI version: $PYPI_VERSION"
           git checkout "v${PYPI_VERSION}"
 
+      - name: Install tests for conda mode
+        if: ${{ inputs.install-mode == 'conda' }}
+        run: |
+          cd AQUA
+          python -m pip install --no-deps -e .[tests]
+
       # ========================================
       # 6. SETUP DVC AND TEST DATA
       # ========================================
-      - name: Install DVC s3
-        if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
-        run: python -m pip install "dvc[s3]"
+      # - name: Install DVC s3
+      #   if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
+      #   run: python -m pip install "dvc[s3]"
 
       - name: Create DVC pem file and configure it for the ecmwf_climatedt remote
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
@@ -267,7 +301,7 @@ jobs:
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
         id: dvc-pull
         continue-on-error: ${{ inputs.test-data-source == 'auto' }}
-        timeout-minutes: 10
+        timeout-minutes: 5
         run: |
           cd aqua-dvc
           git checkout main
