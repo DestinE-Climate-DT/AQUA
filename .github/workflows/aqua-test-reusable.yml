@@ -226,6 +226,7 @@ jobs:
         if: ${{ inputs.install-mode == 'local' }}
         run: |
           cd AQUA
+          sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
           # python -m pip install --no-deps -e ".[tests]"
           # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
           python -m pip install --no-deps -e .
