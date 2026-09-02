@@ -179,6 +179,6 @@ docstring-code-format = true
 default-non-conda-source = "pip"
 platforms = [
     "linux-64",
-    "osx-64",
-    "osx-arm64",
+#    "osx-64",
+#    "osx-arm64",
 ]
