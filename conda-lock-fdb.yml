@@ -5,13 +5,13 @@
 # available, unless you explicitly update the lock file.
 #
 # Install this environment as "YOURENV" with:
-#     conda-lock install -n YOURENV conda-lock.yml
+#     conda-lock install -n YOURENV conda-lock-fdb.yml
 # This lock contains optional dependency categories all, docs, fdb, notebooks, style, tests. Include them in the installed environment with:
-#     conda-lock install -e all -e docs -e fdb -e notebooks -e style -e tests -n YOURENV conda-lock.yml
+#     conda-lock install -e all -e docs -e fdb -e notebooks -e style -e tests -n YOURENV conda-lock-fdb.yml
 # To update a single package to the latest version compatible with the version constraints in the source:
-#     conda-lock lock  --lockfile conda-lock.yml --update PACKAGE
+#     conda-lock lock  --lockfile conda-lock-fdb.yml --update PACKAGE
 # To re-solve the entire environment, e.g. after changing a version constraint in the source file:
-#     conda-lock -f environment.yml -f pyproject.toml --lockfile conda-lock.yml
+#     conda-lock -f environment.yml -f pyproject.toml --lockfile conda-lock-fdb.yml
 version: 1
 metadata:
   content_hash:
@@ -5695,10 +5695,10 @@ package:
   manager: conda
   platform: linux-64
   dependencies: {}
-  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
+  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
   hash:
-    md5: 0539938c55b6b1a59b560e843ad864a4
-    sha256: ad6d2e9ac39751cc0529dd1566a26751a0bf2542adb0c232533d32e176e21db5
+    md5: 350d89b50d7de805abf2e63e29dee451
+    sha256: e7f8e965bbfb98e08feb2365cacdad8bb218fa5b5a0a2752f747287f425f213c
   category: main
   optional: false
 - name: python_abi
@@ -5706,10 +5706,10 @@ package:
   manager: conda
   platform: osx-64
   dependencies: {}
-  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
+  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
   hash:
-    md5: 0539938c55b6b1a59b560e843ad864a4
-    sha256: ad6d2e9ac39751cc0529dd1566a26751a0bf2542adb0c232533d32e176e21db5
+    md5: 350d89b50d7de805abf2e63e29dee451
+    sha256: e7f8e965bbfb98e08feb2365cacdad8bb218fa5b5a0a2752f747287f425f213c
   category: main
   optional: false
 - name: python_abi
@@ -5717,10 +5717,10 @@ package:
   manager: conda
   platform: osx-arm64
   dependencies: {}
-  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
+  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
   hash:
-    md5: 0539938c55b6b1a59b560e843ad864a4
-    sha256: ad6d2e9ac39751cc0529dd1566a26751a0bf2542adb0c232533d32e176e21db5
+    md5: 350d89b50d7de805abf2e63e29dee451
+    sha256: e7f8e965bbfb98e08feb2365cacdad8bb218fa5b5a0a2752f747287f425f213c
   category: main
   optional: false
 - name: qhull
