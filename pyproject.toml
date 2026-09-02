@@ -66,7 +66,6 @@ dependencies = [
     "seaborn",
     "smmregrid>=0.1.4",
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
-    "typeguard",
     "xarray>=2025.12.0",
     "zarr>=3.0"
 ]
@@ -75,7 +74,8 @@ dependencies = [
 fdb = [
     "pyfdb",
     "polytope-client",
-    "gsv-interface==2.13.1"
+    "gsv-interface==2.13.1",
+    "z3fdb>=5.21.4"
 ]
 docs = [
     "sphinx",
@@ -94,7 +94,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.16.1"
+    "ruff==0.16.5"
 ]
 all = [
     "aqua-core[docs]",

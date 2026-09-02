@@ -5,7 +5,7 @@ import os
 import pytest
 
 from aqua import GridBuilder, Reader
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.gridbuilder.gridentrymanager import GridEntryManager
 from aqua.core.util import load_yaml
 
@@ -17,7 +17,7 @@ class TestPolytopeGridBuilder:
 
     pytestmark = [pytest.mark.polytope]
 
-    grid_dir = f"{ConfigPath().configdir}/grids"
+    grid_dir = ConfigContext().get_folder("grids")
 
     def test_grid_healpix_polytope_atm2d(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
@@ -53,7 +53,7 @@ class TestBasicGridBuilder:
 
     pytestmark = [pytest.mark.aqua]
 
-    grid_dir = f"{ConfigPath().configdir}/grids"
+    grid_dir = ConfigContext().get_folder("grids")
 
     @pytest.mark.parametrize("rebuild", [False, True])
     def test_grid_regular(self, tmp_path, rebuild):

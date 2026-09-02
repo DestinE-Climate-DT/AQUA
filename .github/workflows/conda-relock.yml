@@ -1,0 +1,44 @@
+name: relock conda
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  relock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-name: relock-env
+          create-args: >-
+            python
+            conda-lock
+          condarc: |
+            channels:
+              - conda-forge
+
+      - name: relock with FDB
+        shell: bash -l {0}
+        run: |
+          conda-lock -f environment.yml -f pyproject.toml --extra tests --extra fdb --lockfile conda-lock-fdb.yml
+
+      - name: relock without FDB
+        shell: bash -l {0}
+        run: |
+          conda-lock -f environment.yml -f pyproject.toml --extra tests --lockfile conda-lock.yml
+
+      - name: open PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: relock with conda-lock
+          title: relock with conda-lock
+          branch: relock-conda
+          delete-branch: true
+          labels: |
+            conda-lock
+            run tests

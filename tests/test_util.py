@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from conftest import LOGLEVEL
+from ruamel.yaml.comments import CommentedSeq
 
 from aqua import Reader
 from aqua.core.util import (
@@ -164,10 +165,14 @@ class TestFileIsComplete:
         ({}, []),  # Test empty dictionary
         (set(), []),  # Test empty set
         ((), []),  # Test empty tuple
+        (CommentedSeq(["A", "B", "C"]), ["A", "B", "C"]),
     ],
 )
 def test_to_list(arg, expected):
-    assert to_list(arg) == expected
+    result = to_list(arg)
+    assert result == expected
+    if isinstance(arg, CommentedSeq):
+        assert type(result) is list
 
 
 @pytest.mark.aqua
