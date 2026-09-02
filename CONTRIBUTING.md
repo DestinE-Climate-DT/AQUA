@@ -40,24 +40,38 @@ When creating a Pull Request, please make sure to:
 - start from the `main` branch if your Pull Request wants to be merged in the `main` branch
 - point to the correct branch
 
-If your Pull Request is adding some new dependencies, please make sure to state it in the description.
+If your Pull Request is adding some new dependencies, please make sure to state it in the description. Also check the conda-lock instructions below.
+
+### Conda-lock
+
+We use conda-lock files to guarantee a fully reproducible environment. Tests use these files to reproduce always the exact same
+environment.
+
+If a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files.
+In this case you will also need to tun the `conda-relock` action, pointing to your branch. 
+This will create new conda-lock files.
+A new PR will be opened, pointing to your branch. If tests in that branch pass, you can merge it to update the lockfiles.
 
 ### Finalizing a Pull Request
 
-If your Pull Request is a work in progress, please add `[WIP]` to the title.
-When your Pull Request is ready to be reviewed, please remove `[WIP]` from the title. A label `run tests` can be added to the Pull Request to activate the CI tests.
+If your Pull Request is a work in progress, please set it to "Draft" mode.
+When your Pull Request is ready to be reviewed, please remove the "Draft" mode.
+A label `run tests` can be added to the Pull Request to activate the CI tests.
 A label `ready to merge` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
 
 Before asking for a review, please make sure to:
-- be up to date with the `main` branch
-- run the tests successfully
-- if a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files
-- please notice that a lumi_install.sh script is available to install the framework on a LUMI machine.
+- Be up to date with the `main` branch
+- Run the tests successfully
+- If a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files and run the `conda-relock` action.
+- Please notice that a lumi_install.sh script is available to install the framework on a LUMI machine.
   It is located in the `cli/lumi-install` folder.
   If the environment has been modified, please make sure to update the files `environment_lumi.yml` and `pip_lumi.txt` accordingly.
-- if a new feature has been added, please make sure to update the documentation accordingly
-- add docstrings to your code
-- remove any file unrelated to your Pull Request
+- If a new feature has been added, please make sure to update the documentation accordingly
+- Add docstrings to your code
+- Remove any file unrelated to your Pull Request
+
+When you are ready to merge:
+- Make sure that all items in your checklist have been completed. Do not forget to update the `CHANGELOG.md` file
 
 Do not merge your Pull Request yourself, it will be merged by the AQUA team.
 
