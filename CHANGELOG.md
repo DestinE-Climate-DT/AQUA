@@ -17,6 +17,7 @@ ClimateDT workflow modifications:
 
 Complete list:
 - Remove intake-xarray dependency (#2958)
+- Implement tests with conda-lock and less pip pins (#3049)
 - Polytope now inherits the logging level from the `Reader` class (#2926)
 - Introduced `intake` drivers for GSVRetrieve (Polytope and GSV), Z3fdb and Icechunk (#2926)
 - Removed `aqua.core.gsv` module, now part of the `aqua.core.backend` module (#2926)
