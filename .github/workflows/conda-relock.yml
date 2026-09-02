@@ -25,8 +25,7 @@ jobs:
       - name: relock without FDB
         shell: bash -l {0}
         run: |
-          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests
-          mv conda-linux-64.lock conda-linux-64-nofdb.lock
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests --filename-template ‘conda-{platform}.nofdb.lock’
 
       - name: relock with FDB
         shell: bash -l {0}
@@ -38,7 +37,7 @@ jobs:
         with:
           token: ${{ secrets.AQUA_GITHUB_PAT }}
           commit-message: relock with conda-lock
-          title: relock with conda-lock
+          title: "[Conda-Lock] Relock with conda-lock"
           branch: relock-conda-${{ github.run_number }}
           delete-branch: true
           committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
