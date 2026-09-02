@@ -972,7 +972,7 @@ package:
   category: main
   optional: false
 - name: libcurl
-  version: 8.21.0
+  version: 8.22.0
   manager: conda
   platform: linux-64
   dependencies:
@@ -983,12 +983,12 @@ package:
     libpsl: '>=0.23.1,<0.24.0a0'
     libssh2: '>=1.11.1,<2.0a0'
     libzlib: '>=1.3.2,<2.0a0'
-    openssl: '>=3.5.7,<4.0a0'
+    openssl: '>=3.5.8,<4.0a0'
     zstd: '>=1.5.7,<1.6.0a0'
-  url: https://conda.anaconda.org/conda-forge/linux-64/libcurl-8.21.0-ha042cf0_5.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/libcurl-8.22.0-ha042cf0_0.conda
   hash:
-    md5: 0ed167049513943d078a6c997df2b4e0
-    sha256: 0b6cc13e36cf19ae9b764740112fc591682e189c99353be9f72f3d96ccf29d79
+    md5: e617deee7af8eb0c04f6296d12b54157
+    sha256: 483b7eb97f56fbb3a9cb7190d33012dfa0a5aaed99ede61465563cd97dd82504
   category: main
   optional: false
 - name: libdeflate

@@ -16,13 +16,13 @@ version: 1
 metadata:
   content_hash:
     osx-arm64: 94ed0246901782afd253d5d203178e7a3adb689ca84a385272e9d6a7f8a6e718
-    linux-64: 2cfa66e07fd47e385850e61e98c44fb3913387d116023f5896cbdab96823199a
+    linux-64: ec55448fa10ac29817d0d73f4781f32b048f5ab64cc7815d24a0b93425b225d4
   channels:
   - url: conda-forge
     used_env_vars: []
   platforms:
-  - osx-arm64
   - linux-64
+  - osx-arm64
   sources:
   - environment.yml
   - pyproject.toml
@@ -1299,12 +1299,12 @@ package:
   platform: linux-64
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
-    libgcc: '>=14'
-    libstdcxx: '>=14'
-  url: https://conda.anaconda.org/conda-forge/linux-64/geos-3.14.1-h480dda7_0.conda
+    libgcc: '>=15'
+    libstdcxx: '>=15'
+  url: https://conda.anaconda.org/conda-forge/linux-64/geos-3.14.1-h55b0958_0.conda
   hash:
-    md5: 4d4efd0645cd556fab54617c4ad477ef
-    sha256: 08896dcd94e14a83f247e91748444e610f344ab42d80cbf2b6082b481c3f8f4b
+    md5: 5f856b72ca9cd5b5b4a1c43551804622
+    sha256: dc9f03bef913c8b3c94e93a61318b7437bd5e4f7136ef841e68df8de082405d5
   category: main
   optional: false
 - name: geos
@@ -1328,10 +1328,10 @@ package:
     __glibc: '>=2.17,<3.0.a0'
     libgcc: '>=14'
     libstdcxx: '>=14'
-  url: https://conda.anaconda.org/conda-forge/linux-64/graphite2-1.3.15-hecca717_1.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/graphite2-1.3.15-h54a6638_1.conda
   hash:
-    md5: e86875ca0bba5c9fccf3ea6ae5088a4f
-    sha256: 81b908c4955e206f7daa60acf12a6787e7c53b083471073f3ba90b8280dbb7cf
+    md5: f9fe2984587fa8235a6af6004760cd18
+    sha256: 7fa3b6a9c081fa3e545573152a788d061a0a0ba57df7251cc0f4f75225fc93e7
   category: main
   optional: false
 - name: graphite2
@@ -1470,10 +1470,10 @@ package:
     __glibc: '>=2.17,<3.0.a0'
     libgcc: '>=14'
     libstdcxx: '>=14'
-  url: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py313h92f78c6_2.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
   hash:
-    md5: bb83797250f801fa3b0bc1acc4d9d265
-    sha256: bb0b242aeea5061a93635d065f05460e0c3c45f47d0a493355eb9b282c442cde
+    md5: 72a381cbad04f24b1c2a43ef707f45b4
+    sha256: 9f07834f0c546ab14d885ce0366285f61f44e326c0edd1fc63b8294e113ae432
   category: main
   optional: false
 - name: icu
@@ -1495,15 +1495,15 @@ package:
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
     freeglut: '>=3.2.2,<4.0a0'
-    libexpat: '>=2.7.4,<3.0a0'
-    libgcc: '>=14'
+    libexpat: '>=2.8.1,<3.0a0'
+    libgcc: '>=15'
     libgl: '>=1.7.0,<2.0a0'
     libglu: '>=9.0.3,<10.0a0,>=9.0.3,<9.1.0a0'
-    libjpeg-turbo: '>=3.1.2,<4.0a0'
-  url: https://conda.anaconda.org/conda-forge/linux-64/jasper-4.2.9-h1588d4d_1.conda
+    libjpeg-turbo: '>=3.2.0,<4.0a0'
+  url: https://conda.anaconda.org/conda-forge/linux-64/jasper-4.2.9-hd038ad9_2.conda
   hash:
-    md5: 115ecf05370670f93bc81a8c4f7fd57f
-    sha256: a6a9858eadb4c794b56a1c954c1d4f4b57d96c9fb87092dd46f5bff9b0697b35
+    md5: 7b3e0e66ba910b1785312ada14ff664d
+    sha256: a7b36f828a4d85171e61b3153997b5513f766d02501b2b596129edb0e8896d04
   category: main
   optional: false
 - name: jasper
@@ -1819,7 +1819,7 @@ package:
   category: main
   optional: false
 - name: libcurl
-  version: 8.21.0
+  version: 8.22.0
   manager: conda
   platform: linux-64
   dependencies:
@@ -1830,12 +1830,12 @@ package:
     libpsl: '>=0.23.1,<0.24.0a0'
     libssh2: '>=1.11.1,<2.0a0'
     libzlib: '>=1.3.2,<2.0a0'
-    openssl: '>=3.5.7,<4.0a0'
+    openssl: '>=3.5.8,<4.0a0'
     zstd: '>=1.5.7,<1.6.0a0'
-  url: https://conda.anaconda.org/conda-forge/linux-64/libcurl-8.21.0-ha042cf0_5.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/libcurl-8.22.0-ha042cf0_0.conda
   hash:
-    md5: 0ed167049513943d078a6c997df2b4e0
-    sha256: 0b6cc13e36cf19ae9b764740112fc591682e189c99353be9f72f3d96ccf29d79
+    md5: e617deee7af8eb0c04f6296d12b54157
+    sha256: 483b7eb97f56fbb3a9cb7190d33012dfa0a5aaed99ede61465563cd97dd82504
   category: main
   optional: false
 - name: libcurl
@@ -2667,12 +2667,13 @@ package:
   platform: linux-64
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
+    icu: '>=78.3,<79.0a0'
     libgcc: '>=15'
     libzlib: '>=1.3.2,<2.0a0'
-  url: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h0737f62_1.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
   hash:
-    md5: 17b328272d5caa0994678529be5b86ab
-    sha256: 35c05bd0adfaf6fcac01fc3a42214e4e2a44e32f7ce2c77ddae419522c3c328d
+    md5: e72bbec309c2b0f37823ee7d4fabfcd3
+    sha256: f20d70da54e5b31dd4a51fb1efeaafafd5ab6dd8d7ac9d1438eaa2526ac4ed3d
   category: main
   optional: false
 - name: libsqlite
@@ -3786,7 +3787,6 @@ package:
     libzlib: '>=1.3.2,<2.0a0'
     ncurses: '>=6.6,<7.0a0'
     openssl: '>=3.5.8,<4.0a0'
-    pip: ''
     python_abi: 3.14.*
     readline: '>=8.3,<9.0a0'
     tk: '>=8.6.13,<8.7.0a0'
@@ -3883,10 +3883,10 @@ package:
   manager: conda
   platform: linux-64
   dependencies: {}
-  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
+  url: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-9_cp314.conda
   hash:
-    md5: 0539938c55b6b1a59b560e843ad864a4
-    sha256: ad6d2e9ac39751cc0529dd1566a26751a0bf2542adb0c232533d32e176e21db5
+    md5: 350d89b50d7de805abf2e63e29dee451
+    sha256: e7f8e965bbfb98e08feb2365cacdad8bb218fa5b5a0a2752f747287f425f213c
   category: main
   optional: false
 - name: python_abi
@@ -4100,15 +4100,16 @@ package:
   platform: linux-64
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
+    icu: '>=78.3,<79.0a0'
     libgcc: '>=15'
     libsqlite: 3.53.4
     libzlib: '>=1.3.2,<2.0a0'
     ncurses: '>=6.6,<7.0a0'
     readline: '>=8.3,<9.0a0'
-  url: https://conda.anaconda.org/conda-forge/linux-64/sqlite-3.53.4-h6e79ffa_1.conda
+  url: https://conda.anaconda.org/conda-forge/linux-64/sqlite-3.53.4-h9ffa6c4_1.conda
   hash:
-    md5: 237875bda674b2da7ca68765ffb22645
-    sha256: 45babc48aef7a468175a609848d56242e43c043a5c2a4d595c220cfc31488028
+    md5: d42b24574925bfa3167efb3571c905ad
+    sha256: b01812eff4e950a73933cb3dc14647a97ee377c7fab4858495b80a749ebfbf8b
   category: main
   optional: false
 - name: sqlite
@@ -4239,11 +4240,11 @@ package:
   platform: linux-64
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
-    libgcc: '>=13'
-  url: https://conda.anaconda.org/conda-forge/linux-64/xorg-libice-1.1.2-hb9d3cd8_0.conda
+    libgcc: '>=14'
+  url: https://conda.anaconda.org/conda-forge/linux-64/xorg-libice-1.1.2-h280c20c_0.conda
   hash:
-    md5: fb901ff28063514abb6046c9ec2c4a45
-    sha256: c12396aabb21244c212e488bbdc4abcdef0b7404b15761d9329f5a4a39113c4b
+    md5: 85c9442aec283b4e464fa9ecc484a2f3
+    sha256: 49b532d1df875c6749d9078b56a76f3f5db49a5abe0ca620b593ed474ef0ebf1
   category: main
   optional: false
 - name: xorg-libsm
@@ -4455,12 +4456,12 @@ package:
   platform: linux-64
   dependencies:
     __glibc: '>=2.17,<3.0.a0'
-    libgcc: '>=14'
-    libstdcxx: '>=14'
-  url: https://conda.anaconda.org/conda-forge/linux-64/zlib-ng-2.3.3-hceb46e0_1.conda
+    libgcc: '>=15'
+    libstdcxx: '>=15'
+  url: https://conda.anaconda.org/conda-forge/linux-64/zlib-ng-2.3.3-hce19668_1.conda
   hash:
-    md5: 2aadb0d17215603a82a2a6b0afd9a4cb
-    sha256: ea4e50c465d70236408cb0bfe0115609fd14db1adcd8bd30d8918e0291f8a75f
+    md5: 1726acec19beeed1c764385cd8622405
+    sha256: 8b786bb4380fa69a718b08a400040b865bc9207eda337e0a1955717c3c3a9403
   category: main
   optional: false
 - name: zlib-ng
@@ -5418,6 +5419,27 @@ package:
     sha256: 470eed1c5ba0aa9062a345ac0806cb887e5395263243b2d93c88e45002a035aa
   category: main
   optional: false
+- name: eccodeslib
+  version: 2.48.0.26
+  manager: pip
+  platform: linux-64
+  dependencies:
+    eckitlib: 2.1.1.26
+  url: https://files.pythonhosted.org/packages/86/5f/21e45a69b772d36b8aa6ddd02414c813c8e9420e56e3ead5070d1e7121f5/eccodeslib-2.48.0.26-cp314-cp314-manylinux_2_28_x86_64.whl
+  hash:
+    sha256: b8806183d2d633f761e67bb33e430b8d2b5b1324439c8aa5581ee2b1a244dc73
+  category: fdb
+  optional: true
+- name: eckitlib
+  version: 2.1.1.26
+  manager: pip
+  platform: linux-64
+  dependencies: {}
+  url: https://files.pythonhosted.org/packages/9c/61/1145f9a7d335a7836e8713917d1b7cdb9c58307f064343ee4ce8bee7a8c6/eckitlib-2.1.1.26-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+  hash:
+    sha256: 0e5c197940585c2c3cac6f7098830b1e6e8fda2a810977b1ede4f5677c8ea5a7
+  category: fdb
+  optional: true
 - name: execnet
   version: 2.1.2
   manager: pip
@@ -5488,6 +5510,19 @@ package:
     sha256: 12bf12e20bfd0929718850bd23e76fbc5c24e63051bd67c62924e23d86f5dff4
   category: main
   optional: false
+- name: fdb5lib
+  version: 5.22.0.26
+  manager: pip
+  platform: linux-64
+  dependencies:
+    eccodeslib: 2.48.0.26
+    eckitlib: 2.1.1.26
+    metkitlib: 1.19.0.26
+  url: https://files.pythonhosted.org/packages/0a/70/d7edf388ad0c8bcc693b632ea86df262617b2f0a1ac591d59209890c7fdb/fdb5lib-5.22.0.26-cp314-cp314-manylinux_2_28_x86_64.whl
+  hash:
+    sha256: 983e447ef67a8ecae44016f0b90003c2190013bb6824b4705a766dbd0c9cb990
+  category: fdb
+  optional: true
 - name: filelock
   version: 3.32.5
   manager: pip
@@ -6720,6 +6755,18 @@ package:
   hash:
     sha256: 3c821cf1c209f59fb2d2d64abbf5b23b67bcb2210d663f9918dd851c6da1fcf6
   category: notebooks
+  optional: true
+- name: metkitlib
+  version: 1.19.0.26
+  manager: pip
+  platform: linux-64
+  dependencies:
+    eccodeslib: 2.48.0.26
+    eckitlib: 2.1.1.26
+  url: https://files.pythonhosted.org/packages/95/46/6f86f6980eff04f8ab3b13eeee14f537ebd30b828597763136963b1187bd/metkitlib-1.19.0.26-cp314-cp314-manylinux_2_28_x86_64.whl
+  hash:
+    sha256: cd1476d4f44448fb6db236afff0a5584154d310c650632d1c515f754467c9091
+  category: fdb
   optional: true
 - name: metpy
   version: 1.7.1
@@ -8745,6 +8792,20 @@ package:
     sha256: e42d75862735da90e7fc5a7b23db0c976f737113a54b3c9777a9b665e9cbff75
   category: main
   optional: false
+- name: z3fdb
+  version: 5.22.0.26
+  manager: pip
+  platform: linux-64
+  dependencies:
+    fdb5lib: 5.22.0.26
+    findlibs: '>=0.1.2'
+    numpy: '*'
+    zarr: '>=3,<4'
+  url: https://files.pythonhosted.org/packages/99/77/51afb46d757095c9f8750321d60cf507169f2c289fa77b5224e259929dd7/z3fdb-5.22.0.26-cp314-cp314-manylinux_2_28_x86_64.whl
+  hash:
+    sha256: e778290b0abb6f46e5482552f2b5d3de051f56742947641cc256fb020ef332bd
+  category: fdb
+  optional: true
 - name: zarr
   version: 3.3.0
   manager: pip
