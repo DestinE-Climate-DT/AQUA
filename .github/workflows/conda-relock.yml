@@ -25,12 +25,12 @@ jobs:
       - name: relock with FDB
         shell: bash -l {0}
         run: |
-          conda-lock -f environment.yml -f pyproject.toml --extra tests --extra fdb --lockfile conda-lock-fdb.yml
+          conda-lock -f environment.yml -f pyproject.toml --extras tests --extras fdb --lockfile conda-lock-fdb.yml
 
       - name: relock without FDB
         shell: bash -l {0}
         run: |
-          conda-lock -f environment.yml -f pyproject.toml --extra tests --lockfile conda-lock.yml
+          conda-lock -f environment.yml -f pyproject.toml --extras tests --lockfile conda-lock.yml
 
       - name: open PR
         uses: peter-evans/create-pull-request@v6
