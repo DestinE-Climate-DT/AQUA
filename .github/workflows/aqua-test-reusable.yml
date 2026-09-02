@@ -165,13 +165,6 @@ jobs:
       # ========================================
       # 3. SETUP ENVIRONMENT
       # ========================================
-      - name: Strip pip install from environment file (local mode)
-        if: ${{ inputs.install-mode == 'local' }}
-        run: |
-          sed -e '/^  - pip:$/d' \
-              -e '/^    # pip install/d' \
-              -e '/^    - -e \.\[all\]$/d' \
-              AQUA/environment.yml > AQUA/environment-stripped.yml
 
       - name: Set up Micromamba (local mode with fdb)
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
@@ -180,9 +173,8 @@ jobs:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/conda-linux-64.lock
-          #environment-file: AQUA/conda-lock-fdb.yml
-          #environment-file: AQUA/environment-stripped.yml
+          # environment-file: AQUA/conda-linux-64.lock
+          environment-file: AQUA/conda-lock.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -196,9 +188,8 @@ jobs:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/conda-linux-64.nofdb.lock
-          #environment-file: AQUA/conda-lock-fdb.yml
-          #environment-file: AQUA/environment-stripped.yml
+          #environment-file: AQUA/conda-linux-64.nofdb.lock
+          environment-file: AQUA/conda-lock.nofdb.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -226,7 +217,7 @@ jobs:
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
         run: |
           cd AQUA
-          sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
+          # sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
           # python -m pip install --no-deps -e ".[tests]"
           # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
           python -m pip install --no-deps -e .
@@ -235,7 +226,7 @@ jobs:
         if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
         run: |
           cd AQUA
-          sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
+          # sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
           # python -m pip install --no-deps -e ".[tests]"
           # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
           python -m pip install --no-deps -e .
