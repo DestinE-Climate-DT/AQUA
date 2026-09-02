@@ -174,7 +174,6 @@ jobs:
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/conda-linux-64.lock
-          # environment-file: AQUA/conda-lock.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -189,7 +188,6 @@ jobs:
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/conda-linux-64.nofdb.lock
-          # environment-file: AQUA/conda-lock.nofdb.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -218,8 +216,6 @@ jobs:
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
-          # python -m pip install --no-deps -e ".[tests]"
-          # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
           python -m pip install --no-deps -e .
 
       - name: Install AQUA without FDB dependencies (local, no fdb)
@@ -227,9 +223,8 @@ jobs:
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
-          # python -m pip install --no-deps -e ".[tests]"
-          # python -m pip install pytest-cov pytest-xdist pytest-timeout coverage
           python -m pip install --no-deps -e .
+
       # ========================================
       # 5. INSTALL AQUA (PyPI mode)
       # ========================================
