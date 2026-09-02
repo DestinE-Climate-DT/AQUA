@@ -45,7 +45,8 @@ dependencies = [
     "boto3",
     "cartopy>=0.24.1",
     "cfgrib", #enable support for GRIB files
-    "dask[distributed]",
+    "dask",
+    "distributed",
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
