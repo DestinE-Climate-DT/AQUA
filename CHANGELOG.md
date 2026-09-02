@@ -6,10 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.1.0):
 
+Main changes:
+- `Reader` now supports `icechunk` and `z3fdb` sources
+- `Backend` module is a new module to handle the different `intake` drivers. There is no API change for the user.
+- `ConfigCatalog` does browsing and resolving of catalog entries
+- `ConfigContext` resolves AQUA configuration files and packages
+- `ConfigPath` is still implemented but deprecated
+
 ClimateDT workflow modifications:
 
 Complete list:
 - Remove intake-xarray dependency (#2958)
+- Polytope now inherits the logging level from the `Reader` class (#2926)
+- Introduced `intake` drivers for GSVRetrieve (Polytope and GSV), Z3fdb and Icechunk (#2926)
+- Removed `aqua.core.gsv` module, now part of the `aqua.core.backend` module (#2926)
+- `Fixer` can be initialized without any mandatory argument (#2926)
+- In `CoordIdentifier`, time coordinates partial match increase the matching score (#2926)
+- `10si` and `tcw` added to WMO GRIB2 convention tables (#2926)
+- `databridge` is a kwarg of the `Reader` class and is used to select the databridge to be used by the `polytope` engine (#2926)
+- Deprecated the `switch_eccodes` option for the FDB based sources (#2926)
+- `default` module is now a submodule of `aqua` and contains the default values of all the core variables used in AQUA. (#2926)
+- `BackendFactory` is a new class to create the `Backend` instance based on the needed `intake` driver. (#2926)
+- `Backend` is a new module and a new abstract class to handle the different `intake` drivers. (#2926)
+- `ConfigLocator` (finds the config files) and `ConfigPackages` (finds the installed aqua packages) are internal classes used by the new `ConfigCatalog` and `ConfigContext` classes (#2926)
+- `ConfigPath` class is now split in `ConfigCatalog` and `ConfigContext` classes (#2926)
+- Fix no kind case for aqua analysis (#3032)
+- Implement new DVC remote from ECMWF (#3031)
 
 ## [v1.0.1]
 

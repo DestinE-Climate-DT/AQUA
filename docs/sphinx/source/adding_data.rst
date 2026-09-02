@@ -241,7 +241,6 @@ Some of the parameters are here described:
 .. option:: config_fdb
 
     This optional parameter is used to specify a custom configuration file path for the ``z3fdb`` engine.
-    If not set, the default ``config-z3fdb.yaml`` file in the user's config folder will be used.
 
 .. option:: chunks
 

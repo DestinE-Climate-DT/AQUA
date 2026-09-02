@@ -40,9 +40,8 @@ def open_gsv(
         var (str, optional): Variable ID. Defaults to those in the catalog.
         metadata (dict, optional): Metadata containing paths to FDB.
         level (int, float, list, optional): level(s) to be read.
-        switch_eccodes (bool, optional): Flag to activate switching of eccodes path. Defaults to False.
         loglevel (str, optional): The loglevel. Defaults to "WARNING".
-        engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to None.
+        engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to None.
         databridge (str, optional): Databridge to be used. Defaults to None.
         kwargs: other keyword arguments.
 
@@ -89,7 +88,7 @@ def open_polytope(
         metadata (dict, optional): Metadata containing paths to FDB.
         level (int, float, list, optional): level(s) to be read.
         loglevel (str, optional): The loglevel. Defaults to "WARNING".
-        engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to None.
+        engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to None.
         databridge (str, optional): Databridge to be used. Defaults to None.
         kwargs: other keyword arguments.
 

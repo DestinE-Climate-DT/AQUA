@@ -2,12 +2,12 @@
 
 import xarray as xr
 
-import aqua.core.version as aqua_version
 from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
 from aqua.core.util import to_list
+from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
 from .catalog_mixin import CatalogMixin
@@ -31,7 +31,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             exp="test",
             source="long",
             configurer=configurer,
-            engine="fdb",
+            engine="gsv",
         )
         data = backend.retrieve(var="2t", startdate="2020-01-01", enddate="2020-01-31")
     """
@@ -46,7 +46,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         chunks: str | dict = None,
         fixer: Fixer = None,
         datamodel: DataModel = None,
-        engine: str = "fdb",
+        engine: str = "gsv",
         databridge: str = None,
         loglevel: str = "WARNING",
         **kwargs,
@@ -64,7 +64,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                                            Defaults to None (use the catalog default).
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to standardize coordinates. Defaults to None.
-            engine (str, optional): Engine used for GSV retrieval, 'fdb' or 'polytope'. Defaults to 'fdb'.
+            engine (str, optional): Engine used for GSV retrieval, 'gsv' or 'polytope'. Defaults to 'gsv'.
             databridge (str, optional): Only for the polytope engine: 'lumi' or 'mn5'. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional intake parameters forwarded to the catalog source entry.
@@ -78,7 +78,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
 
         # Check machine compatibility
         self.machine_from_catalog = self.expcat.metadata.get("machine")
-        if engine != "polytope":
+        if engine != "polytope" and engine != "polytope-gsv":
             if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
                 self.logger.warning(
                     "The machine configured (%s) is different from the machine in the catalog (%s). "
@@ -92,17 +92,18 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         # we mirror the legacy Reader._filter_kwargs GSV logic here.
         # Use the catalog 'machine' metadata as the polytope databridge target when
         # the caller has not supplied one explicitly (mirrors Reader.machine_from_catalog).
+        # The machine name is striped of any partition info (e.g. "lumi-44" -> "lumi").
         needs_rebuild = False
         if "engine" not in self.kwargs:
             self.kwargs["engine"] = engine
             self.logger.debug("Adding engine=%s to filtered kwargs", engine)
             needs_rebuild = True
-        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine")
-        if engine == "polytope" and effective_databridge is not None and "databridge" not in self.kwargs:
+        effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine", "").split("-")[0]
+        if engine == "polytope" and effective_databridge and "databridge" not in self.kwargs:
             self.kwargs["databridge"] = effective_databridge
             self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
             needs_rebuild = True
-        if (engine == "z3fdb" or engine == "fdb") and "config_fdb" not in self.kwargs and "config_fdb" in kwargs:
+        if (engine == "z3fdb" or engine == "gsv") and "config_fdb" not in self.kwargs and "config_fdb" in kwargs:
             self.kwargs["config_fdb"] = kwargs["config_fdb"]
             self.logger.debug("Adding config_fdb=%s to filtered kwargs", kwargs["config_fdb"])
             needs_rebuild = True

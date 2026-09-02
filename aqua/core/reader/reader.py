@@ -88,7 +88,7 @@ class Reader:
             preproc (function, optional): a function to be applied to the dataset when retrieved. Defaults to None.
             convention (str, optional): convention to be used for reading data. Defaults to 'eccodes'.
                                         (Only one supported so far)
-            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.
+            engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to 'gsv'.
 
         Keyword Args:
             zoom (int, optional): HEALPix grid zoom level (e.g. zoom=10 is h1024). Allows for multiple gridname definitions.
@@ -203,7 +203,6 @@ class Reader:
             datamodel=self.datamodel,
             chunks=self.chunks,
             engine=engine,
-            databridge=None,
             loglevel=self.loglevel,
             **kwargs,
         )

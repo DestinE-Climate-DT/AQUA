@@ -67,10 +67,8 @@ class GSV(FDB):
     def __init__(
         self,
         request,
-        switch_eccodes=False,
         **kwargs,
     ):
-        self.switch_eccodes = switch_eccodes
 
         super().__init__(request, **kwargs)
 

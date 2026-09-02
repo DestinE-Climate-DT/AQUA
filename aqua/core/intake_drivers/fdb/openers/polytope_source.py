@@ -11,11 +11,17 @@ To add a different engine (e.g. Polytope or z3fdb) subclass
 :class:`FDBSource` and implement ``_retrieve_partition`` only.
 """
 
+import logging
+import warnings
+
+from aqua.core.logger import _check_loglevel
+
 from .dates import FDBDatesMixin
 from .fdb_source import FDBSource
 
 # Test if FDB5 binary library is available
 try:
+    import polytope.api  # NOQA: F401
     from gsv.retriever import GSVRetriever
 
     gsv_available = True
@@ -63,7 +69,15 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
         databridge=None,
         **kwargs,
     ):
-        print("Running Polytope reader!")
+        """Initialize the Polytope intake source.
+
+        For all other arguments, see :class:`~aqua.core.intake_drivers.fdb.openers.fdb_source.FDBSource`.
+
+        Args:
+            databridge (str, optional): Target databridge machine for Polytope retrieval (e.g. 'lumi').
+                Defaults to 'lumi' when engine is 'polytope'.
+            engine (str, optional): Retrieval engine name. Defaults to 'polytope'.
+        """
 
         engine = engine or "polytope"
 
@@ -91,9 +105,15 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
             level=level,
             loglevel=loglevel,
             engine=engine,
-            databridge=self.databridge,
             **kwargs,
         )
+
+        # HACK: Silence verbose output from polytope internals
+        for _ln in ("polytope", "polytope.api"):
+            logging.getLogger(_ln).setLevel(_check_loglevel(loglevel))
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
 
     # ------------------------------------------------------------ init helpers
     def _check_availability(self):
@@ -109,6 +129,9 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
             self.fdb_info_file = None
             self.levels = None
 
+    def _post_init(self):
+        pass
+
     # -------------------------------------------------------------- retrieval
     def _retrieve_partition(self, request, chunk_type=None, first=False):
         """Retrieve a single partition through Polytope."""
@@ -122,7 +145,11 @@ class PolytopeSource(FDBSource, FDBDatesMixin):
         # if chunk_type:
         #    self.gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
 
-        gsv = GSVRetriever(engine=self.engine, source=self.databridge, logging_level=self.gsv_log_level)
+        engine = self.engine
+        if self.engine == "gsv":
+            engine = "fdb"  # GSVRetriever needs this
+
+        gsv = GSVRetriever(engine=engine, source=self.databridge, logging_level=self.gsv_log_level)
 
         self.logger.debug("Request %s", request)
         dataset = gsv.request_data(

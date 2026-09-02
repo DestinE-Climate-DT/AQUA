@@ -1,6 +1,8 @@
 """Factory class to create backend instances based on the provided parameters."""
 
-# Register custom intake drivers (gsv, icechunk, etc.)
+# Register custom intake drivers (fdb, icechunk, etc.)
+import warnings
+
 import aqua.core.intake_drivers  # noqa: F401
 from aqua.core.configurer import ConfigCatalog, ConfigContext
 from aqua.core.data_model import DataModel
@@ -20,7 +22,7 @@ class BackendFactory:
     """
 
     BACKEND_TYPES = {
-        "gsv": BackendIntakeFDB,
+        "fdb": BackendIntakeFDB,
         "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
         "zarr": BackendIntakeXarray,
@@ -30,7 +32,7 @@ class BackendFactory:
     # Parameters accepted by each driver's backend constructor.
     # netcdf and zarr share the same intake-xarray signature.
     _BACKEND_PARAMS = {
-        "gsv": {
+        "fdb": {
             "model",
             "exp",
             "source",
@@ -151,6 +153,13 @@ class BackendFactory:
         # Extract the source catalog and explore it
         self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
         self.driver = self.esmcat._entry._driver
+        if self.driver == "gsv":
+            self.driver = "fdb"
+            warnings.warn(
+                "The driver gsv is deprecated and will be removed in a future release. Use fdb instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         if self.driver not in self.BACKEND_TYPES:
             raise ValueError(f"Unsupported driver: {self.driver}. Supported drivers are: {list(self.BACKEND_TYPES.keys())}")
 
@@ -198,7 +207,6 @@ class BackendFactory:
         datamodel: DataModel = None,
         chunks: str | dict = None,
         engine: str = None,
-        databridge: str = None,
         loglevel: str = None,
         **kwargs,
     ):
@@ -222,7 +230,6 @@ class BackendFactory:
             datamodel=datamodel,
             engine=engine,
             xarray_engine=None,
-            databridge=databridge,
             loglevel=loglevel,
             **kwargs,
         )

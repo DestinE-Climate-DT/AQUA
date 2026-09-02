@@ -81,7 +81,7 @@ class Drop:
         stat="mean",
         stat_kwargs={},
         compact="xarray",
-        engine="fdb",
+        engine="gsv",
         output_format="netcdf",
         zarr_chunks=None,
         **kwargs,
@@ -136,7 +136,7 @@ class Drop:
                 Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
-            engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
+            engine (string, opt):    Engine to be used by the Reader. Default is 'gsv'.
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.

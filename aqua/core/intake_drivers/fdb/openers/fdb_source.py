@@ -1,54 +1,56 @@
-"""Backend-agnostic partitioned source for FDB/MARS-like data access.
+"""Abstract base class for partitioned FDB/MARS-like data access.
 
-This module isolates everything that is **not** specific to the GSV/FDB retrieval
-engine, so that alternative drivers (e.g. Polytope, z3fdb) can be implemented by
-subclassing :class:`FDBSource` and overriding a single method,
-:meth:`FDBSource._retrieve_partition`.
+This module provides :class:`FDBSource`, an abstract intake source that encapsulates
+all engine-agnostic logic for partitioned data retrieval from FDB/MARS-like backends.
+Concrete retrieval engines are implemented as subclasses:
 
-Responsibilities kept here (all engine-agnostic):
+* :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`: for direct FDB5/bridge access via GSV/pyfdb.
+* :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource`: for access via the Polytope API.
 
-* partition planning: time axis, chunk start/end indices and vertical chunking
-  (delegated to :mod:`aqua.core.intake_drivers.fdb.openers.timeutil`);
-* MARS/FDB request construction per ``timestyle`` (date / step / yearmonth);
-* the intake ``Schema`` and the dask assembly (``to_dask``, ``read``,
-  ``read_chunked``, ``get_part_delayed``);
-* robust pickling for dask workers (snapshot of ``__dict__`` minus transient
-  state), so ``__init__`` is *not* re-executed on the workers.
+Responsibilities handled by :class:`FDBSource` (engine-agnostic):
 
-Engine-specific behaviour is delegated to overridable hooks:
+* Partition planning across time and vertical dimensions (delegated to
+  :mod:`aqua.core.intake_drivers.fdb.openers.timeutil`).
+* MARS/FDB request construction per ``timestyle`` (``date``, ``step``, or ``yearmonth``).
+* Intake ``Schema`` generation and lazy dask assembly (``to_dask``, ``read``,
+  ``read_chunked``, ``get_part_delayed``).
+* Serialization and pickling state management for dask distributed workers.
 
-* :meth:`_retrieve_partition` (mandatory) — pull one partition from the backend;
-* :meth:`_check_availability` (optional) — check library availability at init;
-* :meth:`_read_metadata` (optional) — configure engine path parameters;
-* :meth:`_post_init` (optional) — final engine-specific init steps;
-* :meth:`_postprocess_partition` — per-partition fixups (default: time shift);
-* :meth:`_map_output_variable` — map a raw variable to its output name and the
-  identifier used to re-request it (default: identity).
+Engine-specific lifecycle and retrieval hooks:
 
-Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
-request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-:class:`aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource` for a reference implementation).
+* :meth:`_retrieve_partition` (mandatory): pull a single partition from the target backend.
+* :meth:`_check_availability` (optional): verify client library/dependency availability during init.
+* :meth:`_read_metadata` (optional): configure engine-specific parameters from catalog metadata.
+* :meth:`_post_init` (optional): finalize engine-specific setup.
+* :meth:`_postprocess_partition` (optional): per-partition fixups (e.g., time shifting).
+* :meth:`_map_output_variable` (optional): map raw variables to standard output names.
+
+Concrete subclasses such as :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`
+and :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource` must implement
+:meth:`_retrieve_partition` and set up request/date/level attributes before calling
+:meth:`_compute_partition_plan`.
 """
 
-import datetime
+from abc import ABC, abstractmethod
 
 import dask
 import eccodes
 import xarray as xr
 
-from aqua.core.logger import log_configure
+from aqua.core.logger import log_configure, log_history
 from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
 
 from .timeutil import FDBTimeMixin
 
 
-class FDBSource(FDBTimeMixin):
-    """Generic intake source that reads FDB/MARS-like data in time/level partitions.
+class FDBSource(ABC, FDBTimeMixin):
+    """Abstract intake source that reads FDB/MARS-like data in time/level partitions.
 
-    Concrete subclasses must implement :meth:`_retrieve_partition` and populate the
-    request/date/level attributes before calling :meth:`_compute_partition_plan` (see
-    :class:`aqua.core.intake_drivers.fdb.openers.GSVSource` for a reference implementation).
+    Concrete subclasses (e.g. :class:`~aqua.core.intake_drivers.fdb.openers.gsv_source.GSVSource`
+    and :class:`~aqua.core.intake_drivers.fdb.openers.polytope_source.PolytopeSource`) must
+    implement :meth:`_retrieve_partition` and populate request/date/level attributes before
+    computing the partition plan.
     """
 
     _ds = None  # _ds and _da will contain samples of the data for dask access
@@ -75,10 +77,34 @@ class FDBSource(FDBTimeMixin):
         level=None,
         loglevel="WARNING",
         engine=None,
-        databridge=None,
         config_fdb=None,
         **kwargs,
     ):
+        """Initialize the abstract partitioned FDB intake source.
+
+        Args:
+            request (dict): Base MARS/FDB request dictionary defining data to retrieve.
+            data_start_date (str, optional): Start date of available data on HPC/FDB. Defaults to None.
+            data_end_date (str, optional): End date of available data on HPC/FDB. Defaults to None.
+            bridge_start_date (str, optional): Start date of data available on bridge storage. Defaults to None.
+            bridge_end_date (str, optional): End date of data available on bridge storage. Defaults to None.
+            hpc_expver (str, optional): Experiment version override for HPC partition requests. Defaults to None.
+            timestyle (str, optional): Request time format style ('date', 'step', or 'yearmonth'). Defaults to 'date'.
+            chunks (str or dict, optional): Chunking frequency ('S' for single, 'D', 'M', 'Y', or dict). Defaults to 'S'.
+            savefreq (str, optional): Frequency at which data was saved (e.g. 'h', '6h', 'D', 'M'). Defaults to 'h'.
+            timestep (str, optional): Integration or sampling timestep (e.g. 'h', '15min'). Defaults to 'h'.
+            timeshift (bool or int, optional): Shift applied to time coordinate (e.g. for monthly accumulations).
+                Defaults to None.
+            startdate (str, optional): Start date of the requested retrieval window. Defaults to None.
+            enddate (str, optional): End date of the requested retrieval window. Defaults to None.
+            var (str, int, list, optional): Variable name(s) or paramId(s) to retrieve. Defaults to None.
+            metadata (dict, optional): Catalog entry metadata with FDB paths, info files, or levels. Defaults to None.
+            level (int, float, list, optional): Vertical level(s) to retrieve. Defaults to None.
+            loglevel (str, optional): Logging level. Defaults to 'WARNING'.
+            engine (str, optional): Retrieval engine name (e.g. 'gsv', 'polytope'). Defaults to None.
+            config_fdb (str, optional): Path to FDB configuration YAML or FDB root directory override. Defaults to None.
+            **kwargs: Additional engine-specific keyword arguments.
+        """
         self.config_fdb = config_fdb
         self.fdbhome = None
         self.fdbpath = None
@@ -89,9 +115,6 @@ class FDBSource(FDBTimeMixin):
 
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
 
-        from aqua.core.logger import _check_loglevel
-
-        self.gsv_log_level = _check_loglevel(self.logger.getEffectiveLevel())
         self.logger.debug("Init of the %s class", self.__class__.__name__)
 
         self._check_availability()
@@ -134,13 +157,17 @@ class FDBSource(FDBTimeMixin):
 
         self._post_init()
 
+    @abstractmethod
     def _check_availability(self):
         """Hook for checking external library availability."""
-        pass
 
+    @abstractmethod
     def _read_metadata(self, metadata):
         """Hook for reading metadata."""
-        pass
+
+    @abstractmethod
+    def _post_init(self):
+        """Hook for any subclass-specific post-init logic."""
 
     def _resolve_paramids(self, request, var):
         """Resolve the requested variables into a list of ecCodes paramIds."""
@@ -158,10 +185,6 @@ class FDBSource(FDBTimeMixin):
                 self._var[i] = int(get_eccodes_attr(v)["paramId"])
 
         self.logger.debug("List of paramid to retrieve %s", self._var)
-
-    def _post_init(self):
-        """Hook for any subclass-specific post-init logic."""
-        pass
 
     #: Instance attributes that must never be pickled to dask workers. They are
     #: either heavy (data samples) or hold non-serialisable backend handles. Anything
@@ -466,9 +489,7 @@ class FDBSource(FDBTimeMixin):
         We consider the paramId stable between ecCodes versions, not the short name.
         So we read the ``GRIB_paramId`` attribute and derive the short name from the
         current ecCodes definitions; if it differs from the retrieved short name a
-        warning is issued (this only affects the final name when ``fix=False``). Set
-        ``switch_eccodes=True`` in the catalog to read short names from a pinned
-        ecCodes version instead.
+        warning is issued (this only affects the final name when ``fix=False``).
         """
         original_paramid = self._ds[ds_var].attrs.get("GRIB_paramId", ds_var)
         updated_var = get_eccodes_attr(original_paramid)["shortName"]
@@ -572,7 +593,7 @@ class FDBSource(FDBTimeMixin):
                 coords=coords,
             )
 
-            log_history(da, "Dataset retrieved by GSV interface")
+            log_history(da, "Dataset retrieved by intake FDB driver")
 
             ds[output_var] = da
 
@@ -591,18 +612,6 @@ class FDBSource(FDBTimeMixin):
             if self.idx_3d:
                 ds = ds.assign_coords(idx_level=("level", self.idx_3d))
             yield ds
-
-
-# This function is repeated here in order not to create a cross dependency between the gsv
-# subpackage and the rest of AQUA.
-def log_history(data, msg):
-    """Elementary provenance logger in the history attribute"""
-
-    if isinstance(data, (xr.DataArray, xr.Dataset)):
-        now = datetime.datetime.now()
-        date_now = now.strftime("%Y-%m-%d %H:%M:%S")
-        hist = data.attrs.get("history", "") + f"{date_now} {msg};\n"
-        data.attrs.update({"history": hist})
 
 
 class Schema(dict):
