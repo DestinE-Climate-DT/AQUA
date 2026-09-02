@@ -180,7 +180,7 @@ jobs:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/conda-lock.yml
+          environment-file: AQUA/conda-lock-fdb.yml
           #environment-file: AQUA/environment-stripped.yml
           environment-name: aqua
           cache-downloads: true
@@ -195,7 +195,7 @@ jobs:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: AQUA/conda-lock.yml
+          environment-file: AQUA/conda-lock-fdb.yml
           #environment-file: AQUA/environment-stripped.yml
           environment-name: aqua
           cache-downloads: true
