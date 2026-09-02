@@ -17,7 +17,7 @@ from aqua.core.util import (
     to_list,
 )
 from aqua.core.util.string import lat_to_phrase, strlist_to_phrase
-from aqua.core.util.time import frequency_string_to_pandas
+from aqua.core.util.time import frequency_string_to_pandas, xarray_to_pandas_freq
 from aqua.core.util.units import multiply_units
 
 
@@ -316,3 +316,84 @@ def test_frequency_string_to_pandas(input_freq, expected_output):
     """Test the frequency_string_to_pandas function with and without numerical prefixes"""
     result = frequency_string_to_pandas(input_freq)
     assert result == expected_output
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
+    "freq_str, expected",
+    [
+        ("2YS", "2YS"),
+        ("YS", "YS"),
+        ("MS", "MS"),
+        ("W", "W"),
+        ("5D", "5D"),
+        ("2D", "2D"),
+        ("D", "D"),
+        ("12h", "12h"),
+        ("6h", "6h"),
+        ("h", "h"),
+        ("30min", "30min"),
+        ("min", "min"),
+        ("10s", "10s"),
+        ("1s", "s"),
+    ],
+)
+def test_xarray_to_pandas_freq(freq_str, expected):
+    """Test xarray_to_pandas_freq with various standard frequencies and input types."""
+    dates = pd.date_range("2020-01-01", periods=5, freq=freq_str)
+    da = xr.DataArray(np.arange(len(dates)), coords={"time": dates}, dims=["time"])
+    ds = da.to_dataset(name="var")
+
+    assert xarray_to_pandas_freq(da) == expected
+    assert xarray_to_pandas_freq(da["time"]) == expected
+    assert xarray_to_pandas_freq(dates) == expected
+    assert xarray_to_pandas_freq(ds) == expected
+
+
+@pytest.mark.aqua
+def test_xarray_to_pandas_freq_cftime():
+    """Test xarray_to_pandas_freq with cftime calendars."""
+    # Monthly cftime with non-standard calendar
+    cftime_monthly = xr.date_range("2020-01-15", periods=12, freq="MS", calendar="noleap")
+    assert xarray_to_pandas_freq(cftime_monthly) == "MS"
+
+    # Daily cftime
+    cftime_daily = xr.date_range("2020-01-01", periods=10, freq="D", calendar="360_day")
+    assert xarray_to_pandas_freq(cftime_daily) == "D"
+
+
+@pytest.mark.aqua
+def test_xarray_to_pandas_freq_custom_dim():
+    """Test xarray_to_pandas_freq with custom dimension name."""
+    dates = pd.date_range("2020-01-01", periods=5, freq="D")
+    ds = xr.Dataset(coords={"lead_time": dates})
+    assert xarray_to_pandas_freq(ds, dim="lead_time") == "D"
+    # Dimension not present in dataset
+    assert xarray_to_pandas_freq(ds, dim="non_existent") is None
+
+
+@pytest.mark.aqua
+def test_xarray_to_pandas_freq_list_inputs():
+    """Test xarray_to_pandas_freq with list and raw array inputs."""
+    # List of date strings
+    assert xarray_to_pandas_freq(["2020-01-01", "2020-01-02", "2020-01-03"]) == "D"
+    # Numpy array of datetime64
+    arr = np.array(["2020-01-01", "2020-01-02"], dtype="datetime64[D]")
+    assert xarray_to_pandas_freq(arr) == "D"
+
+
+@pytest.mark.aqua
+def test_xarray_to_pandas_freq_edge_cases():
+    """Test xarray_to_pandas_freq edge cases."""
+    # Single date
+    assert xarray_to_pandas_freq(pd.DatetimeIndex(["2020-01-01"])) is None
+    # Empty index
+    assert xarray_to_pandas_freq(pd.DatetimeIndex([])) is None
+    # Identical timestamps (zero delta)
+    assert xarray_to_pandas_freq(pd.DatetimeIndex(["2020-01-01", "2020-01-01"])) is None
+    # Sub-second intervals (< 1s)
+    dates_ms = pd.date_range("2020-01-01", periods=5, freq="100ms")
+    assert xarray_to_pandas_freq(dates_ms) is None
+    # Dataset without coordinates
+    ds_empty = xr.Dataset({"a": [1, 2]})
+    assert xarray_to_pandas_freq(ds_empty) is None
