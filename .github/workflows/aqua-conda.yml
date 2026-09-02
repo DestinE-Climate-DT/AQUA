@@ -1,4 +1,4 @@
-name: AQUA PyPI tests
+name: AQUA Conda tests
 
 on:
   workflow_dispatch:
@@ -11,16 +11,17 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Call the reusable workflow with PyPI installation
-  aqua-pypi-tests:
+  # Call the reusable workflow with Conda installation
+  aqua-conda-tests:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.12", "3.13", "3.14"]'
+      ppython-versions: '["3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true
       enable-coverage: false
       fail-fast: false
-      install-mode: 'pypi'
+      install-mode: 'conda'
+      enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
     secrets:

@@ -210,6 +210,21 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
+      - name: Set up Micromamba (conda mode)
+        if: ${{ inputs.install-mode == 'conda' }}
+        uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
+        with:
+          micromamba-version: 'latest'
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          channels: conda-forge
+          create-args: >-
+            python=${{ matrix.python-version }}
+            aqua-core
+
       # ========================================
       # 4. INSTALL AQUA (local mode)
       # ========================================
@@ -240,7 +255,7 @@ jobs:
           python -m pip install aqua-core[tests] --pre
 
       - name: Checkout the tag for PyPI mode
-        if: ${{ inputs.install-mode == 'pypi' }}
+        if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
         run: |
           cd AQUA
           PYPI_VERSION=$(python -c "import importlib.metadata; print(importlib.metadata.version('aqua-core'))")
