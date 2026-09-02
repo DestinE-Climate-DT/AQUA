@@ -22,23 +22,29 @@ jobs:
             channels:
               - conda-forge
 
-      - name: relock with FDB
+      - name: Relock without FDB
         shell: bash -l {0}
+        #run: |
+        #  conda-lock --file environment.yml --file pyproject.toml -p linux-64 -e tests --lockfile conda-nofdb.lock
         run: |
-          conda-lock -f environment.yml -f pyproject.toml --extra tests --extra fdb --lockfile conda-lock-fdb.yml
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests --filename-template conda-{platform}.nofdb.lock
 
-      - name: relock without FDB
+      - name: Relock with FDB
         shell: bash -l {0}
+        #run: |
+        #  conda-lock --file environment.yml --file pyproject.toml -p linux-64 -e tests -e fdb --lockfile conda-fdb.lock
         run: |
-          conda-lock -f environment.yml -f pyproject.toml --extra tests --lockfile conda-lock.yml
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests -e fdb
 
-      - name: open PR
-        uses: peter-evans/create-pull-request@v6
+      - name: Open PR
+        uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
           commit-message: relock with conda-lock
-          title: relock with conda-lock
-          branch: relock-conda
+          title: "[Conda-Lock] Relock AQUA-core with conda-lock"
+          branch: relock-conda-${{ github.run_number }}
           delete-branch: true
+          committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
           labels: |
             conda-lock
             run tests
