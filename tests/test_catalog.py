@@ -11,7 +11,11 @@ from aqua.core.reader import show_catalog_content as catalog
 
 @pytest.fixture(
     params=[
-        (model, exp, source)
+        pytest.param(
+            (model, exp, source),
+            marks=[pytest.mark.fdb] if "gsv" in source else [],
+            id=f"{model}-{exp}-{source}",
+        )
         for model in catalog(catalog_name="ci", verbose=False)["ci"]
         for exp in catalog(catalog_name="ci", verbose=False)["ci"][model]
         for source in catalog(catalog_name="ci", verbose=False)["ci"][model][exp]
