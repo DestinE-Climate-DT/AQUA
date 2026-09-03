@@ -196,7 +196,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (PyPI mode)
+      - name: Set up Micromamba (PyPI mode, no fdb)
         if: ${{ inputs.install-mode == 'pypi' }}
         uses: mamba-org/setup-micromamba@v3
         env:
@@ -210,7 +210,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (conda mode)
+      - name: Set up Micromamba (conda mode, no fdb)
         if: ${{ inputs.install-mode == 'conda' }}
         uses: mamba-org/setup-micromamba@v3
         env:
@@ -250,7 +250,7 @@ jobs:
           python -m pip install --no-deps -e .
 
       # ========================================
-      # 5. INSTALL AQUA (PyPI mode)
+      # 5. INSTALL AQUA (PyPI and mode)
       # ========================================
       - name: Upgrade pip/setuptools/wheel
         if: ${{ inputs.install-mode == 'pypi' }}
@@ -259,9 +259,13 @@ jobs:
       - name: Install aqua from PyPI with test dependencies
         if: ${{ inputs.install-mode == 'pypi' }}
         run: |
-          python -m pip install aqua-core[tests] --pre
+          python -m pip install aqua-core[tests,fdb] --pre
           # temporary since it is not shipped by aqua-core[tests] yet
           python -m pip install dvc dvc-s3
+
+      # =======================================
+      # 6. CHECKOUT AQUA TAG FOR PYPI AND CONDA MODE
+      # =======================================
 
       - name: Checkout the tag for PyPI mode
         if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
