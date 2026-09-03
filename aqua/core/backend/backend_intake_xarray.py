@@ -1,11 +1,10 @@
-"""Backend realization using intake-xarray for data handling."""
+"""Backend realization using the intake ``netcdf`` / ``zarr`` drivers for data handling."""
 
 import os
 import re
 from glob import glob
 from urllib.parse import urlparse
 
-import intake_xarray
 import pandas as pd
 import xarray as xr
 
@@ -69,10 +68,8 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.setup_catalog(model, exp, source, configurer_catalog, catalog, chunks, **kwargs)
 
-        # HACK: convenience to get expanded url, xarray_kwargs and metadata for netcdf/zarr sources for intake2.
-        # This provides direct access to the intake data object and is xarray-specific.
-        self.esmcat.data = self._get_source_urls()
-        self.esmcat.xarray_kwargs = self._get_xarray_kwargs_from_catalog()
+        # The AQUA netcdf/zarr sources expose .data (holding the url), .metadata and
+        # .xarray_kwargs directly (see aqua.core.intake_drivers.xarray).
 
         # Manual safety check for netcdf sources (see #943), we output a more meaningful error message
         self._check_netcdf_files_exist()
@@ -87,10 +84,6 @@ class BackendIntakeXarray(Backend, CatalogMixin):
         """Setup xarray_kwargs for the intake-xarray reader based on the catalog metadata."""
 
         xarray_kwargs = getattr(self.esmcat, "xarray_kwargs", {}).copy()
-
-        # HACK: forcing to netcdf4 for intake2
-        if isinstance(self.esmcat, intake_xarray.netcdf.NetCDFSource) and "engine" not in xarray_kwargs:
-            xarray_kwargs.setdefault("engine", "netcdf4")
 
         # if the catalog uses CDS api, get the key from user configuration
         if "cds" == self.metadata.get("key"):
