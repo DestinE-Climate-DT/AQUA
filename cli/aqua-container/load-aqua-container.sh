@@ -22,10 +22,12 @@ usage() {
                                  Machine supported are lumi, levante and MN5
 
     Options:
-        --native                 Enable native mode: AQUA will read from native env variable.
-        -s <script>              Execute an executable bash or python script.
-        -c <command>             Execute a shell command.
-        -v <version>             Specify the AQUA container version (default: "latest").
+        -n, --native             Enable native mode: AQUA will read from native env variable.
+        -d, --diagnostics        Load aqua-diagnostics container instead of aqua-core (default)
+        -l, --list               List available containers
+        -s, --script <script>    Execute an executable bash or python script.
+        -c, --command <command>  Execute a shell command.
+        -v, --version <version>  Specify the AQUA container version (default: "latest").
         -h, --help               Display this help message.
 
     Examples:
@@ -55,9 +57,13 @@ parse_machine() {
     script=""     # Script to be read as argument
     cmd="shell"   # Standard container init
     mode=""    # Container mode: none, script or bash
+    container_type=aqua-core # type of container: diagnostics (default) or core
+    container_dir=aqua  # where the containers are stored
+    aqua_title=AQUA-core
+    list=0
 
     # Use getopt to parse options
-    OPTIONS=$(getopt -o hnc:s:v: --long help,native,version:,command:,script: -n "$0" -- "$@")
+    OPTIONS=$(getopt -o hnldc:s:v: --long help,native,list,diagnostics,version:,command:,script: -n "$0" -- "$@")
     if [ $? -ne 0 ]; then
         usage
     fi
@@ -66,8 +72,12 @@ parse_machine() {
     # Process each option
     while true; do
         case "$1" in
+            -d|--diagnostics)
+                container_type=aqua-diagnostics; container_dir=aqua-diagnostics; aqua_title=AQUA-diagnostics; shift ;;
             -n|--native)
                 native_mode=1; shift ;;
+            -l|--list)
+                list=1; shift ;;
             -c|--command)
                 mode="bash"; cmd="exec"; script=$2; shift 2 ;;
             -s|--script)
@@ -94,10 +104,10 @@ parse_machine() {
     if [[ "$native_mode" -eq 0 ]]; then
         export AQUA="/app/AQUA"
         echo "Selecting the AQUA path $AQUA from the container."
-        echo "AQUA version is set to: $version"
+        echo "$aqua_title version is set to: $version"
     else
         if [ -z $AQUA ]; then
-            echo "ERROR: AQUA directory is not set!"
+            echo "ERROR: $aqua_title directory is not set!"
             exit 1
         fi
         # Check if AQUA is set and the file exists
@@ -105,7 +115,7 @@ parse_machine() {
         echo "Please use this with caution since it is not how the container is meant to be used!"
         echo "Remember to run: pip install -e `$AQUA` once you are in the container"
         if [ ! -d "$AQUA" ]; then
-            echo "ERROR: The AQUA directory does not exist at: $AQUA"
+            echo "ERROR: The $aqua_title directory does not exist at: $AQUA"
             exit 1
         fi
         branch_name=$(git -C "$AQUA" rev-parse --abbrev-ref HEAD)
@@ -134,19 +144,19 @@ parse_machine() {
 #------------------Machine-dependent setup---------------------#
 #--------------------------------------------------------------#
 
-function setup_container_path(){
+function setup_folder(){
     machine=$1
     case "$machine" in
         "lumi")
-            AQUA_folder="/project/project_465000454/containers/aqua"
+            AQUA_folder="/project/project_465002727/containers/$container_dir"
             ;;
 
         "levante")
-            AQUA_folder="/work/bb1153/b382289/container/aqua"
+            AQUA_folder="/work/bb1153/b382289/container/$container_dir"
             ;;
 
         "MN5")
-            AQUA_folder="/gpfs/projects/ehpc01/containers/aqua"
+            AQUA_folder="/gpfs/projects/ehpc01/containers/$container_dir"
             ;;
         "nord4")
             AQUA_folder="/esarchive/scratch/AQUA/containers"
@@ -156,19 +166,24 @@ function setup_container_path(){
             return 1
             ;;
     esac
+    echo "${AQUA_folder}"
+}
 
+function setup_container_path(){
+    machine=$1
+    AQUA_folder=$2
 
     if [ ${version} == "latest" ] ; then
         echo "Asking for latest AQUA version, detecting the more recent available in ${AQUA_folder}" >&2
-        available_versions=$(find ${AQUA_folder}/ -type f -name 'aqua_*.sif' -exec basename {} .sif \; | sed 's/^aqua_//')
+        available_versions=$(find ${AQUA_folder}/ -type f -name "${container_type}_*.sif" -exec basename {} .sif \; | sed "s/^${container_type}_//")
         version=$(printf "%s\n" "${available_versions[@]}" | sort -V -r | head -n 1 )
-        echo "AQUA v${version} selected! If you are not happy, please specify your version with -v flag" >&2
+        echo "$aqua_title v${version} selected! If you are not happy, please specify your version with -v flag" >&2
     fi
 
-    AQUA_container="$AQUA_folder/aqua_${version}.sif"
+    AQUA_container="$AQUA_folder/${container_type}_${version}.sif"
 
     if [ ! -f "$AQUA_container" ]; then
-        echo "ERROR: The AQUA container does not exist at: $AQUA_container" >&2
+        echo "ERROR: The $aqua_title container does not exist at: $AQUA_container" >&2
         return 1
     fi
 
@@ -284,7 +299,17 @@ function setup_binds(){
 parse_machine "$@"
 
 # Call the function and assign its output to a variable
-AQUA_container="$(setup_container_path $machine)"
+
+AQUA_folder=$(setup_folder $machine)
+
+if [[ "$list" -eq 1 ]]; then
+    echo "Available containers in ${AQUA_folder}" >&2
+    available_versions=$(find ${AQUA_folder}/ -type f -name "${container_type}_*.sif" -exec basename {} .sif \; | sed "s/^${container_type}_//")
+    printf "%s\n" "${available_versions[@]}" | sort -V -r >&2
+    exit
+fi
+
+AQUA_container="$(setup_container_path $machine $AQUA_folder)"
 if [ $? -ne 0 ]; then
     echo "Cannot find the container!"
     exit 1
