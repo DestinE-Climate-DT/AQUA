@@ -9,9 +9,9 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
     """Open one or more Zarr stores with xarray, registered as the ``zarr`` driver.
 
     Port of ``intake_xarray.xzarr.ZarrSource``, with the AQUA deltas shared with
-    the netcdf source in :meth:`~.base.IntakeXarraySourceAdapter._setup` (attributes
+    the netcdf source in :class:`~.base.IntakeXarraySourceAdapter` (attributes
     exposed for the backend, reads through :class:`~.readers.NetCDFZarrDatasetReader`,
-    ``use_cftime`` folding); an ``xarray_kwargs`` argument is accepted so that netcdf
+    ``chunks={}`` default); an ``xarray_kwargs`` argument is accepted so that netcdf
     and zarr catalog entries share the same signature.
 
     Example usage::

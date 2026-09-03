@@ -11,8 +11,8 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
     Port of ``intake_xarray.netcdf.NetCDFSource`` (intake-xarray 2.0.0), with the
     xarray engine defaulting to netcdf4. The rest of the AQUA deltas (attributes
     exposed for the backend, reads through
-    :class:`~.readers.NetCDFZarrDatasetReader`, ``use_cftime`` folding) is shared
-    with the zarr source in :meth:`~.base.IntakeXarraySourceAdapter._setup`.
+    :class:`~.readers.NetCDFZarrDatasetReader`, ``chunks={}`` default) is shared
+    with the zarr source in :class:`~.base.IntakeXarraySourceAdapter`.
 
     Example usage::
 
