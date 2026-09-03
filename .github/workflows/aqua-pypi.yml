@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+  push:
+    branches:
+      - pypi-test
+      - fix-test-pypi
+      - main
 
 permissions:
   contents: read
@@ -15,7 +20,7 @@ jobs:
   aqua-pypi-tests:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.12", "3.13", "3.14"]'
+      python-versions: '["3.11", "3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true
       enable-coverage: false
