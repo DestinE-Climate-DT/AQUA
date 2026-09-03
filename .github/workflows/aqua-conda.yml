@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+  push:
+    branches:
+      - conda-test
+      - main
 
 permissions:
   contents: read
