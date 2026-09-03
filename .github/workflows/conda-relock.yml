@@ -1,0 +1,50 @@
+name: relock conda
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  relock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-name: relock-env
+          create-args: >-
+            python
+            conda-lock
+          condarc: |
+            channels:
+              - conda-forge
+
+      - name: Relock without FDB
+        shell: bash -l {0}
+        #run: |
+        #  conda-lock --file environment.yml --file pyproject.toml -p linux-64 -e tests --lockfile conda-nofdb.lock
+        run: |
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests --filename-template conda-{platform}.nofdb.lock
+
+      - name: Relock with FDB
+        shell: bash -l {0}
+        #run: |
+        #  conda-lock --file environment.yml --file pyproject.toml -p linux-64 -e tests -e fdb --lockfile conda-fdb.lock
+        run: |
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests -e fdb
+
+      - name: Open PR
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
+          commit-message: relock with conda-lock
+          title: "[Conda-Lock] Relock AQUA-core with conda-lock"
+          branch: relock-conda-${{ github.run_number }}
+          delete-branch: true
+          committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          labels: |
+            conda-lock
+            run tests

@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 
-from aqua.core.configurer import ConfigLocator, ConfigPath
+from aqua.core.configurer import ConfigContext, ConfigLocator
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -52,8 +52,8 @@ class InstallMixin:
         checklevel = "ERROR" if silent else self.loglevel
 
         try:
-            self.configurer = ConfigPath(loglevel=checklevel)
-            self.configpath = self.configurer.configdir
+            self.configurer = ConfigContext(loglevel=checklevel)
+            self.configpath = self.configurer.get_config_dir()
             self.configfile = os.path.join(self.configpath, "config-aqua.yaml")
             self.templatepath = os.path.join(self.configpath, "templates")
             self.logger.debug("AQUA found in %s", self.configpath)
@@ -377,7 +377,7 @@ class InstallMixin:
         if args.machine is not None:
             machine = args.machine
         else:
-            machine = ConfigPath(configdir=self.configpath).get_machine()
+            machine = ConfigContext(configdir=self.configpath).get_machine()
 
         if machine is None:
             self.logger.info("Unknown machine!")
