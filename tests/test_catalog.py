@@ -13,7 +13,7 @@ from aqua.core.reader import show_catalog_content as catalog
     params=[
         pytest.param(
             (model, exp, source),
-            marks=[pytest.mark.gsv] if "fdb" in source else [],
+            marks=[pytest.mark.gsv] if "fdb" in source else [pytest.mark.aqua],
             id=f"{model}-{exp}-{source}",
         )
         for model in catalog(catalog_name="ci", verbose=False)["ci"]
