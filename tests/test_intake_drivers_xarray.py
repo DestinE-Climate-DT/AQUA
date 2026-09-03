@@ -24,6 +24,15 @@ def sample_dataset():
     )
 
 
+@pytest.fixture
+def netcdf_tree(tmp_path, sample_dataset):
+    """One standalone file holding the whole sample, plus the same sample split in two."""
+    sample_dataset.to_netcdf(tmp_path / "one.nc")
+    sample_dataset.isel(time=slice(0, 2)).to_netcdf(tmp_path / "part_a.nc")
+    sample_dataset.isel(time=slice(2, 4)).to_netcdf(tmp_path / "part_b.nc")
+    return tmp_path
+
+
 @pytest.mark.aqua
 class TestDriverRegistration:
     """The AQUA sources own the intake netcdf/zarr driver names."""
@@ -44,29 +53,50 @@ class TestDriverRegistration:
 class TestIntakeNetCDFSource:
     """Behaviour of the netcdf source built on the intake 2 readers."""
 
-    def test_to_dask_single_file(self, tmp_path, sample_dataset):
-        path = tmp_path / "sample.nc"
-        sample_dataset.to_netcdf(path)
-        source = IntakeNetCDFSource(str(path))
-        data = source.to_dask()
+    @pytest.mark.parametrize("urlkind", ["single_str", "single_list", "multi_list", "glob"])
+    def test_read_is_lazy_and_complete(self, netcdf_tree, sample_dataset, urlkind):
+        # this is the backend's own read path: it calls source.reader.read(), not to_dask().
+        # intake sends a single url to xr.open_dataset and a list/glob to xr.open_mfdataset,
+        # and only the latter forces chunks={} on its own, hence the driver default (#3064)
+        urlpath = {
+            "single_str": str(netcdf_tree / "one.nc"),
+            "single_list": [str(netcdf_tree / "one.nc")],
+            "multi_list": [str(netcdf_tree / "part_a.nc"), str(netcdf_tree / "part_b.nc")],
+            "glob": str(netcdf_tree / "part_*.nc"),
+        }[urlkind]
+        source = IntakeNetCDFSource(urlpath)
+        assert source.reader.kwargs["chunks"] == {}
+        data = source.reader.read()
         assert data["tas"].chunks is not None
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
-
-    def test_read_eager(self, tmp_path, sample_dataset):
-        path = tmp_path / "sample.nc"
-        sample_dataset.to_netcdf(path)
-        source = IntakeNetCDFSource(str(path))
-        data = source.read()
-        assert data["tas"].chunks is None
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
-
-    def test_to_dask_glob(self, tmp_path, sample_dataset):
-        sample_dataset.isel(time=slice(0, 2)).to_netcdf(tmp_path / "sample_a.nc")
-        sample_dataset.isel(time=slice(2, 4)).to_netcdf(tmp_path / "sample_b.nc")
-        source = IntakeNetCDFSource(str(tmp_path / "sample_*.nc"))
-        data = source.to_dask()
         assert data.sizes["time"] == 4
         xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+
+    @pytest.mark.parametrize(
+        "kwargs,time_chunks",
+        [
+            ({}, (4,)),  # driver default: lazy in a single chunk
+            ({"chunks": {"time": 1}}, (1, 1, 1, 1)),  # catalog args (and Reader(chunks=...)) win
+            ({"xarray_kwargs": {"chunks": {"time": 2}}}, (2, 2)),  # so does the xarray_kwargs block
+            ({"chunks": None}, None),  # explicit opt-out from dask is honoured
+        ],
+        ids=["driver_default", "source_args", "xarray_kwargs", "explicit_none"],
+    )
+    def test_chunks_precedence(self, netcdf_tree, kwargs, time_chunks):
+        # the default must never be added on top of an explicit chunks, or the reader
+        # would receive it twice and raise TypeError (real case: climatedt-phase1 zonalmean)
+        data = IntakeNetCDFSource(str(netcdf_tree / "one.nc"), **kwargs).reader.read()
+        if time_chunks is None:
+            assert data["tas"].chunks is None
+        else:
+            assert data["tas"].chunks[0] == time_chunks
+
+    def test_access_modes(self, netcdf_tree, sample_dataset):
+        # the ported intake-xarray API: to_dask() is lazy, read()/discover() are eager
+        source = IntakeNetCDFSource(str(netcdf_tree / "one.nc"))
+        assert source.to_dask()["tas"].chunks is not None
+        eager = source.read()
+        assert eager["tas"].chunks is None
+        xr.testing.assert_allclose(eager["tas"], sample_dataset["tas"])
 
     def test_engine_defaults_to_netcdf4(self):
         source = IntakeNetCDFSource("dummy.nc")
@@ -90,43 +120,37 @@ class TestIntakeNetCDFSource:
         assert source.data.url == urls
         assert source.metadata["fixer_name"] == "amazing_fixer"
 
-    def test_single_file_tolerates_mfdataset_kwargs(self, tmp_path, sample_dataset):
+    def test_single_file_tolerates_mfdataset_kwargs(self, netcdf_tree, sample_dataset):
         # mfdataset-only kwargs (combine etc.) are common in AQUA catalogs and must
         # not break single-file reads, which xarray routes to xr.open_dataset
-        path = tmp_path / "sample.nc"
-        sample_dataset.to_netcdf(path)
-        source = IntakeNetCDFSource(str(path), combine="by_coords")
-        data = source.to_dask()
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+        source = IntakeNetCDFSource(str(netcdf_tree / "one.nc"), combine="by_coords")
+        xr.testing.assert_allclose(source.reader.read()["tas"], sample_dataset["tas"])
 
-    def test_filtered_single_file_tolerates_mfdataset_kwargs(self, tmp_path, sample_dataset):
+    def test_filtered_single_file_tolerates_mfdataset_kwargs(self, netcdf_tree):
         # the backend narrows source.data.url between reads (glob expansion, date
         # filtering): a one-file leftover must still read with mfdataset-only kwargs
-        sample_dataset.isel(time=slice(0, 2)).to_netcdf(tmp_path / "sample_a.nc")
-        sample_dataset.isel(time=slice(2, 4)).to_netcdf(tmp_path / "sample_b.nc")
-        source = IntakeNetCDFSource(str(tmp_path / "sample_*.nc"), combine="by_coords")
-        source.data.url = [str(tmp_path / "sample_b.nc")]
-        data = source.reader.read()
-        assert data.sizes["time"] == 2
+        source = IntakeNetCDFSource(str(netcdf_tree / "part_*.nc"), combine="by_coords")
+        source.data.url = [str(netcdf_tree / "part_b.nc")]
+        assert source.reader.read().sizes["time"] == 2
 
 
 @pytest.mark.aqua
 class TestIntakeZarrSource:
     """Behaviour of the zarr source built on the intake 2 readers."""
 
-    def test_to_dask(self, tmp_path, sample_dataset):
+    def test_read_is_lazy(self, tmp_path, sample_dataset):
+        # a single store takes the same xr.open_dataset branch as a single netcdf file,
+        # so it needs the same chunks default to come back dask-backed (#3064)
         store = tmp_path / "sample.zarr"
         sample_dataset.to_zarr(store)
-        source = IntakeZarrSource(str(store))
-        data = source.to_dask()
+        data = IntakeZarrSource(str(store)).reader.read()
         assert data["tas"].chunks is not None
         xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
 
     def test_chunks_honored(self, tmp_path, sample_dataset):
         store = tmp_path / "sample.zarr"
         sample_dataset.to_zarr(store)
-        source = IntakeZarrSource(str(store), chunks={"time": 2})
-        data = source.to_dask()
+        data = IntakeZarrSource(str(store), chunks={"time": 2}).reader.read()
         assert data["tas"].chunks[0] == (2, 2)
 
     def test_data_and_metadata_exposed(self, tmp_path, sample_dataset):
@@ -139,8 +163,7 @@ class TestIntakeZarrSource:
         # DROP-generated entries point to multiple stores through a glob urlpath
         sample_dataset.isel(time=slice(0, 2)).to_zarr(tmp_path / "sample_a.zarr")
         sample_dataset.isel(time=slice(2, 4)).to_zarr(tmp_path / "sample_b.zarr")
-        source = IntakeZarrSource(str(tmp_path / "sample_*.zarr"))
-        data = source.to_dask()
+        data = IntakeZarrSource(str(tmp_path / "sample_*.zarr")).reader.read()
         assert data.sizes["time"] == 4
         xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
 
@@ -148,8 +171,7 @@ class TestIntakeZarrSource:
         store = tmp_path / "sample.zarr"
         sample_dataset.to_zarr(store)
         source = IntakeZarrSource(str(store), combine="by_coords")
-        data = source.to_dask()
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+        xr.testing.assert_allclose(source.reader.read()["tas"], sample_dataset["tas"])
 
 
 @pytest.mark.aqua
@@ -162,6 +184,13 @@ class TestXarrayKwargsPassthrough:
         source = IntakeNetCDFSource("dummy.nc", xarray_kwargs={"use_cftime": True})
         assert source.xarray_kwargs["use_cftime"] is True
         assert source.reader.kwargs["use_cftime"] is True
+
+    def test_read_time_kwargs_keep_the_driver_defaults(self, netcdf_tree):
+        # the backend re-reads with those kwargs, and BaseReader.read() merges them on top
+        # of the reader ones: the engine and chunks defaults must survive that merge
+        source = IntakeNetCDFSource(str(netcdf_tree / "one.nc"))
+        data = source.reader.read(decode_times=xr.coders.CFDatetimeCoder(time_unit="s"))
+        assert data["tas"].chunks is not None
 
 
 @pytest.mark.aqua
