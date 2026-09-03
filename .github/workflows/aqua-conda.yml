@@ -5,9 +5,9 @@ on:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
   push:
+    # if you want to edit this workflow, create a branch called "conda-test" and push to it
     branches:
       - conda-test
-      - main
 
 permissions:
   contents: read
