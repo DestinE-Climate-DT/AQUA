@@ -260,6 +260,8 @@ jobs:
         if: ${{ inputs.install-mode == 'pypi' }}
         run: |
           python -m pip install aqua-core[tests] --pre
+          # temporary since it is not shipped by aqua-core[tests] yet
+          python -m pip install dvc dvc-s3
 
       - name: Checkout the tag for PyPI mode
         if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
