@@ -52,34 +52,41 @@ to define some environment variables.
 Load container script
 ^^^^^^^^^^^^^^^^^^^^^
 
-AQUA provides scripts to use the AQUA container (updated to the last release) with Singularity on LUMI, Levante and MN5.
-These contain also bindings to the commonly used folders on the machine but they can be easily adapted to other platforms.
-The scripts are located in the ``cli/aqua-container/load_AQUA_container.sh``, and it is centralized for all the three machines.
+AQUA provides a script to run the AQUA containers with Singularity on LUMI, Levante and MN5.
+These contain bindings to commonly used folders on each machine, and can also be adapted to other platforms.
+The script is located in ``cli/aqua-container/load-aqua-container.sh``, centralized for supported machines.
 
-The script can be called and will guide the user to load the container in an interactive way.
-Otherwise some options can be passed to the script to avoid the interactive mode, for example in a batch job.
+By default, the script loads the ``aqua-core`` container, but you can also choose to load the ``aqua-diagnostics`` container.
+The script can be called interactively or with command-line options (e.g. for batch jobs).
 
 .. option:: machine
 
-   Mandatory argument, could be ``levante``, ``lumi`` or ``MN5``. This set env variables and bindings which are specifically required.
+   Mandatory argument: ``levante``, ``lumi``, or ``MN5``. Sets environment variables and directory bindings specific to that machine.
+
+.. option:: -d, --diagnostics
+
+   Load the ``aqua-diagnostics`` container instead of the default ``aqua-core`` container.
+
+.. option:: -l, --list
+
+   List available container versions on the specified machine for the selected container type (``aqua-core`` by default, or ``aqua-diagnostics`` if combined with ``-d``).
 
 .. option:: -n, --native
 
-   Load the container with the local version of AQUA found in the ``$AQUA`` environment variable (which must be defined).
-   Please also notice that to be fully able to exploit the local installation of AQUA you will need to run `pip install -e $AQUA`
-   once you are in the container. Use this option with caution since it is not how the container is meant to work.
+   Load the container in native mode, reading from the local installation specified by the ``$AQUA`` environment variable (which must be defined).
+   Please note that to fully exploit the local installation of AQUA you will need to run ``pip install -e $AQUA`` once inside the container. Use this option with caution since it overrides the preinstalled container code.
 
 .. option:: -v, --version <version>
 
-   Load a specific version of the AQUA container. The default is the "latest" version available on the machine
+   Load a specific version of the container. The default is the ``latest`` version available on the machine.
 
-.. option:: -c, --command <script>
+.. option:: -c, --command <command>
 
-   Execute a command in the container after loading it.
+   Execute a shell command in the container after loading it.
 
-.. option:: -s, --script <command>
+.. option:: -s, --script <script>
 
-   Execute an executable script (e.g. python or bash) after loading it.
+   Execute an executable script (e.g. python or bash) inside the container after loading it.
 
 .. option:: -h, --help
 
