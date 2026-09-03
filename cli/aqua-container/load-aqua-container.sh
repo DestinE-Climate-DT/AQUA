@@ -115,7 +115,7 @@ parse_machine() {
         echo "Please use this with caution since it is not how the container is meant to be used!"
         echo "Remember to run: pip install -e `$AQUA` once you are in the container"
         if [ ! -d "$AQUA" ]; then
-            echo "ERROR: The $AQUA_title directory does not exist at: $AQUA"
+            echo "ERROR: The $aqua_title directory does not exist at: $AQUA"
             exit 1
         fi
         branch_name=$(git -C "$AQUA" rev-parse --abbrev-ref HEAD)
