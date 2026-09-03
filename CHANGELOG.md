@@ -16,6 +16,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix area selection for regionmask regions crossing the Greenwich meridian (#3058)
 - Implement tests with conda-lock and less pip pins (#3049)
 - Polytope now inherits the logging level from the `Reader` class (#2926)
 - Introduced `intake` drivers for GSVRetrieve (Polytope and GSV), Z3fdb and Icechunk (#2926)

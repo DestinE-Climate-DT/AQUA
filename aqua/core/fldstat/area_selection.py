@@ -77,6 +77,16 @@ class AreaSelection:
             if region_sel is None:
                 raise ValueError("`region_sel` must be specified when using region argument.")
 
+            lon_max = float(data[lon_name].max(skipna=True).values)
+
+            # Regions crossing Greenwich (e.g. Europe) end up split
+            # across the two ends of a 0..360 coordinate array, so
+            # `.where(..., drop=True)` leaves a huge gap that plotting
+            # renders as a band across the globe. Convert to [-180, 180]
+            # and sort first, as already done for box-based selection.
+            if to_180 and lon_max > 180:
+                data = self._to_180_and_sort(data, lon_name)
+
             mask = region.mask(data[lon_name], data[lat_name], **mask_kwargs)
 
             # Normalize input to list
@@ -138,13 +148,8 @@ class AreaSelection:
         # for plotting. Use xarray operations where possible to stay
         # dask-friendly.
         if to_180 and crossing_greenwich and lon_name in selected.coords:
-            lon_da = selected[lon_name]
-            # Use xarray.where to compute conversion lazily
-            lon_conv = xr.where(lon_da > 180, lon_da - 360, lon_da)
-
-            selected = selected.assign_coords({lon_name: lon_conv})
             # sort longitudes so they are ascending (-80 .. 30)
-            selected = selected.sortby(lon_name)
+            selected = self._to_180_and_sort(selected, lon_name)
 
         selected = log_history(selected, f"Area selection: lat={lat}, lon={lon}")
 
@@ -177,6 +182,21 @@ class AreaSelection:
         )
 
         return inferred_coords
+
+    def _to_180_and_sort(
+        self,
+        data: xr.Dataset | xr.DataArray,
+        lon_name: str,
+    ) -> xr.Dataset | xr.DataArray:
+        """Convert a longitude coordinate from [0, 360] to [-180, 180] and sort by it.
+
+        Used to keep a selection contiguous in index space when it crosses
+        the Greenwich meridian in the original 0..360 convention (for both
+        the regionmask-based and the box-based selection paths).
+        """
+        lon_da = data[lon_name]
+        lon_conv = xr.where(lon_da > 180, lon_da - 360, lon_da)
+        return data.assign_coords({lon_name: lon_conv}).sortby(lon_name)
 
     def _lon_condition(
         self,
