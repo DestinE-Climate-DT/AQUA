@@ -5,32 +5,62 @@ import xarray
 from conftest import LOGLEVEL
 
 from aqua import Reader
-from aqua.core.intake_drivers.fdb.openers.gsv_source import gsv_available
+
+# from aqua.core.intake_drivers.fdb.openers.gsv_source import gsv_available
 from aqua.core.reader import show_catalog_content as catalog
 
 
-@pytest.fixture(
-    params=[
+def _catalog_params(marks_for_source):
+    cat = catalog(catalog_name="ci", verbose=False)["ci"]
+    return [
         pytest.param(
             (model, exp, source),
-            marks=[pytest.mark.fdb] if "fdb" in source else [pytest.mark.aqua],
+            marks=marks_for_source(source),
             id=f"{model}-{exp}-{source}",
         )
-        for model in catalog(catalog_name="ci", verbose=False)["ci"]
-        for exp in catalog(catalog_name="ci", verbose=False)["ci"][model]
-        for source in catalog(catalog_name="ci", verbose=False)["ci"][model][exp]
+        for model in cat
+        for exp in cat[model]
+        for source in cat[model][exp]
     ]
-)
+
+
+def _default_marks(source):
+    return [pytest.mark.fdb] if "fdb" in source else [pytest.mark.aqua]
+
+
+# -- FIXTURES --- #
+
+
+@pytest.fixture(params=_catalog_params(_default_marks))
 def reader(request):
     """Reader instance fixture"""
     model, exp, source = request.param
     if source == "intake-esm-test":  # temporary skip of intake esm sources
         pytest.skip("Skipping intake-esm-test for now, not supported for now")
-    if not gsv_available and "fdb" in source:
-        pytest.skip(f"Skipping {model} {exp} {source} because GSV is not available")
+    # if not gsv_available and "fdb" in source:
+    #     pytest.skip(f"Skipping {model} {exp} {source} because GSV is not available")
     myread = Reader(catalog="ci", model=model, exp=exp, source=source, areas=False, fix=False, loglevel=LOGLEVEL)
     data = myread.retrieve()
     return myread, data
+
+
+@pytest.fixture(params=_catalog_params(_default_marks))
+def reader_regrid(request):
+    """Reader instance fixture"""
+    model, exp, source = request.param
+    if source == "intake-esm-test":  # temporary skip of intake esm sources
+        pytest.skip("Skipping intake-esm-test for now, not supported for now")
+    # if not gsv_available and "fdb" in source:
+    #     pytest.skip(f"Skipping {model} {exp} {source} because GSV is not available")
+    myread = Reader(
+        catalog="ci", model=model, exp=exp, source=source, areas=True, regrid="r200", loglevel=LOGLEVEL, rebuild=False
+    )
+    data = myread.retrieve()
+
+    return myread, data
+
+
+# --- TESTS --- #
 
 
 @pytest.mark.fdb
@@ -48,27 +78,7 @@ def test_catalog_gsv():
         assert isinstance(data, xarray.Dataset)
 
 
-@pytest.fixture(
-    params=[
-        (model, exp, source)
-        for model in catalog(catalog_name="ci", verbose=False)["ci"]
-        for exp in catalog(catalog_name="ci")["ci"][model]
-        for source in catalog(catalog_name="ci")["ci"][model][exp]
-    ]
-)
-def reader_regrid(request):
-    """Reader instance fixture"""
-    model, exp, source = request.param
-    print([model, exp, source])
-    myread = Reader(
-        catalog="ci", model=model, exp=exp, source=source, areas=True, regrid="r200", loglevel=LOGLEVEL, rebuild=False
-    )
-    data = myread.retrieve()
-
-    return myread, data
-
-
-@pytest.mark.slow
+# reader test, get markers from fixture
 def test_catalog(reader):
     """
     Checking that both reader and Dataset are retrived in reasonable shape
@@ -78,7 +88,7 @@ def test_catalog(reader):
     assert isinstance(bbb, xarray.Dataset)
 
 
-@pytest.mark.aqua
+# reader test, get markers from fixture
 def test_catalog_reader(reader_regrid):
     """
     Checking that data can be regridded
@@ -89,68 +99,3 @@ def test_catalog_reader(reader_regrid):
     rgd = read.regrid(select)
     assert len(rgd.lon) == 180
     assert len(rgd.lat) == 90
-
-
-# @pytest.mark.aqua
-# @pytest.mark.parametrize(
-#     "catalog, model, exp, source, expected_output",
-#     [
-#         # Test case 1: Source is specified and exists in the catalog
-#         (
-#             {"model1": {"exp1": {"source1": "data1", "source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             "source1",
-#             "source1"
-#         ),
-#         # Test case 2: Source is specified but does not exist,
-#         # default source exists
-#         (
-#             {"model1": {"exp1": {"default": "default_data", "source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             "source1",
-#             "default"
-#         ),
-#         # Test case 3: Source is specified but does not exist,
-#         # default source does not exist
-#         (
-#             {"model1": {"exp1": {"source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             "source1",
-#             pytest.raises(KeyError)
-#         ),
-#         # Test case 4: Source is not specified, choose the first source
-#         (
-#             {"model1": {"exp1": {"source1": "data1", "source2": "data2"}}},
-#             "model1",
-#             "exp1",
-#             None,
-#             "source1"
-#         ),
-#         # Test case 5: Source is not specified, no sources available
-#         (
-#             {"model1": {"exp1": {}}},
-#             "model1",
-#             "exp1",
-#             None,
-#             pytest.raises(KeyError)
-#         ),
-#         # Test case 6: Source is not specified, no sources available,
-#         # but a default source exists
-#         (
-#             {"model1": {"exp1": {"default": "default_data"}}},
-#             "model1",
-#             "exp1",
-#             None,
-#             "default"
-#         )
-#     ]
-# )
-# def test_check_catalog_source(catalog, model, exp, source, expected_output):
-#     if isinstance(expected_output, str):
-#         assert check_catalog_source(catalog, model, exp, source) == expected_output
-#     else:
-#         with expected_output:
-#             check_catalog_source(catalog, model, exp, source)
