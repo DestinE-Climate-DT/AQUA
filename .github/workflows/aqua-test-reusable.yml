@@ -236,7 +236,7 @@ jobs:
       # 4. INSTALL AQUA (local mode)
       # ========================================
       - name: Install AQUA with FDB dependencies (local mode)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
