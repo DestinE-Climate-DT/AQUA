@@ -13,7 +13,7 @@ from aqua.core.reader import show_catalog_content as catalog
     params=[
         pytest.param(
             (model, exp, source),
-            marks=[pytest.mark.gsv] if "fdb" in source else [pytest.mark.aqua],
+            marks=[pytest.mark.fdb] if "fdb" in source else [pytest.mark.aqua],
             id=f"{model}-{exp}-{source}",
         )
         for model in catalog(catalog_name="ci", verbose=False)["ci"]
@@ -33,7 +33,7 @@ def reader(request):
     return myread, data
 
 
-@pytest.mark.gsv
+@pytest.mark.fdb
 def test_catalog_gsv():
     """
     Checking that both reader and Dataset are retrived in reasonable shape
@@ -78,7 +78,7 @@ def test_catalog(reader):
     assert isinstance(bbb, xarray.Dataset)
 
 
-@pytest.mark.sbatch
+@pytest.mark.aqua
 def test_catalog_reader(reader_regrid):
     """
     Checking that data can be regridded

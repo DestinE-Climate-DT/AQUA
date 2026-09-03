@@ -139,9 +139,8 @@ testpaths = [
 markers = [
     "aqua: mark test as AQUA framework",
     "slow: tests which are slow",
-    "sbatch: tests which require sbatch",
     "graphics: tests which deal with graphics",
-    "gsv: mark test that requires ECMWF FDB libraries",
+    "fdb: mark test that requires ECMWF FDB libraries",
     "catgen: mark test for catalog generator",
     "console: mark test for console",
     "polytope: mark test that uses polytope"
