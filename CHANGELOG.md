@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.1.0):
+Unreleased in the current development version (target v1.2.0):
+
+Main changes:
+
+ClimateDT workflow modifications:
+
+Complete list:
+
+## [v1.1.0]
 
 Main changes:
 - `Reader` now supports `icechunk` and `z3fdb` sources
@@ -1520,7 +1528,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
 [v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6
