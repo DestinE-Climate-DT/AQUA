@@ -23,7 +23,7 @@ usage() {
 
     Options:
         -n, --native             Enable native mode: AQUA will read from native env variable.
-        -r, --core               Load aqua-core container instead of aqua-diagnostics (default)
+        -d, --diagnostics        Load aqua-diagnostics container instead of aqua-core (default)
         -l, --list               List available containers
         -s, --script <script>    Execute an executable bash or python script.
         -c, --command <command>  Execute a shell command.
