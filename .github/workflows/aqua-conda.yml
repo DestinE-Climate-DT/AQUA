@@ -17,7 +17,7 @@ jobs:
     with:
       python-versions: '["3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen'
-      enable-parallel: true
+      enable-parallel: false
       enable-coverage: false
       fail-fast: false
       install-mode: 'conda'
