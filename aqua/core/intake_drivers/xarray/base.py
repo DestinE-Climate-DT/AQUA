@@ -19,6 +19,10 @@ class IntakeXarraySourceAdapter(base.DataSource):
             kwargs: Further parameters forwarded to the reader (e.g. chunks).
         """
         xarray_kwargs = dict(xarray_kwargs or {})
+        # AQUA always wants lazy data, but intake routes a single file/store to
+        # ``xr.open_dataset``, which is eager unless ``chunks`` is given
+        if "chunks" not in xarray_kwargs:
+            kwargs.setdefault("chunks", {})
         self.xarray_kwargs = xarray_kwargs
         self.data = data
         self.reader = reader_class(data, **xarray_kwargs, metadata=metadata, **kwargs)
