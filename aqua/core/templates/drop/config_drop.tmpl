@@ -76,7 +76,7 @@ data:
       hourly-hpz10-atm2d:
         vars: ['mtpr', '2t', 'skt', 'msl', 'tcc', 'sd', 'tciw', 'tclw', 'msr', 'mslhf', 'msshf',
                'msnswrf', 'msnlwrf', 'msdwlwrf', 'msdwswrf', 'mtnswrf', 'mtnlwrf', 'mtdwswrf']
-        workers: 12
+        nworkers: 12
 
         # Optional: process specific realizations
         #realizations: [0, 1, 2] #process only r0, r1 and r2 (if supported by the catalog)
@@ -96,22 +96,22 @@ data:
 
       hourly-hpz10-atm3d:
         vars: ['q', 't', 'u', 'v']
-        workers: 6
+        nworkers: 6
 
       daily-hpz10-oce2d:
         vars: ['avg_sithick', 'avg_siconc']
-        workers: 16
+        nworkers: 16
 
       daily-hpz10-oce3d:
         vars: ['avg_thetao', 'avg_so']
-        workers: 10
+        nworkers: 10
 
 # Example: Multiple experiments with different configurations
 #  IFS-NEMO:
 #    historical-1950:
 #      daily:
 #        vars: ['2t', 'tp']
-#        workers: 8
+#        nworkers: 8
 #        # Regional European extraction with daily maxima
 #        region:
 #          name: Europe

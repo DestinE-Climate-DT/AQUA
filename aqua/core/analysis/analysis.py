@@ -11,7 +11,7 @@ import tempfile
 from importlib import resources as pypath
 
 from aqua.core.configurer import ConfigCatalog, ConfigContext
-from aqua.core.dask.daskcluster import DaskCluster
+from aqua.core.dask import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
@@ -509,7 +509,7 @@ class Analysis:
             connect_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"],
             tcp_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"],
         )
-        if not self.cluster.active:
+        if not self.cluster.cluster_active:
             self.logger.error("Failed to start Dask cluster.")
             sys.exit(1)
         else:
@@ -517,7 +517,7 @@ class Analysis:
 
     def close_dask_cluster(self):
         """Close the Dask cluster if it is active."""
-        if self.cluster.active:
+        if self.cluster.cluster_active:
             self.cluster.close()
             self.logger.info("Dask cluster closed.")
         else:

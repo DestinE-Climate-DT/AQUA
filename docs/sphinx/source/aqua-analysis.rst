@@ -169,8 +169,8 @@ Cluster
 
 The cluster section contains the following keys:
 
-- ``workers``: the number of workers to use. Default is ``32``.
-- ``threads``: the number of threads per worker. Default is ``2``.
+- ``nworkers``: the number of workers to use. Default is ``32``.
+- ``nthreads``: the number of threads per worker. Default is ``2``.
 - ``memory_limit``: the memory per worker. Default is ``7GiB``.
 - ``connect_timeout``: the timeout in seconds to wait for client to connect to the cluster.
                         Default is ``120``.
