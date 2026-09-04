@@ -4,15 +4,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.0.0):
+Unreleased in the current development version (target v1.2.0):
+
+Main changes:
+
+ClimateDT workflow modifications:
 
 Complete list:
-- Update submit_aqua_web tool to support kind and separate templates (#2921))
+
+## [v1.1.0]
+
+Main changes:
+- `Reader` now supports `icechunk` and `z3fdb` sources
+- `Backend` module is a new module to handle the different `intake` drivers. There is no API change for the user.
+- `ConfigCatalog` does browsing and resolving of catalog entries
+- `ConfigContext` resolves AQUA configuration files and packages
+- `ConfigPath` is still implemented but deprecated
+
+ClimateDT workflow modifications:
+
+Complete list:
+- Remove deprecated idx_level coordinates for FDB access (#3063)
+- Implement tests with conda-lock and less pip pins (#3049)
+- Polytope now inherits the logging level from the `Reader` class (#2926)
+- Introduced `intake` drivers for GSVRetrieve (Polytope and GSV), Z3fdb and Icechunk (#2926)
+- Removed `aqua.core.gsv` module, now part of the `aqua.core.backend` module (#2926)
+- `Fixer` can be initialized without any mandatory argument (#2926)
+- In `CoordIdentifier`, time coordinates partial match increase the matching score (#2926)
+- `10si` and `tcw` added to WMO GRIB2 convention tables (#2926)
+- `databridge` is a kwarg of the `Reader` class and is used to select the databridge to be used by the `polytope` engine (#2926)
+- Deprecated the `switch_eccodes` option for the FDB based sources (#2926)
+- `default` module is now a submodule of `aqua` and contains the default values of all the core variables used in AQUA. (#2926)
+- `BackendFactory` is a new class to create the `Backend` instance based on the needed `intake` driver. (#2926)
+- `Backend` is a new module and a new abstract class to handle the different `intake` drivers. (#2926)
+- `ConfigLocator` (finds the config files) and `ConfigPackages` (finds the installed aqua packages) are internal classes used by the new `ConfigCatalog` and `ConfigContext` classes (#2926)
+- `ConfigPath` class is now split in `ConfigCatalog` and `ConfigContext` classes (#2926)
+- Fix no kind case for aqua analysis (#3032)
+- Implement new DVC remote from ECMWF (#3031)
+
+## [v1.0.1]
+
+ClimateDT workflow modifications:
+
+Complete list:
+- Update hpc2020 installation script (#3017)
+- Fix intake_gsv fdb_info_file treatment (#3020)
+- Fix level selection in DROP when a list of levels is provided (#3005)
+- Explicit bokeh version in environment.yml to avoid issues with python 3.14 (#3021)
+- Fix and rewrite get_eccodes_attr for paramId case (#3008)
+- Add memory option to submit-aqua-web (#3006)
+- Synchronize the available statistics in DROP with the TimStat class (#2991)
+- Specify min and max allowed versions for all dependencies (#2984)
+- CI/CD: fix micromamba setup broken by setup-micromamba v3.2.0 (#2985)
+
+## [v1.0.0]
+
+ClimateDT workflow modifications:
+
+Complete list:
+- Graphics: minor aesthetic adjustments (#2969)
+- Area selection can be correctly performed with `areas=False` in the Reader (#2960)
+
+## [v1.0.0a6]
+
+ClimateDT workflow modifications:
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
+- Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2925)
+- More info on the origin of a push to lumi-o in the logs (#2910)
+
+Main changes:
+- Update submit_aqua_web tool to support kind and separate templates (#2921)
+- DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
+- DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
+- DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+
+Complete list:
+- Hack to fix nemo model level data model identification (#2909)
+- Catalog generator: support for model names with resolution suffixes (e.g. IFS-NEMO-5km) (#2925)
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
+- Update submit_aqua_web tool to support kind and separate templates (#2921)
+- Updated the AQUA development container to Ubuntu 26.04 LTS, FDB 5.19.0, Metkit 1.15.10, eccodes 2.47.0 and eckit 1.32.5 (#2948)
 - DROP: can now handle level selection with a `--level` cli option or a `level` argument in the DROP class. Levels will be added to the data filenames (#2901)
 - Remove bold from graphics functions (#2916)
 - More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
+- AQUA analysis refactored as a class, cleaned up parser, config files templates and extended tests (#2897)
+- Introduced a `DaskCluster` class to centralize dask setup and shutdown (#2897)
 
 ## [v1.0.0a5]
 
@@ -1450,7 +1528,11 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
+[v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
+[v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
+[v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6
 [v1.0.0a5]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a4...v1.0.0a5
 [v1.0.0a4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a3...v1.0.0a4
 [v1.0.0a3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a2...v1.0.0a3

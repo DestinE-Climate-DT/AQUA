@@ -45,7 +45,8 @@ dependencies = [
     "boto3",
     "cartopy>=0.24.1",
     "cfgrib", #enable support for GRIB files
-    "dask[distributed]",
+    "dask",
+    "distributed",
     "fastparquet", #enable support for parquet files
     "filelock",
     "gcsfs", # Google Cloud Storage File System: required by ARCO
@@ -64,9 +65,8 @@ dependencies = [
     "ruamel.yaml",
     "scipy",
     "seaborn",
-    "smmregrid>=0.1.4",
+    "smmregrid==0.1.6",
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
-    "typeguard",
     "xarray>=2025.12.0",
     "zarr>=3.0"
 ]
@@ -75,7 +75,8 @@ dependencies = [
 fdb = [
     "pyfdb",
     "polytope-client",
-    "gsv-interface==2.13.1"
+    "gsv-interface==2.13.1",
+    "z3fdb>=5.21.4"
 ]
 docs = [
     "sphinx",
@@ -90,11 +91,13 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo"
+    "cdo",
+    "dvc>3.60.0",
+    "dvc-s3"
 ]
 style = [
     "pre-commit",
-    "ruff==0.15.20"
+    "ruff==0.16.5"
 ]
 all = [
     "aqua-core[docs]",
@@ -174,3 +177,11 @@ known-first-party = ["aqua"]
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[tool.conda-lock]
+default-non-conda-source = "pip"
+platforms = [
+    "linux-64",
+#    "osx-64",
+#    "osx-arm64",
+]

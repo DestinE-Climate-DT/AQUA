@@ -8,7 +8,7 @@ import xarray as xr
 from conftest import APPROX_REL, LOGLEVEL
 
 from aqua import Reader, Regridder
-from aqua.core.regridder.griddicthandler import GridDictHandler
+from aqua.core.regridder.grid_dict_handler import GridDictHandler
 
 
 @pytest.fixture(
@@ -271,7 +271,7 @@ class TestRegridder:
         assert val == pytest.approx(274.90709, rel=APPROX_REL)
 
         # test reading specific levels for first vertical coordinate (nz1)
-        data = reader.retrieve(level=[2.5, 2275])
+        data = reader.retrieve(level=[2.5, 2275], level_coord="nz1")
         val = data.isel(time=1).aqua.regrid().thetao.isel(nz1=1).aqua.fldmean().values
         # assert val == pytest.approx(274.9045) #smmregrid <= v0.1.3
         assert val == pytest.approx(274.90709, rel=APPROX_REL)

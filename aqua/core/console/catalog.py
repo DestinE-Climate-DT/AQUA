@@ -190,8 +190,12 @@ class CatalogMixin:
             os.makedirs(cdir, exist_ok=True)
 
             # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
-            self._fsspec_get_single_call(fs, source_dir, cdir)
-            self.logger.info("Download complete!")
+            try:
+                self._fsspec_get_single_call(fs, source_dir, cdir)
+                self.logger.info("Download complete!")
+            except Exception as e:
+                self.logger.error("Error occurred while fetching catalog: %s", e)
+                sys.exit(1)
         else:
             self.logger.error("Catalog %s already installed in %s, please consider `aqua update`.", catalog, cdir)
             sys.exit(1)
