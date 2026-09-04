@@ -11,6 +11,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Startdate and enddate in microseconds to allow dates beyond 2262 (#3072)
 
 ## [v1.1.0]
 
