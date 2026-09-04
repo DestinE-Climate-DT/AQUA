@@ -5,10 +5,9 @@ on:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
   push:
+    # if you want to edit this workflow, please create pypi-test branch and push to it
     branches:
       - pypi-test
-      - fix-test-pypi
-      - main
 
 permissions:
   contents: read
