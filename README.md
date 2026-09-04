@@ -4,7 +4,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Documentation](https://readthedocs.org/projects/aqua/badge/?version=latest)](https://aqua.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/aqua-core?style=flat)](https://pypi.org/project/aqua-core/)
-[![conda-forge](https://img.shields.io/conda/vn/conda-forge/aqua-core?color=green&label=conda-forge&logo=conda-forge&logoColor=white))](https://anaconda.org/conda-forge/aqua-core)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/aqua-core?color=green&label=conda-forge&logo=conda-forge&logoColor=white)](https://anaconda.org/conda-forge/aqua-core)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14906075.svg)](https://doi.org/10.5281/zenodo.14906075)
 
 
