@@ -10,8 +10,8 @@ import sys
 import tempfile
 from importlib import resources as pypath
 
-from aqua.core.dask import DaskCluster
 from aqua.core.configurer import ConfigCatalog, ConfigContext
+from aqua.core.dask import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
