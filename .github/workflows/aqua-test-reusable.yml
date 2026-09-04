@@ -12,7 +12,7 @@ on:
         description: 'Pytest markers to run (e.g., "aqua or slow")'
         required: true
         type: string
-        default: 'aqua or slow or gsv or graphics or catgen'
+        default: 'aqua or slow or fdb or graphics or catgen'
       enable-parallel:
         description: 'Enable pytest-xdist parallel execution'
         required: false
