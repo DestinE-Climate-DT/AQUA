@@ -10,6 +10,8 @@ on:
         description: 'Git tag to publish (e.g., v1.2.3)'
         required: true
         type: string
+  release:
+    types: [published]
 
 permissions:
   contents: read
