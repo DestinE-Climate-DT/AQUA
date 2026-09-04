@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+  push:
+    # if you want to edit this workflow, create a branch called "conda-test" and push to it
+    branches:
+      - conda-test
 
 permissions:
   contents: read
@@ -15,9 +19,9 @@ jobs:
   aqua-conda-tests:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.12", "3.13", "3.14"]'
+      python-versions: '["3.11", "3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen'
-      enable-parallel: false
+      enable-parallel: true
       enable-coverage: false
       fail-fast: false
       install-mode: 'conda'

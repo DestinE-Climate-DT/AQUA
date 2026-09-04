@@ -220,7 +220,6 @@ jobs:
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
-          channels: conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
             aqua-core
