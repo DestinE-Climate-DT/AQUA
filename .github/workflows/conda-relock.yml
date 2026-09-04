@@ -1,6 +1,8 @@
 name: relock conda
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1" # run every Monday night at 4AM UTC
 
 permissions:
   contents: write
