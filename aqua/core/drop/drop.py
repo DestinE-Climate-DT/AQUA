@@ -22,7 +22,7 @@ from time import time
 import dask
 import pandas as pd
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.dask import DaskCluster
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
@@ -82,7 +82,7 @@ class Drop:
         stat="mean",
         stat_kwargs={},
         compact="xarray",
-        engine="fdb",
+        engine="gsv",
         output_format="netcdf",
         zarr_chunks=None,
         **kwargs,
@@ -138,7 +138,7 @@ class Drop:
                 Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
-            engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
+            engine (string, opt):    Engine to be used by the Reader. Default is 'gsv'.
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.
@@ -207,11 +207,11 @@ class Drop:
 
         # configure tmpdir
         self.tmpdir = self._configure_tmpdir(tmpdir, self.basedir)
-        configpath = ConfigPath(configdir=configdir)
-        self.configdir = configpath.configdir
+        configpath = ConfigContext(configdir=configdir)
+        self.configdir = configpath.get_config_dir()
 
         # get default grids
-        _, grids_path = configpath.get_reader_filenames()
+        _, grids_path = configpath.get_reader_folders()
         self.default_grids = load_yaml(os.path.join(grids_path, "default.yaml"))
 
         # add the performance report

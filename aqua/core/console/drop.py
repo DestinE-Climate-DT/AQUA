@@ -79,7 +79,7 @@ def drop_parser(parser=None):
     parser.add_argument('--level', type=str,
                         help="Level(s) to be included in the filename. Can be a single level (int or float) or a list of levels separated by commas (e.g. '1000,850,500').") # noqa: E501
     parser.add_argument('--engine', type=str,
-                        help="Engine to be used for GSV retrieval: 'polytope' or 'fdb'. Defaults to 'fdb'.")
+                        help="Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to 'gsv'.")
     parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'],
                         help='Output format for DROP files [default: netcdf, or options.driver from config]: '
                              'netcdf, zarr or icechunk '
@@ -171,7 +171,7 @@ def drop_execute(args):
         level = [float(lev) if "." in lev else int(lev) for lev in level.split(",")]
 
     # options
-    engine = get_arg(args, "engine", _cfg(config, "options", "engine", "fdb"))
+    engine = get_arg(args, "engine", _cfg(config, "options", "engine", "gsv"))
     loglevel = get_arg(args, "loglevel", _cfg(config, "options", "loglevel", "WARNING"))
     compact = _cfg(config, "options", "compact", "cdo")
     driver = get_arg(args, "driver", _cfg(config, "options", "driver", "netcdf"))
@@ -258,7 +258,7 @@ def drop_cli(
     rebuild=False,
     no_validate=False,
     monitoring=False,
-    engine="fdb",
+    engine="gsv",
     default_nworkers=1,
     default_nthreads=1,
     driver="netcdf",

@@ -75,13 +75,13 @@ from the catalog entry, providing additional information:
     catalog_content = show_catalog_content(model='IFS-NEMO', show_descriptions=True)
 
 .. note::
-    The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigPath`` initialization internally.
-    If you need more control over the configuration, you can still use the method directly from the ``ConfigPath`` class:
+    The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigCatalog`` initialization internally.
+    If you need more control over the configuration, you can still use the method directly from the ``ConfigCatalog`` class:
 
     .. code-block:: python
 
-        from aqua.core.configurer import ConfigPath
-        config = ConfigPath(loglevel='info')
+        from aqua.core.configurer import ConfigCatalog
+        config = ConfigCatalog(loglevel='info')
         results = config.show_catalog_content()
 
 Reader basic usage

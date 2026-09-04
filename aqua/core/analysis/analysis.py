@@ -10,8 +10,8 @@ import sys
 import tempfile
 from importlib import resources as pypath
 
-from aqua.core.configurer import ConfigPath
 from aqua.core.dask import DaskCluster
+from aqua.core.configurer import ConfigCatalog, ConfigContext
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
@@ -30,7 +30,7 @@ class Analysis:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
 
-        self.aqua_configdir = ConfigPath().configdir
+        self.aqua_configdir = ConfigContext().get_config_dir()
 
         if config_file_path is None:
             self.config_file_path = os.path.join(self.aqua_configdir, "analysis/config.aqua-analysis.yaml")
@@ -109,7 +109,7 @@ class Analysis:
         if self.catalog:
             self.logger.info("Requested catalog: %s", self.catalog)
         else:
-            cat, _ = ConfigPath().browse_catalogs(self.model, self.exp, self.source)
+            cat, _ = ConfigCatalog(loglevel=self.loglevel).browse_catalogs(self.model, self.exp, self.source)
             if cat:
                 self.catalog = cat[0]
                 self.logger.info("Automatically determined catalog: %s", self.catalog)
