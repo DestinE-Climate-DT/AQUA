@@ -164,7 +164,6 @@ class Backend(ABC):
         t_start = pd.Timestamp(startdate) if startdate else None
         # This guarantees that the end of year, day, hour etc is correctly selected
         t_end = pd.Period(enddate).end_time if enddate else None
-        # t_end = pd.Timestamp(enddate) if enddate else None
         return data.sel(time=slice(t_start, t_end))
 
     def _sellevel(
