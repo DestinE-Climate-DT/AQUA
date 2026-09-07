@@ -74,10 +74,6 @@ The most straightforward intake catalog describing our dataset will look like th
 
 .. code-block:: yaml
 
-    plugins:
-    source:
-        - module: intake_xarray
-
     sources:
       annual:
         description: my amazing yearly_SST dataset
@@ -277,13 +273,13 @@ Some of the parameters are here described:
       time: D  # Default time chunk size
       vertical: 3  # Three vertical levels in each chunk
 
-    .. note::
-        When using the ``z3fdb`` engine, chunking is supported differently:
+.. note::
+    When using the ``z3fdb`` engine, chunking is supported differently:
 
-        * **Time direction**: Chunking is always by single time steps.
-        * **Level direction**: By default, level chunking is not performed.
-        * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
-        * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
+    * **Time direction**: Chunking is always by single time steps.
+    * **Level direction**: By default, level chunking is not performed.
+    * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
+    * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
 
 .. option:: timestep
 
