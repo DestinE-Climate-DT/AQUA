@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 import dask.array as da
-import numpy as np
+import pandas as pd
 import xarray as xr
 from smmregrid import GridInspector
 
@@ -161,7 +161,9 @@ class Backend(ABC):
 
     def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
         """Store date bounds for lazy application."""
-        return data.sel(time=slice(np.datetime64(startdate, "us"), np.datetime64(enddate, "us")))
+        t_start = pd.Timestamp(startdate) if startdate else None
+        t_end = pd.Timestamp(enddate) if enddate else None
+        return data.sel(time=slice(t_start, t_end))
 
     def _sellevel(
         self,
