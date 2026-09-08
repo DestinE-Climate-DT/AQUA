@@ -717,6 +717,14 @@ class Reader:
         """
         return histogram(data, **kwargs)
 
+    # Other convenience wrappers for reader methods
+
+    def seldate(self, data, *args, **kwargs):
+        """
+        Wrapper for selection of date using the backend method.
+        """
+        return self.backend.seldate(data, *args, **kwargs)
+
 
 def _check_if_regridded(data):
     """
