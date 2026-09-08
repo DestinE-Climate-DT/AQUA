@@ -9,7 +9,6 @@ import glob
 import os
 import shutil
 from abc import ABC, abstractmethod
-from datetime import datetime
 from time import time
 
 import numpy as np
@@ -620,7 +619,7 @@ class BaseWriter(ABC):
 
     def _write_chunk_stat_line(self, entry, stats_file):
         """Write a single chunk stat line immediately to the stats file."""
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ts = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
         mem = entry.get("mem")
         size_bytes = entry.get("size_bytes")
         tp = entry.get("throughput_mib_s")
