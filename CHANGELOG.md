@@ -12,6 +12,8 @@ ClimateDT workflow modifications:
 
 Complete list:
 
+- Suppress Intake2 warning (#3077)
+
 ## [v1.1.0]
 
 Main changes:
