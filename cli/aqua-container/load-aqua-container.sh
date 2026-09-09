@@ -22,6 +22,7 @@ usage() {
                                  Machine supported are lumi, levante and MN5
 
     Options:
+        -p, --path <path>        Specify custom container folder path.
         -n, --native             Enable native mode: AQUA will read from native env variable.
         -d, --diagnostics        Load aqua-diagnostics container instead of aqua-core (default)
         -l, --list               List available containers
@@ -61,9 +62,10 @@ parse_machine() {
     container_dir=aqua  # where the containers are stored
     aqua_title=AQUA-core
     list=0
+    aqua_folder_override=""
 
     # Use getopt to parse options
-    OPTIONS=$(getopt -o hnldc:s:v: --long help,native,list,diagnostics,version:,command:,script: -n "$0" -- "$@")
+    OPTIONS=$(getopt -o hnldp:c:s:v: --long help,native,list,diagnostics,path:,version:,command:,script: -n "$0" -- "$@")
     if [ $? -ne 0 ]; then
         usage
     fi
@@ -72,6 +74,8 @@ parse_machine() {
     # Process each option
     while true; do
         case "$1" in
+            -p|--path)
+                aqua_folder_override="$2"; shift 2 ;;
             -d|--diagnostics)
                 container_type=aqua-diagnostics; container_dir=aqua-diagnostics; aqua_title=AQUA-diagnostics; shift ;;
             -n|--native)
@@ -146,14 +150,26 @@ parse_machine() {
 
 function setup_folder(){
     machine=$1
+    folder_override=$2
+
+    if [ -n "$folder_override" ]; then
+        if [ ! -d "$folder_override" ]; then
+            echo "ERROR: The specified container folder does not exist at: $folder_override" >&2
+            return 1
+        fi
+        echo "$folder_override"
+        return 0
+    fi
+
     case "$machine" in
         "lumi")
             AQUA_folder="/project/project_465002727/containers/$container_dir"
             ;;
 
-        "levante")
-            AQUA_folder="/work/bb1153/b382289/container/$container_dir"
-            ;;
+        # No containers currently available on levante
+        # "levante")
+        #     AQUA_folder="/work/bb1153/b382289/container/$container_dir"
+        #     ;;
 
         "MN5")
             AQUA_folder="/gpfs/projects/ehpc01/containers/$container_dir"
@@ -300,7 +316,11 @@ parse_machine "$@"
 
 # Call the function and assign its output to a variable
 
-AQUA_folder=$(setup_folder $machine)
+AQUA_folder=$(setup_folder "$machine" "$aqua_folder_override")
+if [ $? -ne 0 ]; then
+    echo "Cannot setup container folder!"
+    exit 1
+fi
 
 if [[ "$list" -eq 1 ]]; then
     echo "Available containers in ${AQUA_folder}" >&2
