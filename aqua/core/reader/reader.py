@@ -721,7 +721,21 @@ class Reader:
 
     def seldate(self, data, *args, **kwargs):
         """
-        Wrapper for selection of date using the backend method.
+        Wrapper for selection of data for a specific date or date range using the backend method.
+        This method is more robust and convenient than using xarray ``.sel(time=slice(...))`` directly.
+        It supports different time resolution representations, solving issues with dates beyond 2262
+
+        Args:
+            data (xr.Dataset or xr.DataArray): The input dataset or dataarray.
+            startdate (str, optional): The starting date (e.g. '1985-01-01').
+                If only startdate is provided without enddate, data for that single date is selected.
+                Defaults to None.
+            enddate (str, optional): The end date (e.g. '1985-01-05').
+                If set to None explicitly, all data from startdate to the end is selected.
+                Defaults to startdate when startdate is provided.
+
+        Returns:
+            xr.Dataset or xr.DataArray: Sliced data.
         """
         return self.backend.seldate(data, *args, **kwargs)
 
