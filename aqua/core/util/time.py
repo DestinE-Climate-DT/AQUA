@@ -96,61 +96,94 @@ def xarray_to_pandas_freq(
             return None
         time_coord = xdataset[dim]
     elif isinstance(xdataset, xr.DataArray):
-        if dim in xdataset.coords:
-            time_coord = xdataset[dim]
-        else:
-            time_coord = xdataset
+        time_coord = xdataset[dim] if dim in xdataset.coords else xdataset
     else:
         time_coord = xdataset
 
     if hasattr(time_coord, "to_index"):
         time_index = time_coord.to_index()
-    elif isinstance(time_coord, pd.Index):
-        time_index = time_coord
     else:
-        time_index = pd.to_datetime(time_coord)
+        time_index = time_coord
+
+    if not isinstance(time_index, (pd.DatetimeIndex, xr.CFTimeIndex)):
+        try:
+            time_index = pd.to_datetime(time_index)
+        except Exception:
+            return None
+
+    if len(time_index) < 2:
+        return None
 
     diffs = pd.Series(time_index).diff().dropna()
     if diffs.empty:
         return None
 
-    delta = diffs.median()
-    if pd.isna(delta):
+    try:
+        delta = pd.Timedelta(diffs.median())
+    except Exception:
         return None
 
-    if not isinstance(delta, pd.Timedelta):
-        delta = pd.Timedelta(delta)
-
-    if delta <= pd.Timedelta(0):
+    if pd.isna(delta) or delta <= pd.Timedelta(0):
         return None
+
+    sec = delta.total_seconds()
 
     # Calendar-scale intervals
-    if delta >= pd.Timedelta(days=350):
-        years = int(round(delta.total_seconds() / (365.25 * 86400)))
+    if sec >= 350 * 86400:
+        years = int(round(sec / (365.25 * 86400)))
         return "YS" if years <= 1 else f"{years}YS"
-    if pd.Timedelta(days=25) <= delta <= pd.Timedelta(days=35):
+    if 25 * 86400 <= sec <= 35 * 86400:
         return "MS"
-    if pd.Timedelta(days=6) <= delta <= pd.Timedelta(days=8):
+    if 6 * 86400 <= sec <= 8 * 86400:
         return "W"
-    if delta >= pd.Timedelta(hours=20):
-        days = int(delta.round("D").total_seconds() // 86400)
+    if sec >= 20 * 3600:
+        days = int(round(sec / 86400))
         return "D" if days <= 1 else f"{days}D"
 
     # Sub-daily intervals
-    hours = int(delta.round("h").total_seconds() // 3600)
-    if hours >= 1:
+    if sec >= 3600:
+        hours = int(round(sec / 3600))
         return "h" if hours == 1 else f"{hours}h"
-
-    # Sub-hourly intervals
-    minutes = int(delta.round("min").total_seconds() // 60)
-    if minutes >= 1:
+    if sec >= 60:
+        minutes = int(round(sec / 60))
         return "min" if minutes == 1 else f"{minutes}min"
-
-    seconds = int(delta.round("s").total_seconds())
-    if seconds >= 1:
+    if sec >= 1:
+        seconds = int(round(sec))
         return "s" if seconds == 1 else f"{seconds}s"
 
     return None
+
+
+def pandas_freq_to_offset(freq: str) -> pd.DateOffset | pd.tseries.offsets.BaseOffset | None:
+    """
+    Convert a pandas frequency string to a pandas DateOffset or BaseOffset.
+
+    Args:
+        freq (str): A pandas-compliant frequency string (e.g. 'YS', 'MS', 'W', 'D', 'h').
+
+    Returns:
+        pd.DateOffset or pd.tseries.offsets.BaseOffset or None: The corresponding offset object.
+    """
+    if freq is None:
+        return None
+
+    # Handle numerical prefix if present (e.g., "2YS" -> 2 and "YS")
+    match = re.match(r"^(\d+)?(.+)$", freq)
+    if match:
+        num_str, base = match.groups()
+        n = int(num_str) if num_str else 1
+    else:
+        n = 1
+        base = freq
+
+    if base in ["YS", "AS", "Y", "A", "YE"]:
+        return pd.DateOffset(years=n)
+    if base in ["MS", "M", "ME"]:
+        return pd.DateOffset(months=n)
+    if base == "W" or base.startswith("W-"):
+        return pd.DateOffset(weeks=n)
+
+    return pd.tseries.frequencies.to_offset(freq)
 
 
 def pandas_freq_to_string(freq: str) -> str:

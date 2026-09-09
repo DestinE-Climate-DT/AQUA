@@ -17,7 +17,7 @@ from aqua.core.util import (
     to_list,
 )
 from aqua.core.util.string import lat_to_phrase, strlist_to_phrase
-from aqua.core.util.time import frequency_string_to_pandas, xarray_to_pandas_freq
+from aqua.core.util.time import frequency_string_to_pandas, pandas_freq_to_offset, xarray_to_pandas_freq
 from aqua.core.util.units import multiply_units
 
 
@@ -397,3 +397,38 @@ def test_xarray_to_pandas_freq_edge_cases():
     # Dataset without coordinates
     ds_empty = xr.Dataset({"a": [1, 2]})
     assert xarray_to_pandas_freq(ds_empty) is None
+    # Dataset and DataArray with length 0 time coordinate
+    ds_time_0 = xr.Dataset({"var": ("time", [])}, coords={"time": pd.to_datetime([])})
+    assert xarray_to_pandas_freq(ds_time_0) is None
+    da_time_0 = xr.DataArray([], coords={"time": []}, dims=["time"])
+    assert xarray_to_pandas_freq(da_time_0) is None
+    # Dataset and DataArray with length 1 time coordinate
+    ds_time_1 = xr.Dataset({"var": ("time", [1.0])}, coords={"time": pd.to_datetime(["2020-01-01"])})
+    assert xarray_to_pandas_freq(ds_time_1) is None
+    da_time_1 = xr.DataArray([1.0], coords={"time": ["2020-01-01"]}, dims=["time"])
+    assert xarray_to_pandas_freq(da_time_1) is None
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
+    "freq_str, expected_offset",
+    [
+        ("YS", pd.DateOffset(years=1)),
+        ("2YS", pd.DateOffset(years=2)),
+        ("AS", pd.DateOffset(years=1)),
+        ("YE", pd.DateOffset(years=1)),
+        ("MS", pd.DateOffset(months=1)),
+        ("6MS", pd.DateOffset(months=6)),
+        ("M", pd.DateOffset(months=1)),
+        ("W", pd.DateOffset(weeks=1)),
+        ("2W", pd.DateOffset(weeks=2)),
+        ("W-SUN", pd.DateOffset(weeks=1)),
+        ("D", pd.tseries.frequencies.to_offset("D")),
+        ("h", pd.tseries.frequencies.to_offset("h")),
+        ("30min", pd.tseries.frequencies.to_offset("30min")),
+        (None, None),
+    ],
+)
+def test_pandas_freq_to_offset(freq_str, expected_offset):
+    """Test converting pandas frequency strings to offsets."""
+    assert pandas_freq_to_offset(freq_str) == expected_offset
