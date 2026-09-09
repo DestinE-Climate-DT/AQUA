@@ -66,6 +66,18 @@ fixer_name:
             tnlwrf:
                 src_units: J m**-2 day**-1
                 source: ttr
+            snswrfcs:
+                src_units: J m**-2 day**-1
+                source: ssrc
+            snlwrfcs:
+                src_units: J m**-2 day**-1
+                source: strc
+            tnswrfcs:
+                src_units: J m**-2 day**-1
+                source: tsrc
+            tnlwrfcs:
+                src_units: J m**-2 day**-1
+                source: ttrc
 
     ERA5-daily-destine-v1:
         convention: eccodes
