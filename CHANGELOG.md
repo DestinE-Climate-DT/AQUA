@@ -12,6 +12,7 @@ ClimateDT workflow modifications:
 
 Complete list:
 
+- Trender works also with irregular monthly data (#3041)
 - Suppress Intake2 warning (#3077)
 
 ## [v1.1.0]
