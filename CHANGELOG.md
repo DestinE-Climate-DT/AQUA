@@ -11,6 +11,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
 
 - Suppress Intake2 warning (#3077)
 

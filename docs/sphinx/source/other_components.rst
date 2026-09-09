@@ -219,11 +219,37 @@ Time selection
 --------------
 
 Even if slicing your data after the ``retrieve()`` method is an easy task,
-being able to perform a time selecetion during the Reader initialization
+being able to perform a time selection during the Reader initialization
 can speed up your code, having less metadata to explore.
 For this reason ``startdate`` and ``enddate`` options are available both
 during the Reader initialization and the ``retrieve()`` method to subselect
-immediatly only a chunck of data.
+immediately only a chunk of data.
+
+In addition, AQUA provides the ``seldate()`` method on the ``Reader`` instance
+and as an ``aqua`` accessor on datasets and dataarrays for post-retrieval time selection:
+
+.. code-block:: python
+
+    from aqua import Reader
+
+    reader = Reader(model="IFS", exp="test-tco79", source="short")
+    data = reader.retrieve()
+
+    # Select a single date / day:
+    day_data = reader.seldate(data, "1985-01-01")
+    # Or via the accessor:
+    day_data = data.aqua.seldate("1985-01-01")
+
+    # Select a date range:
+    range_data = reader.seldate(data, "1985-01-01", "1985-01-05")
+    # Or via the accessor:
+    range_data = data.aqua.seldate("1985-01-01", "1985-01-05")
+
+    # Select from a starting date to the end of the dataset:
+    open_data = reader.seldate(data, "1985-01-01", enddate=None)
+    # Or via the accessor:
+    open_data = data.aqua.seldate("1985-01-01", enddate=None)
+
 
 .. _lev-selection:
 

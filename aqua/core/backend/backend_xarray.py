@@ -101,19 +101,6 @@ class BackendXarray(Backend):
         """
         return log_history(data, f"Retrieved from {self.path} using AQUA v{aqua_version} with native xarray")
 
-    def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
-        return super()._seldate(data=data, startdate=startdate, enddate=enddate)
-
-    def _sellevel(self, data: xr.Dataset, level: str | list = None, level_coord: str = None):
-        return super()._sellevel(data=data, level=level, level_coord=level_coord)
-
-    def _selvar(
-        self,
-        data: xr.Dataset,
-        var: str | list = None,
-    ):
-        return super()._selvar(data=data, var=var)
-
     @staticmethod
     def _detect_engine(path):
         """
