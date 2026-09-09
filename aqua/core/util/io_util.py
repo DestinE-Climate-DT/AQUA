@@ -127,7 +127,7 @@ def file_is_complete(filename, loglevel="WARNING"):
         if mindate is not None:
             logger.warning("Some NaN and mindate found: %s", mindate)
             last_nan = xfield.time[np.where(nan_count == nan_count[0])].max()
-            if np.datetime64(mindate) > last_nan:
+            if pd.Timestamp(mindate) > last_nan:
                 logger.info(
                     "File %s has some NaN up to %s but it is ok according to mindate %s",
                     filename,

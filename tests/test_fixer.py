@@ -132,7 +132,7 @@ def test_fixer_ifs_coords():
 
     reader = Reader(model="IFS", exp="test-tco79", source="short_masked-coord-test", loglevel=LOGLEVEL)
     data = reader.retrieve()
-    assert "timepippo" in data.coords
+    assert "tempodipippo" in data.coords
     assert "cellspippo" in data.dims
 
 

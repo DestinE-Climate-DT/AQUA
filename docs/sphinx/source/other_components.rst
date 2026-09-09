@@ -225,10 +225,6 @@ For this reason ``startdate`` and ``enddate`` options are available both
 during the Reader initialization and the ``retrieve()`` method to subselect
 immediatly only a chunck of data.
 
-.. note::
-    If you're streaming data check the section :ref:`streaming` to have an
-    overview of the behaviour of the Reader with these options.
-
 .. _lev-selection:
 
 Level selection
@@ -251,38 +247,6 @@ The levels are specified in the same units as they are stored in the archive
 .. warning::
     If you're dealing with level selection and regridding, please take a look at
     the section :ref:`lev-selection-regrid`.
-
-.. _streaming:
-
-Streaming of data
------------------
-
-The Reader class includes the ability to simulate data streaming to retrieve chunks
-of data of a specific time length.
-
-To activate the streaming mode the user should specify the argument ``streaming=True``
-in the Reader initialization.
-The user can also choose the length of the data chunk with the ``aggregation`` keyword
-(e.g. in pandas notation, or with aliases as ``daily``, ``monthly`` etc. or ``days``, ``months`` etc.).
-The default is ``S`` (step), i.e. single saved timesteps are read at each iteration.
-The user can also specify the desired initial and final dates with the keywords ``startdate`` and ``enddate``.
-
-If, for example, we want to stream the data every three days from ``'2020-05-01'``, we need to call:
-
-.. code-block:: python
-
-    from aqua import Reader
-    reader = Reader(model="IFS", exp= "tco2559-ng5", source="ICMGG_atm2d",
-                    streaming=True, aggregation = '3D', startdate = '2020-05-01')
-    data = reader.retrieve()
-
-The data available with the first retrieve will be only 3 days of the available times.
-The ``retrieve()`` method can then be called multiple times,
-returning a new chunk of 3 days of data, until all data are streamed.
-The function will automatically determine the appropriate start and end points for each chunk based on
-the internal state of the streaming process.
-
-If we want to reset the state of the streaming process, we can call the ``reset_stream()`` method.
 
 .. _accessors:
 

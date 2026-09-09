@@ -2,7 +2,7 @@
 
 from typing import Optional, Union
 
-DEFAULT_REALIZATION = "r1"  # Default realization if not specified
+from aqua.core.default import DEFAULT_REALIZATION
 
 
 def format_realization(realization: Optional[str | int | list | None] = None) -> Union[str, list]:
