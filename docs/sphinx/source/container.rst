@@ -63,6 +63,10 @@ The script can be called interactively or with command-line options (e.g. for ba
 
    Mandatory argument: ``levante``, ``lumi``, or ``MN5``. Sets environment variables and directory bindings specific to that machine.
 
+.. option:: -p, --path <path>
+
+   Specify a custom directory path where the container images (``.sif`` files) are located, overriding the default machine container directory.
+
 .. option:: -d, --diagnostics
 
    Load the ``aqua-diagnostics`` container instead of the default ``aqua-core`` container.

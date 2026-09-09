@@ -117,7 +117,7 @@ parse_machine() {
         # Check if AQUA is set and the file exists
         echo "Selecting native AQUA path: $AQUA"
         echo "Please use this with caution since it is not how the container is meant to be used!"
-        echo "Remember to run: pip install -e `$AQUA` once you are in the container"
+        echo "Remember to run: pip install -e '$AQUA' once you are in the container"
         if [ ! -d "$AQUA" ]; then
             echo "ERROR: The $aqua_title directory does not exist at: $AQUA"
             exit 1
