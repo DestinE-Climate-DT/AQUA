@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
 Complete list:
 
 - Suppress Intake2 warning (#3077)
+- New version of the ERA5 data, including clear-sky variables, for Fixer (#3079)
 
 ## [v1.1.0]
 
