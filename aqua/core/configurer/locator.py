@@ -8,7 +8,7 @@ class ConfigLocator:
     Helper to resolve AQUA configuration directories/files.
     """
 
-    def __init__(self, filename="config-aqua.yaml", configdir=None, logger=None):
+    def __init__(self, filename: str = "config-aqua.yaml", configdir: str | None = None, logger=None):
         """
         Initialize the ConfigLocator instance.
         Args:
@@ -22,12 +22,18 @@ class ConfigLocator:
 
     @property
     def configdir(self):
+        """
+        Return the path to the configuration directory.
+        """
         if self._configdir is None:
             self._configdir = self._discover_config_dir()
         return self._configdir
 
     @property
     def config_file(self):
+        """
+        Return the path to the configuration file.
+        """
         return os.path.join(self.configdir, self.filename)
 
     def _discover_config_dir(self):

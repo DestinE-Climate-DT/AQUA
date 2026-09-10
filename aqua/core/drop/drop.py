@@ -16,17 +16,17 @@ Main features:
 
 import os
 import shutil
-from datetime import datetime
 from time import time
 
 import dask
 import pandas as pd
 from dask.distributed import Client, LocalCluster
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
+from aqua.core.timstat import TimStat
 from aqua.core.util import dump_yaml, load_yaml
 from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
@@ -37,8 +37,8 @@ from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
 
-# available statistics
-available_stats = ["mean", "std", "max", "min", "sum", "histogram"]
+# available statistics are synchronized with the TimStat class
+available_stats = TimStat().available_stats
 
 
 class Drop:
@@ -80,7 +80,7 @@ class Drop:
         stat="mean",
         stat_kwargs={},
         compact="xarray",
-        engine="fdb",
+        engine="gsv",
         output_format="netcdf",
         zarr_chunks=None,
         **kwargs,
@@ -135,7 +135,7 @@ class Drop:
                 Default is empty dict.
             compact (string, opt):   Compact the data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
-            engine (string, opt):    Engine to be used by the Reader. Default is 'fdb'.
+            engine (string, opt):    Engine to be used by the Reader. Default is 'gsv'.
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.
@@ -203,11 +203,11 @@ class Drop:
 
         # configure tmpdir
         self.tmpdir = self._configure_tmpdir(tmpdir, self.basedir)
-        configpath = ConfigPath(configdir=configdir)
-        self.configdir = configpath.configdir
+        configpath = ConfigContext(configdir=configdir)
+        self.configdir = configpath.get_config_dir()
 
         # get default grids
-        _, grids_path = configpath.get_reader_filenames()
+        _, grids_path = configpath.get_reader_folders()
         self.default_grids = load_yaml(os.path.join(grids_path, "default.yaml"))
 
         # add the performance report
@@ -246,7 +246,7 @@ class Drop:
         self.check = False
 
         # stats file written in basedir (timestamped, with run details to avoid overwrites)
-        _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        _ts = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         self.stats_file = os.path.join(
             self.basedir,
             f"drop_stats_{self.catalog}_{self.model}_{self.exp}_{self.source}_{output_format}_{_ts}.txt",
@@ -663,7 +663,7 @@ class Drop:
         """Write a run header block to the stats file."""
         if not self.definitive:
             return
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
         header = (
             "\n=== DROP Performance Stats ===\n"
             f"Model: {self.model} | Exp: {self.exp} | Source: {self.source} |"
@@ -680,7 +680,7 @@ class Drop:
             return
         chunk_stats = getattr(self.writer, "_chunk_stats", [])
         total_time = t_end - t_beg
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ts = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
         line = f"[{ts}] SUMMARY  var={var}  total_time={total_time:.2f}s  chunks={len(chunk_stats)}\n"
         with open(self.stats_file, "a", encoding="utf-8") as fh:
             fh.write(line)

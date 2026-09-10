@@ -13,7 +13,7 @@ import sys
 
 import jinja2
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.util import get_arg, load_yaml, to_list
 
 
@@ -110,7 +110,7 @@ def submit_sbatch(
         "definitive": definitive,
         "overwrite": overwrite,
         "config": yaml_file,
-        "machine": ConfigPath().get_machine(),
+        "machine": ConfigContext().get_machine(),
         "aqua": aquapath,
     }
 

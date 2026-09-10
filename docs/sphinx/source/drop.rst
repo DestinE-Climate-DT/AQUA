@@ -273,7 +273,7 @@ The ``target`` section defines the primary output characteristics for the DROP p
 - **regrid_first** (bool, optional): Whether to apply regridding (and region selection) before time statistics. Default: ``False``
 
   - For some statistics (e.g., histogram), it may be necessary to regrid the data before applying the statistic
-  because the statistic can disrupt the spatial dimensions required for regridding.
+    because the statistic can disrupt the spatial dimensions required for regridding.
 
 **Paths Section**
 

@@ -14,23 +14,28 @@ and please include also the following acknowledgements:
   @software{AQUA,
   doi = {10.5281/ZENODO.14906075},
   url = {https://zenodo.org/doi/10.5281/zenodo.14906075},
-  author = {Nurisso,  Matteo and Caprioli,  Silvia and Davini,  Paolo and von Hardenberg,  Jost and Nazarova,  Natalia and Ghosh,  Supriyo and Ghinassi,  Paolo and Cadau,  Marco and Tovazzi,  Emanuele and Koldunov,  Nikolay and Massonnet,  Fran\c{c}ois and Rajput,  Maqsood Mubarak and Sayed,  Susan and Sharma,  Tamvi and Sunny,  Jaleena and Kluft,  Lukas and Kinoshita,  Bruno and Ortega,  Pablo},
-  title = {AQUA},
+  author = {Nurisso,  Matteo and Caprioli,  Silvia and Davini,  Paolo and von Hardenberg,  Jost and Nazarova,  Natalia and Ghosh,  Supriyo and Ghinassi,  Paolo and Cadau,  Marco and Tovazzi,  Emanuele and Koldunov,  Nikolay and Rajput,  Maqsood Mubarak and Kinoshita,  Bruno},
+  title = {AQUA-core},
   publisher = {Zenodo},
-  year = {2025},
+  year = {2026},
   copyright = {Apache License 2.0}
   }
 
 .. code-block:: bibtex
 
   @article{Nurisso2026,
-  title = {AQUA v1: The Application for QUality Assessment for the Climate Change Adaptation Digital Twin},
-  url = {http://dx.doi.org/10.5194/egusphere-2026-1115},
-  DOI = {10.5194/egusphere-2026-1115},
+  title = {AQUA v1.0.0: The Application for QUality Assessment for the Climate Change Adaptation Digital Twin – the core engine},
+  volume = {19},
+  ISSN = {1991-9603},
+  url = {http://dx.doi.org/10.5194/gmd-19-7725-2026},
+  DOI = {10.5194/gmd-19-7725-2026},
+  number = {16},
+  journal = {Geoscientific Model Development},
   publisher = {Copernicus GmbH},
   author = {Nurisso,  Matteo and von Hardenberg,  Jost and Cadau,  Marco and Caprioli,  Silvia and Ghinassi,  Paolo and Ghosh,  Supriyo and Koldunov,  Nikolay and Nazarova,  Natalia and Rajput,  Maqsood Mubarak and Tovazzi,  Emanuele and Davini,  Paolo},
   year = {2026},
-  month = May
+  month = Aug,
+  pages = {7725–7740}
   }
 
 Acknowledgments

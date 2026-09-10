@@ -5,6 +5,9 @@ from __future__ import annotations
 import os
 import sys
 
+import xarray as xr
+from ruamel.yaml.comments import CommentedSeq
+
 
 def to_list(arg):
     """
@@ -13,6 +16,7 @@ def to_list(arg):
     - Returns the list itself if input is already a list.
     - Converts tuples, sets, and dictionaries to a list.
     - Wraps other types in a single-element list.
+    - Converts ruamel.yaml CommentedSeq to a plain list.
 
     Parameters:
     arg: The input object to convert.
@@ -22,6 +26,8 @@ def to_list(arg):
     """
     if arg is None:  # Preserve None
         return []
+    if isinstance(arg, CommentedSeq):  # Convert ruamel YAML sequences to a plain list
+        return list(arg)
     if isinstance(arg, list):  # Already a list
         return arg
     if isinstance(arg, (tuple, set)):  # Convert tuples and sets to a list
@@ -31,28 +37,76 @@ def to_list(arg):
     return [arg]
 
 
-def get_arg(args, arg, default):
+def get_arg(args, arg, default, config=None, key=None):
     """
-    Support function to get arguments
+    Support function to get arguments:
+    - First tries to get the argument from the command line arguments (args).
+    - If not found, tries to get it from the configuration dictionary (config) using the provided key or the argument name.
+    - If still not found, returns the default value.
 
     Args:
         args: the arguments
         arg: the argument to get
         default: the default value
+        config: the (optional) configuration dictionary
+        key: the key (optional) to use in the configuration dictionary
 
     Returns:
         The argument value or the default value
     """
-    return getattr(args, arg, None) or default
+    return getattr(args, arg, None) or (config.get(key or arg, default) if config else default)
 
 
-def extract_attrs(data, attr):
+def check_attrs(da, att) -> bool:
+    """
+    Check if a DataArray or Dataset has a specific attribute.
+
+    Arguments:
+        da (xarray.DataArray or xarray.Dataset): Object to check
+        att (dict or str): Attribute to check for
+
+    Returns:
+        Boolean
+    """
+    if not att:
+        return False
+    if isinstance(att, str):
+        return att in da.attrs
+    if isinstance(att, dict):
+        key = next(iter(att))
+        return da.attrs.get(key) == att[key]
+    return False
+
+
+def set_attrs(ds, attrs) -> xr.Dataset | xr.DataArray:
+    """
+    Set an attribute for all variables in an xarray.Dataset
+
+    Args:
+        ds (xarray.Dataset or xarray.DataArray): Dataset to set attributes on
+        attrs (dict): Dictionary of attributes to set
+
+    Returns:
+        xarray.Dataset or xarray.DataArray: Updated Dataset or DataArray, or the same object if not this.
+    """
+    if not isinstance(attrs, dict):
+        raise TypeError("The 'attrs' argument must be a dictionary.")
+
+    if isinstance(ds, xr.Dataset):
+        for var in ds.data_vars:
+            ds[var].attrs.update(attrs)
+    elif isinstance(ds, xr.DataArray):
+        ds.attrs.update(attrs)
+    return ds
+
+
+def extract_attrs(data, attr) -> list | None:
     """Extract attribute(s) from dataset or list of datasets.
     Args:
         data (xarray.Dataset or list of xarray.Dataset): Dataset(s) to extract
         attr (str): Attribute name to extract.
         Returns:
-            list: List of attribute values from the dataset(s).
+            list | None: List of attribute values from the dataset(s).
     """
     if data is None:
         return None

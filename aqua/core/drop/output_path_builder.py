@@ -108,7 +108,9 @@ class OutputPathBuilder:
         year = "*" if year is None else year
 
         # specific case for a specific list of levels
-        level = to_list(str(level)) if level is not None else None
+        level = to_list(level) if level is not None else None
+        if level:
+            level = [str(l) for l in level]  # Convert all levels to strings
         varname = f"{var}_{'_'.join(level)}" if level else var
 
         components = [

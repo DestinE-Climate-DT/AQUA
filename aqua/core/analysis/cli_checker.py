@@ -10,7 +10,11 @@ import argparse
 import os
 import sys
 
-from aqua.core.util import template_parse_arguments
+from aqua import Reader
+from aqua import __version__ as aqua_version
+from aqua.core.exceptions import NoDataError
+from aqua.core.logger import log_configure
+from aqua.core.util import dump_yaml, get_arg, template_parse_arguments
 
 
 def parse_arguments(args):
@@ -45,16 +49,10 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 
-if __name__ == "__main__":
-    args = parse_arguments(sys.argv[1:])
+def main(args):
+    """Main function for the cli_checker."""
 
     try:
-        from aqua import Reader
-        from aqua import __version__ as aqua_version
-        from aqua.core.exceptions import NoDataError
-        from aqua.core.logger import log_configure
-        from aqua.core.util import dump_yaml, get_arg
-
         loglevel = get_arg(args, "loglevel", "WARNING")
         logger = log_configure(log_name="Setup check", log_level=loglevel)
     except ImportError:
@@ -120,3 +118,8 @@ if __name__ == "__main__":
         raise NoDataError("Failed to retrieve data: {}".format(e))
 
     logger.info("Check is terminated, diagnostics can run!")
+
+
+if __name__ == "__main__":
+    args = parse_arguments(sys.argv[1:])
+    main(args)

@@ -1,7 +1,5 @@
 """Strategies for fixing issues in the code."""
 
-from datetime import timedelta
-
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -50,14 +48,15 @@ class FixerOperator:
             offset = data.attrs.get("offset", 0)
             time_conversion_flag = data.attrs.get("time_conversion_flag", 0)
             if factor != 1:
-                data *= factor
+                data = data * factor
                 # if a special dpm correction has been defined, apply it
                 if time_conversion_flag and time_correction is not False:
-                    data /= time_correction
+                    data = data / time_correction
             if offset != 0:
-                data += offset
+                data = data + offset
             log_history(data, f"Units changed to {tgt_units} by fixer")
             data.attrs.pop("tgt_units", None)
+        return data
 
     def delete_variables(self, data):
         """
@@ -158,7 +157,7 @@ class FixerOperator:
 
         if jump:
             # universal mask based on the change of month (shifted by one timestep)
-            dt = np.timedelta64(timedelta(seconds=deltat))
+            dt = pd.Timedelta(seconds=deltat).to_timedelta64()
             data1 = data.assign_coords(time=data.time - dt)
             data2 = data.assign_coords(time=data1.time - dt)
             # Mask of dates where month changed in the previous timestep
@@ -219,9 +218,9 @@ class FixerOperator:
 
         first = data.time.groupby(data["time.year"] * 100 + data["time.month"]).first()
         if enddate:
-            first = first.where(first < np.datetime64(str(enddate)), drop=True)
+            first = first.where(first < pd.Timestamp(enddate), drop=True)
         if startdate:
-            first = first.where(first > np.datetime64(str(startdate)), drop=True)
+            first = first.where(first > pd.Timestamp(startdate), drop=True)
         mask = data.time.isin(first)
         data = data.where(~mask, np.nan)
 
