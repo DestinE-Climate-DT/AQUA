@@ -110,7 +110,7 @@ def main(args):
             dump_yaml(outfile=yaml_path, cfg=metadata)
 
         if fread:
-            reader.retrieve(sample=True)
+            reader._retrieve_plain()
 
     except Exception as e:
         logger.error("Failed to retrieve data: {}".format(e))
