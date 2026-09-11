@@ -594,11 +594,18 @@ class InstallMixin:
         Determine the installation mode for a component.
 
         Args:
-            specific_arg: Value of --core or --diagnostics argument
+            specific_arg: Value of the component's CLI argument (e.g. --core or --diagnostics):
+                None if not requested, 'standard' if requested without a path, or a path string
+                for an editable install.
 
         Returns:
-            dict: {'mode': 'editable'|'standard', 'path': str|None}
+            dict or None: {'mode': 'editable'|'standard', 'path': str|None},
+                or None if the component was not requested at all.
         """
+        # If the component was not requested at all, argparse leaves it as None
+        if specific_arg is None:
+            return None
+
         # If specific_arg is a string path (not 'standard'), use editable mode
         if isinstance(specific_arg, str) and specific_arg != "standard":
             return {"mode": "editable", "path": specific_arg}
