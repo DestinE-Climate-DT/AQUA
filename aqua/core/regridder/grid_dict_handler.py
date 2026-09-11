@@ -2,6 +2,7 @@
 
 from smmregrid import CdoGrid
 
+from aqua.core.gridbuilder import GridDeployer
 from aqua.core.logger import log_configure
 
 from .regridder_util import check_existing_file
@@ -14,6 +15,7 @@ class GridDictHandler:
     that can be used to define a grid.
     It covers many cases (it might seem overdetailed), and can be used also
     in absence of a cfg_grid_dict dictionary.
+    It also checks if the grid path is a valid CDO grid name or a file path, and if not, it tries to deploy the grid file.
     """
 
     def __init__(self, cfg_grid_dict, default_dimension="2d", loglevel="WARNING"):
@@ -58,7 +60,7 @@ class GridDictHandler:
         """
 
         grid_dict = self._normalize_grid_dict(grid_name)
-        grid_dict["path"] = self._normalize_grid_path(grid_dict)
+        grid_dict["path"] = self._normalize_grid_path(grid_dict, grid_name)
         return grid_dict
 
     def _normalize_grid_dict(self, grid_name):
@@ -108,7 +110,7 @@ class GridDictHandler:
         # if the grid dict is a dictionary, return it
         return grid_dict
 
-    def _normalize_grid_path(self, grid_dict):
+    def _normalize_grid_path(self, grid_dict, grid_name):
         """
         Normalize the grid path to a dictionary with the self.default_dimension key.
         3 cases handled:
@@ -117,8 +119,8 @@ class GridDictHandler:
             - a dictionary with a dictionary of path, one for each vertical coordinate
 
         Args:
-            path (str, dict): The grid path.
-            data (xarray.Dataset): The dataset to extract grid information from.
+            grid_dict (dict): The grid dictionary.
+            grid_name (str): The grid name, for logging purposes.
 
         Returns:
             dict: The normalized grid path dictionary. "self.default_dimension" key is mandatory.
@@ -131,21 +133,55 @@ class GridDictHandler:
 
         # case path is a string: check if it is a valid CDO grid name or a file path
         if isinstance(path, str):
-            if CdoGrid(path).grid_kind:
-                self.logger.debug("Grid path %s is a valid CDO grid name.", path)
-                return {self.default_dimension: path}
-            if check_existing_file(path):
-                self.logger.debug("Grid path %s is a valid file path.", path)
-                return {self.default_dimension: path}
-            raise FileNotFoundError(f"Grid file '{path}' does not exist.")
+            resolved = self._resolve_grid_path(path, grid_name)
+            return {self.default_dimension: resolved}
 
-        # case path is a dictionary: check if the values are valid file paths
-        # (could extend to CDO names?)
+        # case path is a dictionary: check if the values are valid file paths, deploying if needed
         if isinstance(path, dict):
-            for _, value in path.items():
-                if not (CdoGrid(value).grid_kind or check_existing_file(value)):
-                    raise ValueError(f"Grid path '{value}' is not a valid CDO grid name nor a file path.")
-            self.logger.debug("Grid path %s is a valid dictionary of file paths.", path)
+            resolved_dict = {key: self._resolve_grid_path(value, grid_name) for key, value in path.items()}
+            self.logger.debug("Grid path %s for grid '%s' is a valid dictionary of file paths.", path, grid_name)
+            return resolved_dict
+
+        raise TypeError(f"Grid path '{path}' for grid '{grid_name}' is not a valid type.")
+
+    def _resolve_grid_path(self, path, grid_name):
+        """
+        Resolve a single grid path value: check if it's a valid CDO grid name
+        or an existing file path; if not, attempt to deploy it and re-check.
+
+        Args:
+            path (str): The path, CDO grid name, or identifier to resolve.
+            grid_name (str): The grid name, for logging purposes.
+
+        Returns:
+            str: The resolved (validated) path.
+
+        Raises:
+            ValueError: If the path cannot be resolved even after deployment.
+        """
+        if CdoGrid(path).grid_kind:
+            self.logger.debug("Grid path %s for grid '%s' is a valid CDO grid name.", path, grid_name)
             return path
 
-        raise TypeError(f"Grid path '{path}' is not a valid type.")
+        if check_existing_file(path):
+            self.logger.debug("Grid path %s for grid '%s' is a valid file path.", path, grid_name)
+            return path
+
+        try:
+            self.logger.warning(
+                "Grid path %s for grid '%s' is not a valid CDO grid name nor a file path. Attempting to deploy the grid file.",
+                path,
+                grid_name,
+            )
+            grid_deployer = GridDeployer(loglevel="debug")
+            grid_deployer.deploy(source_grid_name=grid_name)
+            if check_existing_file(path):
+                self.logger.debug("Grid path %s for grid '%s' is a valid file path after deployment.", path, grid_name)
+                return path
+        except Exception as e:
+            raise ValueError(
+                f"Grid path '{path}' for grid '{grid_name}' is not a valid CDO grid name "
+                f"nor a file path, and deployment failed: {e}"
+            )
+
+        raise ValueError(f"Grid path '{path}' for grid '{grid_name}' is not a valid CDO grid name nor a file path.")
