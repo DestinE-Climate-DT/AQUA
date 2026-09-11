@@ -445,7 +445,7 @@ class Drop:
 
         # Cleaning
         self.data.close()
-        if self.dask:  # self.nworkers > 1
+        if self.dask_cluster.client_active:
             self.dask_cluster.close()
         self._remove_tmpdir()
 
