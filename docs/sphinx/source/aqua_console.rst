@@ -72,8 +72,9 @@ aqua install
 ------------
 
 With this command the configuration file and the default data models, grids and fixes are copied to the destination folder.
-If the ``aqua-diagnostics`` package is found in the current environment,
-also the configuration files for the diagnostics are copied (see aqua-diagnostics `documentation <https://aqua-diagnostics.readthedocs.io/en/latest/>`_).
+AQUA core is always installed. On top of it, any other AQUA component installed in the current environment
+(``aqua-diagnostics`` and any further package following the same convention, see :ref:`aqua-console-plugins`)
+is automatically detected and its configuration/template files are copied as well.
 
 By default, the destination folder will be ``$HOME/.aqua``.
 It is possible to specify from where to copy and where to store.
@@ -112,8 +113,11 @@ Optional arguments are:
     allowing developers to work on their local copy of AQUA diagnostics.
 
 .. note::
-    The default behaviour, when no extra arguments are specified, is to implicitly try both ``--core`` and ``--diagnostics`` options,
-    depending on the presence of the corresponding packages in the current environment.
+    ``--diagnostics`` is only one example: **every** AQUA component discovered in the current environment
+    gets its own ``--<component-name>`` option automatically, following the same syntax
+    (bare flag for a standard install, or a path for an editable one). Run ``aqua install --help``
+    to see the exact list of components available in your environment.
+    The default behaviour, when no component flag is specified at all, is to install every discovered component.
 
 .. option:: --path, -p <path>
 
@@ -121,6 +125,40 @@ Optional arguments are:
     If this option is used, the tool will ask the user if they want a link in the default folder ``$HOME/.aqua``.
     If this link is not created, the environment variable ``AQUA_CONFIG`` has to be set to the folder specified
     in order to expose it to AQUA.
+
+.. _aqua-console-plugins:
+
+How AQUA discovers installable components
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``aqua install`` no longer hardcodes the list of components it knows how to install: besides ``core``,
+any Python package can advertise itself as an installable AQUA component through a standard
+`entry point <https://packaging.python.org/en/latest/specifications/entry-points/>`_.
+This is how ``aqua-diagnostics`` itself is discovered, and it is the mechanism a new package
+(e.g. a future ``aqua-fishery``) would use to plug into ``aqua install``/``aqua update`` without
+any change needed in AQUA core.
+
+A plugin package needs two things:
+
+1. An entry point declared in its ``pyproject.toml``:
+
+   .. code-block:: toml
+
+       [project.entry-points."aqua.plugins"]
+       diagnostics = "aqua.diagnostics:get_install_dirs"
+
+2. A ``get_install_dirs()`` function, importable from that module, returning the list of
+   config and template directories to install:
+
+   .. code-block:: python
+
+       def get_install_dirs():
+           return {"config": DIAGNOSTIC_CONFIG_DIRECTORIES, "templates": DIAGNOSTIC_TEMPLATE_DIRECTORIES}
+
+At runtime, ``aqua install`` looks up all packages registered under the ``aqua.plugins`` entry point
+group, and for each of them builds a ``--<name>`` CLI option (``<name>`` being the entry point name,
+e.g. ``diagnostics``). A package that is registered but cannot be imported (e.g. installed metadata
+left over after an incomplete removal) is simply skipped with a warning, rather than breaking the install.
 
 .. _aqua-avail:
 
@@ -241,7 +279,9 @@ If the installation was done in editable mode, only the links will be removed.
 aqua update
 -----------
 
-This command will update all the configuration files, both from AQUA core and AQUA diagnostics, if installed in the current environment.
+This command will update the configuration files of every AQUA component discovered in the current
+environment (core plus any registered plugin, see :ref:`aqua-console-plugins`), except those installed
+in editable mode, which are left untouched since they already point to the developer's own working copy.
 
 .. option:: -c, --catalog
 
