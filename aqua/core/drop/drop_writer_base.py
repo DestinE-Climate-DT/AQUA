@@ -77,7 +77,6 @@ class BaseWriter(ABC):
         Returns:
             str: File extension (e.g., '.nc', '.zarr')
         """
-        pass
 
     @abstractmethod
     def validate(self, path):
@@ -90,7 +89,6 @@ class BaseWriter(ABC):
         Returns:
             bool: True if valid, False otherwise
         """
-        pass
 
     @abstractmethod
     def _get_encoding(self, data, var=None):
@@ -104,7 +102,6 @@ class BaseWriter(ABC):
         Returns:
             dict: Encoding configuration or None
         """
-        pass
 
     @abstractmethod
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
@@ -119,7 +116,6 @@ class BaseWriter(ABC):
         Returns:
             bool: True if write successful
         """
-        pass
 
     @abstractmethod
     def _should_concat(self):
@@ -129,7 +125,6 @@ class BaseWriter(ABC):
         Returns:
             bool: True if concatenation is enabled
         """
-        pass
 
     @abstractmethod
     def _open_files(self, filepaths):
@@ -145,7 +140,6 @@ class BaseWriter(ABC):
         Returns:
             xarray.Dataset: Opened dataset
         """
-        pass
 
     def _build_zarr_encoding(self, data, time_chunk, compressor_level=1):
         """

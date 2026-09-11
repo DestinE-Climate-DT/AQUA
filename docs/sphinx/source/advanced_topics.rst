@@ -206,6 +206,46 @@ It is also possible to specify vertical chunking by passing a dictionary with th
 In this case ``time`` will follow the notation discussed above, while ``vertical`` specifies the number of vertical
 levels to use for each chunk.
 
+.. _dask-cluster:
+
+Centralized Dask cluster management
+------------------------------------
+
+AQUA provides a ``DaskCluster`` class (``aqua.core.dask.DaskCluster``) to centralize the setup, activation
+and shutdown of a Dask ``LocalCluster`` used for parallel diagnostic execution.
+It is used internally by both the AQUA analysis and DROP CLI (``AquaAnalysis`` and ``Drop``) to avoid duplicating
+cluster lifecycle logic, and it can be reused by any tool that needs a managed local cluster.
+
+.. code-block:: python
+
+    from aqua.core.dask import DaskCluster
+
+    dask_cluster = DaskCluster(loglevel="INFO")
+    dask_cluster.setup(nworkers=4, nthreads=2, mem_limit="3.1GiB")
+    dask_cluster.activate_client()
+
+    # ... run computations using the cluster ...
+
+    dask_cluster.close()
+
+The main methods are:
+
+- ``setup()``: starts a ``LocalCluster`` with the given number of workers/threads, memory limit,
+  temporary directory and optional communication timeouts. It is a no-op if a cluster is already running.
+- ``activate_client()``: creates and activates a Dask ``Client`` bound to the cluster, so that computations
+  in the current process are executed on it. This is optional: a cluster can be set up and its address
+  passed to external processes (e.g. subprocess-based diagnostics) without activating a local client. This
+  for example is what done by the AQUA-diagnostics, which uses the cluster for parallel execution of subprocesses.
+- ``close()``: shuts down the client (if active) and the cluster, and is safe to call even if the cluster
+  was never started.
+- ``address``: the scheduler address of the running cluster, useful to pass to external tools that should
+  connect to the same cluster (e.g. via ``--cluster`` command-line options).
+- ``cluster_active`` / ``client_active``: boolean properties to check the current state.
+
+.. note::
+    ``DaskCluster`` never forces computation of xarray objects itself: it only manages the cluster/client
+    lifecycle. Materialisation of lazy data still happens at the usual write/output boundaries.
+
 .. _lev-selection-regrid:
 
 Level selection and regridding
