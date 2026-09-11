@@ -33,6 +33,52 @@ fixer_name:
                 src_units: J m**-2 day**-1
                 source: TTR
 
+    ERA5-destine-v2:
+        convention: eccodes
+        vars:
+            ie:
+                source: e
+                src_units: m/day
+            tprate:
+                source: tp
+                src_units: m/day
+            slhtf:
+                src_units: J m**-2 day**-1
+                source: slhf
+            ishf:
+                src_units: J m**-2 day**-1
+                source: sshf
+            snswrf:
+                src_units: J m**-2 day**-1
+                source: ssr
+            sdswrf:
+                src_units: J m**-2 day**-1
+                source: ssrd
+            snlwrf:
+                src_units: J m**-2 day**-1
+                source: str
+            sdlwrf:
+                src_units: J m**-2 day**-1
+                source: strd
+            tnswrf:
+                src_units: J m**-2 day**-1
+                source: tsr
+            tnlwrf:
+                src_units: J m**-2 day**-1
+                source: ttr
+            snswrfcs:
+                src_units: J m**-2 day**-1
+                source: ssrc
+            snlwrfcs:
+                src_units: J m**-2 day**-1
+                source: strc
+            tnswrfcs:
+                src_units: J m**-2 day**-1
+                source: tsrc
+            tnlwrfcs:
+                src_units: J m**-2 day**-1
+                source: ttrc
+
     ERA5-daily-destine-v1:
         convention: eccodes
         delete:
