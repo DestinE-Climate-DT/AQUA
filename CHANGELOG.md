@@ -29,6 +29,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Update load_aqua_container script for both core and diagnostics (#3043)
 - Remove deprecated idx_level coordinates for FDB access (#3063)
 - Implement tests with conda-lock and less pip pins (#3049)
 - Polytope now inherits the logging level from the `Reader` class (#2926)
