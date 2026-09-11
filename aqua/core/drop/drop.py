@@ -16,7 +16,6 @@ Main features:
 
 import os
 import shutil
-from datetime import datetime
 from time import time
 
 import dask
@@ -247,7 +246,7 @@ class Drop:
         self.check = False
 
         # stats file written in basedir (timestamped, with run details to avoid overwrites)
-        _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        _ts = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         self.stats_file = os.path.join(
             self.basedir,
             f"drop_stats_{self.catalog}_{self.model}_{self.exp}_{self.source}_{output_format}_{_ts}.txt",
@@ -664,7 +663,7 @@ class Drop:
         """Write a run header block to the stats file."""
         if not self.definitive:
             return
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
         header = (
             "\n=== DROP Performance Stats ===\n"
             f"Model: {self.model} | Exp: {self.exp} | Source: {self.source} |"
@@ -681,7 +680,7 @@ class Drop:
             return
         chunk_stats = getattr(self.writer, "_chunk_stats", [])
         total_time = t_end - t_beg
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ts = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
         line = f"[{ts}] SUMMARY  var={var}  total_time={total_time:.2f}s  chunks={len(chunk_stats)}\n"
         with open(self.stats_file, "a", encoding="utf-8") as fh:
             fh.write(line)

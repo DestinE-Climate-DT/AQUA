@@ -108,7 +108,7 @@ class TestAqua:
 
     def test_time_selection(self, reader_ifs_tco79_long):
         """
-        Test that time selection works correctly
+        Test that time selection works correctly, also beyond 2262
         """
         reader = reader_ifs_tco79_long
 
@@ -118,6 +118,10 @@ class TestAqua:
         assert "2t" in data
 
         assert all(data.time.dt.month == 3)
+
+        data = reader.retrieve(startdate="2300-03-01", enddate="2300-03-31")
+
+        assert len(data.time) == 0
 
     @pytest.fixture(
         params=[

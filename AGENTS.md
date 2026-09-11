@@ -95,7 +95,7 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
 - **Attribute loss through slicing is a common silent failure** — verify that Dataset-level attrs (especially `history`) survive `.sel()` in tests
 - Cache expensive results (areas, weights) with a `hasattr` guard:
   ```python
-  if not hasattr(self, '_cached_areas'):
+  if not hasattr(self, "_cached_areas"):
       self._cached_areas = compute_areas(...)
   return self._cached_areas
   ```

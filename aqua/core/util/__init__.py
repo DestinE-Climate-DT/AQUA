@@ -21,8 +21,9 @@ from .string import clean_filename, extract_literal_and_numeric, unit_to_latex
 from .units import multiply_units, normalize_units, convert_units, convert_data_units
 from .util import expand_env_vars, extract_attrs, get_arg, to_list, check_attrs, set_attrs
 from .yaml import load_yaml, dump_yaml, load_multi_yaml
-from .time import check_chunk_completeness, frequency_string_to_pandas, pandas_freq_to_string
-from .time import time_to_string, int_month_name, xarray_to_pandas_freq, check_seasonal_chunk_completeness
+from .time import check_chunk_completeness, check_seasonal_chunk_completeness
+from .time import frequency_string_to_pandas, pandas_freq_to_string, pandas_freq_to_offset
+from .time import time_to_string, int_month_name, xarray_to_pandas_freq
 from .time import fix_calendar
 from aqua.core.default import DEFAULT_TIME_UNIT
 from .zarr import create_zarr_reference
@@ -47,7 +48,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'clean_filename', 'extract_literal_and_numeric', 'unit_to_latex',
            'multiply_units', 'normalize_units', 'convert_units', 'convert_data_units',
            'expand_env_vars', 'extract_attrs', 'get_arg', 'to_list', 'check_attr', 'set_attrs',
-           'load_yaml', 'dump_yaml', 'load_multi_yaml',
+           'load_yaml', 'dump_yaml', 'load_multi_yaml', 'pandas_freq_to_offset',
            'check_chunk_completeness', 'frequency_string_to_pandas', 'pandas_freq_to_string',
            'time_to_string', 'int_month_name',  'xarray_to_pandas_freq', 'check_seasonal_chunk_completeness',
            'fix_calendar', 'DEFAULT_TIME_UNIT',
