@@ -162,7 +162,7 @@ jobs:
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-3/data-portfolio data-portfolio
           cd data-portfolio
-          git checkout tags/v2.1.0
+          git checkout tags/v2.2.0
 
       # ========================================
       # 3. SETUP ENVIRONMENT
