@@ -1,6 +1,9 @@
 """Test cases for the Trender class."""
 
+import numpy as np
+import pandas as pd
 import pytest
+import xarray as xr
 from conftest import LOGLEVEL
 
 from aqua import Reader
@@ -30,6 +33,37 @@ class TestTrender:
         coeffs = reader.trender.coeffs(block1, degree=1, normalize=True)
         avg = coeffs["2t"].sel(degree=1).mean().values
         assert float(avg) == pytest.approx(-0.0002850853431, rel=1e-5)
+
+    def test_coeffs_monthly_irregular(self, reader):
+        """Test for polynomial coefficients normalization on monthly data with slightly irregular intervals."""
+        # Monthly data centered around mid-month (e.g. 15th and 16th)
+        times = pd.to_datetime(
+            [
+                "2020-01-15",
+                "2020-02-15",
+                "2020-03-16",
+                "2020-04-15",
+                "2020-05-16",
+                "2020-06-15",
+                "2020-07-15",
+                "2020-08-16",
+                "2020-09-15",
+                "2020-10-16",
+                "2020-11-15",
+                "2020-12-15",
+            ]
+        )
+        da = xr.DataArray(
+            np.arange(len(times), dtype=float),
+            coords={"time": times},
+            dims=["time"],
+            name="monthly_var",
+        )
+        coeffs = reader.trender.coeffs(da, degree=1, normalize=True)
+        assert coeffs is not None
+        # Degree 1 coefficient should be close to 1.0 (1 unit increase per month)
+        slope = coeffs.sel(degree=1).values
+        assert float(slope) == pytest.approx(1.0, rel=0.05)
 
     def test_trend_dataarray(self, reader, data):
         """Trivial test for trend on DataArray"""

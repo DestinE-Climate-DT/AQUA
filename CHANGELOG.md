@@ -11,7 +11,9 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
 
+- Trender works also with irregular monthly data (#3041)
 - Suppress Intake2 warning (#3077)
 - New version of the ERA5 data, including clear-sky variables, for Fixer (#3079)
 
