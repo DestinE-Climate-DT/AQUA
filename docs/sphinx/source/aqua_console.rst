@@ -135,7 +135,7 @@ How AQUA discovers installable components
 any Python package can advertise itself as an installable AQUA component through a standard
 `entry point <https://packaging.python.org/en/latest/specifications/entry-points/>`_.
 This is how ``aqua-diagnostics`` itself is discovered, and it is the mechanism a new package
-(e.g. a future ``aqua-emulators``) would use to plug into ``aqua install``/``aqua update`` without
+(e.g. a future ``aqua-fishery``) would use to plug into ``aqua install``/``aqua update`` without
 any change needed in AQUA core.
 
 A plugin package needs two things:
