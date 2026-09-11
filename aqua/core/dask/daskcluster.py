@@ -115,7 +115,7 @@ class DaskCluster:
             return
 
         # Close client first if active
-        if self._client:
+        if self.client_active:
             self.logger.info("Shutting down dask client.")
             self._client.shutdown()
             self._client = None

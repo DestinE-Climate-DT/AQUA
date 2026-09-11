@@ -58,7 +58,7 @@ class Analysis:
 
         # dask
         self.serial = False
-        self.cluster = DaskCluster(loglevel=loglevel)
+        self.dask_cluster = DaskCluster(loglevel=loglevel)
 
     def get_config(self):
         """Load the configuration file and return the config dictionary."""
@@ -384,8 +384,8 @@ class Analysis:
                     extra_args += f" --nthreads {tool_nthreads}"
 
             # This is needed for ECmean which uses multiprocessing
-            if self.cluster.address and not tool_config.get("nocluster", False):
-                extra_args += f" --cluster {self.cluster.address}"
+            if self.dask_cluster.address and not tool_config.get("nocluster", False):
+                extra_args += f" --cluster {self.dask_cluster.address}"
 
             # Add standard arguments using helper function
             extra_args += self.build_extra_args(
@@ -502,23 +502,23 @@ class Analysis:
             "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP": cluster_config.get("tcp_timeout"),
         }
 
-        self.cluster.setup(
+        self.dask_cluster.setup(
             nworkers=nworkers,
             nthreads=nthreads,
             mem_limit=mem_limit,
             connect_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"],
             tcp_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"],
         )
-        if not self.cluster.cluster_active:
+        if not self.dask_cluster.cluster_active:
             self.logger.error("Failed to start Dask cluster.")
             sys.exit(1)
         else:
-            self.logger.info("Dask cluster running at address: %s", self.cluster.address)
+            self.logger.info("Dask cluster running at address: %s", self.dask_cluster.address)
 
     def close_dask_cluster(self):
         """Close the Dask cluster if it is active."""
-        if self.cluster.cluster_active:
-            self.cluster.close()
+        if self.dask_cluster.cluster_active:
+            self.dask_cluster.close()
             self.logger.info("Dask cluster closed.")
         else:
             self.logger.debug("No active Dask cluster to close.")
