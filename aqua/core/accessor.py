@@ -117,3 +117,7 @@ class AquaAccessor:
     def histogram(self, **kwargs):
         """Compute a histogram (or pdf) of the data."""
         return self.instance.histogram(self._obj, **kwargs)
+
+    def seldate(self, *args, **kwargs):
+        """Select data for a specific date or date range."""
+        return self.instance.seldate(self._obj, *args, **kwargs)
