@@ -126,13 +126,6 @@ class CoordTransformer:
                 f"Renamed coordinate {src_coord['name']} to {tgt_coord['name']} by datamodel",
             )
 
-            # Ensure the AQUA dependent index is preserved
-            # if f"idx_{src_coord['name']}" in original_coords:
-            #     index_name = f"idx_{src_coord['name']}"
-            #     new_index_name = f"idx_{tgt_coord['name']}"
-            #     self.logger.info("Renaming index %s to %s", index_name, new_index_name)
-            #     data = data.rename({index_name: new_index_name})
-
             # unclear if this is fundamental
             # if tgt_coord['name'] in data.dims:
             #   self.logger.info("Preserving original dimension %s and index.", src_coord['name'])
@@ -201,10 +194,8 @@ class CoordTransformer:
                 data[tgt_coord["name"]].attrs["flipped"] = 1
                 log_history(
                     data,
-                    (
-                        f"Flipped coordinate {tgt_coord['name']} from ",
-                        f"{src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel",
-                    ),
+                    f"Flipped coordinate {tgt_coord['name']} from "
+                    f"{src_coord['stored_direction']} to {tgt_coord['stored_direction']} by datamodel",
                 )
             else:
                 self.logger.info(

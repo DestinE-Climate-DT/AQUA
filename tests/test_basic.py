@@ -95,7 +95,7 @@ class TestAqua:
         Test the compact catalog override functionality
         """
         reader = Reader(model="IFS", exp="test-tco79", source="short_override", loglevel=loglevel)
-        assert reader.esmcat.metadata["test-key"] == "test-value"  # from the default
+        assert reader.backend.metadata["test-key"] == "test-value"  # from the default
         assert reader.src_grid_name == "tco79-nn"  # overwritten key
 
     def test_empty_dataset_error(self, reader_instance):
@@ -108,7 +108,7 @@ class TestAqua:
 
     def test_time_selection(self, reader_ifs_tco79_long):
         """
-        Test that time selection works correctly
+        Test that time selection works correctly, also beyond 2262
         """
         reader = reader_ifs_tco79_long
 
@@ -118,6 +118,10 @@ class TestAqua:
         assert "2t" in data
 
         assert all(data.time.dt.month == 3)
+
+        data = reader.retrieve(startdate="2300-03-01", enddate="2300-03-31")
+
+        assert len(data.time) == 0
 
     @pytest.fixture(
         params=[
@@ -176,7 +180,7 @@ class TestAqua:
                 areas=False,
                 realization=realization_input,
             )
-            assert reader.kwargs["realization"] == expected_output
+            assert reader.backend.kwargs["realization"] == expected_output
 
     def test_realization_formatting_str(self):
         """

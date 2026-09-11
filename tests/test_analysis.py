@@ -571,10 +571,10 @@ class TestUtilities:
 class TestTemplating:
     """Tests for templating and experiment kind configuration."""
 
-    def test_configure_experiment_kind_none(self, analysis):
-        """exp_kind=None returns None without accessing any file."""
-        analysis.configure_experiment_kind(None, "/nonexistent/file.yaml")
-        assert analysis.exp_kind_dict is None
+    def test_configure_experiment_kind_none(self, analysis, kinds_yaml):
+        """exp_kind=None defaults to default"""
+        analysis.configure_experiment_kind(None, kinds_yaml)
+        assert analysis.exp_kind_dict["period"] == "unknown"
 
     def test_configure_experiment_kind_file_not_found(self, analysis):
         """Non-existent file raises FileNotFoundError."""

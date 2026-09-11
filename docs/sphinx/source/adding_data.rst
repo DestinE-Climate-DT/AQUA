@@ -74,10 +74,6 @@ The most straightforward intake catalog describing our dataset will look like th
 
 .. code-block:: yaml
 
-    plugins:
-    source:
-        - module: intake_xarray
-
     sources:
       annual:
         description: my amazing yearly_SST dataset
@@ -106,19 +102,19 @@ Once this is defined, we can access our dataset from AQUA with the following com
 Finally, the ``metadata`` entry contains optional additional information useful to define how to postprocess the data:
 
     - ``source_grid_name``: the grid name defined in ``aqua-grids.yaml`` to be used for areas and regridding.
-                            if set to ``null`` or not specified, the regridder will try to guess the grid based on the data coordinates, but this can be costly and not always successful.
-                            if set to ``False``, the regridder will be disabled and no attempt to guess the grid will be done.
+      if set to ``null`` or not specified, the regridder will try to guess the grid based on the data coordinates, but this can be costly and not always successful.
+      if set to ``False``, the regridder will be disabled and no attempt to guess the grid will be done.
     - ``fixer_name``: the name of the fixer defined in the fixes folder
     - ``deltat`` (optional): the cumulation window of fluxes in the dataset. This is a fixer option. If not present, the default is 1 second.
     - ``time_coder`` (optional): xarray builds on pandas, and pandas support a limited time range becuase time precision is based on nanoseconds.
-                                 Despite recent updates to underlying ``np.datetime64`` class, support for time range before 1678 CE and after 2262 AD is very limited.
-                                 A partial solution build on passing a coarser time_coder, e.g. "s". If this is specified modifies the time resolution when decoding dates.
-                                 Underneath it is used by the ``CFDatetimeCoder`` and it is working only for NetCDF sources.
+      Despite recent updates to underlying ``np.datetime64`` class, support for time range before 1678 CE and after 2262 AD is very limited.
+      A partial solution build on passing a coarser time_coder, e.g. "s". If this is specified modifies the time resolution when decoding dates.
+      Underneath it is used by the ``CFDatetimeCoder`` and it is working only for NetCDF sources.
     - ``filter_key`` (optional): Sometimes NetCDF sources are based on many small files: loading long time series can be extremely slow due to the large number of files.
-                                 This key is meant to filter files based information in the filename.
-                                 Currently only "year" key is supported, which will filter files based on years between ``startdate`` and ``enddate`` (of course, only if "year" is found in the filename).
-                                 Requires that both ``startdate`` and ``enddate`` are specified in the ``Reader()`` call (will not work at `.retrieve()`` level).
-                                 Working only with NetCDF sources.
+      This key is meant to filter files based information in the filename.
+      Currently only "year" key is supported, which will filter files based on years between ``startdate`` and ``enddate`` (of course, only if "year" is found in the filename).
+      Requires that both ``startdate`` and ``enddate`` are specified in the ``Reader()`` call (will not work at `.retrieve()`` level).
+      Working only with NetCDF sources.
 
 You can add fixes to your dataset by following examples in the ``aqua/core/config/fixes/`` directory (see :ref:`fixer`).
 
@@ -233,6 +229,17 @@ Some of the parameters are here described:
     This optional parameter is used to specify the expver of the data on the HPC FDB.
     If not set, the expver is assumed to be the same for all data.
 
+.. option:: engine
+
+    This optional parameter is used to specify the data retrieval engine.
+    The default is ``gsv``. Alternatives are ``polytope`` (see :ref:`polytope`), ``polytope-gsv`` (functionally identical to ``polytope``at the moment) and ``z3fdb``.
+    To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"``
+    when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
+
+.. option:: config_fdb
+
+    This optional parameter is used to specify a custom configuration file path for the ``z3fdb`` engine.
+
 .. option:: chunks
 
     The chunks parameter is essential, whether you are using Dask or a generator.
@@ -252,10 +259,10 @@ Some of the parameters are here described:
     It is possible to choose a smaller chunks value, but keep in mind that each worker has its own overhead,
     and it is usually more efficient to retrieve as much data as possible from the FDB for each worker.
 
-    By the ``chunks`` argument is a string and refers to time-chunking.
+    By default, the ``chunks`` argument is a string and refers to time-chunking.
     In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
     by passing a dictionary to chunks with the keys ``time`` and ``vertical``.
-    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maxmimum number of vertical levels
+    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maximum number of vertical levels
     in each chunk.
 
     An example would be:
@@ -265,6 +272,14 @@ Some of the parameters are here described:
     chunks:
       time: D  # Default time chunk size
       vertical: 3  # Three vertical levels in each chunk
+
+.. note::
+    When using the ``z3fdb`` engine, chunking is supported differently:
+
+    * **Time direction**: Chunking is always by single time steps.
+    * **Level direction**: By default, level chunking is not performed.
+    * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
+    * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
 
 .. option:: timestep
 

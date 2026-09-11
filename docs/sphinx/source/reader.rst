@@ -75,13 +75,13 @@ from the catalog entry, providing additional information:
     catalog_content = show_catalog_content(model='IFS-NEMO', show_descriptions=True)
 
 .. note::
-    The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigPath`` initialization internally.
-    If you need more control over the configuration, you can still use the method directly from the ``ConfigPath`` class:
+    The ``show_catalog_content()`` function is a convenience wrapper that handles ``ConfigCatalog`` initialization internally.
+    If you need more control over the configuration, you can still use the method directly from the ``ConfigCatalog`` class:
 
     .. code-block:: python
 
-        from aqua.core.configurer import ConfigPath
-        config = ConfigPath(loglevel='info')
+        from aqua.core.configurer import ConfigCatalog
+        config = ConfigCatalog(loglevel='info')
         results = config.show_catalog_content()
 
 Reader basic usage
@@ -103,7 +103,7 @@ The ``catalog``, differently from the ``model``, ``exp`` and ``source`` argument
 However, if the triplet is not unique across catalogs, the ``Reader`` will guess the correct catalog,
 so it is suggested to always specify it when possible.
 
-The basic call enables fixer, area and time average functionalities, but no regridding or streaming.
+The basic call enables fixer, area and time average functionalities, but no regridding.
 To have a complete overview of the available options, please check the :doc:`api_reference`.
 
 If some information about the data is needed, it is possible to use the ``info()`` method of the ``Reader`` class.
@@ -141,22 +141,3 @@ For example, to select a specific ensemble member, you can do:
     data = reader.retrieve()
 
 See `Intake documentation <https://intake.readthedocs.io/en/stable/catalog.html#source-parameters>`_ for more details about Intake source parameters.
-
-Dask and streaming capabilities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The standard usage of the ``Reader`` class will load metadata in memory and
-make the data available for processing.
-This is the standard behaviour of the ``Reader`` class, where ``xarray`` and ``dask``
-capabilities are used to retrieve the data.
-
-This allows to fully process also large datasets using dask lazy and parallel processing capabilities.
-However, for specific testing or development needs,
-the ``Reader`` class is also able to allow a streaming of data,
-where the data are loaded in chunks and processed step by step.
-Please check the :ref:`streaming` section for more details.
-
-.. note::
-    Dask access to data is available also for FDB data.
-    Since a specific intake driver has been developed, if you're adding new FDB sources to the catalog,
-    we suggest to read the :ref:`FDB_dask` section.

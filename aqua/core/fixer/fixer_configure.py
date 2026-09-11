@@ -1,6 +1,8 @@
 """Class for fixer configuration and loading"""
 
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
+from aqua.core.util import load_multi_yaml
 
 
 class FixerConfigure:
@@ -17,7 +19,8 @@ class FixerConfigure:
 
         self.convention = convention
         self.fixer_name = fixer_name
-        self.fixes_dictionary = fixes_dictionary
+        # If the fixer_dictionary is not provided, the default one available in the package is used.
+        self.fixes_dictionary = fixes_dictionary if fixes_dictionary is not None else self._load_default_fixes_dictionary()
         self.logger = log_configure(log_level=loglevel, log_name="FixerConfigure")
 
     def find_fixes(self):
@@ -48,6 +51,19 @@ class FixerConfigure:
         base_fixes = self._load_fixer_name()
         return self._combine_convention(base_fixes, convention_dictionary)
 
+    def _load_default_fixes_dictionary(self):
+        """
+        Load the default fixes dictionary from the package.
+        The default fixes dictionary is located in the aqua/core/fixer/fixes.yaml file.
+
+        Returns:
+            The default fixes dictionary
+        """
+        fixes_folder = ConfigContext().get_folder("fixes")
+        fixes_dictionary = load_multi_yaml(fixes_folder)
+
+        return fixes_dictionary
+
     def _load_convention_dictionary(self, version="2.39.0"):
         """
         Load the convention dictionary from the fixer file.
@@ -70,8 +86,8 @@ class FixerConfigure:
         if convention_dictionary is None:
             self.logger.error("No convention dictionary found for %s", convention_name)
             return None
-        else:
-            self.logger.info("Convention dictionary: %s", convention_name)
+
+        self.logger.info("Convention dictionary: %s", convention_name)
 
         return convention_dictionary
 
@@ -94,11 +110,12 @@ class FixerConfigure:
             self.logger.info("No fixer_name found, only convention will be applied")
             base_fixes = {}
             base_convention = "eccodes"
-        elif convention_dictionary is None:
-            self.logger.info("No convention dictionary found, only fixer_name will be applied")
-            return base_fixes
         else:
             base_convention = base_fixes.get("convention", None)
+        if convention_dictionary is None:
+            self.logger.info("No convention dictionary found, only fixer_name will be applied")
+            return base_fixes
+
         # We do not crash if the convention is not eccodes, but we log an error and return the base fixes
         convention = convention_dictionary.get("convention", None)
         if convention != "eccodes":
@@ -169,18 +186,16 @@ class FixerConfigure:
             if fixes is None:
                 self.logger.error("The requested fixer_name %s does not exist in fixes files", self.fixer_name)
                 return None
-            else:
-                self.logger.info("Fix names %s found in fixes files", self.fixer_name)
 
-                if "parent" in fixes:
-                    parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes["parent"])
-                    if parent_fixes is not None:
-                        self.logger.info(
-                            "Parent fix %s found! Mergin with fixer_name fixes %s!", fixes["parent"], self.fixer_name
-                        )
-                        fixes = self._merge_fixes(parent_fixes, fixes)
-                    else:
-                        self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes["parent"])
+            self.logger.info("Fix names %s found in fixes files", self.fixer_name)
+
+            if "parent" in fixes:
+                parent_fixes = self.fixes_dictionary["fixer_name"].get(fixes["parent"])
+                if parent_fixes is not None:
+                    self.logger.info("Parent fix %s found! Mergin with fixer_name fixes %s!", fixes["parent"], self.fixer_name)
+                    fixes = self._merge_fixes(parent_fixes, fixes)
+                else:
+                    self.logger.error("Parent fix %s defined but not available in the fixes file.", fixes["parent"])
 
             return fixes
 
