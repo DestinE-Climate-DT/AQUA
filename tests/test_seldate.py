@@ -116,3 +116,22 @@ class TestSeldate:
         # Open-ended via accessor
         res_open = sample_dataset.aqua.seldate("1985-01-04", enddate=None)
         assert len(res_open.time) == 8
+
+    def test_backend_seldate_datetime_objects(self, sample_dataset):
+        import datetime
+
+        backend = DummyBackend()
+
+        # Test datetime.date / datetime.datetime objects
+        dt_start = datetime.datetime(1985, 1, 1, 0, 0)
+        dt_end = datetime.datetime(1985, 1, 2, 12, 0)
+        res = backend.seldate(sample_dataset, dt_start, dt_end)
+        assert len(res.time) == 7  # 00:00, 06:00, 12:00, 18:00 (Jan 1) + 00:00, 06:00, 12:00 (Jan 2)
+
+        # Test pd.Timestamp objects
+        ts_start = pd.Timestamp("1985-01-01 06:00:00")
+        ts_end = pd.Timestamp("1985-01-01 18:00:00")
+        res_ts = backend.seldate(sample_dataset, ts_start, ts_end)
+        assert len(res_ts.time) == 3
+        assert pd.Timestamp(res_ts.time.values[0]) == ts_start
+        assert pd.Timestamp(res_ts.time.values[-1]) == ts_end
