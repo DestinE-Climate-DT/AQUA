@@ -280,7 +280,8 @@ class Backend(ABC):
                 data = data[matched_var]
             else:
                 self.logger.error("None of the requested variables %s were found in the dataset.", var)
-                return xr.Dataset()  # Return an empty Dataset if no variables match
+                # Keep coordinates so subsequent selections can still be applied.
+                return data.drop_vars(list(data.data_vars))
 
         return data
 

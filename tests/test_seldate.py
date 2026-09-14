@@ -70,6 +70,22 @@ class TestSeldate:
         assert pd.Timestamp(res.time.values[0]) == pd.Timestamp("1985-01-01 00:00:00")
         assert pd.Timestamp(res.time.values[-1]) == pd.Timestamp("1985-01-02 18:00:00")
 
+    def test_backend_missing_variable_with_date_range(self, sample_dataset):
+        """Date selection remains valid when variable selection returns no data variables."""
+        backend = DummyBackend()
+
+        res = backend._postprocess_data(
+            sample_dataset.chunk(),
+            var="NOT_EXISTING_VAR",
+            startdate="1985-01-01",
+            enddate="1985-01-02",
+        )
+
+        assert not res.data_vars
+        assert len(res.time) == 8
+        assert pd.Timestamp(res.time.values[0]) == pd.Timestamp("1985-01-01 00:00:00")
+        assert pd.Timestamp(res.time.values[-1]) == pd.Timestamp("1985-01-02 18:00:00")
+
     def test_backend_seldate_both_none(self, sample_dataset):
         backend = DummyBackend()
         res = backend.seldate(sample_dataset, None, None)
