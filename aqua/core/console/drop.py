@@ -316,7 +316,7 @@ def drop_cli(
                 varnames = to_list(get_arg(args, "var", config["data"][model][exp][source]["vars"]))
 
                 # get the number of workers for this specific configuration
-                nworkers = config["data"][model][exp][source].get("workers", default_nworkers)
+                nworkers = config["data"][model][exp][source].get("nworkers", default_nworkers)
                 nthreads = config["data"][model][exp][source].get("nthreads", default_nthreads)
 
                 # per-source overrides: resolution, frequency, stat fall back to global values

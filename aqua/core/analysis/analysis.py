@@ -495,7 +495,7 @@ class Analysis:
         """
 
         nthreads = get_arg(args, "nthreads", 2, config=cluster_config, key="threads")
-        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="workers")
+        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="nworkers")
         mem_limit = cluster_config.get("memory_limit", "3.1GiB")
         timeouts = {
             "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT": cluster_config.get("connect_timeout"),
