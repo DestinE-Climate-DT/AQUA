@@ -141,4 +141,4 @@ class TestSeldate:
             model="ERA5", exp="era5-hpz3", source="monthly", catalog="ci", startdate="1990-01-01", enddate="1990-12-31"
         )
         data = reader.retrieve(var="NOT_EXISTING_VAR")
-        assert data is None
+        assert len(data) == 0

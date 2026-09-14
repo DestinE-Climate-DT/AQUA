@@ -101,11 +101,11 @@ class Backend(ABC):
 
         data = self._fixer_and_datamodel(data, var=var)
 
-        if var:
+        if data and var:
             data = self._selvar(data=data, var=var)
-        if startdate or enddate:
+        if data and (startdate or enddate):
             data = self.seldate(data=data, startdate=startdate, enddate=enddate)
-        if level:
+        if data and level:
             data = self._sellevel(data=data, level=level, level_coord=level_coord)
 
         return data
