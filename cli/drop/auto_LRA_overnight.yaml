@@ -27,124 +27,124 @@ data:
   ICON:
     control-1990-freeze:
       hourly-hpz6-atm2d:
-        workers: 24
-        #workers: 1
+        nworkers: 24
+        #nworkers: 1
         vars: ['tprate', '2t', 'msl', 'tcc', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
           'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews']
       hourly-hpz6-atm3d:
-        workers: 16
-        #workers: 1
+        nworkers: 16
+        #nworkers: 1
         vars: ['q', 't', 'u', 'v']
       daily-hpz6-oce2d:
-        workers: 32
-        #workers: 1
+        nworkers: 32
+        #nworkers: 1
         vars: ['tos', 'sithick', 'siconc', 'sos']
       daily-hpz6-oce3d:
-        workers: 16
-        #workers: 1
+        nworkers: 16
+        #nworkers: 1
         vars: ['thetao', 'so']
 
   # IFS-NEMO:
   #   control-1990:
   #     hourly-hpz10-atm2d:
-  #       workers: 16
+  #       nworkers: 16
   #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
   #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
   #     hourly-hpz10-atm3d:
-  #       workers: 6
+  #       nworkers: 6
   #       vars: ['q', 't', 'u', 'v']
   #     daily-hpz10-oce2d:
-  #       workers: 12
+  #       nworkers: 12
   #       vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
   #     daily-hpz10-oce3d:
-  #       workers: 3
+  #       nworkers: 3
   #       vars: ['thetao', 'so']
     # a1al:
     #   hourly-hpz7-atm2d:
-    #     workers: 24
+    #     nworkers: 24
     #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
     #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
     #   hourly-hpz7-atm3d:
-    #     workers: 16
+    #     nworkers: 16
     #     vars: ['q', 't', 'u', 'v']
     #   daily-hpz7-oce2d:
-    #     workers: 32
+    #     nworkers: 32
     #     vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
     #   daily-hpz7-oce3d:
-    #     workers: 16
+    #     nworkers: 16
     #     vars: ['thetao', 'so']
     # a16z:
     #   hourly-hpz7-atm2d:
-    #     workers: 24
+    #     nworkers: 24
     #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
     #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
     #   hourly-hpz7-atm3d:
-    #     workers: 16
+    #     nworkers: 16
     #     vars: ['q', 't', 'u', 'v']
     #   daily-hpz7-oce2d:
-    #     workers: 32
+    #     nworkers: 32
     #     vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
     #   daily-hpz7-oce3d:
-    #     workers: 16
+    #     nworkers: 16
     #     vars: ['thetao', 'so']
     # a18j:
     #   hourly-hpz7-atm2d:
-    #     workers: 24
+    #     nworkers: 24
     #     vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
     #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
     #   hourly-hpz7-atm3d:
-    #     workers: 16
+    #     nworkers: 16
     #     vars: ['q', 't', 'u', 'v']
     #   daily-hpz7-oce2d:
-    #     workers: 32
+    #     nworkers: 32
     #     vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
     #   daily-hpz7-oce3d:
-    #     workers: 16
+    #     nworkers: 16
     #     vars: ['thetao', 'so']
           #    hs3l-historical-1990:
           #      monthly-hpz7-atm2d:
-          #        workers: 24
+          #        nworkers: 24
           #        vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
           #          'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
           #      monthly-hpz7-atm3d:
-          #        workers: 16
+          #        nworkers: 16
           #        vars: ['q', 't', 'u', 'v']
           #    hs3l-control-1990:
           #      monthly-hpz7-atm2d:
-          #        workers: 24
+          #        nworkers: 24
           #      vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
           #       'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
           #      monthly-hpz7-atm3d:
-          #     workers: 16
+          #     nworkers: 16
           #  vars: ['q', 't', 'u', 'v']
 
   # IFS-FESOM:
   #   story-2017-control:
   #     hourly-hpz7-atm2d:
-  #       workers: 24
+  #       nworkers: 24
   #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
   #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
   #     hourly-hpz7-atm3d:
-  #       workers: 16
+  #       nworkers: 16
   #       vars: ['q', 't', 'u', 'v']
   #     daily-hpz7-oce2d:
-  #       workers: 32
+  #       nworkers: 32
   #       vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
   #     daily-hpz7-oce3d:
-  #       workers: 16
+  #       nworkers: 16
   #       vars: ['thetao', 'so']
 
   #   story-2017-T2K:
   #     hourly-hpz7-atm2d:
-  #       workers: 24
+  #       nworkers: 24
   #       vars: ['tprate', '2t', 'skt', 'msl', 'tcc', 'lcc', 'hcc', 'mcc', 'sd', 'tciw', 'tclw', 'ie', 'tsrwe', 'slhtf', 'ishf',
   #         'snswrf', 'snlwrf', 'sdlwrf', 'sdswrf', 'tnswrf', 'tnlwrf', 'tdswrf', 'inss', 'iews', 'msror']
   #     hourly-hpz7-atm3d:
-  #       workers: 16
+  #       nworkers: 16
   #       vars: ['q', 't', 'u', 'v']
   #     daily-hpz7-oce2d:
-  #       workers: 32
+  #       nworkers: 32
   #       vars: ['tos', 'sithick', 'siconc', 'sos', 'hc700m']
   #     daily-hpz7-oce3d:
-  #       workers: 16
+  #       nworkers: 16
   #       vars: ['thetao', 'so']
