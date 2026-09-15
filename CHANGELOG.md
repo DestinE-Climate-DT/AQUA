@@ -16,6 +16,8 @@ Complete list:
 - Seldate method using pandas as reader method and allows dates beyond 2262 (#3072, #3085)
 - Trender works also with irregular monthly data (#3041)
 - Suppress Intake2 warning (#3077)
+- fldmean: matching the data and area longitudes is working (#2957)
+- Data model introduces internal coordinate names instead of hard-coded values (#2957)
 - New version of the ERA5 data, including clear-sky variables, for Fixer (#3079)
 
 ## [v1.1.0]
