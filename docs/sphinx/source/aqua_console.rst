@@ -64,7 +64,8 @@ It is possible to set the level of verbosity with two options:
 
     It increases the verbosity level, setting it to DEBUG.
 
-In both cases the level of verbosity has to be specified before the subcommand.
+.. warning::
+    In both cases the level of verbosity has to be specified before the subcommand.
 
 .. _aqua-install:
 
@@ -101,10 +102,6 @@ Optional arguments are:
     If used without specifying a path, it will copy the configuration files from the AQUA core package installed in the current environment.
     If a path is specified, the folders containing the configuration files will be linked from the specified path,
     allowing developers to work on their local copy of AQUA core.
-
-.. warning::
-    In version ``v0.19`` and earlier, the path needed to point to the ``config`` folder inside the AQUA core repository.
-    This is not anymore necessary, as the command will determine the correct path automatically.
 
 .. option:: --diagnostics, --diagnostics <path/to/aqua-diagnostics/repo>
 
