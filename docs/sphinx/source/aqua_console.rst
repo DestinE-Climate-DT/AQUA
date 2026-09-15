@@ -253,7 +253,8 @@ catalogs, to use the first one found in the selected catalog.
 aqua list
 ---------
 
-This command lists the available catalogs in the installation folder.
+This command lists some information about the current AQUA installation and
+report the available catalogs in the installation folder.
 It will show also if a catalog is installed in editable mode.
 
 .. option:: -a, -all

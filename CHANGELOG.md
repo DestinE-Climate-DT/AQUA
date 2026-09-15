@@ -11,8 +11,8 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Generalized installation method for aqua components (not aqua-core) (#2974)
 - Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
-
 - Suppress Intake2 warning (#3077)
 
 ## [v1.1.0]
