@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 
-from aqua.core.configurer import ConfigContext, ConfigLocator
+from aqua.core.configurer import ConfigContext, ConfigLocator, ConfigPackages
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -529,11 +529,16 @@ class InstallMixin:
                 shutil.copy2(source, target)
 
     def list(self, args):
-        """List installed catalogs"""
+        """List installed catalogs and environment information"""
 
         self._check()
 
         cdir = f"{self.configpath}/{CATPATH}"
+
+        print("AQUA environment information:")
+        print(f"\t - AQUA installation path: {self.configpath}")
+        print(f"\t - AQUA available components: {', '.join(self.components)}")
+        print(f"\t - AQUA available packages: {', '.join(ConfigPackages.avail_packages())}")
 
         print("AQUA current installed catalogs in", cdir, ":")
         self._list_folder(cdir)
