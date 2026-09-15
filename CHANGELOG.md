@@ -10,12 +10,16 @@ Main changes:
 
 ClimateDT workflow modifications:
 
-
 Complete list:
+- Cli_checker adjustments after Backend new developments (#3081)
 - Update Data Portfolio to v2.2.0 (#3084)
 - Seldate method using pandas as reader method and allows dates beyond 2262 (#3072, #3085)
 - Trender works also with irregular monthly data (#3041)
+- Generalized installation method for aqua components (not aqua-core) (#2974)
+- Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
 - Suppress Intake2 warning (#3077)
+- fldmean: matching the data and area longitudes is working (#2957)
+- Data model introduces internal coordinate names instead of hard-coded values (#2957)
 - New version of the ERA5 data, including clear-sky variables, for Fixer (#3079)
 
 ## [v1.1.0]
