@@ -19,13 +19,9 @@ AQUA_ISOBARIC = "isobaric"
 AQUA_DEPTH = "depth"
 AQUA_HEIGHT = "height"
 
-# Possible basic names for coordinates
+# Possible basic names for coordinates: used for CoordIdentifier matching
 DEFAULT_COORD_NAMES = {
-    AQUA_LATITUDE: [
-        "latitude",
-        "lat",
-        "y"
-    ],
+    AQUA_LATITUDE: ["latitude","lat", "y"],
     AQUA_LONGITUDE: ["longitude", "lon", "x"],
     AQUA_TIME: ["time", "time_counter"],
     AQUA_ISOBARIC: ["plev"],

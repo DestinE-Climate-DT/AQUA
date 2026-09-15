@@ -16,6 +16,8 @@ Complete list:
 - Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
 - Trender works also with irregular monthly data (#3041)
 - Suppress Intake2 warning (#3077)
+- fldmean: matching the data and area longitudes is working (#2957)
+- Data model introduces internal coordinate names instead of hard-coded values (#2957)
 
 ## [v1.1.0]
 
@@ -94,7 +96,6 @@ Complete list:
 - More info on the origin of a push to lumi-o in the logs (#2910)
 - DROP: `drop` option from the `region` block is correctly handled, specifying if the NaN around the region should be kept or not (#2903)
 - DROP: add a `regrid_first` option to perform regridding before time statistics, useful when time-statistics can remove spatial coords (#2899)
-- fldmean: matching the data and area longitudes is working (#2957)
 - AQUA analysis refactored as a class, cleaned up parser, config files templates and extended tests (#2897)
 - Introduced a `DaskCluster` class to centralize dask setup and shutdown (#2897)
 
