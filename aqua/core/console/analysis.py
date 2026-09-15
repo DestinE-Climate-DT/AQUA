@@ -48,9 +48,9 @@ def analysis_parser(parser=None):
     # computation
     parser.add_argument("--serial", action="store_true", help="Disable dask cluster parallel execution")
     parser.add_argument("--nworkers", type=int, default=None,
-                        help="Number of workers to use in the cluster (overrides config file)")
+                        help="Number of dask workers to use in the cluster (overrides config file)")
     parser.add_argument("--nthreads", type=int, default=None,
-                        help="Number of threads per worker to use in the cluster (overrides config file)")
+                        help="Number of dask threads per worker to use in the cluster (overrides config file)")
     parser.add_argument("--nmaxprocesses", type=int, default=-1,
                         help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
 

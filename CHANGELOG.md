@@ -9,6 +9,8 @@ Unreleased in the current development version (target v1.2.0):
 Main changes:
 
 ClimateDT workflow modifications:
+- The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
+  The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
 - Cli_checker adjustments after Backend new developments (#3081)
@@ -51,6 +53,7 @@ Complete list:
 - `ConfigPath` class is now split in `ConfigCatalog` and `ConfigContext` classes (#2926)
 - Fix no kind case for aqua analysis (#3032)
 - Implement new DVC remote from ECMWF (#3031)
+- Expand use of `DaskCluster()` class to `Drop()` to control dask (#3037)
 
 ## [v1.0.1]
 
