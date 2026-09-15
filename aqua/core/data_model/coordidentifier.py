@@ -4,15 +4,17 @@ Module to identify the nature of coordinates of an Xarray object.
 
 import xarray as xr
 
-from aqua.core.logger import log_configure
-
-from .coord_utils import (
+from aqua.core.default import (
     AQUA_DEPTH,
     AQUA_HEIGHT,
     AQUA_ISOBARIC,
     AQUA_LATITUDE,
     AQUA_LONGITUDE,
     AQUA_TIME,
+)
+from aqua.core.logger import log_configure
+
+from .coord_utils import (
     get_coord_defaults,
     is_meter,
     is_pressure,

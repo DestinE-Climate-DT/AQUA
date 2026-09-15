@@ -2,9 +2,10 @@
 
 import xarray as xr
 
+from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE
 from aqua.core.logger import log_configure, log_history
 
-from .coord_utils import AQUA_LATITUDE, AQUA_LONGITUDE, get_data_model, units_conversion_factor
+from .coord_utils import get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
 IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
