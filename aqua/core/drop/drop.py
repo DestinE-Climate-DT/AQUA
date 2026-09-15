@@ -22,7 +22,7 @@ import dask
 import pandas as pd
 
 from aqua.core.configurer import ConfigContext
-from aqua.core.dask import DaskCluster
+from aqua.core.daskcluster import DaskCluster
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader

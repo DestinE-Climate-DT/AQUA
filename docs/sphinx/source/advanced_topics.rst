@@ -211,7 +211,7 @@ levels to use for each chunk.
 Centralized Dask cluster management
 ------------------------------------
 
-AQUA provides a ``DaskCluster`` class (``aqua.core.dask.DaskCluster``) to centralize the setup, activation
+AQUA provides a ``DaskCluster`` class (``aqua.core.daskcluster.DaskCluster``) to centralize the setup, activation
 and shutdown of a Dask ``LocalCluster`` used for parallel diagnostic execution.
 It is used internally by both the AQUA analysis and DROP CLI (``AquaAnalysis`` and ``Drop``) to avoid duplicating
 cluster lifecycle logic, and it can be reused by any tool that needs a managed local cluster.
@@ -239,7 +239,7 @@ The main methods are:
 - ``close()``: shuts down the client (if active) and the cluster, and is safe to call even if the cluster
   was never started.
 - ``address``: the scheduler address of the running cluster, useful to pass to external tools that should
-  connect to the same cluster (e.g. via ``--cluster`` command-line options).
+  connect to the same cluster (e.g. via ``--cluster`` command-line options in AQUA diagnostics).
 - ``cluster_active`` / ``client_active``: boolean properties to check the current state.
 
 .. note::

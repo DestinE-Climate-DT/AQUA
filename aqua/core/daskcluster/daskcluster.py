@@ -42,7 +42,7 @@ class DaskCluster:
         self,
         nworkers: int,
         nthreads: int,
-        mem_limit: str = None,
+        mem_limit: str = "auto",
         tmpdir: str = None,
         connect_timeout: float = None,
         tcp_timeout: float = None,
@@ -55,7 +55,8 @@ class DaskCluster:
         Args:
             nworkers (int): Number of dask workers to start.
             nthreads (int): Number of dask threads per worker.
-            mem_limit (str): Memory limit per worker.
+            mem_limit (str): Memory limit per worker. Please check dask cluster documentation
+                             for valid formats (e.g., "2GB", "auto", "400MB").
             tmpdir (str, optional): Temporary directory for Dask worker files.
             connect_timeout (float, optional): Connection timeout for Dask communications.
             tcp_timeout (float, optional): TCP timeout for Dask communications.
