@@ -136,7 +136,20 @@ class TestSeldate:
         assert pd.Timestamp(res_ts.time.values[0]) == ts_start
         assert pd.Timestamp(res_ts.time.values[-1]) == ts_end
 
-    def test_reader_retrieve_non_existing_var(self):
+    def test_backend_non_existing_var(self, sample_dataset):
+
+        backend = DummyBackend()
+        data = backend._postprocess_data(
+            sample_dataset.chunk(),
+            var="NOT_EXISTING_VAR",
+            startdate="1985-01-01",
+            enddate="1985-01-02",
+        )
+        assert len(data) == 0
+
+    def test_reader_non_existing_var(self):
+        # Integrated test
+
         reader = Reader(
             model="ERA5", exp="era5-hpz3", source="monthly", catalog="ci", startdate="1990-01-01", enddate="1990-12-31"
         )
