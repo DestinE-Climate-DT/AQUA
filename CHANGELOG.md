@@ -10,8 +10,8 @@ Main changes:
 
 ClimateDT workflow modifications:
 
-
 Complete list:
+- Fix treatment of empty datasets in backend (#3092)
 - Update Data Portfolio to v2.2.0 (#3084)
 - Seldate method using pandas as reader method and allows dates beyond 2262 (#3072, #3085)
 - Trender works also with irregular monthly data (#3041)
