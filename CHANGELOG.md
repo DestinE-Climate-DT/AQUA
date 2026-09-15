@@ -9,6 +9,8 @@ Unreleased in the current development version (target v1.2.0):
 Main changes:
 
 ClimateDT workflow modifications:
+- The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
+  The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
 - Cli_checker adjustments after Backend new developments (#3081)
