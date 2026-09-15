@@ -9,6 +9,8 @@ Unreleased in the current development version (target v1.2.0):
 Main changes:
 
 ClimateDT workflow modifications:
+- The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
+  The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
 - Fix treatment of empty datasets in backend (#3092)
@@ -16,6 +18,8 @@ Complete list:
 - Update Data Portfolio to v2.2.0 (#3084)
 - Seldate method using pandas as reader method and allows dates beyond 2262 (#3072, #3085)
 - Trender works also with irregular monthly data (#3041)
+- Generalized installation method for aqua components (not aqua-core) (#2974)
+- Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
 - Suppress Intake2 warning (#3077)
 - fldmean: matching the data and area longitudes is working (#2957)
 - Data model introduces internal coordinate names instead of hard-coded values (#2957)
@@ -50,6 +54,7 @@ Complete list:
 - `ConfigPath` class is now split in `ConfigCatalog` and `ConfigContext` classes (#2926)
 - Fix no kind case for aqua analysis (#3032)
 - Implement new DVC remote from ECMWF (#3031)
+- Expand use of `DaskCluster()` class to `Drop()` to control dask (#3037)
 
 ## [v1.0.1]
 
