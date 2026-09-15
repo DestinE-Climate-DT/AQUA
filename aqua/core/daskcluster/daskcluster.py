@@ -56,7 +56,8 @@ class DaskCluster:
             nworkers (int): Number of dask workers to start.
             nthreads (int): Number of dask threads per worker.
             mem_limit (str): Memory limit per worker. Please check dask cluster documentation
-                             for valid formats (e.g., "2GB", "auto", "400MB").
+                             for valid formats (e.g., "2GB", "auto", "400MB"). Default is "auto",
+                             which divide the available memory by the number of workers.
             tmpdir (str, optional): Temporary directory for Dask worker files.
             connect_timeout (float, optional): Connection timeout for Dask communications.
             tcp_timeout (float, optional): TCP timeout for Dask communications.
@@ -84,9 +85,14 @@ class DaskCluster:
         # Consider a more flexible approach in the future.
         self._configure_timeouts(connect_timeout=connect_timeout, tcp_timeout=tcp_timeout)
 
+        # HACK: we pass only memory_limit if it's not "auto", otherwise let Dask handle it.
+        # this because the docuemntation is not clear on how to set "auto" memory limit, and passing "auto" directly can lead
+        # to differentbehavior depending on the Dask version (total memory divided by available cpu instead of workers)
+        worker_kwargs = {"memory_limit": mem_limit} if mem_limit != "auto" else {}
+
         # spinup cluster
         self._cluster = LocalCluster(
-            threads_per_worker=nthreads, n_workers=nworkers, memory_limit=mem_limit, silence_logs=logging.ERROR, **kwargs
+            threads_per_worker=nthreads, n_workers=nworkers, **worker_kwargs, silence_logs=logging.ERROR, **kwargs
         )
         self.logger.info(
             "Initialized dask cluster at %s with %d workers.",
