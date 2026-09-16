@@ -4,7 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.1.0):
+Unreleased in the current development version (target v1.2.0):
+
+Main changes:
+
+ClimateDT workflow modifications:
+- The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
+  The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
+
+Complete list:
+- Fix treatment of empty datasets in backend (#3092)
+- Cli_checker adjustments after Backend new developments (#3081)
+- Update Data Portfolio to v2.2.0 (#3084)
+- Seldate method using pandas as reader method and allows dates beyond 2262 (#3072, #3085)
+- Trender works also with irregular monthly data (#3041)
+- Generalized installation method for aqua components (not aqua-core) (#2974)
+- Seldate method using pandas as reader method and allows dates beyond 2262 (#3072)
+- Suppress Intake2 warning (#3077)
+- fldmean: matching the data and area longitudes is working (#2957)
+- Data model introduces internal coordinate names instead of hard-coded values (#2957)
+- New version of the ERA5 data, including clear-sky variables, for Fixer (#3079)
+
+## [v1.1.0]
 
 Main changes:
 - `Reader` now supports `icechunk` and `z3fdb` sources
@@ -17,6 +38,8 @@ ClimateDT workflow modifications:
 
 Complete list:
 - Remove intake-xarray dependency (#2958)
+- Update load_aqua_container script for both core and diagnostics (#3043)
+- Remove deprecated idx_level coordinates for FDB access (#3063)
 - Implement tests with conda-lock and less pip pins (#3049)
 - Polytope now inherits the logging level from the `Reader` class (#2926)
 - Introduced `intake` drivers for GSVRetrieve (Polytope and GSV), Z3fdb and Icechunk (#2926)
@@ -33,6 +56,7 @@ Complete list:
 - `ConfigPath` class is now split in `ConfigCatalog` and `ConfigContext` classes (#2926)
 - Fix no kind case for aqua analysis (#3032)
 - Implement new DVC remote from ECMWF (#3031)
+- Expand use of `DaskCluster()` class to `Drop()` to control dask (#3037)
 
 ## [v1.0.1]
 
@@ -1520,7 +1544,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
 [v1.0.0a6]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a5...v1.0.0a6

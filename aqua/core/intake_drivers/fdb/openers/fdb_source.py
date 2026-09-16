@@ -265,21 +265,16 @@ class FDBSource(ABC, FDBTimeMixin):
         self.ilevel = None
 
     def _resolve_levels(self, level):
-        """Resolve ``levelist``/``idx_3d``/``onelevel`` from the request and metadata."""
+        """Resolve ``levelist``/``onelevel`` from the request and metadata."""
         if "levelist" in self._request:
             levelist = to_list(self._request["levelist"])
             if level:
                 level = to_list(level)
                 idx = list(map(levelist.index, level))
-                self.idx_3d = idx
                 self._request["levelist"] = level  # override default levels
                 if self.levels:  # if levels in metadata select them too
                     self.levels = to_list(self.levels)
                     self.levels = [self.levels[i] for i in idx]
-            else:
-                self.idx_3d = list(range(0, len(levelist)))
-        else:
-            self.idx_3d = None
 
         self.onelevel = False
         if "levelist" in self._request:
@@ -598,8 +593,6 @@ class FDBSource(ABC, FDBTimeMixin):
             ds[output_var] = da
 
         ds.attrs.update(self._ds.attrs)
-        if self.idx_3d:
-            ds = ds.assign_coords(idx_level=("level", self.idx_3d))
 
         return ds
 
@@ -609,8 +602,6 @@ class FDBSource(ABC, FDBTimeMixin):
         # self._get_schema()
         for i in range(self._npartitions):
             ds = self._get_partition(i)
-            if self.idx_3d:
-                ds = ds.assign_coords(idx_level=("level", self.idx_3d))
             yield ds
 
 

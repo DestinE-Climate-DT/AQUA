@@ -7,17 +7,12 @@ from metpy.units import units
 from pint.errors import DimensionalityError, UndefinedUnitError
 
 from aqua.core.configurer import ConfigContext
-
-# Possible basic names for coordinates
 from aqua.core.default import DEFAULT_COORD_NAMES
 from aqua.core.util import load_yaml
 
 # Define the target dimensionality (pressure)
 pressure_dim = units.pascal.dimensionality
 meter_dim = units.meter.dimensionality
-
-# module logger
-# logger = log_configure(log_level='INFO', log_name='coord_utils')
 
 
 @cache

@@ -4,20 +4,18 @@
 AQUA command line main functions
 """
 
-import os
-
-from aqua.core.configurer import ConfigPackages
 from aqua.core.logger import log_configure
 
 from .analysis import analysis_execute
 from .builder import builder_execute
 from .catalog import CatalogMixin
 from .catgen import catgen_execute
+from .components import discover_aqua_components
 from .drop import drop_execute
 from .files import FilesMixin
 
 # this are used to check existence of aqua.diagnostics
-from .install import DIAGNOSTIC_CONFIG_DIRECTORIES, DIAGNOSTIC_TEMPLATE_DIRECTORIES, InstallMixin
+from .install import InstallMixin
 from .parser import parse_arguments
 
 
@@ -28,14 +26,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
     def __init__(self):
         """The main AQUA command line interface"""
 
-        # NOTE: self.corepath points to $AQUA/aqua/core/config folder
-        aqua_paths = ConfigPackages()
-        self.corepath = os.path.join(aqua_paths.aqua_core_path, "config")
-        if DIAGNOSTIC_CONFIG_DIRECTORIES and DIAGNOSTIC_TEMPLATE_DIRECTORIES:
-            self.diagpath = os.path.join(aqua_paths.get_package_path("aqua.diagnostics"), "config")
-        else:
-            self.diagpath = None
-        # The configurer contains the ConfigContext class, while the configpath
+        # The configurer contains the ConfigPath class, while the configpath
         # will be populated by the configdir path by the _check method
         self.configurer = None
         self.configpath = None
@@ -81,6 +72,13 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             self.loglevel = "INFO"
 
         self.logger = log_configure(self.loglevel, "AQUA")
+
+        self.components = discover_aqua_components()
+        self.logger.debug(
+            "Using aqua components: %s",
+            [c for c in self.components if self.components[c]["installed"]],
+        )
+        self.aquapath = {name: info["path"] for name, info in self.components.items()}
 
         command = args.command
         method = self.command_map.get(command, parser.print_help)

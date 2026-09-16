@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import dask.array as da
+import pandas as pd
 import xarray as xr
 from smmregrid import GridInspector
 
@@ -9,6 +10,8 @@ from aqua.core.data_model.coordidentifier import CoordIdentifier
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
 from aqua.core.util import fix_calendar, set_attrs, to_list
+
+_DEFAULT = object()
 
 
 class Backend(ABC):
@@ -98,11 +101,11 @@ class Backend(ABC):
 
         data = self._fixer_and_datamodel(data, var=var)
 
-        if var:
+        if data and var:
             data = self._selvar(data=data, var=var)
-        if startdate or enddate:
-            data = self._seldate(data=data, startdate=startdate, enddate=enddate)
-        if level:
+        if data and (startdate or enddate):
+            data = self.seldate(data=data, startdate=startdate, enddate=enddate)
+        if data and level:
             data = self._sellevel(data=data, level=level, level_coord=level_coord)
 
         return data
@@ -158,9 +161,37 @@ class Backend(ABC):
             self.logger.error("No data available after applying _select_minimum_sample selections.")
         return data
 
-    def _seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = None):
-        """Store date bounds for lazy application."""
-        return data.sel(time=slice(startdate, enddate))
+    def seldate(self, data: xr.Dataset, startdate: str = None, enddate: str = _DEFAULT):
+        """
+        Select data for a specific date or date range.
+
+        Args:
+            data (xr.Dataset or xr.DataArray): The input dataset or dataarray.
+            startdate (str, optional): The starting date (e.g. '1985-01-01').
+                If only startdate is provided without enddate, data for that single date is selected.
+                Defaults to None.
+            enddate (str, optional): The end date (e.g. '1985-01-05').
+                If set to None explicitly, all data from startdate to the end is selected.
+                Defaults to startdate when startdate is provided.
+
+        Returns:
+            xr.Dataset or xr.DataArray: Sliced data.
+        """
+        if enddate is _DEFAULT:
+            enddate = startdate
+
+        t_start = pd.Timestamp(startdate) if startdate else None
+
+        # Strings are treated as periods to cover the full end of year, day, etc.
+        # Explicit datetime/Timestamp objects are preserved as-is.
+        if isinstance(enddate, str):
+            t_end = pd.Period(enddate).end_time
+        elif enddate is not None:
+            t_end = pd.Timestamp(enddate)
+        else:
+            t_end = None
+
+        return data.sel(time=slice(t_start, t_end))
 
     def _sellevel(
         self,
