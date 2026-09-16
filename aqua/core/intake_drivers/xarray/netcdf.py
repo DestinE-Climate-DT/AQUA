@@ -20,13 +20,28 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
         data = source.to_dask()
 
     Args:
-        urlpath (str | list): Path(s) to the source file(s); may include globs
-                              or ``{field}`` patterns (see ``path_as_pattern``).
-        xarray_kwargs (dict, optional): Additional kwargs for the xarray open call.
-        metadata (dict, optional): Catalog metadata for this source.
-        path_as_pattern (bool | str, optional): Treat the path as a ``{field}`` pattern. Defaults to True.
-        storage_options (dict, optional): Parameters passed to the backend file-system (e.g. s3).
-        kwargs: Further parameters forwarded to the reader (e.g. chunks, combine).
+        urlpath (str | list): Path(s) to the source file(s). May be a list, include glob ``*``
+            characters or ``{field}`` format patterns, e.g. ``{{ CATALOG_DIR }}/data/air.nc``,
+            ``{{ CATALOG_DIR }}/data/*.nc``, ``{{ CATALOG_DIR }}/data/air_{year}.nc``.
+        xarray_kwargs (dict, optional): Additional kwargs for ``xr.open_dataset()`` /
+            ``xr.open_mfdataset()``. Defaults to None.
+        metadata (dict, optional): Catalog metadata for this source (``fixer_name``,
+            ``source_grid_name``, ``filter_key``, ...). Defaults to None.
+        path_as_pattern (bool | str, optional): Whether to treat the path as a pattern (ie.
+            ``data_{field}.nc``) and create new coordinates in the output corresponding to the
+            pattern fields. If str, it is treated as the pattern to match on. Defaults to True.
+        storage_options (dict, optional): If using a remote fs, the kwargs to pass to that FS.
+            Defaults to None.
+        chunks (int | dict, optional): Used to load the dataset into dask arrays; ``chunks={}``
+            uses a single chunk per array, ``chunks=None`` bypasses dask. Defaults to ``{}``
+            (AQUA delta: intake-xarray only applies it inside ``to_dask()``).
+        combine ({'by_coords', 'nested'}, optional): Which function concatenates the files when
+            urlpath resolves to more than one; passed to ``xr.open_mfdataset`` (default
+            ``by_coords``) and dropped on single-file reads, see
+            :class:`~.readers.NetCDFZarrDatasetReader`.
+        concat_dim (str, optional): Dimension to concatenate the files along. Can be new or
+            pre-existing if ``combine="nested"``; must be None or new if ``combine="by_coords"``.
+        kwargs: Further parameters forwarded to the reader.
     """
 
     name = "netcdf"
