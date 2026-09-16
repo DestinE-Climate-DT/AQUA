@@ -3,7 +3,7 @@
 from intake import readers
 
 from .base import IntakeXarraySourceAdapter
-from .readers import NetCDFZarrDatasetReader
+from .readers import TolerantXArrayDatasetReader
 
 
 class IntakeNetCDFSource(IntakeXarraySourceAdapter):
@@ -11,7 +11,7 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
 
     Port of ``intake_xarray.netcdf.NetCDFSource`` (intake-xarray 2.0.0). AQUA deltas:
     the xarray engine defaults to netcdf4, ``chunks`` defaults to ``{}``, plain
-    (non-pattern) urls are read through :class:`~.readers.NetCDFZarrDatasetReader`,
+    (non-pattern) urls are read through :class:`~.readers.TolerantXArrayDatasetReader`,
     and the attributes the backend reads through are exposed by
     :class:`~.base.IntakeXarraySourceAdapter`.
 
@@ -39,7 +39,7 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
         combine ({'by_coords', 'nested'}, optional): Which function concatenates the files when
             urlpath resolves to more than one; passed to ``xr.open_mfdataset`` (default
             ``by_coords``) and dropped on single-file reads, see
-            :class:`~.readers.NetCDFZarrDatasetReader`.
+            :class:`~.readers.TolerantXArrayDatasetReader`.
         concat_dim (str, optional): Dimension to concatenate the files along. Can be new or
             pre-existing if ``combine="nested"``; must be None or new if ``combine="by_coords"``.
         kwargs: Further parameters forwarded to the reader.
@@ -62,6 +62,6 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
             # ``{field}`` patterns become output coordinates: intake has its own reader for that
             reader = readers.XArrayPatternReader(data, **xarray_kwargs, metadata=metadata, pattern=path_as_pattern, **kwargs)
         else:
-            reader = NetCDFZarrDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
+            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
         self.reader = reader
         super().__init__(data, xarray_kwargs, metadata)

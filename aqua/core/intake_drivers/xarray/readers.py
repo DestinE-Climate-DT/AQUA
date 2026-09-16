@@ -20,7 +20,7 @@ MFDATASET_ONLY_KWARGS = (
 )
 
 
-class NetCDFZarrDatasetReader(XArrayDatasetReader):
+class TolerantXArrayDatasetReader(XArrayDatasetReader):
     """XArrayDatasetReader tolerating multi-file kwargs on single-file reads.
 
     AQUA catalog entries routinely carry ``xr.open_mfdataset``-only kwargs

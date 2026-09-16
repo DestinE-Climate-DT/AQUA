@@ -3,7 +3,7 @@
 from intake import readers
 
 from .base import IntakeXarraySourceAdapter
-from .readers import NetCDFZarrDatasetReader
+from .readers import TolerantXArrayDatasetReader
 
 
 class IntakeZarrSource(IntakeXarraySourceAdapter):
@@ -11,7 +11,7 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
 
     Port of ``intake_xarray.xzarr.ZarrSource``. AQUA deltas, as in the netcdf source:
     ``chunks`` defaults to ``{}``, reads go through
-    :class:`~.readers.NetCDFZarrDatasetReader` (which also receives the catalog
+    :class:`~.readers.TolerantXArrayDatasetReader` (which also receives the catalog
     metadata), and the attributes the backend reads through are exposed by
     :class:`~.base.IntakeXarraySourceAdapter`; an ``xarray_kwargs`` argument is
     accepted so that netcdf and zarr catalog entries share the same signature.
@@ -38,5 +38,5 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
             kwargs.setdefault("chunks", {})
 
         data = readers.datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
-        self.reader = NetCDFZarrDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
+        self.reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
         super().__init__(data, xarray_kwargs, metadata)
