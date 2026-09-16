@@ -3,16 +3,17 @@
 from intake import readers
 
 from .base import IntakeXarraySourceAdapter
+from .readers import NetCDFZarrDatasetReader
 
 
 class IntakeNetCDFSource(IntakeXarraySourceAdapter):
     """Open one or more NetCDF files with xarray, registered as the ``netcdf`` driver.
 
-    Port of ``intake_xarray.netcdf.NetCDFSource`` (intake-xarray 2.0.0), with the
-    xarray engine defaulting to netcdf4. The rest of the AQUA deltas (attributes
-    exposed for the backend, reads through
-    :class:`~.readers.NetCDFZarrDatasetReader`, ``chunks={}`` default) is shared
-    with the zarr source in :class:`~.base.IntakeXarraySourceAdapter`.
+    Port of ``intake_xarray.netcdf.NetCDFSource`` (intake-xarray 2.0.0). AQUA deltas:
+    the xarray engine defaults to netcdf4, ``chunks`` defaults to ``{}``, plain
+    (non-pattern) urls are read through :class:`~.readers.NetCDFZarrDatasetReader`,
+    and the attributes the backend reads through are exposed by
+    :class:`~.base.IntakeXarraySourceAdapter`.
 
     Example usage::
 
@@ -51,12 +52,16 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
         # intake infers engine="scipy" from the NetCDF3 datatype, and scipy fails on any
         # other flavour: netcdf4 reads them all (the backend used to force it downstream)
         xarray_kwargs.setdefault("engine", "netcdf4")
-        data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
+        # AQUA always wants lazy data, but intake routes a single file to ``xr.open_dataset``,
+        # which is eager unless ``chunks`` is given
+        if "chunks" not in xarray_kwargs:
+            kwargs.setdefault("chunks", {})
 
+        data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
         if (path_as_pattern is True and "{" in urlpath) or isinstance(path_as_pattern, str):
             # ``{field}`` patterns become output coordinates: intake has its own reader for that
-            super().__init__(
-                data, xarray_kwargs, metadata, reader_class=readers.XArrayPatternReader, pattern=path_as_pattern, **kwargs
-            )
+            reader = readers.XArrayPatternReader(data, **xarray_kwargs, metadata=metadata, pattern=path_as_pattern, **kwargs)
         else:
-            super().__init__(data, xarray_kwargs, metadata, **kwargs)
+            reader = NetCDFZarrDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
+        self.reader = reader
+        super().__init__(data, xarray_kwargs, metadata)

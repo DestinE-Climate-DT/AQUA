@@ -3,16 +3,18 @@
 from intake import readers
 
 from .base import IntakeXarraySourceAdapter
+from .readers import NetCDFZarrDatasetReader
 
 
 class IntakeZarrSource(IntakeXarraySourceAdapter):
     """Open one or more Zarr stores with xarray, registered as the ``zarr`` driver.
 
-    Port of ``intake_xarray.xzarr.ZarrSource``, with the AQUA deltas shared with
-    the netcdf source in :class:`~.base.IntakeXarraySourceAdapter` (attributes
-    exposed for the backend, reads through :class:`~.readers.NetCDFZarrDatasetReader`,
-    ``chunks={}`` default); an ``xarray_kwargs`` argument is accepted so that netcdf
-    and zarr catalog entries share the same signature.
+    Port of ``intake_xarray.xzarr.ZarrSource``. AQUA deltas, as in the netcdf source:
+    ``chunks`` defaults to ``{}``, reads go through
+    :class:`~.readers.NetCDFZarrDatasetReader` (which also receives the catalog
+    metadata), and the attributes the backend reads through are exposed by
+    :class:`~.base.IntakeXarraySourceAdapter`; an ``xarray_kwargs`` argument is
+    accepted so that netcdf and zarr catalog entries share the same signature.
 
     Example usage::
 
@@ -30,5 +32,11 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
     name = "zarr"
 
     def __init__(self, urlpath, storage_options=None, metadata=None, xarray_kwargs=None, **kwargs):
+        xarray_kwargs = dict(xarray_kwargs or {})
+        # a single store takes the same eager ``xr.open_dataset`` route as a single netcdf file
+        if "chunks" not in xarray_kwargs:
+            kwargs.setdefault("chunks", {})
+
         data = readers.datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
-        super().__init__(data, xarray_kwargs, metadata, **kwargs)
+        self.reader = NetCDFZarrDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
+        super().__init__(data, xarray_kwargs, metadata)

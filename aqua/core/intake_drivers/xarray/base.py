@@ -1,31 +1,24 @@
 from intake.source import base
 
-from .readers import NetCDFZarrDatasetReader
-
 
 class IntakeXarraySourceAdapter(base.DataSource):
     container = "xarray"
     name = "xarray"
     version = ""
 
-    def __init__(self, data, xarray_kwargs=None, metadata=None, reader_class=NetCDFZarrDatasetReader, **kwargs):
-        """Build the intake 2 reader and expose the attributes the AQUA backend needs.
+    def __init__(self, data, xarray_kwargs=None, metadata=None):
+        """Expose the attributes the AQUA backend reads the source through.
+
+        The concrete sources build ``self.reader`` themselves, then call this.
 
         Args:
-            data (intake.readers.BaseData): The datatype the reader reads from.
-            xarray_kwargs (dict, optional): Kwargs for the xarray open call.
-            metadata (dict, optional): Catalog metadata for this source.
-            reader_class (type, optional): Reader to build. Defaults to NetCDFZarrDatasetReader.
-            kwargs: Further parameters forwarded to the reader (e.g. chunks).
+            data (intake.readers.BaseData): The datatype the reader reads from; the backend
+                narrows its ``url`` in place (glob expansion, date filtering).
+            xarray_kwargs (dict, optional): The effective kwargs of the xarray open call.
+            metadata (dict, optional): Catalog metadata for this source, set as ``self.metadata``.
         """
-        xarray_kwargs = dict(xarray_kwargs or {})
-        # AQUA always wants lazy data, but intake routes a single file/store to
-        # ``xr.open_dataset``, which is eager unless ``chunks`` is given
-        if "chunks" not in xarray_kwargs:
-            kwargs.setdefault("chunks", {})
-        self.xarray_kwargs = xarray_kwargs
         self.data = data
-        self.reader = reader_class(data, **xarray_kwargs, metadata=metadata, **kwargs)
+        self.xarray_kwargs = xarray_kwargs or {}
         super().__init__(metadata=metadata)
 
     def to_dask(self):
