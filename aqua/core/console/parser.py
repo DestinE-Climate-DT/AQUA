@@ -8,11 +8,13 @@ import argparse
 
 from aqua import __version__ as version
 from aqua.core.configurer import ConfigPackages
+
 from .analysis import analysis_parser
 from .builder import builder_parser
 from .catgen import catgen_parser
 from .components import discover_aqua_components
 from .drop import drop_parser
+from .stacgen import stacgen_parser
 
 
 def parse_arguments():
