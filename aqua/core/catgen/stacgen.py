@@ -582,7 +582,7 @@ class AquaSTACGenerator:
             list: Enum values for the key, or empty list if not found.
         """
         for element in response.get("links", []):
-            if element["title"] == key:
+            if element.get("title") == key:
                 return element["variables"][key]["enum"]
         return []
 
