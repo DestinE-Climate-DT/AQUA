@@ -10,8 +10,8 @@ import sys
 import tempfile
 from importlib import resources as pypath
 
-from aqua.core.configurer import ConfigPath
-from aqua.core.dask.daskcluster import DaskCluster
+from aqua.core.configurer import ConfigCatalog, ConfigContext
+from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
@@ -30,7 +30,7 @@ class Analysis:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
 
-        self.aqua_configdir = ConfigPath().configdir
+        self.aqua_configdir = ConfigContext().get_config_dir()
 
         if config_file_path is None:
             self.config_file_path = os.path.join(self.aqua_configdir, "analysis/config.aqua-analysis.yaml")
@@ -58,7 +58,7 @@ class Analysis:
 
         # dask
         self.serial = False
-        self.cluster = DaskCluster(loglevel=loglevel)
+        self.dask_cluster = DaskCluster(loglevel=loglevel)
 
     def get_config(self):
         """Load the configuration file and return the config dictionary."""
@@ -109,7 +109,7 @@ class Analysis:
         if self.catalog:
             self.logger.info("Requested catalog: %s", self.catalog)
         else:
-            cat, _ = ConfigPath().browse_catalogs(self.model, self.exp, self.source)
+            cat, _ = ConfigCatalog(loglevel=self.loglevel).browse_catalogs(self.model, self.exp, self.source)
             if cat:
                 self.catalog = cat[0]
                 self.logger.info("Automatically determined catalog: %s", self.catalog)
@@ -384,8 +384,8 @@ class Analysis:
                     extra_args += f" --nthreads {tool_nthreads}"
 
             # This is needed for ECmean which uses multiprocessing
-            if self.cluster.address and not tool_config.get("nocluster", False):
-                extra_args += f" --cluster {self.cluster.address}"
+            if self.dask_cluster.address and not tool_config.get("nocluster", False):
+                extra_args += f" --cluster {self.dask_cluster.address}"
 
             # Add standard arguments using helper function
             extra_args += self.build_extra_args(
@@ -495,30 +495,30 @@ class Analysis:
         """
 
         nthreads = get_arg(args, "nthreads", 2, config=cluster_config, key="threads")
-        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="workers")
+        nworkers = get_arg(args, "nworkers", 32, config=cluster_config, key="nworkers")
         mem_limit = cluster_config.get("memory_limit", "3.1GiB")
         timeouts = {
             "DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT": cluster_config.get("connect_timeout"),
             "DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP": cluster_config.get("tcp_timeout"),
         }
 
-        self.cluster.setup(
+        self.dask_cluster.setup(
             nworkers=nworkers,
             nthreads=nthreads,
             mem_limit=mem_limit,
             connect_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT"],
             tcp_timeout=timeouts["DASK_DISTRIBUTED__COMM__TIMEOUTS__TCP"],
         )
-        if not self.cluster.active:
+        if not self.dask_cluster.cluster_active:
             self.logger.error("Failed to start Dask cluster.")
             sys.exit(1)
         else:
-            self.logger.info("Dask cluster running at address: %s", self.cluster.address)
+            self.logger.info("Dask cluster running at address: %s", self.dask_cluster.address)
 
     def close_dask_cluster(self):
         """Close the Dask cluster if it is active."""
-        if self.cluster.active:
-            self.cluster.close()
+        if self.dask_cluster.cluster_active:
+            self.dask_cluster.close()
             self.logger.info("Dask cluster closed.")
         else:
             self.logger.debug("No active Dask cluster to close.")

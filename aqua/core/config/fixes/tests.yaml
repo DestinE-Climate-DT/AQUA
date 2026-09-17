@@ -37,7 +37,7 @@ fixer_name:
 
     ifs-ci-coords:
         coords:
-            timepippo:
+            tempodipippo:
                 source: time
         dims:
             cellspippo:

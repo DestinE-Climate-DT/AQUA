@@ -3,7 +3,7 @@ import os
 import xarray as xr
 from metpy.units import units
 
-from aqua.core.configurer import ConfigPath
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure, log_history
 
 from .yaml import load_yaml
@@ -19,8 +19,7 @@ def normalize_units(src, loglevel="WARNING"):
     logger = log_configure(loglevel, "normalize_units")
     src = str(src)
 
-    config_folder = ConfigPath().get_config_dir()
-    config_folder = os.path.join(config_folder, "fixes")
+    config_folder = ConfigContext().get_folder("fixes")
     default_file = os.path.join(config_folder, "default.yaml")
 
     if not os.path.exists(default_file):
@@ -73,20 +72,20 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel="WARNING"):
         offset = (0 * units(src)).to(units(dst)) - (0 * units(dst))
     else:
         if factor.units == "meter ** 3 / kilogram":
-            factor *= 1000 * units("kg m-3")
+            factor = factor * 1000 * units("kg m-3")
             if logger:
                 logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
         elif factor.units == "meter ** 3 * second / kilogram":
-            factor *= 1000 * units("kg m-3") / (deltat * units("s"))
+            factor = factor * 1000 * units("kg m-3") / (deltat * units("s"))
             if logger:
                 logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
                 logger.info("%s: corrected dividing by accumulation time %s s", var, deltat)
         elif factor.units == "second":
-            factor /= deltat * units("s")
+            factor = factor / (deltat * units("s"))
             if logger:
                 logger.debug("%s: corrected dividing by accumulation time %s s", var, deltat)
         elif factor.units == "kilogram / meter ** 3":
-            factor /= 1000 * units("kg m-3")
+            factor = factor / (1000 * units("kg m-3"))
             if logger:
                 logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
         else:

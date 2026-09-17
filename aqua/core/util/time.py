@@ -2,7 +2,6 @@
 Module including time utilities for AQUA
 """
 
-import math
 import re
 
 import cftime
@@ -12,11 +11,10 @@ import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from xarray.coding.times import cftime_to_nptime
 
+from aqua.core.default import DEFAULT_CALENDAR, DEFAULT_TIME_UNIT
 from aqua.core.logger import log_configure
 from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
 from aqua.core.util.string import get_quarter_anchor_month
-
-default_time_unit = "us"  # default to microseconds for datetime64 for a wider dates range
 
 
 def frequency_string_to_pandas(freq):
@@ -77,35 +75,114 @@ def frequency_string_to_pandas(freq):
     return new_freq
 
 
-def xarray_to_pandas_freq(xdataset: xr.Dataset | xr.DataArray):
+def xarray_to_pandas_freq(
+    xdataset: xr.Dataset | xr.DataArray | pd.Index,
+    dim: str = "time",
+) -> str | None:
     """
-    Given a Xarray Dataset, estimate the time frequency and convert
-    it as a Pandas frequency string
+    Given an xarray object or pandas Index, dynamically estimate the time frequency
+    and convert it to a pandas-compliant frequency string.
 
     Args:
-        xdataset (xr.Dataset | xr.DataArray): The input xarray object.
+        xdataset (xr.Dataset | xr.DataArray | pd.Index): The input xarray object, coordinate, or index.
+        dim (str, optional): Name of the time dimension. Defaults to 'time'.
 
     Returns:
-        str: The inferred time frequency as a string, pandas compliant.
+        str or None: The inferred time frequency as a string, pandas compliant, or None.
     """
-    # to check if this is necessary
-    timedelta = pd.Timedelta(xdataset.time.diff("time").mean().values)
-
-    hours = math.floor(timedelta.total_seconds() / 3600)
-    days = math.floor(hours / 24)
-    months = math.floor(days / 28)  # Minimum month has around 28 days
-    years = math.floor(days / 365)  # Assuming an average year has around 365 days
-
-    # print([hours, days, months, years])
-
-    if years >= 1:
-        return f"{years}Y"
-    elif months >= 1:
-        return f"{months}MS"
-    elif days >= 1:
-        return f"{days}D"
+    if isinstance(xdataset, xr.Dataset):
+        if dim not in xdataset.coords:
+            return None
+        time_coord = xdataset[dim]
+    elif isinstance(xdataset, xr.DataArray):
+        time_coord = xdataset[dim] if dim in xdataset.coords else xdataset
     else:
-        return f"{hours}h"
+        time_coord = xdataset
+
+    if hasattr(time_coord, "to_index"):
+        time_index = time_coord.to_index()
+    else:
+        time_index = time_coord
+
+    if not isinstance(time_index, (pd.DatetimeIndex, xr.CFTimeIndex)):
+        try:
+            time_index = pd.to_datetime(time_index)
+        except Exception:
+            return None
+
+    if len(time_index) < 2:
+        return None
+
+    diffs = pd.Series(time_index).diff().dropna()
+    if diffs.empty:
+        return None
+
+    try:
+        delta = pd.Timedelta(diffs.median())
+    except Exception:
+        return None
+
+    if pd.isna(delta) or delta <= pd.Timedelta(0):
+        return None
+
+    sec = delta.total_seconds()
+
+    # Calendar-scale intervals
+    if sec >= 350 * 86400:
+        years = int(round(sec / (365.25 * 86400)))
+        return "YS" if years <= 1 else f"{years}YS"
+    if 25 * 86400 <= sec <= 35 * 86400:
+        return "MS"
+    if 6 * 86400 <= sec <= 8 * 86400:
+        return "W"
+    if sec >= 20 * 3600:
+        days = int(round(sec / 86400))
+        return "D" if days <= 1 else f"{days}D"
+
+    # Sub-daily intervals
+    if sec >= 3600:
+        hours = int(round(sec / 3600))
+        return "h" if hours == 1 else f"{hours}h"
+    if sec >= 60:
+        minutes = int(round(sec / 60))
+        return "min" if minutes == 1 else f"{minutes}min"
+    if sec >= 1:
+        seconds = int(round(sec))
+        return "s" if seconds == 1 else f"{seconds}s"
+
+    return None
+
+
+def pandas_freq_to_offset(freq: str) -> pd.DateOffset | pd.tseries.offsets.BaseOffset | None:
+    """
+    Convert a pandas frequency string to a pandas DateOffset or BaseOffset.
+
+    Args:
+        freq (str): A pandas-compliant frequency string (e.g. 'YS', 'MS', 'W', 'D', 'h').
+
+    Returns:
+        pd.DateOffset or pd.tseries.offsets.BaseOffset or None: The corresponding offset object.
+    """
+    if freq is None:
+        return None
+
+    # Handle numerical prefix if present (e.g., "2YS" -> 2 and "YS")
+    match = re.match(r"^(\d+)?(.+)$", freq)
+    if match:
+        num_str, base = match.groups()
+        n = int(num_str) if num_str else 1
+    else:
+        n = 1
+        base = freq
+
+    if base in ["YS", "AS", "Y", "A", "YE"]:
+        return pd.DateOffset(years=n)
+    if base in ["MS", "M", "ME"]:
+        return pd.DateOffset(months=n)
+    if base == "W" or base.startswith("W-"):
+        return pd.DateOffset(weeks=n)
+
+    return pd.tseries.frequencies.to_offset(freq)
 
 
 def pandas_freq_to_string(freq: str) -> str:
@@ -478,9 +555,8 @@ def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> 
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
-    default_calendar = "gregorian"
-    # default_calendar_start = 'microseconds since 1850-01-01'
-    unit = default_time_unit
+
+    unit = DEFAULT_TIME_UNIT
 
     logger = log_configure(loglevel, "fix_calendar")
     cal = data.time.encoding.get("calendar", "standard") if "time" in data.coords else "standard"
@@ -491,14 +567,14 @@ def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> 
             unit = np.datetime_data(data.time.values.dtype)[0]
             logger.debug(f"Time units detected as {unit} from datetime64 dtype")
 
-        logger.info(f"Converting calendar from {cal} to {default_calendar} for data retrieval...")
-        data = data.convert_calendar(default_calendar, align_on="year")
+        logger.info(f"Converting calendar from {cal} to {DEFAULT_CALENDAR} for data retrieval...")
+        data = data.convert_calendar(DEFAULT_CALENDAR, align_on="year")
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
         if data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime):
-            logger.info(f"Rolling back cftime to datetime64[{default_time_unit}] after calendar conversion")
+            logger.info(f"Rolling back cftime to datetime64[{DEFAULT_TIME_UNIT}] after calendar conversion")
 
-            np_time = cftime_to_nptime(data.time.values, time_unit=default_time_unit)
+            np_time = cftime_to_nptime(data.time.values, time_unit=DEFAULT_TIME_UNIT)
             logger.debug(f"Time axis is now of type {np_time.dtype}, first step {np_time[0]}")
             data = data.assign_coords(time=np_time)
         else:  # Still datetime64, ensure we keep original precision

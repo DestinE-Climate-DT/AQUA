@@ -2,13 +2,12 @@
 
 import pandas as pd
 
+# default grid name for DROP outputs, if not specified otherwise
+from aqua.core.default import DEFAULT_DROP_GRID
 from aqua.core.logger import log_configure
 from aqua.core.util import format_realization, frequency_string_to_pandas, replace_intake_vars, replace_urlpath_jinja
 
 from .output_path_builder import OutputPathBuilder
-
-# default grid name for DROP outputs, if not specified otherwise
-DEFAULT_DROP_GRID = "lon-lat-r100"
 
 
 class CatalogEntryBuilder:

@@ -12,17 +12,20 @@ pytestmark = [pytest.mark.aqua]
 
 @pytest.fixture
 def deployer(monkeypatch, tmp_path):
-    """Create a GridDeployer with a fully mocked ConfigPath."""
+    """Create a GridDeployer with a fully mocked ConfigContext."""
 
     class DummyConfigPath:
         def __init__(self, loglevel="WARNING"):
             self.loglevel = loglevel
             self.configdir = str(tmp_path)
 
-        def get_reader_filenames(self):
+        def get_reader_folders(self):
             return "ignored-reader.yaml", "ignored-grids-folder"
 
-    monkeypatch.setattr(griddeploy_module, "ConfigPath", DummyConfigPath)
+        def get_config_dir(self):
+            return str(tmp_path)
+
+    monkeypatch.setattr(griddeploy_module, "ConfigContext", DummyConfigPath)
     return GridDeployer(loglevel="DEBUG")
 
 

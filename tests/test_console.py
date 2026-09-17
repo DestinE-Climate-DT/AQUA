@@ -6,13 +6,18 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from importlib.metadata import EntryPoint
+from importlib.metadata import entry_points as real_entry_points
 from unittest.mock import patch
 
 import pytest
 
+import aqua
 from aqua import __path__ as pypath
 from aqua import __version__ as version
 from aqua.core.console import catalog
+from aqua.core.console import components as components_module
+from aqua.core.console.components import _resolve_component_info, discover_aqua_components
 from aqua.core.console.main import AquaConsole
 from aqua.core.console.util import query_yes_no
 from aqua.core.gridbuilder.griddeploy import GridDeployer
@@ -20,6 +25,9 @@ from aqua.core.util import dump_yaml, load_yaml, to_list
 
 TESTFILE = "testfile.txt"
 MACHINE = "github"
+# fake plugin fixture package used by TestPluginInstall, mirroring the real aqua-diagnostics
+# entry-point contract: [project.entry-points."aqua.plugins"] diagnostics = "aqua.diagnostics:get_install_dirs"
+MOCKPLUGIN_FIXTURE_ROOT = os.path.join(os.path.dirname(__file__), "fixtures", "mockplugin")
 
 pytestmark = [pytest.mark.aqua, pytest.mark.console]
 
@@ -844,6 +852,183 @@ class TestAquaConsoleAnalysis:
 
         # The dummy tool should have been invoked once
         mock_tool.assert_called_once()
+
+
+# "mockplugin" resolves to a real fixture package; "brokenplugin" points to a module that
+# does not exist on disk, so ep.load() raises and the component is reported as not installed.
+MOCK_ENTRY_POINTS = [
+    EntryPoint(name="mockplugin", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins"),
+    EntryPoint(name="brokenplugin", value="aqua.brokenplugin:get_install_dirs", group="aqua.plugins"),
+]
+
+
+@pytest.fixture
+def mock_plugin_entrypoint(monkeypatch):
+    """Register the fake aqua.plugins entry points for the duration of a single test"""
+
+    aqua.__path__.append(os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua"))
+
+    def fake_entry_points(*args, **kwargs):
+        if kwargs.get("group") == "aqua.plugins":
+            return list(real_entry_points(*args, **kwargs)) + MOCK_ENTRY_POINTS
+        return real_entry_points(*args, **kwargs)
+
+    monkeypatch.setattr(components_module, "entry_points", fake_entry_points)
+    discover_aqua_components.cache_clear()
+
+    yield
+
+    aqua.__path__.remove(os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua"))
+    # avoid leaking the fake plugin into tests running later in the same process
+    discover_aqua_components.cache_clear()
+
+
+@pytest.mark.aqua
+class TestPluginInstall:
+    """Tests exercising AquaConsole.install()/update() with a fake registered plugin"""
+
+    def test_bare_install_includes_plugin(
+        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """A bare `aqua install` with no component flags must also install the discovered plugin"""
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        run_aqua(["install", MACHINE])
+
+        assert os.path.isfile(os.path.join(mydir, ".aqua", "mock_config", "dummy.yaml"))
+        assert os.path.isfile(os.path.join(mydir, ".aqua", "templates", "mock_templates", "dummy.tmpl"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
+    def test_editable_plugin_install_creates_symlinks(
+        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """Requesting the plugin with a path installs it in editable (symlinked) mode"""
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        run_aqua(["install", MACHINE, "--core", "--mockplugin", MOCKPLUGIN_FIXTURE_ROOT])
+
+        assert os.path.islink(os.path.join(mydir, ".aqua", "mock_config"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
+    def test_plugin_without_core_fails_when_core_not_installed(self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua):
+        """Requesting only a plugin, with core never installed here, must fail explicitly rather than
+        silently installing core too"""
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        with pytest.raises(SystemExit):
+            run_aqua(["install", MACHINE, "--mockplugin"])
+
+        assert not os.path.exists(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+
+    def test_broken_plugin_does_not_crash_bare_install(
+        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """A registered entry point whose module cannot be imported must not break a bare install"""
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        run_aqua(["install", MACHINE])
+        assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
+    def test_discover_reports_broken_plugin_as_not_installed(self, mock_plugin_entrypoint):
+        """discover_aqua_components must mark an unresolvable plugin as not installed, without raising"""
+        components = discover_aqua_components()
+
+        assert components["mockplugin"]["installed"] is True
+        assert components["brokenplugin"]["installed"] is False
+
+    def test_update_installation_updates_plugin_files(
+        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """`aqua update` (standard mode) refreshes the plugin's installed config directory"""
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        run_aqua(["install", MACHINE])
+        run_aqua(["-v", "update"])
+
+        assert os.path.isfile(os.path.join(mydir, ".aqua", "mock_config", "dummy.yaml"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
+    def test_update_skips_editable_plugin_dirs(
+        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """`aqua update` must leave an editable plugin's config/template symlinks untouched"""
+        mydir = str(tmpdir)
+        set_home(mydir)
+
+        run_aqua(["install", MACHINE, "--core", "--mockplugin", MOCKPLUGIN_FIXTURE_ROOT])
+        run_aqua(["-v", "update"])
+
+        assert os.path.islink(os.path.join(mydir, ".aqua", "mock_config"))
+        assert os.path.islink(os.path.join(mydir, ".aqua", "templates", "mock_templates"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
+
+@pytest.mark.aqua
+class TestComponentResolution:
+    """Unit tests for the aqua.plugins discovery helpers in components.py"""
+
+    def test_unknown_module_returns_not_installed(self):
+        """An import failure (no such module) must be reported as not installed, not raise"""
+        info = _resolve_component_info("doesnotexist_xyz")
+
+        assert info == {"installed": False, "config_dirs": [], "template_dirs": [], "path": None}
+
+    def test_module_without_get_install_dirs_returns_not_installed(self, monkeypatch):
+        """A module missing the get_install_dirs() contract must be reported as not installed, not raise"""
+        monkeypatch.setattr(components_module, "import_module", lambda name: object())
+
+        info = _resolve_component_info("somemodule")
+
+        assert info["installed"] is False
+
+    def test_empty_dirs_are_not_installed_without_importing(self):
+        """A plugin advertising no config/template dirs is skipped before even resolving its path"""
+        info = _resolve_component_info("whatever", data={"config": [], "templates": ["mock_templates"]})
+
+        assert info == {"installed": False, "config_dirs": [], "template_dirs": ["mock_templates"], "path": None}
+
+    def test_unresolvable_path_returns_not_installed(self):
+        """Non-empty dirs for a module that cannot be located as a resource must not raise"""
+        info = _resolve_component_info("doesnotexist_xyz", data={"config": ["a"], "templates": ["b"]})
+
+        assert info["installed"] is False
+
+    def test_resolves_via_get_install_dirs_when_no_data_given(self, mock_plugin_entrypoint):
+        """Calling with data=None (as done for 'core') must import the module and call get_install_dirs()"""
+        info = _resolve_component_info("mockplugin")
+
+        assert info["installed"] is True
+        assert info["config_dirs"] == ["mock_config"]
+
+    def test_discover_ignores_a_plugin_named_core(self, mock_plugin_entrypoint, monkeypatch):
+        """A rogue entry point named 'core' must be ignored (with a warning), not override real core"""
+        entry_points_with_core = MOCK_ENTRY_POINTS + [
+            EntryPoint(name="core", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins")
+        ]
+        monkeypatch.setattr(
+            components_module,
+            "entry_points",
+            lambda *a, **k: entry_points_with_core if k.get("group") == "aqua.plugins" else real_entry_points(*a, **k),
+        )
+        discover_aqua_components.cache_clear()
+
+        with pytest.warns(UserWarning, match="Ignoring unexpected 'core'"):
+            components = discover_aqua_components()
+
+        assert components["core"]["config_dirs"] != ["mock_config"]
+
+        discover_aqua_components.cache_clear()
 
 
 class TestAquaConsoleGridBuilder:

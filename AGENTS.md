@@ -36,7 +36,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 | Provenance / history | `from aqua.core.logger import log_history` |
 | List coercion | `from aqua.core.util import to_list` |
 | Env vars, attrs, username | `from aqua.core.util import expand_env_vars, extract_attrs, username` |
-| Paths & catalog config | `from aqua.core.configurer import ConfigPath` |
+| Paths & catalog config | `from aqua.core.configurer import ConfigContext, ConfigCatalog` |
 | YAML load/merge/dump | `from aqua.core.util import load_yaml, load_multi_yaml, dump_yaml` |
 | Lock shared config writes | `from aqua.core.lock import SafeFileLock` |
 | Coordinate standardization | `from aqua.core.data_model import DataModel` |
@@ -52,7 +52,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 
 - **Modularity over monoliths**: when not possible to delegate to specialized (`FixerConfigure`, `FixerOperator`, `FixerDataModel`) sub-classes, use mixins (`InstallMixin`, `CatalogMixin`, `FilesMixin`)
 - **No `print()`**: use `self.logger = log_configure(log_level=loglevel, log_name="ClassName")` and pass `loglevel` through every constructor *(existing user-facing `print()` calls in `aqua/core/console/` may remain; update only in files already being modified for functional changes)*
-- **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigPath` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua` *(some legacy install/config flows still use explicit defaults — route new logic through `ConfigPath` but do not refactor existing flows unless already touching them)*
+- **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigContext`, `ConfigContext` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua` *(some legacy install/config flows still use explicit defaults — route new logic through `ConfigContext` but do not refactor existing flows unless already touching them)*
 - **Configuration is declarative**: define grids, fixes, data models, catalogs, and analyses in YAML first; add Python `if/else` only when config cannot express the behaviour
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
@@ -67,8 +67,8 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 All data *read paths* must go through Intake catalogs unless explicitly justified:
 
 - Do not hardcode file access patterns already representable in catalog YAML
-- Extend an Intake driver to support new data formats (see `aqua/core/gsv/` for a reference implementation); do not bypass Intake
-- Use Intake 0.7.x syntax (pinned in `pyproject.toml`)
+- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope, `icechunk/` for IceChunk); do not bypass Intake
+- AQUA uses intake ≥2 (pinned in `pyproject.toml`) with v1-style YAML catalogs; the `netcdf`, `zarr`, `gsv` and `icechunk` drivers are registered by AQUA itself (see `aqua/core/intake_drivers/__init__.py`)
 
 ---
 
@@ -95,7 +95,7 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
 - **Attribute loss through slicing is a common silent failure** — verify that Dataset-level attrs (especially `history`) survive `.sel()` in tests
 - Cache expensive results (areas, weights) with a `hasattr` guard:
   ```python
-  if not hasattr(self, '_cached_areas'):
+  if not hasattr(self, "_cached_areas"):
       self._cached_areas = compute_areas(...)
   return self._cached_areas
   ```
@@ -163,7 +163,7 @@ All code is linted with **Ruff**: no unused imports, no bare `except`, consisten
 
 ## External Dependencies
 
-Prefer in this order before adding anything new: `xarray`, `numpy`, `pandas`, `metpy`, `smmregrid`, `intake_xarray`.
+Prefer in this order before adding anything new: `xarray`, `numpy`, `pandas`, `metpy`, `smmregrid`, `intake`.
 
 ---
 

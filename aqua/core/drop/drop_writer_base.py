@@ -9,7 +9,6 @@ import glob
 import os
 import shutil
 from abc import ABC, abstractmethod
-from datetime import datetime
 from time import time
 
 import numpy as np
@@ -78,7 +77,6 @@ class BaseWriter(ABC):
         Returns:
             str: File extension (e.g., '.nc', '.zarr')
         """
-        pass
 
     @abstractmethod
     def validate(self, path):
@@ -91,7 +89,6 @@ class BaseWriter(ABC):
         Returns:
             bool: True if valid, False otherwise
         """
-        pass
 
     @abstractmethod
     def _get_encoding(self, data, var=None):
@@ -105,7 +102,6 @@ class BaseWriter(ABC):
         Returns:
             dict: Encoding configuration or None
         """
-        pass
 
     @abstractmethod
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
@@ -120,7 +116,6 @@ class BaseWriter(ABC):
         Returns:
             bool: True if write successful
         """
-        pass
 
     @abstractmethod
     def _should_concat(self):
@@ -130,7 +125,6 @@ class BaseWriter(ABC):
         Returns:
             bool: True if concatenation is enabled
         """
-        pass
 
     @abstractmethod
     def _open_files(self, filepaths):
@@ -146,7 +140,6 @@ class BaseWriter(ABC):
         Returns:
             xarray.Dataset: Opened dataset
         """
-        pass
 
     def _build_zarr_encoding(self, data, time_chunk, compressor_level=1):
         """
@@ -620,7 +613,7 @@ class BaseWriter(ABC):
 
     def _write_chunk_stat_line(self, entry, stats_file):
         """Write a single chunk stat line immediately to the stats file."""
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ts = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
         mem = entry.get("mem")
         size_bytes = entry.get("size_bytes")
         tp = entry.get("throughput_mib_s")

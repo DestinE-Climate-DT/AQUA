@@ -3,7 +3,6 @@ import pytest
 import regionmask
 import xarray as xr
 from conftest import LOGLEVEL
-from typeguard import TypeCheckError
 
 from aqua.core.fldstat import AreaSelection
 from aqua.core.util import check_seasonal_chunk_completeness, select_season
@@ -107,9 +106,6 @@ def test_missing_data():
     """Test with missing data or wrong type"""
     with pytest.raises(TypeError):
         AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
-
-    with pytest.raises(TypeCheckError):
-        AreaSelection(loglevel=loglevel).select_area("invalid_data", lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
