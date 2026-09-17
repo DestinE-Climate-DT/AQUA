@@ -206,7 +206,8 @@ class CatalogNode:
     def add_path(self, *pairs: tuple[str, Any]) -> "CatalogNode":
         """Add a chain of (key, value) pairs as nested descendants.
 
-        Reuses existing nodes with matching keys; creates new nodes as needed.
+        Reuses existing nodes with matching (key, value) pairs; creates new
+        nodes as needed.
 
         Args:
             *pairs: Variable number of (key, value) tuples.
@@ -216,12 +217,11 @@ class CatalogNode:
         """
         node = self
         for key, value in pairs:
-            if value in node.children:
-                node = node.children[value]
-            else:
+            child = node.children.get((key, value))
+            if child is None:
                 child = CatalogNode(key=key, value=value)
-                node.children[child.value] = child
-                node = child
+                node.children[(key, value)] = child
+            node = child
         return node
 
 
@@ -437,7 +437,7 @@ class AquaSTACGenerator:
 
         # Determine tier: production for baseline/projection, develop otherwise
         activity = request.get("activity", "").lower()
-        tier = "production" if activity in ("baseline", "projection") else "develop"
+        tier = "production" if activity in ("baseline", "projections") else "develop"
 
         model = request.get("model", "").lower()
         levtype = request.get("levtype", "").lower()
@@ -521,7 +521,7 @@ class AquaSTACGenerator:
             None. Modifies params in-place.
         """
         for element in stac_response.get("links", []):
-            title = element["title"]
+            title = element.get("title")
             variables = element.get("variables", {})
             if title in keys and "enum" in variables.get(title, {}):
                 params[title] = variables[title]["enum"]
