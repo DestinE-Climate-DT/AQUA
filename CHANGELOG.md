@@ -37,6 +37,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Remove intake-xarray dependency (#2958)
 - Update load_aqua_container script for both core and diagnostics (#3043)
 - Remove deprecated idx_level coordinates for FDB access (#3063)
 - Implement tests with conda-lock and less pip pins (#3049)

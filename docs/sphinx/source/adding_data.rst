@@ -123,8 +123,10 @@ You can add fixes to your dataset by following examples in the ``aqua/core/confi
     If you want to add a Zarr or GRIB source the syntax may be slightly different,
     but the general structure of the catalog will be the same.
     You can find examples in the existing catalog or more information on the
-    `intake <https://intake.readthedocs.io/en/stable/>`_ and
-    `intake-xarray <https://intake-xarray.readthedocs.io/en/latest/>`_ documentation.
+    `intake <https://intake.readthedocs.io/en/stable/>`_ documentation.
+    The ``netcdf`` and ``zarr`` drivers are provided by AQUA itself
+    (``aqua.core.intake_drivers.xarray``), keeping the same catalog syntax as
+    the former intake-xarray ones.
 
 .. _FDB-based-sources:
 
