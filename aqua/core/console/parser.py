@@ -8,12 +8,11 @@ import argparse
 
 from aqua import __version__ as version
 from aqua.core.configurer import ConfigPackages
-
 from .analysis import analysis_parser
 from .builder import builder_parser
 from .catgen import catgen_parser
+from .components import discover_aqua_components
 from .drop import drop_parser
-from .stacgen import stacgen_parser
 
 
 def parse_arguments():
@@ -69,26 +68,21 @@ def parse_arguments():
     install_parser.add_argument(
         "-p", "--path", type=str, metavar="AQUA_TARGET_PATH", help="Path where to install AQUA. Default is $HOME/.aqua"
     )
-    install_parser.add_argument(
-        "-c",
-        "--core",
-        nargs="?",
-        const="standard",
-        type=str,
-        metavar="AQUA_CORE_PATH",
-        help="Install AQUA core. Without path: standard installation of core only. "
-        "With path: editable installation from that path",
-    )
-    install_parser.add_argument(
-        "-d",
-        "--diagnostics",
-        nargs="?",
-        const="standard",
-        type=str,
-        metavar="AQUA_DIAG_PATH",
-        help="Install AQUA diagnostics. Without path: standard installation of diagnostics only. "
-        "With path: editable installation from that path",
-    )
+    for name in discover_aqua_components():
+        install_parser.add_argument(
+            f"-{name[0]}",
+            f"--{name}",
+            nargs="?",
+            const="standard",
+            type=str,
+            metavar=f"AQUA_{name.upper()}_PATH",
+            help=f"Install AQUA {name}. Without path: standard installation of {name} only. "
+            "With path: editable installation from that path",
+        )
+
+    # TODO: extend
+    # for name in self.components:
+    #    install_parser.add_argument(f"--{name}", action="store_true", help=f"Install only the {name} component")
 
     catalog_add_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be installed")
     catalog_add_parser.add_argument(

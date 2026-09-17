@@ -100,9 +100,9 @@ def main(args):
         # extract metadata from catalog
         if yamldir:
             logger.info("Creating experiment.yaml")
-            metadata = reader.expcat.metadata.copy()
+            metadata = reader.backend.expcat.metadata.copy()
             metadata.pop("catalog_dir", None)
-            metadata["description"] = getattr(reader.expcat, "description", "")
+            metadata["description"] = getattr(reader.backend.expcat, "description", "")
             metadata["catalog"] = catalog
             metadata["model"] = model
             metadata["experiment"] = exp
@@ -110,7 +110,7 @@ def main(args):
             dump_yaml(outfile=yaml_path, cfg=metadata)
 
         if fread:
-            reader.retrieve(sample=True)
+            reader._retrieve_plain()
 
     except Exception as e:
         logger.error("Failed to retrieve data: {}".format(e))
