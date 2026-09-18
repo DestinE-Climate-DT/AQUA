@@ -208,6 +208,17 @@ class TestGsv:
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
 
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
+    @pytest.mark.parametrize("config_fdb_type", ["dir", "file"])
+    def test_reader_config_fdb(self, engine, config_fdb_type) -> None:
+        """Test reading data with config_fdb passed to Reader as a directory or config file."""
+        config = FDB_HOME if config_fdb_type == "dir" else f"{FDB_HOME}/etc/fdb/config.yaml"
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", config_fdb=config, loglevel=loglevel, engine=engine)
+        assert reader.backend.kwargs.get("config_fdb") == config
+        data = reader.retrieve()
+        assert isinstance(data, xr.Dataset), "Does not return a Dataset"
+        assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
+
     def test_reader_paramid(self) -> None:
         """
         Reading with the variable paramid, we use '130' instead of 't'
