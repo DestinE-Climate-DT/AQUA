@@ -217,8 +217,7 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
             req_copy.pop("date", None)
             req_copy.pop("time", None)
 
-        m_str = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in req_copy.items())
-        mars_list.append(m_str)
+        mars_list.append(req_copy)
 
     return mars_list, pd_freq, start
 
@@ -237,7 +236,7 @@ def _build_zarr_axes(freq, levels, chunks=None):
         if isinstance(chunks, dict) and "level" in chunks:
             level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
         else:
-            level_axes = [AxisDefinition(["levelist"], Chunking.NONE)]
+            level_axes = [AxisDefinition(["levelist"], Chunking.WHOLE_AXIS)]
 
     axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
     return axes
@@ -518,9 +517,17 @@ def open_z3fdb(
 
     ds = add_coordinates(ds, levunits=levunits, grid_type=grid_type)
 
+    # Convert list of dictionaries to list of strings
+    def _mars_to_str(req):
+        if isinstance(req, str):
+            return req
+        return ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, (list, tuple)) else str(v)) for k, v in req.items())
+
+    mars_str_list = [_mars_to_str(m) for m in mars_list]
+
     ds.attrs.update(
         {
-            "mars_request": "; ".join(mars_list) if len(mars_list) > 1 else mars_list[0],
+            "mars_request": "; ".join(mars_str_list) if len(mars_list) > 1 else mars_list[0],
         }
     )
 
