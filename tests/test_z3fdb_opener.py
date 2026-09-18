@@ -8,11 +8,23 @@ import xarray as xr
 
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
 
-CMIP6_MARS_REQ = (
-    "class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,"
-    "model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,"
-    "stream=clte,date=19900101,time=0000,param=164,levtype=sfc"
-)
+CMIP6_MARS_REQ = {
+    "class": "d1",
+    "dataset": "climate-dt",
+    "activity": "CMIP6",
+    "experiment": "hist",
+    "generation": 1,
+    "model": "IFS-NEMO",
+    "realization": 1,
+    "resolution": "standard",
+    "expver": "a0h3",
+    "type": "fc",
+    "stream": "clte",
+    "date": "19900101",
+    "time": "0000",
+    "param": 164,
+    "levtype": "sfc",
+}
 FDB_HOME = "/app"
 
 pytestmark = pytest.mark.aqua
@@ -203,7 +215,7 @@ def test_z3fdb_rebuild_parameters() -> None:
         pytest.skip("z3fdb not available")
 
     serialized_axes = [(["date", "time"], "SINGLE_VALUE")]
-    # Test with mars as string
+    # Test with mars as single dict
     try:
         store1 = rebuild_fdb_zarr_store(
             config=None, mars=CMIP6_MARS_REQ, serialized_axes=serialized_axes, extractor_type_str="GRIB"
