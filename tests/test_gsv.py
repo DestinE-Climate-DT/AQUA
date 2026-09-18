@@ -265,17 +265,27 @@ class TestGsv:
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
+    @pytest.mark.parametrize("chunk_key", ["vertical", "level"])
     @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
-    def test_reader_3d_chunks(self, engine) -> None:
+    def test_reader_3d_chunks(self, engine, chunk_key) -> None:
         """Testing 3D access with vertical chunking"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels-chunks", loglevel=loglevel, engine=engine)
+        reader = Reader(
+            model="IFS",
+            exp="test-fdb",
+            source="fdb-levels",
+            chunks={"time": "h", chunk_key: 1},
+            loglevel=loglevel,
+            engine=engine,
+        )
         data = reader.retrieve()
+        assert data.t.chunksizes["plev"] == (1, 1, 1), "Vertical dimension is not chunked correctly"
 
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
         data = reader.retrieve(level=[900, 800])  # Read only two levels
+        assert data.t.chunksizes["plev"] == (1, 1), "Subsetted vertical dimension is not chunked correctly"
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
     @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])

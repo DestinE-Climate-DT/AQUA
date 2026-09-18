@@ -233,7 +233,7 @@ def _build_zarr_axes(freq, levels, chunks=None):
 
     level_axes = []
     if levels is not None:
-        if isinstance(chunks, dict) and "level" in chunks:
+        if isinstance(chunks, dict) and ("level" in chunks or "vertical" in chunks):
             level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
         else:
             level_axes = [AxisDefinition(["levelist"], Chunking.WHOLE_AXIS)]
@@ -424,7 +424,7 @@ def open_z3fdb(
         data_end_date (str, optional): End date of the dataset. Defaults to None.
         freq (str, optional): Frequency of the data. Defaults to "MS".
         chunks (dict, optional): Chunking configuration for the zarr array.
-            At the moment it only supports one key 'level', when this is provided,
+            At the moment it supports 'level' or 'vertical' keys, when either is provided,
             the level axis is chunked, otherwise it is not chunked.
             The value of the chunk size for the level axis is ignored.
             The time axis is always chunked as single values. Defaults to None.
