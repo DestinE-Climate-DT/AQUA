@@ -34,8 +34,8 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert start == "2020-01-01"
     assert len(mars_list) == 1
     # Since it's daily, request elements like date are mapped, and year/month are removed from the query
-    assert "date=20200101/to/20201231/by/1" in mars_list[0]
-    assert "year=" not in mars_list[0]
+    expected = {"param": 129, "date": "20200101/to/20201231/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
     # 2. years=None, start_date=None, end_date=None, request['year'] is a list
     request_list = {"year": [2020, 2021], "param": 129}
@@ -43,7 +43,8 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert pd_freq == "1D"
     assert start == "2020-01-01"
     assert len(mars_list) == 1
-    assert "date=20200101/to/20211231/by/1" in mars_list[0]
+    expected = {"param": 129, "date": "20200101/to/20211231/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
     # 3. Raising ValueError when only start_date is provided
     with pytest.raises(ValueError, match="provide both start_date and end_date"):
@@ -60,7 +61,8 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert pd_freq == "1D"
     assert start == "2020-05-01"
     assert len(mars_list) == 1
-    assert "date=20200501/to/20200510/by/1" in mars_list[0]
+    expected = {"param": 129, "date": "20200501/to/20200510/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
 
 def test_build_mars_requests_hourly_partial_days():
@@ -87,9 +89,12 @@ def test_build_mars_requests_hourly_partial_days():
     assert pd_freq == "1h"
     assert start == "2020-01-01T12:00:00"
     assert len(mars_list) == 3
-    assert "date=20200101,time=1200/to/2300/by/1" in mars_list[0]
-    assert "date=20200102,time=0000/to/2300/by/1" in mars_list[1]
-    assert "date=20200103,time=0000/to/1200/by/1" in mars_list[2]
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
+    assert expected.items() <= mars_list[0].items()
+    expected = {"param": 129, "date": "20200102", "time": "0000/to/2300/by/1"}
+    assert expected.items() <= mars_list[1].items()
+    expected = {"param": 129, "date": "20200103", "time": "0000/to/1200/by/1"}
+    assert expected.items() <= mars_list[2].items()
 
     # Case B: ts_start.hour > 0, ts_end.hour < 23, and day_start_full < day_end_full
     # ts_start = 2020-01-01T12:00:00
@@ -101,9 +106,12 @@ def test_build_mars_requests_hourly_partial_days():
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-04T12:00:00"
     )
     assert len(mars_list) == 3
-    assert "date=20200101,time=1200/to/2300/by/1" in mars_list[0]
-    assert "date=20200102/to/20200103/by/1,time=0000/to/2300/by/1" in mars_list[1]
-    assert "date=20200104,time=0000/to/1200/by/1" in mars_list[2]
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
+    assert expected.items() <= mars_list[0].items()
+    expected = {"param": 129, "date": "20200102/to/20200103/by/1", "time": "0000/to/2300/by/1"}
+    assert expected.items() <= mars_list[1].items()
+    expected = {"param": 129, "date": "20200104", "time": "0000/to/1200/by/1"}
+    assert expected.items() <= mars_list[2].items()
 
 
 def test_build_mars_requests_daily_and_monthly_start():
@@ -124,8 +132,8 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert pd_freq == "1D"
     assert start == "2020-01-01"
     assert len(mars_list) == 1
-    assert "date=20200101/to/20200105/by/1" in mars_list[0]
-    assert "time=0000" in mars_list[0]
+    expected = {"param": 129, "date": "20200101/to/20200105/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
     # 2. Monthly start frequency with matching month patterns across years (lines 186-187, 198)
     # ts_start = 2020-01-01, ts_end = 2021-12-01 (all 12 months in 2020 and 2021)
@@ -136,10 +144,8 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert pd_freq == "MS"
     assert start == "2020-01-01"
     assert len(mars_list) == 1
-    assert "year=2020/2021" in mars_list[0]
-    assert "month=1/2/3/4/5/6/7/8/9/10/11/12" in mars_list[0]
-    assert "date=" not in mars_list[0]
-    assert "time=" not in mars_list[0]
+    expected = {"param": 129, "year": "2020/2021", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
+    assert expected.items() <= mars_list[0].items()
 
     # 3. Monthly start frequency with non-matching month patterns across years (lines 188-191, 193)
     # ts_start = 2020-01-01, ts_end = 2021-02-01
@@ -153,10 +159,10 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert pd_freq == "MS"
     assert start == "2020-01-01"
     assert len(mars_list) == 2
-    assert "year=2020" in mars_list[0]
-    assert "month=1/2/3/4/5/6/7/8/9/10/11/12" in mars_list[0]
-    assert "year=2021" in mars_list[1]
-    assert "month=1/2" in mars_list[1]
+    expected = {"param": 129, "year": "2020", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
+    assert expected.items() <= mars_list[0].items()
+    expected = {"param": 129, "year": "2021", "month": "1/2"}
+    assert expected.items() <= mars_list[1].items()
 
 
 def test_z3fdb_store_pickling() -> None:
