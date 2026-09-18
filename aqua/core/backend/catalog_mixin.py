@@ -63,8 +63,7 @@ class CatalogMixin:
         # First plain instantiation — needed to read _entry._user_parameters for _filter_kwargs.
         self.esmcat = self.expcat[self.source]()
 
-        #self.kwargs = self._filter_kwargs(kwargs, intake_vars=intake_vars)
-        self.kwargs = kwargs
+        self.kwargs = self._filter_kwargs(kwargs, intake_vars=intake_vars)
         self.kwargs = self._format_realization_reader_kwargs(self.kwargs)
         self.logger.debug("Using filtered kwargs: %s", self.kwargs)
 
