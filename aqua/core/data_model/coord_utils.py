@@ -7,7 +7,7 @@ from metpy.units import units
 from pint.errors import DimensionalityError, UndefinedUnitError
 
 from aqua.core.configurer import ConfigContext
-from aqua.core.default import DEFAULT_COORD_NAMES
+from aqua.core.default import AQUA_COORDS, DEFAULT_COORD_NAMES
 from aqua.core.util import load_yaml
 
 # Define the target dimensionality (pressure)
@@ -89,6 +89,8 @@ def scan_coord(internal_name: str, default: str = None, data_model: str = "aqua"
     Returns:
         str: Coordinate name as defined by the data model, or the default if not found.
     """
+    if internal_name not in AQUA_COORDS:
+        raise ValueError(f"'{internal_name}' is not a valid internal coordinate name. Allowed values are {AQUA_COORDS}.")
     try:
         coord = get_data_model(data_model)["data_model"][internal_name]
     except FileNotFoundError:

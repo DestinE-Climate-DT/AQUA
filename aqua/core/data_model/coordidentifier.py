@@ -5,6 +5,7 @@ Module to identify the nature of coordinates of an Xarray object.
 import xarray as xr
 
 from aqua.core.default import (
+    AQUA_COORDS,
     AQUA_DEPTH,
     AQUA_HEIGHT,
     AQUA_ISOBARIC,
@@ -55,35 +56,14 @@ class CoordIdentifier:
             raise TypeError("coords must be an Xarray Coordinates object.")
         self.coords = coords
 
-        # internal name definition for the coordinates
-        self.coord_dict = {
-            AQUA_LATITUDE: [],
-            AQUA_LONGITUDE: [],
-            AQUA_TIME: [],
-            AQUA_ISOBARIC: [],
-            AQUA_DEPTH: [],
-            AQUA_HEIGHT: [],
-        }
+        # internal name definition for the coordinates, built from the single source of truth
+        self.coord_dict = {name: [] for name in AQUA_COORDS}
 
-        # Score methods for each internal coordinate
-        self.score_methods = {
-            AQUA_LATITUDE: self._score_latitude,
-            AQUA_LONGITUDE: self._score_longitude,
-            AQUA_ISOBARIC: self._score_isobaric,
-            AQUA_DEPTH: self._score_depth,
-            AQUA_TIME: self._score_time,
-            AQUA_HEIGHT: self._score_height,
-        }
+        # Score methods for each internal coordinate (method names mirror the internal names)
+        self.score_methods = {name: getattr(self, f"_score_{name}") for name in AQUA_COORDS}
 
         # default coordinate values from config
-        self.default_coords = {
-            AQUA_LATITUDE: get_coord_defaults(AQUA_LATITUDE),
-            AQUA_LONGITUDE: get_coord_defaults(AQUA_LONGITUDE),
-            AQUA_TIME: get_coord_defaults(AQUA_TIME),
-            AQUA_ISOBARIC: get_coord_defaults(AQUA_ISOBARIC),
-            AQUA_DEPTH: get_coord_defaults(AQUA_DEPTH),
-            AQUA_HEIGHT: get_coord_defaults(AQUA_HEIGHT),
-        }
+        self.default_coords = {name: get_coord_defaults(name) for name in AQUA_COORDS}
 
     def identify_coords(self):
         """
