@@ -241,7 +241,9 @@ class FDBSource(ABC, FDBTimeMixin):
 
         if isinstance(chunks, dict):
             chunking_time = chunks.get("time", "S")
-            chunking_vertical = chunks.get("vertical", None)
+            chunking_vertical = chunks.get("vertical")
+            if chunking_vertical is None:
+                chunking_vertical = chunks.get("level", None)
         else:
             chunking_time = chunks
             chunking_vertical = None
