@@ -281,3 +281,37 @@ def test_z3fdb_lonlat_mismatch_aborts() -> None:
     ds = xr.Dataset(coords={"cell": np.arange(5)})
     ds_out = add_lonlat_coordinates(ds)
     assert ds_out.equals(ds)
+
+
+def test_build_zarr_axes_chunking() -> None:
+    """Test time and vertical chunking options in _build_zarr_axes."""
+    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_zarr_axes, z3fdb_available
+
+    if not z3fdb_available:
+        pytest.skip("z3fdb not available")
+
+    from z3fdb import Chunking
+
+    # Default without chunks
+    axes = _build_zarr_axes("h", levels=[1000, 850])
+    assert axes[0].chunking == Chunking.SINGLE_VALUE
+    assert axes[0].keys == ["date", "time"]
+    assert axes[2].chunking == Chunking.WHOLE_AXIS
+
+    # Time chunking with FixedSizeChunk via dict
+    axes_time = _build_zarr_axes("h", levels=None, chunks={"time": 24})
+    assert isinstance(axes_time[0].chunking, Chunking.FixedSizeChunk)
+    assert axes_time[0].chunking.chunkShape == 24
+
+    # Monthly frequency time chunking
+    axes_ms = _build_zarr_axes("MS", levels=None, chunks={"time": 12})
+    assert axes_ms[0].keys == ["year", "month"]
+    assert isinstance(axes_ms[0].chunking, Chunking.FixedSizeChunk)
+    assert axes_ms[0].chunking.chunkShape == 12
+
+    # String chunk representation and single value fallback
+    axes_single = _build_zarr_axes("h", levels=None, chunks={"time": 1})
+    assert axes_single[0].chunking == Chunking.SINGLE_VALUE
+    axes_str = _build_zarr_axes("h", levels=None, chunks={"time": "6"})
+    assert isinstance(axes_str[0].chunking, Chunking.FixedSizeChunk)
+    assert axes_str[0].chunking.chunkShape == 6
