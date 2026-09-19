@@ -315,3 +315,23 @@ def test_build_zarr_axes_chunking() -> None:
     axes_str = _build_zarr_axes("h", levels=None, chunks={"time": "6"})
     assert isinstance(axes_str[0].chunking, Chunking.FixedSizeChunk)
     assert axes_str[0].chunking.chunkShape == 6
+
+    # Vertical chunking with FixedSizeChunk
+    axes_vert = _build_zarr_axes("h", levels=[1000, 850, 700, 500], chunks={"vertical": 2})
+    assert isinstance(axes_vert[2].chunking, Chunking.FixedSizeChunk)
+    assert axes_vert[2].chunking.chunkShape == 2
+
+    # Vertical chunking with 'level' key and string representation
+    axes_vert_str = _build_zarr_axes("h", levels=[1000, 850, 700, 500], chunks={"level": "2"})
+    assert isinstance(axes_vert_str[2].chunking, Chunking.FixedSizeChunk)
+    assert axes_vert_str[2].chunking.chunkShape == 2
+
+    # Vertical chunk size 1 (SINGLE_VALUE) and equal to n_levels (WHOLE_AXIS)
+    axes_vert_1 = _build_zarr_axes("h", levels=[1000, 850], chunks={"vertical": 1})
+    assert axes_vert_1[2].chunking == Chunking.SINGLE_VALUE
+    axes_vert_all = _build_zarr_axes("h", levels=[1000, 850], chunks={"vertical": 2})
+    assert axes_vert_all[2].chunking == Chunking.WHOLE_AXIS
+
+    # Non-divisor vertical chunk size fallback to SINGLE_VALUE
+    axes_fallback = _build_zarr_axes("h", levels=[1000, 850, 700], chunks={"vertical": 2})
+    assert axes_fallback[2].chunking == Chunking.SINGLE_VALUE

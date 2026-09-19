@@ -561,8 +561,6 @@ def open_z3fdb(
 
     # Convert list of dictionaries to list of strings
     def _mars_to_str(req):
-        if isinstance(req, str):
-            return req
         return ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, (list, tuple)) else str(v)) for k, v in req.items())
 
     mars_str_list = [_mars_to_str(m) for m in mars_list]
