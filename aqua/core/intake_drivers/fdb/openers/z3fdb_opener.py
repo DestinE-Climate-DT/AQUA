@@ -239,15 +239,13 @@ def _build_zarr_axes(freq, levels, chunks=None):
     else:
         raise ValueError(f"Unknown freq {freq!r}")
 
-    time_chunking = Chunking.SINGLE_VALUE
-    time_val = chunks.get("time") if isinstance(chunks, dict) else chunks
-    if isinstance(time_val, str) and time_val.isdigit():
-        time_val = int(time_val)
-
-    if isinstance(time_val, int) and time_val > 1:
-        time_chunking = Chunking.FixedSizeChunk(chunkShape=time_val)
-
-    time_axes = [AxisDefinition(time_keys, time_chunking)]
+    chunking = Chunking.SINGLE_VALUE
+    val = chunks.get("time") if isinstance(chunks, dict) else chunks
+    if isinstance(val, str) and val.isdigit():
+        val = int(val)
+    if isinstance(val, int) and val > 1:
+        chunking = Chunking.FixedSizeChunk(chunkShape=val)
+    time_axes = [AxisDefinition(time_keys, chunking)]
 
     level_axes = []
     if levels is not None:
