@@ -288,6 +288,18 @@ class TestGsv:
         assert data.t.chunksizes["plev"] == (1, 1), "Subsetted vertical dimension is not chunked correctly"
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
+        # Test custom chunk size with FixedSizeChunk (z3fdb) or vertical chunk size (gsv)
+        reader2 = Reader(
+            model="IFS",
+            exp="test-fdb",
+            source="fdb-levels",
+            chunks={"time": "h", chunk_key: 2},
+            loglevel=loglevel,
+            engine=engine,
+        )
+        data_chunk2 = reader2.retrieve(level=[900, 800])
+        assert data_chunk2.t.chunksizes["plev"] == (2,), "Fixed size vertical chunking is incorrect"
+
     @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_bridge(self, engine) -> None:
         """
