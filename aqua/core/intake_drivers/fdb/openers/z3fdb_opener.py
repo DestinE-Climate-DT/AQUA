@@ -233,32 +233,48 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
 def _build_zarr_axes(freq, levels, chunks=None):
     """Build the AxisDefinition objects representing the layout of the virtual Zarr store."""
     if freq in ("h", "D"):
-        time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
+        time_keys = ["date", "time"]
     elif freq == "MS":
-        time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
+        time_keys = ["year", "month"]
     else:
         raise ValueError(f"Unknown freq {freq!r}")
 
+    time_chunking = Chunking.SINGLE_VALUE
+    time_val = chunks.get("time") if isinstance(chunks, dict) else chunks
+    if isinstance(time_val, str) and time_val.isdigit():
+        time_val = int(time_val)
+
+    if isinstance(time_val, int) and time_val > 1:
+        time_chunking = Chunking.FixedSizeChunk(chunkShape=time_val)
+
+    time_axes = [AxisDefinition(time_keys, time_chunking)]
+
     level_axes = []
     if levels is not None:
-        if isinstance(chunks, dict) and ("level" in chunks or "vertical" in chunks):
-            val = chunks.get("vertical") if "vertical" in chunks else chunks.get("level")
+        chunking = Chunking.WHOLE_AXIS
+        if isinstance(chunks, dict):
+            val = chunks.get("vertical") or chunks.get("level")
             if isinstance(val, str) and val.isdigit():
                 val = int(val)
-            n_levels = len(to_list(levels))
-            if isinstance(val, int) and val > 1 and n_levels % val == 0:
-                level_axes = [AxisDefinition(["levelist"], Chunking.FixedSizeChunk(chunkShape=val))]
-            else:
-                if isinstance(val, int) and val > 1 and n_levels % val != 0:
+
+            if isinstance(val, int) and val > 0:
+                n_levels = len(to_list(levels))
+                if val == 1:
+                    chunking = Chunking.SINGLE_VALUE
+                elif val == n_levels:
+                    chunking = Chunking.WHOLE_AXIS
+                elif n_levels % val == 0:
+                    chunking = Chunking.FixedSizeChunk(chunkShape=val)
+                else:
                     logger.warning(
                         "Vertical chunk size %s is not an integer divisor of number of levels (%s); "
                         "falling back to SINGLE_VALUE.",
                         val,
                         n_levels,
                     )
-                level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
-        else:
-            level_axes = [AxisDefinition(["levelist"], Chunking.WHOLE_AXIS)]
+                    chunking = Chunking.SINGLE_VALUE
+
+        level_axes = [AxisDefinition(["levelist"], chunking)]
 
     axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
     return axes
