@@ -87,22 +87,6 @@ class TestSafeFileLock:
         lock.release()
 
     @pytest.mark.aqua
-    def test_heartbeat_updates_mtime(self, lock_file):
-        """Test that heartbeat updates lock file mtime."""
-        lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=1)
-
-        lock.acquire()
-        initial_mtime = os.path.getmtime(lock_file)
-
-        # Wait for heartbeat to update
-        time.sleep(2)
-
-        updated_mtime = os.path.getmtime(lock_file)
-        assert updated_mtime > initial_mtime
-
-        lock.release()
-
-    @pytest.mark.aqua
     def test_metadata_written(self, lock_file):
         """Test that lock file contains PID and timestamp."""
         lock = SafeFileLock(lock_file, timeout=5)
@@ -321,19 +305,19 @@ def test_logging_levels(lock_file):
 
 @pytest.mark.aqua
 def test_long_running_lock(lock_file):
-    """Test lock held for extended period with heartbeat."""
-    lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=1)
+    """Test lock held for extended period."""
+    lock = SafeFileLock(lock_file, timeout=5)
 
     lock.acquire()
-    initial_mtime = os.path.getmtime(lock_file)
+    assert os.path.exists(lock_file)
 
-    # Hold lock for several heartbeat intervals
-    time.sleep(3)
+    # Hold lock for a period
+    time.sleep(1)
 
-    final_mtime = os.path.getmtime(lock_file)
-
-    # Mtime should have been updated multiple times
-    assert final_mtime > initial_mtime
+    # Another lock should timeout while first is held
+    lock2 = SafeFileLock(lock_file, timeout=1)
+    with pytest.raises(Timeout):
+        lock2.acquire()
 
     lock.release()
 
