@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
+- Small test of CI/CD pipeline (TEST)
 - Fix treatment of empty datasets in backend (#3092)
 - Cli_checker adjustments after Backend new developments (#3081)
 - Update Data Portfolio to v2.2.0 (#3084)
