@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 
 from filelock import SoftFileLock, Timeout
@@ -10,6 +11,7 @@ class SafeFileLock:
     """
     A resilient soft lock with:
       - Timeout on acquire
+      - Heartbeat updates (refreshes lock timestamp periodically)
       - Stale lock cleanup
     """
 
@@ -18,7 +20,7 @@ class SafeFileLock:
         :param lock_path: Path to the .lock file (must be on shared filesystem)
         :param timeout: Seconds to wait to acquire lock before raising Timeout
         :param stale_timeout: Lock older than this (in seconds) is considered stale
-        :param heartbeat_interval: Deprecated; kept for backwards compatibility
+        :param heartbeat_interval: How often to refresh lock file's mtime (seconds)
         :param loglevel: Logging level for the lock (DEBUG, INFO, WARNING, ERROR)
         """
         self.lock_path = lock_path
@@ -27,7 +29,10 @@ class SafeFileLock:
         self.heartbeat_interval = heartbeat_interval
 
         self.logger = log_configure(log_level=loglevel, log_name="FileLock")
+
         self.lock = SoftFileLock(lock_path, timeout=timeout)
+        self._stop_event = threading.Event()
+        self._heartbeat_thread = None
 
     def _is_stale(self):
         """Return True if lock file is older than stale_timeout."""
@@ -53,8 +58,21 @@ class SafeFileLock:
         except Exception:
             pass  # not fatal
 
+    def _heartbeat(self):
+        """Refresh mtime periodically to indicate lock holder is alive."""
+        while not self._stop_event.is_set():
+            if os.path.exists(self.lock_path):
+                try:
+                    now = time.time()
+                    os.utime(self.lock_path, (now, now))
+                except Exception:
+                    pass
+            # Wait for interval OR wake immediately when stop_event is set
+            if self._stop_event.wait(self.heartbeat_interval):
+                break
+
     def acquire(self):
-        """Acquire the lock with timeout and stale cleanup."""
+        """Acquire the lock with timeout, stale cleanup, and start heartbeat."""
         self._remove_stale()
 
         try:
@@ -64,8 +82,17 @@ class SafeFileLock:
         except Timeout:
             raise Timeout(f"Timeout waiting for lock: {self.lock_path}")
 
+        # Start heartbeat thread
+        self._stop_event.clear()
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat, daemon=True)
+        self._heartbeat_thread.start()
+
     def release(self):
-        """Release the lock."""
+        """Stop heartbeat and release the lock."""
+        self._stop_event.set()
+        if self._heartbeat_thread and self._heartbeat_thread.is_alive():
+            self._heartbeat_thread.join(timeout=2)
+
         try:
             self.lock.release()
             self.logger.debug("Released: %s", self.lock_path)
