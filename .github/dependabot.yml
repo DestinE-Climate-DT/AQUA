@@ -9,6 +9,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      day: "monday"           # You can pick any day
       time: "06:00"
     commit-message:
       prefix: "[Dependabot-conda]"
@@ -16,7 +17,7 @@ updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "daily"
       day: "monday"           # You can pick any day
       time: "08:00"
     commit-message:

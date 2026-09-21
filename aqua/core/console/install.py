@@ -325,6 +325,7 @@ class InstallMixin:
 
         # set machine
         self._set_machine(args)
+        self.logger.info("AQUA installation completed successfully in %s", self.configpath)
 
     def _config_home(self):
         """Configure the AQUA installation folder, by default inside $HOME"""
