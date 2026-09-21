@@ -67,9 +67,7 @@ class SafeFileLock:
                     os.utime(self.lock_path, (now, now))
                 except Exception:
                     pass
-            # Wait for interval OR wake immediately when stop_event is set
-            if self._stop_event.wait(self.heartbeat_interval):
-                break
+            time.sleep(self.heartbeat_interval)
 
     def acquire(self):
         """Acquire the lock with timeout, stale cleanup, and start heartbeat."""
