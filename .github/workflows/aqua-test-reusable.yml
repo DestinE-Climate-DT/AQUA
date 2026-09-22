@@ -53,6 +53,11 @@ on:
         required: false
         type: string
         default: 'auto'
+      use-environment-file:
+        description: 'Use environment.yml instead of lock files (for fresh dependency testing)'
+        required: false
+        type: boolean
+        default: false
     secrets:
       AQUA_GITHUB_PAT:
         required: true
@@ -164,12 +169,8 @@ jobs:
           cd data-portfolio
           git checkout tags/v2.2.0
 
-      # ========================================
-      # 3. SETUP ENVIRONMENT
-      # ========================================
-
-      - name: Set up Micromamba (local mode with fdb)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
+      - name: Set up Micromamba (local mode with fdb, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && !inputs.use-environment-file }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -182,14 +183,42 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (local mode without fdb)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+      - name: Set up Micromamba (local mode with fdb, using environment.yml)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && inputs.use-environment-file }}
+        uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
+        with:
+          micromamba-version: 'latest'
+          environment-file: AQUA/environment.yml
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          create-args: >-
+            python=${{ matrix.python-version }}
+
+      - name: Set up Micromamba (local mode without fdb, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.use-environment-file }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
           environment-file: AQUA/conda-linux-64.nofdb.lock
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          create-args: >-
+            python=${{ matrix.python-version }}
+
+      - name: Set up Micromamba (local mode without fdb, using environment.yml)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && inputs.use-environment-file }}
+        uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
+        with:
+          micromamba-version: 'latest'
+          environment-file: AQUA/environment.yml
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
@@ -230,19 +259,15 @@ jobs:
             pytest-xdist
             coverage
 
-
-      # ========================================
-      # 4. INSTALL AQUA (local mode)
-      # ========================================
-      - name: Install AQUA with FDB dependencies (local mode)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true }}
+      - name: Install AQUA with FDB dependencies (local mode, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true && !inputs.use-environment-file }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
           python -m pip install --no-deps -e .
 
-      - name: Install AQUA without FDB dependencies (local, no fdb)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+      - name: Install AQUA without FDB dependencies (local, no fdb, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.use-environment-file }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
@@ -262,9 +287,7 @@ jobs:
           # temporary since it is not shipped by aqua-core[tests] yet
           python -m pip install dvc dvc-s3
 
-      # =======================================
       # 6. CHECKOUT AQUA TAG FOR PYPI AND CONDA MODE
-      # =======================================
 
       - name: Checkout the tag for PyPI mode
         if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
@@ -274,10 +297,6 @@ jobs:
           git fetch --tags --quiet
           echo "Installed PyPI version: $PYPI_VERSION"
           git checkout "v${PYPI_VERSION}"
-
-      # ========================================
-      # 6. SETUP DVC AND TEST DATA
-      # ========================================
 
       - name: Create DVC pem file and configure it for the ecmwf_climatedt remote
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
@@ -321,9 +340,6 @@ jobs:
           wget -nv -r -np -nH -R "index.html*" --cut-dirs=3 http://wilma.to.isac.cnr.it/paolo/aqua-tests/data-tests/
           echo "Test data downloaded"
 
-      # ========================================
-      # 7. SETUP FDB
-      # ========================================
       - name: Set up FDB
         if: ${{ inputs.enable-fdb == true }}
         run: |
@@ -342,9 +358,7 @@ jobs:
           fdb-read sample_test_data_fdb_request test.grib
           grib_dump test.grib
 
-      # ========================================
       # 8. SETUP AQUA
-      # ========================================
       - name: Set up AQUA
         run: |
           # Initialize the AQUA catalog in the $HOME/.aqua folder
@@ -370,18 +384,14 @@ jobs:
           }
           EOF
 
-      # ========================================
       # 9. SAVE ENVIRONMENT INFO
-      # ========================================
       - name: Save environment information
         run: |
           cd AQUA
           micromamba list > micromamba_list.txt
           pip freeze > pip_freeze.txt
 
-      # ========================================
       # 10. RUN TESTS
-      # ========================================
       - name: Install pytest-timeout (for per-test timeout to avoid hangs)
         run: python -m pip install pytest-timeout
 
@@ -469,9 +479,7 @@ jobs:
             -o junit_family=legacy \
             -m "${{ inputs.pytest-markers }}"
 
-      # ========================================
       # 10b. SHOW XDIST LOG ON FAILURE (parallel runs only)
-      # ========================================
       - name: Show xdist worker log (on test failure or timeout)
         if: failure() && inputs.enable-parallel
         run: |
@@ -485,9 +493,7 @@ jobs:
             echo "No xdist worker log found at $LOG"
           fi
 
-      # ========================================
       # 11. UPLOAD COVERAGE (if enabled)
-      # ========================================
       - name: Upload coverage reports to Codecov
         if: ${{ inputs.enable-coverage && github.actor != 'dependabot[bot]' && !cancelled() }}
         uses: codecov/codecov-action@v7
@@ -505,9 +511,7 @@ jobs:
           report_type: test_results
           files: AQUA/junit.xml
 
-      # ========================================
       # 12. UPLOAD ARTIFACTS
-      # ========================================
       - name: Upload xdist worker log (parallel runs)
         if: ${{ !cancelled() && inputs.enable-parallel }}
         uses: actions/upload-artifact@v7

@@ -27,15 +27,13 @@ jobs:
         run: |
           # Run tests if:
           # 1) PR has label "run tests" or "ready to merge"
-          # 2) Triggered by Dependabot
-          # 3) Triggered manually (workflow_dispatch)
-          # 4) Triggered by schedule
-          # 5) Pushed to main branch
+          # 2) Triggered manually (workflow_dispatch)
+          # 3) Triggered by schedule
+          # 4) Pushed to main branch
           SHOULD_RUN="false"
 
           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
              [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
-             [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
              [[ "${{ github.event_name }}" == "schedule" ]] || \
              [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
@@ -57,6 +55,29 @@ jobs:
       fail-fast: false
       pr-number: ${{ github.event.pull_request.number || '' }}
       test-data-source: 'auto'
+    secrets:
+      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
+      BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  # Test Dependabot PRs against fresh dependencies (environment.yml, not lock files)
+  aqua-tests-dependabot:
+    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/aqua-test-reusable.yml
+    with:
+      python-versions: '["3.14"]'
+      pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+      enable-parallel: true
+      enable-coverage: false
+      fail-fast: false
+      pr-number: ${{ github.event.pull_request.number || '' }}
+      test-data-source: 'auto'
+      use-environment-file: true
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
