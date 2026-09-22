@@ -9,19 +9,34 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-      day: "monday"           # You can pick any day
+      day: "monday"
       time: "06:00"
     commit-message:
       prefix: "[Dependabot-conda]"
+    labels:
+      - "dependabot"
+    groups:
+      netcdf:
+        patterns:
+          - "netcdf4"
+          - "hdf5"
+          - "h5py"
 
-  - package-ecosystem: "pip" # See documentation for possible values
+  - package-ecosystem: "pip"
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-      day: "monday"           # You can pick any day
+      day: "monday"
       time: "08:00"
     commit-message:
       prefix: "[Dependabot-pip]"
+    labels:
+      - "dependabot"
+    groups:
+      eccodes:
+        patterns:
+          - "eccodes"
+          - "eccodeslib"
 
   - package-ecosystem: "github-actions"
     directory: "/"
