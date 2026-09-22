@@ -78,7 +78,7 @@ jobs:
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
-      is-dependabot: ${{ github.actor == 'dependabot[bot]' || inputs.simulate-dependabot }}
+      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)) }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
