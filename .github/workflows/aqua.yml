@@ -33,13 +33,15 @@ jobs:
         run: |
           # Run tests if:
           # 1) PR has label "run tests" or "ready to merge"
-          # 2) Triggered manually (workflow_dispatch)
-          # 3) Triggered by schedule
-          # 4) Pushed to main branch
+          # 2) Triggered by Dependabot
+          # 3) Triggered manually (workflow_dispatch)
+          # 4) Triggered by schedule
+          # 5) Pushed to main branch
           SHOULD_RUN="false"
 
           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
              [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+             [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
              [[ "${{ github.event_name }}" == "schedule" ]] || \
              [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
@@ -51,7 +53,7 @@ jobs:
   # Call the reusable workflow (Dependabot simulation or normal tests)
   aqua-tests:
     needs: check-trigger
-    if: needs.check-trigger.outputs.should-run == 'true' || (github.actor == 'dependabot[bot]' || inputs.simulate-dependabot)
+    if: needs.check-trigger.outputs.should-run == 'true' || inputs.simulate-dependabot
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
