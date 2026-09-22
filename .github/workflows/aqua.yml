@@ -7,6 +7,12 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      simulate-dependabot:
+        description: 'Simulate Dependabot PR (test mode)'
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
 
@@ -26,15 +32,28 @@ jobs:
         id: check
         run: |
           # Run tests if:
-          # 1) PR has label "run tests" or "ready to merge"
+          # 1) Any pull request
           # 2) Triggered by Dependabot
           # 3) Triggered manually (workflow_dispatch)
           # 4) Triggered by schedule
           # 5) Pushed to main branch
           SHOULD_RUN="false"
 
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
-             [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+          echo "=== DEBUG INFO ==="
+          echo "Event Name: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "PR Labels: ${{ toJSON(github.event.pull_request.labels.*.name) }}"
+          echo ""
+          echo "=== CONDITION CHECKS ==="
+          echo "Is pull_request event: ${{ github.event_name == 'pull_request' }}"
+          echo "Is dependabot[bot]: ${{ github.actor == 'dependabot[bot]' }}"
+          echo "Is workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' }}"
+          echo "Is schedule: ${{ github.event_name == 'schedule' }}"
+          echo "Is push to main: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}"
+          echo ""
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]] || \
              [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
              [[ "${{ github.event_name }}" == "schedule" ]] || \
@@ -42,12 +61,13 @@ jobs:
             SHOULD_RUN="true"
           fi
 
+          echo "Final SHOULD_RUN: $SHOULD_RUN"
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
-  # Call the reusable workflow
+  # Call the reusable workflow (Dependabot simulation or normal tests)
   aqua-tests:
     needs: check-trigger
-    if: needs.check-trigger.outputs.should-run == 'true'
+    if: needs.check-trigger.outputs.should-run == 'true' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
@@ -57,6 +77,7 @@ jobs:
       fail-fast: false
       pr-number: ${{ github.event.pull_request.number || '' }}
       test-data-source: 'auto'
+      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)) }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
