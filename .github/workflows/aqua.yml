@@ -7,6 +7,12 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      simulate-dependabot:
+        description: 'Simulate Dependabot PR (test mode)'
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
 
@@ -67,7 +73,7 @@ jobs:
 
   # Test Dependabot PRs against fresh dependencies (environment.yml, not lock files)
   aqua-tests-dependabot:
-    if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
+    if: ${{ (github.actor == 'dependabot[bot]' || inputs.simulate-dependabot) && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
