@@ -81,16 +81,6 @@ permissions:
 
 defaults:
   run:
-    # NOTE: We must take care with the shell value here. We have steps
-    #       with multiline YAML strings.
-    #       These get converted into shell scripts.
-    #       If execute as ``bash -l fail_first_command.sh``
-    #       then it would fail the first command but run the second
-    #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
-    #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
-    #       We removed the noprofile and norc so we have pytest set by Conda in our PATH.
-    # NOTE2: login should be kept because the action micromamba/setup-micromamba
-    #        writes the environment activation script in the .bashrc file.
     shell: bash -l -eo pipefail {0}
 
 jobs:
