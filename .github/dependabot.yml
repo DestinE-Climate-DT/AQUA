@@ -13,6 +13,8 @@ updates:
       time: "06:00"
     commit-message:
       prefix: "[Dependabot-conda]"
+    labels:
+      - "dependabot"
     groups:
       netcdf:
         patterns:
@@ -28,6 +30,8 @@ updates:
       time: "08:00"
     commit-message:
       prefix: "[Dependabot-pip]"
+    labels:
+      - "dependabot"
     groups:
       eccodes:
         patterns:
