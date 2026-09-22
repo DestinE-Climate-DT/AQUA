@@ -64,13 +64,10 @@ jobs:
           echo "Final SHOULD_RUN: $SHOULD_RUN"
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
-          echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
-
   # Call the reusable workflow without FDB (Dependabot simulation or normal tests)
   aqua-no-fdb-tests:
     needs: check-trigger
-    # DEBUG: Temporarily removed condition to test if job runs at all
-    # if: needs.check-trigger.outputs.should-run == 'true' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)
+    if: needs.check-trigger.outputs.should-run == 'true' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
