@@ -53,7 +53,7 @@ jobs:
   # Call the reusable workflow without FDB (Dependabot simulation or normal tests)
   aqua-no-fdb-tests:
     needs: check-trigger
-    if: needs.check-trigger.outputs.should-run == 'true' || inputs.simulate-dependabot
+    if: needs.check-trigger.outputs.should-run == 'true' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
