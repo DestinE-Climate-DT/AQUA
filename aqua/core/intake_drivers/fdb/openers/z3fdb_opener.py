@@ -239,7 +239,7 @@ def _build_zarr_axes(freq, levels, chunks=None):
     else:
         raise ValueError(f"Unknown freq {freq!r}")
 
-    chunking = Chunking.SINGLE_VALUE
+    chunking = Chunking.SINGLE_VALUE  # by default we chunk step-by-step in time
     val = chunks.get("time") if isinstance(chunks, dict) else chunks
     if isinstance(val, str) and val.isdigit():
         val = int(val)
