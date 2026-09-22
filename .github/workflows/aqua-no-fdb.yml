@@ -50,34 +50,10 @@ jobs:
 
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
-  # Test Dependabot PRs against fresh dependencies (environment.yml, not lock files) - without FDB
-  aqua-tests-dependabot-no-fdb:
-    if: ${{ (github.actor == 'dependabot[bot]' || inputs.simulate-dependabot) && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
-    uses: ./.github/workflows/aqua-test-reusable.yml
-    with:
-      python-versions: '["3.14"]'
-      pytest-markers: 'aqua or slow or graphics or catgen'
-      enable-parallel: true
-      enable-coverage: false
-      fail-fast: false
-      enable-fdb: false
-      container-image: ''
-      test-data-source: 'auto'
-      use-environment-file: true
-    secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
-      AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
-      BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
-
-  # Call the reusable workflow without FDB
+  # Call the reusable workflow without FDB (Dependabot simulation or normal tests)
   aqua-no-fdb-tests:
     needs: check-trigger
-    if: needs.check-trigger.outputs.should-run == 'true'
+    if: needs.check-trigger.outputs.should-run == 'true' || (github.actor == 'dependabot[bot]' || inputs.simulate-dependabot)
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
@@ -88,6 +64,7 @@ jobs:
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
+      is-dependabot: ${{ github.actor == 'dependabot[bot]' || inputs.simulate-dependabot }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
