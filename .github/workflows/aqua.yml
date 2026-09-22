@@ -66,7 +66,7 @@ jobs:
       fail-fast: false
       pr-number: ${{ github.event.pull_request.number || '' }}
       test-data-source: 'auto'
-      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)) }}
+      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || contains(github.event.pull_request.labels.*.name, 'dependabot') || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)) }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
