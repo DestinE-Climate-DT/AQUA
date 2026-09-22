@@ -13,6 +13,12 @@ updates:
       time: "06:00"
     commit-message:
       prefix: "[Dependabot-conda]"
+    groups:
+      netcdf:
+        patterns:
+          - "netcdf4"
+          - "hdf5"
+          - "h5py"
 
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
@@ -22,6 +28,11 @@ updates:
       time: "08:00"
     commit-message:
       prefix: "[Dependabot-pip]"
+    groups:
+      eccodes:
+        patterns:
+          - "eccodes"
+          - "eccodeslib"
 
   - package-ecosystem: "github-actions"
     directory: "/"
