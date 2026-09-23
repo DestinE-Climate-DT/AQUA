@@ -371,10 +371,10 @@ class TestGsv:
         Reading from mn5 databridge using polytope
         """
         reader = Reader(
-            catalog="climatedt-o25.1",
-            model="IFS-NEMO",
-            exp="historical-1990",
-            source="hourly-hpz7-atm2d",
+            catalog="climatedt-gen2",
+            model="IFS-NEMO-5km",
+            exp="baseline-hist",
+            source="hourly-hpz7-sfc",
             startdate="19900101T0000",
             enddate="19910101T0025",
             loglevel="debug",
