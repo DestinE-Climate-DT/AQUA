@@ -211,6 +211,7 @@ def test_partial_lon_selection(data_fixture, lon_limits, expected_in, expected_o
     for lon_val in expected_out:
         assert np.isnan(result.sel(lat=lat_val, lon=lon_val).values), f"lon={lon_val} should be NaN but is selected"
 
+
 @pytest.mark.aqua
 @pytest.mark.parametrize("box_brd", [True, False])
 @pytest.mark.parametrize("to_180", [True, False])
