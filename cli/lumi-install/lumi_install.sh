@@ -153,9 +153,10 @@ create_aqua_file() {
   log_message INFO "exports for FDB5 added to .bashrc. Please run 'source ~/.bashrc' to load the new configuration."
 
   # Config GSV: check load_modules_lumi.sh on GSV repo https://earth.bsc.es/gitlab/digital-twins/de_340/gsv_interface/-/blob/main/load_modules_lumi.sh
-  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465000454/igonzalez/gsv_weights' >>  $load_aqua_file
-  echo 'export GSV_TEST_FILES=/scratch/project_465000454/igonzalez/gsv_test_files' >> $load_aqua_file
-  echo 'export GRID_DEFINITION_PATH=/scratch/project_465000454/igonzalez/grid_definitions' >>  $load_aqua_file
+  # Updated to point to the new GSV files location on LUMI (Set 2026, source: Iker)
+  echo 'export GSV_WEIGHTS_PATH=/scratch/project_465002727/gsv_files/gsv_weights' >>  $load_aqua_file
+  echo 'export GSV_TEST_FILES=/scratch/project_465002727/gsv_files/gsv_test_files' >> $load_aqua_file
+  echo 'export GRID_DEFINITION_PATH=/scratch/project_465002727/gsv_files/grid_definitions' >>  $load_aqua_file
 
   # Currently (Feb 2025) this is the recommended setup overcoming lumi modules
   # This points to a stack with fdb 5.14.0 and the required associated modules
