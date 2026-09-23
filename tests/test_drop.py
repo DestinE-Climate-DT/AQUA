@@ -379,6 +379,7 @@ class TestDROP:
             ("netcdf", "xarray", 12, True),  # 12 months: yearly file created
             ("zarr", "xarray", 3, False),  # <12 months: monthly stores remain
             ("zarr", "xarray", 12, True),  # 12 months: yearly store created
+            ("zarr", None, 12, False),  # null compacting: monthly stores remain
         ],
     )
     def test_concat_threshold(self, drop_arguments, tmp_path, output_format, compact_method, num_months, should_concat):
