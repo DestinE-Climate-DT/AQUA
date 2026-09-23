@@ -8,10 +8,10 @@ from smmregrid import GridInspector
 # This is needed to initialize the gsv driver
 from aqua.core.backend import BackendFactory
 from aqua.core.configurer import ConfigContext
-from aqua.core.data_model import DataModel, counter_reverse_coordinate
+from aqua.core.data_model import DataModel, counter_reverse_coordinate, scan_coord
 
 # set default data model
-from aqua.core.default import DEFAULT_ENGINE, DEFAULT_NPROC
+from aqua.core.default import AQUA_ISOBARIC, AQUA_TIME, DEFAULT_ENGINE, DEFAULT_NPROC
 from aqua.core.exceptions import NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
@@ -198,6 +198,10 @@ class Reader:
             self.datamodel = None
         else:
             self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
+
+        # once data model is defined, get the default coordinates
+        self.AQUA_TIME = scan_coord(AQUA_TIME)
+        self.AQUA_ISOBARIC = scan_coord(AQUA_ISOBARIC)
 
         # create the backend: this is the interface that access the data
         self.backend = backend_factory.create_backend(
@@ -438,24 +442,25 @@ class Reader:
     #     final.aqua.set_default(self)
     #     return final
 
-    def detrend(self, data, dim="time", degree=1, skipna=False):
+    def detrend(self, data, dim=None, degree=1, skipna=False):
         """
         Remove the trend from an xarray object using polynomial fitting.
 
         Args:
             data (DataArray or Dataset): The input data.
-            dim (str): Dimension to apply detrend along. Defaults to 'time'.
+            dim (str): Dimension to apply detrend along. Defaults to AQUA_TIME ("time").
             degree (int): Degree of the polynomial. Defaults to 1.
             skipna (bool): Whether to skip NaNs. Defaults to False.
 
         Returns:
             DataArray or Dataset: The detrended data.
         """
+        dim = dim if dim is not None else self.AQUA_TIME
         final = self.trender.detrend(data, dim=dim, degree=degree, skipna=skipna)
         final.aqua.set_default(self)
         return final
 
-    def vertinterp(self, data, levels=None, level_coord="plev", units=None, method="linear"):
+    def vertinterp(self, data, levels=None, level_coord=None, units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
         of xarray within AQUA. Given an xarray object, will interpolate the
@@ -467,13 +472,14 @@ class Reader:
             data (DataArray, Dataset): your dataset
             levels (float, or list): The level you want to interpolate the vertical coordinate
             units (str, optional, ): The units of your vertical axis. Default 'Pa'
-            level_coord (str, optional): The name of the vertical coordinate. Default 'plev'
+            level_coord (str, optional): The name of the vertical coordinate. Default to AQUA_ISOBARIC ("plev")
             method (str, optional): The type of interpolation method supported by interp()
 
         Return
             A DataArray or a Dataset with the new interpolated vertical dimension
         """
 
+        level_coord = level_coord if level_coord is not None else self.AQUA_ISOBARIC
         data = self.vertinterpolator.vertinterp(data=data, levels=levels, level_coord=level_coord, units=units, method=method)
         data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 
