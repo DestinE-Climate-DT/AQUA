@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from aqua.core.data_model import scan_coord
+from aqua.core.default import AQUA_TIME
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import normalize_units, to_list
 
@@ -25,6 +27,7 @@ class FixerOperator:
         self.fixes = fixes
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="FixerOperator")
+        self.AQUA_TIME = scan_coord(AQUA_TIME)
 
     def apply_unit_fix(self, data, time_correction=False):
         """
@@ -86,17 +89,17 @@ class FixerOperator:
         if timeshift is None:
             return data
 
-        if "time" not in data:
-            raise KeyError("'time' coordinate not found in the dataset.")
+        if self.AQUA_TIME not in data:
+            raise KeyError(f"'{self.AQUA_TIME}' coordinate not found in the dataset.")
 
         field = data.copy()
         if isinstance(timeshift, int):
             self.logger.info("Shifting the time axis by %s timesteps.", timeshift)
-            time_interval = timeshift * data.time.diff("time").isel(time=0).values
-            field = field.assign_coords(time=data.time + time_interval)
+            time_interval = timeshift * data[self.AQUA_TIME].diff(self.AQUA_TIME).isel({self.AQUA_TIME: 0}).values
+            field = field.assign_coords({self.AQUA_TIME: data[self.AQUA_TIME] + time_interval})
         elif isinstance(timeshift, str):
             self.logger.info("Shifting time axis by %s following pandas timedelta.", timeshift)
-            field["time"] = field["time"] + pd.Timedelta(timeshift)
+            field[self.AQUA_TIME] = field[self.AQUA_TIME] + pd.Timedelta(timeshift)
         else:
             raise TypeError("timeshift should be either a integer (timesteps) or a pandas Timedelta!")
 
@@ -144,24 +147,27 @@ class FixerOperator:
         """
 
         # get the derivatives
-        deltas = data.diff(dim="time")
+        deltas = data.diff(dim=self.AQUA_TIME)
 
         # add a first timestep empty to align the original and derived fields
 
         if keep_first:
-            zeros = data.isel(time=0)
+            zeros = data.isel({self.AQUA_TIME: 0})
         else:
-            zeros = xr.zeros_like(data.isel(time=0))
+            zeros = xr.zeros_like(data.isel({self.AQUA_TIME: 0}))
 
-        deltas = xr.concat([zeros, deltas], dim="time", coords="different", compat="equals").transpose("time", ...)
-
+        deltas = xr.concat([zeros, deltas], dim=self.AQUA_TIME, coords="different", compat="equals").transpose(
+            self.AQUA_TIME, ...
+        )
         if jump:
             # universal mask based on the change of month (shifted by one timestep)
             dt = pd.Timedelta(seconds=deltat).to_timedelta64()
-            data1 = data.assign_coords(time=data.time - dt)
-            data2 = data.assign_coords(time=data1.time - dt)
+            data1 = data.assign_coords({self.AQUA_TIME: data[self.AQUA_TIME] - dt})
+            data2 = data.assign_coords({self.AQUA_TIME: data1[self.AQUA_TIME] - dt})
             # Mask of dates where month changed in the previous timestep
-            mask = data1[f"time.{jump}"].assign_coords(time=data.time) == data2[f"time.{jump}"].assign_coords(time=data.time)
+            mask = data1[f"{self.AQUA_TIME}.{jump}"].assign_coords({self.AQUA_TIME: data[self.AQUA_TIME]}) == data2[
+                f"{self.AQUA_TIME}.{jump}"
+            ].assign_coords({self.AQUA_TIME: data[self.AQUA_TIME]})
 
             # kaboom: exploit where
             deltas = deltas.where(mask, data)
@@ -216,12 +222,12 @@ class FixerOperator:
             DataArray in with data on first step of each month is set to NaN
         """
 
-        first = data.time.groupby(data["time.year"] * 100 + data["time.month"]).first()
+        first = data[self.AQUA_TIME].groupby(data[f"{self.AQUA_TIME}.year"] * 100 + data[f"{self.AQUA_TIME}.month"]).first()
         if enddate:
             first = first.where(first < pd.Timestamp(enddate), drop=True)
         if startdate:
             first = first.where(first > pd.Timestamp(startdate), drop=True)
-        mask = data.time.isin(first)
+        mask = data[self.AQUA_TIME].isin(first)
         data = data.where(~mask, np.nan)
 
         return data
