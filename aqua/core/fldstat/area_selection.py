@@ -1,7 +1,7 @@
 import regionmask
 import xarray as xr
 
-from aqua.core.default import DEFAULT_COORDS
+from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, DEFAULT_COORDS
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 
@@ -28,8 +28,8 @@ class AreaSelection:
         lat: list | None = None,
         box_brd: bool = True,
         drop: bool = False,
-        lat_name: str = "lat",
-        lon_name: str = "lon",
+        lat_name: str = AQUA_LATITUDE,
+        lon_name: str = AQUA_LONGITUDE,
         region: regionmask.Regions | None = None,
         region_sel: str | int | list | None = None,
         mask_kwargs: dict = {},
@@ -49,9 +49,9 @@ class AreaSelection:
             drop (bool, optional): Whether to drop non-selected data.
                 Default is False.
             lat_name (str, optional): Name of latitude coordinate.
-                Default is "lat".
+                Default is AQUA_LATITUDE.
             lon_name (str, optional): Name of longitude coordinate.
-                Default is "lon".
+                Default is AQUA_LONGITUDE.
             region (regionmask.Regions, optional): A regionmask Regions object defining a class regions.
             region_sel (str, int or list, optional): The region(s) to select by name or number from the region object.
             mask_kwargs (dict, optional): Additional keyword arguments passed to region.mask().
