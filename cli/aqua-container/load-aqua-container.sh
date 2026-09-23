@@ -221,8 +221,8 @@ function setup_envs(){
 
     case "$machine" in
         "lumi")
-            GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
-            GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
+            GSV_WEIGHTS_PATH="/scratch/project_465002727/gsv_files/gsv_weights"
+            GRID_DEFINITION_PATH="/scratch/project_465002727/gsv_files/grid_definitions"
             ESMFMKFILE="/opt/conda/lib/esmf.mk"
             ;;
         "levante")
