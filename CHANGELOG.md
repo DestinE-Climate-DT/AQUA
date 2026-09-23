@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
+- Introduce `scan_coord()` function to retrieve the coordinate name from the data model (#3038)
 - Added S3 compatibility with LUMI-O bucket (#3099)
 - Update GSV paths for lumi_install (#3120)
 - Fix treatment of empty datasets in backend (#3092)
@@ -65,7 +66,6 @@ Complete list:
 ClimateDT workflow modifications:
 
 Complete list:
-- Introduce `scan_coord()` function to retrieve the coordinate name from the data model (#3038)
 - Update hpc2020 installation script (#3017)
 - Fix intake_gsv fdb_info_file treatment (#3020)
 - Fix level selection in DROP when a list of levels is provided (#3005)
