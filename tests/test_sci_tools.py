@@ -7,6 +7,7 @@ from conftest import LOGLEVEL
 from aqua.core.fldstat import AreaSelection
 from aqua.core.util import check_seasonal_chunk_completeness, select_season
 from aqua.core.util.sci_util import generate_quarter_months
+from aqua.core.default import DEFAULT_COORDS
 
 loglevel = LOGLEVEL
 
@@ -209,3 +210,21 @@ def test_partial_lon_selection(data_fixture, lon_limits, expected_in, expected_o
         assert not np.isnan(result.sel(lat=lat_val, lon=lon_val).values), f"lon={lon_val} should be selected but is NaN"
     for lon_val in expected_out:
         assert np.isnan(result.sel(lat=lat_val, lon=lon_val).values), f"lon={lon_val} should be NaN but is selected"
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("box_brd", [True, False])
+@pytest.mark.parametrize("to_180", [True, False])
+def test_greenwich_crossing_360(sample_data_360, box_brd, to_180):
+    """Box selection crossing Greenwich on a 0..360 grid, with and without lon conversion."""
+    result = AreaSelection(loglevel=loglevel).select_area(
+        sample_data_360, lon=[250, 40], box_brd=box_brd, to_180=to_180, default_coords=DEFAULT_COORDS
+    )
+    lon_in = [-90, 0, 30] if to_180 else [270, 0, 30]
+    lon_out = [-135, 45, 90] if to_180 else [225, 45, 90]
+
+    for lon_val in lon_in:
+        assert not np.isnan(result.sel(lat=15, lon=lon_val).values), f"lon={lon_val} should be selected"
+    for lon_val in lon_out:
+        assert np.isnan(result.sel(lat=15, lon=lon_val).values), f"lon={lon_val} should be NaN"
+    if to_180:
+        assert (result.lon.diff("lon") > 0).all()
