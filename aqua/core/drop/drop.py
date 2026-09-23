@@ -135,7 +135,7 @@ class Drop:
                 Default is 'mean'.
             stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram.
                 Default is empty dict.
-            compact (string, opt):   Compact the data into yearly files using xarray or cdo.
+            compact (string, opt):   Compact NetCDF or Zarr data into yearly files using xarray or cdo.
                                      If set to None, no compacting is performed. Default is "xarray"
             engine (string, opt):    Engine to be used by the Reader. Default is 'gsv'.
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
@@ -333,7 +333,7 @@ class Drop:
             raise ValueError("output_format must be 'netcdf', 'zarr' or 'icechunk'")
 
         # Zarr/icechunk do not support post-write compact (they write in-place)
-        if self.output_format in ("zarr", "icechunk"):
+        if self.output_format == "icechunk":
             if self.compact is not None:
                 self.logger.warning("compact option ignored for %s output", self.output_format)
                 self.compact = None
@@ -510,6 +510,7 @@ class Drop:
             self.writer = ZarrWriter(
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
+                compact=self.compact,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
             )
