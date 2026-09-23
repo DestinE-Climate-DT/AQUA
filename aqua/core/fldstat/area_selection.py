@@ -68,7 +68,10 @@ class AreaSelection:
         # By default we work with the AQUA data_model but we keep the
         # flexibility to adapt to other data models.
         if lat_name not in data.coords or lon_name not in data.coords:
-            raise KeyError(f"Latitude or Longitude coordinates not found. Expected '{lat_name}' and '{lon_name}'.")
+            raise KeyError(
+                f"Latitude or Longitude coordinates not found. Expected '{lat_name}' and '{lon_name}'."
+                f"Found: {list(data.coords)}"
+            )
 
         # Case1: Regionmask selection
         if region is not None:

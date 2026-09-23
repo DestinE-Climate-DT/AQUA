@@ -47,6 +47,11 @@ class FldStat:
         # Initialize area selection
         self.area_selection = AreaSelection(loglevel=loglevel)
 
+        # define AQUA data model coordinates for lon, lat and time
+        self.AQUA_TIME = scan_coord(AQUA_TIME)
+        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
+        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
+
         if self.area is None:
             self.logger.warning("No area provided, no weighted area can be provided.")
             return
@@ -56,11 +61,6 @@ class FldStat:
             raise ValueError("Area must be an xarray DataArray or Dataset.")
 
         self.grid_name = grid_name
-
-        # define AQUA data model coordinates for lon, lat and time
-        self.AQUA_TIME = scan_coord(AQUA_TIME)
-        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
-        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
 
     @property
     def available_fldstats(self):
@@ -191,8 +191,8 @@ class FldStat:
         lat: list | None = None,
         box_brd: bool = True,
         drop: bool = False,
-        lat_name: str = AQUA_LATITUDE,
-        lon_name: str = AQUA_LONGITUDE,
+        lat_name: str = None,
+        lon_name: str = None,
         region: regionmask.Regions | None = None,
         region_sel: str | int | list | None = None,
         mask_kwargs: dict = {},
@@ -212,8 +212,8 @@ class FldStat:
             lat=lat,
             box_brd=box_brd,
             drop=drop,
-            lat_name=lat_name,
-            lon_name=lon_name,
+            lat_name=lat_name if lat_name is not None else self.AQUA_LATITUDE,
+            lon_name=lon_name if lon_name is not None else self.AQUA_LONGITUDE,
             region=region,
             region_sel=region_sel,
             mask_kwargs=mask_kwargs,
