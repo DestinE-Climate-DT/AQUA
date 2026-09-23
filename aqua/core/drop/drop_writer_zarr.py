@@ -16,9 +16,6 @@ import zarr
 from aqua.core.drop.drop_writer_base import BaseWriter
 from aqua.core.util.io_util import file_is_complete
 
-# zarr chunking defaults
-ZARR_CHUNKS = {"time": 1, "lat": None, "lon": None}
-
 
 class ZarrWriter(BaseWriter):
     """
@@ -45,7 +42,7 @@ class ZarrWriter(BaseWriter):
             Metadata consolidation is always enabled on yearly archives for optimal read performance.
         """
         super().__init__(tmpdir, outdir, **kwargs)
-        self.chunks = ZARR_CHUNKS
+        self.chunks = {self.AQUA_TIME: 1, self.AQUA_LATITUDE: None, self.AQUA_LONGITUDE: None}
 
     def get_extension(self):
         """Return file extension for this format."""
@@ -79,7 +76,7 @@ class ZarrWriter(BaseWriter):
         if not self.chunks:
             return None
         self.logger.debug("Using xarray default compression for zarr v3")
-        return self._build_zarr_encoding(data, time_chunk=self.chunks.get("time", 1))
+        return self._build_zarr_encoding(data, time_chunk=self.chunks.get(self.AQUA_TIME, 1))
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """

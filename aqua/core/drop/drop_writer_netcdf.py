@@ -80,7 +80,7 @@ class NetCDFWriter(BaseWriter):
         """
         data_vars = list(data.data_vars) if isinstance(data, xr.Dataset) else [data.name]
         var_name = var if var in data_vars else data_vars[0]
-        return {"time": self.time_encoding, var_name: self.var_encoding}
+        return {self.AQUA_TIME: self.time_encoding, var_name: self.var_encoding}
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """
@@ -142,7 +142,7 @@ class NetCDFWriter(BaseWriter):
                 var_name = list(ds.data_vars)[0]
                 ds.to_netcdf(
                     tmp_year_file,
-                    encoding={"time": self.time_encoding, var_name: self.var_encoding},
+                    encoding={self.AQUA_TIME: self.time_encoding, var_name: self.var_encoding},
                 )
 
             # Move yearly file to output and cleanup monthly files

@@ -19,6 +19,8 @@ from dask.diagnostics import ProgressBar
 from dask.distributed import progress
 from dask.distributed.diagnostics import MemorySampler
 
+from aqua.core.data_model import scan_coord
+from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, AQUA_TIME
 from aqua.core.drop.drop_util import move_tmp_files
 from aqua.core.logger import log_configure
 
@@ -68,6 +70,11 @@ class BaseWriter(ABC):
         self._chunk_stats = []
         self._last_mem_stats = None
         self._last_chunk_size_bytes = None
+
+        # data model coordiante names
+        self.AQUA_TIME = scan_coord(AQUA_TIME)
+        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
+        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
 
     @abstractmethod
     def get_extension(self):
@@ -160,7 +167,7 @@ class BaseWriter(ABC):
         encoding = {}
         compressor = zarr.codecs.GzipCodec(level=compressor_level)
         for var_name in data.data_vars:
-            chunks = tuple(time_chunk if dim == "time" else data[var_name].sizes[dim] for dim in data[var_name].dims)
+            chunks = tuple(time_chunk if dim == self.AQUA_TIME else data[var_name].sizes[dim] for dim in data[var_name].dims)
             encoding[var_name] = {"chunks": chunks, "compressor": compressor}
         return encoding or None
 
@@ -229,11 +236,11 @@ class BaseWriter(ABC):
         Yields:
             tuple: (year, year_data) where year_data has original attrs restored.
         """
-        years = sorted(set(data.time.dt.year.values))
+        years = sorted(set(data[self.AQUA_TIME].dt.year.values))
         if performance_reporting:
             years = [years[0]]
         for year in years:
-            yield year, data.sel(time=data.time.dt.year == year)
+            yield year, data.sel({self.AQUA_TIME: data[self.AQUA_TIME].dt.year == year})
 
     def _iter_months_in_year(self, year_data, performance_reporting):
         """Yield (month, month_data) pairs with Dataset-level attrs preserved after slicing.
@@ -245,11 +252,11 @@ class BaseWriter(ABC):
         Yields:
             tuple: (month, month_data) where month_data has original attrs restored.
         """
-        months = sorted(set(year_data.time.dt.month.values))
+        months = sorted(set(year_data[self.AQUA_TIME].dt.month.values))
         if performance_reporting:
             months = [months[0]]
         for month in months:
-            yield month, year_data.sel(time=year_data.time.dt.month == month)
+            yield month, year_data.sel({self.AQUA_TIME: year_data[self.AQUA_TIME].dt.month == month})
 
     def _write_chunk(self, data, var, year, month, level=None, dask=False, performance_reporting=False):
         """
@@ -477,7 +484,7 @@ class BaseWriter(ABC):
             try:
                 # xr.open_mfdataset works with both single and multiple files
                 ds = self._open_files(yearfiles)
-                last_record = ds.time[-1].values
+                last_record = ds[self.AQUA_TIME][-1].values
                 last_record_str = pd.to_datetime(last_record).strftime("%Y%m%d")
                 return {
                     "complete": True,
