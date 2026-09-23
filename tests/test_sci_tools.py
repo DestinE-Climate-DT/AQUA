@@ -4,10 +4,10 @@ import regionmask
 import xarray as xr
 from conftest import LOGLEVEL
 
+from aqua.core.default import DEFAULT_COORDS
 from aqua.core.fldstat import AreaSelection
 from aqua.core.util import check_seasonal_chunk_completeness, select_season
 from aqua.core.util.sci_util import generate_quarter_months
-from aqua.core.default import DEFAULT_COORDS
 
 loglevel = LOGLEVEL
 
@@ -228,3 +228,17 @@ def test_greenwich_crossing_360(sample_data_360, box_brd, to_180):
         assert np.isnan(result.sel(lat=15, lon=lon_val).values), f"lon={lon_val} should be NaN"
     if to_180:
         assert (result.lon.diff("lon") > 0).all()
+
+
+@pytest.mark.aqua
+def test_regionmask_greenwich_360(sample_data_360):
+    """Region crossing Greenwich on a 0..360 grid is converted to [-180, 180] and sorted."""
+    region = regionmask.Regions([[[-40, -20], [40, -20], [40, 20], [-40, 20]]], names=["box"])
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data_360, region=region, region_sel=0)
+
+    assert result.lon.min() < 0
+    assert (result.lon.diff("lon") > 0).all()
+    for lon_val in [0, 30]:
+        assert not np.isnan(result.sel(lat=15, lon=lon_val).values)
+    for lon_val in [-90, 90]:
+        assert np.isnan(result.sel(lat=15, lon=lon_val).values)
