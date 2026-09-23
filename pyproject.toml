@@ -37,7 +37,8 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0",
+    "eccodes>=2.41.0,<2.48",
+    "eccodeslib>=2.41.0,<2.48",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -96,7 +97,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.16.7"
+    "ruff==0.16.8"
 ]
 all = [
     "aqua-core[docs]",

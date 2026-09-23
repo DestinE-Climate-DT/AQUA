@@ -7,6 +7,12 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      simulate-dependabot:
+        description: 'Simulate Dependabot PR (test mode)'
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
 
@@ -26,15 +32,16 @@ jobs:
         id: check
         run: |
           # Run tests if:
-          # 1) PR has label "run tests" or "ready to merge"
-          # 2) Triggered by Dependabot
+          # 1) PR has "dependabot" label (manual override for testing edited Dependabot PRs)
+          # 2) Triggered by Dependabot actor
           # 3) Triggered manually (workflow_dispatch)
           # 4) Triggered by schedule
           # 5) Pushed to main branch
           SHOULD_RUN="false"
 
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
+           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
              [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'dependabot') }}" == "true" ]] || \
              [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
              [[ "${{ github.event_name }}" == "schedule" ]] || \
@@ -42,12 +49,13 @@ jobs:
             SHOULD_RUN="true"
           fi
 
+          echo "Event: ${{ github.event_name }} | Actor: ${{ github.actor }} | Has 'dependabot' label: ${{ contains(github.event.pull_request.labels.*.name, 'dependabot') }}"
+          echo "Result: $SHOULD_RUN"
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
-  # Call the reusable workflow without FDB
   aqua-no-fdb-tests:
     needs: check-trigger
-    if: needs.check-trigger.outputs.should-run == 'true'
+    if: needs.check-trigger.outputs.should-run == 'true' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
@@ -58,6 +66,7 @@ jobs:
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
+      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || contains(github.event.pull_request.labels.*.name, 'dependabot') || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)) }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
