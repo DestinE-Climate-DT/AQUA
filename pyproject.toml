@@ -37,7 +37,8 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0",
+    "eccodes>=2.41.0,<2.48",
+    "eccodeslib>=2.41.0,<2.48",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -52,7 +53,6 @@ dependencies = [
     "gcsfs", # Google Cloud Storage File System: required by ARCO
     "icechunk",
     "intake>=2.0.9", # Version 2 is a major refactor, 2.0.8 had a vulnerability
-    "intake-xarray>=2.0.0", # Version 2 is a major refactor
     "jinja2",
     "kerchunk",
     "matplotlib",
@@ -63,6 +63,7 @@ dependencies = [
     "pyYAML",
     "regionmask",
     "ruamel.yaml",
+    "s3fs>=2026.1.0", # AWS for bucket access, setting a minimum to avoid installing a very old version
     "scipy",
     "seaborn",
     "smmregrid==0.1.6",
@@ -97,7 +98,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.16.5"
+    "ruff==0.16.8"
 ]
 all = [
     "aqua-core[docs]",
@@ -139,9 +140,8 @@ testpaths = [
 markers = [
     "aqua: mark test as AQUA framework",
     "slow: tests which are slow",
-    "sbatch: tests which require sbatch",
     "graphics: tests which deal with graphics",
-    "gsv: mark test that requires ECMWF FDB libraries",
+    "fdb: mark test that requires ECMWF FDB libraries",
     "catgen: mark test for catalog generator",
     "console: mark test for console",
     "polytope: mark test that uses polytope"

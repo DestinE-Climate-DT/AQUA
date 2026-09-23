@@ -7,17 +7,12 @@ from metpy.units import units
 from pint.errors import DimensionalityError, UndefinedUnitError
 
 from aqua.core.configurer import ConfigContext
-
-# Possible basic names for coordinates
-from aqua.core.default import DEFAULT_COORD_NAMES
+from aqua.core.default import AQUA_COORDS, DEFAULT_COORD_NAMES
 from aqua.core.util import load_yaml
 
 # Define the target dimensionality (pressure)
 pressure_dim = units.pascal.dimensionality
 meter_dim = units.meter.dimensionality
-
-# module logger
-# logger = log_configure(log_level='INFO', log_name='coord_utils')
 
 
 @cache
@@ -79,6 +74,30 @@ def get_data_model(name: str = "aqua"):
         name (str): An installed data_model into aqua config, i.e. a YAML file
     """
     return _load_data_model(name)
+
+
+def scan_coord(internal_name: str, default: str = None, data_model: str = "aqua") -> str:
+    """
+    Get the coordinate name used by a given data model for an internal coordinate type
+    (e.g. 'depth', 'isobaric'), so that diagnostics do not need to hard-code coordinate names.
+
+    Args:
+        internal_name (str): Internal coordinate type (e.g. 'depth', 'isobaric', 'latitude').
+        default (str): Fallback name returned if the coordinate is not defined in the data model.
+        data_model (str): Data model name. Default is 'aqua'.
+
+    Returns:
+        str: Coordinate name as defined by the data model, or the default if not found.
+    """
+    if internal_name not in AQUA_COORDS:
+        raise ValueError(f"'{internal_name}' is not a valid internal coordinate name. Allowed values are {AQUA_COORDS}.")
+    try:
+        coord = get_data_model(data_model)["data_model"][internal_name]
+    except FileNotFoundError:
+        return default
+    except KeyError:
+        raise KeyError(f"Coordinate '{internal_name}' not found in data model '{data_model}'.")
+    return coord.get("name", default)
 
 
 # Function to get the conversion factor

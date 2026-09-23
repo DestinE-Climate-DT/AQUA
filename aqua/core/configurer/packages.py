@@ -1,6 +1,7 @@
 """Helpers to resolve installation paths of AQUA and complementary packages."""
 
 import importlib.resources as pypath
+from importlib.metadata import entry_points
 
 
 class ConfigPackages:
@@ -61,6 +62,13 @@ class ConfigPackages:
             if self.logger:
                 self.logger.error("%s package not found; path will be empty.", package)
             return ""
+
+    @staticmethod
+    def avail_packages() -> list[str]:
+        """Return a list of all available AQUA packages in the environment."""
+        packages = ["aqua.core"]  # hardcoded, since it's not a plugin
+        packages += [ep.name for ep in entry_points(group="aqua.plugins")]
+        return packages
 
     @property
     def aqua_path(self) -> str:

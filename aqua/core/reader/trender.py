@@ -1,10 +1,10 @@
 """Class for handling trend and detrending of xarray objects."""
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
+from aqua.core.util.time import pandas_freq_to_offset, xarray_to_pandas_freq
 
 
 class Trender:
@@ -99,14 +99,14 @@ class Trender:
             self.logger.debug("Normalizing coefficients for time dimension.")
             # get the inferred frequency of the time dimension and convert to pandas offset
             time_values = data[dim].to_index()
-            inferred_freq = time_values.inferred_freq
+            inferred_freq = xarray_to_pandas_freq(time_values)
             self.logger.debug("Inferred frequency for 'time' dimension: %s", inferred_freq)
             if inferred_freq is None:
                 raise ValueError(
                     "Inferred frequency for 'time' dimension is None. "
                     "Ensure that the time dimension has a pandas compatible frequency."
                 )
-            offset = pd.tseries.frequencies.to_offset(inferred_freq)
+            offset = pandas_freq_to_offset(inferred_freq)
             self.logger.debug("Offset for normalization: %s", offset)
 
             # offset cannot be converted to timedelta, so we use the mean of the time values

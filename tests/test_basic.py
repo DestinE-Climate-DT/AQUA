@@ -3,6 +3,7 @@ import pytest
 from conftest import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
+from aqua.core.backend.backend import Backend
 from aqua.core.exceptions import NoRegridError
 
 approx_rel = APPROX_REL
@@ -22,6 +23,16 @@ def data(fesom_test_pi_original_2d_r200_fixfalse_data):
 @pytest.fixture(scope="module")
 def reader_ifs_tco79_long(ifs_tco79_long_reader):
     return ifs_tco79_long_reader
+
+
+@pytest.fixture(scope="module")
+def reader_nemo_short_3d(nemo_test_e_orca1_short_3d_reader):
+    return nemo_test_e_orca1_short_3d_reader
+
+
+@pytest.fixture(scope="module")
+def data_nemo_short_3d(nemo_test_e_orca1_short_3d_data):
+    return nemo_test_e_orca1_short_3d_data
 
 
 # aqua class for tests
@@ -90,6 +101,22 @@ class TestAqua:
         data = reader.retrieve()
         assert set(data["2t"].chunksizes["time"]) == {1}
 
+    def test_single_file_source_is_lazy(self, reader_nemo_short_3d, data_nemo_short_3d):
+        """
+        Test that a source made of one single netcdf file is still dask-backed (#3064).
+        Without the chunks default the intake reader routes it to xr.open_dataset,
+        which returns numpy arrays and the backend can only report the failure.
+        """
+        assert reader_nemo_short_3d.backend.esmcat.reader.kwargs["chunks"] == {}
+        assert Backend.is_dask(data_nemo_short_3d)
+        assert data_nemo_short_3d["so"].chunks is not None
+
+    def test_catalog_chunks_are_not_overridden(self, reader_ifs_tco79_long):
+        """
+        Test that a chunks entry defined in the catalog wins over the chunks default (#3064)
+        """
+        assert reader_ifs_tco79_long.backend.esmcat.reader.kwargs["chunks"] == {"time": 24}
+
     def test_catalog_override(self):
         """
         Test the compact catalog override functionality
@@ -108,7 +135,7 @@ class TestAqua:
 
     def test_time_selection(self, reader_ifs_tco79_long):
         """
-        Test that time selection works correctly
+        Test that time selection works correctly, also beyond 2262
         """
         reader = reader_ifs_tco79_long
 
@@ -118,6 +145,10 @@ class TestAqua:
         assert "2t" in data
 
         assert all(data.time.dt.month == 3)
+
+        data = reader.retrieve(startdate="2300-03-01", enddate="2300-03-31")
+
+        assert len(data.time) == 0
 
     @pytest.fixture(
         params=[

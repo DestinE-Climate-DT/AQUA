@@ -11,14 +11,25 @@ DEFAULT_NPROC = 4
 # Spatial defaults
 DEFAULT_COORDS = {"lat_min": -90, "lat_max": 90, "lon_min": 0, "lon_max": 360}
 
-# Data model coord names
+# Define internal names for coordinates
+AQUA_LONGITUDE = "longitude"
+AQUA_LATITUDE = "latitude"
+AQUA_TIME = "time"
+AQUA_ISOBARIC = "isobaric"
+AQUA_DEPTH = "depth"
+AQUA_HEIGHT = "height"
+
+# Single source of truth for all valid internal coordinate names
+AQUA_COORDS = (AQUA_LATITUDE, AQUA_LONGITUDE, AQUA_TIME, AQUA_ISOBARIC, AQUA_DEPTH, AQUA_HEIGHT)
+
+# Possible basic names for coordinates: used for CoordIdentifier matching
 DEFAULT_COORD_NAMES = {
-    "latitude": ["lat", "latitude", "y"],
-    "longitude": ["lon", "longitude", "x"],
-    "time": ["time"],
-    "isobaric": ["plev", "level"],
-    "depth": ["depth"],
-    "height": ["height"],
+    AQUA_LATITUDE: ["latitude","lat", "y"],
+    AQUA_LONGITUDE: ["longitude", "lon", "x"],
+    AQUA_TIME: ["time", "time_counter"],
+    AQUA_ISOBARIC: ["plev"],
+    AQUA_DEPTH: ["depth"],
+    AQUA_HEIGHT: ["height"],
 }
 
 # Fixer defaults

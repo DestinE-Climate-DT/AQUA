@@ -12,7 +12,7 @@ on:
         description: 'Pytest markers to run (e.g., "aqua or slow")'
         required: true
         type: string
-        default: 'aqua or slow or gsv or graphics or catgen'
+        default: 'aqua or slow or fdb or graphics or catgen'
       enable-parallel:
         description: 'Enable pytest-xdist parallel execution'
         required: false
@@ -53,6 +53,11 @@ on:
         required: false
         type: string
         default: 'auto'
+      is-dependabot:
+        description: 'Is this a Dependabot PR? Automatically sets use-environment-file and disables coverage'
+        required: false
+        type: boolean
+        default: false
     secrets:
       AQUA_GITHUB_PAT:
         required: true
@@ -76,16 +81,6 @@ permissions:
 
 defaults:
   run:
-    # NOTE: We must take care with the shell value here. We have steps
-    #       with multiline YAML strings.
-    #       These get converted into shell scripts.
-    #       If execute as ``bash -l fail_first_command.sh``
-    #       then it would fail the first command but run the second
-    #       command. The default value in GitHub is ``--noprofile --norc -eo pipefail``.
-    #       https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsshell
-    #       We removed the noprofile and norc so we have pytest set by Conda in our PATH.
-    # NOTE2: login should be kept because the action micromamba/setup-micromamba
-    #        writes the environment activation script in the .bashrc file.
     shell: bash -l -eo pipefail {0}
 
 jobs:
@@ -162,14 +157,14 @@ jobs:
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-3/data-portfolio data-portfolio
           cd data-portfolio
-          git checkout tags/v2.1.0
+          git checkout tags/v2.2.0
 
       # ========================================
-      # 3. SETUP ENVIRONMENT
+      # 3. SETUP MICROMAMBA ENVIRONMENT
       # ========================================
 
-      - name: Set up Micromamba (local mode with fdb)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
+      - name: Set up Micromamba (local mode with fdb, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && !inputs.is-dependabot }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -182,8 +177,8 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (local mode without fdb)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+      - name: Set up Micromamba (local mode without fdb, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -196,7 +191,21 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (PyPI mode)
+      - name: Set up Micromamba (local mode with dependabot using environment.yml)
+        if: ${{ inputs.install-mode == 'local' && inputs.is-dependabot }}
+        uses: mamba-org/setup-micromamba@v3
+        env:
+          GITHUB_TOKEN: ''
+        with:
+          micromamba-version: 'latest'
+          environment-file: AQUA/environment.yml
+          environment-name: aqua
+          cache-downloads: true
+          cache-environment: false
+          create-args: >-
+            python=${{ matrix.python-version }}
+
+      - name: Set up Micromamba (PyPI mode, no fdb)
         if: ${{ inputs.install-mode == 'pypi' }}
         uses: mamba-org/setup-micromamba@v3
         env:
@@ -210,7 +219,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (conda mode)
+      - name: Set up Micromamba (conda mode, no fdb)
         if: ${{ inputs.install-mode == 'conda' }}
         uses: mamba-org/setup-micromamba@v3
         env:
@@ -220,32 +229,36 @@ jobs:
           environment-name: aqua
           cache-downloads: true
           cache-environment: false
-          channels: conda-forge
           create-args: >-
             python=${{ matrix.python-version }}
             aqua-core
             dvc
             dvc-s3
+            pytest
+            pytest-cov
+            pytest-xdist
+            coverage
 
       # ========================================
-      # 4. INSTALL AQUA (local mode)
+      # 4a. INSTALL AQUA (local mode on top of lock file)
       # ========================================
-      - name: Install AQUA with FDB dependencies (local mode)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false }}
+
+      - name: Install AQUA with FDB dependencies (local mode, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true && !inputs.is-dependabot }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
           python -m pip install --no-deps -e .
 
-      - name: Install AQUA without FDB dependencies (local, no fdb)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false }}
+      - name: Install AQUA without FDB dependencies (local, no fdb, using lock file)
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
           python -m pip install --no-deps -e .
 
       # ========================================
-      # 5. INSTALL AQUA (PyPI mode)
+      # 4b. INSTALL AQUA (PyPI and mode)
       # ========================================
       - name: Upgrade pip/setuptools/wheel
         if: ${{ inputs.install-mode == 'pypi' }}
@@ -254,7 +267,9 @@ jobs:
       - name: Install aqua from PyPI with test dependencies
         if: ${{ inputs.install-mode == 'pypi' }}
         run: |
-          python -m pip install aqua-core[tests] --pre
+          python -m pip install aqua-core[tests,fdb] --pre
+          # temporary since it is not shipped by aqua-core[tests] yet
+          python -m pip install dvc dvc-s3
 
       - name: Checkout the tag for PyPI mode
         if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
@@ -266,11 +281,8 @@ jobs:
           git checkout "v${PYPI_VERSION}"
 
       # ========================================
-      # 6. SETUP DVC AND TEST DATA
+      # 5. SETUP DVC
       # ========================================
-      # - name: Install DVC s3
-      #   if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
-      #   run: python -m pip install "dvc[s3]"
 
       - name: Create DVC pem file and configure it for the ecmwf_climatedt remote
         if: ${{ inputs.test-data-source == 'dvc' || inputs.test-data-source == 'auto' }}
@@ -315,12 +327,12 @@ jobs:
           echo "Test data downloaded"
 
       # ========================================
-      # 7. SETUP FDB
+      # 6. SETUP FDB (if enabled)
       # ========================================
+
       - name: Set up FDB
         if: ${{ inputs.enable-fdb == true }}
         run: |
-          # FDB for GSV
           rm -rf /app/
           cp -r ./AQUA/AQUA_tests/fdb/ /app/
           cat /app/etc/fdb/config.yaml
@@ -337,15 +349,16 @@ jobs:
           grib_dump test.grib
 
       # ========================================
-      # 8. SETUP AQUA
+      # 7. SETUP AQUA
       # ========================================
+
       - name: Set up AQUA
         run: |
           # Initialize the AQUA catalog in the $HOME/.aqua folder
           aqua -vv install github
-          # Add the climatedt-phase1 catalog and the climatedt-o25.1 catalog (for polytope testing)
+          # Add the climatedt-phase1 catalog and the climatedt-gen2 catalog (for polytope testing)
           aqua -vv add climatedt-phase1
-          aqua -vv add climatedt-o25.1
+          aqua -vv add climatedt-gen2
           # Add the ci/cd catalog
           aqua -vv add ci
           # Double check the catalogs
@@ -365,8 +378,9 @@ jobs:
           EOF
 
       # ========================================
-      # 9. SAVE ENVIRONMENT INFO
+      # 8. SHOW AQUA VERSION AND CONFIG
       # ========================================
+
       - name: Save environment information
         run: |
           cd AQUA
@@ -374,8 +388,9 @@ jobs:
           pip freeze > pip_freeze.txt
 
       # ========================================
-      # 10. RUN TESTS
-      # ========================================
+      # 9. RUN TESTS
+      # =====================================
+
       - name: Install pytest-timeout (for per-test timeout to avoid hangs)
         run: python -m pip install pytest-timeout
 
@@ -463,9 +478,10 @@ jobs:
             -o junit_family=legacy \
             -m "${{ inputs.pytest-markers }}"
 
-      # ========================================
-      # 10b. SHOW XDIST LOG ON FAILURE (parallel runs only)
-      # ========================================
+      # =======================================
+      # 10. SHOW LOGS ON FAILURE
+      # ======================================
+
       - name: Show xdist worker log (on test failure or timeout)
         if: failure() && inputs.enable-parallel
         run: |
@@ -479,11 +495,12 @@ jobs:
             echo "No xdist worker log found at $LOG"
           fi
 
-      # ========================================
-      # 11. UPLOAD COVERAGE (if enabled)
-      # ========================================
+      # =======================================
+      # 11. UPLOAD COVERAGE REPORTS TO CODECOV
+      # ======================================
+
       - name: Upload coverage reports to Codecov
-        if: ${{ inputs.enable-coverage && github.actor != 'dependabot[bot]' && !cancelled() }}
+        if: ${{ inputs.enable-coverage && !inputs.is-dependabot && !cancelled() }}
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -492,16 +509,16 @@ jobs:
           name: codecov-aqua
 
       - name: Upload test results to Codecov
-        if: ${{ inputs.enable-coverage && github.actor != 'dependabot[bot]' && !cancelled() }}
+        if: ${{ inputs.enable-coverage && !inputs.is-dependabot && !cancelled() }}
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
           files: AQUA/junit.xml
 
-      # ========================================
+      # =======================================
       # 12. UPLOAD ARTIFACTS
-      # ========================================
+      # ======================================
       - name: Upload xdist worker log (parallel runs)
         if: ${{ !cancelled() && inputs.enable-parallel }}
         uses: actions/upload-artifact@v7

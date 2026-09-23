@@ -166,11 +166,19 @@ If you would like to see a detailed example of how each diagnostic is used, plea
   <summary>💡 <strong><span style="color: orange;">Solution</span></strong></summary>
 ```python
 # 0 s
-ts_area = Timeseries(var='2t', models='IFS-NEMO', exps='historical-1990', sources='lra-r100-monthly',
-                     startdate='1990-01-01', enddate='1999-12-01',
-                     std_startdate='1990-01-01', std_enddate='1999-12-01', extend=False,
-                     lat_limits=[-20, 20],
-                     loglevel='INFO')
+ts_area = Timeseries(
+    var="2t",
+    models="IFS-NEMO",
+    exps="historical-1990",
+    sources="lra-r100-monthly",
+    startdate="1990-01-01",
+    enddate="1999-12-01",
+    std_startdate="1990-01-01",
+    std_enddate="1999-12-01",
+    extend=False,
+    lat_limits=[-20, 20],
+    loglevel="INFO",
+)
 # 1 m, 10 s
 ts_area.run()
 ```
@@ -201,18 +209,18 @@ ts_area.run()
 seasonal_bias(
     dataset1=data_ifs_nemo_historical,
     dataset2=data_era5,
-    var_name='avg_tos',
+    var_name="avg_tos",
     plev=None,
-    model_label1='IFS-NEMO historical',
-    model_label2='ERA5',
-    start_date1='1990-01-01',
-    end_date1='2001-12-31',
-    start_date2='1980-01-01',
-    end_date2='2010-12-31',
+    model_label1="IFS-NEMO historical",
+    model_label2="ERA5",
+    start_date1="1990-01-01",
+    end_date1="2001-12-31",
+    start_date2="1980-01-01",
+    end_date2="2010-12-31",
     vmin=-4,
     vmax=4,
     nlevels=9,
-    seasons=False
+    seasons=False,
 )
 ```
 </details>
