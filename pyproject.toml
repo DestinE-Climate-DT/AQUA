@@ -63,6 +63,7 @@ dependencies = [
     "pyYAML",
     "regionmask",
     "ruamel.yaml",
+    "s3fs>=2026.1.0", # AWS for bucket access, setting a minimum to avoid installing a very old version
     "scipy",
     "seaborn",
     "smmregrid==0.1.6",
