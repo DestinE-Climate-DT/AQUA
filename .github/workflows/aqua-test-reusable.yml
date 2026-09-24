@@ -117,8 +117,24 @@ jobs:
 
     steps:
       # ========================================
-      # 1. CHECKOUT REPOSITORIES
+      # 1. INSTALL SYSTEM DEPENDENCIES
       # ========================================
+      - name: Install GH Actions dependencies
+        run: |
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
+          # Ubuntu dependencies (Git, curl, gpg...)
+          $SUDO apt-get update && \
+            $SUDO apt-get install -y \
+              curl \
+              git \
+              gpg \
+              wget
+
+      # ========================================
+      # 2. CHECKOUT REPOSITORIES
+      # ========================================
+
       - name: Checkout code
         uses: actions/checkout@v7
         with:
@@ -139,20 +155,6 @@ jobs:
           path: aqua-dvc
           ref: main
           token: ${{ secrets.AQUA_DVC_PAT }}
-
-      # ========================================
-      # 2. INSTALL SYSTEM DEPENDENCIES
-      # ========================================
-      - name: Install GH Actions dependencies
-        run: |
-          # Use sudo when not running as root (plain ubuntu-latest runner)
-          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
-          # Ubuntu dependencies (Git, curl, gpg...)
-          $SUDO apt-get update && \
-            $SUDO apt-get install -y \
-              curl \
-              git \
-              gpg
 
       - name: Clone GitLab data-portfolio repository
         run: |
