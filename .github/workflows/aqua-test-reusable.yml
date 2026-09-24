@@ -136,9 +136,13 @@ jobs:
         run: |
           # Use sudo when not running as root (plain ubuntu-latest runner)
           SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
-          # Install FDB dependencies
-          $SUDO apt install -y \
-            fdb
+          # Enable the resolute-proposed pocket (fdb5 5.18.3-1 currently lives here)
+          echo "deb http://archive.ubuntu.com/ubuntu resolute-proposed universe" | \
+            $SUDO tee /etc/apt/sources.list.d/resolute-proposed.list
+          $SUDO apt-get update
+          # Install FDB dependencies (pinned to the proposed version)
+          $SUDO apt-get install -y \
+            fdb5=5.18.3-1
 
       # ========================================
       # 2. CHECKOUT REPOSITORIES
