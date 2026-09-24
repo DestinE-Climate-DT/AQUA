@@ -129,7 +129,8 @@ jobs:
               curl \
               git \
               gpg \
-              wget
+              wget \
+              fdb5
 
       # ========================================
       # 2. CHECKOUT REPOSITORIES
