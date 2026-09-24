@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
+- Allow `compact: null` to disable monthly-to-yearly concatenation for Zarr DROP output. (#3125)
 - Update GSV paths and container name logic for `load-aqua-container.sh` bash script (#3123)
 - Introduce `scan_coord()` function to retrieve the coordinate name from the data model (#3038)
 - Added S3 compatibility with LUMI-O bucket (#3099)
