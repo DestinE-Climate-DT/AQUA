@@ -138,7 +138,7 @@ jobs:
           SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
           # Install FDB dependencies
           $SUDO apt install -y \
-            fdb5=5.18.3-1resolute
+            fdb
 
       # ========================================
       # 2. CHECKOUT REPOSITORIES
