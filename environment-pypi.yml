@@ -12,3 +12,6 @@ dependencies:
   - cdo>=2.5.0,<2.6.1
   - eccodes>=2.41.0,<=2.47.0
   - netcdf4
+  - pip
+  - pip:
+    - aqua-core
