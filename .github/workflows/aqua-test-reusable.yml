@@ -364,7 +364,10 @@ jobs:
       - name: Remove FDB from apt
         if: ${{ inputs.enable-fdb == true }}
         run: |
-          sudo apt remove -y fdb5
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
+          # Remove FDB from apt to avoid conflicts
+          $SUDO apt remove -y fdb5
 
       # ========================================
       # 7. SETUP AQUA
