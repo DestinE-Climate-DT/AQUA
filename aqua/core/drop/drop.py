@@ -135,8 +135,9 @@ class Drop:
                 Default is 'mean'.
             stat_kwargs (dict, opt):  kwargs to be sent to the statistic function, as 'bins' for histogram.
                 Default is empty dict.
-            compact (string, opt):   Compact NetCDF or Zarr data into yearly files using xarray or cdo.
-                                     If set to None, no compacting is performed. Default is "xarray"
+            compact (string, opt):   Compact data into yearly files. NetCDF supports "xarray" or "cdo";
+                                     Zarr supports "xarray" only. If set to None, no compacting is performed.
+                                     Default is "xarray"
             engine (string, opt):    Engine to be used by the Reader. Default is 'gsv'.
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
@@ -324,13 +325,16 @@ class Drop:
         """
         Validate parameters and raise errors if invalid
         """
-        # Validate compact method
-        if self.compact not in ["xarray", "cdo", None]:
-            raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
-
         # Validate output format
         if self.output_format not in ["netcdf", "zarr", "icechunk"]:
             raise ValueError("output_format must be 'netcdf', 'zarr' or 'icechunk'")
+
+        # Validate compact method
+        if self.output_format == "zarr" and self.compact not in ["xarray", None]:
+            self.logger.error("Invalid compact option '%s' for zarr output; disabling compaction.", self.compact)
+            self.compact = None
+        elif self.compact not in ["xarray", "cdo", None]:
+            raise KeyError("Please specify a valid compact method: xarray, cdo or None.")
 
         # Zarr/icechunk do not support post-write compact (they write in-place)
         if self.output_format == "icechunk":
