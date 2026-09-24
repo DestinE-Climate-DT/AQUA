@@ -325,8 +325,8 @@ Controls processing behavior and performance settings:
   - ``netcdf``: Create NetCDF files.
     Monthly files are always created, but if ``compact`` is set to ``xarray`` or ``cdo`` (see below), they will be concatenated into yearly files and the monthly files will be deleted.
   - ``zarr``: Create Zarr datasets files for faster subsequent access. Test feature under development, use with caution.
-    Monthly files are created and then concatenated into yearly consolidated files when ``compact`` is not ``null``; monthly files are removed after successful concatenation.
-    Set ``compact: null`` to keep the monthly files. This is suboptimal but provides safety against incomplete or corrupted files.
+    Monthly files are created and then concatenated into yearly consolidated files when ``compact: xarray``; monthly files are removed after successful concatenation.
+    Set ``compact: null`` to keep the monthly files. Other compact methods, such as ``cdo``, are not supported for Zarr and disable compaction.
   - ``icechunk``: Write all data into a single git-like versioned Zarr repository using `icechunk <https://icechunk.io>`_.
     Every month is committed as an atomic snapshot; failed writes are automatically rolled back to the last clean commit.
     A post-commit integrity check is performed after each month.
@@ -356,10 +356,10 @@ Controls processing behavior and performance settings:
   - ``False``: Use cached weights if available
   - Set to ``True`` if you suspect weights are outdated (e.g., after a major update to CDO or AQUA)
 
-- **compact** (string, optional): Method for concatenating monthly files into yearly files. Relevant for ``driver: netcdf`` and ``driver: zarr``. Default: ``cdo``
+- **compact** (string, optional): Method for concatenating monthly files into yearly files. Relevant for ``driver: netcdf`` and ``driver: zarr``. Default: ``xarray``
 
-  - ``xarray``: Use xarray for concatenation
-  - ``cdo``: Use Climate Data Operators for NetCDF; enables concatenation for Zarr
+  - ``xarray``: Use xarray for concatenation for NetCDF or Zarr
+  - ``cdo``: Use Climate Data Operators for NetCDF only. For Zarr, an error is logged and compaction is disabled.
   - ``null`` or omit: No compacting, keep monthly files
 
 - **performance_reporting** (bool, optional): Generate Dask performance HTML report. Default: ``False``
