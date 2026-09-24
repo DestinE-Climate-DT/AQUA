@@ -42,6 +42,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix area selection for regionmask regions crossing the Greenwich meridian (#3058)
 - Remove intake-xarray dependency (#2958)
 - Update load_aqua_container script for both core and diagnostics (#3043)
 - Remove deprecated idx_level coordinates for FDB access (#3063)
