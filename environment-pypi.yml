@@ -14,4 +14,4 @@ dependencies:
   - netcdf4
   - pip
   - pip:
-    - aqua-core
+    - aqua-core[tests]
