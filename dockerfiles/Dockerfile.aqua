@@ -5,7 +5,6 @@ ARG MICROMAMBA_VERSION=2.9.0
 ARG BASE_IMAGE=ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container
 ARG MAMBA_USER_ID=57439
 ARG MAMBA_USER_GID=57439
-ARG EXTRA_PACKAGES=""
 
 # -----------------------------------------------------------------------------
 # --- Micromamba / Conda (used later).
@@ -23,6 +22,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get --yes --no-install-recommends install \
         ssh \
         vim \
+        git \
+        gcc \
         && \
     apt-get --yes clean && \
     apt-get --yes autoremove && \
@@ -78,8 +79,7 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 # Generate conda environment (env name does not matter,
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
-RUN micromamba install -y -n base -c conda-forge gcc git vim jupyterlab conda-lock ${EXTRA_PACKAGES} && \
-    micromamba install -y -n base -f AQUA/conda-linux-64.lock
+RUN micromamba install -y -n base -f AQUA/conda-linux-64.lock
 
 EXPOSE 8888
 
