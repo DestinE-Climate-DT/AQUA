@@ -360,6 +360,12 @@ jobs:
           fdb-read sample_test_data_fdb_request test.grib
           grib_dump test.grib
 
+
+      - name: Remove FDB from apt
+        if: ${{ inputs.enable-fdb == true }}
+        run: |
+          sudo apt remove -y fdb5
+
       # ========================================
       # 7. SETUP AQUA
       # ========================================
