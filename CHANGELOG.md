@@ -8,6 +8,10 @@ Unreleased in the current development version (target v1.2.0):
 
 Main changes:
 
+## [v1.1.1]
+
+Main changes:
+
 ClimateDT workflow modifications:
 - The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
@@ -1549,7 +1553,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.1...HEAD
+[v1.1.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.1.1
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
