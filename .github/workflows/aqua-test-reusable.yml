@@ -43,7 +43,7 @@ on:
         required: false
         type: string
         #default: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
-        default: 'ubuntu:24.04'
+        default: ''
       enable-fdb:
         description: 'Enable FDB dependencies and setup'
         required: false
@@ -124,13 +124,21 @@ jobs:
           # Use sudo when not running as root (plain ubuntu-latest runner)
           SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
           # Ubuntu dependencies (Git, curl, gpg...)
-          $SUDO apt-get update && \
-            $SUDO apt-get install -y \
+          $SUDO apt update && \
+            $SUDO apt install -y \
               curl \
               git \
               gpg \
-              wget \
-              fdb5
+              wget
+
+      - name: Install FDB dependencies
+        if: ${{ inputs.enable-fdb == true }}
+        run: |
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
+          # Install FDB dependencies (ECCODES, GRIB_API, etc.)
+          $SUDO apt install -y \
+            fdb5
 
       # ========================================
       # 2. CHECKOUT REPOSITORIES
