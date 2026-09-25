@@ -337,10 +337,10 @@ class TestGsv:
         """
 
         reader = Reader(
-            catalog="climatedt-phase1",
-            model="IFS-NEMO",
-            exp="ssp370",
-            source="hourly-hpz7-atm2d",
+            catalog="climatedt-gen2",
+            model="IFS-NEMO-5km",
+            exp="projections-ssp370",
+            source="hourly-hpz7-sfc",
             startdate="20210101T0000",
             enddate="20210101T2300",
             loglevel="debug",
@@ -348,23 +348,23 @@ class TestGsv:
             chunks="h",
         )
         data = reader.retrieve(var="2t")
-        assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.8661045)
+        assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.1543)
 
     def test_reader_stac_polytope(self) -> None:
         """
         Reading from a remote databridge using polytope
         """
         reader = Reader(
-            catalog="climatedt-phase1",
-            model="IFS-FESOM",
-            exp="story-2017-control",
-            source="hourly-hpz7-atm2d",
+            catalog="climatedt-gen2",
+            model="IFS-FESOM-10km",
+            exp="story-nudging-Tplus2K",
+            source="hourly-hpz7-sfc",
             loglevel="debug",
             engine="polytope",
             areas=False,
         )
         data = reader.retrieve(var="2t")
-        assert data.isel(time=20)["2t"].mean().values == pytest.approx(285.52128)
+        assert data.isel(time=20)["2t"].mean().values == pytest.approx(286.9244)
 
     def test_reader_polytope_mn5(self) -> None:
         """
