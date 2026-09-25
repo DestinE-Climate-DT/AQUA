@@ -1,3 +1,5 @@
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
@@ -14,7 +16,14 @@ from aqua.core.util import (
     healpix_resample,
     set_map_title,
 )
-from aqua.core.util.graphics import add_cyclic_lon, get_decimals, minmax_maps, plot_box, prettify_levels
+from aqua.core.util.graphics import (
+    add_contour_labels,
+    add_cyclic_lon,
+    get_decimals,
+    minmax_maps,
+    plot_box,
+    prettify_levels,
+)
 
 loglevel = LOGLEVEL
 
@@ -255,3 +264,29 @@ class TestPrettifyLevels:
     @pytest.mark.parametrize("step,expected", [(1, 0), (0.5, 1), (0.05, 2), (0.001, 3), (0.99, 1)])
     def test_get_decimals(self, step, expected):
         assert get_decimals(step) == expected
+
+
+@pytest.mark.graphics
+def test_add_contour_labels_fallback(monkeypatch):
+    """If matplotlib fails to place the labels, the contour lines are kept without labels"""
+    ax = plt.axes(projection=ccrs.Robinson())
+    lon, lat = np.linspace(0, 360, 37), np.linspace(-90, 90, 19)
+    data = np.cos(np.deg2rad(lat))[:, None] * np.sin(np.deg2rad(lon))
+    cs = ax.contour(lon, lat, data, levels=[-0.5, 0.5], transform=ccrs.PlateCarree())
+    paths, transform = list(cs.get_paths()), cs.get_transform()
+
+    # Fail after a first label has been placed, as the matplotlib bug does
+    split, calls = cs._split_path_and_get_label_rotation, []
+
+    def failing_split(*args, **kwargs):
+        calls.append(1)
+        if len(calls) > 1:
+            raise IndexError("index -1 is out of bounds for axis 0 with size 0")
+        return split(*args, **kwargs)
+
+    monkeypatch.setattr(cs, "_split_path_and_get_label_rotation", failing_split)
+    add_contour_labels(cs, loglevel=loglevel)
+
+    assert not cs.labelTexts and not ax.texts
+    assert cs.get_paths() == paths and cs.get_transform() is transform
+    plt.close()
