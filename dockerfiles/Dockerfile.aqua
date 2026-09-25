@@ -72,10 +72,6 @@ WORKDIR /app/
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 
-# git for the pip dependencies installed from source
-# gcc for pytdigest (wheels not being picked up?)
-# jupyterlab to run notebooks
-# conda-lock to manage dependencies
 # Generate conda environment (env name does not matter,
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
