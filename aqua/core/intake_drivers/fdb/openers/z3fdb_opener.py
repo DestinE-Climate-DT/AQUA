@@ -13,6 +13,11 @@ import pandas as pd
 import xarray as xr
 import zarr
 
+from aqua.core.logger import log_configure
+from aqua.core.util import to_list
+
+logger = log_configure(log_level="WARNING", log_name="z3fdb_opener")
+
 # Test if z3fdb module is available
 try:
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
@@ -43,8 +48,11 @@ def rebuild_fdb_zarr_store(config, mars, serialized_axes, extractor_type_str):
 
     builder = SimpleStoreBuilder(fdb_config_file)
     axes = []
-    for keys, chunking_str in serialized_axes:
-        chunking = getattr(Chunking, chunking_str)
+    for keys, chunking_spec in serialized_axes:
+        if isinstance(chunking_spec, (list, tuple)) and chunking_spec[0] == "FixedSizeChunk":
+            chunking = Chunking.FixedSizeChunk(chunkShape=chunking_spec[1])
+        else:
+            chunking = getattr(Chunking, chunking_spec)
         axes.append(AxisDefinition(keys, chunking))
     extractor_type = getattr(ExtractorType, extractor_type_str)
     if isinstance(mars, list):
@@ -217,8 +225,7 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
             req_copy.pop("date", None)
             req_copy.pop("time", None)
 
-        m_str = ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, list) else str(v)) for k, v in req_copy.items())
-        mars_list.append(m_str)
+        mars_list.append(req_copy)
 
     return mars_list, pd_freq, start
 
@@ -226,18 +233,46 @@ def _build_mars_requests(request, freq, levels, years, start_date=None, end_date
 def _build_zarr_axes(freq, levels, chunks=None):
     """Build the AxisDefinition objects representing the layout of the virtual Zarr store."""
     if freq in ("h", "D"):
-        time_axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
+        time_keys = ["date", "time"]
     elif freq == "MS":
-        time_axes = [AxisDefinition(["year", "month"], Chunking.SINGLE_VALUE)]
+        time_keys = ["year", "month"]
     else:
         raise ValueError(f"Unknown freq {freq!r}")
 
+    chunking = Chunking.SINGLE_VALUE  # by default we chunk step-by-step in time
+    val = chunks.get("time") if isinstance(chunks, dict) else chunks
+    if isinstance(val, str) and val.isdigit():
+        val = int(val)
+    if isinstance(val, int) and val > 1:
+        chunking = Chunking.FixedSizeChunk(chunkShape=val)
+    time_axes = [AxisDefinition(time_keys, chunking)]
+
     level_axes = []
     if levels is not None:
-        if isinstance(chunks, dict) and "level" in chunks:
-            level_axes = [AxisDefinition(["levelist"], Chunking.SINGLE_VALUE)]
-        else:
-            level_axes = [AxisDefinition(["levelist"], Chunking.NONE)]
+        chunking = Chunking.WHOLE_AXIS
+        if isinstance(chunks, dict):
+            val = chunks.get("vertical") or chunks.get("level")
+            if isinstance(val, str) and val.isdigit():
+                val = int(val)
+
+            if isinstance(val, int) and val > 0:
+                n_levels = len(to_list(levels))
+                if val == 1:
+                    chunking = Chunking.SINGLE_VALUE
+                elif val == n_levels:
+                    chunking = Chunking.WHOLE_AXIS
+                elif n_levels % val == 0:
+                    chunking = Chunking.FixedSizeChunk(chunkShape=val)
+                else:
+                    logger.warning(
+                        "Vertical chunk size %s is not an integer divisor of number of levels (%s); "
+                        "falling back to SINGLE_VALUE.",
+                        val,
+                        n_levels,
+                    )
+                    chunking = Chunking.SINGLE_VALUE
+
+        level_axes = [AxisDefinition(["levelist"], chunking)]
 
     axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
     return axes
@@ -425,9 +460,9 @@ def open_z3fdb(
         data_end_date (str, optional): End date of the dataset. Defaults to None.
         freq (str, optional): Frequency of the data. Defaults to "MS".
         chunks (dict, optional): Chunking configuration for the zarr array.
-            At the moment it only supports one key 'level', when this is provided,
-            the level axis is chunked, otherwise it is not chunked.
-            The value of the chunk size for the level axis is ignored.
+            Supports 'level' or 'vertical' keys. If the value is an integer > 1,
+            Chunking.FixedSizeChunk is used with that chunk size.
+            If the value is 1 (or 'single', True), Chunking.SINGLE_VALUE is used.
             The time axis is always chunked as single values. Defaults to None.
         level_values (list, optional): List of physical values of levels. Defaults to None.
         grid (str, optional): Name of the grid. Defaults to None.
@@ -503,7 +538,13 @@ def open_z3fdb(
     # Attach serialization attributes for pickling/Dask support
     store._config = config
     store._mars = mars_list
-    store._serialized_axes = [(axis.keys, axis.chunking.name) for axis in axes]
+    serialized_axes = []
+    for axis in axes:
+        if hasattr(axis.chunking, "chunkShape"):
+            serialized_axes.append((axis.keys, ("FixedSizeChunk", axis.chunking.chunkShape)))
+        else:
+            serialized_axes.append((axis.keys, axis.chunking.name))
+    store._serialized_axes = serialized_axes
     store._extractor_type_str = ExtractorType.GRIB.name
 
     zarr_arr = zarr.open_array(store, mode="r", zarr_format=3, use_consolidated=False)
@@ -518,9 +559,15 @@ def open_z3fdb(
 
     ds = add_coordinates(ds, levunits=levunits, grid_type=grid_type)
 
+    # Convert list of dictionaries to list of strings
+    def _mars_to_str(req):
+        return ",".join(f"{k}=" + ("/".join(map(str, v)) if isinstance(v, (list, tuple)) else str(v)) for k, v in req.items())
+
+    mars_str_list = [_mars_to_str(m) for m in mars_list]
+
     ds.attrs.update(
         {
-            "mars_request": "; ".join(mars_list) if len(mars_list) > 1 else mars_list[0],
+            "mars_request": "; ".join(mars_str_list) if len(mars_list) > 1 else mars_list[0],
         }
     )
 
