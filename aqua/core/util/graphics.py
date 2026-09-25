@@ -507,6 +507,7 @@ def add_contour_labels(contour_set, loglevel: str = "WARNING", **kwargs):
         loglevel (str, optional): Log level. Defaults to 'WARNING'.
         **kwargs: Keyword arguments passed to contour_set.clabel.
     """
+    # HACK: matplotlib bug workaround, revert to a plain clabel call once fixed upstream
     # clabel replaces the paths (cartopy also reprojects them), keep the originals to restore them
     paths, transform = list(contour_set.get_paths()), contour_set.get_transform()
     try:
