@@ -37,8 +37,8 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0,<2.48",
-    "eccodeslib>=2.41.0,<2.49",
+    "eccodes>=2.41.0,<2.50",
+    "eccodeslib>=2.41.0,<2.50",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
