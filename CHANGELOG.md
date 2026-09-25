@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
+- Adapt z3fdb reader to recent API change (#3100)
 - Simplify `lumi_install.sh` so that specific environment file is no longer necessary (#3130)
 - Allow `compact: null` to disable monthly-to-yearly concatenation for Zarr DROP output. (#3125)
 - Update GSV paths and container name logic for `load-aqua-container.sh` bash script (#3123)
