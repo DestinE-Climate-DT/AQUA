@@ -39,10 +39,11 @@ on:
         type: string
         default: ''
       container-image:
-        description: 'Container image to use (empty string = ubuntu-latest, default = FDB container)'
+        description: 'Container image to use (empty string = ubuntu-latest, alternative FDB container or any ubuntu versions)'
         required: false
         type: string
-        default: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
+        #default: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
+        default: 'ubuntu:25.10'
       enable-fdb:
         description: 'Enable FDB dependencies and setup'
         required: false
@@ -116,8 +117,33 @@ jobs:
 
     steps:
       # ========================================
-      # 1. CHECKOUT REPOSITORIES
+      # 1. INSTALL SYSTEM DEPENDENCIES
       # ========================================
+      - name: Install GH Actions dependencies
+        run: |
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
+          # Ubuntu dependencies (Git, curl, gpg...)
+          $SUDO apt update && \
+            $SUDO apt install -y \
+              curl \
+              git \
+              gpg \
+              wget
+
+      - name: Install FDB dependencies
+        if: ${{ inputs.enable-fdb == true }}
+        run: |
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
+          # Install FDB dependencies
+          $SUDO apt install -y \
+            fdb5
+
+      # ========================================
+      # 2. CHECKOUT REPOSITORIES
+      # ========================================
+
       - name: Checkout code
         uses: actions/checkout@v7
         with:
@@ -138,20 +164,6 @@ jobs:
           path: aqua-dvc
           ref: main
           token: ${{ secrets.AQUA_DVC_PAT }}
-
-      # ========================================
-      # 2. INSTALL SYSTEM DEPENDENCIES
-      # ========================================
-      - name: Install GH Actions dependencies
-        run: |
-          # Use sudo when not running as root (plain ubuntu-latest runner)
-          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
-          # Ubuntu dependencies (Git, curl, gpg...)
-          $SUDO apt-get update && \
-            $SUDO apt-get install -y \
-              curl \
-              git \
-              gpg
 
       - name: Clone GitLab data-portfolio repository
         run: |
@@ -347,6 +359,15 @@ jobs:
           # When it fails, the test.grib file will have 0 (zero) messages.
           fdb-read sample_test_data_fdb_request test.grib
           grib_dump test.grib
+
+
+      - name: Remove FDB from apt
+        if: ${{ inputs.enable-fdb == true }}
+        run: |
+          # Use sudo when not running as root (plain ubuntu-latest runner)
+          SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
+          # Remove FDB from apt to avoid conflicts
+          $SUDO apt remove -y fdb5
 
       # ========================================
       # 7. SETUP AQUA
