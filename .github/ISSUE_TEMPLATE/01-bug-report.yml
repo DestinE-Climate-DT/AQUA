@@ -32,13 +32,11 @@ body:
       description: Which catalog are you using?
       options:
       - ci
+      - climatedt-gen2
       - climatedt-phase1
       - climatedt-o25.1
       - climatedt-o26.1
       - levante
-      - lumi-phase2
-      - mn5-phase2
-      - nextgems3
       - nextgems4
       - obs
       - Others (specify)
@@ -51,28 +49,18 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v1.1.1
       - v1.1.0
       - v1.0.1
       - v1.0.0
-      - v1.0.0a6
-      - v1.0.0a5
-      - v1.0.0a4
-      - v1.0.0a3
-      - v1.0.0a2
-      - v1.0.0a1
+      - v1.0.0a*
       - v0.21.0
-      - v0.20.1
-      - v0.20.0
+      - v0.20.*
+      - v0.19.13
+      - v0.19.12
       - v0.19.11
-      - v0.19.10+op
-      - v0.19.10
-      - v0.19.9+op
-      - v0.19.9
-      - v0.19.8+op
-      - v0.19.8
-      - v0.19.7+op (or older)
-      - v0.19.7 (or older)
-      - v0.14.* - v0.18.* (specify)
+      - v0.19.10+op (or older)
+      - v0.19.10 (or older)
       - v0.13.* (specify)
       - older (specify)
     validations:
