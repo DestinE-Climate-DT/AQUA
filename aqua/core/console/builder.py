@@ -42,7 +42,9 @@ def builder_parser(parser=None):
                         help='alternative name for the grid for grid naming [default: None]. '
                              'Required for Curvilinear and Unstructured grids.')
     parser.add_argument('--fix', action='store_true',
-                        help='Fix and apply data model to the original source [default: False]')
+                        help='Apply the fixer to the original source [default: False]')
+    parser.add_argument('--datamodel', action='store_true',
+                        help='Apply data model to the original source [default: False]')
     parser.add_argument('--verify', action='store_true', default=False,
                         help='Verify the grid file after creation [default: False]')
     parser.add_argument('--yaml', action='store_true', default=False,
@@ -70,8 +72,9 @@ def builder_execute(args):
     model = get_arg(args, "model", reader_config.get("model"))
     exp = get_arg(args, "exp", reader_config.get("exp"))
     source = get_arg(args, "source", reader_config.get("source"))
+    # TODO: datamodel and fix have different API
     fix = get_arg(args, "fix", reader_config.get("fix", False))
-    datamodel = get_arg(args, "fix", reader_config.get("datamodel", False))
+    datamodel = reader_config.get("datamodel", None if fix else False)
     loglevel = get_arg(args, "loglevel", builder_config.get("loglevel", "WARNING"))
     outdir = get_arg(args, "outdir", builder_config.get("outdir", "."))
     original_resolution = get_arg(args, "original", builder_config.get("original"))
