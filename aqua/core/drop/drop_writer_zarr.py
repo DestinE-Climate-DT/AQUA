@@ -28,6 +28,7 @@ class ZarrWriter(BaseWriter):
         self,
         tmpdir,
         outdir,
+        compact="xarray",
         **kwargs,
     ):
         """
@@ -36,6 +37,7 @@ class ZarrWriter(BaseWriter):
         Args:
             tmpdir: Temporary directory for atomic writes
             outdir: Output directory for zarr stores
+            compact: Whether to concatenate monthly stores into yearly stores
             **kwargs: Additional arguments passed to BaseWriter
 
         Note:
@@ -43,6 +45,7 @@ class ZarrWriter(BaseWriter):
         """
         super().__init__(tmpdir, outdir, **kwargs)
         self.chunks = {self.AQUA_TIME: 1, self.AQUA_LATITUDE: None, self.AQUA_LONGITUDE: None}
+        self.compact = compact
 
     def get_extension(self):
         """Return file extension for this format."""
@@ -118,8 +121,8 @@ class ZarrWriter(BaseWriter):
             return False
 
     def _should_concat(self):
-        """Zarr always concatenates monthly stores into yearly."""
-        return True
+        """Check if yearly Zarr concatenation is enabled."""
+        return self.compact is not None
 
     def _open_files(self, filepaths):
         """Open one or more Zarr stores."""
@@ -137,6 +140,9 @@ class ZarrWriter(BaseWriter):
         Returns:
             bool: True if successful
         """
+        if not self._should_concat():
+            return False
+
         # Prepare monthly stores for concatenation (Zarr requires 12 like NetCDF for consistency)
         tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(
             var, year, level=level, minimum_required=12

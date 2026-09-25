@@ -196,7 +196,11 @@ function setup_container_path(){
         echo "$aqua_title v${version} selected! If you are not happy, please specify your version with -v flag" >&2
     fi
 
-    AQUA_container="$AQUA_folder/${container_type}_${version}.sif"
+    container_prefix=$container_type
+    if [[ "$container_type" == "aqua-core" && "$version" == 0.* ]]; then
+        container_prefix=aqua
+    fi
+    AQUA_container="$AQUA_folder/${container_prefix}_${version}.sif"
 
     if [ ! -f "$AQUA_container" ]; then
         echo "ERROR: The $aqua_title container does not exist at: $AQUA_container" >&2
@@ -221,8 +225,8 @@ function setup_envs(){
 
     case "$machine" in
         "lumi")
-            GSV_WEIGHTS_PATH="/scratch/project_465000454/igonzalez/gsv_weights/"
-            GRID_DEFINITION_PATH="/scratch/project_465000454/igonzalez/grid_definitions"
+            GSV_WEIGHTS_PATH="/scratch/project_465002727/gsv_files/gsv_weights"
+            GRID_DEFINITION_PATH="/scratch/project_465002727/gsv_files/grid_definitions"
             ESMFMKFILE="/opt/conda/lib/esmf.mk"
             ;;
         "levante")

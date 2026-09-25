@@ -84,9 +84,12 @@ install_aqua() {
   module load lumi-container-wrapper
   log_message INFO "Modules have been loaded."
 
+  SCRIPTDIR="${AQUA}/cli/lumi-install"
+  cp ../../environment.yml $SCRIPTDIR/environment_lumi.yml
+  sed -i.bak "s;- -e .;- -e $AQUA;" $SCRIPTDIR/environment_lumi.yml  # replace relative paths with $AQUA
+
   # install AQUA framework
-  conda-containerize new --mamba --prefix "${INSTALLATION_PATH}" "${AQUA}/cli/lumi-install/environment_lumi.yml"
-  conda-containerize update "${INSTALLATION_PATH}" --post-install "${AQUA}/cli/lumi-install/pip_lumi.txt"
+  conda-containerize new --prefix "${INSTALLATION_PATH}" "${SCRIPTDIR}/environment_lumi.yml"
   log_message INFO "AQUA framework has been installed."
 
 }
