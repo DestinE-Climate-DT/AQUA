@@ -76,6 +76,8 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER . AQUA
 # but easier to use base in the container to avoid having
 # to activate or install kernels):
 RUN micromamba install -y -n base -f AQUA/conda-linux-64.lock
+RUN micromamba run -n base sed -n 's/^# pip //p' AQUA/conda-linux-64.lock | micromamba run -n base python -m pip install -r /dev/stdin
+RUN micromamba run -n base python -m pip install --no-deps -e AQUA
 
 EXPOSE 8888
 
