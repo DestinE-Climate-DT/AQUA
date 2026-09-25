@@ -2,10 +2,14 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from matplotlib import rcParams
 
+from aqua.core.data_model import scan_coord
+from aqua.core.defaults import AQUA_TIME
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, to_list
 
 from .styles import ConfigStyle
+
+TIME = scan_coord(AQUA_TIME)
 
 
 def plot_gregory_monthly(
@@ -77,8 +81,8 @@ def plot_gregory_monthly(
 
     # Create a cycle that is the average of the available ref data
     if ref:
-        t2m_ref = t2m_monthly_ref.groupby("time.month").mean(dim="time")
-        net_toa_ref = net_toa_monthly_ref.groupby("time.month").mean(dim="time")
+        t2m_ref = t2m_monthly_ref.groupby(f"{TIME}.month").mean(dim=TIME)
+        net_toa_ref = net_toa_monthly_ref.groupby(f"{TIME}.month").mean(dim=TIME)
         # Add an extra point same as the first one to close the loop
         t2m_ref = xr.concat([t2m_ref, t2m_ref.isel(month=0)], dim="month", coords="different", compat="equals")
         net_toa_ref = xr.concat([net_toa_ref, net_toa_ref.isel(month=0)], dim="month", coords="different", compat="equals")
@@ -218,8 +222,8 @@ def plot_gregory_annual(
         ax.set_xlim(t2m_min, t2m_max)
         ax.set_ylim(toa_min, toa_max)
 
-        logger.debug(f"Annual x-axis limits: {t2m_min} to {t2m_max}")
-        logger.debug(f"Annual y-axis limits: {toa_min} to {toa_max}")
+        logger.debug("Annual x-axis limits: %s to %s", t2m_min, t2m_max)
+        logger.debug("Annual y-axis limits: %s to %s", toa_min, toa_max)
 
     for i, (t2m_annual, net_toa_annual) in enumerate(zip(t2m_annual_data, net_toa_annual_data)):
         ax.plot(t2m_annual, net_toa_annual, label=labels[i], marker="o")
@@ -227,11 +231,11 @@ def plot_gregory_annual(
         # We plot the first and last points with different markers
         ax.plot(t2m_annual[0], net_toa_annual[0], marker=">", color="tab:green")
         ax.plot(t2m_annual[-1], net_toa_annual[-1], marker="<", color="tab:red")
-        ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize=8, ha="right")
-        ax.annotate(str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize=8, ha="right")
+        ax.annotate(str(t2m_annual[TIME].dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize=8, ha="right")
+        ax.annotate(str(t2m_annual[TIME].dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize=8, ha="right")
     if ref:
-        t2m_mean = t2m_annual_ref.mean(dim="time")
-        net_toa_mean = net_toa_annual_ref.mean(dim="time")
+        t2m_mean = t2m_annual_ref.mean(dim=TIME)
+        net_toa_mean = net_toa_annual_ref.mean(dim=TIME)
         ax.axhspan(
             net_toa_mean - net_toa_std, net_toa_mean + net_toa_std, color="lightgreen", alpha=0.3, label=r"1 $\sigma$ band"
         )
