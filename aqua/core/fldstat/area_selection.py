@@ -1,7 +1,8 @@
 import regionmask
 import xarray as xr
 
-from aqua.core.default import DEFAULT_COORDS
+from aqua.core.data_model import scan_coord
+from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, DEFAULT_COORDS
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 
@@ -20,6 +21,8 @@ class AreaSelection:
             loglevel (str, optional): The logging level. Default is "WARNING".
         """
         self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
+        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
+        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
 
     def select_area(
         self,
@@ -28,8 +31,8 @@ class AreaSelection:
         lat: list | None = None,
         box_brd: bool = True,
         drop: bool = False,
-        lat_name: str = "lat",
-        lon_name: str = "lon",
+        lat_name: str = None,
+        lon_name: str = None,
         region: regionmask.Regions | None = None,
         region_sel: str | int | list | None = None,
         mask_kwargs: dict = {},
@@ -49,9 +52,9 @@ class AreaSelection:
             drop (bool, optional): Whether to drop non-selected data.
                 Default is False.
             lat_name (str, optional): Name of latitude coordinate.
-                Default is "lat".
+                Default is data_model AQUA_LATITUDE.
             lon_name (str, optional): Name of longitude coordinate.
-                Default is "lon".
+                Default is data_model AQUA_LONGITUDE.
             region (regionmask.Regions, optional): A regionmask Regions object defining a class regions.
             region_sel (str, int or list, optional): The region(s) to select by name or number from the region object.
             mask_kwargs (dict, optional): Additional keyword arguments passed to region.mask().
@@ -67,8 +70,13 @@ class AreaSelection:
         """
         # By default we work with the AQUA data_model but we keep the
         # flexibility to adapt to other data models.
+        lat_name = lat_name if lat_name is not None else self.AQUA_LATITUDE
+        lon_name = lon_name if lon_name is not None else self.AQUA_LONGITUDE
         if lat_name not in data.coords or lon_name not in data.coords:
-            raise KeyError(f"Latitude or Longitude coordinates not found. Expected '{lat_name}' and '{lon_name}'.")
+            raise KeyError(
+                f"Latitude or Longitude coordinates not found. Expected '{lat_name}' and '{lon_name}'."
+                f"Found: {list(data.coords)}"
+            )
 
         # Case1: Regionmask selection
         if region is not None:
