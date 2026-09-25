@@ -208,6 +208,17 @@ class TestGsv:
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
 
+    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
+    @pytest.mark.parametrize("config_fdb_type", ["dir", "file"])
+    def test_reader_config_fdb(self, engine, config_fdb_type) -> None:
+        """Test reading data with config_fdb passed to Reader as a directory or config file."""
+        config = FDB_HOME if config_fdb_type == "dir" else f"{FDB_HOME}/etc/fdb/config.yaml"
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", config_fdb=config, loglevel=loglevel, engine=engine)
+        assert reader.backend.kwargs.get("config_fdb") == config
+        data = reader.retrieve()
+        assert isinstance(data, xr.Dataset), "Does not return a Dataset"
+        assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
+
     def test_reader_paramid(self) -> None:
         """
         Reading with the variable paramid, we use '130' instead of 't'
@@ -254,18 +265,40 @@ class TestGsv:
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
+    @pytest.mark.parametrize("chunk_key", ["vertical", "level"])
     @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
-    def test_reader_3d_chunks(self, engine) -> None:
+    def test_reader_3d_chunks(self, engine, chunk_key) -> None:
         """Testing 3D access with vertical chunking"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels-chunks", loglevel=loglevel, engine=engine)
+        reader = Reader(
+            model="IFS",
+            exp="test-fdb",
+            source="fdb-levels",
+            chunks={"time": "h", chunk_key: 1},
+            loglevel=loglevel,
+            engine=engine,
+        )
         data = reader.retrieve()
+        assert data.t.chunksizes["plev"] == (1, 1, 1), "Vertical dimension is not chunked correctly"
 
         # can read second level
         assert data.t.isel(plev=1).mean().values == pytest.approx(274.79095), "Field values incorrect"
 
         data = reader.retrieve(level=[900, 800])  # Read only two levels
+        assert data.t.chunksizes["plev"] == (1, 1), "Subsetted vertical dimension is not chunked correctly"
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
+
+        # Test custom chunk size with FixedSizeChunk (z3fdb) or vertical chunk size (gsv)
+        reader2 = Reader(
+            model="IFS",
+            exp="test-fdb",
+            source="fdb-levels",
+            chunks={"time": "h", chunk_key: 2},
+            loglevel=loglevel,
+            engine=engine,
+        )
+        data_chunk2 = reader2.retrieve(level=[900, 800])
+        assert data_chunk2.t.chunksizes["plev"] == (2,), "Fixed size vertical chunking is incorrect"
 
     @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_bridge(self, engine) -> None:
@@ -304,10 +337,10 @@ class TestGsv:
         """
 
         reader = Reader(
-            catalog="climatedt-phase1",
-            model="IFS-NEMO",
-            exp="ssp370",
-            source="hourly-hpz7-atm2d",
+            catalog="climatedt-gen2",
+            model="IFS-NEMO-5km",
+            exp="projections-ssp370",
+            source="hourly-hpz7-sfc",
             startdate="20210101T0000",
             enddate="20210101T2300",
             loglevel="debug",
@@ -315,23 +348,23 @@ class TestGsv:
             chunks="h",
         )
         data = reader.retrieve(var="2t")
-        assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.8661045)
+        assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.1543)
 
     def test_reader_stac_polytope(self) -> None:
         """
         Reading from a remote databridge using polytope
         """
         reader = Reader(
-            catalog="climatedt-phase1",
-            model="IFS-FESOM",
-            exp="story-2017-control",
-            source="hourly-hpz7-atm2d",
+            catalog="climatedt-gen2",
+            model="IFS-FESOM-10km",
+            exp="story-nudging-Tplus2K",
+            source="hourly-hpz7-sfc",
             loglevel="debug",
             engine="polytope",
             areas=False,
         )
         data = reader.retrieve(var="2t")
-        assert data.isel(time=20)["2t"].mean().values == pytest.approx(285.52128)
+        assert data.isel(time=20)["2t"].mean().values == pytest.approx(286.9244)
 
     def test_reader_polytope_mn5(self) -> None:
         """
