@@ -6,6 +6,7 @@ import xarray as xr
 
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+from aqua.core.util.graphics import add_contour_labels
 
 from .styles import ConfigStyle
 
@@ -207,7 +208,7 @@ def plot_vertical_profile_diff(
 
         cs = ax.contour(data_common[x_coord], data_common[lev_name], data_common, levels=levels, colors="k", linewidths=0.5)
         fmt = {lvl: f"{lvl:.1e}" if (abs(lvl) < 0.1 or abs(lvl) > 1000) else f"{lvl:.1f}" for lvl in cs.levels}
-        ax.clabel(cs, fmt=fmt, fontsize=6, inline=True)
+        add_contour_labels(cs, loglevel=loglevel, fmt=fmt, fontsize=6, inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)
