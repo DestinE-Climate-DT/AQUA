@@ -1,5 +1,8 @@
 """AQUA core package - provides core functionality"""
 
+# needed as a HACK for z3fdb/eckitlib/fdb5lib vs Cartopy/pyproj clash #3140
+import cartopy.crs  # noqa: F401
+
 import warnings
 
 # Extend namespace to allow aqua-diagnostics to contribute

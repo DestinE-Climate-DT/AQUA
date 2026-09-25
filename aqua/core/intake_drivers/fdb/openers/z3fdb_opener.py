@@ -7,9 +7,6 @@ import os
 from collections import defaultdict
 
 import astropy_healpix
-
-# needed as a HACK for z3fdb/eckitlib/fdb5lib vs Cartopy/pyproj clash #3140
-import cartopy.crs as ccrs  # noqa: F401
 import dask.array as da
 import numpy as np
 import pandas as pd
