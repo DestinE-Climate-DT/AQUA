@@ -23,6 +23,8 @@ import pandas as pd
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
+from aqua.core.data_model import scan_coord
+from aqua.core.default import AQUA_TIME
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -156,6 +158,7 @@ class Drop:
         self.engine = engine
         self.logger = log_configure(loglevel, "DROP")
         self.loglevel = loglevel
+        self.AQUA_TIME = scan_coord(AQUA_TIME)
 
         # save parameters
         self.resolution = resolution
@@ -588,7 +591,7 @@ class Drop:
                 func_kwargs=self.stat_kwargs,
             )
             # data could be empty after time statistics if everything was excluded
-            if "time" in data.coords and len(data.time) == 0:
+            if self.AQUA_TIME in data.coords and len(data[self.AQUA_TIME]) == 0:
                 self.logger.warning("No data available after time statistics, skipping...")
                 return None
         return data
