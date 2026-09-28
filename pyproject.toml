@@ -37,8 +37,8 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0,<2.48",
-    "eccodeslib>=2.41.0,<2.48",
+    "eccodes>=2.41.0,<2.49",
+    "eccodeslib>=2.41.0,<2.49",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -77,7 +77,7 @@ fdb = [
     "pyfdb",
     "polytope-client",
     "gsv-interface==2.13.1",
-    "z3fdb>=5.21.4"
+    "z3fdb==5.23.2.27"
 ]
 docs = [
     "sphinx",

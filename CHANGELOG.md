@@ -14,6 +14,10 @@ ClimateDT workflow modifications:
 
 Complete list:
 - Container are now created with conda-lock file (#3133)
+- Allow update to latest matplotlib in AQUA-diagnostics (#3138)
+- Adapt tests involving Polytope to `climatedt-gen2` catalog (#3137)
+- Adapt z3fdb reader to recent API change (#3100)
+- Simplify `lumi_install.sh` so that specific environment file is no longer necessary (#3130)
 - Allow `compact: null` to disable monthly-to-yearly concatenation for Zarr DROP output. (#3125)
 - Update GSV paths and container name logic for `load-aqua-container.sh` bash script (#3123)
 - Introduce `scan_coord()` function to retrieve the coordinate name from the data model (#3038)

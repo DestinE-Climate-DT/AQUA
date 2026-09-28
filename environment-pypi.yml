@@ -10,5 +10,5 @@ channels:
 dependencies:
   - python>=3.11,<3.15
   - cdo>=2.5.0,<2.6.1
-  - eccodes>=2.41.0,<=2.47.0
+  - eccodes>=2.41.0,<2.49
   - netcdf4

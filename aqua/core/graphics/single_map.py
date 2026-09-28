@@ -29,7 +29,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import get_decimals, isnpixok, prettify_levels
+from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -413,7 +413,7 @@ def plot_single_map_diff(
             else:
                 fmt[level] = f"{level:.{decimals}f}"
 
-        ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
+        add_contour_labels(ds, loglevel=loglevel, fmt=fmt, fontsize=6, inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)

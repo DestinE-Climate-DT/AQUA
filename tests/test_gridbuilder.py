@@ -22,9 +22,10 @@ class TestPolytopeGridBuilder:
     def test_grid_healpix_polytope_atm2d(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
         reader = Reader(
-            model="IFS-FESOM",
-            exp="story-2017-control",
-            source="hourly-hpz7-atm2d",
+            catalog="climatedt-gen2",
+            model="IFS-FESOM-10km",
+            exp="story-nudging-cont",
+            source="hourly-hpz7-sfc",
             engine="polytope",
             areas=False,
             chunks={"time": "h"},
@@ -36,9 +37,10 @@ class TestPolytopeGridBuilder:
     def test_grid_healpix_polytope_ocean2d(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid and rebuild option."""
         reader = Reader(
-            model="IFS-FESOM",
-            exp="story-2017-control",
-            source="daily-hpz7-oce2d",
+            catalog="climatedt-gen2",
+            model="IFS-FESOM-10km",
+            exp="story-nudging-cont",
+            source="daily-hpz7-o2d",
             engine="polytope",
             areas=False,
             chunks={"time": "D"},
