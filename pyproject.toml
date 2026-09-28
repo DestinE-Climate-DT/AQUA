@@ -77,7 +77,8 @@ fdb = [
     "pyfdb",
     "polytope-client",
     "gsv-interface==2.13.1",
-    "z3fdb>=5.23.2.27"
+    "z3fdb==5.23.2.27; sys_platform == 'linux'",
+    "z3fdb>=5.23.2.27; sys_platform != 'linux'",
 ]
 docs = [
     "sphinx",
