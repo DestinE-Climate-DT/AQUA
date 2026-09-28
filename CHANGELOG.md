@@ -14,6 +14,7 @@ ClimateDT workflow modifications:
 
 Complete list:
 - Remove the `intake_xarray` compatibility stub (#3147)
+- Container are now created with conda-lock file (#3133)
 - Allow update to latest matplotlib in AQUA-diagnostics (#3138)
 - Adapt tests involving Polytope to `climatedt-gen2` catalog (#3137)
 - Adapt z3fdb reader to recent API change (#3100)
