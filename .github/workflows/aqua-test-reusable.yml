@@ -185,6 +185,7 @@ jobs:
           generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -200,6 +201,7 @@ jobs:
           generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -215,6 +217,7 @@ jobs:
           generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -230,6 +233,7 @@ jobs:
           generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -244,6 +248,7 @@ jobs:
           generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
             aqua-core
