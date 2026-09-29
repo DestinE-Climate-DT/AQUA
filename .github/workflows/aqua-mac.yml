@@ -1,6 +1,9 @@
 name: AQUA macOS tests
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
   schedule:
     - cron: "0 4 * * 3" # run every Wednesday at 4AM UTC
@@ -11,7 +14,36 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Run tests only when specific conditions are met
+  check-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check if MacOS tests should run
+        id: check-macos
+        run: |
+          # Run tests if:
+          # 1) Triggered manually (workflow_dispatch)
+          # 2) Triggered by schedule
+          # 3) Pushed to main branch and label present
+          SHOULD_RUN="false"
+
+           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run MacOS test') }}" == "true" ]] || \
+             [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            SHOULD_RUN="true"
+          fi
+
+          echo "Event: ${{ github.event_name }} | Actor: ${{ github.actor }} | Has 'dependabot' label: ${{ contains(github.event.pull_request.labels.*.name, 'dependabot') }}"
+          echo "Result: $SHOULD_RUN"
+          echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
+
   aqua-mac-tests:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should-run == 'true' || (github.event_name == 'workflow_dispatch' && inputs.simulate-dependabot)
     strategy:
       fail-fast: false
       matrix:
