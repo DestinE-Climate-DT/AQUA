@@ -23,7 +23,7 @@ Installation with Miniforge
 
 AQUA-core is available on the Python Package Index (PyPI) repository and on conda-forge.
 You can install it with pip or with conda/mamba package manager.
-Anyway, some dependencies are not available on PyPI, so you may need to install them manually:
+Anyway, some dependencies are not available on PyPI, so you may need to install them manually,
 the recommended way to do this is to use Mamba/Conda package manager for the installation process of the dependencies.
 
 For a pure conda installation:
