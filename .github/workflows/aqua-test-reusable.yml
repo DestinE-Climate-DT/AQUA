@@ -174,7 +174,7 @@ jobs:
       # ========================================
 
       - name: Set up Micromamba (local mode with fdb, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && !inputs.is-dependabot && runner.os != 'macOS' }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -190,13 +190,13 @@ jobs:
             python=${{ matrix.python-version }}
 
       - name: Set up Micromamba (local mode without fdb, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot && runner.os != 'macOS' }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
         with:
           micromamba-version: 'latest'
-          environment-file: ${{ runner.os == 'macOS' && 'AQUA/conda-osx-arm64.nofdb.lock' || 'AQUA/conda-linux-64.nofdb.lock' }}
+          environment-file: AQUA/conda-linux-64.nofdb.lock
           environment-name: aqua
           generate-run-shell: false
           cache-downloads: true
@@ -205,8 +205,8 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (local mode with dependabot using environment.yml)
-        if: ${{ inputs.install-mode == 'local' && inputs.is-dependabot }}
+      - name: Set up Micromamba (local mode with environment.yml, macOS or dependabot)
+        if: ${{ inputs.install-mode == 'local' && (inputs.is-dependabot || runner.os == 'macOS') }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -264,19 +264,17 @@ jobs:
       # ========================================
 
       - name: Install AQUA with FDB dependencies (local mode, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true && !inputs.is-dependabot && runner.os != 'macOS' }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
           python -m pip install --no-deps -e .
 
       - name: Install AQUA without FDB dependencies (local, no fdb, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot }}
-        env:
-          AQUA_LOCK_FILE: ${{ runner.os == 'macOS' && 'conda-osx-arm64.nofdb.lock' || 'conda-linux-64.nofdb.lock' }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot && runner.os != 'macOS' }}
         run: |
           cd AQUA
-          sed -n 's/^# pip //p' "$AQUA_LOCK_FILE" |python -m pip install -r /dev/stdin
+          sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
           python -m pip install --no-deps -e .
 
       # ========================================
