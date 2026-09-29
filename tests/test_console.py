@@ -1,5 +1,6 @@
 """Module for tests for AQUA cli"""
 
+import json
 import logging
 import os
 import shutil
@@ -1041,8 +1042,28 @@ class TestAquaConsoleGridBuilder:
         ],
     )
     def test_aqua_console_gridbuilder(self, run_aqua, command_args, tmpdir):
-        """Test the aqua grids build CLI"""
-        run_aqua(command_args + ["--verify", "--outdir", str(tmpdir)])
+        """Test the aqua grids build CLI, including a valid --reader_kwargs JSON payload"""
+        run_aqua(command_args + ["--verify", "--outdir", str(tmpdir), "--reader_kwargs", '{"chunks": {"time": 12}}'])
+
+    def test_aqua_console_gridbuilder_invalid_reader_kwargs(self, run_aqua, tmpdir):
+        """Malformed --reader_kwargs JSON must fail fast, before any data is retrieved"""
+        with pytest.raises(json.JSONDecodeError):
+            run_aqua(
+                [
+                    "grids",
+                    "build",
+                    "--model",
+                    "ERA5",
+                    "--exp",
+                    "era5-hpz3",
+                    "--source",
+                    "monthly",
+                    "--outdir",
+                    str(tmpdir),
+                    "--reader_kwargs",
+                    "{not valid json}",
+                ]
+            )
 
 
 # checks for query function
