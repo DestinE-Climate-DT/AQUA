@@ -182,6 +182,7 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/conda-linux-64.lock
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
           create-args: >-
@@ -196,6 +197,7 @@ jobs:
           micromamba-version: 'latest'
           environment-file: ${{ runner.os == 'macOS' && 'AQUA/conda-osx-arm64.nofdb.lock' || 'AQUA/conda-linux-64.nofdb.lock' }}
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
           create-args: >-
@@ -210,6 +212,7 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/environment.yml
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
           create-args: >-
@@ -224,6 +227,7 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/environment-pypi.yml
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
           create-args: >-
@@ -237,6 +241,7 @@ jobs:
         with:
           micromamba-version: 'latest'
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
           create-args: >-
