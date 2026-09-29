@@ -493,6 +493,37 @@ def get_decimals(step: float) -> int:
     return max(0, int(np.ceil(-np.log10(step))))
 
 
+def add_contour_labels(contour_set, loglevel: str = "WARNING", **kwargs):
+    """
+    Add labels to a contour plot, dropping them if matplotlib fails to place them.
+
+    Workaround for a matplotlib bug (3.10 and 3.11): automatic label placement can raise
+    an IndexError when a label falls on the first vertex of a contour line.
+    In that case the contour lines are restored and left without labels.
+    To be replaced by a plain clabel call once the bug is fixed in matplotlib.
+
+    Args:
+        contour_set (matplotlib.contour.ContourSet): Contour set to label.
+        loglevel (str, optional): Log level. Defaults to 'WARNING'.
+        **kwargs: Keyword arguments passed to contour_set.clabel.
+    """
+    # HACK: matplotlib bug workaround, revert to a plain clabel call once fixed upstream
+    # clabel replaces the paths (cartopy also reprojects them), keep the originals to restore them
+    paths, transform = list(contour_set.get_paths()), contour_set.get_transform()
+    try:
+        contour_set.clabel(**kwargs)
+    except IndexError as err:
+        logger = log_configure(loglevel, "add_contour_labels")
+        logger.warning("Contour labels could not be placed, plotting contours without labels: %s", err)
+        for text in contour_set.labelTexts:
+            text.remove()
+        contour_set.labelTexts.clear()
+        contour_set.labelCValues.clear()
+        contour_set.labelXYs.clear()
+        contour_set.set_paths(paths)
+        contour_set.set_transform(transform)
+
+
 """
 Following functions are taken and adjusted from the easygems package,
 on this repository:
