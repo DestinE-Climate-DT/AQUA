@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
 Complete list:
+- Implement MacOS CI/CD test (#3158)
 - `aqua grids build` now supports `reader_kwargs` option to pass extra arguments to the Reader (#3136)
 - `aqua grids build` now supports `--datamodel` option to apply the data model to the original source before building the grid (#3136)
 - Remove the `intake_xarray` compatibility stub (#3147)
