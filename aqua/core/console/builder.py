@@ -3,6 +3,7 @@ This module contains the CLI for the GridBuilder.
 """
 
 import argparse
+import json
 
 from aqua import GridBuilder, Reader
 from aqua.core.util import get_arg, load_yaml
@@ -51,6 +52,9 @@ def builder_parser(parser=None):
                         help='Create the grid entry in the grid file [default: False]')
     parser.add_argument('--force_unstructured', action='store_true', default=False,
                         help='Force grid detection to use unstructured grid type [default: False]')
+    parser.add_argument('--reader_kwargs', type=str,
+                        help='Additional Reader kwargs as a JSON object, '
+                             'e.g. \'{"engine": "polytope", "chunks": {"time": 12}}\' [default: None]')
     # fmt: on
     return parser
 
@@ -86,6 +90,10 @@ def builder_execute(args):
     create_yaml = get_arg(args, "yaml", builder_config.get("yaml", False))
     vert_coord = get_arg(args, "vert_coord", builder_config.get("vert_coord"))
     force_unstructured = get_arg(args, "force_unstructured", builder_config.get("force_unstructured", False))
+    reader_kwargs = get_arg(args, "reader_kwargs", reader_config.get("reader_kwargs"))
+    if isinstance(reader_kwargs, str):
+        reader_kwargs = json.loads(reader_kwargs)
+    reader_kwargs = reader_kwargs or {}
 
     # Ensure required arguments are present
     if model is None:
@@ -97,7 +105,15 @@ def builder_execute(args):
 
     # Retrieve the data
     reader = Reader(
-        catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix, datamodel=datamodel
+        catalog=catalog,
+        model=model,
+        exp=exp,
+        source=source,
+        loglevel=loglevel,
+        areas=False,
+        fix=fix,
+        datamodel=datamodel,
+        **reader_kwargs,
     )
     data = reader.retrieve()
 
