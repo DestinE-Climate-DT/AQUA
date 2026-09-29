@@ -443,6 +443,11 @@ The following options are available for ``aqua grids build``:
     Apply fixes and data model to the original source before building the grid. Useful for models with very specific coordinates/dimensions.
     Suggested as default setting, disabled if issues arise.
 
+.. option:: --datamodel
+
+    Apply data model to the original source before building the grid. Useful for models with very specific coordinates/dimensions.
+    Suggested as default setting, disabled if issues arise.
+
 .. option:: --verify
 
     Verify the grid file after creation. This is done by calling CDO via ``smmregrid`` to check if the weights generation is valid.
