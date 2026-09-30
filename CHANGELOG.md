@@ -10,11 +10,13 @@ Main changes:
 
 ## [v1.2.0]
 
-Main changes:
-
 ClimateDT workflow modifications:
 - The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
+
+Main changes: 
+1. Generalised installation option for aqua packages (as aqua-diagnostics) via plugins
+2. Various fixes to the Backend and to the Console
 
 Complete list:
 - `aqua analysis` support for ensemble analysis with the `aqua analysis ensemble` subcommand (#3159)
