@@ -214,3 +214,18 @@ The diagnostics are specified as a dictionary with the following keys:
 - ``source_oce``: a boolean flag to pass the additional ocean source to the diagnostic (currently only ECmean). Defaults to False.
 - ``extra``: a string with extra arguments to pass to the diagnostic script.
 - ``outname``: the name of the output folder if different from the diagnostic name.
+
+Ensemble analysis
+-----------------
+
+As described above, it is possible to run the analysis with different options and diagnostics by customizing the configuration file.
+However, AQUA provides also a wrapper with a set of predefined configurations for running the analysis on an ensemble of experiments, models, sources and realizations.
+
+This is an extension of the ``aqua analysis`` command, and it can be used with the ``aqua analysis ensemble`` command.
+This command takes the same options as the ``aqua analysis`` command, and it can ingest the same configuration file structure, but it points
+by default to a different configuration file ``config.aqua-analysis-ensemble.yaml`` which contains a list of diagnostics
+specifically tailored for ensemble analysis.
+
+.. note::
+    The current ensemble analysis approach on AQUA is based on having the analysis done with the ``aqua-diagnostics`` package done on
+    the same set of experiments, models, sources and realizations, and then the ensemble analysis is done on the output of the diagnostics.
