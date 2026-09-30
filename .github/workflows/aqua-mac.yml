@@ -65,7 +65,7 @@ jobs:
       enable-parallel: true
       enable-coverage: false
       fail-fast: false
-      enable-fdb: true
+      enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
     secrets:
