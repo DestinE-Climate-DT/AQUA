@@ -14,9 +14,9 @@ Basic usage
 
 Without any argument, the script will look for a default configuration file ``config.aqua-analysis.yaml``
 in your installation folder (see :ref:`aqua-install`) and run all the diagnostics available in AQUA on an hard-coded dataset
-(IFS-NEMO-5km baseline-hist from ClimateDT gen2),
-which is available on LUMI and output directory in the ``./output`` folder.
+(IFS-NEMO-5km baseline-hist from ClimateDT gen2), which is available on LUMI.
 
+The output of the analysis directory in the ``./output`` folder.
 All the diagnostic logfiles will be saved in this main folder, while the diagnostics output will be saved in subfolders
 named after the diagnostic name.
 Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
@@ -133,7 +133,7 @@ so that the script can be used in a batch job or in a workflow. These override c
 Configuration file
 ------------------
 
-Altought the default configuration file is contained in the ``aqua-diagnostics`` package,
+Although the default configuration file is contained in the ``aqua-diagnostics`` package,
 a template configuration file ``templates/config.aqua-analysis.tmpl`` is shipped in the ``aqua-core`` package and
 contains an example of list of diagnostics to run and technical details of the analysis.
 
@@ -227,5 +227,5 @@ by default to a different configuration file ``config.aqua-analysis-ensemble.yam
 specifically tailored for ensemble analysis.
 
 .. note::
-    The current ensemble analysis approach on AQUA is based on having the analysis done with the ``aqua-diagnostics`` package done on
-    the same set of experiments, models, sources and realizations, and then the ensemble analysis is done on the output of the diagnostics.
+    The current ensemble analysis approach on AQUA is based on a two step approach. First, the analysis performed with the ``aqua-diagnostics`` package must
+    be run on a set of experiments, models, sources and realizations. Then, the ensemble analysis is done on the output of the diagnostics.
