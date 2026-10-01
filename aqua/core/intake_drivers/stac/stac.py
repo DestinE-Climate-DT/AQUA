@@ -261,6 +261,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.orig_metadata = metadata
         self.xarray_kwargs_arg = xarray_kwargs
         self.format_arg = format
+        self._is_item = kwargs.pop("_is_item", False)
         self.extra_kwargs = kwargs
 
         # Read the STAC JSON
@@ -442,6 +443,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 metadata=self.orig_metadata,
                 xarray_kwargs=self.xarray_kwargs_arg,
                 loglevel=self.loglevel,
+                _is_item=True,
                 **self.extra_kwargs,
             )
             if hasattr(self, "_entry") and self._entry is not None:
@@ -461,6 +463,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 metadata=self.orig_metadata,
                 xarray_kwargs=self.xarray_kwargs_arg,
                 loglevel=self.loglevel,
+                _is_item=True,
                 **self.extra_kwargs,
             )
             if hasattr(self, "_entry") and self._entry is not None:
@@ -484,13 +487,13 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
     def __iter__(self):
         """Iterate over item identifiers if in collection mode, or asset names if in item mode."""
-        if self.item_name is None:
+        if self.is_collection and not self._is_item:
             return iter(self.available_items)
         return iter(self.assets.keys())
 
     def __contains__(self, key: str) -> bool:
         """Check if item or asset key is available."""
-        if self.item_name is None:
+        if self.is_collection and not self._is_item:
             return key in self.available_items
         return key in self.assets
 
