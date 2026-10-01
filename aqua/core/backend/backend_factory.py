@@ -78,6 +78,8 @@ class BackendFactory:
             "fixer",
             "datamodel",
             "loglevel",
+            "item",
+            "asset",
         },
         "icechunk": {
             "model",

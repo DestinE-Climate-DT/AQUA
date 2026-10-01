@@ -27,6 +27,21 @@ def sample_stac_netcdf_path():
     return item_path
 
 
+@pytest.fixture
+def sample_stac_collection_path():
+    """Path to the IFS STAC collection in AQUA_tests."""
+    test_dir = os.path.dirname(__file__)
+    coll_path = os.path.abspath(
+        os.path.join(
+            test_dir,
+            "../AQUA_tests/models/stac-example/collections/ifs.json",
+        )
+    )
+    if not os.path.isfile(coll_path):
+        pytest.skip("STAC example collection not found on disk")
+    return coll_path
+
+
 @pytest.mark.aqua
 def test_stac_driver_registration():
     """Verify that 'stac' driver is registered in intake."""
@@ -153,3 +168,115 @@ def test_stac_asset_selection_errors(tmp_path):
 
     with pytest.raises(KeyError, match="Asset 'missing' not found"):
         IntakeSTACSource(urlpath=str(json_path2), asset="missing")
+
+
+@pytest.mark.aqua
+def test_stac_read_collection(sample_stac_collection_path):
+    """Test reading a NetCDF-backed STAC item through a STAC collection."""
+    source = IntakeSTACSource(
+        urlpath=sample_stac_collection_path,
+        item="ifs-long-regridded-r18x9",
+        asset="data",
+    )
+
+    # Check exposed metadata from collection and item
+    assert source.metadata.get("aqua:model") == "IFS"
+    assert source.metadata.get("id") == "ifs-long-regridded-r18x9"
+    assert source.metadata.get("collection_title") == "AQUA IFS test data"
+    assert "collection_info" in source.metadata
+    assert source.collection_info["id"] == "ifs"
+    assert source.item_name == "ifs-long-regridded-r18x9"
+    assert source.asset_name == "data"
+
+    # Read dataset
+    ds = source.read()
+    assert isinstance(ds, xr.Dataset)
+    assert "2t" in ds.data_vars
+    assert "ttr" in ds.data_vars
+
+
+@pytest.mark.aqua
+def test_stac_collection_missing_item_error(sample_stac_collection_path):
+    """Test that reading a collection without 'item' raises ValueError."""
+    with pytest.raises(ValueError, match="Please provide the 'item' argument"):
+        IntakeSTACSource(urlpath=sample_stac_collection_path)
+
+
+@pytest.mark.aqua
+def test_stac_collection_unknown_item_error(sample_stac_collection_path):
+    """Test that requesting an unknown item from a collection raises KeyError with available items."""
+    with pytest.raises(KeyError, match="Item 'non-existent-item' not found in STAC collection"):
+        IntakeSTACSource(
+            urlpath=sample_stac_collection_path,
+            item="non-existent-item",
+        )
+
+
+@pytest.mark.aqua
+def test_stac_collection_catalog_yaml(sample_stac_collection_path):
+    """Test loading a STAC collection entry with an item argument from an Intake YAML catalog."""
+    catalog_content = f"""
+sources:
+  ifs_collection_item:
+    description: Test STAC collection entry with item argument
+    driver: stac
+    args:
+      urlpath: "{sample_stac_collection_path}"
+      item: "ifs-long-regridded-r18x9"
+      asset: "data"
+"""
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml") as f:
+        f.write(catalog_content)
+        f.flush()
+
+        cat = intake.open_catalog(f.name)
+        assert "ifs_collection_item" in cat
+
+        entry = cat["ifs_collection_item"]
+        assert entry.metadata.get("collection_title") == "AQUA IFS test data"
+        assert entry.metadata.get("id") == "ifs-long-regridded-r18x9"
+
+        ds = entry.read()
+        assert isinstance(ds, xr.Dataset)
+        assert "2t" in ds.data_vars
+
+
+@pytest.mark.aqua
+def test_stac_collection_dynamic_item_selection(sample_stac_collection_path):
+    """Test dynamically selecting different items using entry(item=...) in an Intake catalog."""
+    catalog_content = f"""
+sources:
+  ifs_collection:
+    description: IFS collection with selectable item
+    driver: stac
+    parameters:
+      item:
+        description: Item to load
+        type: str
+        default: ifs-long-regridded-r18x9
+    args:
+      urlpath: "{sample_stac_collection_path}"
+      item: "{{{{ item }}}}"
+      asset: "data"
+"""
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml") as f:
+        f.write(catalog_content)
+        f.flush()
+
+        cat = intake.open_catalog(f.name)
+
+        # 1. Default item
+        e1 = cat["ifs_collection"]
+        assert e1.item_name == "ifs-long-regridded-r18x9"
+
+        # 2. Select another item via entry call
+        e2 = cat["ifs_collection"](item="ifs-short-ifs2d-tco79")
+        assert e2.item_name == "ifs-short-ifs2d-tco79"
+        ds2 = e2.read()
+        assert "2t" in ds2.data_vars
+
+        # 3. Select teleconnections item
+        e3 = cat.ifs_collection(item="ifs-teleconnections-enso-test")
+        assert e3.item_name == "ifs-teleconnections-enso-test"
+        ds3 = e3.read()
+        assert "skt" in ds3.data_vars
