@@ -8,12 +8,19 @@ Unreleased in the current development version (target v1.2.0):
 
 Main changes:
 
+## [v1.2.0]
+
 ClimateDT workflow modifications:
 - The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
+Main changes: 
+1. Generalised installation option for aqua packages (as aqua-diagnostics) via plugins
+2. Various fixes to the Backend and to the Console
+
 Complete list:
 - Implement MacOS CI/CD test (#3158)
+- `aqua analysis` support for ensemble analysis with the `aqua analysis ensemble` subcommand (#3159)
 - `aqua grids build` now supports `reader_kwargs` option to pass extra arguments to the Reader (#3136)
 - `aqua grids build` now supports `--datamodel` option to apply the data model to the original source before building the grid (#3136)
 - Remove the `intake_xarray` compatibility stub (#3147)
@@ -51,6 +58,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix area selection for regionmask regions crossing the Greenwich meridian (#3058)
 - Remove intake-xarray dependency (#2958)
 - Update load_aqua_container script for both core and diagnostics (#3043)
 - Remove deprecated idx_level coordinates for FDB access (#3063)
@@ -1558,7 +1566,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...HEAD
+[v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0
