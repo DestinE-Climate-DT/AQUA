@@ -26,11 +26,12 @@ class BackendFactory:
         "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
         "zarr": BackendIntakeXarray,
+        "stac": BackendIntakeXarray,
         "xarray": BackendXarray,
     }
 
     # Parameters accepted by each driver's backend constructor.
-    # netcdf and zarr share the same intake-xarray signature.
+    # netcdf, zarr, and stac share the same intake-xarray signature.
     _BACKEND_PARAMS = {
         "fdb": {
             "model",
@@ -57,6 +58,17 @@ class BackendFactory:
             "loglevel",
         },
         "zarr": {
+            "model",
+            "exp",
+            "source",
+            "configurer_catalog",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
+        "stac": {
             "model",
             "exp",
             "source",
