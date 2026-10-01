@@ -61,7 +61,7 @@ jobs:
     with:
       platform: ${{ matrix.runner }}
       python-versions: '["3.14"]'
-      pytest-markers: 'aqua or slow or graphics or catgen'
+      pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
       fail-fast: false
