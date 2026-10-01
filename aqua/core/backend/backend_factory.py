@@ -12,8 +12,8 @@ from aqua.core.logger import log_configure
 
 from .backend_intake_fdb import BackendIntakeFDB
 from .backend_intake_icechunk import BackendIntakeIcechunk
-from .backend_intake_stac import BackendIntakeSTAC
 from .backend_intake_xarray import BackendIntakeXarray
+from .backend_stac import BackendSTAC
 from .backend_xarray import BackendXarray
 
 
@@ -26,7 +26,7 @@ class BackendFactory:
         "fdb": BackendIntakeFDB,
         "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
-        "stac": BackendIntakeSTAC,
+        "stac": BackendSTAC,
         "zarr": BackendIntakeXarray,
         "xarray": BackendXarray,
     }
@@ -81,8 +81,8 @@ class BackendFactory:
             "loglevel",
         },
         "stac": {
-            "path",
-            "stac",
+            "url",
+            "stac_kwargs",
             "chunks",
             "fixer",
             "datamodel",
@@ -107,7 +107,8 @@ class BackendFactory:
         path: str = None,
         catalog: str = None,
         loglevel: str = "WARNING",
-        stac: dict = None,
+        url: str = None,
+        stac_kwargs: dict = None,
     ):
         # Set the provided parameters as instance attributes
         self.catalog = catalog
@@ -116,7 +117,8 @@ class BackendFactory:
         self.source = source
         self.catalog = catalog
         self.path = path
-        self.stac = stac
+        self.url = url
+        self.stac_kwargs = stac_kwargs
 
         self.configurer = configurer
         self.loglevel = loglevel
@@ -142,7 +144,7 @@ class BackendFactory:
 
         Please notiche the _check_required_params method ensures that either a path or model/exp/source are provided.
         """
-        if self.stac is not None:
+        if self.url:
             self._select_backend_stac()
         elif self.path:
             self._select_backend_xarray()
@@ -192,6 +194,7 @@ class BackendFactory:
     def _select_backend_stac(self):
         """Activate direct STAC catalog access through Intake."""
         self.driver = "stac"
+        self.logger.warning(" STAC backend is experimental and may not work for all catalogs.")
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
@@ -242,7 +245,8 @@ class BackendFactory:
             exp=self.exp,
             source=self.source,
             path=self.path,
-            stac=self.stac,
+            url=self.url,
+            stac_kwargs=self.stac_kwargs,
             configurer=self.configurer,
             configurer_catalog=self.configurer_catalog,
             catalog=self.catalog,
@@ -263,14 +267,12 @@ class BackendFactory:
 
     def _check_required_params(self):
         """Check if the required parameters are provided."""
-        if self.stac is not None and self.path is None:
-            raise ValueError("A STAC catalog path or URL must be provided with the stac selection.")
-        if self.path is None and not all(v is not None for v in [self.model, self.exp, self.source]):
+        # TODO: add a check for stac_kwargs when driver is stac
+        if self.path is None and self.url is None and not all(v is not None for v in [self.model, self.exp, self.source]):
             raise ValueError(
-                "Nor path nor model/exp/source are provided. Please provide either a path or model, exp, and source."
+                "Nor path not url nor model/exp/source are provided. Please provide either a path or model, exp, and source."
             )
-        if self.path is not None and any(v is not None for v in [self.model, self.exp, self.source]):
-            self.logger.error(
-                "Both path and model/exp/source are provided.\n"
-                "The model/exp/source parameters will be ignored in favor of the path."
+        if self.path is not None and self.url and any(v is not None for v in [self.model, self.exp, self.source, self.url]):
+            raise ValueError(
+                "Nor path not url nor model/exp/source are provided. Please provide either a path or model, exp, and source."
             )

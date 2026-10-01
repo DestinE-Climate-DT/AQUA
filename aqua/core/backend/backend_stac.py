@@ -5,7 +5,7 @@ Example:
 
         reader = Reader(
             path="https://example.org/catalog.json",
-            stac={"collection": {"item": "asset"}},
+            stac_kwargs={"collection": {"item": "asset"}},
             areas=False,
         )
         data = reader.retrieve()
@@ -24,13 +24,13 @@ from .backend import Backend
 xr.set_options(keep_attrs=True)
 
 
-class BackendIntakeSTAC(Backend):
+class BackendSTAC(Backend):
     """Retrieve an xarray dataset from an asset in an Intake STAC catalog."""
 
     def __init__(
         self,
-        path: str,
-        stac: dict,
+        url: str,
+        stac_kwargs: dict,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
         datamodel: DataModel = None,
@@ -40,8 +40,8 @@ class BackendIntakeSTAC(Backend):
         """Initialize the Intake STAC backend.
 
         Args:
-            path (str): URL or local path of the STAC catalog JSON document.
-            stac (dict): Single-branch nested mapping describing successive catalog
+            url (str): URL of the STAC catalog JSON document.
+            stac_kwargs (dict): Single-branch nested mapping describing successive catalog
                 lookups, for example ``{"collection": {"item": "asset"}}``.
             chunks (str | dict, optional): Chunking passed to the selected asset reader.
                 ``None`` falls back to ``"auto"`` so STAC assets remain lazy. Defaults
@@ -50,12 +50,12 @@ class BackendIntakeSTAC(Backend):
             datamodel (DataModel, optional): Data model applied after the fixer.
                 Defaults to None.
             loglevel (str, optional): Logging level. Defaults to "WARNING".
-            **kwargs: Additional keyword arguments passed to the selected asset reader.
+            stac_kwargs (dict, optional): Additional keyword arguments passed to the selected asset reader.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
-        self.path = path
-        self.stac = stac
-        self.catalog_path = self._parse_stac_path(stac)
+        self.url = url
+        self.stac_kwargs = stac_kwargs
+        self.catalog_path = self._parse_stac_path(stac_kwargs)
         self.read_kwargs = kwargs
         self.read_kwargs["chunks"] = "auto" if chunks is None else chunks
 
@@ -99,8 +99,8 @@ class BackendIntakeSTAC(Backend):
         return self._set_metadata(
             data,
             {
-                "path": self.path,
-                "stac": "/".join(self.catalog_path),
+                "url": self.url,
+                "stac_kwargs": self.stac_kwargs,
                 "version": aqua_version,
             },
         )
@@ -110,7 +110,7 @@ class BackendIntakeSTAC(Backend):
         selection = "/".join(self.catalog_path)
         return log_history(
             data,
-            f"Retrieved {selection} from {self.path} using AQUA v{aqua_version} with Intake STAC",
+            f"Retrieved {selection} from {self.url} using AQUA v{aqua_version} with STAC Backend",
         )
 
     def _read_asset(self) -> xr.Dataset:
@@ -124,7 +124,7 @@ class BackendIntakeSTAC(Backend):
     def _get_asset_reader(self):
         """Build and cache the Intake reader for the selected STAC asset."""
         if not hasattr(self, "_asset_reader"):
-            stac_data = intake.datatypes.STACJSON(self.path)
+            stac_data = intake.datatypes.STACJSON(self.url)
             catalog = intake.catalogs.StacCatalogReader(stac_data).read()
             selected = catalog
             for entry in self.catalog_path:

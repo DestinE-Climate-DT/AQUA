@@ -60,6 +60,7 @@ dependencies = [
     "numpy",
     "pandas>=3.0.0", # pandas3 required for new time unit handling
     "pypdf",
+    "pystac",
     "pyYAML",
     "regionmask",
     "ruamel.yaml",

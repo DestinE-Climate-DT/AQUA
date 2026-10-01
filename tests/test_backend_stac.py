@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 
 from aqua.core.backend.backend_factory import BackendFactory
-from aqua.core.backend.backend_intake_stac import BackendIntakeSTAC
+from aqua.core.backend.backend_stac import BackendSTAC
 
 
 def _dataset():
@@ -33,11 +33,11 @@ def test_stac_backend_retrieves_and_postprocesses_dataset():
     datamodel.apply.side_effect = lambda dataset: dataset
 
     with (
-        patch("aqua.core.backend.backend_intake_stac.intake.datatypes.STACJSON") as stac_json,
-        patch("aqua.core.backend.backend_intake_stac.intake.catalogs.StacCatalogReader") as catalog_reader,
+        patch("aqua.core.backend.backend_stac.intake.datatypes.STACJSON") as stac_json,
+        patch("aqua.core.backend.backend_stac.intake.catalogs.StacCatalogReader") as catalog_reader,
     ):
         catalog_reader.return_value.read.return_value = catalog
-        backend = BackendIntakeSTAC(
+        backend = BackendSTAC(
             path="https://example.org/catalog.json",
             stac={"collection": {"item": "asset"}},
             chunks={"time": 1},
@@ -71,7 +71,7 @@ def test_stac_backend_retrieves_and_postprocesses_dataset():
 def test_stac_backend_rejects_invalid_selection(selection):
     """Only a non-empty, single-branch nested mapping is accepted."""
     with pytest.raises(ValueError):
-        BackendIntakeSTAC(path="catalog.json", stac=selection)
+        BackendSTAC(path="catalog.json", stac=selection)
 
 
 def test_backend_factory_selects_stac_backend():
@@ -83,7 +83,7 @@ def test_backend_factory_selects_stac_backend():
 
     assert factory.driver == "stac"
     backend = factory.create_backend(fixer=None, datamodel=None)
-    assert isinstance(backend, BackendIntakeSTAC)
+    assert isinstance(backend, BackendSTAC)
     assert backend.catalog_path == ("collection", "asset")
     assert backend.read_kwargs["chunks"] == "auto"
 
@@ -98,7 +98,7 @@ def test_stac_backend_drops_mapping_attrs_from_grid_sample():
     """Backend-only mapping attributes cannot be serialized by area generation."""
     data = _dataset()
     data["x"].attrs["filter_by_keys"] = {}
-    backend = BackendIntakeSTAC(path="catalog.json", stac={"collection": "asset"})
+    backend = BackendSTAC(path="catalog.json", stac={"collection": "asset"})
 
     backend._drop_nonserializable_sample_attrs(data)
 
