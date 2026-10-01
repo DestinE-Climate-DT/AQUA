@@ -11,7 +11,7 @@ Example:
         data = reader.retrieve()
 """
 
-import intake
+import pystac
 import xarray as xr
 
 from aqua.core.data_model import DataModel
@@ -55,7 +55,6 @@ class BackendSTAC(Backend):
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.url = url
         self.stac_kwargs = stac_kwargs
-        self.catalog_path = self._parse_stac_path(stac_kwargs)
         self.read_kwargs = kwargs
         self.read_kwargs["chunks"] = "auto" if chunks is None else chunks
 
@@ -63,7 +62,6 @@ class BackendSTAC(Backend):
         """Retrieve a minimal sample from the selected STAC asset."""
         data = self._read_asset()
         data = self._select_minimum_sample(data, startdate=startdate)
-        self._drop_nonserializable_sample_attrs(data)
         return data
 
     def retrieve(
@@ -107,56 +105,77 @@ class BackendSTAC(Backend):
 
     def log_history(self, data: xr.Dataset) -> xr.Dataset:
         """Add STAC retrieval provenance to the dataset history."""
-        selection = "/".join(self.catalog_path)
         return log_history(
             data,
-            f"Retrieved {selection} from {self.url} using AQUA v{aqua_version} with STAC Backend",
+            f"Retrieved {self.stac_kwargs} from {self.url} using AQUA v{aqua_version} with STAC Backend",
         )
 
     def _read_asset(self) -> xr.Dataset:
         """Open the selected STAC asset as an xarray Dataset."""
-        asset_reader = self._get_asset_reader()
-        data = asset_reader.read(**self.read_kwargs)
+        item = pystac.read_file(self.url)
+        if isinstance(self.stac_kwargs, str):
+            self.logger.debug("STAC selection is a string, treating as asset name")
+            asset = item.assets[self.stac_kwargs]
+        elif isinstance(self.stac_kwargs, dict):
+            self.logger.debug("STAC selection is a mapping, traversing catalog")
+            raise NotImplementedError("Nested STAC selection is not implemented yet")
+        else:
+            raise ValueError("stac_kwargs must be a string or a mapping")
+
+        data = xr.open_dataset(
+            asset.href,
+            **asset.extra_fields.get("xarray:open_kwargs", {}),
+            storage_options=asset.extra_fields.get("xarray:storage_options"),
+        )
+
         if not isinstance(data, xr.Dataset):
-            raise TypeError(f"STAC asset {'/'.join(self.catalog_path)!r} did not produce an xarray.Dataset")
+            raise TypeError(f"STAC asset {self.stac_kwargs} from {self.url} did not produce an xarray.Dataset")
         return data
 
-    def _get_asset_reader(self):
-        """Build and cache the Intake reader for the selected STAC asset."""
-        if not hasattr(self, "_asset_reader"):
-            stac_data = intake.datatypes.STACJSON(self.url)
-            catalog = intake.catalogs.StacCatalogReader(stac_data).read()
-            selected = catalog
-            for entry in self.catalog_path:
-                selected = selected[entry]
-            self._asset_reader = selected
-        return self._asset_reader
+    # def _read_asset(self) -> xr.Dataset:
+    #     """Open the selected STAC asset as an xarray Dataset."""
+    #     asset_reader = self._get_asset_reader()
+    #     data = asset_reader.read(**self.read_kwargs)
+    #     if not isinstance(data, xr.Dataset):
+    #         raise TypeError(f"STAC asset {'/'.join(self.catalog_path)!r} did not produce an xarray.Dataset")
+    #     return data
 
-    def _drop_nonserializable_sample_attrs(self, data: xr.Dataset):
-        """Remove backend-only mapping attributes before grid sample serialization."""
-        for variable in data.variables.values():
-            mapping_attrs = [key for key, value in variable.attrs.items() if isinstance(value, dict)]
-            for key in mapping_attrs:
-                self.logger.debug("Removing non-serializable sample attribute %s", key)
-                variable.attrs.pop(key)
+    # def _get_asset_reader(self):
+    #     """Build and cache the Intake reader for the selected STAC asset."""
+    #     if not hasattr(self, "_asset_reader"):
+    #         stac_data = intake.datatypes.STACJSON(self.url)
+    #         catalog = intake.catalogs.StacCatalogReader(stac_data).read()
+    #         selected = catalog
+    #         for entry in self.catalog_path:
+    #             selected = selected[entry]
+    #         self._asset_reader = selected
+    #     return self._asset_reader
 
-    @staticmethod
-    def _parse_stac_path(stac: dict) -> tuple[str, ...]:
-        """Convert a single-branch nested STAC selection mapping to a tuple."""
-        if not isinstance(stac, dict) or not stac:
-            raise ValueError("stac must be a non-empty nested mapping")
+    # def _drop_nonserializable_sample_attrs(self, data: xr.Dataset):
+    #     """Remove backend-only mapping attributes before grid sample serialization."""
+    #     for variable in data.variables.values():
+    #         mapping_attrs = [key for key, value in variable.attrs.items() if isinstance(value, dict)]
+    #         for key in mapping_attrs:
+    #             self.logger.debug("Removing non-serializable sample attribute %s", key)
+    #             variable.attrs.pop(key)
 
-        path = []
-        node = stac
-        while isinstance(node, dict):
-            if len(node) != 1:
-                raise ValueError("each level of stac must contain exactly one catalog entry")
-            entry, node = next(iter(node.items()))
-            if not isinstance(entry, str) or not entry:
-                raise ValueError("stac catalog entry names must be non-empty strings")
-            path.append(entry)
+    # @staticmethod
+    # def _parse_stac_path(stac: dict) -> tuple[str, ...]:
+    #     """Convert a single-branch nested STAC selection mapping to a tuple."""
+    #     if not isinstance(stac, dict) or not stac:
+    #         raise ValueError("stac must be a non-empty nested mapping")
 
-        if not isinstance(node, str) or not node:
-            raise ValueError("the final stac catalog entry must be a non-empty string")
-        path.append(node)
-        return tuple(path)
+    #     path = []
+    #     node = stac
+    #     while isinstance(node, dict):
+    #         if len(node) != 1:
+    #             raise ValueError("each level of stac must contain exactly one catalog entry")
+    #         entry, node = next(iter(node.items()))
+    #         if not isinstance(entry, str) or not entry:
+    #             raise ValueError("stac catalog entry names must be non-empty strings")
+    #         path.append(entry)
+
+    #     if not isinstance(node, str) or not node:
+    #         raise ValueError("the final stac catalog entry must be a non-empty string")
+    #     path.append(node)
+    #     return tuple(path)
