@@ -26,13 +26,17 @@ jobs:
         id: check-macos
         run: |
           # Run tests if:
-          # 1) Triggered manually (workflow_dispatch)
-          # 2) Triggered by schedule
-          # 3) PR has 'run MacOS label'
-          # 4) Pushed to main branch
+          # 1) PR has 'run tests', 'ready to merge', or 'run MacOS test' labels
+          # 2) PR has 'dependabot' label or actor is Dependabot
+          # 3) Triggered manually (workflow_dispatch)
+          # 4) Triggered by schedule
+          # 5) Pushed to main branch (e.g. merge into main)
           SHOULD_RUN="false"
 
-           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run MacOS test') }}" == "true" ]] || \
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'run MacOS test') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'dependabot') }}" == "true" ]] || \
              [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
              [[ "${{ github.event_name }}" == "schedule" ]] || \
@@ -40,7 +44,8 @@ jobs:
             SHOULD_RUN="true"
           fi
 
-          echo "Event: ${{ github.event_name }} | Actor: ${{ github.actor }} | Has 'dependabot' label: ${{ contains(github.event.pull_request.labels.*.name, 'run MacOS test') }}"
+          echo "Event: ${{ github.event_name }} | Ref: ${{ github.ref }} | Actor: ${{ github.actor }}"
+          echo "Labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}"
           echo "Result: $SHOULD_RUN"
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
@@ -54,8 +59,8 @@ jobs:
           - macos_version: macos-15
             runner: macos-15
           # GitHub's macOS 27 preview runner currently uses the xcode-27 label.
-          - macos_version: macos-27
-            runner: xcode-27
+          #- macos_version: macos-27
+          #  runner: xcode-27
     name: AQUA tests (${{ matrix.macos_version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
@@ -68,6 +73,8 @@ jobs:
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
+      pr-number: ${{ github.event.pull_request.number || '' }}
+      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || contains(github.event.pull_request.labels.*.name, 'dependabot')) }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
