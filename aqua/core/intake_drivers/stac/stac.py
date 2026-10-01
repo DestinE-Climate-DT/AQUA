@@ -139,11 +139,36 @@ def _find_item_in_collection(
     raise KeyError(err_msg)
 
 
+def _get_collection_item_ids(collection_dict: dict) -> list[str]:
+    """Extract list of item identifiers from collection links.
+
+    Args:
+        collection_dict (dict): Parsed collection dictionary.
+
+    Returns:
+        list[str]: Available item names/ids.
+    """
+    links = collection_dict.get("links", [])
+    items = []
+    for l in links:
+        if l.get("rel") == "item":
+            href = l.get("href", "")
+            lid = l.get("id", "")
+            base_name = os.path.basename(href)
+            stem = base_name.removesuffix(".json") if base_name.endswith(".json") else base_name
+            label = lid or stem or l.get("title") or href
+            if label and label not in items:
+                items.append(label)
+    return items
+
+
 class IntakeSTACSource(IntakeXarraySourceAdapter):
     """Intake driver to read a STAC item or collection JSON and open an asset with xarray.
 
     Registered as the ``stac`` driver. Reads a STAC item JSON directly, or reads a
-    STAC collection JSON and selects the item specified via the ``item`` argument.
+    STAC collection JSON. For collections, items and assets can be selected either via
+    hierarchical indexing (e.g. ``cat["ifs"]["item_id"]["asset_name"]``), or via arguments
+    (e.g. ``cat["ifs"](item="item_id", asset="asset_name")``).
     It extracts metadata and properties, resolves the target asset (defaulting to
     ``data`` or the first asset), and loads it into an xarray Dataset via NetCDF or Zarr.
 
@@ -164,13 +189,11 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
     Example usage in an Intake YAML catalog for a STAC Collection::
 
         sources:
-          ifs_stac_collection:
-            description: IFS regridded test data via STAC collection
+          ifs:
+            description: IFS STAC collection with selectable items
             driver: stac
             args:
               urlpath: "{{ CATALOG_DIR }}/collections/ifs.json"
-              item: "ifs-long-regridded-r18x9"
-              asset: "data"
               chunks:
                 time: 12
 
@@ -178,18 +201,23 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
         # Direct STAC Item:
         source = IntakeSTACSource("/path/to/item.json", asset="data")
-        ds = source.to_dask()
+        ds = source.read()
 
-        # Via STAC Collection:
-        source = IntakeSTACSource("/path/to/collection.json", item="ifs-long-regridded-r18x9", asset="data")
-        ds = source.to_dask()
-        print(source.metadata)
+        # Via STAC Collection - Hierarchical indexing:
+        cat = intake.open_catalog("catalog.yaml")
+        ds = cat["ifs"]["ifs-short-ifs2d-tco79"].read()
+        ds = cat["ifs"]["ifs-short-ifs2d-tco79"]["data"].read()
+
+        # Via STAC Collection - Keyword calling:
+        ds = cat["ifs"](item="ifs-short-ifs2d-tco79").read()
+        ds = cat["ifs"](item="ifs-short-ifs2d-tco79", asset="data").read()
 
     Args:
         urlpath (str, optional): Path or URL to the STAC item or collection JSON file.
         path (str, optional): Alias for ``urlpath``.
         item (str, optional): Identifier, filename, or title of the item to load if
-            ``urlpath`` points to a STAC Collection. Required when reading a collection.
+            ``urlpath`` points to a STAC Collection. Optional; if omitted, returns a
+            collection source from which items can be selected.
         asset (str, optional): Key of the asset to open (e.g. 'data'). If None,
             defaults to 'data' if present, or the first available asset.
         format (str, optional): Data format ('netcdf' or 'zarr'). If None,
@@ -223,6 +251,18 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         if not target_url:
             raise ValueError("Must provide 'urlpath' (or 'path') pointing to a STAC JSON.")
 
+        # Save config params for re-instantiation / indexing
+        self.urlpath = urlpath
+        self.path = path
+        self.target_url = target_url
+        self.storage_options = storage_options
+        self.item_arg = item
+        self.asset_arg = asset
+        self.orig_metadata = metadata
+        self.xarray_kwargs_arg = xarray_kwargs
+        self.format_arg = format
+        self.extra_kwargs = kwargs
+
         # Read the STAC JSON
         if isinstance(target_url, dict):
             raw_dict = target_url
@@ -233,32 +273,58 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             with fsspec.open(base_urlpath, "r", **(storage_options or {})) as f:
                 raw_dict = json.load(f)
 
+        self.base_urlpath = base_urlpath
+        self.raw_dict = raw_dict
+
         # Determine whether this is a STAC Collection or Item
         is_collection = raw_dict.get("type") == "Collection" or (
             "extent" in raw_dict and "links" in raw_dict and "assets" not in raw_dict
         )
+        self.is_collection = is_collection
+
+        if is_collection and not item:
+            self.logger.info("Initialized STAC collection '%s'", raw_dict.get("id", base_urlpath))
+            collection_info = {k: v for k, v in raw_dict.items() if k != "links"}
+            combined_metadata = {}
+            combined_metadata["collection_info"] = collection_info
+            if "title" in collection_info:
+                combined_metadata["collection_title"] = collection_info["title"]
+            if "description" in collection_info:
+                combined_metadata["collection_description"] = collection_info["description"]
+            if metadata:
+                combined_metadata.update(metadata)
+
+            self.collection_info = collection_info
+            self.item_name = None
+            self.item_base_urlpath = None
+            self.stac_item = None
+            self.asset_name = None
+            self.asset_info = None
+            self.assets = {}
+            self.reader = None
+            self.available_items = _get_collection_item_ids(raw_dict)
+
+            super().__init__(None, xarray_kwargs or {}, metadata=combined_metadata)
+            return
 
         collection_info = None
         if is_collection:
-            if not item:
-                coll_id = raw_dict.get("id", base_urlpath)
-                raise ValueError(
-                    f"The STAC JSON at '{base_urlpath}' is a Collection (id: '{coll_id}'). "
-                    "Please provide the 'item' argument to specify which item to load."
-                )
             self.logger.info("Resolving item '%s' from STAC collection '%s'", item, raw_dict.get("id"))
             collection_info = {k: v for k, v in raw_dict.items() if k != "links"}
             item_dict, item_base_urlpath = _find_item_in_collection(
                 raw_dict, item, base_urlpath, storage_options=storage_options
             )
+            self.available_items = _get_collection_item_ids(raw_dict)
         else:
             item_dict = raw_dict
             item_base_urlpath = base_urlpath
+            self.available_items = []
 
         # Validate and select asset
         assets = item_dict.get("assets", {})
         if not assets:
             raise ValueError(f"STAC item '{item_dict.get('id', item_base_urlpath)}' contains no assets.")
+        self.assets = assets
 
         if asset is not None:
             if asset not in assets:
@@ -327,7 +393,157 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.stac_item = item_dict
         self.collection_info = collection_info
         self.item_name = item or item_dict.get("id")
+        self.item_base_urlpath = item_base_urlpath
         self.asset_name = asset_key
         self.asset_info = asset_info
 
         super().__init__(data, xarray_kwargs, metadata=combined_metadata)
+
+    def read(self):
+        """Read data into an in-memory xarray Dataset."""
+        if self.reader is None:
+            coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+            raise ValueError(
+                f"STAC Collection '{coll_id}' cannot be read directly. "
+                "Please specify an item to load, for example:\n"
+                f"  cat['{self.name}']['item_id'].read() or cat['{self.name}'](item='item_id').read()"
+            )
+        return super().read()
+
+    def to_dask(self):
+        """Read data into a dask-backed xarray Dataset."""
+        if self.reader is None:
+            coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+            raise ValueError(
+                f"STAC Collection '{coll_id}' cannot be read directly. "
+                "Please specify an item to load, for example:\n"
+                f"  cat['{self.name}']['item_id'].to_dask() or cat['{self.name}'](item='item_id').to_dask()"
+            )
+        return super().to_dask()
+
+    def __getitem__(self, key: str):
+        """Index into a collection or item to select a STAC item or asset.
+
+        Args:
+            key (str): STAC item identifier (when indexing a collection) or
+                asset key (when indexing an item).
+
+        Returns:
+            IntakeSTACSource: A source configured for the requested item or asset.
+        """
+        # If this source belongs to a collection and key matches an item in the collection:
+        if self.is_collection and key in self.available_items:
+            child = IntakeSTACSource(
+                urlpath=self.raw_dict if isinstance(self.target_url, dict) else self.base_urlpath,
+                item=key,
+                asset=self.asset_arg,
+                format=self.format_arg,
+                storage_options=self.storage_options,
+                metadata=self.orig_metadata,
+                xarray_kwargs=self.xarray_kwargs_arg,
+                loglevel=self.loglevel,
+                **self.extra_kwargs,
+            )
+            if hasattr(self, "_entry") and self._entry is not None:
+                child._entry = self._entry
+            return child
+
+        # If an item is already selected, check if key is an asset in that item:
+        if self.item_name is not None and key in self.assets:
+            if key == self.asset_name:
+                return self
+            child = IntakeSTACSource(
+                urlpath=self.base_urlpath,
+                item=self.item_name,
+                asset=key,
+                format=self.format_arg,
+                storage_options=self.storage_options,
+                metadata=self.orig_metadata,
+                xarray_kwargs=self.xarray_kwargs_arg,
+                loglevel=self.loglevel,
+                **self.extra_kwargs,
+            )
+            if hasattr(self, "_entry") and self._entry is not None:
+                child._entry = self._entry
+            return child
+
+        # Neither item nor asset
+        if self.item_name is not None:
+            if self.is_collection:
+                coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+                raise KeyError(
+                    f"'{key}' is not an available item in collection '{coll_id}' "
+                    f"({self.available_items}) nor an asset in item '{self.item_name}' ({list(self.assets.keys())})."
+                )
+            raise KeyError(
+                f"Asset '{key}' not found in STAC item '{self.item_name}'. Available assets: {list(self.assets.keys())}"
+            )
+
+        coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+        raise KeyError(f"Item '{key}' not found in STAC collection '{coll_id}'. Available items: {self.available_items}")
+
+    def __iter__(self):
+        """Iterate over item identifiers if in collection mode, or asset names if in item mode."""
+        if self.item_name is None:
+            return iter(self.available_items)
+        return iter(self.assets.keys())
+
+    def __contains__(self, key: str) -> bool:
+        """Check if item or asset key is available."""
+        if self.item_name is None:
+            return key in self.available_items
+        return key in self.assets
+
+    def keys(self) -> list[str]:
+        """Return list of available item identifiers or asset names."""
+        return list(self)
+
+    def __call__(self, *args, **kwargs):
+        """Re-configure or select item/asset dynamically."""
+        if kwargs:
+            if getattr(self, "_entry", None) is not None:
+                return self._entry.get(**kwargs)
+            new_item = kwargs.get("item", self.item_name)
+            new_asset = kwargs.get("asset", self.asset_name)
+            child = IntakeSTACSource(
+                urlpath=self.base_urlpath,
+                item=new_item,
+                asset=new_asset,
+                format=kwargs.get("format", self.format_arg),
+                storage_options=kwargs.get("storage_options", self.storage_options),
+                metadata=kwargs.get("metadata", self.orig_metadata),
+                xarray_kwargs=kwargs.get("xarray_kwargs", self.xarray_kwargs_arg),
+                loglevel=kwargs.get("loglevel", self.loglevel),
+                **{
+                    **self.extra_kwargs,
+                    **{
+                        k: v
+                        for k, v in kwargs.items()
+                        if k
+                        not in (
+                            "item",
+                            "asset",
+                            "format",
+                            "storage_options",
+                            "metadata",
+                            "xarray_kwargs",
+                            "loglevel",
+                        )
+                    },
+                },
+            )
+            return child
+        return self
+
+    get = __call__
+
+    def describe(self):
+        """Return description dictionary including available items or assets."""
+        d = super().describe()
+        if self.item_name is None:
+            d["available_items"] = self.available_items
+        else:
+            d["item"] = self.item_name
+            d["asset"] = self.asset_name
+            d["available_assets"] = list(self.assets.keys())
+        return d

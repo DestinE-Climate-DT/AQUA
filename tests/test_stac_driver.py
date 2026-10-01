@@ -197,9 +197,12 @@ def test_stac_read_collection(sample_stac_collection_path):
 
 @pytest.mark.aqua
 def test_stac_collection_missing_item_error(sample_stac_collection_path):
-    """Test that reading a collection without 'item' raises ValueError."""
-    with pytest.raises(ValueError, match="Please provide the 'item' argument"):
-        IntakeSTACSource(urlpath=sample_stac_collection_path)
+    """Test that reading directly from a collection without selecting an item raises ValueError."""
+    source = IntakeSTACSource(urlpath=sample_stac_collection_path)
+    assert source.item_name is None
+    assert "ifs-short-ifs2d-tco79" in source.keys()
+    with pytest.raises(ValueError, match="cannot be read directly"):
+        source.read()
 
 
 @pytest.mark.aqua
@@ -280,3 +283,54 @@ sources:
         assert e3.item_name == "ifs-teleconnections-enso-test"
         ds3 = e3.read()
         assert "skt" in ds3.data_vars
+
+
+@pytest.mark.aqua
+def test_stac_collection_hierarchical_indexing(sample_stac_collection_path):
+    """Test hierarchical indexing syntax cat['collection']['item']['asset'].read()."""
+    catalog_content = f"""
+sources:
+  ifs:
+    description: IFS collection
+    driver: stac
+    args:
+      urlpath: "{sample_stac_collection_path}"
+"""
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml") as f:
+        f.write(catalog_content)
+        f.flush()
+
+        cat = intake.open_catalog(f.name)
+        ifs = cat["ifs"]
+
+        # Inspect collection
+        assert "ifs-short-ifs2d-tco79" in ifs
+        assert "ifs-long-regridded-r18x9" in ifs.keys()
+
+        # Reading directly on collection raises ValueError
+        with pytest.raises(ValueError, match="cannot be read directly"):
+            ifs.read()
+
+        # Level 1: cat["ifs"]["item"].read()
+        item_source = ifs["ifs-short-ifs2d-tco79"]
+        assert item_source.item_name == "ifs-short-ifs2d-tco79"
+        assert item_source.asset_name == "data"
+        assert "data" in item_source.keys()
+
+        ds1 = item_source.read()
+        assert isinstance(ds1, xr.Dataset)
+        assert "2t" in ds1.data_vars
+
+        # Level 2: cat["ifs"]["item"]["asset"].read()
+        ds2 = cat["ifs"]["ifs-short-ifs2d-tco79"]["data"].read()
+        assert isinstance(ds2, xr.Dataset)
+        assert "2t" in ds2.data_vars
+
+        # Other items
+        ds3 = cat["ifs"]["ifs-teleconnections-enso-test"]["data"].read()
+        assert isinstance(ds3, xr.Dataset)
+        assert "skt" in ds3.data_vars
+
+        # Invalid asset
+        with pytest.raises(KeyError, match="not an available item in collection"):
+            cat["ifs"]["ifs-short-ifs2d-tco79"]["nonexistent"]
