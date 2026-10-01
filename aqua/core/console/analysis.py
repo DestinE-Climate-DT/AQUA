@@ -24,13 +24,17 @@ def analysis_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Run AQUA diagnostics.")
     # fmt: off
+    # optional sub-target selecting a different default pipeline/config (e.g. "ensemble")
+    parser.add_argument("target", nargs="?", choices=["ensemble"], default=None,
+                        help="Optional sub-target selecting a dedicated pipeline (e.g. 'ensemble')")
+
     # sources
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
     parser.add_argument("--source_oce", type=str,
-        help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
+                        help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
     parser.add_argument("--realization", type=str, help="Realization (default: None)")
 
     # default options for diagnostics
@@ -54,7 +58,6 @@ def analysis_parser(parser=None):
     parser.add_argument("--nmaxprocesses", type=int, default=-1,
                         help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
 
-
     # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -70,8 +73,12 @@ def analysis_execute(args):
     loglevel = args.loglevel
     logger = log_configure(loglevel, "AQUA Analysis")
 
+    # target selects a dedicated default config/pipeline (e.g. "ensemble"), reusing the same engine
+    target = getattr(args, "target", None)
+    default_config_name = f"config.aqua-analysis-{target}.yaml" if target else "config.aqua-analysis.yaml"
+
     # Initialize analyzer
-    analyzer = Analysis(config_file_path=args.config, loglevel=loglevel)
+    analyzer = Analysis(config_file_path=args.config, loglevel=loglevel, default_config_name=default_config_name)
 
     # Load config and get AQUA paths
     config = analyzer.get_config()
