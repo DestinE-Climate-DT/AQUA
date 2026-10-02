@@ -12,7 +12,6 @@ dependencies:
   - cdo>=2.5.0,<2.6.1
   - eccodes>=2.41.0,<2.50
   - netcdf4
-  - rasterio
   - pip
   - pip:
     - aqua-core[tests]
