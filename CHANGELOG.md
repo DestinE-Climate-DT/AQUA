@@ -8,6 +8,9 @@ Unreleased in the current development version (target v1.2.0):
 
 Main changes:
 
+Complete list:
+- Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
+
 ## [v1.2.0]
 
 ClimateDT workflow modifications:
