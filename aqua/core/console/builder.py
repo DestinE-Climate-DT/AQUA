@@ -3,6 +3,7 @@ This module contains the CLI for the GridBuilder.
 """
 
 import argparse
+import json
 
 from aqua import GridBuilder, Reader
 from aqua.core.util import get_arg, load_yaml
@@ -42,13 +43,18 @@ def builder_parser(parser=None):
                         help='alternative name for the grid for grid naming [default: None]. '
                              'Required for Curvilinear and Unstructured grids.')
     parser.add_argument('--fix', action='store_true',
-                        help='Fix and apply data model to the original source [default: False]')
+                        help='Apply the fixer to the original source [default: False]')
+    parser.add_argument('--datamodel', action='store_true',
+                        help='Apply data model to the original source [default: False]')
     parser.add_argument('--verify', action='store_true', default=False,
                         help='Verify the grid file after creation [default: False]')
     parser.add_argument('--yaml', action='store_true', default=False,
                         help='Create the grid entry in the grid file [default: False]')
     parser.add_argument('--force_unstructured', action='store_true', default=False,
                         help='Force grid detection to use unstructured grid type [default: False]')
+    parser.add_argument('--reader_kwargs', type=str,
+                        help='Additional Reader kwargs as a JSON object, '
+                             'e.g. \'{"engine": "polytope", "chunks": {"time": 12}}\' [default: None]')
     # fmt: on
     return parser
 
@@ -70,8 +76,9 @@ def builder_execute(args):
     model = get_arg(args, "model", reader_config.get("model"))
     exp = get_arg(args, "exp", reader_config.get("exp"))
     source = get_arg(args, "source", reader_config.get("source"))
+    # TODO: datamodel and fix have different API
     fix = get_arg(args, "fix", reader_config.get("fix", False))
-    datamodel = get_arg(args, "fix", reader_config.get("datamodel", False))
+    datamodel = reader_config.get("datamodel", None if fix else False)
     loglevel = get_arg(args, "loglevel", builder_config.get("loglevel", "WARNING"))
     outdir = get_arg(args, "outdir", builder_config.get("outdir", "."))
     original_resolution = get_arg(args, "original", builder_config.get("original"))
@@ -83,6 +90,10 @@ def builder_execute(args):
     create_yaml = get_arg(args, "yaml", builder_config.get("yaml", False))
     vert_coord = get_arg(args, "vert_coord", builder_config.get("vert_coord"))
     force_unstructured = get_arg(args, "force_unstructured", builder_config.get("force_unstructured", False))
+    reader_kwargs = get_arg(args, "reader_kwargs", reader_config.get("reader_kwargs"))
+    if isinstance(reader_kwargs, str):
+        reader_kwargs = json.loads(reader_kwargs)
+    reader_kwargs = reader_kwargs or {}
 
     # Ensure required arguments are present
     if model is None:
@@ -94,7 +105,15 @@ def builder_execute(args):
 
     # Retrieve the data
     reader = Reader(
-        catalog=catalog, model=model, exp=exp, source=source, loglevel=loglevel, areas=False, fix=fix, datamodel=datamodel
+        catalog=catalog,
+        model=model,
+        exp=exp,
+        source=source,
+        loglevel=loglevel,
+        areas=False,
+        fix=fix,
+        datamodel=datamodel,
+        **reader_kwargs,
     )
     data = reader.retrieve()
 

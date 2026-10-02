@@ -443,6 +443,11 @@ The following options are available for ``aqua grids build``:
     Apply fixes and data model to the original source before building the grid. Useful for models with very specific coordinates/dimensions.
     Suggested as default setting, disabled if issues arise.
 
+.. option:: --datamodel
+
+    Apply data model to the original source before building the grid. Useful for models with very specific coordinates/dimensions.
+    Suggested as default setting, disabled if issues arise.
+
 .. option:: --verify
 
     Verify the grid file after creation. This is done by calling CDO via ``smmregrid`` to check if the weights generation is valid.
@@ -455,6 +460,19 @@ The following options are available for ``aqua grids build``:
 .. option:: --force_unstructured
 
     Force the grid detection to use unstructured grid type. Useful for datasets with ambiguous grid types (e.g. gaussian regular with inverted lon/lat dimensions).
+
+.. option:: --reader_kwargs <json>
+
+    Pass additional Reader parameters using a JSON object. For example, to select the Polytope engine and set time chunks:
+
+    .. code-block:: bash
+
+        aqua grids build --catalog CATALOG --model MODEL --exp EXP --source SOURCE \
+            --reader_kwargs '{"engine": "polytope", "chunks": {"time": 12}}'
+
+    Quote the entire object with single quotes in the shell and use double quotes for JSON keys and strings.
+    JSON preserves numbers, booleans (``true`` and ``false``), lists, nested objects and ``null`` (Python ``None``).
+    The selected Reader/backend determines which additional parameters it supports.
 
 .. _aqua-drop:
 
