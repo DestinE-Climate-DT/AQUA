@@ -110,18 +110,30 @@ class BackendSTAC(Backend):
             f"Retrieved {self.stac_kwargs} from {self.url} using AQUA v{aqua_version} with STAC Backend",
         )
 
+    def _get_asset(self):
+        """Open the STAC object and follow the nested catalog path to the selected asset using
+        pystacn and stac_kwargs. Raises KeyError if the path is invalid or the asset is not found."""
+        obj = pystac.read_file(self.url)
+
+        # Follow nested dict: each key is a child or item id
+        while isinstance(self.stac_kwargs, dict):
+            ((key, self.stac_kwargs),) = self.stac_kwargs.items()  # exactly one entry per level
+            nxt = obj.get_child(key) if hasattr(obj, "get_child") else None
+            if nxt is None and hasattr(obj, "get_item"):
+                nxt = next(obj.get_items(key), None)
+            if nxt is None:
+                raise KeyError(f"'{key}' not found in '{obj.id}'")
+            obj = nxt
+
+        # Leaf: a string is the asset key of the current object
+        if self.stac_kwargs not in obj.assets:
+            raise KeyError(f"asset '{self.stac_kwargs}' not found in '{obj.id}'. Available: {list(obj.assets)}")
+        return obj.assets[self.stac_kwargs]
+
     def _read_asset(self) -> xr.Dataset:
         """Open the selected STAC asset as an xarray Dataset."""
-        item = pystac.read_file(self.url)
-        if isinstance(self.stac_kwargs, str):
-            self.logger.debug("STAC selection is a string, treating as asset name")
-            asset = item.assets[self.stac_kwargs]
-        elif isinstance(self.stac_kwargs, dict):
-            self.logger.debug("STAC selection is a mapping, traversing catalog")
-            raise NotImplementedError("Nested STAC selection is not implemented yet")
-        else:
-            raise ValueError("stac_kwargs must be a string or a mapping")
 
+        asset = self._get_asset()
         data = xr.open_dataset(
             asset.href,
             **asset.extra_fields.get("xarray:open_kwargs", {}),
