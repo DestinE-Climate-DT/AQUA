@@ -59,7 +59,7 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
-      pytest-markers: 'aqua or slow or graphics or catgen'
+      pytest-markers: 'aqua or slow or graphics or catgen or stac'
       enable-parallel: true
       enable-coverage: false
       fail-fast: false

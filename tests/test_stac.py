@@ -19,6 +19,7 @@ def _dataset():
     )
 
 
+@pytest.mark.stac
 def test_stac_backend_retrieves_and_postprocesses_dataset():
     """The selected asset is read and passed through fixer and data model."""
     data = _dataset()
@@ -68,12 +69,14 @@ def test_stac_backend_retrieves_and_postprocesses_dataset():
         {"": "asset"},
     ],
 )
+@pytest.mark.stac
 def test_stac_backend_rejects_invalid_selection(selection):
     """Only a non-empty, single-branch nested mapping is accepted."""
     with pytest.raises(ValueError):
         BackendSTAC(path="catalog.json", stac=selection)
 
 
+@pytest.mark.stac
 def test_backend_factory_selects_stac_backend():
     """A STAC selection takes precedence over native xarray path access."""
     selection = {"collection": "asset"}
@@ -88,12 +91,14 @@ def test_backend_factory_selects_stac_backend():
     assert backend.read_kwargs["chunks"] == "auto"
 
 
+@pytest.mark.stac
 def test_backend_factory_requires_path_for_stac():
     """A selector without a catalog endpoint is rejected."""
     with pytest.raises(ValueError, match="STAC catalog path"):
         BackendFactory(configurer=MagicMock(), stac={"collection": "asset"})
 
 
+@pytest.mark.stac
 def test_stac_backend_drops_mapping_attrs_from_grid_sample():
     """Backend-only mapping attributes cannot be serialized by area generation."""
     data = _dataset()
