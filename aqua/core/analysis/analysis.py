@@ -19,12 +19,16 @@ from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg
 class Analysis:
     """Structured class for running AQUA diagnostic collections and managing configurations."""
 
-    def __init__(self, config_file_path=None, loglevel="WARNING"):
+    def __init__(self, config_file_path=None, default_config_name="config.aqua-analysis.yaml", loglevel="WARNING"):
         """
         Initialize the analysis instance.
 
         Args:
             config_file_path (str): Path to the AQUA analysis configuration file.
+            default_config_name (str): Name of the config file to use, resolved in the
+                installed "analysis" config directory, when config_file_path is not provided.
+                Allows different entry points (e.g. the ensemble one) to ship their own default
+                pipeline definition without duplicating any of the execution machinery.
             loglevel (str): Logging level for the analysis instance.
         """
         self.loglevel = loglevel
@@ -33,7 +37,7 @@ class Analysis:
         self.aqua_configdir = ConfigContext().get_config_dir()
 
         if config_file_path is None:
-            self.config_file_path = os.path.join(self.aqua_configdir, "analysis/config.aqua-analysis.yaml")
+            self.config_file_path = os.path.join(self.aqua_configdir, "analysis", default_config_name)
         else:
             self.config_file_path = os.path.expandvars(config_file_path)
 

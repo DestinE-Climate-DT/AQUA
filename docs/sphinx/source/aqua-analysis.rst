@@ -12,16 +12,22 @@ Basic usage
 
     aqua analysis <options>
 
-Without any argument, the script will run all the diagnostics available in AQUA on an hard-coded dataset,
-with LUMI configuration and output directory in the ``./output`` folder.
+Without any argument, the script will look for a default configuration file ``config.aqua-analysis.yaml``
+in your installation folder (see :ref:`aqua-install`) and run all the diagnostics available in AQUA on an hard-coded dataset
+(IFS-NEMO-5km baseline-hist from ClimateDT gen2), which is available on LUMI.
 
+The output of the analysis directory in the ``./output`` folder.
 All the diagnostic logfiles will be saved in this main folder, while the diagnostics output will be saved in subfolders
 named after the diagnostic name.
 Inside each diagnostic folder, the output will be saved in a subfolder named with the filetype (e.g. ``pdf``, ``netcdf``).
 
 The exact list of diagnostics to run and technical details of the analysis
-(such as the number of workers/thread/memory to use for the dask cluster) are specified in the configuration file ``config.aqua-analysis.yaml`` in the same folder.
-This file is available in the ``aqua/core/config/analysis`` folder and it is installed with AQUA (see :ref:`aqua-install`).
+(such as the number of workers/thread/memory to use for the dask cluster) are specified in the configuration file ``config.aqua-analysis.yaml``.
+
+.. note::
+    The ``config.aqua-analysis.yaml`` file is available in the `aqua-diagnostic <https://aqua-diagnostics.readthedocs.io/en/latest/>`_ package
+    in the ``aqua/diagnostics/config/analysis`` folder and it is installed
+    with AQUA when also the diagnostics package is installed (see :ref:`aqua-install`).
 
 Additional options
 ------------------
@@ -58,6 +64,7 @@ so that the script can be used in a batch job or in a workflow. These override c
 .. option:: --config <config>
 
     The config file to use.
+    Default is ``config.aqua-analysis.yaml`` in the AQUA installation folder.
 
 .. option:: --regrid <target_grid>
 
@@ -85,8 +92,8 @@ so that the script can be used in a batch job or in a workflow. These override c
 .. option:: -k <kind>, --kind <kind>
 
     Experiment kind to run (e.g. ``historical``, ``scenario``, ``storyline``).
-    This works in combination with the jinja template configuration files available in AQUA-diagnostics, and allow
-    for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
+    This works in combination with the jinja template configuration files available in `AQUA-diagnostics <https://aqua-diagnostics.readthedocs.io/en/latest/>`_,
+    and allow for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
     Overrides the value from the configuration file.
 
 .. option:: --checker
@@ -94,6 +101,8 @@ so that the script can be used in a batch job or in a workflow. These override c
     Activate the setup checker diagnostic. This diagnostic checks if the input data are available and
     if the configuration is correct before running the other diagnostics.
     Default is ``False``. Overrides the value from the configuration file.
+    The checker is contained in the ``aqua-diagnostics`` package and it is installed with
+    AQUA when also the diagnostics package is installed (see :ref:`aqua-install`).
 
 .. option:: --serial
 
@@ -117,16 +126,23 @@ so that the script can be used in a batch job or in a workflow. These override c
     The log level to use for the cli and the diagnostics.
     Default is ``INFO``.
 
-.. note ::
-
+.. note::
     By default the script will run all the state-of-the-art diagnostics available in AQUA.
     It is possible to run only a subset of the diagnostics by modifying the ``run`` key in the configuration file.
 
 Configuration file
 ------------------
 
-The configuration file ``templates/config.aqua-analysis.tmpl`` contains the list of diagnostics to run and technical details of the analysis.
-If a configuration is available also as a command line argument, the command line argument will take precedence.
+Although the default configuration file is contained in the ``aqua-diagnostics`` package,
+a template configuration file ``templates/config.aqua-analysis.tmpl`` is shipped in the ``aqua-core`` package and
+contains an example of list of diagnostics to run and technical details of the analysis.
+
+This template configuration file can be copied and modified to create a custom configuration file for the analysis.
+It is possible to select a subset of diagnostics to run, or even to add new diagnostics to the list,
+as long as they can accept the same command line arguments as the other diagnostics.
+
+.. note::
+    If a configuration is available also as a command line argument (e.g., ``--nworkers``, ``--nthreads``, etc.), the command line argument will take precedence.
 
 The configuration file is divided in three main sections:
 
@@ -135,13 +151,12 @@ The configuration file is divided in three main sections:
 - ``diagnostics``: contains the list of diagnostics to run.
 
 .. note::
-
     The configuration file allows for the definition of a custom folder path where the individual diagnostics configuration files are stored.
     This is done by setting an environment variable ``AQUA_CONFIG``.
 
 Please noticed that a supplementary configuration file is needed for each diagnostic, which contains the specific configuration for that diagnostic (e.g. the variables to use, the time range, etc.).
 These files are specified in the ``script_path`` key of each diagnostic in the ``diagnostics``, and can be templated with jinja to allow for dynamic configuration based on the experiment kind or other parameters.
-The `templates/config.exp-kind.tmpl` file contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
+The ``templates/config.exp-kind.tmpl`` file contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
 
 Job
 ^^^
@@ -173,11 +188,11 @@ The cluster section contains the following keys:
 - ``nthreads``: the number of threads per worker. Default is ``2``.
 - ``memory_limit``: the memory per worker. Default is ``7GiB``.
 - ``connect_timeout``: the timeout in seconds to wait for client to connect to the cluster.
-                        Default is ``120``.
-                        Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT=120s``.
+  Default is ``120``.
+  Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__CONNECT=120s``.
 - ``tcp_timeout``: the timeout in seconds for tcp connections.
-                        Default is ``60``.
-                        Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__FTP=60s``
+  Default is ``60``.
+  Can be overridden also setting an environment variable: ``DASK_DISTRIBUTED__COMM__TIMEOUTS__FTP=60s``
 
 .. note::
 
@@ -199,3 +214,18 @@ The diagnostics are specified as a dictionary with the following keys:
 - ``source_oce``: a boolean flag to pass the additional ocean source to the diagnostic (currently only ECmean). Defaults to False.
 - ``extra``: a string with extra arguments to pass to the diagnostic script.
 - ``outname``: the name of the output folder if different from the diagnostic name.
+
+Ensemble analysis
+-----------------
+
+As described above, it is possible to run the analysis with different options and diagnostics by customizing the configuration file.
+However, AQUA provides also a wrapper with a set of predefined configurations for running the analysis on an ensemble of experiments, models, sources and realizations.
+
+This is an extension of the ``aqua analysis`` command, and it can be used with the ``aqua analysis ensemble`` command.
+This command takes the same options as the ``aqua analysis`` command, and it can ingest the same configuration file structure, but it points
+by default to a different configuration file ``config.aqua-analysis-ensemble.yaml`` which contains a list of diagnostics
+specifically tailored for ensemble analysis.
+
+.. note::
+    The current ensemble analysis approach on AQUA is based on a two step approach. First, the analysis performed with the ``aqua-diagnostics`` package must
+    be run on a set of experiments, models, sources and realizations. Then, the ensemble analysis is done on the output of the diagnostics.

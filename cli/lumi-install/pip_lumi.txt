@@ -1,4 +1,0 @@
-# pip dependencies
-# pip install -e $AQUA/diagnostics/tropical_cyclones/[all]
-# pip install -e $AQUA/diagnostics/tropical_rainfall/[all]
-pip install -e $AQUA/[all]

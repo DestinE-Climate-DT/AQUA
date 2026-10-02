@@ -4,15 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.2.0):
+Unreleased in the current development version (target v1.2.1):
 
 Main changes:
+
+Complete list:
+- Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
+
+## [v1.2.0]
 
 ClimateDT workflow modifications:
 - The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
+Main changes: 
+1. Generalised installation option for aqua packages (as aqua-diagnostics) via plugins
+2. Various fixes to the Backend and to the Console
+
 Complete list:
+- `aqua analysis` support for ensemble analysis with the `aqua analysis ensemble` subcommand (#3159)
+- `aqua grids build` now supports `reader_kwargs` option to pass extra arguments to the Reader (#3136)
+- `aqua grids build` now supports `--datamodel` option to apply the data model to the original source before building the grid (#3136)
+- Remove the `intake_xarray` compatibility stub (#3147)
+- Container are now created with conda-lock file (#3133)
+- Allow update to latest matplotlib in AQUA-diagnostics (#3138)
+- Adapt tests involving Polytope to `climatedt-gen2` catalog (#3137)
+- Adapt z3fdb reader to recent API change (#3100)
+- Simplify `lumi_install.sh` so that specific environment file is no longer necessary (#3130)
+- Allow `compact: null` to disable monthly-to-yearly concatenation for Zarr DROP output. (#3125)
 - Update GSV paths and container name logic for `load-aqua-container.sh` bash script (#3123)
 - Introduce `scan_coord()` function to retrieve the coordinate name from the data model (#3038)
 - Added S3 compatibility with LUMI-O bucket (#3099)
@@ -41,6 +60,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix area selection for regionmask regions crossing the Greenwich meridian (#3058)
 - Remove intake-xarray dependency (#2958)
 - Update load_aqua_container script for both core and diagnostics (#3043)
 - Remove deprecated idx_level coordinates for FDB access (#3063)
@@ -1548,7 +1568,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...HEAD
+[v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0

@@ -9,10 +9,10 @@ AQUA is developed and tested with Python 3.14 and it supports Python>=3.11,<3.15
 .. note ::
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
 
-.. _installation-pip:
+.. _installation-conda:
 
-Conda/Mamba installation with pip
----------------------------------
+Conda/Mamba installation
+------------------------
 
 Prerequisites
 ^^^^^^^^^^^^^
@@ -21,10 +21,19 @@ Prerequisites
 Installation with Miniforge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-AQUA-core is available on the Python Package Index (PyPI) repository and can be installed with pip.
-However, some dependencies are not available on PyPI, so you may need to install them manually:
-recommended way to do this is to use Mamba/Conda package manager for the installation process of the dependencies, and then use pip to install AQUA-core itself.
-This can be achieved with:
+AQUA-core is available on the Python Package Index (PyPI) repository and on conda-forge.
+You can install it with pip or with conda/mamba package manager.
+Anyway, some dependencies are not available on PyPI, so you may need to install them manually,
+the recommended way to do this is to use Mamba/Conda package manager for the installation process of the dependencies.
+
+For a pure conda installation:
+
+.. code-block:: bash
+
+    mamba create -n aquarium -c conda-forge python=3.14 aqua-core
+    mamba activate aquarium
+
+Or for a pip installation of AQUA-core after installing the dependencies:
 
 .. code-block:: bash
 
@@ -34,19 +43,16 @@ This can be achieved with:
 
 The same environment is available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
 
+.. warning ::
+    On MacOS, the installation is supported only for MacOS 15 and later.
+
 .. note ::
-    If you want to access ClimateDT data, you will need to run `pip install aqua-core[fdb]`
+    If you want to access ClimateDT data, you will need to run ``pip install aqua-core[fdb]``
 
 .. note ::
     If you need to access data written in a local FDB database (not polytope), you need to install the FDB5 library.
-    The FDB5 library is not available in the conda-forge repository, so you need to install it manually.
+    The FDB5 library is not available in the conda-forge repository, but can be installed on unix systems with the ``sudo apt-get install fdb5`` command.
     If you are working on a supported HPC, you can check the corresponding section for more information in the :ref:`HPC installation <installation-hpc>` section.
-
-Once the extra dependencies are installed, you can install AQUA with the following command:
-
-.. code-block:: bash
-
-    pip install aqua-core
 
 Extra dependencies
 ^^^^^^^^^^^^^^^^^^
@@ -69,15 +75,6 @@ Or to install all the extra dependencies:
 
     pip install aqua-core[all]
 
-.. _installation-conda:
-
-Conda/Mamba installation
-------------------------
-
-It is possible to use Mamba/Conda package manager for the installation process.
-AQUA is not yet available on the conda-forge repository, so the installation process requires the use of an environment file
-that contains all the required dependencies.
-
 Prerequisites
 ^^^^^^^^^^^^^
 
@@ -86,9 +83,11 @@ Before installing AQUA, ensure that you have the following software installed:
 - `Git <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_: AQUA is hosted on GitHub, and you will need Git to clone the repository.
 - `Miniforge <https://github.com/conda-forge/miniforge>`_ : Miniforge is a package manager for conda-forge, and it is the recommended package manager for the installation process.
 
-Installation with Miniforge
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Installation from source
+------------------------
 
+This method is recommended for developers or users who want to install the latest version of AQUA from the source code.
+This may be useful if you want to contribute to the development of AQUA or if you want to use the latest features that are not yet available in the released version.
 First, clone the AQUA repository from GitHub:
 
 .. code-block:: bash
@@ -246,7 +245,7 @@ To verify the configuration, try testing the SSH connection with:
 
 Once verified, you can successfully use ``git clone`` and other Git commands with SSH.
 
-You can now install AQUA with your preferred method (see :ref:`installation-conda` or :ref:`installation-pip`).
+You can now install AQUA with your preferred method (see :ref:`installation-conda`).
 
 .. warning::
 

@@ -1,15 +1,12 @@
 """Tests for aqua.core.intake_drivers.xarray: the AQUA-provided netcdf/zarr intake drivers."""
 
-import importlib.util
-import sys
-
 import intake
 import numpy as np
 import pytest
 import xarray as xr
 from intake.source import get_plugin_class
 
-from aqua.core.intake_drivers.xarray import IntakeNetCDFSource, IntakeZarrSource, install_intake_xarray_stub
+from aqua.core.intake_drivers.xarray import IntakeNetCDFSource, IntakeZarrSource
 
 
 @pytest.fixture
@@ -42,11 +39,6 @@ class TestDriverRegistration:
 
     def test_zarr_driver_registered(self):
         assert get_plugin_class("zarr") is IntakeZarrSource
-
-    def test_intake_xarray_importable(self):
-        # Real package or AQUA stub: legacy catalogs carrying a
-        # "plugins: source: - module: intake_xarray" block need this import to succeed.
-        import intake_xarray  # noqa: F401
 
 
 @pytest.mark.aqua
@@ -219,29 +211,3 @@ class TestYAMLCatalog:
         assert source.xarray_kwargs["decode_times"] is True
         data = source.to_dask()
         xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
-
-
-@pytest.mark.aqua
-def test_stub_installation(monkeypatch):
-    """When intake_xarray is absent, the stub provides the legacy module."""
-    real_find_spec = importlib.util.find_spec
-    saved = {k: sys.modules.pop(k) for k in list(sys.modules) if k == "intake_xarray" or k.startswith("intake_xarray.")}
-    monkeypatch.setattr(
-        importlib.util,
-        "find_spec",
-        lambda name, *args, **kwargs: None if name == "intake_xarray" else real_find_spec(name, *args, **kwargs),
-    )
-    try:
-        assert install_intake_xarray_stub() is True
-        import intake_xarray
-
-        # the stub exposes the legacy intake-xarray class names
-        assert intake_xarray.netcdf.NetCDFSource is IntakeNetCDFSource
-        assert intake_xarray.xzarr.ZarrSource is IntakeZarrSource
-        # a second call must be a no-op now that the stub is in place
-        assert install_intake_xarray_stub() is False
-    finally:
-        for key in list(sys.modules):
-            if key == "intake_xarray" or key.startswith("intake_xarray."):
-                sys.modules.pop(key)
-        sys.modules.update(saved)
