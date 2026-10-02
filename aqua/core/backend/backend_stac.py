@@ -4,7 +4,7 @@ Example:
     Open a STAC asset through the public :class:`aqua.Reader` interface::
 
         reader = Reader(
-            path="https://example.org/catalog.json",
+            url="https://example.org/catalog.json",
             stac_kwargs={"collection": {"item": "asset"}},
             areas=False,
         )
@@ -30,7 +30,7 @@ class BackendSTAC(Backend):
     def __init__(
         self,
         url: str,
-        stac_kwargs: dict,
+        stac_kwargs: dict | str,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
         datamodel: DataModel = None,
@@ -41,7 +41,7 @@ class BackendSTAC(Backend):
 
         Args:
             url (str): URL of the STAC catalog JSON document.
-            stac_kwargs (dict): Single-branch nested mapping describing successive catalog
+            stac_kwargs (dict | str): Single-branch nested mapping describing successive catalog
                 lookups, for example ``{"collection": {"item": "asset"}}``.
             chunks (str | dict, optional): Chunking passed to the selected asset reader.
                 ``None`` falls back to ``"auto"`` so STAC assets remain lazy. Defaults
@@ -111,29 +111,40 @@ class BackendSTAC(Backend):
         )
 
     def _get_asset(self):
-        """Open the STAC object and follow the nested catalog path to the selected asset using
-        pystacn and stac_kwargs. Raises KeyError if the path is invalid or the asset is not found."""
+        """Follow the dict path (if any) and resolve the asset key on the object reached.
+        Raises KeyError if not found, ValueError if ambiguous."""
         obj = pystac.read_file(self.url)
+        spec = self.stac_kwargs  # don't mutate self
 
-        # Follow nested dict: each key is a child or item id
-        while isinstance(self.stac_kwargs, dict):
-            ((key, self.stac_kwargs),) = self.stac_kwargs.items()  # exactly one entry per level
-            nxt = obj.get_child(key) if hasattr(obj, "get_child") else None
-            if nxt is None and hasattr(obj, "get_item"):
-                nxt = next(obj.get_items(key), None)
+        # Dict: each key is a child or item id
+        while isinstance(spec, dict):
+            ((key, spec),) = spec.items()
+            if isinstance(obj, pystac.Item):
+                raise KeyError(f"cannot descend into '{key}': '{obj.id}' is an Item")
+            nxt = obj.get_child(key) or obj.get_item(key)
             if nxt is None:
                 raise KeyError(f"'{key}' not found in '{obj.id}'")
             obj = nxt
 
-        # Leaf: a string is the asset key of the current object
-        if self.stac_kwargs not in obj.assets:
-            raise KeyError(f"asset '{self.stac_kwargs}' not found in '{obj.id}'. Available: {list(obj.assets)}")
-        return obj.assets[self.stac_kwargs]
+        # Leaf: string asset key
+        if isinstance(obj, pystac.Item):
+            if spec not in obj.assets:
+                raise KeyError(f"asset '{spec}' not found in item '{obj.id}'. Available: {list(obj.assets)}")
+            return obj.assets[spec]
+
+        # Collection: its own assets take priority
+        if isinstance(obj, pystac.Collection) and spec in obj.assets:
+            return obj.assets[spec]
+
+        raise ValueError(f"'{spec}' is not a valid asset key for '{obj.id}'")
 
     def _read_asset(self) -> xr.Dataset:
         """Open the selected STAC asset as an xarray Dataset."""
 
         asset = self._get_asset()
+        if not isinstance(asset, pystac.Asset):
+            raise TypeError(f"STAC asset {self.stac_kwargs} from {self.url} is not a pystac.Asset")
+
         data = xr.open_dataset(
             asset.href,
             **asset.extra_fields.get("xarray:open_kwargs", {}),

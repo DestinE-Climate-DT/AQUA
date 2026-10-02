@@ -35,27 +35,27 @@ class Reader:
 
     def __init__(
         self,
-        model=None,
-        exp=None,
-        source=None,
-        catalog=None,
-        path=None,
-        fix=True,
-        datamodel=None,
-        convention=None,
-        regrid=None,
-        regrid_method=None,
-        areas=True,
-        startdate=None,
-        enddate=None,
-        rebuild=False,
-        loglevel="WARNING",
-        nproc=DEFAULT_NPROC,
-        chunks=None,
-        preproc=None,
+        model: str = None,
+        exp: str = None,
+        source: str = None,
+        catalog: str = None,
+        path: str = None,
+        fix: bool = True,
+        datamodel: str | bool = None,
+        convention: str = None,
+        regrid: str = None,
+        regrid_method: str = None,
+        areas: bool = True,
+        startdate: str = None,
+        enddate: str = None,
+        rebuild: bool = False,
+        loglevel: str = "WARNING",
+        nproc: int = DEFAULT_NPROC,
+        chunks: str | dict = None,
+        preproc: callable = None,
         engine=DEFAULT_ENGINE,
-        url=None,
-        stac_kwargs=None,
+        url: str = None,
+        stac_kwargs: dict | str = None,
         **kwargs,
     ):
         """Initialize the Reader class to identify, retrieve, fix, and regrid climate data.
@@ -95,10 +95,12 @@ class Reader:
                 Defaults to None.
             engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope' or 'gsv'.
                 Defaults to DEFAULT_ENGINE ('gsv').
-            url (str, optional): URL of the STAC catalog. Defaults to None.
-            stac_kwargs (dict, optional): Single-branch nested mapping selecting an asset from the STAC
+            url (str, optional): URL of the STAC catalog.
+                When provided, data access uses the Intake STAC backend.
+                Defaults to None.
+            stac_kwargs (dict or str, optional): Mapping selecting an asset from the STAC
                 catalog at `path`, for example ``{"collection": {"item": "asset"}}``.
-                When provided, data access uses the Intake STAC backend. Defaults to None.
+               Defaults to None.
             **kwargs: Additional keyword arguments forwarded to the catalog entry or backend.
 
         Keyword Args:

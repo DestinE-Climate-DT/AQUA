@@ -108,7 +108,7 @@ class BackendFactory:
         catalog: str = None,
         loglevel: str = "WARNING",
         url: str = None,
-        stac_kwargs: dict = None,
+        stac_kwargs: dict | str = None,
     ):
         # Set the provided parameters as instance attributes
         self.catalog = catalog
@@ -266,13 +266,35 @@ class BackendFactory:
         return self.BACKEND_TYPES[self.driver](**filtered)
 
     def _check_required_params(self):
-        """Check if the required parameters are provided."""
-        # TODO: add a check for stac_kwargs when driver is stac
-        if self.path is None and self.url is None and not all(v is not None for v in [self.model, self.exp, self.source]):
+        """
+        Require exactly one complete setup: (model, exp, source), (path), or (url, stac_kwargs).
+
+        Raises:
+            ValueError: If no setup is provided, multiple setups are provided, or a setup is incomplete.
+        """
+        modes = {
+            "intake": {"model": self.model, "exp": self.exp, "source": self.source},
+            "xarray": {"path": self.path},
+            "stac": {"url": self.url, "stac_kwargs": self.stac_kwargs},
+        }
+        # for each mode, the parameters the user actually set
+        active = {name: [k for k, v in params.items() if v is not None] for name, params in modes.items()}
+        active = {name: keys for name, keys in active.items() if keys}
+
+        if not active:
+            raise ValueError("No source provided. Use one of: (model, exp, source), (path), or (url, stac_kwargs).")
+
+        if len(active) > 1:
+            details = "; ".join(f"{name}: {keys}" for name, keys in active.items())
             raise ValueError(
-                "Nor path not url nor model/exp/source are provided. Please provide either a path or model, exp, and source."
+                f"Inconsistent parameters, multiple setups given ({details}). "
+                "Use only one of: (model, exp, source), (path), or (url, stac_kwargs)."
             )
-        if self.path is not None and self.url and any(v is not None for v in [self.model, self.exp, self.source, self.url]):
+
+        # exactly one mode is active: make sure it is complete
+        ((name, given),) = active.items()
+        missing = [k for k in modes[name] if k not in given]
+        if missing:
             raise ValueError(
-                "Nor path not url nor model/exp/source are provided. Please provide either a path or model, exp, and source."
+                f"Incomplete '{name}' setup: missing {missing}. Required parameters are: {list(modes[name].keys())}."
             )
