@@ -258,18 +258,8 @@ jobs:
           python -m pip install --no-deps -e .
 
       # ========================================
-      # 4b. INSTALL AQUA (PyPI and mode)
+      # 4b. Checkkout right tag for PyPI and conda mode
       # ========================================
-      - name: Upgrade pip/setuptools/wheel
-        if: ${{ inputs.install-mode == 'pypi' }}
-        run: python -m pip install --upgrade pip setuptools wheel
-
-      - name: Install aqua from PyPI with test dependencies
-        if: ${{ inputs.install-mode == 'pypi' }}
-        run: |
-          python -m pip install aqua-core[tests,fdb] --pre
-          # temporary since it is not shipped by aqua-core[tests] yet
-          python -m pip install dvc dvc-s3
 
       - name: Checkout the tag for PyPI mode
         if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
