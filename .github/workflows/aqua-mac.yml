@@ -1,7 +1,25 @@
 name: AQUA macOS tests
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
+    inputs:
+      macos_version:
+        description: 'macOS runner version'
+        required: true
+        default: 'macos-15'
+        type: choice
+        options:
+          - 'macos-15'
+          - 'macos-16'
+          - 'macos-26'
+          - 'macos-27'
+          - 'macos-latest'
+          - 'all'
   schedule:
     - cron: "0 4 * * 3" # run every Wednesday at 4AM UTC
 
@@ -11,28 +29,77 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Run tests only when specific conditions are met
+  check-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check-macos.outputs.result }}
+      matrix: ${{ steps.check-macos.outputs.matrix }}
+    steps:
+      - name: Check if MacOS tests should run
+        id: check-macos
+        run: |
+          # Run tests if:
+          # 1) PR has 'run tests', 'ready to merge', or 'run MacOS test' labels
+          # 2) PR has 'dependabot' label or actor is Dependabot
+          # 3) Triggered manually (workflow_dispatch)
+          # 4) Triggered by schedule
+          # 5) Pushed to main branch (e.g. merge into main)
+          SHOULD_RUN="false"
+
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'run MacOS test') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'dependabot') }}" == "true" ]] || \
+             [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
+             [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            SHOULD_RUN="true"
+          fi
+
+          MACOS_VERSION="${{ inputs.macos_version || 'macos-15' }}"
+
+          # Configure matrix: defaults to macos-15 on PR/push/schedule.
+          # On workflow_dispatch, 'all' runs macos-15, macos-26, and macos-27 in parallel.
+          # Only macos-27 requires setting runner to xcode-27.
+          if [[ "$MACOS_VERSION" == "all" ]]; then
+            MATRIX='[{"macos_version":"macos-15","runner":"macos-15"},{"macos_version":"macos-26","runner":"macos-26"},{"macos_version":"macos-27","runner":"xcode-27"}]'
+          elif [[ "$MACOS_VERSION" == "macos-27" ]]; then
+            MATRIX='[{"macos_version":"macos-27","runner":"xcode-27"}]'
+          else
+            MATRIX="[{\"macos_version\":\"$MACOS_VERSION\",\"runner\":\"$MACOS_VERSION\"}]"
+          fi
+
+          echo "Event: ${{ github.event_name }} | Ref: ${{ github.ref }} | Actor: ${{ github.actor }}"
+          echo "Labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}"
+          echo "macOS Version selection: $MACOS_VERSION"
+          echo "Matrix: $MATRIX"
+          echo "Result: $SHOULD_RUN"
+          echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
   aqua-mac-tests:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should-run == 'true'
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - macos_version: macos-15
-            runner: macos-15
-          # GitHub's macOS 27 preview runner currently uses the xcode-27 label.
-          - macos_version: macos-27
-            runner: xcode-27
+        include: ${{ fromJSON(needs.check-trigger.outputs.matrix) }}
     name: AQUA tests (${{ matrix.macos_version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.runner }}
       python-versions: '["3.14"]'
-      pytest-markers: 'aqua or slow or graphics or catgen'
+      pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
       fail-fast: false
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
+      pr-number: ${{ github.event.pull_request.number || '' }}
+      is-dependabot: ${{ fromJSON(github.actor == 'dependabot[bot]' || contains(github.event.pull_request.labels.*.name, 'dependabot')) }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
