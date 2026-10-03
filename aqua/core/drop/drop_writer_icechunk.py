@@ -237,7 +237,7 @@ class IcechunkWriter(BaseWriter):
         read_session = repo.readonly_session("main")
         return xr.open_zarr(read_session.store, consolidated=False)
 
-    def check_integrity(self, var, level=None, overwrite=False, end_date=None):
+    def check_integrity(self, var, level=None, overwrite=False, end_date=None, start_date=None):
         """
         Check variable integrity by querying repo metadata.
 
@@ -256,6 +256,7 @@ class IcechunkWriter(BaseWriter):
                 by ``pd.Timestamp``).  When provided, the repo is considered
                 complete only if its last committed timestamp is >= end_date.
                 More data than requested is fine; less is not.
+            start_date: Unused; accepted for interface compatibility (metadata-only check is already fast).
 
         Returns:
             dict: {
