@@ -7,6 +7,19 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
+    inputs:
+      macos_version:
+        description: 'macOS runner version'
+        required: true
+        default: 'macos-15'
+        type: choice
+        options:
+          - 'macos-15'
+          - 'macos-16'
+          - 'macos-26'
+          - 'macos-27'
+          - 'macos-latest'
+          - 'all'
   schedule:
     - cron: "0 4 * * 3" # run every Wednesday at 4AM UTC
 
@@ -21,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should-run: ${{ steps.check-macos.outputs.result }}
+      matrix: ${{ steps.check-macos.outputs.matrix }}
     steps:
       - name: Check if MacOS tests should run
         id: check-macos
@@ -44,10 +58,26 @@ jobs:
             SHOULD_RUN="true"
           fi
 
+          MACOS_VERSION="${{ inputs.macos_version || 'macos-15' }}"
+
+          # Configure matrix: defaults to macos-15 on PR/push/schedule.
+          # On workflow_dispatch, 'all' runs macos-15, macos-26, and macos-27 in parallel.
+          # Only macos-27 requires setting runner to xcode-27.
+          if [[ "$MACOS_VERSION" == "all" ]]; then
+            MATRIX='[{"macos_version":"macos-15","runner":"macos-15"},{"macos_version":"macos-26","runner":"macos-26"},{"macos_version":"macos-27","runner":"xcode-27"}]'
+          elif [[ "$MACOS_VERSION" == "macos-27" ]]; then
+            MATRIX='[{"macos_version":"macos-27","runner":"xcode-27"}]'
+          else
+            MATRIX="[{\"macos_version\":\"$MACOS_VERSION\",\"runner\":\"$MACOS_VERSION\"}]"
+          fi
+
           echo "Event: ${{ github.event_name }} | Ref: ${{ github.ref }} | Actor: ${{ github.actor }}"
           echo "Labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}"
+          echo "macOS Version selection: $MACOS_VERSION"
+          echo "Matrix: $MATRIX"
           echo "Result: $SHOULD_RUN"
           echo "result=$SHOULD_RUN" >> $GITHUB_OUTPUT
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
   aqua-mac-tests:
     needs: check-trigger
@@ -55,12 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - macos_version: macos-15
-            runner: macos-15
-          # GitHub's macOS 27 preview runner currently uses the xcode-27 label.
-          #- macos_version: macos-27
-          #  runner: xcode-27
+        include: ${{ fromJSON(needs.check-trigger.outputs.matrix) }}
     name: AQUA tests (${{ matrix.macos_version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
