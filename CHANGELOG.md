@@ -22,6 +22,7 @@ Main changes:
 2. Various fixes to the Backend and to the Console
 
 Complete list:
+- Implement MacOS CI/CD test (#3158)
 - `aqua analysis` support for ensemble analysis with the `aqua analysis ensemble` subcommand (#3159)
 - `aqua grids build` now supports `reader_kwargs` option to pass extra arguments to the Reader (#3136)
 - `aqua grids build` now supports `--datamodel` option to apply the data model to the original source before building the grid (#3136)
