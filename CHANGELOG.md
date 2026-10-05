@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.2.1):
 Main changes:
 
 Complete list:
+- Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points.
 - Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
 
 ## [v1.2.0]
