@@ -930,6 +930,23 @@ class TestBoxplot:
 
 
 @pytest.mark.graphics
+@pytest.mark.parametrize("plot_func", [plot_gregory_monthly, plot_gregory_annual])
+def test_gregory_time_colormap_is_applied_to_lines(plot_func):
+    """Time colors should map consistently to trajectory segments and points."""
+    times = np.array(["2000-01-01", "2001-01-01", "2002-01-01"], dtype="datetime64[D]")
+    t2m = xr.DataArray([1.0, 2.0, 3.0], dims="time", coords={"time": times})
+    net_toa = xr.DataArray([4.0, 2.0, 5.0], dims="time", coords={"time": times})
+
+    fig, ax = plot_func(t2m, net_toa, cmap="viridis")
+
+    assert len(ax.collections) == 2
+    assert np.allclose(ax.collections[0].get_array(), [0.25, 0.75])
+    assert np.allclose(ax.collections[1].get_array(), [0.0, 0.5, 1.0])
+    assert fig.axes[1].get_ylabel() == "Time"
+    plt.close(fig)
+
+
+@pytest.mark.graphics
 class TestGregory:
     """Basic tests for the Gregory plot functions"""
 
