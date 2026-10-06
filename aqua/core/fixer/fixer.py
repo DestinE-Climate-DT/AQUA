@@ -239,7 +239,7 @@ class Fixer:
                     )
 
                     # if some unit conversion is defined, modify the attributes and history for later usage
-                    if "factor" in conversion_dictionary or "offset" in conversion_dictionary:
+                    if conversion_dictionary:
                         data[source].attrs.update({"tgt_units": tgt_units})
                         for key, value in conversion_dictionary.items():
                             data[source].attrs.update({key: value})
