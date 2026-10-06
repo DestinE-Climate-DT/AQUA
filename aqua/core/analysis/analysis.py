@@ -316,9 +316,9 @@ class Analysis:
         if script_path is None:
             if self.aqua_diagnostics_path:
                 self.logger.info("Running setup checker from AQUA diagnostics path: %s", self.aqua_diagnostics_path)
-                script_path = os.path.join(self.aqua_diagnostics_path, "checker", "cli_checker.py")
+                script_path = os.path.join(self.aqua_diagnostics_path, "base", "cli_setup_checker.py")
             else:
-                self.logger.error("AQUA diagnostics path not found; cannot locate cli_checker.py.")
+                self.logger.error("AQUA diagnostics path not found; cannot locate cli_setup_checker.py.")
                 return 0
         if logfile is None:
             logfile = os.path.expandvars(f"{self.output_dir}/setup_checker.log")
