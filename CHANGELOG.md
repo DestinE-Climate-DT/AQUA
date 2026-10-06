@@ -1571,7 +1571,7 @@ This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
 [unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...HEAD
-[v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
+[v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
