@@ -331,6 +331,7 @@ class TestGsv:
         assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
+    @pytest.mark.polytope
     def test_reader_polytope(self) -> None:
         """
         Reading from a remote databridge using polytope
@@ -350,6 +351,7 @@ class TestGsv:
         data = reader.retrieve(var="2t")
         assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.1543)
 
+    @pytest.mark.polytope
     def test_reader_stac_polytope(self) -> None:
         """
         Reading from a remote databridge using polytope
@@ -366,6 +368,7 @@ class TestGsv:
         data = reader.retrieve(var="2t")
         assert data.isel(time=20)["2t"].mean().values == pytest.approx(286.9244)
 
+    @pytest.mark.polytope
     def test_reader_polytope_mn5(self) -> None:
         """
         Reading from mn5 databridge using polytope
