@@ -211,7 +211,7 @@ class FldStat:
             mask_kwargs=mask_kwargs,
             default_coords=default_coords,
             to_180=to_180,
-            frac_threshold=frac_threshold
+            frac_threshold=frac_threshold,
         )
 
     def integrate_over_area(self, data: xr.Dataset | xr.DataArray, areacell: xr.DataArray, dims: list):
