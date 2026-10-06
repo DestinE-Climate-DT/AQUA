@@ -96,7 +96,7 @@ so that the script can be used in a batch job or in a workflow. These override c
     and allow for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
     Overrides the value from the configuration file.
 
-.. option:: --checker
+.. option:: --setup_checker
 
     Activate the setup checker diagnostic. This diagnostic checks if the input data are available and
     if the configuration is correct before running the other diagnostics.

@@ -792,7 +792,7 @@ class TestAquaConsoleAnalysis:
                         "analysis",
                         "--config",
                         str(analysis_cfg),
-                        "--checker",
+                        "--setup_checker",
                     ]
                 )
 
