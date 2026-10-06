@@ -15,8 +15,8 @@ fixer_name:
                 src_units: m
                 grib: true
             wo:
-                src_units: m/s
                 derived: w
+                grib: 262507
             uoe:
                 derived: u
             von:
