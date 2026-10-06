@@ -89,8 +89,7 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel="WARNING"):
             if logger:
                 logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
         else:
-            if logger:
-                logger.debug("%s: incommensurate units converting %s to %s --> %s", var, src, dst, factor.units)
+            raise ValueError(f"Incommensurate units: cannot convert from {src} to {dst} for variable {var}")
         offset = 0 * units(dst)
 
     # Store non-default conversion factors and offsets
