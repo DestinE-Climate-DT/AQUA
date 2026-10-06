@@ -123,9 +123,10 @@ def analysis_execute(args):
 
     # setup checker: run the setup checker if requested
     run_setup_checker = get_arg(args, "setup_checker", False, config=job_config, key="run_setup_checker")
-    cli_setup_checker = os.path.join(script_dir, cli.get("setup_checker"))
+    setup_checker_script = os.path.join(script_dir, cli.get("setup_checker", ""))
+    setup_checker_script = setup_checker_script if os.path.isfile(setup_checker_script) else None
     if run_setup_checker:
-        _ = analyzer.run_setup_checker(script_path=cli_setup_checker)
+        _ = analyzer.run_setup_checker(script_path=setup_checker_script)
 
     # running or not
     run = config.get("run", [])
