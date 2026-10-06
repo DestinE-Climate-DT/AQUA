@@ -117,7 +117,7 @@ class AreaSelection:
                 if lon_sel.size > 0:
                     span_180 = np.ptp((lon_sel + 180) % 360 - 180)
                     span_360 = np.ptp(lon_sel % 360)
-                    if span_180 < span_360:
+                    if span_180 <= span_360:  # tie: keep the [-180, 180] behaviour
                         selected = self._to_180_and_sort(selected, lon_name)
                     else:
                         selected = self._to_360_and_sort(selected, lon_name)
