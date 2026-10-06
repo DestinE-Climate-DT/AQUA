@@ -47,7 +47,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
     parser.add_argument("--config", type=str, help="Configuration file")
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
-    parser.add_argument("--checker", action="store_true", help="Run the setup checker")
+    parser.add_argument("--setup_checker", action="store_true", help="Run the setup checker")
 
     # computation
     parser.add_argument("--serial", action="store_true", help="Disable dask cluster parallel execution")
