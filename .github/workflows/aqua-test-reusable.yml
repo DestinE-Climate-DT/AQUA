@@ -278,7 +278,7 @@ jobs:
           python -m pip install --no-deps -e .
 
       # ========================================
-      # 4b. Checkkout right tag for PyPI and conda mode
+      # 4b. Checkout right tag for PyPI and conda mode
       # ========================================
 
       - name: Checkout the tag for PyPI mode
