@@ -183,7 +183,7 @@ class TestFldmean:
 
     def test_fldmean_nemo_3d(self, reader_nemo_3d, data_nemo_3d):
         """Fldmean test for NEMO-3D"""
-        avg = reader_nemo_3d.fldmean(data_nemo_3d["so"]).values
+        avg = reader_nemo_3d.fldmean(data_nemo_3d["avg_so"]).values
         assert avg.shape == (8,)
         assert avg[4] == pytest.approx(34.63406)
 
