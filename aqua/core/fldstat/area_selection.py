@@ -1,6 +1,6 @@
+import numpy as np
 import regionmask
 import xarray as xr
-import numpy as np
 
 from aqua.core.default import DEFAULT_COORDS
 from aqua.core.logger import log_configure, log_history
