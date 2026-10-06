@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
+- Remove climatedt-phase1 from CI/CD (#3181)
+
 ## [v1.2.1]
 
 Complete list:
