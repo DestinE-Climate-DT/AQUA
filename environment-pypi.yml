@@ -13,4 +13,4 @@ dependencies:
   - eccodes>=2.41.0,<2.50
   - pip
   - pip:
-    - aqua-core[tests]
+    - aqua-core[test,fdb]
