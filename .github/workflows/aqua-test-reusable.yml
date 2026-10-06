@@ -7,7 +7,12 @@ on:
         description: 'JSON array of Python versions to test'
         required: true
         type: string
-        default: '["3.14]'
+        default: '["3.14"]'
+      platform:
+        description: 'GitHub Actions runner label'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
       pytest-markers:
         description: 'Pytest markers to run (e.g., "aqua or slow")'
         required: true
@@ -39,7 +44,7 @@ on:
         type: string
         default: ''
       container-image:
-        description: 'Container image to use (empty string = ubuntu-latest, default = FDB container)'
+        description: 'Container image to use (empty string = selected host runner, default = FDB container)'
         required: false
         type: string
         default: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
@@ -85,16 +90,16 @@ defaults:
 
 jobs:
   aqua_test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.platform }}
     continue-on-error: false
 
     concurrency:
-      group: ${{ inputs.pr-number != '' && format('aqua-pr-{0}-py{1}', inputs.pr-number, matrix.python-version) || format('aqua-{0}-py{1}', github.run_id, matrix.python-version) }}
+      group: ${{ inputs.pr-number != '' && format('aqua-pr-{0}-{1}-py{2}', inputs.pr-number, inputs.platform, matrix.python-version) || format('aqua-{0}-{1}-py{2}', github.run_id, inputs.platform, matrix.python-version) }}
       cancel-in-progress: ${{ inputs.pr-number != '' }}
 
     container:
       # To run FDB tests we need to use a Docker image with FDB installed.
-      # Pass container-image: '' from the caller to use plain ubuntu-latest (no container).
+      # Pass container-image: '' from the caller to use the selected host runner without a container.
       image: ${{ inputs.container-image }}
       options: --user root
 
@@ -143,6 +148,7 @@ jobs:
       # 2. INSTALL SYSTEM DEPENDENCIES
       # ========================================
       - name: Install GH Actions dependencies
+        if: ${{ runner.os == 'Linux' }}
         run: |
           # Use sudo when not running as root (plain ubuntu-latest runner)
           SUDO=$([ "$(id -u)" = "0" ] && echo "" || echo "sudo")
@@ -152,6 +158,10 @@ jobs:
               curl \
               git \
               gpg
+
+      - name: Install GH Actions dependencies (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        run: brew install wget
 
       - name: Clone GitLab data-portfolio repository
         run: |
@@ -164,7 +174,7 @@ jobs:
       # ========================================
 
       - name: Set up Micromamba (local mode with fdb, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb != false && !inputs.is-dependabot && runner.os != 'macOS' }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -172,13 +182,15 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/conda-linux-64.lock
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
       - name: Set up Micromamba (local mode without fdb, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot && runner.os != 'macOS' }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -186,13 +198,15 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/conda-linux-64.nofdb.lock
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
-      - name: Set up Micromamba (local mode with dependabot using environment.yml)
-        if: ${{ inputs.install-mode == 'local' && inputs.is-dependabot }}
+      - name: Set up Micromamba (local mode with environment.yml, macOS or dependabot)
+        if: ${{ inputs.install-mode == 'local' && (inputs.is-dependabot || runner.os == 'macOS') }}
         uses: mamba-org/setup-micromamba@v3
         env:
           GITHUB_TOKEN: ''
@@ -200,8 +214,10 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/environment.yml
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -214,8 +230,10 @@ jobs:
           micromamba-version: 'latest'
           environment-file: AQUA/environment-pypi.yml
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -227,8 +245,10 @@ jobs:
         with:
           micromamba-version: 'latest'
           environment-name: aqua
+          generate-run-shell: false
           cache-downloads: true
           cache-environment: false
+          post-cleanup: 'none'
           create-args: >-
             python=${{ matrix.python-version }}
             aqua-core
@@ -244,14 +264,14 @@ jobs:
       # ========================================
 
       - name: Install AQUA with FDB dependencies (local mode, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == true && !inputs.is-dependabot && runner.os != 'macOS' }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.lock |python -m pip install -r /dev/stdin
           python -m pip install --no-deps -e .
 
       - name: Install AQUA without FDB dependencies (local, no fdb, using lock file)
-        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot }}
+        if: ${{ inputs.install-mode == 'local' && inputs.enable-fdb == false && !inputs.is-dependabot && runner.os != 'macOS' }}
         run: |
           cd AQUA
           sed -n 's/^# pip //p' conda-linux-64.nofdb.lock |python -m pip install -r /dev/stdin
@@ -523,7 +543,7 @@ jobs:
         if: ${{ !cancelled() && inputs.enable-parallel }}
         uses: actions/upload-artifact@v7
         with:
-          name: xdist-worker-tests-log-py${{ matrix.python-version }}
+          name: xdist-worker-tests-log-${{ inputs.platform }}-py${{ matrix.python-version }}
           path: AQUA/.pytest_cache/xdist_worker_tests.log
           if-no-files-found: ignore
 
@@ -531,7 +551,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: aqua-test-artifacts-py${{ matrix.python-version }}
+          name: aqua-test-artifacts-${{ inputs.platform }}-py${{ matrix.python-version }}
           path: |
             AQUA/coverage.xml
             AQUA/junit.xml

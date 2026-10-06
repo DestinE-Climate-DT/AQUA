@@ -15,7 +15,6 @@ on:
         type: choice
         options:
           - 'macos-15'
-          - 'macos-16'
           - 'macos-26'
           - 'macos-27'
           - 'macos-latest'

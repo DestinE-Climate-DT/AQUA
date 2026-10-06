@@ -1,5 +1,6 @@
 """Module for tests for AQUA cli"""
 
+import io
 import json
 import logging
 import os
@@ -24,13 +25,12 @@ from aqua.core.console.util import query_yes_no
 from aqua.core.gridbuilder.griddeploy import GridDeployer
 from aqua.core.util import dump_yaml, load_yaml, to_list
 
-TESTFILE = "testfile.txt"
 MACHINE = "github"
 # fake plugin fixture package used by TestPluginInstall, mirroring the real aqua-diagnostics
 # entry-point contract: [project.entry-points."aqua.plugins"] diagnostics = "aqua.diagnostics:get_install_dirs"
 MOCKPLUGIN_FIXTURE_ROOT = os.path.join(os.path.dirname(__file__), "fixtures", "mockplugin")
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = [pytest.mark.aqua, pytest.mark.console, pytest.mark.xdist_group(name="test_console")]
 
 
 def set_args(args):
@@ -38,24 +38,19 @@ def set_args(args):
     sys.argv = ["aqua"] + args
 
 
-@pytest.fixture(scope="session")
-def tmpdir(tmp_path_factory):
-    """Fixture to create a temporary directory"""
-    mydir = tmp_path_factory.mktemp("tmp")
-    yield mydir
-    shutil.rmtree(str(mydir))
-
-
-@pytest.fixture(scope="class")
+@pytest.fixture
 def set_home():
     """Fixture to modify the HOME environment variable"""
     original_value = os.environ.get("HOME")
 
     def _modify_home(new_value):
-        os.environ["HOME"] = new_value
+        os.environ["HOME"] = str(new_value)
 
     yield _modify_home
-    os.environ["HOME"] = original_value
+    if original_value is not None:
+        os.environ["HOME"] = original_value
+    else:
+        os.environ.pop("HOME", None)
 
 
 @pytest.fixture
@@ -64,19 +59,18 @@ def delete_home():
     original_value = os.environ.get("HOME")
 
     def _modify_home():
-        del os.environ["HOME"]
+        os.environ.pop("HOME", None)
 
     yield _modify_home
-    os.environ["HOME"] = original_value
+    if original_value is not None:
+        os.environ["HOME"] = original_value
+    else:
+        os.environ.pop("HOME", None)
 
 
-@pytest.fixture(scope="class")
-def run_aqua_console_with_input(tmpdir):
-    """Fixture to run AQUA console with some interactive command
-
-    Args:
-        tmpdir (str): temporary directory
-    """
+@pytest.fixture(scope="session")
+def run_aqua_console_with_input():
+    """Fixture to run AQUA console with some interactive command"""
 
     def _run_aqua_console(args, input_text):
         """Run AQUA console with some interactive command
@@ -86,19 +80,19 @@ def run_aqua_console_with_input(tmpdir):
             input_text (str): input text
         """
         set_args(args)
-        myfile = os.path.join(str(tmpdir), TESTFILE)
-        with open(myfile, "w", encoding="utf-8") as f:
-            f.write(input_text)
-        sys.stdin = open(myfile, "r", encoding="utf-8")
-        aquacli = AquaConsole()
-        aquacli.execute()
-        sys.stdin.close()
-        os.remove(myfile)
+        old_stdin = sys.stdin
+        try:
+            content = input_text if input_text.endswith("\n") else input_text + "\n"
+            sys.stdin = io.StringIO(content)
+            aquacli = AquaConsole()
+            aquacli.execute()
+        finally:
+            sys.stdin = old_stdin
 
     return _run_aqua_console
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def run_aqua():
     """Fixture to run AQUA console with some interactive command"""
 
@@ -111,13 +105,14 @@ def run_aqua():
 
 
 @pytest.fixture(scope="class")
-def shared_aqua_install(tmpdir, set_home, run_aqua, run_aqua_console_with_input):
+def shared_aqua_install(tmp_path_factory, run_aqua, run_aqua_console_with_input):
     """Shared AQUA installation for multiple tests in a class
 
     This fixture installs AQUA once and provides cleanup after all tests in the class.
     """
-    mydir = str(tmpdir)
-    set_home(mydir)
+    mydir = str(tmp_path_factory.mktemp("aqua_shared"))
+    original_home = os.environ.get("HOME")
+    os.environ["HOME"] = mydir
 
     # Install AQUA once for all tests in class
     run_aqua(["install", MACHINE])
@@ -127,6 +122,11 @@ def shared_aqua_install(tmpdir, set_home, run_aqua, run_aqua_console_with_input)
     # Cleanup after all tests in class
     if os.path.exists(os.path.join(mydir, ".aqua")):
         run_aqua_console_with_input(["uninstall"], "yes")
+
+    if original_home is not None:
+        os.environ["HOME"] = original_home
+    else:
+        os.environ.pop("HOME", None)
 
 
 @pytest.mark.aqua
@@ -144,18 +144,18 @@ class TestAquaConsole:
         assert pypath[0] == result.stdout.strip()
 
     # base set of tests
-    def test_console_base(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
+    def test_console_base(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input):
         """Basic tests
 
         Args:
-            tmpdir (str): temporary directory
+            tmp_path (Path): temporary directory
             set_home (fixture): fixture to modify the HOME environment variable
             run_aqua (fixture): fixture to run AQUA console with some interactive command
             run_aqua_console_with_input (fixture): fixture to run AQUA console with some interactive command
         """
 
         # getting fixture
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         # aqua install
@@ -207,10 +207,10 @@ class TestAquaConsole:
         run_aqua_console_with_input(["uninstall"], "yes")
         assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    def test_console_drop(self, tmpdir, set_home, run_aqua, run_aqua_console_with_input):
+    def test_console_drop(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input):
         """Test for running DROP via the console"""
 
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         # aqua install
@@ -378,11 +378,11 @@ class TestAquaConsole:
         ],
     )
     def test_console_selective_install(
-        self, tmpdir, set_home, run_aqua, run_aqua_console_with_input, install_args, should_fail
+        self, tmp_path, set_home, run_aqua, run_aqua_console_with_input, install_args, should_fail
     ):
         """Test for running selective install via the console (parametrized)"""
 
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         if should_fail:
@@ -400,19 +400,19 @@ class TestAquaConsole:
             run_aqua_console_with_input(["uninstall"], "yes")
             assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    def test_console_advanced(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
+    def test_console_advanced(self, tmp_path, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation, editable catalog, catalog update,
         add a wrong catalog, uninstall
 
         Args:
-            tmpdir (str): temporary directory
+            tmp_path (pathlib.Path): temporary directory
             run_aqua (fixture): fixture to run AQUA console with some interactive command
             set_home (fixture): fixture to modify the HOME environment variable
             run_aqua_console_with_input (fixture): fixture to run AQUA console with some interactive command
         """
 
         # getting fixture
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         # check unexesting installation
@@ -446,11 +446,11 @@ class TestAquaConsole:
         run_aqua(["remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
-    def test_console_with_links(self, tmpdir, set_home, run_aqua_console_with_input):
+    def test_console_with_links(self, tmp_path, set_home, run_aqua_console_with_input):
         """Advanced tests for installation from path with symlinks"""
 
         # getting fixture
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         # check unexesting installation
@@ -466,11 +466,11 @@ class TestAquaConsole:
         run_aqua_console_with_input(["uninstall"], "yes")
         assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    def test_console_editable(self, tmpdir, run_aqua, set_home, run_aqua_console_with_input):
+    def test_console_editable(self, tmp_path, run_aqua, set_home, run_aqua_console_with_input):
         """Advanced tests for editable installation from path with editable mode"""
 
         # getting fixture
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         # find the correct AQUA root and config paths
@@ -506,18 +506,20 @@ class TestAquaConsole:
 
         # uninstall everything again, using AQUA_CONFIG env variable
         os.environ["AQUA_CONFIG"] = os.path.join(mydir, "vicesindaco1")
-        run_aqua_console_with_input(["uninstall"], "yes")
-        assert not os.path.exists(os.path.join(mydir, "vicesindaco1"))
-        del os.environ["AQUA_CONFIG"]
+        try:
+            run_aqua_console_with_input(["uninstall"], "yes")
+            assert not os.path.exists(os.path.join(mydir, "vicesindaco1"))
+        finally:
+            os.environ.pop("AQUA_CONFIG", None)
 
         assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    def test_console_without_home(self, delete_home, run_aqua, tmpdir, run_aqua_console_with_input):
+    def test_console_without_home(self, delete_home, run_aqua, tmp_path, run_aqua_console_with_input):
         """Basic tests without HOME environment variable"""
 
         # getting fixture
         delete_home()
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
 
         print(f"HOME is set to: {os.environ.get('HOME')}")
 
@@ -889,10 +891,10 @@ class TestPluginInstall:
     """Tests exercising AquaConsole.install()/update() with a fake registered plugin"""
 
     def test_bare_install_includes_plugin(
-        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
     ):
         """A bare `aqua install` with no component flags must also install the discovered plugin"""
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         run_aqua(["install", MACHINE])
@@ -903,10 +905,10 @@ class TestPluginInstall:
         run_aqua_console_with_input(["uninstall"], "yes")
 
     def test_editable_plugin_install_creates_symlinks(
-        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
     ):
         """Requesting the plugin with a path installs it in editable (symlinked) mode"""
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         run_aqua(["install", MACHINE, "--core", "--mockplugin", MOCKPLUGIN_FIXTURE_ROOT])
@@ -915,10 +917,10 @@ class TestPluginInstall:
 
         run_aqua_console_with_input(["uninstall"], "yes")
 
-    def test_plugin_without_core_fails_when_core_not_installed(self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua):
+    def test_plugin_without_core_fails_when_core_not_installed(self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua):
         """Requesting only a plugin, with core never installed here, must fail explicitly rather than
         silently installing core too"""
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         with pytest.raises(SystemExit):
@@ -927,10 +929,10 @@ class TestPluginInstall:
         assert not os.path.exists(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
 
     def test_broken_plugin_does_not_crash_bare_install(
-        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
     ):
         """A registered entry point whose module cannot be imported must not break a bare install"""
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         run_aqua(["install", MACHINE])
@@ -946,10 +948,10 @@ class TestPluginInstall:
         assert components["brokenplugin"]["installed"] is False
 
     def test_update_installation_updates_plugin_files(
-        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
     ):
         """`aqua update` (standard mode) refreshes the plugin's installed config directory"""
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         run_aqua(["install", MACHINE])
@@ -960,10 +962,10 @@ class TestPluginInstall:
         run_aqua_console_with_input(["uninstall"], "yes")
 
     def test_update_skips_editable_plugin_dirs(
-        self, mock_plugin_entrypoint, tmpdir, set_home, run_aqua, run_aqua_console_with_input
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
     ):
         """`aqua update` must leave an editable plugin's config/template symlinks untouched"""
-        mydir = str(tmpdir)
+        mydir = str(tmp_path)
         set_home(mydir)
 
         run_aqua(["install", MACHINE, "--core", "--mockplugin", MOCKPLUGIN_FIXTURE_ROOT])
@@ -1041,11 +1043,11 @@ class TestAquaConsoleGridBuilder:
             ["grids", "build", "--model", "ERA5", "--exp", "era5-hpz3", "--source", "monthly"],
         ],
     )
-    def test_aqua_console_gridbuilder(self, run_aqua, command_args, tmpdir):
+    def test_aqua_console_gridbuilder(self, run_aqua, command_args, tmp_path):
         """Test the aqua grids build CLI, including a valid --reader_kwargs JSON payload"""
-        run_aqua(command_args + ["--verify", "--outdir", str(tmpdir), "--reader_kwargs", '{"chunks": {"time": 12}}'])
+        run_aqua(command_args + ["--verify", "--outdir", str(tmp_path), "--reader_kwargs", '{"chunks": {"time": 12}}'])
 
-    def test_aqua_console_gridbuilder_invalid_reader_kwargs(self, run_aqua, tmpdir):
+    def test_aqua_console_gridbuilder_invalid_reader_kwargs(self, run_aqua, tmp_path):
         """Malformed --reader_kwargs JSON must fail fast, before any data is retrieved"""
         with pytest.raises(json.JSONDecodeError):
             run_aqua(
@@ -1059,7 +1061,7 @@ class TestAquaConsoleGridBuilder:
                     "--source",
                     "monthly",
                     "--outdir",
-                    str(tmpdir),
+                    str(tmp_path),
                     "--reader_kwargs",
                     "{not valid json}",
                 ]
@@ -1068,17 +1070,15 @@ class TestAquaConsoleGridBuilder:
 
 # checks for query function
 @pytest.fixture
-def run_query_with_input(tmpdir):
+def run_query_with_input():
     def _run_query(input_text, default_answer):
-        testfile = os.path.join(tmpdir, TESTFILE)
-        with open(testfile, "w", encoding="utf-8") as f:
-            f.write(input_text)
-        sys.stdin = open(testfile, "r", encoding="utf-8")
+        old_stdin = sys.stdin
         try:
+            content = input_text if input_text.endswith("\n") else input_text + "\n"
+            sys.stdin = io.StringIO(content)
             result = query_yes_no("Question?", default_answer)
         finally:
-            sys.stdin.close()
-            os.remove(testfile)
+            sys.stdin = old_stdin
         return result
 
     return _run_query
