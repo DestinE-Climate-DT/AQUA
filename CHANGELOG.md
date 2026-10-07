@@ -6,10 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
+- Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
+
 ## [v1.2.1]
 
 Complete list:
-- Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
 - Fix for pyproject to avoid core-dump due to cartopy/eccodes conflict 
 - Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
 
