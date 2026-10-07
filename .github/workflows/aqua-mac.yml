@@ -46,10 +46,10 @@ jobs:
           # 5) Pushed to main branch (e.g. merge into main)
           SHOULD_RUN="false"
 
-          if [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'run tests') }}" == "true" ]] || \
-             [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'ready to merge') }}" == "true" ]] || \
-             [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'ready for review') }}" == "true" ]] || \
-             [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'run MacOS test') }}" == "true" ]] || \
+          # if [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'run tests') }}" == "true" ]] || \
+          #   [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'ready to merge') }}" == "true" ]] || \
+          #   [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'ready for review') }}" == "true" ]] || \
+          if [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'run MacOS test') }}" == "true" ]] || \
              [[ "${{ contains(toJson(github.event.pull_request.labels.*.name), 'dependabot') }}" == "true" ]] || \
              [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
              [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || \
