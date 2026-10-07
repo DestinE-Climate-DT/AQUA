@@ -176,7 +176,10 @@ class Analysis:
             args (argparse.Namespace): Parsed command-line arguments.
             config (dict): Job configuration dictionary loaded from YAML.
         """
-
+        target = get_arg(args, 'target',  None)
+        if target == "ensemble":
+            self.realization = "ensemble"
+            return
         realization = get_arg(args, "realization", None, config=config)
         self.realization = format_realization(realization)
         self.check_realization()
