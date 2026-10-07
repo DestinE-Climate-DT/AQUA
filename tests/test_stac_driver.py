@@ -9,37 +9,172 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from aqua import Reader
 from aqua.core.intake_drivers import IntakeSTACSource
 
 
-@pytest.fixture
-def sample_stac_netcdf_path():
-    """Path to the IFS STAC item in AQUA_tests."""
-    test_dir = os.path.dirname(__file__)
-    item_path = os.path.abspath(
-        os.path.join(
-            test_dir,
-            "../AQUA_tests/models/stac-example/items/ifs/ifs-long-regridded-r18x9.json",
-        )
-    )
-    if not os.path.isfile(item_path):
-        pytest.skip("STAC example item not found on disk")
-    return item_path
+@pytest.fixture(scope="session")
+def stac_sample_data(tmp_path_factory):
+    """Generate STAC sample items and collection on the fly using Reader catalog paths."""
+    try:
+        reader_long = Reader(model="IFS", exp="test-tco79", source="long", areas=False, fix=False)
+        long_nc_path = os.path.abspath(reader_long.backend._all_urls[0])
+
+        reader_short = Reader(model="IFS", exp="test-tco79", source="short", areas=False, fix=False)
+        short_nc_path = os.path.abspath(reader_short.backend._all_urls[0])
+
+        reader_tele = Reader(model="IFS", exp="test-tco79", source="teleconnections", areas=False, fix=False)
+        tele_urls = [os.path.abspath(u) for u in reader_tele.backend._all_urls]
+        enso_nc_path = next((u for u in tele_urls if "enso" in u), None)
+    except Exception as e:
+        pytest.skip(f"Could not load IFS test catalog entries via Reader: {e}")
+
+    for p in (long_nc_path, short_nc_path, enso_nc_path):
+        if not p or not os.path.isfile(p):
+            pytest.skip(f"Test NetCDF file not found on disk: {p}")
+
+    tmpdir = tmp_path_factory.mktemp("stac_sample")
+    items_dir = tmpdir / "items"
+    colls_dir = tmpdir / "collections"
+    items_dir.mkdir(parents=True, exist_ok=True)
+    colls_dir.mkdir(parents=True, exist_ok=True)
+
+    item_long_path = items_dir / "ifs-long-regridded-r18x9.json"
+    item_short_path = items_dir / "ifs-short-ifs2d-tco79.json"
+    item_enso_path = items_dir / "ifs-teleconnections-enso-test.json"
+    coll_path = colls_dir / "ifs.json"
+
+    item_long = {
+        "type": "Feature",
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "id": "ifs-long-regridded-r18x9",
+        "geometry": None,
+        "properties": {
+            "title": "regridded_r18x9.nc",
+            "aqua:model": "IFS",
+            "aqua:variables": ["2t", "ttr"],
+            "start_datetime": "2020-01-20T00:00:00Z",
+            "end_datetime": "2020-08-03T23:00:00Z",
+        },
+        "links": [
+            {"rel": "collection", "href": "../collections/ifs.json", "type": "application/json"},
+            {"rel": "parent", "href": "../collections/ifs.json", "type": "application/json"},
+        ],
+        "assets": {
+            "data": {
+                "href": long_nc_path,
+                "title": "regridded_r18x9.nc",
+                "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+                "type": "application/x-netcdf",
+                "roles": ["data"],
+            }
+        },
+        "collection": "ifs",
+    }
+    item_long_path.write_text(json.dumps(item_long, indent=2))
+
+    item_short = {
+        "type": "Feature",
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "id": "ifs-short-ifs2d-tco79",
+        "geometry": None,
+        "properties": {
+            "title": "IFS2d.tco79.nc",
+            "aqua:model": "IFS",
+            "aqua:variables": ["2t"],
+            "start_datetime": "2020-01-20T00:00:00Z",
+            "end_datetime": "2020-01-20T01:00:00Z",
+        },
+        "links": [
+            {"rel": "collection", "href": "../collections/ifs.json", "type": "application/json"},
+            {"rel": "parent", "href": "../collections/ifs.json", "type": "application/json"},
+        ],
+        "assets": {
+            "data": {
+                "href": short_nc_path,
+                "title": "IFS2d.tco79.nc",
+                "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+                "type": "application/x-netcdf",
+                "roles": ["data"],
+            }
+        },
+        "collection": "ifs",
+    }
+    item_short_path.write_text(json.dumps(item_short, indent=2))
+
+    item_enso = {
+        "type": "Feature",
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "id": "ifs-teleconnections-enso-test",
+        "geometry": None,
+        "properties": {
+            "title": "enso_test.nc",
+            "aqua:model": "IFS",
+            "aqua:variables": ["skt"],
+            "start_datetime": "1989-01-01T00:00:00Z",
+            "end_datetime": "1995-12-01T00:00:00Z",
+        },
+        "links": [
+            {"rel": "collection", "href": "../collections/ifs.json", "type": "application/json"},
+            {"rel": "parent", "href": "../collections/ifs.json", "type": "application/json"},
+        ],
+        "assets": {
+            "data": {
+                "href": enso_nc_path,
+                "title": "enso_test.nc",
+                "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+                "type": "application/x-netcdf",
+                "roles": ["data"],
+            }
+        },
+        "collection": "ifs",
+    }
+    item_enso_path.write_text(json.dumps(item_enso, indent=2))
+
+    coll = {
+        "type": "Collection",
+        "stac_version": "1.0.0",
+        "stac_extensions": [],
+        "id": "ifs",
+        "title": "AQUA IFS test data",
+        "description": "IFS native, regridded, and teleconnection test datasets.",
+        "license": "proprietary",
+        "extent": {
+            "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},
+            "temporal": {"interval": [["1989-01-01T00:00:00Z", "2020-08-03T23:00:00Z"]]},
+        },
+        "summaries": {
+            "aqua:model": ["IFS"],
+            "assets:type": ["application/x-netcdf"],
+        },
+        "links": [
+            {"rel": "self", "href": "./ifs.json", "type": "application/json"},
+            {"rel": "item", "href": "../items/ifs-long-regridded-r18x9.json", "type": "application/geo+json"},
+            {"rel": "item", "href": "../items/ifs-short-ifs2d-tco79.json", "type": "application/geo+json"},
+            {"rel": "item", "href": "../items/ifs-teleconnections-enso-test.json", "type": "application/geo+json"},
+        ],
+    }
+    coll_path.write_text(json.dumps(coll, indent=2))
+
+    return {
+        "item_path": str(item_long_path),
+        "collection_path": str(coll_path),
+    }
 
 
 @pytest.fixture
-def sample_stac_collection_path():
-    """Path to the IFS STAC collection in AQUA_tests."""
-    test_dir = os.path.dirname(__file__)
-    coll_path = os.path.abspath(
-        os.path.join(
-            test_dir,
-            "../AQUA_tests/models/stac-example/collections/ifs.json",
-        )
-    )
-    if not os.path.isfile(coll_path):
-        pytest.skip("STAC example collection not found on disk")
-    return coll_path
+def sample_stac_netcdf_path(stac_sample_data):
+    """Path to the generated IFS STAC item."""
+    return stac_sample_data["item_path"]
+
+
+@pytest.fixture
+def sample_stac_collection_path(stac_sample_data):
+    """Path to the generated IFS STAC collection."""
+    return stac_sample_data["collection_path"]
 
 
 @pytest.mark.aqua
