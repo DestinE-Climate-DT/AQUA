@@ -942,7 +942,7 @@ def test_gregory_time_colormap_is_applied_to_lines(plot_func):
     assert len(ax.collections) == 2
     assert np.allclose(ax.collections[0].get_array(), [0.25, 0.75])
     assert np.allclose(ax.collections[1].get_array(), [0.0, 0.5, 1.0])
-    assert fig.axes[1].get_ylabel() == "Time"
+    assert len(fig.axes) == 1
     plt.close(fig)
 
 
