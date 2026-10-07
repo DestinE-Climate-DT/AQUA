@@ -243,3 +243,55 @@ def test_regionmask_greenwich_360(sample_data_360):
         assert not np.isnan(result.sel(lat=15, lon=lon_val).values)
     for lon_val in [-90, 90]:
         assert np.isnan(result.sel(lat=15, lon=lon_val).values)
+
+
+@pytest.fixture
+def sample_data_180_from_360(sample_data_360):
+    """The 360 sample data converted to [-180, 180] and sorted (lon: -180, -135, -90, 0, 30, 45, 90, 135)."""
+    return sample_data_360.assign_coords(lon=(sample_data_360.lon + 180) % 360 - 180).sortby("lon")
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("data_fixture", ["sample_data_360", "sample_data_180_from_360"])
+def test_regionmask_dateline_crossing(data_fixture, request):
+    """Region split across the dateline is kept contiguous in [0, 360] instead of spanning the whole globe."""
+    region = regionmask.Regions(
+        [
+            [[100, -20], [170, -20], [170, 20], [100, 20]],
+            [[-170, -20], [-100, -20], [-100, 20], [-170, 20]],
+        ],
+        names=["east", "west"],
+        numbers=[0, 1],
+    )
+    data = request.getfixturevalue(data_fixture)
+    result = AreaSelection(loglevel=loglevel).select_area(data, region=region, region_sel=[0, 1], drop=True)
+
+    assert result.lon.min() >= 0
+    assert (result.lon.diff("lon") > 0).all()
+    assert set(result.lon.values) == {135, 225}
+    for lon_val in [135, 225]:
+        assert not np.isnan(result.sel(lat=15, lon=lon_val).values), f"lon={lon_val} should be selected"
+
+
+@pytest.mark.aqua
+def test_regionmask_greenwich_180_stays_180(sample_data_180_from_360):
+    """Region crossing Greenwich on a [-180, 180] grid stays in [-180, 180] and sorted."""
+    region = regionmask.Regions([[[-100, -20], [40, -20], [40, 20], [-100, 20]]], names=["box"])
+    result = AreaSelection(loglevel=loglevel).select_area(sample_data_180_from_360, region=region, region_sel=0, drop=True)
+
+    assert result.lon.min() < 0
+    assert (result.lon.diff("lon") > 0).all()
+    for lon_val in [-90, 0, 30]:
+        assert not np.isnan(result.sel(lat=15, lon=lon_val).values)
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("frac_threshold, expect_selected", [(None, False), (0.0, True)])
+def test_regionmask_frac_threshold(sample_data_360, frac_threshold, expect_selected):
+    """frac_threshold keeps cells touching the region even when no cell center falls inside."""
+    # Thin box between the grid points lon=0 and lon=30: it contains no cell center
+    region = regionmask.Regions([[[10, 10], [14, 10], [14, 20], [10, 20]]], names=["thin"])
+    result = AreaSelection(loglevel=loglevel).select_area(
+        sample_data_360, region=region, region_sel=0, frac_threshold=frac_threshold
+    )
+    assert expect_selected != np.isnan(result.values).all()
