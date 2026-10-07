@@ -947,6 +947,26 @@ def test_gregory_time_colormap_is_applied_to_lines(plot_func):
 
 
 @pytest.mark.graphics
+@pytest.mark.parametrize("cmap", [None, "viridis"])
+def test_plot_gregory_monthly_accepts_lists_of_model_data(cmap):
+    """Each item in the monthly data lists should plot as a separate dataset."""
+    times = np.array(["2000-01-01", "2001-01-01", "2002-01-01"], dtype="datetime64[D]")
+    t2m = xr.DataArray([1.0, 2.0, 3.0], dims="time", coords={"time": times})
+    net_toa = xr.DataArray([4.0, 2.0, 5.0], dims="time", coords={"time": times})
+
+    fig, ax = plot_gregory_monthly(
+        [t2m, t2m + 1],
+        [net_toa, net_toa + 1],
+        labels=["model-1", "model-2"],
+        cmap=cmap,
+    )
+
+    assert ax.get_legend_handles_labels()[1] == ["model-1", "model-2"]
+    assert len(ax.collections) == 4 if cmap else len(ax.lines) == 3
+    plt.close(fig)
+
+
+@pytest.mark.graphics
 class TestGregory:
     """Basic tests for the Gregory plot functions"""
 
