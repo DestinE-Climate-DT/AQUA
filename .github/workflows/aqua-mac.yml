@@ -39,7 +39,7 @@ jobs:
         id: check-macos
         run: |
           # Run tests if:
-          # 1) PR has 'run tests', 'ready to merge', or 'run MacOS test' labels
+          # 1) PR has 'run tests', 'ready to merge', 'ready for review', or 'run MacOS test' labels
           # 2) PR has 'dependabot' label or actor is Dependabot
           # 3) Triggered manually (workflow_dispatch)
           # 4) Triggered by schedule
@@ -48,6 +48,7 @@ jobs:
 
           if [[ "${{ contains(github.event.pull_request.labels.*.name, 'run tests') }}" == "true" ]] || \
              [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready to merge') }}" == "true" ]] || \
+             [[ "${{ contains(github.event.pull_request.labels.*.name, 'ready for review') }}" == "true" ]] || \
              [[ "${{ contains(github.event.pull_request.labels.*.name, 'run MacOS test') }}" == "true" ]] || \
              [[ "${{ contains(github.event.pull_request.labels.*.name, 'dependabot') }}" == "true" ]] || \
              [[ "${{ github.actor }}" == "dependabot[bot]" ]] || \
