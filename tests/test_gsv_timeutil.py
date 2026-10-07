@@ -10,6 +10,7 @@ floor_datetime = FDBTimeMixin._floor_datetime
 # Assuming floor_datetime is already imported
 
 
+@pytest.mark.fdb
 def test_floor_datetime_all_cases():
     test_cases = [
         # Valid frequencies and expected results
