@@ -967,6 +967,22 @@ def test_plot_gregory_monthly_accepts_lists_of_model_data(cmap):
 
 
 @pytest.mark.graphics
+@pytest.mark.parametrize("cmap", [None, "viridis"])
+def test_plot_gregory_annual_endpoint_triangles_follow_cmap(cmap):
+    """Endpoint triangles are only needed when time coloring is disabled."""
+    times = np.array(["2000-01-01", "2001-01-01", "2002-01-01"], dtype="datetime64[D]")
+    t2m = xr.DataArray([1.0, 2.0, 3.0], dims="time", coords={"time": times})
+    net_toa = xr.DataArray([4.0, 2.0, 5.0], dims="time", coords={"time": times})
+
+    _, ax = plot_gregory_annual(t2m, net_toa, cmap=cmap)
+
+    markers = [line.get_marker() for line in ax.lines]
+    assert (">" in markers) is (cmap is None)
+    assert ("<" in markers) is (cmap is None)
+    plt.close(ax.figure)
+
+
+@pytest.mark.graphics
 class TestGregory:
     """Basic tests for the Gregory plot functions"""
 
