@@ -57,7 +57,7 @@ A new PR will be opened, pointing to your branch. If tests in that branch pass, 
 If your Pull Request is a work in progress, please set it to "Draft" mode.
 When your Pull Request is ready to be reviewed, please remove the "Draft" mode.
 A label `run tests` can be added to the Pull Request to activate the CI tests.
-A label `ready to merge` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
+A label `ready for review` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
 
 Before asking for a review, please make sure to:
 - Be up to date with the `main` branch
