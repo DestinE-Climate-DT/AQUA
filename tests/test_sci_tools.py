@@ -287,11 +287,18 @@ def test_regionmask_greenwich_180_stays_180(sample_data_180_from_360):
 
 @pytest.mark.aqua
 @pytest.mark.parametrize("frac_threshold, expect_selected", [(None, False), (0.0, True)])
-def test_regionmask_frac_threshold(sample_data_360, frac_threshold, expect_selected):
+def test_regionmask_frac_threshold(frac_threshold, expect_selected):
     """frac_threshold keeps cells touching the region even when no cell center falls inside."""
-    # Thin box between the grid points lon=0 and lon=30: it contains no cell center
-    region = regionmask.Regions([[[10, 10], [14, 10], [14, 20], [10, 20]]], names=["thin"])
-    result = AreaSelection(loglevel=loglevel).select_area(
-        sample_data_360, region=region, region_sel=0, frac_threshold=frac_threshold
+    data = xr.DataArray(
+        np.random.rand(3, 4),
+        coords={"lat": [-10, 0, 10], "lon": [0, 10, 20, 30]},
+        dims=("lat", "lon"),
     )
-    assert expect_selected != np.isnan(result.values).all()
+    # Thin box inside the cell centered at (lat=0, lon=10), containing no cell center
+    region = regionmask.Regions([[[12, -2], [14, -2], [14, 2], [12, 2]]], names=["thin"])
+    result = AreaSelection(loglevel=loglevel).select_area(data, region=region, region_sel=0, frac_threshold=frac_threshold)
+
+    assert (not np.isnan(result.values).all()) == expect_selected
+    if expect_selected:
+        assert not np.isnan(result.sel(lat=0, lon=10).values)
+        assert np.isnan(result.sel(lat=0, lon=30).values)
