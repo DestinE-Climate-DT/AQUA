@@ -6,23 +6,20 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, time_to_string, to_list
+from aqua.core.util import evaluate_colorbar_limits, to_list
 
 from .styles import ConfigStyle
 
 
-def _add_time_evolution(fig, ax, x_list, y_list, cmap, time_format, labels=None):
+def _add_time_evolution(ax, x_list, y_list, cmap, labels=None):
     """Colour trajectory segments and points by normalised time."""
     line_collection = None
-    first_data = None
     labels = to_list(labels) if labels else [None] * len(x_list)
     norm = Normalize(0, 1)
     for x, y, label in zip(x_list, y_list, labels):
         points = np.column_stack((x.values, y.values))
         if len(points) < 2:
             continue
-        if first_data is None:
-            first_data = x
         segments = np.stack((points[:-1], points[1:]), axis=1)
         time_fraction = (np.arange(len(segments)) + 0.5) / len(segments)
         line_collection = LineCollection(segments, cmap=cmap, norm=norm, zorder=2.5)
@@ -39,10 +36,6 @@ def _add_time_evolution(fig, ax, x_list, y_list, cmap, time_format, labels=None)
         )
     if line_collection is None:
         return
-    first = first_data.time.values
-    cbar = fig.colorbar(line_collection, ax=ax, ticks=[0, 1], fraction=0.046, pad=0.04)
-    cbar.ax.set_yticklabels([time_to_string(first[0], format=time_format), time_to_string(first[-1], format=time_format)])
-    cbar.set_label("Time")
 
 
 def plot_gregory_monthly(
@@ -77,7 +70,7 @@ def plot_gregory_monthly(
         ref_label (str, optional): Label for the reference data.
         title (str, optional): Title of the plot. Not used if None
         style (str, optional): Style for the plot. Defaults is the AQUA default style.
-        cmap (str, optional): Colormap used to mark time evolution (with colorbar). Not used if None.
+        cmap (str, optional): Colormap used to mark time evolution. Not used if None.
         loglevel (str, optional): Log level for logging. Defaults to 'WARNING'.
 
     Returns:
@@ -155,7 +148,7 @@ def plot_gregory_monthly(
         if not cmap:
             ax.plot(t2m_monthly, net_toa_monthly, label=labels[i], marker="o")
     if cmap:
-        _add_time_evolution(fig, ax, t2m_monthly_data, net_toa_monthly_data, cmap, "%Y-%m", labels)
+        _add_time_evolution(ax, t2m_monthly_data, net_toa_monthly_data, cmap, labels)
     if ref:
         ax.plot(t2m_ref, net_toa_ref, label=ref_label, marker="o", color="black", zorder=3)
         ax.scatter(t2m_ref, net_toa_ref, color="black", s=150, zorder=3)
@@ -204,7 +197,7 @@ def plot_gregory_annual(
         ylabel (str, optional): Title of the y-axis. Defaults to "Net radiation TOA [W/m^2]".
         title (str, optional): Title of the plot. Not used if None
         style (str, optional): Style for the plot. Defaults is the AQUA default style.
-        cmap (str, optional): Colormap used to mark time evolution (with colorbar). Not used if None.
+        cmap (str, optional): Colormap used to mark time evolution. Not used if None.
         loglevel (str, optional): Log level for logging. Defaults to 'WARNING'.
 
     Returns:
@@ -275,7 +268,7 @@ def plot_gregory_annual(
         ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize=8, ha="right")
         ax.annotate(str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize=8, ha="right")
     if cmap:
-        _add_time_evolution(fig, ax, t2m_annual_data, net_toa_annual_data, cmap, "%Y", labels)
+        _add_time_evolution(ax, t2m_annual_data, net_toa_annual_data, cmap, labels)
     if ref:
         t2m_mean = t2m_annual_ref.mean(dim="time")
         net_toa_mean = net_toa_annual_ref.mean(dim="time")
