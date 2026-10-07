@@ -146,7 +146,7 @@ class Submitter:
         else:
             jobname = definitions["analysis"].get("jobname", "aqua-web")
         # create identifier for each model-exp-source-var tuple
-        full_job_name = jobname + "_" + "_".join([catalog, model, exp, source])
+        full_job_name = jobname + "_" + "_".join([catalog, model, exp, realization, source])
         definitions["job_name"] = full_job_name
 
         definitions["partition"] = definitions["analysis"]["partition"]
