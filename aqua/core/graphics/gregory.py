@@ -12,10 +12,20 @@ from .styles import ConfigStyle
 
 
 def _add_time_evolution(ax, x_list, y_list, cmap, labels=None):
-    """Colour trajectory segments and points by normalised time."""
+    """
+    Colour trajectory segments and points by normalised time.
+    
+    Args:
+        ax (matplotlib.axes.Axes): The axes to plot on.
+        x_list (list): List of x data arrays.
+        y_list (list): List of y data arrays.
+        cmap (str): Colormap name.
+        labels (list, optional): List of labels for each dataset. Defaults to None.
+    """
     line_collection = None
     labels = to_list(labels) if labels else [None] * len(x_list)
     norm = Normalize(0, 1)
+
     for x, y, label in zip(x_list, y_list, labels):
         points = np.column_stack((x.values, y.values))
         if len(points) < 2:
@@ -34,6 +44,7 @@ def _add_time_evolution(ax, x_list, y_list, cmap, labels=None):
             label=label,
             zorder=3,
         )
+
     if line_collection is None:
         return
 
@@ -59,14 +70,14 @@ def plot_gregory_monthly(
     Plot a Gregory plot for monthly data.
 
     Args:
-        t2m_monthly_data (list): List of 2 m temperature data for each month.
-        net_toa_monthly_data (list): List of net radiation TOA data for each month.
+        t2m_monthly_data (xarray.DataArray or list): One monthly time series, or a list of time series for separate datasets.
+        net_toa_monthly_data (xarray.DataArray or list): Matching net TOA time series for the same datasets.
         t2m_monthly_ref (xr.DataArray, optional): Reference 2 m temperature data.
         net_toa_monthly_ref (xr.DataArray, optional): Reference net radiation TOA data.
         fig (plt.Figure, optional): Figure object to plot on.
         ax (plt.Axes, optional): Axes object to plot on.
         set_axis_limits (bool, optional): Whether to set axis limits. Defaults to True.
-        labels (list, optional): List of labels for each month.
+        labels (list, optional): One label per dataset when data arguments are lists.
         ref_label (str, optional): Label for the reference data.
         title (str, optional): Title of the plot. Not used if None
         style (str, optional): Style for the plot. Defaults is the AQUA default style.
@@ -83,12 +94,17 @@ def plot_gregory_monthly(
     # We load the data for speed
     t2m_monthly_data = to_list(t2m_monthly_data)
     net_toa_monthly_data = to_list(net_toa_monthly_data)
+    if len(t2m_monthly_data) != len(net_toa_monthly_data):
+        raise ValueError("t2m_monthly_data and net_toa_monthly_data must contain the same number of datasets")
+    labels = to_list(labels)
+    if labels and len(labels) != len(t2m_monthly_data):
+        raise ValueError("labels must contain one label per monthly dataset")
     t2m_monthly_data = [t2m_monthly_data[i].load() for i in range(len(t2m_monthly_data))]
     net_toa_monthly_data = [net_toa_monthly_data[i].load() for i in range(len(net_toa_monthly_data))]
     t2m_monthly_ref = t2m_monthly_ref.load() if t2m_monthly_ref is not None else None
     net_toa_monthly_ref = net_toa_monthly_ref.load() if net_toa_monthly_ref is not None else None
 
-    labels = to_list(labels) if labels else [None for _ in range(len(t2m_monthly_data))]
+    labels = labels or [None for _ in range(len(t2m_monthly_data))]
 
     if fig is None and ax is None:
         logger.debug("Creating new figure and axis")
