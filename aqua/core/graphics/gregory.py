@@ -14,7 +14,7 @@ from .styles import ConfigStyle
 def _add_time_evolution(ax, x_list, y_list, cmap, labels=None):
     """
     Colour trajectory segments and points by normalised time.
-    
+
     Args:
         ax (matplotlib.axes.Axes): The axes to plot on.
         x_list (list): List of x data arrays.
