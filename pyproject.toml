@@ -38,7 +38,9 @@ classifiers = [
 dependencies = [
     # binaries
     "eccodes>=2.41.0,<2.50",
-    "eccodeslib>=2.41.0,<2.50",
+    "eccodeslib==2.48.2.27; sys_platform == 'linux'",
+    # This is the same pin as for z3fdb to avoid the eccodes/cartopy clash
+    "eccodeslib>=2.41.0,<2.50; sys_platform != 'linux'",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -99,7 +101,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.16.9"
+    "ruff==0.16.10"
 ]
 all = [
     "aqua-core[docs]",

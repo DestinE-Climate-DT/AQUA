@@ -3,7 +3,7 @@
 # Create the environment:
 # mamba env create -f environment-pypi.yml
 
-name: aqua
+name: aquarium
 channels:
   - conda-forge
   - nodefaults
@@ -11,4 +11,6 @@ dependencies:
   - python>=3.11,<3.15
   - cdo>=2.5.0,<2.6.1
   - eccodes>=2.41.0,<2.50
-  - netcdf4
+  - pip
+  - pip:
+    - aqua-core[tests,fdb]
