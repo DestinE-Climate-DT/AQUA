@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
+- Remove climatedt-phase1 from CI/CD (#3181)
 - Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
 
 ## [v1.2.1]
