@@ -128,5 +128,5 @@ jobs:
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file report.md
           else
-            gh issue create --label "$LABEL" --title "Nightly tests failed ($(date -u +%Y-%m-%d))" --body-file report.md
+            gh issue create --label "$LABEL" --type bug --title "Nightly tests failed ($(date -u +%Y-%m-%d))" --body-file report.md
           fi
