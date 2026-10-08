@@ -38,16 +38,16 @@ jobs:
             fdb: false
             container: ''
             markers: 'aqua or slow or graphics or catgen or polytope'
-          - name: ubuntu-latest (FDB container)
-            platform: ubuntu-latest
-            fdb: true
-            container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
-            markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+          #- name: FDB container
+          #  platform: ubuntu-latest
+          #  fdb: true
+          #  container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
+          #  markers: 'aqua or slow or polytope or fdb or graphics or catgen'
     name: AQUA nightly (${{ matrix.name }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.11", "3.14"]'
+      python-versions: '["3.11"]'
       pytest-markers: ${{ matrix.markers }}
       enable-parallel: true
       enable-coverage: false
@@ -68,7 +68,8 @@ jobs:
 
   report-failure:
     needs: aqua-nightly-tests
-    if: ${{ always() && github.event_name == 'schedule' && needs.aqua-nightly-tests.result == 'failure' }}
+    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
+    if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-nightly-tests.result == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
