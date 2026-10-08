@@ -126,6 +126,7 @@ jobs:
             $SUDO apt-get install -y \
               curl \
               git \
+              jq \
               gpg
 
       - name: Install GH Actions dependencies (macOS)
@@ -146,9 +147,10 @@ jobs:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
           ref: main
-          token: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
+          token: ${{ secrets.AQUA_GITHUB_PAT }}
 
       - name: Check GitHub token
+        if: ${{ runner.os == 'Linux' }}
         env:
           PAT_SET: ${{ secrets.AQUA_GITHUB_PAT != '' }}
         run: |
