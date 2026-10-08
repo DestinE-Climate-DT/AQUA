@@ -47,7 +47,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
     parser.add_argument("--config", type=str, help="Configuration file")
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
-    parser.add_argument("--checker", action="store_true", help="Run the setup checker")
+    parser.add_argument("--setup_checker", action="store_true", help="Run the setup checker")
 
     # computation
     parser.add_argument("--serial", action="store_true", help="Disable dask cluster parallel execution")
@@ -114,10 +114,19 @@ def analysis_execute(args):
     exp_kind_file = job_config.get("experiment_kind")
     analyzer.configure_experiment_kind(args.kind, exp_kind_file)
 
-    # cli checker setup and run
-    run_checker = get_arg(args, "checker", False, config=job_config, key="run_checker")
-    if run_checker:
-        _ = analyzer.run_setup_checker()
+    # read cli definitions and prepend script path
+    cli = config.get("cli", {})
+    script_dir = job_config.get("script_path_base", "")  # we were not using this key
+    if script_dir:
+        for diag in cli:
+            cli[diag] = os.path.join(script_dir, cli[diag])
+
+    # setup checker: run the setup checker if requested
+    run_setup_checker = get_arg(args, "setup_checker", False, config=job_config, key="run_setup_checker")
+    setup_checker_script = os.path.join(script_dir, cli.get("setup_checker", ""))
+    setup_checker_script = setup_checker_script if os.path.isfile(setup_checker_script) else None
+    if run_setup_checker:
+        _ = analyzer.run_setup_checker(script_path=setup_checker_script)
 
     # running or not
     run = config.get("run", [])
@@ -127,13 +136,6 @@ def analysis_execute(args):
 
     if not analyzer.serial:
         analyzer.configure_dask_cluster(args, cluster_config)
-
-    # read cli definitions and prepend script path
-    cli = config.get("cli", {})
-    script_dir = job_config.get("script_path_base")  # we were not using this key
-    if script_dir:
-        for diag in cli:
-            cli[diag] = os.path.join(script_dir, cli[diag])
 
     # Internal naming scheme:
     # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.

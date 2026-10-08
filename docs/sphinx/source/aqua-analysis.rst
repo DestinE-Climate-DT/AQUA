@@ -96,7 +96,7 @@ so that the script can be used in a batch job or in a workflow. These override c
     and allow for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
     Overrides the value from the configuration file.
 
-.. option:: --checker
+.. option:: --setup_checker
 
     Activate the setup checker diagnostic. This diagnostic checks if the input data are available and
     if the configuration is correct before running the other diagnostics.
@@ -164,7 +164,7 @@ Job
 The job section contains the following keys:
 
 - ``loglevel``: the log level to use for the cli and the diagnostics. Default is ``WARNING``
-- ``run_checker``: a boolean flag to activate the checker diagnostic. Default is ``true``
+- ``run_setup_checker``: a boolean flag to activate the setup checker diagnostic. Default is ``true``
 - ``outputdir``: the output directory to use. Default is ``$AQUA/cli/aqua-analysis/output``
 - ``catalog``: the catalog to use. Default is ``null``
 - ``model``: the model to use. Default is ``IFS-NEMO``

@@ -777,7 +777,7 @@ class TestAquaConsoleAnalysis:
             str(analysis_cfg),
             {
                 "job": {
-                    "run_checker": True,
+                    "run_setup_checker": True,
                     "outputdir": str(tmp_path / "output"),
                     "model": "IFS",
                     "exp": "test-tco79",
@@ -792,7 +792,7 @@ class TestAquaConsoleAnalysis:
                         "analysis",
                         "--config",
                         str(analysis_cfg),
-                        "--checker",
+                        "--setup_checker",
                     ]
                 )
 
@@ -818,7 +818,7 @@ class TestAquaConsoleAnalysis:
             str(analysis_cfg),
             {
                 "job": {
-                    "run_checker": False,
+                    "run_setup_checker": False,
                     "loglevel": "WARNING",
                     "outputdir": str(tmp_path / "output"),
                 },
