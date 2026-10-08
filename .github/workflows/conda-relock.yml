@@ -24,13 +24,6 @@ jobs:
             channels:
               - conda-forge
 
-      - name: Relock without FDB
-        shell: bash -l {0}
-        #run: |
-        #  conda-lock --file environment.yml --file pyproject.toml -p linux-64 -e tests --lockfile conda-nofdb.lock
-        run: |
-          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests --filename-template conda-{platform}.nofdb.lock
-
       - name: Relock with FDB
         shell: bash -l {0}
         #run: |

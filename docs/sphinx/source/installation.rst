@@ -41,7 +41,7 @@ Or for a pip installation of AQUA-core after installing the dependencies:
     mamba activate aquarium
     pip install aqua-core
 
-The same environment is available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
+The same conda dependencies (without ``aqua-core`` itself) are available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
 
 .. warning ::
     On MacOS, the installation is supported only for MacOS 15 and later.
