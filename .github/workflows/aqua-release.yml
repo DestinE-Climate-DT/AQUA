@@ -6,6 +6,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
 
 permissions:
   contents: read
@@ -19,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, ubuntu-24.04, macos-15, macos-26]
+        platform: [ubuntu-22.04, ubuntu-26.04, macos-15, xcode-27]
     name: AQUA release (${{ matrix.platform }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
@@ -42,3 +44,15 @@ jobs:
       POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  report-failure:
+    needs: aqua-release-tests
+    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
+    if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-release-tests.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: Release

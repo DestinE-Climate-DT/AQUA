@@ -9,7 +9,7 @@ on:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1" # every Monday at 3AM UTC
+    - cron: "0 3 * * *"
 
 permissions:
   contents: read
@@ -29,12 +29,12 @@ jobs:
       matrix:
         include:
           - name: ubuntu-latest
-            platform: ubuntu-latest
+            platform: ubunt-26.04
             fdb: false
             container: ''
             markers: 'aqua or slow or graphics or catgen or polytope'
           - name: macos-latest
-            platform: macos-latest
+            platform: xcode-27
             fdb: false
             container: ''
             markers: 'aqua or slow or graphics or catgen or polytope'
@@ -47,7 +47,7 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.12", "3.14"]'
+      python-versions: '["3.14"]'
       pytest-markers: ${{ matrix.markers }}
       enable-parallel: true
       enable-coverage: false
@@ -70,63 +70,10 @@ jobs:
     needs: aqua-nightly-tests
     # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
     if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-nightly-tests.result == 'failure' }}
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
       actions: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-    steps:
-      - name: Download test artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: aqua-test-artifacts-*
-          path: artifacts
-
-      - name: Build failure report
-        run: |
-          python3 - <<'EOF'
-          import glob, json, os, subprocess
-          import xml.etree.ElementTree as ET
-
-          lines = ["The scheduled nightly run failed: " + os.environ["RUN_URL"], ""]
-
-          pages = json.loads(subprocess.check_output(
-              ["gh", "api", "--paginate", "--slurp",
-               f"repos/{os.environ['GH_REPO']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/jobs?per_page=100"]))
-          failed_jobs = [j["name"] for p in pages for j in p["jobs"] if j["conclusion"] == "failure"]
-          lines += ["## Failed jobs", ""] + [f"- {n}" for n in failed_jobs] + [""]
-
-          lines += ["## Broken tests", ""]
-          found = False
-          for art in sorted(glob.glob("artifacts/aqua-test-artifacts-*")):
-              broken = []
-              for xml in glob.glob(os.path.join(art, "**", "junit.xml"), recursive=True):
-                  for case in ET.parse(xml).getroot().iter("testcase"):
-                      if case.find("failure") is not None or case.find("error") is not None:
-                          broken.append(f"{case.get('classname')}::{case.get('name')}")
-              if broken:
-                  found = True
-                  lines += [f"### {os.path.basename(art).removeprefix('aqua-test-artifacts-')}", ""]
-                  lines += [f"- `{t}`" for t in sorted(set(broken))] + [""]
-          if not found:
-              lines.append("No failing test found in the junit reports: the failure happened before the tests ran "
-                           "(e.g. environment creation). Check the failed jobs above.")
-
-          with open("report.md", "w") as f:
-              f.write("\n".join(lines))
-          EOF
-
-      - name: Open or update issue
-        run: |
-          LABEL="nightly-failure"
-          gh label create "$LABEL" --color D93F0B --description "Failure of the scheduled nightly tests" 2>/dev/null || true
-          EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
-          if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body-file report.md
-          else
-            gh issue create --label "$LABEL" --type bug --title "Nightly tests failed ($(date -u +%Y-%m-%d))" --body-file report.md
-          fi
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: Nightly
