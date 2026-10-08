@@ -17,8 +17,14 @@ permissions:
 jobs:
   # Call the reusable workflow with PyPI installation
   aqua-pypi-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+    name: AQUA PyPI (${{ matrix.platform }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
+      platform: ${{ matrix.platform }}
       python-versions: '["3.11", "3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true

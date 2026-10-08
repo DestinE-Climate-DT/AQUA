@@ -17,8 +17,14 @@ permissions:
 jobs:
   # Call the reusable workflow with Conda installation
   aqua-conda-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+    name: AQUA Conda (${{ matrix.platform }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
+      platform: ${{ matrix.platform }}
       python-versions: '["3.11", "3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true

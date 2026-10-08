@@ -108,7 +108,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
-      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT }}
+      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
       ARTIFACT_SUFFIX: ${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ matrix.python-version }}
 
     steps:
@@ -126,7 +126,26 @@ jobs:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
           ref: main
-          token: ${{ secrets.AQUA_GITHUB_PAT }}
+          token: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
+
+      - name: Check GitHub token
+        env:
+          PAT_SET: ${{ secrets.AQUA_GITHUB_PAT != '' }}
+        run: |
+          if [ "$PAT_SET" != "true" ]; then
+            echo "::warning::AQUA_GITHUB_PAT is empty (Dependabot/fork run or secret not passed): falling back to github.token"
+          fi
+          CODE=$(curl -s -o "$RUNNER_TEMP/rate.json" -w "%{http_code}" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/rate_limit)
+          if [ "$CODE" != "200" ]; then
+            echo "::error::GitHub token rejected (HTTP $CODE): PAT expired or lacking permissions?"
+            exit 1
+          fi
+          REMAINING=$(sed -n 's/.*"core":{[^}]*"remaining":\([0-9]*\).*/\1/p' "$RUNNER_TEMP/rate.json" | head -1)
+          echo "GitHub API core requests remaining: ${REMAINING:-unknown}"
+          if [ -n "$REMAINING" ] && [ "$REMAINING" -lt 100 ]; then
+            echo "::warning::Only $REMAINING GitHub API requests left"
+          fi
 
       - name: Checkout DVC repo
         uses: actions/checkout@v7
