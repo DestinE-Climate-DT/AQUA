@@ -66,12 +66,7 @@ jobs:
 
       - name: Open or update issue
         run: |
-          LABEL="${TEST_NAME,,}-failure"
-          if ! gh label create "$LABEL" --color D93F0B --description "Failure of the $TEST_NAME tests" 2>/dev/null; then
-            gh label view "$LABEL" >/dev/null || {
-              echo "::error::Could not create or find issue label '$LABEL'"
-              exit 1
-            }
+          LABEL="nightly-failure :clown_face:"
           fi
           EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
