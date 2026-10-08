@@ -11,6 +11,7 @@ Unreleased in the current development version (target v1.2.1):
 ## [v1.2.1]
 
 Complete list:
+- Area selection: fix regions crossing the dateline and add fractional-coverage selection (#3179)
 - Fix for pyproject to avoid core-dump due to cartopy/eccodes conflict 
 - Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
 
