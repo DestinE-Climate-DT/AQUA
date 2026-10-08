@@ -706,7 +706,7 @@ class TestIcechunkWriter:
         writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
         writer._init_repo()
         ds = xr.Dataset({"foo": xr.DataArray([1.0], dims=["time"], coords={"time": [pd.Timestamp("2020-01-01")]})})
-        writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
+        assert writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
         writer.main_session.commit("test")
 
         result = writer.check_integrity("bar")

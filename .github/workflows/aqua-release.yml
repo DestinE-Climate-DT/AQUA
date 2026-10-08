@@ -1,27 +1,28 @@
-name: AQUA PyPI tests
+name: AQUA release
+# Full matrix starting from environment-pypi.yml (conda dependencies only), then installing the local AQUA with pip.
+# Runs on PRs whose label contains 'release' (e.g. 'release :sailboat:') or manually. RedHat is not covered yet.
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
   schedule:
-    - cron: "0 2 * * 2" # run every Tuesday night at 2AM UTC
-  push:
-    # if you want to edit this workflow, please create pypi-test branch and push to it
-    branches:
-      - pypi-test
+    - cron: "0 5 * * 1"
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
-  # Call the reusable workflow with PyPI installation
-  aqua-pypi-tests:
+  aqua-release-tests:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-latest]
-    name: AQUA PyPI (${{ matrix.platform }})
+        platform: [ubuntu-22.04, ubuntu-26.04, macos-15, xcode-27]
+    name: AQUA release (${{ matrix.platform }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
@@ -29,10 +30,10 @@ jobs:
       pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
-      enable-fdb: false
       fail-fast: false
-      install-mode: 'pypi'
+      enable-fdb: false
       container-image: ''
+      install-mode: 'release'
       test-data-source: 'auto'
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
@@ -45,12 +46,13 @@ jobs:
       AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
 
   report-failure:
-    needs: aqua-pypi-tests
-    if: ${{ always() && needs.aqua-pypi-tests.result == 'failure' }}
+    needs: aqua-release-tests
+    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
+    if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-release-tests.result == 'failure' }}
     permissions:
       contents: read
       issues: write
       actions: read
     uses: ./.github/workflows/report-failure-reusable.yml
     with:
-      test-name: PyPI
+      test-name: Release

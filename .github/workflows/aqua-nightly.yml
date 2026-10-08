@@ -1,0 +1,79 @@
+name: AQUA nightly
+# Builds the environment from environment.yml (no lock file) to catch dependency breakages.
+# Runs weekly, manually, on Dependabot PRs, and on PRs whose label contains 'nightly'.
+# The 'ubuntu-latest (FDB container)' entry runs inside the FDB container to check the FDB installation.
+# When the scheduled run fails, an issue listing the broken tests is opened (or updated).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  aqua-nightly-tests:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && (
+        github.actor == 'dependabot[bot]' ||
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'dependabot') ||
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'nightly')))
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-latest
+            platform: ubunt-26.04
+            fdb: false
+            container: ''
+            markers: 'aqua or slow or graphics or catgen or polytope'
+          - name: macos-latest
+            platform: xcode-27
+            fdb: false
+            container: ''
+            markers: 'aqua or slow or graphics or catgen or polytope'
+          - name: FDB container
+            platform: ubuntu-latest
+            fdb: true
+            container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
+            markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+    name: AQUA nightly (${{ matrix.name }})
+    uses: ./.github/workflows/aqua-test-reusable.yml
+    with:
+      platform: ${{ matrix.platform }}
+      python-versions: '["3.14"]'
+      pytest-markers: ${{ matrix.markers }}
+      enable-parallel: true
+      enable-coverage: false
+      fail-fast: false
+      enable-fdb: ${{ matrix.fdb }}
+      container-image: ${{ matrix.container }}
+      install-mode: 'environment'
+      test-data-source: 'auto'
+    secrets:
+      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
+      BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  report-failure:
+    needs: aqua-nightly-tests
+    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
+    if: ${{ always() && github.event_name == 'workflow' && needs.aqua-nightly-tests.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: Nightly
