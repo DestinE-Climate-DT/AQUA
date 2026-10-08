@@ -147,7 +147,7 @@ jobs:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
           ref: main
-          token: ${{ secrets.AQUA_GITHUB_PAT }}
+          token: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
 
       - name: Check GitHub token
         if: ${{ runner.os == 'Linux' }}
