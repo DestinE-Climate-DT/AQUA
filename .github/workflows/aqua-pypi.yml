@@ -3,7 +3,7 @@ name: AQUA PyPI tests
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+    - cron: "0 2 * * 2" # run every Tuesday night at 2AM UTC
   push:
     # if you want to edit this workflow, please create pypi-test branch and push to it
     branches:
@@ -17,9 +17,15 @@ permissions:
 jobs:
   # Call the reusable workflow with PyPI installation
   aqua-pypi-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+    name: AQUA PyPI (${{ matrix.platform }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.11", "3.12", "3.13", "3.14"]'
+      platform: ${{ matrix.platform }}
+      python-versions: '["3.12", "3.13", "3.14"]'
       pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
@@ -37,3 +43,14 @@ jobs:
       POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  report-failure:
+    needs: aqua-pypi-tests
+    if: ${{ always() && needs.aqua-pypi-tests.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: PyPI

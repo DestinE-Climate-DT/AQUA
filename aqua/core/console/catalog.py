@@ -4,12 +4,16 @@
 AQUA catalog operations mixin
 """
 
+import base64
+import json
 import os
 import shutil
 import sys
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 import fsspec
+from requests.exceptions import HTTPError as RequestsHTTPError
 
 from aqua.core.lock import SafeFileLock
 from aqua.core.reader.catalog import show_catalog_content as print_catalog
@@ -22,6 +26,66 @@ CATPATH = "catalogs"
 
 class CatalogMixin:
     """Mixin for AQUA catalog operations"""
+
+    def _log_github_api_error(self, error, context):
+        """Log GitHub response details that distinguish quota and permission failures."""
+        response = error.response
+        if response is None:
+            self.logger.error("GitHub API request failed during %s: %s", context, error)
+            return
+
+        headers = response.headers
+        rate_info = {
+            key: headers.get(header)
+            for key, header in (
+                ("resource", "X-RateLimit-Resource"),
+                ("remaining", "X-RateLimit-Remaining"),
+                ("limit", "X-RateLimit-Limit"),
+                ("reset", "X-RateLimit-Reset"),
+                ("retry_after", "Retry-After"),
+                ("sso", "X-GitHub-SSO"),
+            )
+            if headers.get(header) is not None
+        }
+        try:
+            message = response.json().get("message", "")
+        except (ValueError, AttributeError):
+            message = response.text[:300]
+
+        self.logger.error(
+            "GitHub API request failed during %s (HTTP %s): %s; response headers: %s",
+            context,
+            response.status_code,
+            message,
+            rate_info,
+        )
+
+    def _log_github_rate_limit(self, token, username, context):
+        """Log GitHub's core API rate limit using fsspec's Basic authentication."""
+        credentials = base64.b64encode(f"{username}:{token}".encode()).decode()
+        request = Request(
+            "https://api.github.com/rate_limit",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Basic {credentials}",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+        try:
+            with urlopen(request, timeout=10) as response:
+                rate_limit = json.loads(response.read())
+            core = rate_limit.get("resources", {}).get("core", {})
+            self.logger.debug(
+                "GitHub API core rate limit after %s: used=%s remaining=%s limit=%s",
+                context,
+                core.get("used", "unknown"),
+                core.get("remaining", "unknown"),
+                core.get("limit", "unknown"),
+            )
+        except HTTPError as exc:
+            self.logger.warning("Could not inspect GitHub API rate limit (HTTP %s)", exc.code)
+        except (URLError, json.JSONDecodeError) as exc:
+            self.logger.warning("Could not inspect GitHub API rate limit: %s", exc)
 
     def set(self, args):
         """Set an installed catalog as the one used in the config-aqua.yaml
@@ -143,8 +207,15 @@ class CatalogMixin:
                 **auth_kwargs,  # Apply authentication if available
             )
             self.logger.info("Accessed remote repository https://github.com/%s/%s", org, repo)
-        except HTTPError:
-            self.logger.error("Permission issues in accessing Climate-DT catalog, please contact AQUA maintainers")
+            if token and username:
+                self.logger.debug(
+                    "fsspec GitHub filesystem auth configured: username_present=%s token_present=%s",
+                    bool(fs.username),
+                    bool(fs.token),
+                )
+                self._log_github_rate_limit(token, username, "fsspec filesystem initialization")
+        except RequestsHTTPError as exc:
+            self._log_github_api_error(exc, f"opening {org}/{repo}")
             sys.exit(1)
 
         return fs
@@ -158,6 +229,11 @@ class CatalogMixin:
         """
         fs = self._github_explore(repository=args.repository)
         available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
+        token = os.getenv("GITHUB_TOKEN")
+        is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
+        username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+        if token and username:
+            self._log_github_rate_limit(token, username, "catalog listing")
         print("Available ClimateDT catalogs at are:")
         print(available_catalog)
 
@@ -193,6 +269,9 @@ class CatalogMixin:
             try:
                 self._fsspec_get_single_call(fs, source_dir, cdir)
                 self.logger.info("Download complete!")
+            except RequestsHTTPError as e:
+                self._log_github_api_error(e, f"fetching catalog {catalog}")
+                sys.exit(1)
             except Exception as e:
                 self.logger.error("Error occurred while fetching catalog: %s", e)
                 sys.exit(1)
@@ -288,8 +367,7 @@ class CatalogMixin:
 
     def _fsspec_get_single_call(self, fs, src_dir, dest_dir):
         """
-        Optimized function to download entire directory with minimal API calls
-        Uses fs.find() to get all files in ONE call, then batch downloads them
+        Recursively download a directory and report GitHub API usage after each phase.
 
         Args:
             fs: fsspec filesystem object, as github instance
@@ -299,14 +377,16 @@ class CatalogMixin:
         Returns:
             Remotely copy data from source to dest directory
         """
-        api_calls = 0
-
-        # Get all file paths recursively in one GitHub API call
+        # find() may traverse multiple directories, and get() may request each file separately.
         all_files = fs.find(src_dir, withdirs=False, detail=False)
-        api_calls += 1
+        token = os.getenv("GITHUB_TOKEN")
+        is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
+        username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+        if token and username:
+            self._log_github_rate_limit(token, username, "catalog file discovery")
 
         if not all_files:
-            self.logger.debug("No files found, completed with %d API call", api_calls)
+            self.logger.debug("No files found under %s", src_dir)
             return
 
         # Prepare destination paths and create directory structure
@@ -317,7 +397,6 @@ class CatalogMixin:
             dest_paths.append(dest_path)
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
-        # Batch Download
         fs.get(all_files, dest_paths)
-        api_calls += 1
-        self.logger.debug("Download completed with %d API calls (1 find + 1 batch get)", api_calls)
+        if token and username:
+            self._log_github_rate_limit(token, username, "catalog file download")

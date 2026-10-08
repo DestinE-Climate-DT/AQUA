@@ -1,0 +1,58 @@
+name: AQUA release
+# Full matrix starting from environment-pypi.yml (conda dependencies only), then installing the local AQUA with pip.
+# Runs on PRs whose label contains 'release' (e.g. 'release :sailboat:') or manually. RedHat is not covered yet.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  aqua-release-tests:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, ubuntu-26.04, macos-15, xcode-27]
+    name: AQUA release (${{ matrix.platform }})
+    uses: ./.github/workflows/aqua-test-reusable.yml
+    with:
+      platform: ${{ matrix.platform }}
+      python-versions: '["3.12", "3.13", "3.14"]'
+      pytest-markers: 'aqua or slow or graphics or catgen or polytope'
+      enable-parallel: true
+      enable-coverage: false
+      fail-fast: false
+      enable-fdb: false
+      container-image: ''
+      install-mode: 'release'
+      test-data-source: 'auto'
+    secrets:
+      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
+      BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  report-failure:
+    needs: aqua-release-tests
+    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
+    if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-release-tests.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: Release
