@@ -60,8 +60,9 @@ class AreaSelection:
             default_coords (dict, optional): Default coordinate ranges.
                 If omitted, the longitude convention is inferred from the
                 dataset coordinates and latitude defaults to [-90, 90].
-            to_180 (bool, optional): Whether to convert longitude to
-                [-180, 180] range. Default is True.
+            to_180 (bool, optional): Whether to convert the longitude convention of regionmask and
+                box selections. For regionmask selections, the convention (-180..180 or 0..360) in which
+                the selected region spans the smaller longitude range is used. Default is True.
             frac_threshold (float, optional): If set, select all cells whose fractional coverage by the
                 selected regions is above this value (e.g. 0.0 keeps every cell touching the region),
                 instead of only the cells whose center falls inside. Default is None (cell-center selection).
