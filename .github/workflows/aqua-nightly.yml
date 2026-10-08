@@ -69,7 +69,7 @@ jobs:
   report-failure:
     needs: aqua-nightly-tests
     # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
-    if: ${{ always() && github.event_name == 'workflow' && needs.aqua-nightly-tests.result == 'failure' }}
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.aqua-nightly-tests.result == 'failure' }}
     permissions:
       contents: read
       issues: write
