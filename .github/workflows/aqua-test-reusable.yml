@@ -259,13 +259,13 @@ jobs:
 
       - name: Install aqua-core from PyPI (PyPI mode)
         if: ${{ inputs.install-mode == 'pypi' }}
-        run: python -m pip install "aqua-core[tests,fdb]"
+        run: python -m pip install "aqua-core[all]"
 
       - name: Install local AQUA on top of environment-pypi.yml (release mode)
         if: ${{ inputs.install-mode == 'release' }}
         run: |
           cd AQUA
-          python -m pip install -e ".[tests,fdb]"
+          python -m pip install -e ".[all]"
 
       - name: Checkout the tag of the installed release (PyPI and conda mode)
         if: ${{ inputs.install-mode == 'pypi' || inputs.install-mode == 'conda' }}
