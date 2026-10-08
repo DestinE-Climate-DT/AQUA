@@ -161,8 +161,10 @@ jobs:
             echo "::error::GitHub token rejected (HTTP $CODE): PAT expired or lacking permissions?"
             exit 1
           fi
-          REMAINING=$(sed -n 's/.*"core":{[^}]*"remaining":\([0-9]*\).*/\1/p' "$RUNNER_TEMP/rate.json" | head -1)
+          REMAINING=$(jq -r '.resources.core.remaining // empty' "$RUNNER_TEMP/rate.json")
+          USED=$(jq -r '.resources.core.used // empty' "$RUNNER_TEMP/rate.json")
           echo "GitHub API core requests remaining: ${REMAINING:-unknown}"
+          echo "GitHub API core requests used: ${USED:-unknown}"
           if [ -n "$REMAINING" ] && [ "$REMAINING" -lt 100 ]; then
             echo "::warning::Only $REMAINING GitHub API requests left"
           fi
