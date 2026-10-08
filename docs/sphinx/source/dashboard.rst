@@ -73,7 +73,7 @@ Basic usage
 
 This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
-``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5kms/baseline-hist``
+``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5km/baseline-hist``
 or a text file containing a list of experiments.
 The file should be in the format "catalog model experiment realization".
 In case the compatibility flag ``--no-ensemble``
