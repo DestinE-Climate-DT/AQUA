@@ -20,9 +20,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && (
-        contains(github.event.pull_request.labels.*.name, 'run tests') ||
-        contains(github.event.pull_request.labels.*.name, 'ready for review') ||
-        contains(github.event.pull_request.labels.*.name, 'ready to merge')))
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'run tests') ||
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'ready for review') ||
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'ready to merge')))
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'

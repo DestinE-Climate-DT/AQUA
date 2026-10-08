@@ -1,6 +1,6 @@
 name: AQUA release
 # Full matrix starting from environment-pypi.yml (conda dependencies only), then installing the local AQUA with pip.
-# Runs on PRs labelled 'run_release' or manually. RedHat is not covered yet.
+# Runs on PRs whose label contains 'release' (e.g. 'release :sailboat:') or manually. RedHat is not covered yet.
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-        contains(github.event.pull_request.labels.*.name, 'release'))
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
     strategy:
       fail-fast: false
       matrix:
