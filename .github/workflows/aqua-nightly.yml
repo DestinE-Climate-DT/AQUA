@@ -1,4 +1,4 @@
-name: AQUA nightly (free-running environment)
+name: AQUA nightly
 # Builds the environment from environment.yml (no lock file) to catch dependency breakages.
 # Runs weekly, manually, on Dependabot PRs, and on PRs whose label contains 'nightly'.
 # The 'ubuntu-latest (FDB container)' entry runs inside the FDB container to check the FDB installation.
@@ -38,16 +38,16 @@ jobs:
             fdb: false
             container: ''
             markers: 'aqua or slow or graphics or catgen or polytope'
-          #- name: FDB container
-          #  platform: ubuntu-latest
-          #  fdb: true
-          #  container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
-          #  markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+          - name: FDB container
+            platform: ubuntu-latest
+            fdb: true
+            container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
+            markers: 'aqua or slow or polytope or fdb or graphics or catgen'
     name: AQUA nightly (${{ matrix.name }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.11"]'
+      python-versions: '["3.12", "3.14"]'
       pytest-markers: ${{ matrix.markers }}
       enable-parallel: true
       enable-coverage: false
