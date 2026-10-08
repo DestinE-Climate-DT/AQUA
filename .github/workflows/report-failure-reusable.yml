@@ -1,0 +1,76 @@
+name: Report test failure (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      test-name:
+        description: Name of the test suite that failed
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  report-failure:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      TEST_NAME: ${{ inputs.test-name }}
+    steps:
+      - name: Download test artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: aqua-test-artifacts-*
+          path: artifacts
+          if-no-artifact-found: ignore
+
+      - name: Build failure report
+        run: |
+          python3 - <<'EOF'
+          import glob, json, os, subprocess
+          import xml.etree.ElementTree as ET
+
+          test_name = os.environ["TEST_NAME"]
+          lines = [f"The {test_name} test run failed: " + os.environ["RUN_URL"], ""]
+
+          pages = json.loads(subprocess.check_output(
+              ["gh", "api", "--paginate", "--slurp",
+               f"repos/{os.environ['GH_REPO']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/jobs?per_page=100"]))
+          failed_jobs = [j["name"] for p in pages for j in p["jobs"] if j["conclusion"] == "failure"]
+          lines += ["## Failed jobs", ""] + [f"- {n}" for n in failed_jobs] + [""]
+
+          lines += ["## Broken tests", ""]
+          found = False
+          for xml in sorted(glob.glob(os.path.join("artifacts", "**", "junit.xml"), recursive=True)):
+              broken = []
+              for case in ET.parse(xml).getroot().iter("testcase"):
+                  if case.find("failure") is not None or case.find("error") is not None:
+                      broken.append(f"{case.get('classname')}::{case.get('name')}")
+              if broken:
+                  found = True
+                  artifact_name = os.path.basename(os.path.dirname(xml))
+                  lines += [f"### {artifact_name.removeprefix('aqua-test-artifacts-')}", ""]
+                  lines += [f"- `{test}`" for test in sorted(set(broken))] + [""]
+          if not found:
+              lines.append("No failing test found in the junit reports: the failure happened before the tests ran "
+                           "(e.g. environment creation). Check the failed jobs above.")
+
+          with open("report.md", "w") as f:
+              f.write("\n".join(lines))
+          EOF
+
+      - name: Open or update issue
+        run: |
+          LABEL="nightly-failure :clown_face:"
+          fi
+          EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file report.md
+          else
+            gh issue create --label "$LABEL" --type Bug --title "[CI/CD] $TEST_NAME tests failed ($(date -u +%Y-%m-%d))" --body-file report.md
+          fi
