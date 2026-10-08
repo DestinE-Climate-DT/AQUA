@@ -82,7 +82,7 @@ def _find_item_in_collection(
         KeyError: If the item cannot be found in the collection.
     """
     links = collection_dict.get("links", [])
-    item_links = [l for l in links if l.get("rel") == "item"]
+    item_links = [l for l in links if l.get("rel") in ("item", "child")]
 
     target_href = None
     available_items = []
@@ -91,18 +91,22 @@ def _find_item_in_collection(
         href = l.get("href", "")
         title = l.get("title", "")
         lid = l.get("id", "")
-        base_name = os.path.basename(href)
-        stem = base_name.removesuffix(".json")
+        base_name = os.path.basename(href.rstrip("/"))
+        stem = base_name.removesuffix(".json") if base_name.endswith(".json") else base_name
+        parent_name = os.path.basename(os.path.dirname(href.rstrip("/"))) if stem in ("stac", "index") else ""
 
-        label = lid or stem or title or href
-        if label:
+        label = lid or title or (stem if stem not in ("stac", "index") else parent_name) or href
+        if label and label not in available_items:
             available_items.append(label)
+        if stem and stem not in ("stac", "index") and stem not in available_items:
+            available_items.append(stem)
 
-        if item_id in (lid, title, href, base_name, stem):
+        candidates = {lid, title, href, base_name, stem, parent_name} - {"", None}
+        if item_id in candidates:
             target_href = href
             break
 
-    # If not matched directly on rel="item" links, check for rel="items" (STAC API collection)
+    # If not matched directly on rel="item" / "child" links, check for rel="items" (STAC API collection)
     if not target_href:
         items_link = next((l for l in links if l.get("rel") == "items"), None)
         if items_link and items_link.get("href"):
@@ -151,14 +155,18 @@ def _get_collection_item_ids(collection_dict: dict) -> list[str]:
     links = collection_dict.get("links", [])
     items = []
     for l in links:
-        if l.get("rel") == "item":
+        if l.get("rel") in ("item", "child"):
             href = l.get("href", "")
             lid = l.get("id", "")
-            base_name = os.path.basename(href)
+            title = l.get("title", "")
+            base_name = os.path.basename(href.rstrip("/"))
             stem = base_name.removesuffix(".json") if base_name.endswith(".json") else base_name
-            label = lid or stem or l.get("title") or href
+            parent_name = os.path.basename(os.path.dirname(href.rstrip("/"))) if stem in ("stac", "index") else ""
+            label = lid or title or (stem if stem not in ("stac", "index") else parent_name) or href
             if label and label not in items:
                 items.append(label)
+            if stem and stem not in ("stac", "index") and stem not in items:
+                items.append(stem)
     return items
 
 
@@ -278,7 +286,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.raw_dict = raw_dict
 
         # Determine whether this is a STAC Collection or Item
-        is_collection = raw_dict.get("type") == "Collection" or (
+        is_collection = raw_dict.get("type") in ("Collection", "Catalog") or (
             "extent" in raw_dict and "links" in raw_dict and "assets" not in raw_dict
         )
         self.is_collection = is_collection
@@ -328,16 +336,34 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.assets = assets
 
         if asset is not None:
-            if asset not in assets:
-                raise KeyError(
-                    f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
-                    f"Available assets: {list(assets.keys())}"
-                )
-            asset_key = asset
+            if asset in assets:
+                asset_key = asset
+            else:
+                # Check if asset name was supplied as a role (e.g. role 'data')
+                role_matching = [k for k, v in assets.items() if asset in v.get("roles", [])]
+                if len(role_matching) == 1:
+                    asset_key = role_matching[0]
+                    self.logger.info("Matched asset role '%s' to asset key '%s'", asset, asset_key)
+                elif len(role_matching) > 1:
+                    raise KeyError(
+                        f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
+                        f"It matches multiple assets by role: {role_matching}. "
+                        f"Please specify one of: {list(assets.keys())}"
+                    )
+                else:
+                    raise KeyError(
+                        f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
+                        f"Available assets: {list(assets.keys())}"
+                    )
         elif "data" in assets:
             asset_key = "data"
         else:
-            asset_key = next(iter(assets.keys()))
+            # Check if any asset has role "data"
+            data_role_assets = [k for k, v in assets.items() if "data" in v.get("roles", [])]
+            if len(data_role_assets) == 1:
+                asset_key = data_role_assets[0]
+            else:
+                asset_key = next(iter(assets.keys()))
 
         asset_info = assets[asset_key]
         raw_href = asset_info.get("href")
@@ -409,7 +435,17 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 "Please specify an item to load, for example:\n"
                 f"  cat['{self.name}']['item_id'].read() or cat['{self.name}'](item='item_id').read()"
             )
-        return super().read()
+        try:
+            return super().read()
+        except Exception as e:
+            if "not enough values to unpack" in str(e):
+                href = self.asset_info.get("href", "")
+                raise RuntimeError(
+                    f"Failed to read asset '{self.asset_name}' from '{href}'. "
+                    "The remote server returned an HTTP error (such as 404 Not Found), which Zarr "
+                    f"could not parse. Original error: {e}"
+                ) from e
+            raise
 
     def to_dask(self):
         """Read data into a dask-backed xarray Dataset."""
@@ -420,7 +456,17 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 "Please specify an item to load, for example:\n"
                 f"  cat['{self.name}']['item_id'].to_dask() or cat['{self.name}'](item='item_id').to_dask()"
             )
-        return super().to_dask()
+        try:
+            return super().to_dask()
+        except Exception as e:
+            if "not enough values to unpack" in str(e):
+                href = self.asset_info.get("href", "")
+                raise RuntimeError(
+                    f"Failed to read asset '{self.asset_name}' from '{href}'. "
+                    "The remote server returned an HTTP error (such as 404 Not Found), which Zarr "
+                    f"could not parse. Original error: {e}"
+                ) from e
+            raise
 
     def __getitem__(self, key: str):
         """Index into a collection or item to select a STAC item or asset.
@@ -542,7 +588,10 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
     def describe(self):
         """Return description dictionary including available items or assets."""
-        d = super().describe()
+        try:
+            d = super().describe()
+        except Exception:
+            d = {}
         if self.item_name is None:
             d["available_items"] = self.available_items
         else:

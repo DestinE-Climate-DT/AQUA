@@ -469,3 +469,68 @@ sources:
         # Invalid asset
         with pytest.raises(KeyError, match="not an available item in collection"):
             cat["ifs"]["ifs-short-ifs2d-tco79"]["nonexistent"]
+
+
+@pytest.mark.aqua
+def test_stac_collection_child_links_and_roles(tmp_path):
+    """Test STAC collections with rel='child' links, title-based items, and role-based asset matching."""
+    # Create item file
+    item_file = tmp_path / "item.json"
+    item_data = {
+        "id": "my-item-id",
+        "type": "Feature",
+        "stac_version": "1.0.0",
+        "properties": {"title": "My Item"},
+        "assets": {
+            "dkrz-disk": {
+                "href": "disk_data.nc",
+                "roles": ["data"],
+                "type": "application/x-netcdf",
+            },
+            "eerie-cloud": {
+                "href": "cloud_data.nc",
+                "roles": ["data"],
+                "type": "application/x-netcdf",
+            },
+            "preview": {
+                "href": "preview.png",
+                "roles": ["thumbnail"],
+                "type": "image/png",
+            },
+        },
+    }
+    with open(item_file, "w", encoding="utf-8") as f:
+        json.dump(item_data, f)
+
+    # Create collection with rel='child', href ending in /stac, and title
+    coll_file = tmp_path / "coll.json"
+    coll_data = {
+        "id": "my-collection",
+        "type": "Collection",
+        "stac_version": "1.0.0",
+        "links": [
+            {
+                "rel": "child",
+                "href": str(item_file),
+                "title": "my-dataset.2D_hourly",
+            }
+        ],
+    }
+    with open(coll_file, "w", encoding="utf-8") as f:
+        json.dump(coll_data, f)
+
+    # 1. Collection lists item by title
+    source = IntakeSTACSource(urlpath=str(coll_file))
+    assert "my-dataset.2D_hourly" in source.keys()
+
+    # 2. Select item by title and asset by key
+    item_source = IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="preview")
+    assert item_source.asset_name == "preview"
+
+    # 3. Role-based matching: unique role 'thumbnail' matches 'preview'
+    item_source_role = IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="thumbnail")
+    assert item_source_role.asset_name == "preview"
+
+    # 4. Ambiguous role 'data' raises informative KeyError with available assets
+    with pytest.raises(KeyError, match="matches multiple assets by role"):
+        IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="data")
