@@ -8,6 +8,7 @@ Unreleased in the current development version (target v1.2.1):
 
 - Drop support to python 3.12 (#3188)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
+- Remove climatedt-phase1 from CI/CD (#3181)
 - Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
 
 ## [v1.2.1]

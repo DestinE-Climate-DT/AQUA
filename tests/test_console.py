@@ -693,7 +693,7 @@ class TestAquaConsoleShared:
         run_aqua(["avail", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
         out, _ = capfd.readouterr()
 
-        assert "climatedt-phase1" in out
+        assert "climatedt-gen2" in out
         assert "nextgems4" in out
 
         run_aqua(["-v", "update", "-c", "all"])
