@@ -40,7 +40,6 @@ def plot_single_map(
     contour: bool = True,
     sym: bool = False,
     proj: ccrs.Projection = ccrs.Robinson(),
-    proj_kwargs: Optional[dict] = None,
     gridlines: bool = False,
     extent: Optional[list] = None,
     coastlines: bool = True,
