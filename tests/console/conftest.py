@@ -5,6 +5,9 @@ import os
 import sys
 
 import pytest
+from utils_tests import APPROX_REL as APPROX_REL
+from utils_tests import DPI as DPI
+from utils_tests import LOGLEVEL as LOGLEVEL
 
 from aqua.core.console.main import AquaConsole
 
