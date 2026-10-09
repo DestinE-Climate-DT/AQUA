@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
-- Add jinja replacement tests from aqua-diagnostics package (#3189)
+- Fix missing test markers (#3187)
 - Drop support to python 3.12 (#3188)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
 - Remove climatedt-phase1 from CI/CD (#3181)
@@ -18,6 +18,7 @@ Complete list:
 - Area selection: fix regions crossing the dateline and add fractional-coverage selection (#3179)
 - Fix for pyproject to avoid core-dump due to cartopy/eccodes conflict 
 - Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
+- Fix convevention table for ocean variables and logger error for incommensurate units  (#3176)
 
 ## [v1.2.0]
 

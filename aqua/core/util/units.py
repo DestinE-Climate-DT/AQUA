@@ -73,24 +73,20 @@ def convert_units(src, dst, deltat=None, var="input var", loglevel="WARNING"):
     else:
         if factor.units == "meter ** 3 / kilogram":
             factor = factor * 1000 * units("kg m-3")
-            if logger:
-                logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
+            logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
         elif factor.units == "meter ** 3 * second / kilogram":
             factor = factor * 1000 * units("kg m-3") / (deltat * units("s"))
-            if logger:
-                logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
-                logger.info("%s: corrected dividing by accumulation time %s s", var, deltat)
+            logger.debug("%s: corrected multiplying by density of water 1000 kg m-3", var)
+            logger.info("%s: corrected dividing by accumulation time %s s", var, deltat)
         elif factor.units == "second":
             factor = factor / (deltat * units("s"))
-            if logger:
-                logger.debug("%s: corrected dividing by accumulation time %s s", var, deltat)
+            logger.debug("%s: corrected dividing by accumulation time %s s", var, deltat)
         elif factor.units == "kilogram / meter ** 3":
             factor = factor / (1000 * units("kg m-3"))
-            if logger:
-                logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
+            logger.debug("%s: corrected dividing by density of water 1000 kg m-3", var)
         else:
-            if logger:
-                logger.debug("%s: incommensurate units converting %s to %s --> %s", var, src, dst, factor.units)
+            logger.error("Incommensurate units: cannot convert from %s to %s for variable %s", src, dst, var)
+            logger.error("Check the output units of the model or write a fix.")
         offset = 0 * units(dst)
 
     # Store non-default conversion factors and offsets
