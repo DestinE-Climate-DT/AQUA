@@ -10,7 +10,7 @@ from pathlib import Path
 
 import matplotlib
 import pytest
-from utils_tests import TestCleanupRegistry
+from utils_tests import LOGLEVEL, TestCleanupRegistry
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
@@ -20,11 +20,6 @@ matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
-
-# Centralized setting for all tests
-DPI = 50
-APPROX_REL = 1e-4
-LOGLEVEL = "DEBUG"
 
 
 # ======================================================================

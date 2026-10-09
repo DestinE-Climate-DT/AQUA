@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 

@@ -6,7 +6,7 @@ import icechunk
 import pandas as pd
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder

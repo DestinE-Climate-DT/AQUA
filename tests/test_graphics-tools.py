@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 from astropy_healpix import healpy as hp
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.util import (
