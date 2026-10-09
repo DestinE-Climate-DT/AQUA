@@ -29,9 +29,9 @@ jobs:
       pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
       enable-parallel: true
       enable-coverage: true
-      fail-fast: false
       install-mode: 'local'
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}

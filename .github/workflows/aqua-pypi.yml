@@ -30,10 +30,10 @@ jobs:
       enable-parallel: true
       enable-coverage: false
       enable-fdb: false
-      fail-fast: false
       install-mode: 'pypi'
       container-image: ''
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
       AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}

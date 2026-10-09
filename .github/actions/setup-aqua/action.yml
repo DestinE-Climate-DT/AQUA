@@ -1,0 +1,34 @@
+name: Set up AQUA
+description: Install the requested AQUA catalogs and configure the Polytope key.
+inputs:
+  catalogs:
+    description: Newline-separated catalog names to add after installing the GitHub catalog.
+    required: false
+    default: |
+      climatedt-gen2
+      ci
+  polytope-key:
+    description: Polytope API key.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install catalogs and configure AQUA
+      shell: bash -l -eo pipefail {0}
+      env:
+        AQUA_CATALOGS: ${{ inputs.catalogs }}
+        POLYTOPE_KEY: ${{ inputs.polytope-key }}
+      run: |
+        aqua -vv install github
+        while IFS= read -r catalog; do
+          [ -n "$catalog" ] || continue
+          aqua -vv add "$catalog"
+        done <<< "$AQUA_CATALOGS"
+        aqua -vv list
+        cat >> "$HOME/.aqua/config-aqua.yaml" <<EOF
+        paths:
+            grids: ./AQUA_tests/grids
+            weights: ./AQUA_tests/weights
+            areas: ./AQUA_tests/weights
+        EOF
+        python -c 'import json, os; print(json.dumps({"user_key": os.environ["POLYTOPE_KEY"]}))' > "$HOME/.polytopeapirc"

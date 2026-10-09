@@ -1,0 +1,61 @@
+name: Collect AQUA pytest reports
+description: Generate coverage reports and show xdist logs after pytest failures.
+inputs:
+  project-path:
+    description: Workspace-relative path to the checked-out Python project.
+    required: false
+    default: AQUA
+  enable-parallel:
+    description: Whether pytest-xdist was enabled.
+    required: false
+    default: 'true'
+  enable-coverage:
+    description: Whether pytest coverage collection was enabled.
+    required: false
+    default: 'true'
+  codecov-token:
+    description: Codecov upload token.
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Generate coverage reports
+      if: ${{ inputs.enable-coverage == 'true' && !cancelled() }}
+      continue-on-error: true
+      shell: bash -l -eo pipefail {0}
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        coverage xml
+        coverage report
+
+    - name: Upload coverage reports to Codecov
+      if: ${{ inputs.enable-coverage == 'true' && !cancelled() }}
+      uses: codecov/codecov-action@v7
+      with:
+        token: ${{ inputs.codecov-token }}
+        files: ${{ inputs.project-path }}/coverage.xml
+        flags: unittests
+        name: codecov-aqua
+
+    - name: Upload test results to Codecov
+      if: ${{ inputs.enable-coverage == 'true' && !cancelled() }}
+      uses: codecov/codecov-action@v7
+      with:
+        token: ${{ inputs.codecov-token }}
+        report_type: test_results
+        files: ${{ inputs.project-path }}/junit.xml
+
+    - name: Show xdist worker log on test failure or timeout
+      if: ${{ failure() && inputs.enable-parallel == 'true' }}
+      shell: bash -l -eo pipefail {0}
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        LOG=.pytest_cache/xdist_worker_tests.log
+        if [ -f "$LOG" ]; then
+          echo "========== xdist worker log (last 'started' per worker = likely hung test) =========="
+          cat "$LOG"
+          echo "========== Last 'started' line per worker =========="
+          awk -F'\t' '$2=="started" { last[$1]=$0 } END { for (w in last) print last[w] }' "$LOG" || true
+        else
+          echo "No xdist worker log found at $LOG"
+        fi
