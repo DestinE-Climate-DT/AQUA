@@ -6,10 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
-Main changes:
+- Fix missing test markers (#3187)
+- Drop support to python 3.12 (#3188)
+- Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
+- Remove climatedt-phase1 from CI/CD (#3181)
+- Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
+
+## [v1.2.1]
 
 Complete list:
+- Area selection: fix regions crossing the dateline and add fractional-coverage selection (#3179)
+- Fix for pyproject to avoid core-dump due to cartopy/eccodes conflict 
 - Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
+- Fix convevention table for ocean variables and logger error for incommensurate units  (#3176)
 
 ## [v1.2.0]
 
@@ -22,6 +31,7 @@ Main changes:
 2. Various fixes to the Backend and to the Console
 
 Complete list:
+- Implement MacOS CI/CD test (#3158)
 - `aqua analysis` support for ensemble analysis with the `aqua analysis ensemble` subcommand (#3159)
 - `aqua grids build` now supports `reader_kwargs` option to pass extra arguments to the Reader (#3136)
 - `aqua grids build` now supports `--datamodel` option to apply the data model to the original source before building the grid (#3136)
@@ -1568,7 +1578,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...HEAD
+[v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1

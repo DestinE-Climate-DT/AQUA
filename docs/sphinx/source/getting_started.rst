@@ -84,11 +84,11 @@ To add a catalog, run the following command:
 
     aqua add <catalog>
 
-For example, to add the catalog for ``climatedt-phase1``, run:
+For example, to add the catalog for ``climatedt-gen2``, run:
 
 .. code-block:: bash
 
-    aqua add climatedt-phase1
+    aqua add climatedt-gen2
 
 This command will copy the catalog folder to the configuration folder. Please notice that will operate fetching the catalog.
 

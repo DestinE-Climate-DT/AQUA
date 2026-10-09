@@ -168,6 +168,7 @@ class TestFileIsComplete:
         (CommentedSeq(["A", "B", "C"]), ["A", "B", "C"]),
     ],
 )
+@pytest.mark.aqua
 def test_to_list(arg, expected):
     result = to_list(arg)
     assert result == expected
