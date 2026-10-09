@@ -1,7 +1,7 @@
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
 from dask.distributed import Client, LocalCluster
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext

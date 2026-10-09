@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.data_model import CoordTransformer

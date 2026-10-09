@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import regionmask
 import xarray as xr
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua.core.default import DEFAULT_COORDS
 from aqua.core.fldstat import AreaSelection

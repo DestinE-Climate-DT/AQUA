@@ -10,10 +10,7 @@ from pathlib import Path
 
 import matplotlib
 import pytest
-from utils_tests import APPROX_REL as APPROX_REL
-from utils_tests import DPI as DPI
-from utils_tests import LOGLEVEL as LOGLEVEL
-from utils_tests import TestCleanupRegistry
+from utils_tests import LOGLEVEL, TestCleanupRegistry
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
