@@ -12,6 +12,7 @@ from aqua.core.logger import log_configure
 
 from .backend_intake_fdb import BackendIntakeFDB
 from .backend_intake_icechunk import BackendIntakeIcechunk
+from .backend_intake_stac import BackendIntakeSTAC
 from .backend_intake_xarray import BackendIntakeXarray
 from .backend_xarray import BackendXarray
 
@@ -25,6 +26,7 @@ class BackendFactory:
         "fdb": BackendIntakeFDB,
         "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
+        "stac": BackendIntakeSTAC,
         "zarr": BackendIntakeXarray,
         "xarray": BackendXarray,
     }
@@ -78,6 +80,14 @@ class BackendFactory:
             "datamodel",
             "loglevel",
         },
+        "stac": {
+            "path",
+            "stac",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
         "xarray": {
             "path",
             "xarray_engine",
@@ -97,6 +107,7 @@ class BackendFactory:
         path: str = None,
         catalog: str = None,
         loglevel: str = "WARNING",
+        stac: dict = None,
     ):
         # Set the provided parameters as instance attributes
         self.catalog = catalog
@@ -105,6 +116,7 @@ class BackendFactory:
         self.source = source
         self.catalog = catalog
         self.path = path
+        self.stac = stac
 
         self.configurer = configurer
         self.loglevel = loglevel
@@ -130,7 +142,9 @@ class BackendFactory:
 
         Please notiche the _check_required_params method ensures that either a path or model/exp/source are provided.
         """
-        if self.path:
+        if self.stac is not None:
+            self._select_backend_stac()
+        elif self.path:
             self._select_backend_xarray()
         else:
             self.configurer_catalog = ConfigCatalog(self.configurer, catalog=self.catalog, loglevel=self.loglevel)
@@ -173,6 +187,12 @@ class BackendFactory:
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         # TODO: this is a temporary solution to avoid errors when using the xarray backend without a catalog.
         #       Notice that a path could be defined in config-aqua.yaml and used when solving the TODO above.
+        self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
+
+    def _select_backend_stac(self):
+        """Activate direct STAC catalog access through Intake."""
+        self.driver = "stac"
+        self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
     def get_metadata(
@@ -222,6 +242,7 @@ class BackendFactory:
             exp=self.exp,
             source=self.source,
             path=self.path,
+            stac=self.stac,
             configurer=self.configurer,
             configurer_catalog=self.configurer_catalog,
             catalog=self.catalog,
@@ -242,6 +263,8 @@ class BackendFactory:
 
     def _check_required_params(self):
         """Check if the required parameters are provided."""
+        if self.stac is not None and self.path is None:
+            raise ValueError("A STAC catalog path or URL must be provided with the stac selection.")
         if self.path is None and not all(v is not None for v in [self.model, self.exp, self.source]):
             raise ValueError(
                 "Nor path nor model/exp/source are provided. Please provide either a path or model, exp, and source."
