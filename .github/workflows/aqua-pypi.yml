@@ -26,7 +26,7 @@ jobs:
     with:
       platform: ${{ matrix.platform }}
       python-versions: '["3.12", "3.13", "3.14"]'
-      pytest-markers: 'aqua or slow or graphics or catgen or polytope'
+      pytest-markers: 'aqua or slow or graphics or catgen or polytope or stac'
       enable-parallel: true
       enable-coverage: false
       enable-fdb: false
