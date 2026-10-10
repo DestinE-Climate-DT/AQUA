@@ -13,6 +13,7 @@ from aqua.core.logger import log_configure
 from .backend_intake_fdb import BackendIntakeFDB
 from .backend_intake_icechunk import BackendIntakeIcechunk
 from .backend_intake_xarray import BackendIntakeXarray
+from .backend_stac import BackendSTAC
 from .backend_xarray import BackendXarray
 
 
@@ -25,6 +26,7 @@ class BackendFactory:
         "fdb": BackendIntakeFDB,
         "icechunk": BackendIntakeIcechunk,
         "netcdf": BackendIntakeXarray,
+        "stac": BackendSTAC,
         "zarr": BackendIntakeXarray,
         "xarray": BackendXarray,
     }
@@ -78,6 +80,14 @@ class BackendFactory:
             "datamodel",
             "loglevel",
         },
+        "stac": {
+            "url",
+            "stac_kwargs",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
         "xarray": {
             "path",
             "xarray_engine",
@@ -97,6 +107,8 @@ class BackendFactory:
         path: str = None,
         catalog: str = None,
         loglevel: str = "WARNING",
+        url: str = None,
+        stac_kwargs: dict | str = None,
     ):
         # Set the provided parameters as instance attributes
         self.catalog = catalog
@@ -105,6 +117,8 @@ class BackendFactory:
         self.source = source
         self.catalog = catalog
         self.path = path
+        self.url = url
+        self.stac_kwargs = stac_kwargs
 
         self.configurer = configurer
         self.loglevel = loglevel
@@ -130,7 +144,9 @@ class BackendFactory:
 
         Please notiche the _check_required_params method ensures that either a path or model/exp/source are provided.
         """
-        if self.path:
+        if self.url:
+            self._select_backend_stac()
+        elif self.path:
             self._select_backend_xarray()
         else:
             self.configurer_catalog = ConfigCatalog(self.configurer, catalog=self.catalog, loglevel=self.loglevel)
@@ -173,6 +189,13 @@ class BackendFactory:
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         # TODO: this is a temporary solution to avoid errors when using the xarray backend without a catalog.
         #       Notice that a path could be defined in config-aqua.yaml and used when solving the TODO above.
+        self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
+
+    def _select_backend_stac(self):
+        """Activate direct STAC catalog access through Intake."""
+        self.driver = "stac"
+        self.logger.warning(" STAC backend is experimental and may not work for all catalogs.")
+        self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
     def get_metadata(
@@ -222,6 +245,8 @@ class BackendFactory:
             exp=self.exp,
             source=self.source,
             path=self.path,
+            url=self.url,
+            stac_kwargs=self.stac_kwargs,
             configurer=self.configurer,
             configurer_catalog=self.configurer_catalog,
             catalog=self.catalog,
@@ -241,13 +266,35 @@ class BackendFactory:
         return self.BACKEND_TYPES[self.driver](**filtered)
 
     def _check_required_params(self):
-        """Check if the required parameters are provided."""
-        if self.path is None and not all(v is not None for v in [self.model, self.exp, self.source]):
+        """
+        Require exactly one complete setup: (model, exp, source), (path), or (url, stac_kwargs).
+
+        Raises:
+            ValueError: If no setup is provided, multiple setups are provided, or a setup is incomplete.
+        """
+        modes = {
+            "intake": {"model": self.model, "exp": self.exp, "source": self.source},
+            "xarray": {"path": self.path},
+            "stac": {"url": self.url, "stac_kwargs": self.stac_kwargs},
+        }
+        # for each mode, the parameters the user actually set
+        active = {name: [k for k, v in params.items() if v is not None] for name, params in modes.items()}
+        active = {name: keys for name, keys in active.items() if keys}
+
+        if not active:
+            raise ValueError("No source provided. Use one of: (model, exp, source), (path), or (url, stac_kwargs).")
+
+        if len(active) > 1:
+            details = "; ".join(f"{name}: {keys}" for name, keys in active.items())
             raise ValueError(
-                "Nor path nor model/exp/source are provided. Please provide either a path or model, exp, and source."
+                f"Inconsistent parameters, multiple setups given ({details}). "
+                "Use only one of: (model, exp, source), (path), or (url, stac_kwargs)."
             )
-        if self.path is not None and any(v is not None for v in [self.model, self.exp, self.source]):
-            self.logger.error(
-                "Both path and model/exp/source are provided.\n"
-                "The model/exp/source parameters will be ignored in favor of the path."
+
+        # exactly one mode is active: make sure it is complete
+        ((name, given),) = active.items()
+        missing = [k for k in modes[name] if k not in given]
+        if missing:
+            raise ValueError(
+                f"Incomplete '{name}' setup: missing {missing}. Required parameters are: {list(modes[name].keys())}."
             )

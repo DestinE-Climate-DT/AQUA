@@ -61,6 +61,7 @@ dependencies = [
     "numpy",
     "pandas>=3.0.0", # pandas3 required for new time unit handling
     "pypdf",
+    "pystac",
     "pyYAML",
     "regionmask",
     "ruamel.yaml",
@@ -146,7 +147,8 @@ markers = [
     "fdb: mark test that requires ECMWF FDB libraries",
     "catgen: mark test for catalog generator",
     "console: mark test for console",
-    "polytope: mark test that uses polytope"
+    "polytope: mark test that uses polytope",
+    "stac: mark test that uses STAC",
 ]
 
 [tool.coverage.run]

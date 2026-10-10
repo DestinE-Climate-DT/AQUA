@@ -26,7 +26,7 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-versions: '["3.14"]'
-      pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+      pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen or stac'
       enable-parallel: true
       enable-coverage: true
       fail-fast: false

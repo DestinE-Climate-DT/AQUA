@@ -141,3 +141,44 @@ For example, to select a specific ensemble member, you can do:
     data = reader.retrieve()
 
 See `Intake documentation <https://intake.readthedocs.io/en/stable/catalog.html#source-parameters>`_ for more details about Intake source parameters.
+
+
+Reader xarray access
+^^^^^^^^^^^^^^^^^^^^
+
+The ``Reader`` class is designed to provide a main inteface via intake, but can also be used to access data directly via xarray.
+The ``Reader`` class can be initialized with a ``path`` to a dataset, and the ``retrieve()`` method will return an xarray object.
+This is useful when the data is not available in the intake catalog, but is available in a local path, and the user want to inspect them quickly.
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(path="/path/to/data.nc", areas=False)
+    data = reader.retrieve()
+
+
+
+.. note ::
+    The xarray access is experimental and may not support all the functionalities of the intake backed.
+    For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.
+
+Reader stac access
+^^^^^^^^^^^^^^^^^^
+
+The ``Reader`` class can also be used to access data from a STAC catalog.
+The reader can be initialized with a ``url`` to a STAC catalog, and the ``stac_kwargs`` argument can be used to point a specific asset from the catalog.
+``stac_kwargs`` can be a dictionary or a string, depending on the structure of the catalog, or if the json file is a single item or a nested catalog/collection.
+This below is a working example building on the DKRZ EERIE cloud STAC catalog.
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(
+        url="https://eerie.cloud.dkrz.de/datasets/HadGEM3-GC5E-HH.historical.v20250409.gr1.Amon/stac",
+        stac_kwargs="eerie-cloud", areas=False,
+    )
+    data = reader.retrieve()
+
+.. note ::
+    The stac access is experimental and may not support all the functionalities of the intake backed. it might break if the catalog structure is not as expected.
+    For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.
