@@ -10,6 +10,8 @@ import pytest
 import xarray as xr
 
 from aqua import Reader
+from aqua.core.backend import BackendFactory
+from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
 
 
@@ -568,3 +570,63 @@ def test_stac_entries_interface(sample_stac_collection_path):
     assert asset_source.asset_name == "data"
     assert asset_source.extra_kwargs.get("chunks") == {"time": 1}
     assert getattr(asset_source, "_entry", None) is not None
+
+
+@pytest.mark.aqua
+def test_backend_factory_stac_metadata_dict(sample_stac_collection_path):
+    """Test BackendFactory.get_metadata resolves dict-based fixer_name and source_grid_name per item for STAC."""
+    configurer = ConfigContext()
+    factory = BackendFactory(configurer=configurer, model="ifs", exp="item1", source="data")
+    factory.driver = "stac"
+
+    # Case 1: Real IntakeSTACSource with item_name matching a key in the dictionary
+    stac_source = IntakeSTACSource(urlpath=sample_stac_collection_path, item="ifs-short-ifs2d-tco79", asset="data")
+    factory.esmcat = stac_source
+    factory.metadata = {
+        "fixer_name": {
+            "ifs-short-ifs2d-tco79": "ifs-short-fixer",
+            "ifs-long-regridded-r18x9": "ifs-long-fixer",
+        },
+        "source_grid_name": {
+            "ifs-short-ifs2d-tco79": "tco79-grid",
+            "ifs-long-regridded-r18x9": "r18x9-grid",
+        },
+    }
+
+    fixer, grid, conv, dm = factory.get_metadata()
+    assert fixer == "ifs-short-fixer"
+    assert grid == "tco79-grid"
+
+    # Case 2: Another item matches its respective entry in the dictionary
+    factory.esmcat = IntakeSTACSource(urlpath=sample_stac_collection_path, item="ifs-long-regridded-r18x9", asset="data")
+    fixer, grid, conv, dm = factory.get_metadata()
+    assert fixer == "ifs-long-fixer"
+    assert grid == "r18x9-grid"
+
+    # Case 3: Item not found in the dictionary resolves to None
+    factory.esmcat = IntakeSTACSource(urlpath=sample_stac_collection_path, item="ifs-teleconnections-enso-test", asset="data")
+    fixer, grid, conv, dm = factory.get_metadata()
+    assert fixer is None
+    assert grid is None
+
+    # Case 4: item is None on esmcat (e.g. collection-level source)
+    factory.esmcat = IntakeSTACSource(urlpath=sample_stac_collection_path)
+    assert factory.esmcat.item_name is None
+    fixer, grid, conv, dm = factory.get_metadata()
+    assert fixer is None
+    assert grid is None
+
+    # Case 5: Direct arguments passed as dicts to get_metadata
+    factory.esmcat = stac_source
+    fixer, grid, conv, dm = factory.get_metadata(
+        fixer_name={"ifs-short-ifs2d-tco79": "arg-fixer"},
+        src_grid_name={"ifs-short-ifs2d-tco79": "arg-grid"},
+    )
+    assert fixer == "arg-fixer"
+    assert grid == "arg-grid"
+
+    # Case 6: Non-stac driver does not resolve dictionaries by item
+    factory.driver = "netcdf"
+    fixer, grid, conv, dm = factory.get_metadata()
+    assert fixer == factory.metadata["fixer_name"]
+    assert grid == factory.metadata["source_grid_name"]
