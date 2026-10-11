@@ -1,5 +1,7 @@
 name: relock conda
 on:
+  pull_request:
+    types: [labeled]
   workflow_dispatch:
   schedule:
     - cron: "0 4 * * 1" # run every Monday night at 4AM UTC
@@ -10,6 +12,11 @@ permissions:
 
 jobs:
   relock:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' &&
+      github.event.label.name == 'conda-relock')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -40,5 +47,4 @@ jobs:
           delete-branch: true
           committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
           labels: |
-            conda-lock
             run tests
