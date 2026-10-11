@@ -170,6 +170,43 @@ def _get_collection_item_ids(collection_dict: dict) -> list[str]:
     return items
 
 
+class STACCatalogEntry:
+    """Intake catalog entry representing a STAC item or asset.
+
+    Provides a CatalogEntry-compatible interface for IntakeSTACSource so that
+    hierarchical indexing and re-instantiation via ``_entries[name](**kwargs)`` works.
+    """
+
+    def __init__(self, source: "IntakeSTACSource", key: str, is_item: bool = True):
+        self._source = source
+        self._name = key
+        self.name = key
+        self._is_item = is_item
+        self._driver = getattr(getattr(source, "_entry", None), "_driver", "stac")
+        self._user_parameters = getattr(getattr(source, "_entry", None), "_user_parameters", [])
+        self.description = f"STAC {'item' if is_item else 'asset'} {key}"
+
+    def describe(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "driver": self._driver,
+            "user_parameters": self._user_parameters,
+        }
+
+    def get(self, **kwargs):
+        if self._is_item:
+            res = self._source(item=self._name, **kwargs)
+        else:
+            res = self._source(asset=self._name, **kwargs)
+        if not hasattr(res, "_entry") or res._entry is None:
+            res._entry = self
+        return res
+
+    def __call__(self, *args, **kwargs):
+        return self.get(**kwargs)
+
+
 class IntakeSTACSource(IntakeXarraySourceAdapter):
     """Intake driver to read a STAC item or collection JSON and open an asset with xarray.
 
@@ -547,13 +584,40 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         """Return list of available item identifiers or asset names."""
         return list(self)
 
+    @property
+    def _entries(self) -> dict[str, STACCatalogEntry]:
+        """Return a mapping of catalog entries for items (if collection) or assets (if item)."""
+        entries = {}
+        if getattr(self, "assets", None):
+            for k in self.assets:
+                entries[k] = STACCatalogEntry(self, k, is_item=False)
+        if getattr(self, "available_items", None):
+            for k in self.available_items:
+                if k not in entries:
+                    entries[k] = STACCatalogEntry(self, k, is_item=True)
+        return entries
+
+    @property
+    def entries(self) -> dict[str, STACCatalogEntry]:
+        """Alias for _entries conforming to intake catalog interface."""
+        return self._entries
+
     def __call__(self, *args, **kwargs):
         """Re-configure or select item/asset dynamically."""
         if kwargs:
-            if getattr(self, "_entry", None) is not None:
-                return self._entry.get(**kwargs)
             new_item = kwargs.get("item", self.item_name)
             new_asset = kwargs.get("asset", self.asset_name)
+            if getattr(self, "_entry", None) is not None and not isinstance(self._entry, STACCatalogEntry):
+                call_kwargs = dict(kwargs)
+                if new_item is not None and "item" not in call_kwargs:
+                    call_kwargs["item"] = new_item
+                if new_asset is not None and "asset" not in call_kwargs:
+                    call_kwargs["asset"] = new_asset
+                child = self._entry.get(**call_kwargs)
+                if getattr(child, "_entry", None) is None:
+                    child._entry = self._entry
+                return child
+
             child = IntakeSTACSource(
                 urlpath=self.base_urlpath,
                 item=new_item,
@@ -563,6 +627,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 metadata=kwargs.get("metadata", self.orig_metadata),
                 xarray_kwargs=kwargs.get("xarray_kwargs", self.xarray_kwargs_arg),
                 loglevel=kwargs.get("loglevel", self.loglevel),
+                _is_item=True if new_item is not None else False,
                 **{
                     **self.extra_kwargs,
                     **{
@@ -581,6 +646,8 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                     },
                 },
             )
+            if hasattr(self, "_entry") and self._entry is not None:
+                child._entry = self._entry
             return child
         return self
 

@@ -534,3 +534,37 @@ def test_stac_collection_child_links_and_roles(tmp_path):
     # 4. Ambiguous role 'data' raises informative KeyError with available assets
     with pytest.raises(KeyError, match="matches multiple assets by role"):
         IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="data")
+
+
+@pytest.mark.aqua
+def test_stac_entries_interface(sample_stac_collection_path):
+    """Test that IntakeSTACSource exposes _entries and entries compatible with catalog workflows."""
+    source = IntakeSTACSource(urlpath=sample_stac_collection_path)
+
+    # Collection level _entries
+    assert hasattr(source, "_entries")
+    assert hasattr(source, "entries")
+    assert "ifs-short-ifs2d-tco79" in source._entries
+    assert "ifs-short-ifs2d-tco79" in source.entries
+
+    entry = source._entries["ifs-short-ifs2d-tco79"]
+    assert entry.name == "ifs-short-ifs2d-tco79"
+    assert entry._driver == "stac"
+    assert entry._user_parameters == []
+
+    # Instantiating through entry() returns child item source
+    item_source = entry()
+    assert item_source.item_name == "ifs-short-ifs2d-tco79"
+    assert hasattr(item_source, "_entries")
+
+    # Item level _entries lists assets
+    assert "data" in item_source._entries
+    asset_entry = item_source._entries["data"]
+    assert asset_entry.name == "data"
+    assert asset_entry._driver == "stac"
+
+    # Calling asset_entry() with kwargs returns instantiated asset source
+    asset_source = asset_entry(chunks={"time": 1})
+    assert asset_source.asset_name == "data"
+    assert asset_source.extra_kwargs.get("chunks") == {"time": 1}
+    assert getattr(asset_source, "_entry", None) is not None
