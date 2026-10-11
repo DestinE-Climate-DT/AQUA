@@ -165,7 +165,7 @@ class BackendFactory:
         self.machine_paths, intake_vars = self.configurer_catalog.get_machine_info()
 
         # Extract the source catalog and explore it
-        self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
+        self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source]()
         self.driver = self.esmcat._entry._driver
         if self.driver == "gsv":
             self.driver = "fdb"
