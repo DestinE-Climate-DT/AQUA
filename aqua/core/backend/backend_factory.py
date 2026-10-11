@@ -241,6 +241,21 @@ class BackendFactory:
         # Catalog template writes 'source_grid_name'
         src_grid_name = src_grid_name or self.metadata.get("source_grid_name") if self.metadata else None
 
+        if self.driver == "stac":  # dictionaries implemented only for stac
+            # If the driver is stac we can specify a dict of
+            # fixer_names and grid names for each item
+            # TODO This is not entirely modular, but neither get_metadata is
+            item = self.esmcat.item_name
+            if isinstance(fixer_name, dict):
+                fixer_name = fixer_name.get(item) if item else None
+            if isinstance(src_grid_name, dict):
+                src_grid_name = src_grid_name.get(item) if item else None
+
+        if fixer_name is not None:
+            self.logger.debug(f"Fixer name: {fixer_name}")
+        if src_grid_name is not None:
+            self.logger.debug(f"Grid name: {src_grid_name}")
+
         convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION) if self.metadata else DEFAULT_CONVENTION
         # An explicit datamodel=False must be preserved to disable the data model, so we
         # cannot use `or` here (False or "aqua" would wrongly re-enable it).
