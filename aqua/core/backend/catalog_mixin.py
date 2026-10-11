@@ -75,6 +75,33 @@ class CatalogMixin:
             self.esmcat = self.expcat[self.source](**self.kwargs)
 
     @property
+    def collection(self):
+        """Synonym for model."""
+        return self.model
+
+    @collection.setter
+    def collection(self, value):
+        self.model = value
+
+    @property
+    def item(self):
+        """Synonym for exp."""
+        return self.exp
+
+    @item.setter
+    def item(self, value):
+        self.exp = value
+
+    @property
+    def asset(self):
+        """Synonym for source."""
+        return self.source
+
+    @asset.setter
+    def asset(self, value):
+        self.source = value
+
+    @property
     def intake_user_parameters(self):
         """Lazy loader for intake user parameters to avoid expensive describe() calls."""
         if not hasattr(self, "_intake_user_parameters"):
