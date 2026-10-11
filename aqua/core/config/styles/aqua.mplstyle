@@ -33,7 +33,8 @@ axes.edgecolor: silver
 axes.linewidth: 0.8
 
 # Custom
-font.sans-serif: Ubuntu, Luxi Sans, Overpass, Helvetica, Helvetica Neue, Arial, Liberation Sans, DejaVu Sans, Bitstream Vera Sans, sans-serif
+font.sans-serif: DejaVu Sans, Ubuntu, Luxi Sans, Overpass, Helvetica, Helvetica Neue, Arial, Liberation Sans, Bitstream Vera Sans, sans-serif
+axes.unicode_minus: False
 axes.prop_cycle: cycler('color', ["#1898e0", "#8bcd45", "#f89e13", "#d24493", "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf", "#00bb62", "#f9c410", "#fb4865", "#645ccc"])
 figure.facecolor: fefeff
 savefig.facecolor: fefeff

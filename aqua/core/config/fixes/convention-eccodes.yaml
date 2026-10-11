@@ -568,7 +568,7 @@ convention_name:
           - salt # PHC3
           - avg_so
           - so # cmor
-        grid: 262500
+        grib: 262500
       thetao: # Sea water potential temperature
         source:
           - 150129 # ocpt
@@ -579,7 +579,7 @@ convention_name:
           - ocpt
           - to
           - thetao # cmor
-        grid: 262501
+        grib: 262501
       uoe: # Sea water zonal current (eastward)
         source:
           - 262506 # original GRIB2 code

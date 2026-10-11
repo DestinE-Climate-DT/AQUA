@@ -278,12 +278,12 @@ def nemo_test_e_orca1_long_2d_data(nemo_test_e_orca1_long_2d_reader):
 
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_short_3d_reader():
-    return Reader(model="NEMO", exp="test-eORCA1", source="short-3d", loglevel=LOGLEVEL)
+    return Reader(model="NEMO", exp="test-eORCA1", source="short-3d", loglevel=LOGLEVEL, fix=False)
 
 
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_short_3d_data(nemo_test_e_orca1_short_3d_reader):
-    return nemo_test_e_orca1_short_3d_reader.retrieve(var="so")
+    return nemo_test_e_orca1_short_3d_reader.retrieve(var="avg_so")
 
 
 # ======================================================================

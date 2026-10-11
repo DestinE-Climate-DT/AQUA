@@ -161,7 +161,7 @@ class BaseWriter(ABC):
         compressor = zarr.codecs.GzipCodec(level=compressor_level)
         for var_name in data.data_vars:
             chunks = tuple(time_chunk if dim == "time" else data[var_name].sizes[dim] for dim in data[var_name].dims)
-            encoding[var_name] = {"chunks": chunks, "compressor": compressor}
+            encoding[var_name] = {"chunks": chunks, "compressors": (compressor,)}
         return encoding or None
 
     def _compute_data(self, data, dask=False, performance_reporting=False):

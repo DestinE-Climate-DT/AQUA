@@ -32,10 +32,10 @@ Notice that ``fix=True`` is the default option, so we could have omitted it.
 
 .. code-block:: python
 
-    reader = Reader(catalog='climatedt-phase1', model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
+    reader = Reader(catalog='climatedt-gen2', model="IFS-NEMO-5km", exp="baseline-hist", source="hourly-hpz7-sfc",
                     regrid='r100', fix=True)
     # add engine='polytope' if you want to use polytope for data access
-    reader = Reader(catalog='climatedt-phase1', model="IFS-NEMO", exp="historical-1990", source="hourly-hpz7-atm2d",
+    reader = Reader(catalog='climatedt-gen2', model="IFS-NEMO-5km", exp="baseline-hist", source="hourly-hpz7-sfc",
                     regrid='r100', fix=True, engine='polytope')
 
 This will create a ``Reader`` object that will allow us to access the data from the catalog.

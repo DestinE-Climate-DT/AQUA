@@ -5,7 +5,7 @@ fixer_name:
         delete:  # variables to drop at the end
             - w
             - u
-            - w
+            - v
         vars:
             vdf:
                 source: Kv
@@ -16,6 +16,7 @@ fixer_name:
                 grib: true
             wo:
                 derived: w
+                grib: 262507
             uoe:
                 derived: u
             von:
