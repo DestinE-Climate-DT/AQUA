@@ -25,6 +25,8 @@ class IntakeXarraySourceAdapter(base.DataSource):
         return self.reader.read()
 
     def __call__(self, *args, **kwargs):
+        if kwargs and getattr(self, "_entry", None) is not None:
+            return self._entry.get(**kwargs)
         return self
 
     get = __call__
