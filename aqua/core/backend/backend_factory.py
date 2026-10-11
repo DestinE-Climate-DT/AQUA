@@ -204,7 +204,6 @@ class BackendFactory:
         # Extract the source catalog and explore it
         self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source]
         self.driver = self.esmcat._entry._driver
-        self.logger.warning("Driver is %s", self.driver)
         if self.driver == "gsv":
             self.driver = "fdb"
             warnings.warn(
