@@ -335,7 +335,7 @@ jobs:
           echo "pytest ${ARGS[*]}"
           pytest "${ARGS[@]}" 2>&1 | tee aqua_pytest.log
 
-      - name: Collect pytest reports
+      - name: Collect pytest reports and upload artifacts
         if: ${{ !cancelled() }}
         uses: ./aqua-ci/.github/actions/pytest-reports
         with:
@@ -343,23 +343,4 @@ jobs:
           enable-parallel: ${{ inputs.enable-parallel }}
           enable-coverage: ${{ inputs.enable-coverage }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-      # ========================================
-      # 9. UPLOAD ARTIFACTS
-      # ========================================
-
-      - name: Upload test artifacts
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: aqua-test-artifacts-${{ env.ARTIFACT_SUFFIX }}
-          # .pytest_cache (including the xdist worker log) is hidden
-          include-hidden-files: true
-          path: |
-            AQUA/coverage.xml
-            AQUA/junit.xml
-            AQUA/.pytest_cache
-            AQUA/aqua_pytest.log
-            AQUA/micromamba_list.txt
-            AQUA/pip_freeze.txt
-          if-no-files-found: ignore
+          artifact-name: aqua-test-artifacts-${{ env.ARTIFACT_SUFFIX }}

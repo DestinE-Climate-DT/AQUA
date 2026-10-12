@@ -1,5 +1,5 @@
 name: Collect AQUA pytest reports
-description: Generate coverage reports and show xdist logs after pytest failures.
+description: Generate coverage reports, show xdist logs after pytest failures and upload test artifacts.
 inputs:
   project-path:
     description: Workspace-relative path to the checked-out Python project.
@@ -16,6 +16,20 @@ inputs:
   codecov-token:
     description: Codecov upload token.
     required: false
+  artifact-name:
+    description: Name of the uploaded test artifact. Leave empty to skip the upload.
+    required: false
+    default: ''
+  artifact-files:
+    description: Newline-separated files or directories to upload, relative to project-path.
+    required: false
+    default: |
+      coverage.xml
+      junit.xml
+      .pytest_cache
+      aqua_pytest.log
+      micromamba_list.txt
+      pip_freeze.txt
 runs:
   using: composite
   steps:
@@ -59,3 +73,30 @@ runs:
         else
           echo "No xdist worker log found at $LOG"
         fi
+
+    - name: Resolve test artifact paths
+      id: artifact-paths
+      if: ${{ inputs.artifact-name != '' && !cancelled() }}
+      shell: bash -l -eo pipefail {0}
+      env:
+        PROJECT_PATH: ${{ inputs.project-path }}
+        ARTIFACT_FILES: ${{ inputs.artifact-files }}
+      run: |
+        {
+          echo "paths<<EOF"
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            echo "$PROJECT_PATH/$file"
+          done <<< "$ARTIFACT_FILES"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Upload test artifacts
+      if: ${{ inputs.artifact-name != '' && !cancelled() }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        # .pytest_cache (including the xdist worker log) is hidden
+        include-hidden-files: true
+        path: ${{ steps.artifact-paths.outputs.paths }}
+        if-no-files-found: ignore
