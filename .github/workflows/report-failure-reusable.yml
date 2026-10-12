@@ -27,7 +27,6 @@ jobs:
         with:
           pattern: aqua-test-artifacts-*
           path: artifacts
-          if-no-artifact-found: ignore
 
       - name: Build failure report
         run: |
@@ -67,7 +66,6 @@ jobs:
       - name: Open or update issue
         run: |
           LABEL="nightly-failure :clown_face:"
-          fi
           EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file report.md

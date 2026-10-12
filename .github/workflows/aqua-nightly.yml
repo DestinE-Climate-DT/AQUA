@@ -1,6 +1,6 @@
 name: AQUA nightly
 # Builds the environment from environment.yml (no lock file) to catch dependency breakages.
-# Runs weekly, manually, on Dependabot PRs, and on PRs whose label contains 'nightly'.
+# Runs nightly, manually, on Dependabot PRs, and on PRs whose label contains 'nightly'.
 # The 'ubuntu-latest (FDB container)' entry runs inside the FDB container to check the FDB installation.
 # When the scheduled run fails, an issue listing the broken tests is opened (or updated).
 
@@ -29,7 +29,7 @@ jobs:
       matrix:
         include:
           - name: ubuntu-latest
-            platform: ubunt-26.04
+            platform: ubuntu-26.04
             fdb: false
             container: ''
             markers: 'aqua or slow or graphics or catgen or polytope'
@@ -68,12 +68,11 @@ jobs:
 
   report-failure:
     needs: aqua-nightly-tests
-    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
-    if: ${{ always() && github.event_name == 'workflow_dispatch' && needs.aqua-nightly-tests.result == 'failure' }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && needs.aqua-nightly-tests.result == 'failure' }}
     permissions:
       contents: read
-      issues: write
       actions: read
+      issues: write
     uses: ./.github/workflows/report-failure-reusable.yml
     with:
       test-name: Nightly
