@@ -164,28 +164,6 @@ jobs:
           ref: main
           token: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
 
-      - name: Check GitHub token
-        if: ${{ runner.os == 'Linux' }}
-        env:
-          PAT_SET: ${{ secrets.AQUA_GITHUB_PAT != '' }}
-        run: |
-          if [ "$PAT_SET" != "true" ]; then
-            echo "::warning::AQUA_GITHUB_PAT is empty (Dependabot/fork run or secret not passed): falling back to github.token"
-          fi
-          CODE=$(curl -s -o "$RUNNER_TEMP/rate.json" -w "%{http_code}" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/rate_limit)
-          if [ "$CODE" != "200" ]; then
-            echo "::error::GitHub token rejected (HTTP $CODE): PAT expired or lacking permissions?"
-            exit 1
-          fi
-          REMAINING=$(jq -r '.resources.core.remaining // empty' "$RUNNER_TEMP/rate.json")
-          USED=$(jq -r '.resources.core.used // empty' "$RUNNER_TEMP/rate.json")
-          echo "GitHub API core requests remaining: ${REMAINING:-unknown}"
-          echo "GitHub API core requests used: ${USED:-unknown}"
-          if [ -n "$REMAINING" ] && [ "$REMAINING" -lt 100 ]; then
-            echo "::warning::Only $REMAINING GitHub API requests left"
-          fi
-
       - name: Checkout DVC repo
         uses: actions/checkout@v7
         with:
