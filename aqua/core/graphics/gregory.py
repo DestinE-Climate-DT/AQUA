@@ -1,11 +1,52 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import xarray as xr
 from matplotlib import rcParams
+from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
 
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, to_list
 
 from .styles import ConfigStyle
+
+
+def _add_time_evolution(ax, x_list, y_list, cmap, labels=None):
+    """
+    Colour trajectory segments and points by normalised time.
+
+    Args:
+        ax (matplotlib.axes.Axes): The axes to plot on.
+        x_list (list): List of x data arrays.
+        y_list (list): List of y data arrays.
+        cmap (str): Colormap name.
+        labels (list, optional): List of labels for each dataset. Defaults to None.
+    """
+    line_collection = None
+    labels = to_list(labels) if labels else [None] * len(x_list)
+    norm = Normalize(0, 1)
+
+    for x, y, label in zip(x_list, y_list, labels):
+        points = np.column_stack((x.values, y.values))
+        if len(points) < 2:
+            continue
+        segments = np.stack((points[:-1], points[1:]), axis=1)
+        time_fraction = (np.arange(len(segments)) + 0.5) / len(segments)
+        line_collection = LineCollection(segments, cmap=cmap, norm=norm, zorder=2.5)
+        line_collection.set_array(time_fraction)
+        ax.add_collection(line_collection)
+        ax.scatter(
+            points[:, 0],
+            points[:, 1],
+            c=np.linspace(0, 1, len(points)),
+            cmap=cmap,
+            norm=norm,
+            label=label,
+            zorder=3,
+        )
+
+    if line_collection is None:
+        return
 
 
 def plot_gregory_monthly(
@@ -22,23 +63,25 @@ def plot_gregory_monthly(
     ylabel: str = None,
     title: str = "Monthly Mean",
     style: str = None,
+    cmap: str = None,
     loglevel: str = "WARNING",
 ):
     """ "
     Plot a Gregory plot for monthly data.
 
     Args:
-        t2m_monthly_data (list): List of 2 m temperature data for each month.
-        net_toa_monthly_data (list): List of net radiation TOA data for each month.
+        t2m_monthly_data (xarray.DataArray or list): One monthly time series, or a list of time series for separate datasets.
+        net_toa_monthly_data (xarray.DataArray or list): Matching net TOA time series for the same datasets.
         t2m_monthly_ref (xr.DataArray, optional): Reference 2 m temperature data.
         net_toa_monthly_ref (xr.DataArray, optional): Reference net radiation TOA data.
         fig (plt.Figure, optional): Figure object to plot on.
         ax (plt.Axes, optional): Axes object to plot on.
         set_axis_limits (bool, optional): Whether to set axis limits. Defaults to True.
-        labels (list, optional): List of labels for each month.
+        labels (list, optional): One label per dataset when data arguments are lists.
         ref_label (str, optional): Label for the reference data.
         title (str, optional): Title of the plot. Not used if None
         style (str, optional): Style for the plot. Defaults is the AQUA default style.
+        cmap (str, optional): Colormap used to mark time evolution. Not used if None.
         loglevel (str, optional): Log level for logging. Defaults to 'WARNING'.
 
     Returns:
@@ -51,12 +94,17 @@ def plot_gregory_monthly(
     # We load the data for speed
     t2m_monthly_data = to_list(t2m_monthly_data)
     net_toa_monthly_data = to_list(net_toa_monthly_data)
+    if len(t2m_monthly_data) != len(net_toa_monthly_data):
+        raise ValueError("t2m_monthly_data and net_toa_monthly_data must contain the same number of datasets")
+    labels = to_list(labels)
+    if labels and len(labels) != len(t2m_monthly_data):
+        raise ValueError("labels must contain one label per monthly dataset")
     t2m_monthly_data = [t2m_monthly_data[i].load() for i in range(len(t2m_monthly_data))]
     net_toa_monthly_data = [net_toa_monthly_data[i].load() for i in range(len(net_toa_monthly_data))]
     t2m_monthly_ref = t2m_monthly_ref.load() if t2m_monthly_ref is not None else None
     net_toa_monthly_ref = net_toa_monthly_ref.load() if net_toa_monthly_ref is not None else None
 
-    labels = to_list(labels) if labels else [None for _ in range(len(t2m_monthly_data))]
+    labels = labels or [None for _ in range(len(t2m_monthly_data))]
 
     if fig is None and ax is None:
         logger.debug("Creating new figure and axis")
@@ -113,7 +161,10 @@ def plot_gregory_monthly(
         logger.debug(f"Monthly y-axis limits: {toa_min} to {toa_max}")
 
     for i, (t2m_monthly, net_toa_monthly) in enumerate(zip(t2m_monthly_data, net_toa_monthly_data)):
-        ax.plot(t2m_monthly, net_toa_monthly, label=labels[i], marker="o")
+        if not cmap:
+            ax.plot(t2m_monthly, net_toa_monthly, label=labels[i], marker="o")
+    if cmap:
+        _add_time_evolution(ax, t2m_monthly_data, net_toa_monthly_data, cmap, labels)
     if ref:
         ax.plot(t2m_ref, net_toa_ref, label=ref_label, marker="o", color="black", zorder=3)
         ax.scatter(t2m_ref, net_toa_ref, color="black", s=150, zorder=3)
@@ -140,6 +191,7 @@ def plot_gregory_annual(
     ylabel: str = None,
     title: str = "Annual Mean",
     style: str = None,
+    cmap: str = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -161,6 +213,7 @@ def plot_gregory_annual(
         ylabel (str, optional): Title of the y-axis. Defaults to "Net radiation TOA [W/m^2]".
         title (str, optional): Title of the plot. Not used if None
         style (str, optional): Style for the plot. Defaults is the AQUA default style.
+        cmap (str, optional): Colormap used to mark time evolution. Not used if None.
         loglevel (str, optional): Log level for logging. Defaults to 'WARNING'.
 
     Returns:
@@ -222,13 +275,16 @@ def plot_gregory_annual(
         logger.debug(f"Annual y-axis limits: {toa_min} to {toa_max}")
 
     for i, (t2m_annual, net_toa_annual) in enumerate(zip(t2m_annual_data, net_toa_annual_data)):
-        ax.plot(t2m_annual, net_toa_annual, label=labels[i], marker="o")
+        if not cmap:
+            ax.plot(t2m_annual, net_toa_annual, label=labels[i], marker="o")
 
-        # We plot the first and last points with different markers
-        ax.plot(t2m_annual[0], net_toa_annual[0], marker=">", color="tab:green")
-        ax.plot(t2m_annual[-1], net_toa_annual[-1], marker="<", color="tab:red")
+            # We plot the first and last points with different markers
+            ax.plot(t2m_annual[0], net_toa_annual[0], marker=">", color="tab:green")
+            ax.plot(t2m_annual[-1], net_toa_annual[-1], marker="<", color="tab:red")
         ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize=8, ha="right")
         ax.annotate(str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize=8, ha="right")
+    if cmap:
+        _add_time_evolution(ax, t2m_annual_data, net_toa_annual_data, cmap, labels)
     if ref:
         t2m_mean = t2m_annual_ref.mean(dim="time")
         net_toa_mean = net_toa_annual_ref.mean(dim="time")

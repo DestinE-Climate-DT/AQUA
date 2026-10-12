@@ -23,7 +23,7 @@ logdir_output: /pfs/lustrep4/scratch/project_465002727/jvonhar/log/
 aquadir: /pfs/lustrep4/scratch/project_465002727/jvonhar/AQUA
 outdir: /pfs/lustrep4/scratch/project_465002727/jvonhar/aqua-analysis/output
 
-catalog: climatedt-phase1
+catalog: climatedt-gen2
 model: IFS-NEMO
 exp: historical
 source: lra-r100-monthly

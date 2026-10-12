@@ -53,7 +53,7 @@ The configuration folder after the installation has this structure:
     │   ├── fixes
     │   ├── grids
     │   └── catalogs
-    │       ├── climatedt-phase1
+    │       ├── climatedt-gen2
     │       │   ├── catalog
     │       │   └── catalog.yaml
     │       │   └── machine.yaml

@@ -70,12 +70,7 @@ class Fixer:
             A xarray.Dataset containing the fixed data and target units, factors and offsets in variable attributes.
         """
 
-        # OLD NAMING SCHEME
-        # unit: name of 'units' attribute
-        # src_units: name of fixer source units
-        # newunits: name of fixer target units
-
-        # NEW NAMING SCHEME
+        # NAMING SCHEME
         # tgt_units: target unit
         # fixer_src_units: name of fixer source units
         # fixer_tgt_units: name of fixer target units
@@ -89,10 +84,6 @@ class Fixer:
         # if there are no fixes defined, return
         if self.fixes is None:
             return data
-
-        # Default input datamodel
-        # src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
-        # self.logger.debug("Default input datamodel: %s", src_datamodel)
 
         # Special case for monthly deltat
         if self.deltat == "monthly":
@@ -254,7 +245,7 @@ class Fixer:
                             data[source].attrs.update({key: value})
                             self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, float(value))
                             log_history(data[source], f"Fixing {source} to {var}. Unit fix: {key}={value}")
-                    elif conversion_dictionary == {} and data[source].units != tgt_units:
+                    elif not conversion_dictionary and data[source].units != tgt_units:
                         self.logger.info(
                             "No conversion needed for %s, but units are renamed from %s to %s",
                             var,

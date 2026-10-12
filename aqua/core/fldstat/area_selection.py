@@ -1,3 +1,4 @@
+import numpy as np
 import regionmask
 import xarray as xr
 
@@ -35,6 +36,7 @@ class AreaSelection:
         mask_kwargs: dict = {},
         default_coords: dict | None = None,
         to_180: bool = True,
+        frac_threshold: float | None = None,
     ) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and
@@ -58,8 +60,12 @@ class AreaSelection:
             default_coords (dict, optional): Default coordinate ranges.
                 If omitted, the longitude convention is inferred from the
                 dataset coordinates and latitude defaults to [-90, 90].
-            to_180 (bool, optional): Whether to convert longitude to
-                [-180, 180] range. Default is True.
+            to_180 (bool, optional): Whether to convert the longitude convention of regionmask and
+                box selections. For regionmask selections, the convention (-180..180 or 0..360) in which
+                the selected region spans the smaller longitude range is used. Default is True.
+            frac_threshold (float, optional): If set, select all cells whose fractional coverage by the
+                selected regions is above this value (e.g. 0.0 keeps every cell touching the region),
+                instead of only the cells whose center falls inside. Default is None (cell-center selection).
 
         Returns:
             xr.Dataset or None: The selected area dataset or None if no
@@ -77,32 +83,45 @@ class AreaSelection:
             if region_sel is None:
                 raise ValueError("`region_sel` must be specified when using region argument.")
 
-            lon_max = float(data[lon_name].max(skipna=True).values)
-
-            # Regions crossing Greenwich (e.g. Europe) end up split
-            # across the two ends of a 0..360 coordinate array, so
-            # `.where(..., drop=True)` leaves a huge gap that plotting
-            # renders as a band across the globe. Convert to [-180, 180]
-            # and sort first, as already done for box-based selection.
-            if to_180 and lon_max > 180:
-                data = self._to_180_and_sort(data, lon_name)
-
-            mask = region.mask(data[lon_name], data[lat_name], **mask_kwargs)
-
             # Normalize input to list
             region_sel = to_list(region_sel)
 
             # Convert region names to numbers if necessary
             region_numbers = [region.map_keys(name) if isinstance(name, str) else name for name in region_sel]
 
-            # Combine masks for selected regions
-            reg_mask = xr.zeros_like(mask, dtype=bool)
-            for rn in region_numbers:
-                reg_mask = reg_mask | (mask == rn)
+            # Masks are built on the original longitude convention: converting
+            # beforehand would split regions crossing the dateline (e.g. New Zealand)
+            if frac_threshold is None:
+                # Default: select cells whose center falls inside the region
+                mask = region.mask(data[lon_name], data[lat_name], **mask_kwargs)
 
-            reg_mask = reg_mask.fillna(False)  # handle NaNs from regionmask
+                # Combine masks for selected regions
+                reg_mask = xr.zeros_like(mask, dtype=bool)
+                for rn in region_numbers:
+                    reg_mask = reg_mask | (mask == rn)
+
+                reg_mask = reg_mask.fillna(False)  # handle NaNs from regionmask
+            else:
+                # Select cells touching the region, based on the fractional coverage of each cell
+                frac = region.mask_3D_frac_approx(data[lon_name], data[lat_name], **mask_kwargs)
+                reg_mask = frac.sel(region=region_numbers).sum("region") > frac_threshold
 
             selected = data.where(reg_mask, drop=drop)
+
+            # Regions crossing Greenwich (e.g. Europe) or the dateline (e.g. New Zealand)
+            # are split across the two ends of the longitude array in one of the two
+            # conventions, and `.where(..., drop=True)` leaves a huge gap that plotting
+            # renders as a band across the globe. Pick the convention in which the
+            # selected region spans the smaller longitude range.
+            if to_180:
+                lon_sel = data[lon_name].values[reg_mask.any(lat_name).values]
+                if lon_sel.size > 0:
+                    span_180 = np.ptp((lon_sel + 180) % 360 - 180)
+                    span_360 = np.ptp(lon_sel % 360)
+                    if span_180 <= span_360:  # tie: keep the [-180, 180] behaviour
+                        selected = self._to_180_and_sort(selected, lon_name)
+                    else:
+                        selected = self._to_360_and_sort(selected, lon_name)
 
             region_sel = [region.names[rs] if isinstance(rs, int) else rs for rs in region_sel]
             region_str = ", ".join([str(rs) for rs in region_sel])
@@ -111,7 +130,7 @@ class AreaSelection:
 
             return selected
 
-        # 2. Coordinate-based selection
+        # Case2: Coordinate-based selection
 
         # If both lon and lat are None, no selection is needed
         if lon is None and lat is None:
@@ -196,6 +215,15 @@ class AreaSelection:
         """
         lon_da = data[lon_name]
         lon_conv = xr.where(lon_da > 180, lon_da - 360, lon_da)
+        return data.assign_coords({lon_name: lon_conv}).sortby(lon_name)
+
+    def _to_360_and_sort(
+        self,
+        data: xr.Dataset | xr.DataArray,
+        lon_name: str,
+    ) -> xr.Dataset | xr.DataArray:
+        """Convert a longitude coordinate to [0, 360] and sort by it."""
+        lon_conv = data[lon_name] % 360
         return data.assign_coords({lon_name: lon_conv}).sortby(lon_name)
 
     def _lon_condition(

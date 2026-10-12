@@ -4,7 +4,7 @@ Installation
 ============
 
 In this section we will provide a step-by-step guide to install the Python package ``aqua-core``.
-AQUA is developed and tested with Python 3.14 and it supports Python>=3.11,<3.15.
+AQUA is developed and tested with Python 3.14 and it supports Python>=3.12,<3.15.
 
 .. note ::
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
@@ -41,7 +41,7 @@ Or for a pip installation of AQUA-core after installing the dependencies:
     mamba activate aquarium
     pip install aqua-core
 
-The same environment is available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
+The same conda dependencies (without ``aqua-core`` itself) are available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
 
 .. warning ::
     On MacOS, the installation is supported only for MacOS 15 and later.

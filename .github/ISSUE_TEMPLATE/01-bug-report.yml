@@ -2,7 +2,7 @@
 
 name: "Bug Report"
 description: "File a bug report"
-labels: ["bug"]
+type: Bug
 body:
   - type: markdown
     attributes:
@@ -14,12 +14,12 @@ body:
       label: machine
       description: Which machine are you using?
       options:
+      - CI
       - Levante
       - Lumi
       - Lumi operational (specify cycle)
       - MN5
       - MN5 operational (specify cycle)
-      - CI
       - HPC2020
       - Wilma
       - Others
@@ -49,6 +49,7 @@ body:
       description: Which AQUA version are you using?
       options:
       - main
+      - v1.2.1
       - v1.2.0
       - v1.1.0
       - v1.0.1

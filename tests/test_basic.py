@@ -109,7 +109,7 @@ class TestAqua:
         """
         assert reader_nemo_short_3d.backend.esmcat.reader.kwargs["chunks"] == {}
         assert Backend.is_dask(data_nemo_short_3d)
-        assert data_nemo_short_3d["so"].chunks is not None
+        assert data_nemo_short_3d["avg_so"].chunks is not None
 
     def test_catalog_chunks_are_not_overridden(self, reader_ifs_tco79_long):
         """
