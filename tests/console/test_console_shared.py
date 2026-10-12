@@ -58,10 +58,10 @@ class TestCatalogOperations:
             run_aqua(["-v", "update", "-c", "ci"])
         assert excinfo.value.code == 1
 
-        # error for update an editable catalog
+        # a positional catalog name is invalid CLI syntax
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["-v", "update", "ci"])
-        assert excinfo.value.code == 1
+        assert excinfo.value.code == 2
 
         # remove existing catalog from link
         run_aqua(["remove", "ci"])

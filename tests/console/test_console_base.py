@@ -84,7 +84,7 @@ class TestAquaConsole:
         # uninstall and say no
         with pytest.raises(SystemExit) as excinfo:
             run_aqua_console_with_input(["uninstall"], "no")
-        assert excinfo.value.code == 0
+        assert excinfo.value.code is None
         assert os.path.exists(os.path.join(mydir, ".aqua"))
 
         # uninstall and say yes
@@ -110,7 +110,9 @@ class TestAquaConsole:
             # aqua install diagnostics only (should fail)
             with pytest.raises(SystemExit) as excinfo:
                 run_aqua(install_args)
-            assert excinfo.value.code == 1
+            # Optional components fail in the installer when available and in
+            # argument parsing when they are not registered.
+            assert excinfo.value.code in (1, 2)
         else:
             # aqua install core only
             run_aqua(install_args)
@@ -152,9 +154,9 @@ class TestAquaConsole:
         assert excinfo.value.code == 1
         assert os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
-        # error for update an missing catalog
+        # error for updating a missing catalog
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "update", "antani"])
+            run_aqua(["-v", "update", "-c", "antani"])
         assert excinfo.value.code == 1
 
         # add non existing catalog editable
@@ -209,7 +211,7 @@ class TestAquaConsole:
         # try to install diagnostics only on top of existing installation (should fail)
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["install", MACHINE, "--diagnostics", test_dir])
-        assert excinfo.value.code == 1
+        assert excinfo.value.code in (1, 2)
 
         # install from path in editable mode
         run_aqua_console_with_input(
