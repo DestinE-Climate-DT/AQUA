@@ -14,7 +14,21 @@ from urllib3.connectionpool import HTTPConnectionPool
 
 
 class GitHubAPIRequestTracker:
-    """Track GitHub API responses and their rate-limit resources."""
+    """Track GitHub API quota headers while a catalog operation runs.
+
+    Entering the context temporarily wraps urllib3 and, when installed, aiohttp
+    response handling. Only responses from ``api.github.com`` with a
+    ``X-RateLimit-Resource`` of ``core`` or ``graphql`` are counted; this keeps
+    unrelated HTTP traffic and GitHub's separate quota resources out of the
+    report. Call :meth:`stage` around each operation to attribute responses to
+    that phase. Exiting restores the original library methods and logs one
+    summary with per-stage details.
+
+    The wrappers are process-wide while active, so the class lock prevents
+    overlapping tracker contexts. Keep each context scoped to one synchronous
+    command operation; do not nest trackers or use them as concurrent request
+    attribution boundaries.
+    """
 
     _active_lock = Lock()
 
@@ -123,24 +137,18 @@ class GitHubAPIRequestTracker:
             total = sum(count for _, count in resource_counts)
             latest = latest_by_resource.get(resource)
             if latest is not None or resource == "core":
-                if resource == "core":
-                    self.logger.info(
-                        "GitHub REST core API calls for %s: %d; latest used=%s remaining=%s limit=%s",
-                        self.label,
-                        total,
-                        latest["used"] if latest and latest["used"] is not None else "unknown",
-                        latest["remaining"] if latest and latest["remaining"] is not None else "unknown",
-                        latest["limit"] if latest and latest["limit"] is not None else "unknown",
-                    )
-                else:
-                    self.logger.info(
-                        "GitHub GraphQL requests for %s: %d; latest points used=%s remaining=%s limit=%s",
-                        self.label,
-                        total,
-                        latest["used"] if latest["used"] is not None else "unknown",
-                        latest["remaining"] if latest["remaining"] is not None else "unknown",
-                        latest["limit"] if latest["limit"] is not None else "unknown",
-                    )
+                api_label = "REST core API calls" if resource == "core" else "GraphQL requests"
+                usage_label = "used" if resource == "core" else "points used"
+                self.logger.info(
+                    "GitHub %s for %s: %d; latest %s=%s remaining=%s limit=%s",
+                    api_label,
+                    self.label,
+                    total,
+                    usage_label,
+                    latest["used"] if latest and latest["used"] is not None else "unknown",
+                    latest["remaining"] if latest and latest["remaining"] is not None else "unknown",
+                    latest["limit"] if latest and latest["limit"] is not None else "unknown",
+                )
             for stage, count in resource_counts:
                 headers = observations[(resource, stage)]
                 used = [value["used"] for value in headers if value["used"] is not None]
@@ -164,7 +172,22 @@ class GitHubAPIRequestTracker:
 
 
 class GitHubCatalogFetcher:
-    """Fetch one catalog through GitHub's REST tree and GraphQL blob APIs."""
+    """Fetch a selected catalog in a small number of authenticated API calls.
+
+    The fetcher first reads repository metadata to resolve its default branch,
+    then makes one recursive Git-tree request to list paths and blob object IDs.
+    It filters that listing to ``catalogs/<name>/`` and retrieves those blobs
+    with aliases in one GraphQL query. This avoids directory-by-directory
+    discovery and one request per file. The tree and GraphQL calls consume
+    different GitHub quota resources and are tracked separately.
+
+    Use this fetcher only when both a GitHub username and token are available;
+    unauthenticated callers should retain the fsspec path. A truncated tree,
+    GraphQL errors, missing or non-text blobs, or unsafe relative paths must
+    fail rather than silently install incomplete data. Keep the per-blob alias
+    order aligned with ``blobs`` in :meth:`fetch_catalog`, since the response
+    fields are mapped back to tree paths by index.
+    """
 
     api_url = "https://api.github.com"
 

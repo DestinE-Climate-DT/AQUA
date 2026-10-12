@@ -149,12 +149,7 @@ class CatalogMixin:
         """
         org, repo = self._github_repository_parts(repository)
         try:
-            # Detect if running in GitHub Actions
-            is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
-            token = os.getenv("GITHUB_TOKEN")  # Get GitHub token
-
-            # Use authentication only when running inside GitHub Actions
-            username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+            username, token = self._github_credentials()
             if token and username:
                 auth_kwargs = {"username": username, "token": token}
                 self.logger.info("Using authenticated access to GitHub API.")
@@ -185,6 +180,14 @@ class CatalogMixin:
             sys.exit(1)
 
         return fs
+
+    @staticmethod
+    def _github_credentials():
+        """Return the selected GitHub username and configured token."""
+        is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
+        username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+        token = os.getenv("GITHUB_TOKEN")
+        return username, token
 
     def _github_repository_parts(self, repository=None):
         """Return the owner and repository, using AQUA's standard catalog repository by default."""
@@ -224,9 +227,7 @@ class CatalogMixin:
         cdir = f"{self.configpath}/{CATPATH}/{catalog}"
         if not os.path.exists(cdir):
             try:
-                is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
-                token = os.getenv("GITHUB_TOKEN")
-                username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+                username, token = self._github_credentials()
                 self.logger.info("Fetching remote catalog %s from github to %s", catalog, cdir)
                 if token and username:
                     self.logger.info("Using authenticated batched access to GitHub API.")
