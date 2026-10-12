@@ -16,12 +16,6 @@ class TestAquaConsoleAnalysis:
 
     def test_console_analysis_checker(self, aqua_install, run_aqua, tmp_path, caplog):
         """Test that the analysis checker properly handles missing aqua.diagnostics package."""
-        dummy_script = tmp_path / "cli_dummy.py"
-        dummy_script.touch()
-
-        diag_cfg = tmp_path / "diag_config.yaml"
-        dump_yaml(str(diag_cfg), {"key": "value"})
-
         analysis_cfg = tmp_path / "config.aqua-analysis-test.yaml"
         dump_yaml(
             str(analysis_cfg),

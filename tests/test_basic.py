@@ -6,9 +6,6 @@ from aqua import Reader
 from aqua.core.backend.backend import Backend
 from aqua.core.exceptions import NoRegridError
 
-approx_rel = APPROX_REL
-loglevel = LOGLEVEL
-
 
 # aqua class for tests
 @pytest.mark.aqua
@@ -29,7 +26,7 @@ class TestAqua:
         """
         Test the initialization of the Reader class
         """
-        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", fix=False, loglevel=loglevel)
+        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", fix=False, loglevel=LOGLEVEL)
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
@@ -55,8 +52,8 @@ class TestAqua:
         data = fesom_test_pi_original_2d_r200_fixfalse_data
         sstr = reader.regrid(data["sst"][0:2, :])
         assert sstr.shape == (2, 90, 180)
-        assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350324258783935, rel=approx_rel)
-        assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319154700343551, rel=approx_rel)
+        assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350324258783935, rel=APPROX_REL)
+        assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319154700343551, rel=APPROX_REL)
 
     def test_fldmean(self, fesom_test_pi_original_2d_r200_fixfalse_reader, fesom_test_pi_original_2d_r200_fixfalse_data):
         """
@@ -67,17 +64,17 @@ class TestAqua:
         data = fesom_test_pi_original_2d_r200_fixfalse_data
         global_mean = reader.fldmean(data.sst[:2, :])
         assert global_mean.shape == (2,)
-        assert global_mean.values[0] == pytest.approx(17.99434183, rel=approx_rel)
-        assert global_mean.values[1] == pytest.approx(17.98060367, rel=approx_rel)
+        assert global_mean.values[0] == pytest.approx(17.99434183, rel=APPROX_REL)
+        assert global_mean.values[1] == pytest.approx(17.98060367, rel=APPROX_REL)
 
     def test_chunks(self):
         """
         Test that the Reader class correctly handles chunking
         """
-        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 12}, loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 12}, loglevel=LOGLEVEL)
         data = reader.retrieve()
         assert set(data["2t"].chunksizes["time"]) == {12}
-        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 1}, loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 1}, loglevel=LOGLEVEL)
         data = reader.retrieve()
         assert set(data["2t"].chunksizes["time"]) == {1}
 
@@ -104,7 +101,7 @@ class TestAqua:
         """
         Test the compact catalog override functionality
         """
-        reader = Reader(model="IFS", exp="test-tco79", source="short_override", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-tco79", source="short_override", loglevel=LOGLEVEL)
         assert reader.backend.metadata["test-key"] == "test-value"  # from the default
         assert reader.src_grid_name == "tco79-nn"  # overwritten key
 
@@ -149,7 +146,7 @@ class TestAqua:
         Test if the Reader class works with different combinations of arguments
         """
         model, exp, source, regrid, _ = reader_arguments
-        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=False, loglevel=loglevel)
+        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=False, loglevel=LOGLEVEL)
         data = reader.retrieve()
 
         # Check the time precision
@@ -178,7 +175,7 @@ class TestAqua:
                     model="ICON",
                     exp="test-healpix",
                     source="fake-ensemble-int",
-                    loglevel=loglevel,
+                    loglevel=LOGLEVEL,
                     areas=False,
                     realization=realization_input,
                 )
@@ -187,7 +184,7 @@ class TestAqua:
                 model="ICON",
                 exp="test-healpix",
                 source="fake-ensemble-int",
-                loglevel=loglevel,
+                loglevel=LOGLEVEL,
                 areas=False,
                 realization=realization_input,
             )
@@ -198,7 +195,7 @@ class TestAqua:
         Test that the realization parameter is correctly formatted from string.
         """
         reader = Reader(
-            model="ICON", exp="test-healpix", source="fake-ensemble-str", loglevel=loglevel, areas=False, realization="r2i1p1"
+            model="ICON", exp="test-healpix", source="fake-ensemble-str", loglevel=LOGLEVEL, areas=False, realization="r2i1p1"
         )
         assert reader.kwargs["realization"] == "r2i1p1"
 

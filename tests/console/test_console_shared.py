@@ -56,12 +56,12 @@ class TestCatalogOperations:
         # update a catalog installed in editable mode (should fail)
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["-v", "update", "-c", "ci"])
-            assert excinfo.value.code == 1
+        assert excinfo.value.code == 1
 
         # error for update an editable catalog
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["-v", "update", "ci"])
-            assert excinfo.value.code == 1
+        assert excinfo.value.code == 1
 
         # remove existing catalog from link
         run_aqua(["remove", "ci"])
@@ -116,7 +116,7 @@ class TestGridAndFixOperations:
         run_aqua(["-v", "grids", "add", gridtest, "-e"])
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["-v", "grids", "add", gridtest, "-e"])
-            assert excinfo.value.code == 1
+        assert excinfo.value.code == 1
 
         # remove non existing grid file
         run_aqua(["-v", "grids", "remove", "garelli.yaml"])
@@ -125,7 +125,7 @@ class TestGridAndFixOperations:
         # error for already non existing file
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["-v", "fixes", "remove", "ciccio.yaml"])
-            assert excinfo.value.code == 1
+        assert excinfo.value.code == 1
 
         # set the grids path in the config-aqua.yaml with the block already existing
         run_aqua(["-v", "grids", "set", os.path.join(mydir, "pippo")])
