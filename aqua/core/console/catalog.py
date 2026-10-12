@@ -16,7 +16,6 @@ import fsspec
 from requests.exceptions import HTTPError as RequestsHTTPError
 
 from aqua.core.lock import SafeFileLock
-from aqua.core.reader.catalog import show_catalog_content as print_catalog
 from aqua.core.util import dump_yaml, load_yaml
 from aqua.core.util.util import HiddenPrints, to_list
 
@@ -108,6 +107,9 @@ class CatalogMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
+        # deferred: heavy import, keep CLI startup fast
+        from aqua.core.reader.catalog import show_catalog_content as print_catalog
+
         print("Adding the AQUA catalog", args.catalog)
         self._check(silent=True)
 

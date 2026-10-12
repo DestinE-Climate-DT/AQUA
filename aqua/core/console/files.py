@@ -8,7 +8,6 @@ import os
 import shutil
 import sys
 
-from aqua.core.gridbuilder import GridDeployer
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml
 
@@ -85,6 +84,9 @@ class FilesMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
+        # deferred: heavy import, keep CLI startup fast
+        from aqua.core.gridbuilder import GridDeployer
+
         grid_deployer = GridDeployer(loglevel=self.loglevel)
         grid_deployer.deploy(source_grid_name=args.source_grid_name)
 

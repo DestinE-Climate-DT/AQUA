@@ -2,8 +2,8 @@
 
 import xarray as xr
 
-from .graphics import plot_single_map
-from .reader import Reader
+# graphics and Reader are imported inside the methods: this module is imported eagerly
+# by aqua.core to register the accessor, and must stay light
 
 
 # For now not distinguishing between dataarray and dataset methods
@@ -11,6 +11,8 @@ from .reader import Reader
 @xr.register_dataarray_accessor("aqua")
 class AquaAccessor:
     def __init__(self, xarray_obj):
+        from .reader import Reader
+
         self._obj = xarray_obj
         self.instance = Reader.instance  # by default use the latest available instance of the Reader class
 
@@ -29,6 +31,8 @@ class AquaAccessor:
 
     def plot_single_map(self, **kwargs):
         """Plot contour or pcolormesh map of a single variable."""
+        from .graphics import plot_single_map
+
         plot_single_map(self._obj, **kwargs)
 
     def select_area(self, **kwargs):
