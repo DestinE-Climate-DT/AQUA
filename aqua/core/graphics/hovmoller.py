@@ -22,6 +22,7 @@ def plot_hovmoller(
     invert_axis=False,
     invert_time=False,
     invert_space_coord=False,
+    space_limits: tuple = None,
     sym=False,
     style=None,
     contour=True,
@@ -51,6 +52,8 @@ def plot_hovmoller(
         invert_axis (bool): If True, the x-axis will be inverted.
         invert_time (bool): If True, the direction time axis will be inverted.
         invert_space_coord (bool): If True, the space coordinate axis will be inverted.
+        space_limits (tuple): (min, max) range of the space coordinate to show.
+            If None, the bands where the data are NaN at every time are left out.
         sym (bool): If True, the color limits will be symmetric around zero.
         style (str): The style to be used for the plot. Default is None, which uses the default AQUA style.
         contour (bool): If True, contours will be plotted. If False, pcolormesh will be used.
@@ -104,12 +107,17 @@ def plot_hovmoller(
     if ax is None:
         ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2])
 
+    # Label the space axis with the units of its coordinate, if available
+    space_dim = data_mean.dims[-1]
+    space_units = data_mean[space_dim].attrs.get("units")
+    space_label = f"{space_dim} ({unit_to_latex(space_units)})" if space_units else space_dim
+
     # Plot the data
     if invert_axis:
         logger.debug("Inverting axis for plot")
-        x = data_mean.coords[data_mean.dims[-1]]
+        x = data_mean.coords[space_dim]
         y = data_mean.coords["time"]
-        ax.set_xlabel(data_mean.dims[-1])
+        ax.set_xlabel(space_label)
         ax.set_ylabel("time")
         if invert_time:
             plt.gca().invert_yaxis()
@@ -117,9 +125,9 @@ def plot_hovmoller(
             plt.gca().invert_xaxis()
     else:
         x = data_mean.coords["time"]
-        y = data_mean.coords[data_mean.dims[-1]]
+        y = data_mean.coords[space_dim]
         ax.set_xlabel("time")
-        ax.set_ylabel(data_mean.dims[-1])
+        ax.set_ylabel(space_label)
         if invert_time:
             plt.gca().invert_xaxis()
         if invert_space_coord:
@@ -151,6 +159,21 @@ def plot_hovmoller(
             im = ax.pcolormesh(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax)
         else:
             im = ax.pcolormesh(x, y, data_mean.T, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    if space_limits is None:
+        # Leave out the bands where the data are NaN at every time (e.g. below the sea floor)
+        has_data = data_mean.notnull().any(dim="time").values
+        if has_data.any() and not has_data.all():
+            valid_coords = data_mean[space_dim].values[has_data]
+            space_limits = (valid_coords.min(), valid_coords.max())
+    if space_limits is not None:
+        low, high = sorted(space_limits)
+        limits = (high, low) if invert_space_coord else (low, high)
+        logger.debug("Setting space coordinate limits to %s", limits)
+        if invert_axis:
+            ax.set_xlim(limits)
+        else:
+            ax.set_ylim(limits)
 
     if cbar is True:
         # Adjust the location of the subplots on the page to make room for the colorbar
