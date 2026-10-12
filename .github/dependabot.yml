@@ -8,8 +8,8 @@ updates:
   - package-ecosystem: "conda"
     directory: "/"
     schedule:
-      interval: "daily"
-      day: "monday"
+      interval: "weekly"
+      day: "wednesday"
       time: "06:00"
     commit-message:
       prefix: "[Dependabot-conda]"
@@ -25,8 +25,8 @@ updates:
   - package-ecosystem: "pip"
     directory: "/" # Location of package manifests
     schedule:
-      interval: "daily"
-      day: "monday"
+      interval: "weekly"
+      day: "wednesday"
       time: "08:00"
     commit-message:
       prefix: "[Dependabot-pip]"
@@ -38,14 +38,16 @@ updates:
           - "eccodes"
           - "eccodeslib"
 
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: "[Dependabot-github-actions]"
     directory: "/"
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
 
-  - package-ecosystem: "pre-commit"
+  - package-ecosystem: "[Dependabot-pre-commit]"
     directory: "/"
     schedule:
       # Check for updates to pre-commit hooks every week
       interval: "weekly"
+      day: "wednesday"
+      time: "08:00"
