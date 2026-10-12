@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: "0 4 * * 1" # run every Monday night at 4AM UTC
 
+concurrency:
+  group: conda-relock-${{ github.event.pull_request.head.ref || 'main' }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
