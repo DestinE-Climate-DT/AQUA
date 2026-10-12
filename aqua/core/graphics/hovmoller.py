@@ -141,19 +141,24 @@ def plot_hovmoller(
             vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
 
+    # Extend the colorbar only on the sides where the data exceed the color limits
+    below, above = bool(data_mean.min() < vmin), bool(data_mean.max() > vmax)
+    extend = "both" if below and above else "min" if below else "max" if above else "neither"
+    logger.debug("Colorbar extension: %s", extend)
+
     if contour:
         try:
             levels = np.linspace(vmin, vmax, nlevels)
             if invert_axis:
-                im = ax.contourf(x, y, data_mean, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                im = ax.contourf(x, y, data_mean, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
             else:
-                im = ax.contourf(x, y, data_mean.T, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                im = ax.contourf(x, y, data_mean.T, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
         except TypeError as e:
             logger.warning("Could not evaluate levels: {}".format(e))
             if invert_axis:
-                im = ax.contourf(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                im = ax.contourf(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
             else:
-                im = ax.contourf(x, y, data_mean.T, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                im = ax.contourf(x, y, data_mean.T, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
     else:  # pcolormesh
         if invert_axis:
             im = ax.pcolormesh(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax)
