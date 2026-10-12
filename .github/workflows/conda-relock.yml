@@ -68,4 +68,4 @@ jobs:
           delete-branch: true
           committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
           labels: |
-            run tests
+            run tests :runner:
