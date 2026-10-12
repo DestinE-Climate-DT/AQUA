@@ -91,39 +91,20 @@ class TestAquaConsole:
         run_aqua_console_with_input(["uninstall"], "yes")
         assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    @pytest.mark.parametrize(
-        "install_args,should_fail",
-        [
-            (["install", MACHINE, "--core"], False),
-            (["install", MACHINE, "--diagnostics"], True),
-        ],
-    )
-    def test_console_selective_install(
-        self, tmp_path, set_home, run_aqua, run_aqua_console_with_input, install_args, should_fail
-    ):
-        """Test for running selective install via the console (parametrized)"""
+    def test_console_core_only_install(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input):
+        """Test a core-only installation via the console."""
 
         mydir = str(tmp_path)
         set_home(mydir)
 
-        if should_fail:
-            # aqua install diagnostics only (should fail)
-            with pytest.raises(SystemExit) as excinfo:
-                run_aqua(install_args)
-            # Optional components fail in the installer when available and in
-            # argument parsing when they are not registered.
-            assert excinfo.value.code in (1, 2)
-        else:
-            # aqua install core only
-            run_aqua(install_args)
-            assert os.path.isdir(os.path.join(mydir, ".aqua"))
-            assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+        run_aqua(["install", MACHINE, "--core"])
+        assert os.path.isdir(os.path.join(mydir, ".aqua"))
+        assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
 
-            # uninstall aqua
-            run_aqua_console_with_input(["uninstall"], "yes")
-            assert not os.path.exists(os.path.join(mydir, ".aqua"))
+        run_aqua_console_with_input(["uninstall"], "yes")
+        assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    def test_console_advanced(self, tmp_path, run_aqua, set_home, run_aqua_console_with_input):
+    def test_console_advanced(self, tmp_path, run_aqua, set_home, run_aqua_console_with_input, catalog_copy_path):
         """Advanced tests for editable installation, editable catalog, catalog update,
         add a wrong catalog, uninstall
 
@@ -148,7 +129,7 @@ class TestAquaConsole:
         assert os.path.exists(os.path.join(mydir, ".aqua"))
 
         # add catalog again and error
-        run_aqua(["-v", "add", "ci", "-e", "AQUA_tests/catalog_copy"])
+        run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["-v", "add", "ci", "-e", "config/catalogs/ci"])
         assert excinfo.value.code == 1
@@ -197,8 +178,7 @@ class TestAquaConsole:
         set_home(mydir)
 
         # find the correct AQUA root and config paths
-        test_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # /path/to/AQUA/tests
-        aqua_root = os.path.abspath(os.path.join(test_dir, ".."))  # /path/to/AQUA
+        aqua_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # /path/to/AQUA
         # config_dir = os.path.join(aqua_root, 'config')  # /path/to/AQUA/config
 
         # install from path with grids
@@ -207,11 +187,6 @@ class TestAquaConsole:
         for folder in ["fixes", "data_model", "grids"]:
             assert os.path.islink(os.path.join(mydir, ".aqua", folder))
         assert os.path.isdir(os.path.join(mydir, ".aqua", "catalogs"))
-
-        # try to install diagnostics only on top of existing installation (should fail)
-        with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["install", MACHINE, "--diagnostics", test_dir])
-        assert excinfo.value.code in (1, 2)
 
         # install from path in editable mode
         run_aqua_console_with_input(

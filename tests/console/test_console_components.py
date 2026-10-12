@@ -120,10 +120,26 @@ class TestPluginInstall:
         mydir = str(tmp_path)
         set_home(mydir)
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(SystemExit) as excinfo:
             run_aqua(["install", MACHINE, "--mockplugin"])
 
+        assert excinfo.value.code == 1
         assert not os.path.exists(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+
+    def test_invalid_editable_plugin_path_fails(
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """An invalid editable plugin path must fail after a core-only installation."""
+        mydir = str(tmp_path)
+        set_home(mydir)
+        run_aqua(["install", MACHINE, "--core"])
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["install", MACHINE, "--mockplugin", str(tmp_path / "missing-plugin")])
+
+        assert excinfo.value.code == 1
+        assert not os.path.exists(os.path.join(mydir, ".aqua", "mock_config"))
+        run_aqua_console_with_input(["uninstall"], "yes")
 
     def test_broken_plugin_does_not_crash_bare_install(
         self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input

@@ -1,4 +1,4 @@
-"""Console catalog, grid, fixes, and analysis operations."""
+"""Console catalog, grid, and fixes operations."""
 
 import os
 import tempfile
@@ -45,12 +45,12 @@ class TestCatalogOperations:
         run_aqua(["remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
-    def test_editable_catalog_operations(self, aqua_install, run_aqua):
+    def test_editable_catalog_operations(self, aqua_install, run_aqua, catalog_copy_path):
         """Test editable catalog operations."""
         mydir = aqua_install
 
         # add catalog with editable option
-        run_aqua(["-v", "add", "ci", "-e", "AQUA_tests/catalog_copy"])
+        run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
         assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs/ci"))
 
         # update a catalog installed in editable mode (should fail)
@@ -159,13 +159,13 @@ class TestGridAndFixOperations:
 class TestCatalogListingAndErrors:
     """Catalog listing and error handling operations."""
 
-    def test_console_list(self, aqua_install, run_aqua, capfd):
+    def test_console_list(self, aqua_install, run_aqua, capfd, catalog_copy_path):
         """Basic tests for list command"""
 
         # getting fixture
 
         run_aqua(["add", "ci"])
-        run_aqua(["add", "ciccio", "-e", "AQUA_tests/catalog_copy"])
+        run_aqua(["add", "ciccio", "-e", catalog_copy_path])
         run_aqua(["list", "-a"])
 
         out, _ = capfd.readouterr()

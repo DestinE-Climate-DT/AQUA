@@ -3,10 +3,20 @@
 import io
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
 from aqua.core.console.main import AquaConsole
+
+
+@pytest.fixture(scope="session")
+def catalog_copy_path():
+    """Return the repository-local catalog used by console tests."""
+    path = Path(__file__).resolve().parents[2] / "AQUA_tests" / "catalog_copy"
+    if not path.is_dir():
+        pytest.fail(f"Required console test catalog not found: {path}", pytrace=False)
+    return str(path)
 
 
 def _set_aqua_args(args):

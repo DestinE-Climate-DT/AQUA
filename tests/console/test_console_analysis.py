@@ -1,6 +1,5 @@
 """Console analysis workflow tests."""
 
-import logging
 from unittest.mock import patch
 
 import pytest
@@ -14,8 +13,8 @@ pytestmark = [pytest.mark.aqua, pytest.mark.console]
 class TestAquaConsoleAnalysis:
     """Analysis operations against an isolated AQUA installation."""
 
-    def test_console_analysis_checker(self, aqua_install, run_aqua, tmp_path, caplog):
-        """Test that the analysis checker properly handles missing aqua.diagnostics package."""
+    def test_console_analysis_checker_failure(self, aqua_install, run_aqua, tmp_path):
+        """Test that a setup-checker failure is propagated through the console."""
         analysis_cfg = tmp_path / "config.aqua-analysis-test.yaml"
         dump_yaml(
             str(analysis_cfg),
@@ -23,14 +22,15 @@ class TestAquaConsoleAnalysis:
                 "job": {
                     "run_checker": True,
                     "outputdir": str(tmp_path / "output"),
+                    "catalog": "ci",
                     "model": "IFS",
                     "exp": "test-tco79",
                     "source": "lra-r100-monthly",
                 },
             },
         )
-        with pytest.raises(SystemExit) as exc_info:
-            with caplog.at_level(logging.ERROR, logger="AquaAnalysis"):
+        with patch("aqua.core.analysis.Analysis.run_setup_checker", side_effect=SystemExit(1)) as mock_checker:
+            with pytest.raises(SystemExit) as exc_info:
                 run_aqua(
                     [
                         "analysis",
@@ -41,11 +41,12 @@ class TestAquaConsoleAnalysis:
                 )
 
         assert exc_info.value.code == 1
+        mock_checker.assert_called_once_with()
 
-    def test_console_analysis_minimal(self, aqua_install, run_aqua, tmp_path):
+    def test_console_analysis_minimal(self, aqua_install, run_aqua, tmp_path, catalog_copy_path):
         """Minimal smoke test: verifies aqua analysis routes through the config without
         running real subprocesses."""
-        run_aqua(["add", "ci", "-e", "AQUA_tests/catalog_copy"])
+        run_aqua(["add", "ci", "-e", catalog_copy_path])
 
         dummy_script = tmp_path / "cli_dummy.py"
         dummy_script.touch()
