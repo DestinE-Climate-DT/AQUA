@@ -39,6 +39,7 @@ def mock_plugin_entrypoint(monkeypatch):
 
 
 @pytest.mark.aqua
+@pytest.mark.console
 class TestComponentResolution:
     """Tests for plugin discovery helpers in components.py."""
 
