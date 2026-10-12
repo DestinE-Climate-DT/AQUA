@@ -59,7 +59,7 @@ on:
         type: string
         default: 'auto'
     secrets:
-      AQUA_GITHUB_PAT:
+      AQUA_TOKEN:
         required: true
       AQUA_DVC_PAT:
         required: true
@@ -108,7 +108,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
-      GITHUB_TOKEN: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
+      GITHUB_TOKEN: ${{ secrets.AQUA_TOKEN || github.token }}
       ARTIFACT_SUFFIX: ${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ matrix.python-version }}
 
     steps:
@@ -147,15 +147,15 @@ jobs:
           repository: DestinE-Climate-DT/Climate-DT-catalog
           path: Climate-DT-catalog
           ref: main
-          token: ${{ secrets.AQUA_GITHUB_PAT || github.token }}
+          token: ${{ secrets.AQUA_TOKEN || github.token }}
 
       - name: Check GitHub token
         if: ${{ runner.os == 'Linux' }}
         env:
-          PAT_SET: ${{ secrets.AQUA_GITHUB_PAT != '' }}
+          PAT_SET: ${{ secrets.AQUA_TOKEN != '' }}
         run: |
           if [ "$PAT_SET" != "true" ]; then
-            echo "::warning::AQUA_GITHUB_PAT is empty (Dependabot/fork run or secret not passed): falling back to github.token"
+            echo "::warning::AQUA_TOKEN is empty (Dependabot/fork run or secret not passed): falling back to github.token"
           fi
           CODE=$(curl -s -o "$RUNNER_TEMP/rate.json" -w "%{http_code}" \
             -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/rate_limit)
