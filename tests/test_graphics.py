@@ -509,6 +509,32 @@ class TestHovmoller:
         assert os.path.exists(tmp_path / "test_hovmoller_sym.png")
 
 
+@pytest.fixture
+def depth_section():
+    """Monthly (time, depth) field within (0, 1), NaN below the sea floor at the deepest level"""
+    time = np.arange("2000-01", "2001-01", dtype="datetime64[M]")
+    depth = [5.0, 100.0, 1000.0, 3000.0, 6000.0]
+    values = np.random.default_rng(0).uniform(size=(time.size, len(depth)))
+    values[:, -1] = np.nan
+    return xr.DataArray(values, dims=("time", "depth"), coords={"time": time, "depth": ("depth", depth, {"units": "m"})})
+
+
+@pytest.mark.graphics
+def test_plot_hovmoller_space_axis(depth_section):
+    """The space axis is labelled with its units and leaves out the NaN-only band"""
+    _, ax = plot_hovmoller(data=depth_section, dim=None, invert_space_coord=True, return_fig=True, loglevel=loglevel)
+    assert ax.get_ylabel() == "depth (m)"
+    assert ax.get_ylim() == (3000.0, 5.0)
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("vmin, vmax, extend", [(0, 1, "neither"), (0.2, 1, "min"), (0, 0.8, "max"), (0.2, 0.8, "both")])
+def test_plot_hovmoller_extend(depth_section, vmin, vmax, extend):
+    """The colorbar is extended only on the sides where the data exceed vmin/vmax"""
+    _, ax = plot_hovmoller(data=depth_section, dim=None, vmin=vmin, vmax=vmax, return_fig=True, loglevel=loglevel)
+    assert ax.collections[-1].extend == extend
+
+
 @pytest.mark.graphics
 class TestVerticalLines:
     """Basic tests for the Vertical Line functions"""
