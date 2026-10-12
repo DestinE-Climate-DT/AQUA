@@ -7,6 +7,7 @@ hovmoller diagrams with xarray DataArrays.
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.colors import BoundaryNorm
 
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
@@ -36,6 +37,7 @@ def plot_hovmoller(
     cbar: bool = True,
     text: list | str = None,
     nlevels=8,
+    levels: list = None,
     cbar_label=None,
     cbar_orientation: str = "horizontal",
     return_fig=False,
@@ -67,6 +69,8 @@ def plot_hovmoller(
         cbar (bool): If True, a colorbar will be added to the plot.
         text (list | str): Text to be added to the plot. If None, no text will be added.
         nlevels (int): Number of contour levels. Default is 8.
+        levels (list): Contour levels, also unevenly spaced ones. If given, they replace vmin, vmax and nlevels,
+            and each interval between them gets its own color of the colormap.
         cbar_label (str): Label for the colorbar. If None, it will be generated from the data attributes.
         cbar_orientation (str): Orientation of the colorbar. Default is 'horizontal'.
         return_fig (bool): If True, the figure and axes will be returned. Default is False.
@@ -133,7 +137,9 @@ def plot_hovmoller(
         if invert_space_coord:
             plt.gca().invert_yaxis()
 
-    if vmin is None or vmax is None:
+    if levels is not None:
+        vmin, vmax = levels[0], levels[-1]
+    elif vmin is None or vmax is None:
         vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
     else:
         if sym:
@@ -148,11 +154,16 @@ def plot_hovmoller(
 
     if contour:
         try:
-            levels = np.linspace(vmin, vmax, nlevels)
-            if invert_axis:
-                im = ax.contourf(x, y, data_mean, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
+            if levels is None:
+                levels = np.linspace(vmin, vmax, nlevels)
+                color_kwargs = {"vmin": vmin, "vmax": vmax}
             else:
-                im = ax.contourf(x, y, data_mean.T, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
+                # Each interval of the given levels, even uneven ones, gets its own color of the colormap
+                color_kwargs = {"norm": BoundaryNorm(levels, ncolors=plt.get_cmap(cmap).N, extend=extend)}
+            if invert_axis:
+                im = ax.contourf(x, y, data_mean, levels=levels, cmap=cmap, extend=extend, **color_kwargs)
+            else:
+                im = ax.contourf(x, y, data_mean.T, levels=levels, cmap=cmap, extend=extend, **color_kwargs)
         except TypeError as e:
             logger.warning("Could not evaluate levels: {}".format(e))
             if invert_axis:

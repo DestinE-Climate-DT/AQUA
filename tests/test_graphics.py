@@ -536,6 +536,15 @@ def test_plot_hovmoller_extend(depth_section, vmin, vmax, extend):
 
 
 @pytest.mark.graphics
+def test_plot_hovmoller_levels(depth_section):
+    """Uneven levels replace vmin, vmax and nlevels"""
+    levels = [0.1, 0.2, 0.5, 0.9]
+    _, ax = plot_hovmoller(data=depth_section, dim=None, levels=levels, return_fig=True, loglevel=loglevel)
+    assert list(ax.collections[-1].levels) == levels
+    assert ax.collections[-1].extend == "both"
+
+
+@pytest.mark.graphics
 class TestVerticalLines:
     """Basic tests for the Vertical Line functions"""
 
