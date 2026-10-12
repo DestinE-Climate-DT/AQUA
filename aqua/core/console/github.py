@@ -16,13 +16,13 @@ from urllib3.connectionpool import HTTPConnectionPool
 class GitHubAPIRequestTracker:
     """Track GitHub API quota headers while a catalog operation runs.
 
-    Entering the context temporarily wraps urllib3 and, when installed, aiohttp
-    response handling. Only responses from ``api.github.com`` with a
-    ``X-RateLimit-Resource`` of ``core`` or ``graphql`` are counted; this keeps
-    unrelated HTTP traffic and GitHub's separate quota resources out of the
-    report. Call :meth:`stage` around each operation to attribute responses to
-    that phase. Exiting restores the original library methods and logs one
-    summary with per-stage details.
+    Entering the context temporarily wraps urllib3 response handling. Only
+    responses from ``api.github.com`` with a ``X-RateLimit-Resource`` of
+    ``core`` or ``graphql`` are counted; this keeps unrelated HTTP traffic and
+    GitHub's separate quota resources out of the report. Call :meth:`stage`
+    around each operation to attribute responses to that phase. Exiting
+    restores the original urllib3 method and logs one summary with per-stage
+    details.
 
     The wrappers are process-wide while active, so the class lock prevents
     overlapping tracker contexts. Keep each context scoped to one synchronous
@@ -49,7 +49,6 @@ class GitHubAPIRequestTracker:
         installed = False
         try:
             self._install_requests_tracker()
-            self._install_aiohttp_tracker()
             installed = True
             return self
         finally:
@@ -108,24 +107,6 @@ class GitHubAPIRequestTracker:
             return response
 
         self._patches.enter_context(patch.object(HTTPConnectionPool, "_make_request", tracked_make_request))
-
-    def _install_aiohttp_tracker(self):
-        try:
-            from aiohttp.client_reqrep import ClientResponse
-        except ModuleNotFoundError as exc:
-            if exc.name not in {"aiohttp", "aiohttp.client_reqrep"}:
-                raise
-            return
-
-        original_start = ClientResponse.start
-
-        @wraps(original_start)
-        async def tracked_start(response, *args, **kwargs):
-            result = await original_start(response, *args, **kwargs)
-            self._record_api_response(response.url.host, response.headers)
-            return result
-
-        self._patches.enter_context(patch.object(ClientResponse, "start", tracked_start))
 
     def _log_summary(self):
         with self._counts_lock:
