@@ -207,6 +207,8 @@ class TestCatalogListingAndErrors:
                 # Create minimal valid catalog
                 with open(os.path.join(src_dir, "catalog.yaml"), "w", encoding="utf-8") as f:
                     f.write("sources: {}")
+                with open(os.path.join(src_dir, "machine.yaml"), "w", encoding="utf-8") as f:
+                    f.write("{}")
 
                 # define a mock failing dump_yaml function to fail during _set_catalog
                 def failing_dump_yaml(filepath, data):
