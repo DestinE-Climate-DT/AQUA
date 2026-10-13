@@ -4,8 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.2.1):
+Unreleased in the current development version (target v1.2.2):
 
+- `plot_timeseries` function now plot same color for monthly and annual ensemble timeseries (#3220)
 - Unify ensemble monthly and annual timeseries colors to blue (#3195)
 - Split console tests in multiple modules and reintroduce parallel execution (#3199)
 - Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
