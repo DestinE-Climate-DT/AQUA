@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
+
+ClimateDT workflow modification
+- `--checker` rename to `--setup_checker` in `aqua analysis` command line
+
 Unreleased in the current development version (target v1.2.1):
 
+- `aqua analysis` checker renamed to setup checker (`--setup_checker`, `run_setup_checker`); `cli_checker.py` removed in favour of the `cli_setup_checker.py` from diagnostics (#3178)
 - Hovmoller adjustments and possibility to plot uneven levels (#3203)
 - `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
 - The `aqua analysis ensemble` command now set realization to `ensemble` by default, to avoid falling to the default `r1` (#3192)
