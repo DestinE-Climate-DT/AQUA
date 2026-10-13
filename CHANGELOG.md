@@ -4,8 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.2.1):
+Unreleased in the current development version (target v1.2.2):
 
+- `plot_timeseries` function now plot same color for monthly and annual ensemble timeseries (#3220)
 - Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
 - Hovmoller adjustments and possibility to plot uneven levels (#3203)
 - `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
