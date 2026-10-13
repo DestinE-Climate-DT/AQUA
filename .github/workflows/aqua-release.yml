@@ -15,11 +15,17 @@ permissions:
 
 jobs:
   aqua-release-tests:
+    # Non-PR events (listed first) always run. On PRs:
+    #  - opened/synchronize/reopened: run if the PR has the 'release' label
+    #  - labeled: run only if the label just added is 'release', so that adding
+    #    an unrelated label does not restart (and cancel) tests already running
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
-      (github.event_name == 'pull_request' &&
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
+      (github.event.action != 'labeled' &&
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'release')) ||
+      (github.event.action == 'labeled' &&
+        contains(github.event.label.name, 'release'))
     strategy:
       fail-fast: false
       # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
