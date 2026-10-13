@@ -28,12 +28,12 @@ The full pipeline is composed of the following components:
 
 2.  **(optional, not used in the workflow)** In order to submit several ``aqua-analysis.py`` jobs in parallel, for different experiments,
     the ``submit-aqua-web.py`` script can be used. This script reads a list of experiments from a file and submits the ``aqua-analysis``
-    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to aqua-web wesite using ``push_analysis.sh``.
+    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to aqua-web wesite using ``push_analysis.py``.
 
     See the :ref:`submit-aqua-web` section for more details.
 
 
-3.  The ``push_analysis.sh`` bash script is used to push the produced figures to a remote object store (LUMI-O for DestinE).
+3.  The ``push_analysis.py`` Python script is used to push the produced figures to a remote object store (LUMI-O for DestinE).
     It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the ``aqua-web`` bucket on LUMI-O,
     creates a ``content.yaml``/ ``content.json`` file for each experiment, and
     updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
@@ -60,7 +60,7 @@ repository to publish them automatically on a dedicated website.
 A script in the ``cli/aqua-web`` folder is available to push figures to the bucket shown by aqua-web.
 
 If you plan to use these scripts outside the AQUA container or environment to push figures to aqua-web,
-you will need the following scripts: ``push-analysis.sh``, ``make_contents.py``, ``pdf_to_png.sh``
+you will need the following scripts: ``push_analysis.py``, ``make_contents.py``
 and ``push_s3.py``.
 The following python packages will be needed: ``boto3``, ``pyYAML`` and ``pypdf``.
 
@@ -69,7 +69,7 @@ Basic usage
 
 .. code-block:: bash
 
-    bash push-analysis.sh [OPTIONS] INDIR EXPS
+    python push_analysis.py [OPTIONS] INDIR EXPS
 
 This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
@@ -93,8 +93,8 @@ Additional options
 
 .. option:: -c <configfile>, --config <configfile>
 
-    Alternate config file for make_contents (default is 'config.aqua-web.yaml' in the script directory).
-    To be used together with the rsync option.
+    Alternate config file for make_contents (default is ``analysis/config.grouping.yaml``
+    under ``AQUA_CONFIG`` or ``~/.aqua``).
 
 .. option:: -d, --no-update
 
@@ -136,7 +136,7 @@ If the rsync option option is used, it will return the return codes from the rsy
 Grouping configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The file ``config.grouping.yaml``, located in the script directory, contains a custom configuration for the aqua-web portal, describing how to group diagnostics.
+The file ``config.grouping.yaml`` in the AQUA analysis configuration contains a custom configuration for the aqua-web portal, describing how to group diagnostics.
 It is used by ``make_contents.py``` to create the ``content.yaml`` files for each experiment. A custom config file can be passed with the ``-c`` option.
 
 
@@ -169,7 +169,7 @@ The AWS credentials can be stored in the ``~/.aws/credentials`` file or in envir
 
     This is a basic utility used by the other scripts (but you could also use it directly).
     Do not use this to push the results of AQUA analysis to LUMI-O for aqua-web but rather
-    use ``push-analysis.py`` described above.
+    use ``push_analysis.py`` described above.
 
 Basic usage
 ^^^^^^^^^^^
