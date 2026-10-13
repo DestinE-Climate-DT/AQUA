@@ -1,6 +1,7 @@
 name: AQUA release
 # Full matrix starting from environment-pypi.yml (conda dependencies only), then installing the local AQUA with pip.
-# Runs on PRs whose label contains 'release' (e.g. 'release :sailboat:') or manually. RedHat is not covered yet.
+# Runs weekly, manually, and on PRs whose label contains 'release' (e.g. 'release :sailboat:'). RedHat is not covered yet.
+# When the scheduled or manual run fails, an issue listing the broken tests is opened (or updated).
 
 on:
   pull_request:
@@ -16,6 +17,7 @@ jobs:
   aqua-release-tests:
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
       (github.event_name == 'pull_request' &&
         contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
     strategy:
@@ -47,8 +49,7 @@ jobs:
 
   report-failure:
     needs: aqua-release-tests
-    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
-    if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-release-tests.result == 'failure' }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && needs.aqua-release-tests.result == 'failure' }}
     permissions:
       contents: read
       issues: write

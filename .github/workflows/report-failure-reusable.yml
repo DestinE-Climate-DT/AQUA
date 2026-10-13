@@ -65,7 +65,10 @@ jobs:
 
       - name: Open or update issue
         run: |
-          LABEL="nightly-failure :clown_face:"
+          # One label per test suite (e.g. 'ci-failure:nightly :clown_face:'), so failures of different suites do not mix
+          LABEL="ci-failure:$(echo "$TEST_NAME" | tr '[:upper:]' '[:lower:]') :clown_face:"
+          # Create the label on first use; ignore the error if it already exists
+          gh label create "$LABEL" --color B60205 --description "Automatic report of a failed $TEST_NAME test run" 2>/dev/null || true
           EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --body-file report.md
