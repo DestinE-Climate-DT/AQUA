@@ -176,7 +176,10 @@ class Analysis:
             args (argparse.Namespace): Parsed command-line arguments.
             config (dict): Job configuration dictionary loaded from YAML.
         """
-
+        target = get_arg(args, "target", None)
+        if target == "ensemble":
+            self.realization = "ensemble"
+            return
         realization = get_arg(args, "realization", None, config=config)
         self.realization = format_realization(realization)
         self.check_realization()
@@ -314,7 +317,12 @@ class Analysis:
         """
         # self gueessing
         if script_path is None:
-            script_path = os.path.join(self.aqua_core_path, "analysis", "cli_checker.py")
+            if self.aqua_diagnostics_path:
+                self.logger.info("Running setup checker from AQUA diagnostics path: %s", self.aqua_diagnostics_path)
+                script_path = os.path.join(self.aqua_diagnostics_path, "base", "cli_setup_checker.py")
+            else:
+                self.logger.error("AQUA diagnostics path not found; cannot locate cli_setup_checker.py.")
+                return 0
         if logfile is None:
             logfile = os.path.expandvars(f"{self.output_dir}/setup_checker.log")
 

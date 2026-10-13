@@ -2,7 +2,7 @@
 
 name: Discussion
 description: "Start a discussion"
-labels: ["discussion"]
+labels: ["discussion :speech_balloon:"]
 body:
   - type: markdown
     attributes:
