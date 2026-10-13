@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.1):
 
 - Introduction of reusable modular actions to support portable GitHub workflow (#3198)
+- Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
+- `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
 - Drop support to python 3.12 (#3188)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)

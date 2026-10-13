@@ -36,7 +36,7 @@ jobs:
       test-data-source: 'auto'
       aqua-actions-ref: ${{ github.sha }}
     secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
       BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
