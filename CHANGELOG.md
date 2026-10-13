@@ -6,9 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
+- Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
 - `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
-- Drop support to python 3.12 (#3188)
+- Drop support to python 3.11 (#3188, #3214)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
 - Remove climatedt-phase1 from CI/CD (#3181)
 - Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)

@@ -118,7 +118,7 @@ def test_cli_checker_missing_arguments(base_args):
         base_args("--exp", "test-tco79", "--source", "short"),
         capture_output=True,
         text=True,
-        timeout=10,
+        timeout=30,
     )
 
     assert result.returncode != 0
