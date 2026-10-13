@@ -536,6 +536,37 @@ class TestAquaConsole:
         assert os.path.isfile(os.path.join(mydir, "vicesindaco", "config-aqua.yaml"))
         assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
+    def test_console_first_catalog_no_warning(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input, capfd):
+        """Adding the first catalog on a fresh installation must not emit warnings (#3212)"""
+        mydir = str(tmp_path)
+        set_home(mydir)
+        run_aqua(["install", MACHINE])
+        capfd.readouterr()
+
+        run_aqua(["add", "ci", "-e", "AQUA_tests/catalog_copy"])
+        out, err = capfd.readouterr()
+        assert "WARNING" not in out + err
+        assert os.path.islink(os.path.join(mydir, ".aqua/catalogs/ci"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
+    def test_console_add_invalid_editable_catalog(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input):
+        """An editable folder without catalog/machine files must be rejected and cleaned up"""
+        mydir = str(tmp_path)
+        set_home(mydir)
+        run_aqua(["install", MACHINE])
+
+        notacatalog = tmp_path / "notacatalog"
+        notacatalog.mkdir()
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["add", "notacatalog", "-e", str(notacatalog)])
+        assert excinfo.value.code == 1
+        assert not os.path.lexists(os.path.join(mydir, ".aqua/catalogs/notacatalog"))
+        config = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+        assert "notacatalog" not in to_list(config.get("catalog"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
 
 @pytest.mark.aqua
 class TestAquaConsoleShared:
@@ -722,6 +753,8 @@ class TestAquaConsoleShared:
                 # Create minimal valid catalog
                 with open(os.path.join(src_dir, "catalog.yaml"), "w", encoding="utf-8") as f:
                     f.write("sources: {}")
+                with open(os.path.join(src_dir, "machine.yaml"), "w", encoding="utf-8") as f:
+                    f.write("{}")
 
                 # define a mock failing dump_yaml function to fail during _set_catalog
                 def failing_dump_yaml(filepath, data):

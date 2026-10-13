@@ -15,10 +15,10 @@ from urllib.request import Request, urlopen
 import fsspec
 from requests.exceptions import HTTPError as RequestsHTTPError
 
+from aqua.core.configurer import ConfigCatalog
 from aqua.core.lock import SafeFileLock
-from aqua.core.reader.catalog import show_catalog_content as print_catalog
 from aqua.core.util import dump_yaml, load_yaml
-from aqua.core.util.util import HiddenPrints, to_list
+from aqua.core.util.util import to_list
 
 # folder used for reading/storing catalogs
 CATPATH = "catalogs"
@@ -120,8 +120,8 @@ class CatalogMixin:
             else:
                 self._add_catalog_github(args.catalog, args.repository)
 
-            with HiddenPrints():
-                print_catalog()
+            # validate only the new catalog: raises if its catalog or machine file is missing
+            ConfigCatalog(catalog=args.catalog, loglevel=self.loglevel)
 
             self._set_catalog(args.catalog)
 
