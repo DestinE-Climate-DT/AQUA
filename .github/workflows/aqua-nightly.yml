@@ -48,11 +48,10 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.14"]'
+      python-version: '3.14'
       pytest-markers: ${{ matrix.markers }}
       enable-parallel: true
       enable-coverage: false
-      fail-fast: false
       enable-fdb: ${{ matrix.fdb }}
       container-image: ${{ matrix.container }}
       install-mode: 'environment'

@@ -27,11 +27,10 @@ jobs:
         contains(join(github.event.pull_request.labels.*.name, '|'), 'ready to merge')))
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.14"]'
+      python-version: '3.14'
       pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
       enable-parallel: true
       enable-coverage: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
-      fail-fast: false
       install-mode: 'local'
       test-data-source: 'auto'
     secrets:

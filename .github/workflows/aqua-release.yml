@@ -22,17 +22,19 @@ jobs:
         contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
     strategy:
       fail-fast: false
+      # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
+      max-parallel: 6
       matrix:
         platform: [ubuntu-22.04, ubuntu-26.04, macos-15, xcode-27]
-    name: AQUA release (${{ matrix.platform }})
+        python-version: ['3.12', '3.13', '3.14']
+    name: AQUA release (${{ matrix.platform }}, py${{ matrix.python-version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.12", "3.13", "3.14"]'
+      python-version: ${{ matrix.python-version }}
       pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
-      fail-fast: false
       enable-fdb: false
       container-image: ''
       install-mode: 'release'
