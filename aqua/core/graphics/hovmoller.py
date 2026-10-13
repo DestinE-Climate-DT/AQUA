@@ -7,6 +7,7 @@ hovmoller diagrams with xarray DataArrays.
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.colors import BoundaryNorm
 
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
@@ -22,6 +23,7 @@ def plot_hovmoller(
     invert_axis=False,
     invert_time=False,
     invert_space_coord=False,
+    space_limits: tuple = None,
     sym=False,
     style=None,
     contour=True,
@@ -35,6 +37,7 @@ def plot_hovmoller(
     cbar: bool = True,
     text: list | str = None,
     nlevels=8,
+    levels: list = None,
     cbar_label=None,
     cbar_orientation: str = "horizontal",
     return_fig=False,
@@ -51,6 +54,8 @@ def plot_hovmoller(
         invert_axis (bool): If True, the x-axis will be inverted.
         invert_time (bool): If True, the direction time axis will be inverted.
         invert_space_coord (bool): If True, the space coordinate axis will be inverted.
+        space_limits (tuple): (min, max) range of the space coordinate to show.
+            If None, the bands where the data are NaN at every time are left out.
         sym (bool): If True, the color limits will be symmetric around zero.
         style (str): The style to be used for the plot. Default is None, which uses the default AQUA style.
         contour (bool): If True, contours will be plotted. If False, pcolormesh will be used.
@@ -64,6 +69,8 @@ def plot_hovmoller(
         cbar (bool): If True, a colorbar will be added to the plot.
         text (list | str): Text to be added to the plot. If None, no text will be added.
         nlevels (int): Number of contour levels. Default is 8.
+        levels (list): Contour levels, also unevenly spaced ones. If given, they replace vmin, vmax and nlevels,
+            and each interval between them gets its own color of the colormap.
         cbar_label (str): Label for the colorbar. If None, it will be generated from the data attributes.
         cbar_orientation (str): Orientation of the colorbar. Default is 'horizontal'.
         return_fig (bool): If True, the figure and axes will be returned. Default is False.
@@ -104,12 +111,17 @@ def plot_hovmoller(
     if ax is None:
         ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2])
 
+    # Label the space axis with the units of its coordinate, if available
+    space_dim = data_mean.dims[-1]
+    space_units = data_mean[space_dim].attrs.get("units")
+    space_label = f"{space_dim} ({unit_to_latex(space_units)})" if space_units else space_dim
+
     # Plot the data
     if invert_axis:
         logger.debug("Inverting axis for plot")
-        x = data_mean.coords[data_mean.dims[-1]]
+        x = data_mean.coords[space_dim]
         y = data_mean.coords["time"]
-        ax.set_xlabel(data_mean.dims[-1])
+        ax.set_xlabel(space_label)
         ax.set_ylabel("time")
         if invert_time:
             plt.gca().invert_yaxis()
@@ -117,15 +129,17 @@ def plot_hovmoller(
             plt.gca().invert_xaxis()
     else:
         x = data_mean.coords["time"]
-        y = data_mean.coords[data_mean.dims[-1]]
+        y = data_mean.coords[space_dim]
         ax.set_xlabel("time")
-        ax.set_ylabel(data_mean.dims[-1])
+        ax.set_ylabel(space_label)
         if invert_time:
             plt.gca().invert_xaxis()
         if invert_space_coord:
             plt.gca().invert_yaxis()
 
-    if vmin is None or vmax is None:
+    if levels is not None:
+        vmin, vmax = levels[0], levels[-1]
+    elif vmin is None or vmax is None:
         vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
     else:
         if sym:
@@ -133,24 +147,49 @@ def plot_hovmoller(
             vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
 
+    # Extend the colorbar only on the sides where the data exceed the color limits
+    below, above = bool(data_mean.min() < vmin), bool(data_mean.max() > vmax)
+    extend = "both" if below and above else "min" if below else "max" if above else "neither"
+    logger.debug("Colorbar extension: %s", extend)
+
     if contour:
         try:
-            levels = np.linspace(vmin, vmax, nlevels)
-            if invert_axis:
-                im = ax.contourf(x, y, data_mean, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+            if levels is None:
+                levels = np.linspace(vmin, vmax, nlevels)
+                color_kwargs = {"vmin": vmin, "vmax": vmax}
             else:
-                im = ax.contourf(x, y, data_mean.T, levels=levels, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                # Each interval of the given levels, even uneven ones, gets its own color of the colormap
+                color_kwargs = {"norm": BoundaryNorm(levels, ncolors=plt.get_cmap(cmap).N, extend=extend)}
+            if invert_axis:
+                im = ax.contourf(x, y, data_mean, levels=levels, cmap=cmap, extend=extend, **color_kwargs)
+            else:
+                im = ax.contourf(x, y, data_mean.T, levels=levels, cmap=cmap, extend=extend, **color_kwargs)
         except TypeError as e:
             logger.warning("Could not evaluate levels: {}".format(e))
             if invert_axis:
-                im = ax.contourf(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                im = ax.contourf(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
             else:
-                im = ax.contourf(x, y, data_mean.T, cmap=cmap, vmin=vmin, vmax=vmax, extend="both")
+                im = ax.contourf(x, y, data_mean.T, cmap=cmap, vmin=vmin, vmax=vmax, extend=extend)
     else:  # pcolormesh
         if invert_axis:
             im = ax.pcolormesh(x, y, data_mean, cmap=cmap, vmin=vmin, vmax=vmax)
         else:
             im = ax.pcolormesh(x, y, data_mean.T, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    if space_limits is None:
+        # Leave out the bands where the data are NaN at every time (e.g. below the sea floor)
+        has_data = data_mean.notnull().any(dim="time").values
+        if has_data.any() and not has_data.all():
+            valid_coords = data_mean[space_dim].values[has_data]
+            space_limits = (valid_coords.min(), valid_coords.max())
+    if space_limits is not None:
+        low, high = sorted(space_limits)
+        limits = (high, low) if invert_space_coord else (low, high)
+        logger.debug("Setting space coordinate limits to %s", limits)
+        if invert_axis:
+            ax.set_xlim(limits)
+        else:
+            ax.set_ylim(limits)
 
     if cbar is True:
         # Adjust the location of the subplots on the page to make room for the colorbar
