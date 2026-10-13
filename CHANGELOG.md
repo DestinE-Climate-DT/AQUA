@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
+- Split console tests in multiple modules and reintroduce parallel execution (#3199)
 - Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
 - `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
