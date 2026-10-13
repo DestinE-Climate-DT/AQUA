@@ -5,7 +5,7 @@ import xarray as xr
 
 from aqua.core.util import to_list, unit_to_latex
 
-ENSEMBLE_COLOR = "#1898e0"
+ENSEMBLE_COLOR = "#1898e0"  # Blue
 
 
 def _plot_lx(da: xr.DataArray, ax: plt.Axes, **plot_kwargs):
