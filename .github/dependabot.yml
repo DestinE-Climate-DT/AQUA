@@ -38,16 +38,24 @@ updates:
           - "eccodes"
           - "eccodeslib"
 
-  - package-ecosystem: "[Dependabot-github-actions]"
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
+    commit-message:
+      prefix: "[Dependabot-github-actions]"
+    labels:
+      - "dependabot"
 
-  - package-ecosystem: "[Dependabot-pre-commit]"
+  - package-ecosystem: "pre-commit"
     directory: "/"
     schedule:
       # Check for updates to pre-commit hooks every week
       interval: "weekly"
       day: "wednesday"
       time: "08:00"
+    commit-message:
+      prefix: "[Dependabot-pre-commit]"
+    labels:
+      - "dependabot"
