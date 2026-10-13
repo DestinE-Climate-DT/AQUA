@@ -36,9 +36,10 @@ class SafeFileLock:
 
     def _is_stale(self):
         """Return True if lock file is older than stale_timeout."""
-        if not os.path.exists(self.lock_path):
+        try:
+            age = time.time() - os.path.getmtime(self.lock_path)
+        except FileNotFoundError:
             return False
-        age = time.time() - os.path.getmtime(self.lock_path)
         return age > self.stale_timeout
 
     def _remove_stale(self):
@@ -49,14 +50,6 @@ class SafeFileLock:
                 self.logger.debug("Removed stale lock: %s", self.lock_path)
             except OSError:
                 pass
-
-    def _write_metadata(self):
-        """Write PID + timestamp inside the lock file."""
-        try:
-            with open(self.lock_path, "w") as f:
-                f.write(f"pid={os.getpid()} time={time.time()}\n")
-        except Exception:
-            pass  # not fatal
 
     def _heartbeat(self):
         """Refresh mtime periodically to indicate lock holder is alive."""
@@ -75,7 +68,6 @@ class SafeFileLock:
 
         try:
             self.lock.acquire(timeout=self.timeout)
-            self._write_metadata()
             self.logger.debug("Acquired: %s", self.lock_path)
         except Timeout:
             raise Timeout(f"Timeout waiting for lock: {self.lock_path}")

@@ -104,7 +104,7 @@ class TestSafeFileLock:
 
     @pytest.mark.aqua
     def test_metadata_written(self, lock_file):
-        """Test that lock file contains PID and timestamp."""
+        """Test that the SoftFileLock marker (PID first) is not overwritten."""
         lock = SafeFileLock(lock_file, timeout=5)
 
         lock.acquire()
@@ -112,10 +112,33 @@ class TestSafeFileLock:
         with open(lock_file, "r") as f:
             content = f.read()
 
-        assert f"pid={os.getpid()}" in content
-        assert "time=" in content
+        assert content.splitlines()[0] == str(os.getpid())
 
         lock.release()
+
+    @pytest.mark.aqua
+    def test_held_lock_not_broken(self, lock_file):
+        """Test that a lock held for a few seconds is not broken by a contender (#3190)."""
+        lock1 = SafeFileLock(lock_file, timeout=5)
+        lock2 = SafeFileLock(lock_file, timeout=2)
+
+        lock1.acquire()
+        time.sleep(2.5)
+
+        with pytest.raises(Timeout):
+            lock2.acquire()
+
+        lock1.release()
+
+    @pytest.mark.aqua
+    def test_stale_check_lock_vanishing(self, lock_file):
+        """Test that the lock file disappearing during the stale check does not raise (#3190)."""
+        open(lock_file, "w").close()
+        lock = SafeFileLock(lock_file, timeout=5)
+
+        # Lock exists when checked, but is released before its mtime is read
+        with patch("aqua.core.lock.safelock.os.path.getmtime", side_effect=FileNotFoundError):
+            assert not lock._is_stale()
 
     @pytest.mark.aqua
     def test_sequential_access(self, lock_file, shared_file):

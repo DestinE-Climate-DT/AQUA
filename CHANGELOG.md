@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
+- Fix `SafeFileLock`: no longer overwrite the `SoftFileLock` marker (which let concurrent processes break a held lock) and handle the lock disappearing during the stale check (#3190)
 - `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
 - The `aqua analysis ensemble` command now set realization to `ensemble` by default, to avoid falling to the default `r1` (#3192)
 - Split console tests in multiple modules and reintroduce parallel execution (#3199)
