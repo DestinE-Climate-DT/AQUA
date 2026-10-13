@@ -4,7 +4,7 @@ import pytest
 
 from aqua.core.drop import drop_util
 from aqua.core.drop.drop_util import estimate_time_chunk_size
-from aqua.core.util import replace_intake_vars
+from aqua.core.util import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
 
 
 @pytest.fixture
@@ -116,3 +116,40 @@ def test_replace_intake_vars():
 
     path = "./AQUA_tests/models/paperino/pluto"
     assert replace_intake_vars(path, catalog="ci") == "{{ TEST_PATH }}/paperino/pluto"
+
+
+@pytest.mark.aqua
+def test_replace_urlpath_wildcard():
+    """Test wildcard replacement in URL paths."""
+
+    # Test that replacement only happens when surrounded by same character
+    block = {"args": {"urlpath": "data_r1_data.nc"}}
+    result = replace_urlpath_wildcard(block, "r1")
+    assert result["args"]["urlpath"] == "data_*_data.nc"
+
+    # Test no replacement when not surrounded by same character
+    block = {"args": {"urlpath": "/path/to/r1_data.nc"}}
+    result = replace_urlpath_wildcard(block, "r1")
+    assert result["args"]["urlpath"] == "/path/to/r1_data.nc"
+
+    # Test edge cases
+    assert replace_urlpath_wildcard(block, None) == block
+    assert replace_urlpath_wildcard(block, "") == block
+
+
+@pytest.mark.aqua
+def test_replace_urlpath_jinja():
+    """Test Jinja template replacement and parameter management."""
+
+    # Test URL replacement when surrounded by same character
+    block = {"args": {"urlpath": "data_global_data.nc"}}
+    result = replace_urlpath_jinja(block, "global", "region")
+    assert result["args"]["urlpath"] == "data_{{region}}_data.nc"
+
+    # Test parameters block creation
+    assert result["parameters"]["region"]["default"] == "global"
+    assert result["parameters"]["region"]["allowed"] == ["global"]
+
+    # Test adding second value
+    result = replace_urlpath_jinja(result, "europe", "region")
+    assert "europe" in result["parameters"]["region"]["allowed"]
