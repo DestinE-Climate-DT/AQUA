@@ -20,7 +20,7 @@ class TestAquaConsoleAnalysis:
             str(analysis_cfg),
             {
                 "job": {
-                    "run_checker": True,
+                    "run_setup_checker": True,
                     "outputdir": str(tmp_path / "output"),
                     "catalog": "ci",
                     "model": "IFS",
@@ -36,12 +36,12 @@ class TestAquaConsoleAnalysis:
                         "analysis",
                         "--config",
                         str(analysis_cfg),
-                        "--checker",
+                        "--setup_checker",
                     ]
                 )
 
         assert exc_info.value.code == 1
-        mock_checker.assert_called_once_with()
+        mock_checker.assert_called_once_with(script_path=None)
 
     def test_console_analysis_minimal(self, aqua_install, run_aqua, tmp_path, catalog_copy_path):
         """Minimal smoke test: verifies aqua analysis routes through the config without
@@ -59,7 +59,7 @@ class TestAquaConsoleAnalysis:
             str(analysis_cfg),
             {
                 "job": {
-                    "run_checker": False,
+                    "run_setup_checker": False,
                     "loglevel": "WARNING",
                     "outputdir": str(tmp_path / "output"),
                 },

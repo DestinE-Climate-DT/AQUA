@@ -1,5 +1,5 @@
 job:
-  run_checker: true
+  run_setup_checker: true
   loglevel: 'DEBUG'
 
 run:
