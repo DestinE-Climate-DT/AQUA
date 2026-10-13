@@ -232,6 +232,30 @@ class TestConfigurationSetters:
         analysis.set_realization(args, config)
         assert analysis.realization == "r1"
 
+    def test_set_realization_ensemble_target(self, analysis):
+        """When target='ensemble', realization is set to 'ensemble' and returns early."""
+        args = argparse.Namespace(target="ensemble", realization=None)
+        config = {}
+
+        analysis.set_realization(args, config)
+        assert analysis.realization == "ensemble"
+
+    def test_set_realization_ensemble_target_overrides_realization(self, analysis):
+        """When target='ensemble', it takes precedence over realization argument."""
+        args = argparse.Namespace(target="ensemble", realization="r5")
+        config = {}
+
+        analysis.set_realization(args, config)
+        assert analysis.realization == "ensemble"
+
+    def test_set_realization_non_ensemble_target(self, analysis):
+        """When target is not 'ensemble', normal realization formatting applies."""
+        args = argparse.Namespace(target="single", realization="r3")
+        config = {}
+
+        analysis.set_realization(args, config)
+        assert analysis.realization == "r3"
+
     def test_set_output_directory_custom_path(self, analysis, tmp_path):
         """Output directory is constructed correctly with custom outputdir."""
         args = argparse.Namespace(

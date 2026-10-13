@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
 from ruamel.yaml.comments import CommentedSeq
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.util import (

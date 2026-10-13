@@ -1,7 +1,8 @@
 name: AQUA tests
 # Lean feature tests: ubuntu-latest, Python 3.14, FDB container, conda-lock environment.
-# Runs on PRs labelled 'run tests', 'ready for review' or 'ready to merge', on push to main, or manually.
-# Environment/Dependabot checks live in aqua-nightly.yml, release checks in aqua-release.yml.
+# Runs on PRs labelled 'run tests', 'ready for review' or 'ready to merge', on Dependabot PRs, on push to main, or manually.
+# 'aqua-tests / aqua_test (3.14)' is a required check, so it must run (not be skipped) on every Dependabot PR.
+# Dependency bumps are tested against environment.yml in aqua-nightly.yml, release checks live in aqua-release.yml.
 
 on:
   push:
@@ -19,7 +20,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && (
+      (github.event_name == 'pull_request' && (
+        github.event.pull_request.user.login == 'dependabot[bot]' ||
         contains(join(github.event.pull_request.labels.*.name, '|'), 'run tests') ||
         contains(join(github.event.pull_request.labels.*.name, '|'), 'ready for review') ||
         contains(join(github.event.pull_request.labels.*.name, '|'), 'ready to merge')))
@@ -28,12 +30,12 @@ jobs:
       python-versions: '["3.14"]'
       pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
       enable-parallel: true
-      enable-coverage: true
+      enable-coverage: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
       fail-fast: false
       install-mode: 'local'
       test-data-source: 'auto'
     secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
       BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
