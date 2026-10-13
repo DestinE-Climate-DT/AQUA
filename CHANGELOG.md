@@ -11,6 +11,7 @@ ClimateDT workflow modification
 Unreleased in the current development version (target v1.2.1):
 
 - `aqua analysis` checker renamed to setup checker (`--setup_checker`, `run_setup_checker`); `cli_checker.py` removed in favour of the `cli_setup_checker.py` from diagnostics (#3178)
+- Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
 - Hovmoller adjustments and possibility to plot uneven levels (#3203)
 - `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
 - The `aqua analysis ensemble` command now set realization to `ensemble` by default, to avoid falling to the default `r1` (#3192)
@@ -18,7 +19,7 @@ Unreleased in the current development version (target v1.2.1):
 - Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
 - `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
-- Drop support to python 3.12 (#3188)
+- Drop support to python 3.11 (#3188, #3214)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
 - Remove climatedt-phase1 from CI/CD (#3181)
 - Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
