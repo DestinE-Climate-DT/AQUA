@@ -4,13 +4,10 @@
 AQUA catalog operations mixin
 """
 
-import base64
-import json
 import os
 import shutil
 import sys
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from contextlib import nullcontext
 
 import fsspec
 from requests.exceptions import HTTPError as RequestsHTTPError
@@ -19,6 +16,8 @@ from aqua.core.lock import SafeFileLock
 from aqua.core.reader.catalog import show_catalog_content as print_catalog
 from aqua.core.util import dump_yaml, load_yaml
 from aqua.core.util.util import HiddenPrints, to_list
+
+from .github import GitHubAPIRequestTracker, GitHubCatalogFetcher
 
 # folder used for reading/storing catalogs
 CATPATH = "catalogs"
@@ -60,33 +59,6 @@ class CatalogMixin:
             rate_info,
         )
 
-    def _log_github_rate_limit(self, token, username, context):
-        """Log GitHub's core API rate limit using fsspec's Basic authentication."""
-        credentials = base64.b64encode(f"{username}:{token}".encode()).decode()
-        request = Request(
-            "https://api.github.com/rate_limit",
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Basic {credentials}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-        )
-        try:
-            with urlopen(request, timeout=10) as response:
-                rate_limit = json.loads(response.read())
-            core = rate_limit.get("resources", {}).get("core", {})
-            self.logger.debug(
-                "GitHub API core rate limit after %s: used=%s remaining=%s limit=%s",
-                context,
-                core.get("used", "unknown"),
-                core.get("remaining", "unknown"),
-                core.get("limit", "unknown"),
-            )
-        except HTTPError as exc:
-            self.logger.warning("Could not inspect GitHub API rate limit (HTTP %s)", exc.code)
-        except (URLError, json.JSONDecodeError) as exc:
-            self.logger.warning("Could not inspect GitHub API rate limit: %s", exc)
-
     def set(self, args):
         """Set an installed catalog as the one used in the config-aqua.yaml
 
@@ -118,7 +90,8 @@ class CatalogMixin:
             if args.editable is not None:
                 self._add_catalog_editable(args.catalog, args.editable)
             else:
-                self._add_catalog_github(args.catalog, args.repository)
+                with GitHubAPIRequestTracker(self.logger, f"catalog {args.catalog}") as request_tracker:
+                    self._add_catalog_github(args.catalog, args.repository, request_tracker=request_tracker)
 
             with HiddenPrints():
                 print_catalog()
@@ -163,7 +136,7 @@ class CatalogMixin:
             )
             sys.exit(1)
 
-    def _github_explore(self, repository=None):
+    def _github_explore(self, repository=None, request_tracker=None):
         """
         Explore the remote GitHub repository
 
@@ -174,22 +147,9 @@ class CatalogMixin:
         Returns:
             fsspec.filesystem: the filesystem object for the GitHub repository
         """
-        if repository is None:
-            org = "DestinE-Climate-DT"
-            repo = "Climate-DT-catalog"
-        else:
-            try:
-                org, repo = repository.split("/")
-            except ValueError:
-                self.logger.error("Repository should be in the format user/repo, got %s", repository)
-                sys.exit(1)
+        org, repo = self._github_repository_parts(repository)
         try:
-            # Detect if running in GitHub Actions
-            is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
-            token = os.getenv("GITHUB_TOKEN")  # Get GitHub token
-
-            # Use authentication only when running inside GitHub Actions
-            username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+            username, token = self._github_credentials()
             if token and username:
                 auth_kwargs = {"username": username, "token": token}
                 self.logger.info("Using authenticated access to GitHub API.")
@@ -200,12 +160,14 @@ class CatalogMixin:
                     "Consider setting GITHUB_TOKEN and GITHUB_USER environment variables for authenticated access."
                 )
 
-            fs = fsspec.filesystem(
-                "github",
-                org=org,
-                repo=repo,
-                **auth_kwargs,  # Apply authentication if available
-            )
+            stage = request_tracker.stage("GitHub filesystem initialization") if request_tracker else nullcontext()
+            with stage:
+                fs = fsspec.filesystem(
+                    "github",
+                    org=org,
+                    repo=repo,
+                    **auth_kwargs,  # Apply authentication if available
+                )
             self.logger.info("Accessed remote repository https://github.com/%s/%s", org, repo)
             if token and username:
                 self.logger.debug(
@@ -213,12 +175,29 @@ class CatalogMixin:
                     bool(fs.username),
                     bool(fs.token),
                 )
-                self._log_github_rate_limit(token, username, "fsspec filesystem initialization")
         except RequestsHTTPError as exc:
             self._log_github_api_error(exc, f"opening {org}/{repo}")
             sys.exit(1)
 
         return fs
+
+    @staticmethod
+    def _github_credentials():
+        """Return the selected GitHub username and configured token."""
+        is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
+        username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
+        token = os.getenv("GITHUB_TOKEN")
+        return username, token
+
+    def _github_repository_parts(self, repository=None):
+        """Return the owner and repository, using AQUA's standard catalog repository by default."""
+        if repository is None:
+            return "DestinE-Climate-DT", "Climate-DT-catalog"
+        parts = repository.split("/")
+        if len(parts) != 2 or not all(parts):
+            self.logger.error("Repository should be in the format user/repo, got %s", repository)
+            sys.exit(1)
+        return parts[0], parts[1]
 
     def avail(self, args):
         """
@@ -227,17 +206,14 @@ class CatalogMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        fs = self._github_explore(repository=args.repository)
-        available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
-        token = os.getenv("GITHUB_TOKEN")
-        is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
-        username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
-        if token and username:
-            self._log_github_rate_limit(token, username, "catalog listing")
+        with GitHubAPIRequestTracker(self.logger, "catalog availability") as request_tracker:
+            fs = self._github_explore(repository=args.repository, request_tracker=request_tracker)
+            with request_tracker.stage("catalog listing"):
+                available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
         print("Available ClimateDT catalogs at are:")
         print(available_catalog)
 
-    def _add_catalog_github(self, catalog, repository=None):
+    def _add_catalog_github(self, catalog, repository=None, request_tracker=None):
         """
         Add a catalog from a remote Github repository.
         Default repository is the Climate-DT repository
@@ -250,28 +226,39 @@ class CatalogMixin:
         # recursive copy
         cdir = f"{self.configpath}/{CATPATH}/{catalog}"
         if not os.path.exists(cdir):
-            fs = self._github_explore(repository)
-            available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
-            if catalog not in available_catalog:
-                self.logger.error(
-                    "Cannot find on %s the requested catalog %s, available are %s",
-                    repository if repository else "DestinE-Climate-DT/Climate-DT-catalog",
-                    catalog,
-                    available_catalog,
-                )
-                sys.exit(1)
-
-            source_dir = f"{CATPATH}/{catalog}"
-            self.logger.info("Fetching remote catalog %s from github to %s", catalog, cdir)
-            os.makedirs(cdir, exist_ok=True)
-
-            # Single-call (minimal API calls): self._fsspec_get_single_call(fs, source_dir, cdir)
             try:
-                self._fsspec_get_single_call(fs, source_dir, cdir)
+                username, token = self._github_credentials()
+                self.logger.info("Fetching remote catalog %s from github to %s", catalog, cdir)
+                if token and username:
+                    self.logger.info("Using authenticated batched access to GitHub API.")
+                    org, repo = self._github_repository_parts(repository)
+                    available_catalog = GitHubCatalogFetcher(
+                        org, repo, username, token, request_tracker=request_tracker
+                    ).fetch_catalog(catalog, cdir)
+                else:
+                    fs = self._github_explore(repository, request_tracker=request_tracker)
+                    stage = request_tracker.stage("catalog listing") if request_tracker else nullcontext()
+                    with stage:
+                        available_catalog = [os.path.basename(x) for x in fs.ls(f"{CATPATH}/")]
+                    if catalog in available_catalog:
+                        os.makedirs(cdir, exist_ok=True)
+                        source_dir = f"{CATPATH}/{catalog}"
+                        self._fsspec_get_single_call(fs, source_dir, cdir, request_tracker=request_tracker)
+
+                if catalog not in available_catalog:
+                    self.logger.error(
+                        "Cannot find on %s the requested catalog %s, available are %s",
+                        repository if repository else "DestinE-Climate-DT/Climate-DT-catalog",
+                        catalog,
+                        available_catalog,
+                    )
+                    sys.exit(1)
                 self.logger.info("Download complete!")
             except RequestsHTTPError as e:
                 self._log_github_api_error(e, f"fetching catalog {catalog}")
                 sys.exit(1)
+            except SystemExit:
+                raise
             except Exception as e:
                 self.logger.error("Error occurred while fetching catalog: %s", e)
                 sys.exit(1)
@@ -365,7 +352,7 @@ class CatalogMixin:
             self.logger.info("Catalog %s removed, catalogs %s are available", catalog, cfg["catalog"])
             dump_yaml(self.configfile, cfg)
 
-    def _fsspec_get_single_call(self, fs, src_dir, dest_dir):
+    def _fsspec_get_single_call(self, fs, src_dir, dest_dir, request_tracker=None):
         """
         Recursively download a directory and report GitHub API usage after each phase.
 
@@ -378,12 +365,9 @@ class CatalogMixin:
             Remotely copy data from source to dest directory
         """
         # find() may traverse multiple directories, and get() may request each file separately.
-        all_files = fs.find(src_dir, withdirs=False, detail=False)
-        token = os.getenv("GITHUB_TOKEN")
-        is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
-        username = "github-actions" if is_github_actions else os.getenv("GITHUB_USER")
-        if token and username:
-            self._log_github_rate_limit(token, username, "catalog file discovery")
+        stage = request_tracker.stage("catalog file discovery") if request_tracker else nullcontext()
+        with stage:
+            all_files = fs.find(src_dir, withdirs=False, detail=False)
 
         if not all_files:
             self.logger.debug("No files found under %s", src_dir)
@@ -397,6 +381,6 @@ class CatalogMixin:
             dest_paths.append(dest_path)
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
-        fs.get(all_files, dest_paths)
-        if token and username:
-            self._log_github_rate_limit(token, username, "catalog file download")
+        stage = request_tracker.stage("catalog file download") if request_tracker else nullcontext()
+        with stage:
+            fs.get(all_files, dest_paths)
