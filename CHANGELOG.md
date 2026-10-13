@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.1):
 
 - `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
+- Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
 - `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
 - Drop support to python 3.12 (#3188)
