@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.1):
 
 - Hovmoller adjustments and possibility to plot uneven levels (#3203)
+- `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
+- The `aqua analysis ensemble` command now set realization to `ensemble` by default, to avoid falling to the default `r1` (#3192)
+- Split console tests in multiple modules and reintroduce parallel execution (#3199)
+- Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
+- `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
 - Drop support to python 3.12 (#3188)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)

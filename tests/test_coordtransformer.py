@@ -19,7 +19,7 @@ of the above), and the module-level counter_reverse_coordinate().
 import numpy as np
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua.core.data_model import CoordTransformer
 from aqua.core.data_model.coordtransformer import counter_reverse_coordinate

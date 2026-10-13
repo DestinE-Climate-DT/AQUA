@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua.core.catgen import AquaFDBGenerator, get_nested
 from aqua.core.console.catgen import catgen_execute
