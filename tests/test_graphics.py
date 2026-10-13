@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
-from conftest import DPI, LOGLEVEL
+from utils_tests import DPI, LOGLEVEL
 
 from aqua import Reader
 from aqua.core.graphics import (
