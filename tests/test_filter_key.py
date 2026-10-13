@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.exceptions import NoDataError
