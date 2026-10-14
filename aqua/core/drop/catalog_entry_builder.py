@@ -156,13 +156,11 @@ class CatalogEntryBuilder:
         # bounds and other auxiliary variables have no time or no horizontal dimensions
         if not gridtype.time_dims or not gridtype.horizontal_dims:
             return {}
-        horizontal = [dim for dim in data.dims if dim in gridtype.horizontal_dims]
-        time = [dim for dim in data.dims if dim in gridtype.time_dims]
-        vertical = [dim for dim in data.dims if dim == gridtype.mask_dim or dim in gridtype.other_dims]
+        vertical = ([gridtype.mask_dim] if gridtype.mask_dim else []) + gridtype.other_dims
 
         # horizontal dims are never split, to stay aligned with the on-disk chunks (one horizontal slice)
-        chunks = dict.fromkeys(horizontal, -1)
-        slice_bytes = data.dtype.itemsize * math.prod(data.sizes[dim] for dim in horizontal)
+        chunks = dict.fromkeys(gridtype.horizontal_dims, -1)
+        slice_bytes = data.dtype.itemsize * math.prod(data.sizes[dim] for dim in gridtype.horizontal_dims)
 
         # number of horizontal slices fitting in a chunk
         nslices = target // slice_bytes
@@ -171,7 +169,7 @@ class CatalogEntryBuilder:
                 "Horizontal slice of %s (%d bytes) exceeds the chunk target (%d bytes)", data.name, slice_bytes, target
             )
 
-        for dim in time + vertical:
+        for dim in gridtype.time_dims + vertical:
             size = min(data.sizes[dim], max(nslices, 1))
             chunks[dim] = size
             nslices //= size
