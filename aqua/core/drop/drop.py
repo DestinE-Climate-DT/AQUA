@@ -23,6 +23,7 @@ import pandas as pd
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
+from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -84,6 +85,7 @@ class Drop:
         engine="gsv",
         output_format="netcdf",
         zarr_chunks=None,
+        chunk_target=DEFAULT_DROP_CHUNK_TARGET,
         **kwargs,
     ):
         """
@@ -142,6 +144,10 @@ class Drop:
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.
+            chunk_target (str or int, opt): Target size of the read chunks defined in a new catalog
+                                     entry, e.g. '128MiB' or '0.2GiB', or 'auto' for Dask auto chunking.
+                                     Existing entries are not modified.
+                                     Default is DEFAULT_DROP_CHUNK_TARGET ('128MiB').
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -195,6 +201,7 @@ class Drop:
         self.output_format = output_format
         self.compact = compact
         self.zarr_chunks = zarr_chunks
+        self.chunk_target = chunk_target
 
         # whether to regrid before time statistics
         self.regrid_first = regrid_first
@@ -489,7 +496,11 @@ class Drop:
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, output_format=self.output_format, source_grid_name=sgn
+                basedir=self.basedir,
+                catblock=catblock,
+                output_format=self.output_format,
+                source_grid_name=sgn,
+                chunk_target=self.chunk_target,
             )
 
             cat_file["sources"][entry_name] = block

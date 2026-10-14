@@ -3,6 +3,7 @@ import re
 import shutil
 
 import icechunk
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
@@ -82,11 +83,11 @@ class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
 
     @pytest.mark.parametrize(
-        "resolution, frequency, realization, region, stat, source_grid_name, chunks",
+        "resolution, frequency, realization, region, stat, source_grid_name",
         [
-            ("r100", "monthly", "r1", "global", "mean", "lon-lat-r100", {"time": 12, "lat": 180, "lon": 360}),
-            ("r200", "daily", "r1", "global", "mean", "lon-lat", {"time": 365, "lat": 90, "lon": 180}),
-            ("r050s", "monthly", "r4", "europe", "max", "lon-lat", {"time": 12, "lat": 361, "lon": 720}),
+            ("r100", "monthly", "r1", "global", "mean", "lon-lat-r100"),
+            ("r200", "daily", "r1", "global", "mean", "lon-lat"),
+            ("r050s", "monthly", "r4", "europe", "max", "lon-lat"),
         ],
     )
     def test_create_entry_name(
@@ -98,7 +99,6 @@ class TestCatalogEntryBuilder:
         region,
         stat,
         source_grid_name,
-        chunks,
     ):
         """Test creation of entry name."""
         builder = CatalogEntryBuilder(
@@ -128,6 +128,8 @@ class TestCatalogEntryBuilder:
         assert block["driver"] == "netcdf"
         assert block["parameters"].keys() == {"realization", "stat", "region"}
         assert block_zarr["driver"] == "zarr"
+        # no output on disk: chunks cannot be defined
+        assert block["args"]["chunks"] == {}
 
         builder2 = CatalogEntryBuilder(
             catalog="ci",
@@ -146,7 +148,70 @@ class TestCatalogEntryBuilder:
         )
         assert newblock["args"]["urlpath"] == block["args"]["urlpath"]
         assert newblock["parameters"]["realization"]["allowed"] == [realization, "r2"]
-        assert newblock["args"]["chunks"] == chunks
+        # chunks of an existing entry are not modified
+        block["args"]["chunks"] = {"time": 7}
+        newblock = builder2.create_entry_details(basedir=drop_arguments["outdir"], catblock=block)
+        assert newblock["args"]["chunks"] == {"time": 7}
+
+
+class TestOptimalChunks:
+    """Tests for CatalogEntryBuilder.define_optimal_chunks on synthetic DROP outputs."""
+
+    @staticmethod
+    def _write(path, var, dims, sizes, output_format="netcdf"):
+        """Write a lazy-zero variable with the given dims and sizes."""
+        coords = {"time": pd.date_range("2000-01-01", periods=sizes[0], freq="MS")}
+        if "lat" in dims:
+            coords.update(lat=np.linspace(-89.5, 89.5, sizes[dims.index("lat")]))
+            coords.update(lon=np.linspace(0.5, 359.5, sizes[dims.index("lon")]))
+        ds = xr.DataArray(np.zeros(sizes), dims=dims, coords=coords, name=var).to_dataset()
+        if output_format == "zarr":
+            ds.to_zarr(path, mode="w", consolidated=False)
+        else:
+            ds.to_netcdf(path)
+
+    @pytest.fixture
+    def builder(self, drop_arguments):
+        return CatalogEntryBuilder(catalog="ci", **drop_arguments, resolution="r100", frequency="monthly", loglevel=LOGLEVEL)
+
+    @pytest.mark.parametrize(
+        "dims, sizes, chunk_target, expected",
+        [
+            # default case: r100 monthly 2D, the time chunk is capped by the yearly file
+            (("time", "lat", "lon"), (12, 180, 360), "128MiB", {"time": 12, "lat": -1, "lon": -1}),
+            # r100 monthly 3D: vertical levels are split to stay within the target
+            (("time", "level", "lat", "lon"), (12, 75, 180, 360), "128MiB", {"time": 12, "level": 21, "lat": -1, "lon": -1}),
+            (("time", "level", "lat", "lon"), (12, 75, 180, 360), "64MiB", {"time": 12, "level": 10, "lat": -1, "lon": -1}),
+            (("time", "level", "lat", "lon"), (12, 75, 180, 360), "0.2GiB", {"time": 12, "level": 34, "lat": -1, "lon": -1}),
+            # healpix-like 1D horizontal grid
+            (("time", "cell"), (12, 3072), "128MiB", {"time": 12, "cell": -1}),
+            # a single horizontal slice exceeds the target: horizontal dims are never split
+            (("time", "level", "lat", "lon"), (2, 3, 18, 36), 1000, {"time": 1, "level": 1, "lat": -1, "lon": -1}),
+        ],
+    )
+    def test_chunk_size(self, builder, tmp_path, dims, sizes, chunk_target, expected):
+        """Chunks are derived from the size of the data and the target size."""
+        self._write(tmp_path / "var_2000.nc", "var", dims, sizes)
+        chunks = builder.define_optimal_chunks(str(tmp_path / "*.nc"), chunk_target=chunk_target)
+        assert chunks == expected
+
+    @pytest.mark.parametrize("output_format, ext", [("netcdf", ".nc"), ("zarr", ".zarr")])
+    def test_merge_variables(self, builder, tmp_path, output_format, ext):
+        """2D and 3D variables in the same entry share a single chunks dictionary."""
+        for year in (2000, 2001, 2002):
+            self._write(tmp_path / f"tos_{year}{ext}", "tos", ("time", "lat", "lon"), (12, 180, 360), output_format)
+            self._write(
+                tmp_path / f"thetao_{year}{ext}", "thetao", ("time", "level", "lat", "lon"), (12, 75, 180, 360), output_format
+            )
+        # partial first year is ignored, since the file in the middle is sampled
+        self._write(tmp_path / f"tos_1999{ext}", "tos", ("time", "lat", "lon"), (3, 180, 360), output_format)
+
+        chunks = builder.define_optimal_chunks(str(tmp_path / f"*{ext}"), output_format=output_format)
+        assert chunks == {"time": 12, "level": 21, "lat": -1, "lon": -1}
+
+    def test_no_files(self, builder, tmp_path):
+        """No output on disk returns empty chunks."""
+        assert builder.define_optimal_chunks(str(tmp_path / "*.nc")) == {}
 
 
 class TestDROPLevelParameter:
@@ -345,6 +410,10 @@ class TestDROP:
         else:  # zarr
             source_name = "lra-r100-monthly-zarr"
 
+        # monthly files hold a single time step, horizontal dims are kept whole
+        cat_file = load_yaml(os.path.join(test.configdir, "catalogs", test.catalog, "catalog", test.model, test.exp + ".yaml"))
+        assert cat_file["sources"][source_name]["args"]["chunks"] == {"time": 1, "lat": -1, "lon": -1}
+
         # Use Reader to access the newly created source through intake
         reader = Reader(
             catalog="ci",
@@ -520,6 +589,9 @@ class TestDROP:
             ds = xr.open_dataset(feb_path)
         assert len(ds.time) == 1  # Only February data
         assert drop_arguments["var"] in ds.data_vars
+        if output_format == "netcdf":
+            # one on-disk chunk per horizontal slice
+            assert ds[drop_arguments["var"]].encoding["chunksizes"] == (1, 180, 360)
         assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))

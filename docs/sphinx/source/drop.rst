@@ -308,6 +308,7 @@ Controls processing behavior and performance settings:
       overwrite: False
       rebuild: False
       compact: cdo
+      chunk_target: 128MiB
       performance_reporting: False
 
 - **engine** (string, optional): Data retrieval engine. Default: ``fdb``
@@ -361,6 +362,27 @@ Controls processing behavior and performance settings:
   - ``xarray``: Use xarray for concatenation for NetCDF or Zarr
   - ``cdo``: Use Climate Data Operators for NetCDF only. For Zarr, an error is logged and compaction is disabled.
   - ``null`` or omit: No compacting, keep monthly files
+
+- **chunk_target** (string or int, optional): Target size of the Dask chunks used to read the DROP output. Default: ``128MiB``
+
+  - Accepts a Dask size string (e.g. ``64MiB``, ``128MiB``, ``0.2GiB``) or a number of bytes. Available only in the configuration file.
+  - ``auto`` writes ``chunks: auto`` in the catalog entry, leaving the chunking to Dask (see the note below).
+  - Used only when a **new** catalog entry is created: the ``chunks`` of an existing entry are never modified.
+  - One output file per variable is inspected: horizontal dimensions are always kept whole, then time and vertical
+    dimensions are filled until the chunk reaches the target size. The time chunk cannot exceed the length of a single file.
+    If a single horizontal slice is larger than the target, the chunk holds one slice.
+  - NetCDF files are written with one on-disk chunk per horizontal slice (one time step, one level), so read chunks are always aligned.
+
+  .. note::
+
+      Setting ``chunk_target: auto`` (i.e. ``chunks: auto`` in the catalog entry) gives similar chunks for standard grids, since Dask builds them
+      from the on-disk chunks up to ``array.chunk-size`` (default ``128MiB``). The explicit chunks written by DROP differ in that:
+
+      - horizontal dimensions are never split, while ``auto`` splits them when a single slice exceeds the limit,
+        breaking the alignment with the on-disk chunks;
+      - time is filled before vertical levels, while ``auto`` grows all dimensions evenly;
+      - the size is fixed in the catalog entry at DROP time, while with ``auto`` it depends on the Dask configuration
+        of whoever reads the data (``array.chunk-size``, e.g. ``DASK_ARRAY__CHUNK_SIZE=64MiB``).
 
 - **performance_reporting** (bool, optional): Generate Dask performance HTML report. Default: ``False``
 
