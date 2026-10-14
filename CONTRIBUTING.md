@@ -49,9 +49,9 @@ We use conda-lock files to guarantee a fully reproducible environment. Tests use
 environment.
 
 If a new dependency has been added, please make sure to update the `environment.yml` and `pyproject.toml` files.
-In this case you will also need to regenerate the conda-lock files. To do so, add the `conda-lock` label to your Pull Request:
+In this case you will also need to regenerate the conda-lock files. To do so, add the `conda-lock` 🐍 label to your Pull Request:
 this triggers the `conda-relock` workflow on your branch, which regenerates the lock files and opens a new PR
-(`[Conda-Lock] Relock AQUA-core for <your-branch>`) targeting your branch, with the `run tests` label already set.
+(`[Conda-Lock] Relock AQUA-core for <your-branch>`) targeting your branch, with the `run tests` 🏃 label already set.
 If tests in that PR pass, merge it into your branch to update the lockfiles. Remember to remove the label to avoid further triggering of relocking. 
 
 The relock workflow also runs every Monday on `main`, and can be launched manually from the GitHub Actions tab (`workflow_dispatch`), in which case it relocks `main`.
@@ -60,8 +60,8 @@ The relock workflow also runs every Monday on `main`, and can be launched manual
 
 If your Pull Request is a work in progress, please set it to "Draft" mode.
 When your Pull Request is ready to be reviewed, please remove the "Draft" mode.
-A label `run tests` can be added to the Pull Request to activate the CI tests (see [Testing](#testing) for all the test labels).
-A label `ready for review` can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
+A label `run tests` 🏃 can be added to the Pull Request to activate the CI tests (see [Testing](#testing) for all the test labels).
+A label `ready for review` 🏂 can be added to the Pull Request to indicate that it is ready to be reviewed and hopefully merged in the opinion of the author.
 
 Before asking for a review, please make sure to:
 - Be up to date with the `main` branch
@@ -185,12 +185,12 @@ The install modes are:
 
 Tests are not run on every commit, since GitHub Actions hours are limited. They are controlled by PR labels:
 
-| Label (contains) | Effect |
+| Label | Effect |
 |---|---|
-| `run tests`, `ready for review`, `ready to merge` | run `aqua.yml` |
-| `nightly` | run `aqua-nightly.yml` (use it when changing dependencies or platform-specific code) |
-| `release` | run the full `aqua-release.yml` matrix (use it on release PRs) |
-| `conda-lock` | regenerate the lock file (see [Conda-lock](#conda-lock)) |
+| `run tests` 🏃, `ready for review` 🏂, `ready to merge` 🌈 | run `aqua.yml` |
+| `nightly` 🌙 | run `aqua-nightly.yml` (use it when changing dependencies or platform-specific code) |
+| `release` ⛵ | run the full `aqua-release.yml` matrix (use it on release PRs) |
+| `conda-lock` 🐍 | regenerate the lock file (see [Conda-lock](#conda-lock)) |
 
 Once a label is set, the corresponding suite runs again at every push.
 Adding the label triggers a run only for the label just added: adding an unrelated label does not restart running tests.
@@ -230,7 +230,7 @@ Every job uploads an artifact `aqua-test-artifacts-<install-mode>-<platform>-fdb
 Download it from the run page to debug a failure or to compare environments.
 
 When a scheduled or manual run of the Nightly, Release, PyPI or Conda suite fails, `report-failure-reusable.yml`
-opens an issue labelled `ci-failure:<suite> :clown_face:` listing the failed jobs and the broken tests (parsed from `junit.xml`).
+opens an issue labelled `ci-failure:<suite>` 🤡 listing the failed jobs and the broken tests (parsed from `junit.xml`).
 If an open issue with that label already exists, the report is added as a comment instead. Close the issue once the suite is green again.
 
 ### Running tests locally
