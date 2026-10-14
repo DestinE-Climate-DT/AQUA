@@ -1,0 +1,54 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "fesom-hpz3-ifs-fesom-avg-so-historical-1990-r100-monthly-1990-1994-hpz3-lev12",
+  "geometry": null,
+  "properties": {
+    "datetime": null,
+    "start_datetime": "1990-01-01T00:00:00Z",
+    "end_datetime": "1994-12-01T00:00:00Z",
+    "title": "IFS-FESOM_avg_so_historical-1990_r100_monthly_1990-1994_hpz3_lev12.nc",
+    "aqua:model": "FESOM",
+    "aqua:relative_path": "FESOM/hpz3/IFS-FESOM_avg_so_historical-1990_r100_monthly_1990-1994_hpz3_lev12.nc",
+    "aqua:variables": [
+      "avg_so",
+      "healpix"
+    ],
+    "aqua:datetime_source": "NetCDF coordinate time"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collections/fesom.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../../collections/fesom.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./fesom-hpz3-ifs-fesom-avg-so-historical-1990-r100-monthly-1990-1994-hpz3-lev12.json",
+      "type": "application/geo+json"
+    }
+  ],
+  "assets": {
+    "data": {
+      "href": "../../../../AQUA_tests/models/FESOM/hpz3/IFS-FESOM_avg_so_historical-1990_r100_monthly_1990-1994_hpz3_lev12.nc",
+      "title": "IFS-FESOM_avg_so_historical-1990_r100_monthly_1990-1994_hpz3_lev12.nc",
+      "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+      "type": "application/x-netcdf",
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "collection": "fesom"
+}

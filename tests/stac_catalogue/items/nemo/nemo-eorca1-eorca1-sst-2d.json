@@ -1,0 +1,53 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "nemo-eorca1-eorca1-sst-2d",
+  "geometry": null,
+  "properties": {
+    "datetime": null,
+    "start_datetime": "1950-01-01T00:00:00Z",
+    "end_datetime": "1950-06-01T00:00:00Z",
+    "title": "eORCA1_sst_2D.nc",
+    "aqua:model": "NEMO",
+    "aqua:relative_path": "NEMO/eORCA1/eORCA1_sst_2D.nc",
+    "aqua:variables": [
+      "sst"
+    ],
+    "aqua:datetime_source": "NetCDF coordinate time"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collections/nemo.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../../collections/nemo.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./nemo-eorca1-eorca1-sst-2d.json",
+      "type": "application/geo+json"
+    }
+  ],
+  "assets": {
+    "data": {
+      "href": "../../../../AQUA_tests/models/NEMO/eORCA1/eORCA1_sst_2D.nc",
+      "title": "eORCA1_sst_2D.nc",
+      "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+      "type": "application/x-netcdf",
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "collection": "nemo"
+}

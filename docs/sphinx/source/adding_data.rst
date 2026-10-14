@@ -9,8 +9,9 @@ If you need to add data in a new catalog, please refer to :ref:`new-catalog` bef
 
 - To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data.
-  This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
-  or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
+  The source can refer to files directly (:ref:`file-based-sources`), select a NetCDF or Zarr asset
+  through a STAC collection or item (:ref:`stac-based-sources`), or retrieve data from the FDB
+  (:ref:`FDB-based-sources`).
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
 - To exploit the regridding functionalities, you will also need to verify the grid is available in the ``aqua/core/config/grids`` folder
   or to add it (see :ref:`grid_definition`).
@@ -127,6 +128,87 @@ You can add fixes to your dataset by following examples in the ``aqua/core/confi
     The ``netcdf`` and ``zarr`` drivers are provided by AQUA itself
     (``aqua.core.intake_drivers.xarray``), keeping the same catalog syntax as
     the former intake-xarray ones.
+
+.. _stac-based-sources:
+
+STAC-based sources
+------------------
+
+The ``stac`` Intake driver accesses NetCDF or Zarr assets through a STAC
+Collection or Item JSON, supplied as a local path or URL in ``args.urlpath``.
+Relative links inside the JSON are resolved against that document's location.
+Pass xarray options in ``args.xarray_kwargs``, using ``engine: netcdf4`` for
+NetCDF or ``engine: zarr`` for Zarr; set chunk sizes with ``args.chunks``.
+
+For example, add a collection to the top-level ``catalog.yaml`` of an AQUA
+catalog installed as ``stac-example`` (see :ref:`new-catalog`):
+
+.. code-block:: yaml
+
+    sources:
+      ifs:
+        driver: stac
+        args:
+          urlpath: tests/stac_catalogue/collections/ifs.json
+          chunks: {time: 12}
+          xarray_kwargs: {engine: netcdf4}
+        metadata:
+          source_grid_name:
+            ifs-long-regridded-r18x9: lon-lat
+            ifs-short-ifs2d-tco79: tco79
+          fixer_name:
+            ifs-long-regridded-r18x9: ifs-ci-test
+
+This local example requires running from the AQUA repository root with the
+separately downloaded ``AQUA_tests`` directory present. For other datasets,
+replace ``urlpath`` and the metadata with their corresponding values.
+
+In this layout, ``collection``, ``item`` and ``asset`` select the collection
+entry, item ID and asset key. These are aliases for ``model``, ``exp`` and
+``source``, respectively:
+
+.. code-block:: python
+
+    from aqua import Reader
+
+    reader = Reader(catalog="stac-example", collection="ifs",
+                    item="ifs-short-ifs2d-tco79", asset="data", areas=False)
+    data = reader.retrieve()
+
+``source_grid_name`` and ``fixer_name`` may be scalars
+shared by all items or dictionaries keyed by item ID, as above. A missing
+key leaves that setting unspecified.
+Optional ``args.item`` and ``args.asset`` provide default selections when
+accessing the collection directly through Intake.
+
+Alternatively, describe individual items in a nested YAML catalog. Add this
+entry alongside ``ifs`` in the top-level ``sources`` mapping:
+
+.. code-block:: yaml
+
+    ifs-items:
+      driver: yaml_file_cat
+      args:
+        path: "{{CATALOG_DIR}}/catalog/ifs/main.yaml"
+
+In ``catalog/ifs/main.yaml``, point each entry to its Item JSON and specify
+its metadata directly:
+
+.. code-block:: yaml
+
+    sources:
+      ifs-long-regridded-r18x9:
+        driver: stac
+        args:
+          urlpath: tests/stac_catalogue/items/ifs/ifs-long-regridded-r18x9.json
+          xarray_kwargs: {engine: netcdf4}
+        metadata:
+          source_grid_name: lon-lat
+          fixer_name: ifs-ci-test
+
+Use ``Reader(catalog="stac-example", model="ifs-items",
+exp="ifs-long-regridded-r18x9", source="data", areas=False)`` for this entry.
+The YAML item name supplies ``exp``; ``source`` still selects the STAC asset.
 
 .. _FDB-based-sources:
 

@@ -1,0 +1,66 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "icon",
+  "title": "AQUA ICON test data",
+  "description": "ICON low-resolution and HEALPix test datasets.",
+  "license": "proprietary",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          -90.0,
+          180.0,
+          90.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2020-01-21T00:00:00Z",
+          "2020-01-22T00:00:00Z"
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "aqua:model": [
+      "ICON"
+    ],
+    "assets:type": [
+      "application/x-netcdf"
+    ]
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./icon.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "item",
+      "href": "../items/icon/icon-healpix0-healpix-0.json",
+      "type": "application/geo+json",
+      "title": "healpix_0.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/icon/icon-test-lowres-r2b0.json",
+      "type": "application/geo+json",
+      "title": "r2b0.nc"
+    }
+  ]
+}
