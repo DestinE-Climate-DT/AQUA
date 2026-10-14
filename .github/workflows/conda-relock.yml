@@ -16,11 +16,13 @@ permissions:
 
 jobs:
   relock:
+    # Non-PR events always run. On PRs (only 'labeled' events trigger this workflow) run only if the
+    # label just added is 'conda-lock': adding other labels later does not relock again
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
       (github.event_name == 'pull_request' &&
-      contains(join(github.event.pull_request.labels.*.name, '|'), 'conda-lock'))
+        contains(github.event.label.name, 'conda-lock'))
     runs-on: ubuntu-latest
     steps:
       - name: Determine target branch

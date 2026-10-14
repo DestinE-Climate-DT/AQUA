@@ -17,21 +17,28 @@ permissions:
 
 jobs:
   aqua-tests:
+    # Non-PR events (listed first) always run. On PRs:
+    #  - opened/synchronize/reopened: run if the PR is from Dependabot or has a test label
+    #  - labeled: run only if the label just added is a test label, so that adding
+    #    an unrelated label does not restart (and cancel) tests already running
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && (
+      (github.event.action != 'labeled' && (
         github.event.pull_request.user.login == 'dependabot[bot]' ||
         contains(join(github.event.pull_request.labels.*.name, '|'), 'run tests') ||
         contains(join(github.event.pull_request.labels.*.name, '|'), 'ready for review') ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'ready to merge')))
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'ready to merge'))) ||
+      (github.event.action == 'labeled' && (
+        contains(github.event.label.name, 'run tests') ||
+        contains(github.event.label.name, 'ready for review') ||
+        contains(github.event.label.name, 'ready to merge')))
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.14"]'
+      python-version: '3.14'
       pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
       enable-parallel: true
       enable-coverage: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
-      fail-fast: false
       install-mode: 'local'
       test-data-source: 'auto'
     secrets:

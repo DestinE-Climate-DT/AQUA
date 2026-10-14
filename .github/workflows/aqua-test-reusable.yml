@@ -3,11 +3,11 @@ name: AQUA Test Runner (Reusable)
 on:
   workflow_call:
     inputs:
-      python-versions:
-        description: 'JSON array of Python versions to test'
-        required: true
+      python-version:
+        description: 'Python version to test (the caller owns the platform x Python matrix)'
+        required: false
         type: string
-        default: '["3.14"]'
+        default: '3.14'
       platform:
         description: 'GitHub Actions runner label'
         required: false
@@ -28,11 +28,6 @@ on:
         required: false
         type: boolean
         default: true
-      fail-fast:
-        description: 'Stop all jobs if one fails'
-        required: false
-        type: boolean
-        default: false
       install-mode:
         description: >-
           Installation mode: "local" (checkout + conda-lock file with FDB, Linux only),
@@ -85,12 +80,14 @@ defaults:
 
 jobs:
   aqua_test:
+    # Keeps the name of the former Python matrix: 'aqua-tests / aqua_test (3.14)' is a required check
+    name: aqua_test (${{ inputs.python-version }})
     runs-on: ${{ inputs.platform }}
     continue-on-error: false
 
     concurrency:
       # github.event is the caller's event: PR runs cancel superseded runs, other events never do
-      group: aqua-${{ github.event.pull_request.number || github.run_id }}-${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ matrix.python-version }}
+      group: aqua-${{ github.event.pull_request.number || github.run_id }}-${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ inputs.python-version }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
     container:
@@ -99,17 +96,12 @@ jobs:
       image: ${{ inputs.container-image }}
       options: --user root
 
-    strategy:
-      fail-fast: ${{ inputs.fail-fast }}
-      matrix:
-        python-version: ${{ fromJson(inputs.python-versions) }}
-
     env:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
       FDB5_CONFIG_FILE: /app/etc/fdb/config.yaml
       GITHUB_TOKEN: ${{ secrets.AQUA_TOKEN || github.token }}
-      ARTIFACT_SUFFIX: ${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ matrix.python-version }}
+      ARTIFACT_SUFFIX: ${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ inputs.python-version }}
 
     steps:
       # ========================================
@@ -243,7 +235,7 @@ jobs:
           cache-environment: false
           post-cleanup: 'none'
           create-args: >-
-            python=${{ matrix.python-version }}
+            python=${{ inputs.python-version }}
             ${{ steps.resolve.outputs.extra-args }}
 
       # ========================================

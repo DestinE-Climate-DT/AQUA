@@ -19,18 +19,20 @@ jobs:
   aqua-pypi-tests:
     strategy:
       fail-fast: false
+      # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
+      max-parallel: 3
       matrix:
         platform: [ubuntu-latest, macos-latest]
-    name: AQUA PyPI (${{ matrix.platform }})
+        python-version: ['3.12', '3.13', '3.14']
+    name: AQUA PyPI (${{ matrix.platform }}, py${{ matrix.python-version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.12", "3.13", "3.14"]'
+      python-version: ${{ matrix.python-version }}
       pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
       enable-fdb: false
-      fail-fast: false
       install-mode: 'pypi'
       container-image: ''
       test-data-source: 'auto'
