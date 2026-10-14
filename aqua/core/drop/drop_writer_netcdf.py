@@ -10,7 +10,7 @@ import subprocess
 
 import numpy as np
 import xarray as xr
-from smmregrid import GridInspector
+from smmregrid import GridType
 
 from aqua.core.drop.drop_writer_base import BaseWriter
 from aqua.core.util.io_util import file_is_complete
@@ -93,11 +93,11 @@ class NetCDFWriter(BaseWriter):
 
     def _get_chunksizes(self, data):
         """On-disk chunk sizes: whole horizontal dimensions, 1 along all the others."""
-        gridtype = GridInspector(data).get_gridtype()
-        if not gridtype or not gridtype[0].horizontal_dims:
+        horizontal_dims = GridType(dims=data.dims).horizontal_dims
+        if not horizontal_dims:
             self.logger.warning("No horizontal dimensions found for %s, using default netCDF chunking", data.name)
             return None
-        return tuple(size if dim in gridtype[0].horizontal_dims else 1 for dim, size in data.sizes.items())
+        return tuple(size if dim in horizontal_dims else 1 for dim, size in data.sizes.items())
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """

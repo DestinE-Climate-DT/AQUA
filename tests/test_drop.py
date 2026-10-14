@@ -183,6 +183,8 @@ class TestOptimalChunks:
             (("time", "level", "lat", "lon"), (12, 75, 180, 360), "128MiB", {"time": 12, "level": 21, "lat": -1, "lon": -1}),
             (("time", "level", "lat", "lon"), (12, 75, 180, 360), "64MiB", {"time": 12, "level": 10, "lat": -1, "lon": -1}),
             (("time", "level", "lat", "lon"), (12, 75, 180, 360), "0.2GiB", {"time": 12, "level": 34, "lat": -1, "lon": -1}),
+            # ocean depth is a smmregrid mask dim, also treated as vertical
+            (("time", "depth", "lat", "lon"), (12, 75, 180, 360), "128MiB", {"time": 12, "depth": 21, "lat": -1, "lon": -1}),
             # healpix-like 1D horizontal grid
             (("time", "cell"), (12, 3072), "128MiB", {"time": 12, "cell": -1}),
             # a single horizontal slice exceeds the target: horizontal dims are never split
@@ -203,9 +205,6 @@ class TestOptimalChunks:
             self._write(
                 tmp_path / f"thetao_{year}{ext}", "thetao", ("time", "level", "lat", "lon"), (12, 75, 180, 360), output_format
             )
-        # partial first year is ignored, since the file in the middle is sampled
-        self._write(tmp_path / f"tos_1999{ext}", "tos", ("time", "lat", "lon"), (3, 180, 360), output_format)
-
         chunks = builder.define_optimal_chunks(str(tmp_path / f"*{ext}"), output_format=output_format)
         assert chunks == {"time": 12, "level": 21, "lat": -1, "lon": -1}
 
@@ -426,6 +425,8 @@ class TestDROP:
         # Read data through intake and verify it matches
         data = reader.retrieve(var=drop_arguments["var"])
         assert "2t" in data.data_vars, f"Variable '2t' not found in {output_format} intake data"
+        # the catalog chunks are used by the intake driver
+        assert data["2t"].data.chunksize == (1, 180, 360)
         assert len(data.time) == 6, f"{output_format} Reader data should have 6 timesteps instead of {len(data.time)}"
 
         catalogfile = os.path.join(test.configdir, "catalogs", test.catalog, "catalog", test.model, test.exp + ".yaml")

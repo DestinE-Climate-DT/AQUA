@@ -3,11 +3,10 @@
 import glob
 import math
 import os
-from collections import defaultdict
 
 import xarray as xr
 from dask.utils import parse_bytes
-from smmregrid import GridInspector
+from smmregrid import GridType
 
 # default grid name and chunk target size for DROP outputs, if not specified otherwise
 from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET, DEFAULT_DROP_GRID
@@ -105,8 +104,8 @@ class CatalogEntryBuilder:
     def define_optimal_chunks(self, urlpath, output_format="netcdf", chunk_target=DEFAULT_DROP_CHUNK_TARGET):
         """Define the read chunks of DROP outputs from the files already on disk.
 
-        One file per variable is opened lazily (metadata only) to get dimension sizes and dtype.
-        Horizontal dimensions are always kept whole, then time and vertical dimensions are filled
+        The first file (sorted) of each variable is opened lazily (metadata only) to get dimension
+        sizes and dtype. Horizontal dimensions are always kept whole, then time and vertical dimensions are filled
         until a chunk reaches ``chunk_target`` bytes. If a single horizontal slice exceeds the
         target, the chunk holds one slice. The time chunk cannot exceed the length
         of a single file, since xarray.open_mfdataset chunks each file separately.
@@ -133,16 +132,16 @@ class CatalogEntryBuilder:
             self.logger.warning("No DROP output found in %s, leaving chunks undefined", urlpath)
             return {}
 
-        # group the files by variable: the date stamp is the last component of the filename
-        groups = defaultdict(list)
+        # keep the first file of each variable. OutputPathBuilder.build_filename always puts the
+        # date stamp (YYYY, YYYYMM, ...) as the last "_"-separated component, so stripping it with
+        # rsplit leaves a key unique to each variable (and level), without opening the whole dataset
+        samples = {}
         for filename in files:
-            groups[os.path.basename(filename).rsplit("_", 1)[0]].append(filename)
+            samples.setdefault(os.path.basename(filename).rsplit("_", 1)[0], filename)
 
         engine = "zarr" if output_format == "zarr" else None
         chunks = {}
-        for group in groups.values():
-            # pick a file from the middle, to avoid partial years at the edges of the experiment
-            sample = group[len(group) // 2]
+        for sample in samples.values():
             with xr.open_dataset(sample, engine=engine, chunks={}) as ds:
                 for var in ds.data_vars:
                     self._merge_chunks(chunks, self._variable_chunks(ds[var], target))
@@ -152,16 +151,14 @@ class CatalogEntryBuilder:
 
     def _variable_chunks(self, data, target):
         """Chunks of a single variable, filling time then vertical dimensions up to target bytes."""
-        # bounds and other auxiliary variables have no time dimension
-        if "time" not in data.dims:
+        # classify the dimensions with smmregrid: vertical dims are the masked (e.g. depth) and other dims
+        gridtype = GridType(dims=data.dims)
+        # bounds and other auxiliary variables have no time or no horizontal dimensions
+        if not gridtype.time_dims or not gridtype.horizontal_dims:
             return {}
-
-        gridtype = GridInspector(data).get_gridtype()
-        if not gridtype or not gridtype[0].horizontal_dims:
-            self.logger.warning("No horizontal dimensions found for %s, skipping chunk definition", data.name)
-            return {}
-        horizontal = [dim for dim in data.dims if dim in gridtype[0].horizontal_dims]
-        vertical = [dim for dim in data.dims if dim not in horizontal + ["time"]]
+        horizontal = [dim for dim in data.dims if dim in gridtype.horizontal_dims]
+        time = [dim for dim in data.dims if dim in gridtype.time_dims]
+        vertical = [dim for dim in data.dims if dim == gridtype.mask_dim or dim in gridtype.other_dims]
 
         # horizontal dims are never split, to stay aligned with the on-disk chunks (one horizontal slice)
         chunks = dict.fromkeys(horizontal, -1)
@@ -174,7 +171,7 @@ class CatalogEntryBuilder:
                 "Horizontal slice of %s (%d bytes) exceeds the chunk target (%d bytes)", data.name, slice_bytes, target
             )
 
-        for dim in ["time"] + vertical:
+        for dim in time + vertical:
             size = min(data.sizes[dim], max(nslices, 1))
             chunks[dim] = size
             nslices //= size
