@@ -9,8 +9,9 @@ If you need to add data in a new catalog, please refer to :ref:`new-catalog` bef
 
 - To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data.
-  This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
-  or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
+  The source can refer to files directly (:ref:`file-based-sources`), select a NetCDF or Zarr asset
+  through a STAC collection or item (:ref:`stac-based-sources`), or retrieve data from the FDB
+  (:ref:`FDB-based-sources`).
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
 - To exploit the regridding functionalities, you will also need to verify the grid is available in the ``aqua/core/config/grids`` folder
   or to add it (see :ref:`grid_definition`).
@@ -127,6 +128,131 @@ You can add fixes to your dataset by following examples in the ``aqua/core/confi
     The ``netcdf`` and ``zarr`` drivers are provided by AQUA itself
     (``aqua.core.intake_drivers.xarray``), keeping the same catalog syntax as
     the former intake-xarray ones.
+
+.. _stac-based-sources:
+
+STAC-based sources
+------------------
+
+AQUA's ``stac`` Intake driver opens a NetCDF or Zarr asset described by a STAC
+Collection or Item JSON document. The JSON can be a local file or a remote URL.
+Relative links to items and assets are resolved from the document that contains
+them, so a local STAC catalogue can move with its data. The asset format is
+inferred from its media type or URL; ``format: netcdf`` or ``format: zarr`` can
+be set in the driver arguments when needed.
+
+As with other AQUA sources, the Intake YAML catalog must expose the
+``model/exp/source`` hierarchy used by :class:`~aqua.core.reader.reader.Reader`.
+The following example puts STAC sources under a ``stac`` model in a catalog
+installed as ``ci`` (see :ref:`new-catalog`). First, add this entry to the
+catalog's top-level ``catalog.yaml``:
+
+.. code-block:: yaml
+
+    sources:
+      stac:
+        description: STAC test data
+        driver: yaml_file_cat
+        args:
+          path: "{{CATALOG_DIR}}/catalog/stac/catalog.yaml"
+
+Then create ``catalog/stac/catalog.yaml`` with a collection source at the
+``exp`` level. This example uses the local STAC fixtures in the AQUA repository;
+``AQUA_tests`` must be present at the repository root to read the NetCDF assets.
+Run AQUA from that root so the relative ``urlpath`` resolves:
+
+.. code-block:: yaml
+
+    sources:
+      ifs:
+        description: IFS STAC collection
+        driver: stac
+        args:
+          urlpath: tests/stac_catalogue/collections/ifs.json
+          item: ifs-long-regridded-r18x9
+          asset: data
+          chunks:
+            time: 12
+          xarray_kwargs:
+            engine: netcdf4
+        metadata:
+          source_grid_name:
+            ifs-long-regridded-r18x9: lon-lat
+            ifs-short-ifs2d-tco79: tco79
+          fixer_name:
+            ifs-long-regridded-r18x9: ifs-ci-test
+            ifs-short-ifs2d-tco79: false
+
+Here ``item`` and ``asset`` select defaults for the collection source. The
+``source`` argument to ``Reader`` can select another item by its STAC ID:
+
+.. code-block:: python
+
+    from aqua import Reader
+
+    reader = Reader(catalog="ci", model="stac", exp="ifs",
+                    source="ifs-short-ifs2d-tco79", areas=False)
+    dataset = reader.retrieve()
+
+The ``source_grid_name`` and ``fixer_name`` metadata can be dictionaries keyed
+by item ID. AQUA applies the value for the selected item. They can also be
+scalars when every item should use the same value. Other ``stac`` driver
+arguments include ``storage_options`` for fsspec access and ``xarray_kwargs``
+for the xarray reader. For a Zarr asset, for example, set
+``xarray_kwargs: {engine: zarr}`` when that engine is required.
+
+You can also list individual STAC items as YAML sources. Add an entry alongside
+``ifs`` in ``catalog/stac/catalog.yaml``:
+
+.. code-block:: yaml
+
+    ifs-items:
+      description: Individually configured IFS items
+      driver: yaml_file_cat
+      args:
+        path: "{{CATALOG_DIR}}/catalog/ifs/main.yaml"
+
+Then create ``catalog/stac/catalog/ifs/main.yaml``. Each source points directly
+to an Item JSON and can carry its own scalar metadata:
+
+.. code-block:: yaml
+
+    sources:
+      ifs-long-regridded-r18x9:
+        description: Coarse IFS data through a STAC item
+        driver: stac
+        args:
+          urlpath: tests/stac_catalogue/items/ifs/ifs-long-regridded-r18x9.json
+          asset: data
+          chunks:
+            time: 12
+        metadata:
+          source_grid_name: lon-lat
+          fixer_name: ifs-ci-test
+
+Read this item with ``Reader(catalog="ci", model="stac", exp="ifs-items",
+source="ifs-long-regridded-r18x9", areas=False)``. In this layout, the
+``source`` name is the YAML entry for the item; ``asset: data`` selects the
+asset inside its STAC document.
+
+For direct Intake access, a collection exposes item IDs, and an item exposes
+asset keys. Select an item before reading a collection without a default;
+the same syntax overrides the default in the example above. Run this from the
+AQUA repository root, supplying the path to the YAML file created above:
+
+.. code-block:: python
+
+    import intake
+
+    cat = intake.open_catalog("/path/to/catalog/stac/catalog.yaml")
+    print(list(cat["ifs"]))
+    dataset = cat["ifs"]["ifs-short-ifs2d-tco79"]["data"].read()
+    # Equivalent selection through driver arguments:
+    dataset = cat["ifs"](item="ifs-short-ifs2d-tco79", asset="data").read()
+
+For an example STAC catalogue and its generator, see
+``tests/stac_catalogue`` in the AQUA repository. The ``AQUA_tests`` data files
+are downloaded separately for CI and are not part of that repository.
 
 .. _FDB-based-sources:
 

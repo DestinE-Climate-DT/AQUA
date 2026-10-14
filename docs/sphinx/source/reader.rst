@@ -105,6 +105,8 @@ so it is suggested to always specify it when possible.
 
 The basic call enables fixer, area and time average functionalities, but no regridding.
 To have a complete overview of the available options, please check the :doc:`api_reference`.
+For STAC-backed sources, see :ref:`stac-based-sources` for the Intake catalog
+layout and examples of selecting collections, items and assets.
 
 If some information about the data is needed, it is possible to use the ``info()`` method of the ``Reader`` class.
 
