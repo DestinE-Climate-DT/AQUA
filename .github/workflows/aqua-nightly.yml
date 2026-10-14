@@ -18,13 +18,19 @@ permissions:
 
 jobs:
   aqua-nightly-tests:
+    # Non-PR events (listed first) always run. On PRs:
+    #  - opened/synchronize/reopened: run if the PR is a Dependabot pip/conda bump or has the 'nightly' label
+    #  - labeled: run only if the label just added is 'nightly', so that adding
+    #    an unrelated label does not restart (and cancel) tests already running
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
-      (github.event_name == 'pull_request' && (
+      (github.event.action != 'labeled' && (
         startsWith(github.head_ref, 'dependabot/pip/') ||
         startsWith(github.head_ref, 'dependabot/conda/') ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'nightly')))
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'nightly'))) ||
+      (github.event.action == 'labeled' &&
+        contains(github.event.label.name, 'nightly'))
     strategy:
       fail-fast: false
       matrix:
@@ -48,7 +54,7 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.14"]'
+      python-version: '3.14'
       pytest-markers: ${{ matrix.markers }}
       enable-parallel: true
       enable-coverage: false

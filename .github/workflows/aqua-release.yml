@@ -1,6 +1,7 @@
 name: AQUA release
 # Full matrix starting from environment-pypi.yml (conda dependencies only), then installing the local AQUA with pip.
-# Runs on PRs whose label contains 'release' (e.g. 'release :sailboat:') or manually. RedHat is not covered yet.
+# Runs weekly, manually, and on PRs whose label contains 'release' (e.g. 'release :sailboat:'). RedHat is not covered yet.
+# When the scheduled or manual run fails, an issue listing the broken tests is opened (or updated).
 
 on:
   pull_request:
@@ -14,19 +15,29 @@ permissions:
 
 jobs:
   aqua-release-tests:
+    # Non-PR events (listed first) always run. On PRs:
+    #  - opened/synchronize/reopened: run if the PR has the 'release' label
+    #  - labeled: run only if the label just added is 'release', so that adding
+    #    an unrelated label does not restart (and cancel) tests already running
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'release'))
+      github.event_name == 'schedule' ||
+      (github.event.action != 'labeled' &&
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'release')) ||
+      (github.event.action == 'labeled' &&
+        contains(github.event.label.name, 'release'))
     strategy:
       fail-fast: false
+      # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
+      max-parallel: 6
       matrix:
         platform: [ubuntu-22.04, ubuntu-26.04, macos-15, xcode-27]
-    name: AQUA release (${{ matrix.platform }})
+        python-version: ['3.12', '3.13', '3.14']
+    name: AQUA release (${{ matrix.platform }}, py${{ matrix.python-version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.12", "3.13", "3.14"]'
+      python-version: ${{ matrix.python-version }}
       pytest-markers: 'aqua or slow or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
@@ -47,8 +58,7 @@ jobs:
 
   report-failure:
     needs: aqua-release-tests
-    # temporary pull_request instead of workflow to test the issue creation, until we have a better way to test it
-    if: ${{ always() && github.event_name == 'pull_request' && needs.aqua-release-tests.result == 'failure' }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && needs.aqua-release-tests.result == 'failure' }}
     permissions:
       contents: read
       issues: write

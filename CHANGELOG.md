@@ -5,12 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-- Introduction of reusable modular actions to support portable GitHub workflow (#3198)
 ClimateDT workflow modification
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
 
 Unreleased in the current development version (target v1.2.2):
 
+- Introduction of reusable modular actions to support portable GitHub workflow (#3198)
+- CI refinements: `aqua-release.yml` now runs weekly and reports failures only for scheduled/manual runs; one failure label per suite (`ci-failure:<suite> :clown_face:`); callers own the platform x Python matrix with `max-parallel`, `aqua-test-reusable.yml` takes a single `python-version`; on `labeled` events PR workflows check only the label just added, so unrelated labels no longer restart running tests (#3222)
 - `aqua analysis` checker renamed to setup checker (`--setup_checker`, `run_setup_checker`); `cli_checker.py` removed in favour of the `cli_setup_checker.py` from diagnostics (#3178)
 - `plot_timeseries` function now plot same color for monthly and annual ensemble timeseries (#3220)
 - Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
