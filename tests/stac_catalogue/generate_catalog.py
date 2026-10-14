@@ -61,7 +61,8 @@ def variables(ncdump_header: str) -> list[str]:
     )
     coordinate_names = {"time", "time_counter", "lat", "latitude", "lon", "longitude", "lev", "level", "cell", "ncells"}
     return sorted(
-        name for name in declarations
+        name
+        for name in declarations
         if name not in dimension_names and name not in coordinate_names and not name.endswith("_bnds")
     )
 
@@ -164,9 +165,7 @@ def main() -> None:
                 raise RuntimeError(f"Duplicate item id: {item_id}")
             seen_ids.add(item_id)
             item_href = f"../items/{collection_id}/{item_id}.json"
-            collection_links.append(
-                {"rel": "item", "href": item_href, "type": "application/geo+json", "title": path.name}
-            )
+            collection_links.append({"rel": "item", "href": item_href, "type": "application/geo+json", "title": path.name})
             start, end, source, data_variables = metadata[path]
             item_path = OUTPUT / "items" / collection_id / f"{item_id}.json"
             asset_href = Path(os.path.relpath(path, item_path.parent)).as_posix()
