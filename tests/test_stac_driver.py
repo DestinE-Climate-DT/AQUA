@@ -433,7 +433,7 @@ def test_backend_factory_stac_metadata_dict(sample_stac_collection_path):
     """Test BackendFactory.get_metadata resolves dict-based fixer_name and source_grid_name per item for STAC."""
     configurer = ConfigContext()
     factory = BackendFactory(configurer=configurer, model="ifs", exp="item1", source="data")
-    factory.driver = "stac"
+    factory.backend_type = "intake_stac"
 
     # Case 1: Real IntakeSTACSource with item_name matching a key in the dictionary
     stac_source = IntakeSTACSource(urlpath=sample_stac_collection_path, item="ifs-short-ifs2d-tco79", asset="data")
@@ -482,7 +482,7 @@ def test_backend_factory_stac_metadata_dict(sample_stac_collection_path):
     assert grid == "arg-grid"
 
     # Case 6: Non-stac driver does not resolve dictionaries by item
-    factory.driver = "netcdf"
+    factory.backend_type = "intake_netcdf"
     fixer, grid, conv, dm = factory.get_metadata()
     assert fixer == factory.metadata["fixer_name"]
     assert grid == factory.metadata["source_grid_name"]
