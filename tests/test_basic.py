@@ -38,7 +38,7 @@ class TestAqua:
         """
         Test collection, item, asset synonyms in Reader
         """
-        reader = Reader(collection="FESOM", item="test-pi", asset="original_2d", fix=False, loglevel=loglevel)
+        reader = Reader(collection="FESOM", item="test-pi", asset="original_2d", fix=False, loglevel=LOGLEVEL)
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
