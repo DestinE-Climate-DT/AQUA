@@ -1,0 +1,180 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "fesom",
+  "title": "AQUA FESOM test data",
+  "description": "IFS-FESOM model and derived-result test datasets.",
+  "license": "proprietary",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          -90.0,
+          180.0,
+          90.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1985-12-31T23:45:00Z",
+          "2019-12-01T00:00:00Z"
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "aqua:model": [
+      "FESOM"
+    ],
+    "assets:type": [
+      "application/x-netcdf"
+    ]
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./fesom.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-hpz3-ifs-fesom-avg-siconc-historical-1990-r100-monthly-1990-1994-hpz3.json",
+      "type": "application/geo+json",
+      "title": "IFS-FESOM_avg_siconc_historical-1990_r100_monthly_1990-1994_hpz3.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-hpz3-ifs-fesom-avg-sithick-historical-1990-r100-monthly-1990-1994-hpz3.json",
+      "type": "application/geo+json",
+      "title": "IFS-FESOM_avg_sithick_historical-1990_r100_monthly_1990-1994_hpz3.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-hpz3-ifs-fesom-avg-so-historical-1990-r100-monthly-1990-1994-hpz3-lev12.json",
+      "type": "application/geo+json",
+      "title": "IFS-FESOM_avg_so_historical-1990_r100_monthly_1990-1994_hpz3_lev12.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-hpz3-ifs-fesom-avg-thetao-historical-1990-r100-monthly-1990-1994-hpz3-lev12.json",
+      "type": "application/geo+json",
+      "title": "IFS-FESOM_avg_thetao_historical-1990_r100_monthly_1990-1994_hpz3_lev12.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-results-atmglobalmean-statistics-maps-2t-ifs-fesom-historical-1990.json",
+      "type": "application/geo+json",
+      "title": "atmglobalmean.statistics_maps.2t.IFS-FESOM_historical-1990.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-results-global-time-series-timeseries-2t-ifs-fesom-historical-1990-mon.json",
+      "type": "application/geo+json",
+      "title": "global_time_series_timeseries_2t_IFS-FESOM_historical-1990_mon.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-mld2-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "MLD2.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-mld2-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "MLD2.fesom.1986.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-a-ice-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "a_ice.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-a-ice-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "a_ice.fesom.1986.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-filtered.json",
+      "type": "application/geo+json",
+      "title": "filtered.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-sst-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "sst.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-sst-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "sst.fesom.1986.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-temp-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "temp.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-temp-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "temp.fesom.1986.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-u-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "u.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-u-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "u.fesom.1986.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-v-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "v.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-v-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "v.fesom.1986.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-w-fesom-1985.json",
+      "type": "application/geo+json",
+      "title": "w.fesom.1985.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/fesom/fesom-short-w-fesom-1986.json",
+      "type": "application/geo+json",
+      "title": "w.fesom.1986.nc"
+    }
+  ]
+}

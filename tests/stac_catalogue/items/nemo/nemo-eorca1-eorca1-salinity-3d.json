@@ -1,0 +1,51 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "nemo-eorca1-eorca1-salinity-3d",
+  "geometry": null,
+  "properties": {
+    "datetime": "2025-06-05T09:18:30Z",
+    "title": "eORCA1_salinity_3D.nc",
+    "aqua:model": "NEMO",
+    "aqua:relative_path": "NEMO/eORCA1/eORCA1_salinity_3D.nc",
+    "aqua:variables": [
+      "avg_so"
+    ],
+    "aqua:datetime_source": "file modification-time fallback"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collections/nemo.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../../collections/nemo.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./nemo-eorca1-eorca1-salinity-3d.json",
+      "type": "application/geo+json"
+    }
+  ],
+  "assets": {
+    "data": {
+      "href": "../../../../AQUA_tests/models/NEMO/eORCA1/eORCA1_salinity_3D.nc",
+      "title": "eORCA1_salinity_3D.nc",
+      "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+      "type": "application/x-netcdf",
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "collection": "nemo"
+}

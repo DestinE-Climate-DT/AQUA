@@ -1,0 +1,53 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "fesom-results-global-time-series-timeseries-2t-ifs-fesom-historical-1990-mon",
+  "geometry": null,
+  "properties": {
+    "datetime": null,
+    "start_datetime": "1990-01-01T00:00:00Z",
+    "end_datetime": "2019-12-01T00:00:00Z",
+    "title": "global_time_series_timeseries_2t_IFS-FESOM_historical-1990_mon.nc",
+    "aqua:model": "FESOM",
+    "aqua:relative_path": "FESOM/results/global_time_series_timeseries_2t_IFS-FESOM_historical-1990_mon.nc",
+    "aqua:variables": [
+      "2t"
+    ],
+    "aqua:datetime_source": "NetCDF coordinate time"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collections/fesom.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../../collections/fesom.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./fesom-results-global-time-series-timeseries-2t-ifs-fesom-historical-1990-mon.json",
+      "type": "application/geo+json"
+    }
+  ],
+  "assets": {
+    "data": {
+      "href": "../../../../AQUA_tests/models/FESOM/results/global_time_series_timeseries_2t_IFS-FESOM_historical-1990_mon.nc",
+      "title": "global_time_series_timeseries_2t_IFS-FESOM_historical-1990_mon.nc",
+      "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+      "type": "application/x-netcdf",
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "collection": "fesom"
+}

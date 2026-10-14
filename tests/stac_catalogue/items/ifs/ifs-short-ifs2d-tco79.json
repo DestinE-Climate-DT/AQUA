@@ -1,0 +1,53 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "ifs-short-ifs2d-tco79",
+  "geometry": null,
+  "properties": {
+    "datetime": null,
+    "start_datetime": "2020-01-20T00:00:00Z",
+    "end_datetime": "2020-01-20T01:00:00Z",
+    "title": "IFS2d.tco79.nc",
+    "aqua:model": "IFS",
+    "aqua:relative_path": "IFS/short/IFS2d.tco79.nc",
+    "aqua:variables": [
+      "2t"
+    ],
+    "aqua:datetime_source": "NetCDF coordinate time"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collections/ifs.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../../collections/ifs.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./ifs-short-ifs2d-tco79.json",
+      "type": "application/geo+json"
+    }
+  ],
+  "assets": {
+    "data": {
+      "href": "../../../../AQUA_tests/models/IFS/short/IFS2d.tco79.nc",
+      "title": "IFS2d.tco79.nc",
+      "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+      "type": "application/x-netcdf",
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "collection": "ifs"
+}
