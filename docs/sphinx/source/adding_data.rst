@@ -158,7 +158,6 @@ catalog installed as ``stac-example`` (see :ref:`new-catalog`):
             ifs-short-ifs2d-tco79: tco79
           fixer_name:
             ifs-long-regridded-r18x9: ifs-ci-test
-            ifs-short-ifs2d-tco79: false
 
 This local example requires running from the AQUA repository root with the
 separately downloaded ``AQUA_tests`` directory present. For other datasets,
@@ -178,7 +177,7 @@ entry, item ID and asset key. These are aliases for ``model``, ``exp`` and
 
 ``source_grid_name`` and ``fixer_name`` may be scalars
 shared by all items or dictionaries keyed by item ID, as above. A missing
-key leaves that setting unspecified; ``fixer_name: false`` disables fixing.
+key leaves that setting unspecified.
 Optional ``args.item`` and ``args.asset`` provide default selections when
 accessing the collection directly through Intake.
 
