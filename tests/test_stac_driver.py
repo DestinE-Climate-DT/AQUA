@@ -10,6 +10,7 @@ import pytest
 import xarray as xr
 
 from aqua.core.backend import BackendFactory
+from aqua.core.backend.catalog_mixin import CatalogMixin
 from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
 
@@ -65,6 +66,9 @@ def test_stac_read_netcdf(sample_stac_netcdf_path):
     # Read chunked (to_dask)
     ds_dask = source.to_dask()
     assert isinstance(ds_dask, xr.Dataset)
+
+    with pytest.raises(KeyError, match="Asset 'missing' not found"):
+        source["missing"]
 
 
 @pytest.mark.aqua
@@ -162,6 +166,28 @@ def test_stac_asset_selection_errors(tmp_path):
     with pytest.raises(KeyError, match="Asset 'missing' not found"):
         IntakeSTACSource(urlpath=str(json_path2), asset="missing")
 
+    assert IntakeSTACSource(urlpath=str(json_path2)).asset_name == "preview"
+
+    role_path = tmp_path / "item_with_roles.json"
+    role_path.write_text(
+        json.dumps(
+            {
+                "id": "role-item",
+                "type": "Feature",
+                "assets": {
+                    "preview": {"href": "preview.png", "roles": ["thumbnail"]},
+                    "primary": {"href": "data.nc", "roles": ["data"]},
+                },
+            }
+        )
+    )
+    assert IntakeSTACSource(urlpath=str(role_path)).asset_name == "primary"
+
+    missing_href_path = tmp_path / "item_missing_href.json"
+    missing_href_path.write_text(json.dumps({"id": "missing-href", "type": "Feature", "assets": {"data": {}}}))
+    with pytest.raises(ValueError, match="has no 'href'"):
+        IntakeSTACSource(urlpath=str(missing_href_path))
+
 
 @pytest.mark.aqua
 def test_stac_read_collection(sample_stac_collection_path):
@@ -196,6 +222,8 @@ def test_stac_collection_missing_item_error(sample_stac_collection_path):
     assert "ifs-short-ifs2d-tco79" in source.keys()
     with pytest.raises(ValueError, match="cannot be read directly"):
         source.read()
+    with pytest.raises(ValueError, match="cannot be read directly"):
+        source.to_dask()
 
 
 @pytest.mark.aqua
@@ -206,6 +234,8 @@ def test_stac_collection_unknown_item_error(sample_stac_collection_path):
             urlpath=sample_stac_collection_path,
             item="non-existent-item",
         )
+    with pytest.raises(KeyError, match="Item 'non-existent-item' not found in STAC collection"):
+        IntakeSTACSource(urlpath=sample_stac_collection_path)["non-existent-item"]
 
 
 @pytest.mark.aqua
@@ -384,6 +414,8 @@ def test_stac_collection_child_links_and_roles(tmp_path):
     # 2. Select item by title and asset by key
     item_source = IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="preview")
     assert item_source.asset_name == "preview"
+    assert item_source["preview"] is item_source
+    assert item_source["dkrz-disk"].asset_name == "dkrz-disk"
 
     # 3. Role-based matching: unique role 'thumbnail' matches 'preview'
     item_source_role = IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="thumbnail")
@@ -392,6 +424,40 @@ def test_stac_collection_child_links_and_roles(tmp_path):
     # 4. Ambiguous role 'data' raises informative KeyError with available assets
     with pytest.raises(KeyError, match="matches multiple assets by role"):
         IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="data")
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("link_style", ["items", "unlinked"])
+def test_stac_collection_item_fallbacks(tmp_path, link_style):
+    """Resolve items from a STAC API items link or a sibling item file."""
+    item_id = "fallback-item"
+    if link_style == "items":
+        item_dir = tmp_path / "items"
+        item_dir.mkdir()
+        item_path = item_dir / item_id
+        links = [{"rel": "items", "href": "./items"}]
+    else:
+        item_path = tmp_path / f"{item_id}.json"
+        links = []
+
+    item_path.write_text(
+        json.dumps(
+            {
+                "id": item_id,
+                "type": "Feature",
+                "stac_version": "1.0.0",
+                "properties": {"title": "Fallback item"},
+                "assets": {"data": {"href": "data.nc", "type": "application/x-netcdf"}},
+            }
+        )
+    )
+    collection_path = tmp_path / "collection.json"
+    collection_path.write_text(json.dumps({"id": "fallback", "type": "Collection", "links": links}))
+
+    source = IntakeSTACSource(urlpath=str(collection_path), item=item_id)
+    assert source.item_base_urlpath == str(item_path)
+    assert source.metadata["id"] == item_id
+    assert source.asset_name == "data"
 
 
 @pytest.mark.aqua
@@ -409,23 +475,88 @@ def test_stac_entries_interface(sample_stac_collection_path):
     assert entry.name == "ifs-short-ifs2d-tco79"
     assert entry._driver == "stac"
     assert entry._user_parameters == []
+    assert entry.describe()["driver"] == "stac"
 
     # Instantiating through entry() returns child item source
     item_source = entry()
     assert item_source.item_name == "ifs-short-ifs2d-tco79"
     assert hasattr(item_source, "_entries")
+    assert "data" in item_source
 
     # Item level _entries lists assets
     assert "data" in item_source._entries
     asset_entry = item_source._entries["data"]
     assert asset_entry.name == "data"
     assert asset_entry._driver == "stac"
+    assert asset_entry.describe()["description"] == "STAC asset data"
 
     # Calling asset_entry() with kwargs returns instantiated asset source
     asset_source = asset_entry(chunks={"time": 1})
     assert asset_source.asset_name == "data"
     assert asset_source.extra_kwargs.get("chunks") == {"time": 1}
     assert getattr(asset_source, "_entry", None) is not None
+
+
+@pytest.mark.aqua
+def test_stac_source_reselects_item(sample_stac_collection_path):
+    """A collection source can select an item and describe its available assets."""
+    collection = IntakeSTACSource(urlpath=sample_stac_collection_path)
+    assert collection() is collection
+    assert "ifs-short-ifs2d-tco79" in collection.describe()["available_items"]
+
+    item = collection(item="ifs-short-ifs2d-tco79", asset="data")
+    assert item.item_name == "ifs-short-ifs2d-tco79"
+    assert item.asset_name == "data"
+    assert item.describe()["available_assets"] == ["data"]
+
+
+@pytest.mark.aqua
+def test_backend_factory_stac_aliases():
+    """STAC naming aliases stay in sync with the established backend selectors."""
+    factory = BackendFactory(configurer=ConfigContext(), collection="IFS", item="test-tco79", asset="short")
+    assert (factory.model, factory.exp, factory.source) == ("IFS", "test-tco79", "short")
+
+    factory.collection = "NEMO"
+    factory.item = "eorca1"
+    factory.asset = "sst"
+    assert (factory.model, factory.exp, factory.source) == ("NEMO", "eorca1", "sst")
+    assert (factory.collection, factory.item, factory.asset) == ("NEMO", "eorca1", "sst")
+
+    same_values = BackendFactory(
+        configurer=ConfigContext(),
+        model="IFS",
+        exp="test-tco79",
+        source="short",
+        collection="IFS",
+        item="test-tco79",
+        asset="short",
+    )
+    assert (same_values.collection, same_values.item, same_values.asset) == ("IFS", "test-tco79", "short")
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
+    ("canonical", "alias"),
+    [("model", "collection"), ("exp", "item"), ("source", "asset")],
+)
+def test_backend_factory_rejects_conflicting_stac_aliases(canonical, alias):
+    """Do not silently choose between conflicting selector names."""
+    selectors = {"model": "IFS", "exp": "test-tco79", "source": "short", alias: "different"}
+    with pytest.raises(ValueError, match=f"Conflicting values provided for {canonical}"):
+        BackendFactory(configurer=ConfigContext(), **selectors)
+
+
+@pytest.mark.aqua
+def test_catalog_mixin_stac_aliases():
+    """Changing an Intake backend alias updates its canonical selector."""
+    backend = CatalogMixin()
+    backend.model, backend.exp, backend.source = "IFS", "test-tco79", "short"
+    assert (backend.collection, backend.item, backend.asset) == ("IFS", "test-tco79", "short")
+
+    backend.collection = "NEMO"
+    backend.item = "eorca1"
+    backend.asset = "sst"
+    assert (backend.model, backend.exp, backend.source) == ("NEMO", "eorca1", "sst")
 
 
 @pytest.mark.aqua
