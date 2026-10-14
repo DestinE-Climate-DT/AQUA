@@ -38,7 +38,6 @@ def mock_plugin_entrypoint(monkeypatch):
         discover_aqua_components.cache_clear()
 
 
-@pytest.mark.aqua
 @pytest.mark.console
 class TestComponentResolution:
     """Tests for plugin discovery helpers in components.py."""
@@ -82,7 +81,6 @@ class TestComponentResolution:
         assert components["core"]["config_dirs"] != ["mock_config"]
 
 
-@pytest.mark.aqua
 @pytest.mark.console
 class TestPluginInstall:
     """Tests exercising AquaConsole.install()/update() with a fake registered plugin"""

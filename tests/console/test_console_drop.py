@@ -8,7 +8,7 @@ from aqua.core.util import dump_yaml
 
 MACHINE = "github"
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = pytest.mark.console
 
 
 def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input):

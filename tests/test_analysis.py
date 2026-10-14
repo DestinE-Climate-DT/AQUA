@@ -21,7 +21,7 @@ from aqua.core.analysis import Analysis
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.util import dump_yaml, load_yaml
 
-pytestmark = pytest.mark.aqua
+pytestmark = pytest.mark.console
 
 
 # ======================================================================

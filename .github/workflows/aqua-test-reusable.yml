@@ -14,10 +14,10 @@ on:
         type: string
         default: 'ubuntu-latest'
       pytest-markers:
-        description: 'Pytest markers to run (e.g., "aqua or slow")'
+        description: 'Pytest markers to run (e.g., "aqua or console")'
         required: true
         type: string
-        default: 'aqua or slow or fdb or graphics or catgen'
+        default: 'aqua or console or fdb or graphics or catgen'
       enable-parallel:
         description: 'Enable pytest-xdist parallel execution'
         required: false
