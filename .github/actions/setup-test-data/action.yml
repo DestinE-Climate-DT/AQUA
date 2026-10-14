@@ -1,0 +1,116 @@
+name: Set up AQUA test data
+description: Pull test data from DVC, optionally falling back to HTTP.
+inputs:
+  data-source:
+    description: 'Data source mode: dvc, http, or auto.'
+    required: true
+  dvc-repository-path:
+    description: Workspace-relative path to the checked-out DVC repository.
+    required: false
+    default: aqua-dvc
+  dvc-remote:
+    description: DVC remote to configure.
+    required: false
+    default: ecmwf_climatedt
+  dvc-data-glob:
+    description: Shell glob of DVC data directories or files to pull, relative to the DVC repository.
+    required: false
+    default: data-tests/*
+  dvc-connect-timeout-seconds:
+    description: DVC remote connection timeout in seconds.
+    required: false
+    default: '300'
+  test-data-path:
+    description: Workspace-relative destination for the test data.
+    required: false
+    default: AQUA/AQUA_tests
+  http-url:
+    description: HTTP directory used in http mode or as the auto-mode fallback.
+    required: false
+    default: http://wilma.to.isac.cnr.it/paolo/aqua-tests/data-tests/
+  dvc-pem:
+    description: PEM certificate used to verify the DVC remote.
+    required: false
+  aws-access-key-id:
+    description: AWS access key for the DVC remote.
+    required: false
+  aws-secret-access-key:
+    description: AWS secret key for the DVC remote.
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Validate data source
+      shell: bash -l -eo pipefail {0}
+      env:
+        DATA_SOURCE: ${{ inputs.data-source }}
+      run: |
+        case "$DATA_SOURCE" in
+          dvc|http|auto) ;;
+          *) echo "::error::Unsupported test-data source '$DATA_SOURCE' (expected dvc, http, or auto)"; exit 1 ;;
+        esac
+
+    - name: Configure DVC remote credentials
+      if: ${{ inputs.data-source == 'dvc' || inputs.data-source == 'auto' }}
+      shell: bash -l -eo pipefail {0}
+      working-directory: ${{ inputs.dvc-repository-path }}
+      env:
+        DVC_REMOTE: ${{ inputs.dvc-remote }}
+        DVC_CONNECT_TIMEOUT_SECONDS: ${{ inputs.dvc-connect-timeout-seconds }}
+        DVC_PEM: ${{ inputs.dvc-pem }}
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+      run: |
+        if [[ ! "$DVC_CONNECT_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
+          echo "::error::DVC connection timeout must be a positive integer number of seconds"
+          exit 1
+        fi
+        mkdir -p "$HOME/.aws"
+        printf '%s\n' "$DVC_PEM" > "$HOME/.aws/harica-root.pem"
+        chmod 600 "$HOME/.aws/harica-root.pem"
+        dvc remote modify --local "$DVC_REMOTE" ssl_verify "$HOME/.aws/harica-root.pem"
+        dvc remote modify --local "$DVC_REMOTE" connect_timeout "$DVC_CONNECT_TIMEOUT_SECONDS"
+        dvc config --local cache.dir "$HOME/.dvc/cache"
+        cat > "$HOME/.aws/credentials" <<EOF
+        [$DVC_REMOTE]
+        aws_access_key_id = $AWS_ACCESS_KEY_ID
+        aws_secret_access_key = $AWS_SECRET_ACCESS_KEY
+        EOF
+
+    - name: Pull DVC data and move it into the test tree
+      id: dvc-pull
+      if: ${{ inputs.data-source == 'dvc' || inputs.data-source == 'auto' }}
+      continue-on-error: ${{ inputs.data-source == 'auto' }}
+      shell: bash -l -eo pipefail {0}
+      working-directory: ${{ inputs.dvc-repository-path }}
+      env:
+        DVC_DATA_GLOB: ${{ inputs.dvc-data-glob }}
+        TEST_DATA_PATH: ${{ inputs.test-data-path }}
+      run: |
+        git checkout main
+        dvc pull -j 2 -R $DVC_DATA_GLOB
+        destination="$GITHUB_WORKSPACE/$TEST_DATA_PATH"
+        mkdir -p "$destination"
+        shopt -s nullglob
+        data_paths=( $DVC_DATA_GLOB )
+        if ((${#data_paths[@]} == 0)); then
+          echo "::error::DVC data pattern '$DVC_DATA_GLOB' matched no paths"
+          exit 1
+        fi
+        mv "${data_paths[@]}" "$destination"
+
+    - name: Download test data via HTTP
+      if: ${{ inputs.data-source == 'http' || (inputs.data-source == 'auto' && steps.dvc-pull.outcome == 'failure') }}
+      shell: bash -l -eo pipefail {0}
+      env:
+        HTTP_URL: ${{ inputs.http-url }}
+        TEST_DATA_PATH: ${{ inputs.test-data-path }}
+      run: |
+        echo "========================================"
+        echo "Downloading test data from HTTP source"
+        echo "========================================"
+        destination="$GITHUB_WORKSPACE/$TEST_DATA_PATH"
+        mkdir -p "$destination"
+        cd "$destination"
+        wget -nv -r -np -nH -R "index.html*" --cut-dirs=3 "$HTTP_URL"
+        echo "Test data downloaded"

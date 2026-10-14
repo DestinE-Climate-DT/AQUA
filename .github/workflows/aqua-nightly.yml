@@ -1,6 +1,7 @@
 name: AQUA nightly
 # Builds the environment from environment.yml (no lock file) to catch dependency breakages.
-# Runs nightly, manually, on Dependabot PRs, and on PRs whose label contains 'nightly'.
+# Runs nightly, manually, on Dependabot pip/conda PRs, and on PRs whose label contains 'nightly'.
+# Other Dependabot PRs (github-actions, pre-commit) do not change the environment and only need aqua.yml/ruff.
 # The 'ubuntu-latest (FDB container)' entry runs inside the FDB container to check the FDB installation.
 # When the scheduled run fails, an issue listing the broken tests is opened (or updated).
 
@@ -17,13 +18,19 @@ permissions:
 
 jobs:
   aqua-nightly-tests:
+    # Non-PR events (listed first) always run. On PRs:
+    #  - opened/synchronize/reopened: run if the PR is a Dependabot pip/conda bump or has the 'nightly' label
+    #  - labeled: run only if the label just added is 'nightly', so that adding
+    #    an unrelated label does not restart (and cancel) tests already running
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
-      (github.event_name == 'pull_request' && (
-        github.actor == 'dependabot[bot]' ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'dependabot') ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'nightly')))
+      (github.event.action != 'labeled' && (
+        startsWith(github.head_ref, 'dependabot/pip/') ||
+        startsWith(github.head_ref, 'dependabot/conda/') ||
+        contains(join(github.event.pull_request.labels.*.name, '|'), 'nightly'))) ||
+      (github.event.action == 'labeled' &&
+        contains(github.event.label.name, 'nightly'))
     strategy:
       fail-fast: false
       matrix:
@@ -47,17 +54,17 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.14"]'
+      python-version: '3.14'
       pytest-markers: ${{ matrix.markers }}
       enable-parallel: true
       enable-coverage: false
-      fail-fast: false
       enable-fdb: ${{ matrix.fdb }}
       container-image: ${{ matrix.container }}
       install-mode: 'environment'
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
       BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

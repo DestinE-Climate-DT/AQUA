@@ -19,23 +19,26 @@ jobs:
   aqua-conda-tests:
     strategy:
       fail-fast: false
+      # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
+      max-parallel: 3
       matrix:
         platform: [ubuntu-latest, macos-latest]
-    name: AQUA Conda (${{ matrix.platform }})
+        python-version: ['3.12', '3.13', '3.14']
+    name: AQUA Conda (${{ matrix.platform }}, py${{ matrix.python-version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       platform: ${{ matrix.platform }}
-      python-versions: '["3.12", "3.13", "3.14"]'
+      python-version: ${{ matrix.python-version }}
       pytest-markers: 'aqua or slow or graphics or catgen'
       enable-parallel: true
       enable-coverage: false
-      fail-fast: false
       install-mode: 'conda'
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
       BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

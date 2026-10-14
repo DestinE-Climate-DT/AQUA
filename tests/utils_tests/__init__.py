@@ -2,4 +2,8 @@
 
 from .cleanup import TestCleanupRegistry
 
-__all__ = ['TestCleanupRegistry']
+DPI = 50
+APPROX_REL = 1e-4
+LOGLEVEL = "DEBUG"
+
+__all__ = ["APPROX_REL", "DPI", "LOGLEVEL", "TestCleanupRegistry"]

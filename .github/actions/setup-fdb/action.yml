@@ -1,0 +1,29 @@
+name: Set up FDB
+description: Configure FDB with AQUA test fixtures and run a smoke test.
+inputs:
+  test-data-path:
+    description: Workspace-relative path to AQUA test data.
+    required: false
+    default: AQUA/AQUA_tests
+  fdb-root:
+    description: FDB installation and local root directory.
+    required: false
+    default: /app
+runs:
+  using: composite
+  steps:
+    - name: Configure and verify FDB
+      shell: bash -l -eo pipefail {0}
+      env:
+        TEST_DATA_PATH: ${{ inputs.test-data-path }}
+        FDB_ROOT: ${{ inputs.fdb-root }}
+      run: |
+        rm -rf "$FDB_ROOT"
+        cp -r "$GITHUB_WORKSPACE/$TEST_DATA_PATH/fdb/" "$FDB_ROOT/"
+        mkdir -p "$FDB_ROOT/localroot"
+        cd "$FDB_ROOT"
+        fdb-write sample_test_data.grib
+        fdb-write sample_test_data_d1.grib
+        fdb-list class=ea,expver=0001
+        fdb-read sample_test_data_fdb_request test.grib
+        grib_dump test.grib

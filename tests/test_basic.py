@@ -1,38 +1,10 @@
 import numpy as np
 import pytest
-from conftest import APPROX_REL, LOGLEVEL
+from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
 from aqua.core.backend.backend import Backend
 from aqua.core.exceptions import NoRegridError
-
-approx_rel = APPROX_REL
-loglevel = LOGLEVEL
-
-
-@pytest.fixture(scope="module")
-def reader_instance(fesom_test_pi_original_2d_r200_fixfalse_reader):
-    return fesom_test_pi_original_2d_r200_fixfalse_reader
-
-
-@pytest.fixture(scope="module")
-def data(fesom_test_pi_original_2d_r200_fixfalse_data):
-    return fesom_test_pi_original_2d_r200_fixfalse_data
-
-
-@pytest.fixture(scope="module")
-def reader_ifs_tco79_long(ifs_tco79_long_reader):
-    return ifs_tco79_long_reader
-
-
-@pytest.fixture(scope="module")
-def reader_nemo_short_3d(nemo_test_e_orca1_short_3d_reader):
-    return nemo_test_e_orca1_short_3d_reader
-
-
-@pytest.fixture(scope="module")
-def data_nemo_short_3d(nemo_test_e_orca1_short_3d_data):
-    return nemo_test_e_orca1_short_3d_data
 
 
 # aqua class for tests
@@ -54,7 +26,7 @@ class TestAqua:
         """
         Test the initialization of the Reader class
         """
-        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", fix=False, loglevel=loglevel)
+        reader = Reader(model="FESOM", exp="test-pi", source="original_2d", fix=False, loglevel=LOGLEVEL)
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
@@ -95,10 +67,11 @@ class TestAqua:
         with pytest.raises(ValueError, match="Conflicting values provided for source"):
             Reader(model="FESOM", exp="test-pi", source="original_2d", asset="other-asset", fix=False)
 
-    def test_retrieve_data(self, data):
+    def test_retrieve_data(self, fesom_test_pi_original_2d_r200_fixfalse_data):
         """
         Test if the retrieve method returns data with the expected shape
         """
+        data = fesom_test_pi_original_2d_r200_fixfalse_data
         assert len(data) > 0
         assert data.a_ice.shape == (2, 3140)
         assert data.a_ice.attrs["AQUA_catalog"] == "ci"
@@ -106,74 +79,82 @@ class TestAqua:
         assert data.a_ice.attrs["AQUA_exp"] == "test-pi"
         assert data.a_ice.attrs["AQUA_source"] == "original_2d"
 
-    def test_regrid_data(self, reader_instance, data):
+    def test_regrid_data(self, fesom_test_pi_original_2d_r200_fixfalse_reader, fesom_test_pi_original_2d_r200_fixfalse_data):
         """
         Test if the regrid method returns data with the expected
         shape and values
         """
-        sstr = reader_instance.regrid(data["sst"][0:2, :])
+        reader = fesom_test_pi_original_2d_r200_fixfalse_reader
+        data = fesom_test_pi_original_2d_r200_fixfalse_data
+        sstr = reader.regrid(data["sst"][0:2, :])
         assert sstr.shape == (2, 90, 180)
-        assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350324258783935, rel=approx_rel)
-        assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319154700343551, rel=approx_rel)
+        assert np.nanmean(sstr[0, :, :].values) == pytest.approx(13.350324258783935, rel=APPROX_REL)
+        assert np.nanmean(sstr[1, :, :].values) == pytest.approx(13.319154700343551, rel=APPROX_REL)
 
-    def test_fldmean(self, reader_instance, data):
+    def test_fldmean(self, fesom_test_pi_original_2d_r200_fixfalse_reader, fesom_test_pi_original_2d_r200_fixfalse_data):
         """
         Test if the fldmean method returns data with the expected
         shape and values
         """
-        global_mean = reader_instance.fldmean(data.sst[:2, :])
+        reader = fesom_test_pi_original_2d_r200_fixfalse_reader
+        data = fesom_test_pi_original_2d_r200_fixfalse_data
+        global_mean = reader.fldmean(data.sst[:2, :])
         assert global_mean.shape == (2,)
-        assert global_mean.values[0] == pytest.approx(17.99434183, rel=approx_rel)
-        assert global_mean.values[1] == pytest.approx(17.98060367, rel=approx_rel)
+        assert global_mean.values[0] == pytest.approx(17.99434183, rel=APPROX_REL)
+        assert global_mean.values[1] == pytest.approx(17.98060367, rel=APPROX_REL)
 
     def test_chunks(self):
         """
         Test that the Reader class correctly handles chunking
         """
-        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 12}, loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 12}, loglevel=LOGLEVEL)
         data = reader.retrieve()
         assert set(data["2t"].chunksizes["time"]) == {12}
-        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 1}, loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-tco79", source="long", chunks={"time": 1}, loglevel=LOGLEVEL)
         data = reader.retrieve()
         assert set(data["2t"].chunksizes["time"]) == {1}
 
-    def test_single_file_source_is_lazy(self, reader_nemo_short_3d, data_nemo_short_3d):
+    def test_single_file_source_is_lazy(self, nemo_test_e_orca1_short_3d_reader, nemo_test_e_orca1_short_3d_data):
         """
         Test that a source made of one single netcdf file is still dask-backed (#3064).
         Without the chunks default the intake reader routes it to xr.open_dataset,
         which returns numpy arrays and the backend can only report the failure.
         """
-        assert reader_nemo_short_3d.backend.esmcat.reader.kwargs["chunks"] == {}
-        assert Backend.is_dask(data_nemo_short_3d)
-        assert data_nemo_short_3d["avg_so"].chunks is not None
+        reader = nemo_test_e_orca1_short_3d_reader
+        data = nemo_test_e_orca1_short_3d_data
+        assert reader.backend.esmcat.reader.kwargs["chunks"] == {}
+        assert Backend.is_dask(data)
+        assert data["avg_so"].chunks is not None
 
-    def test_catalog_chunks_are_not_overridden(self, reader_ifs_tco79_long):
+    def test_catalog_chunks_are_not_overridden(self, ifs_tco79_long_reader):
         """
         Test that a chunks entry defined in the catalog wins over the chunks default (#3064)
         """
-        assert reader_ifs_tco79_long.backend.esmcat.reader.kwargs["chunks"] == {"time": 24}
+        reader = ifs_tco79_long_reader
+        assert reader.backend.esmcat.reader.kwargs["chunks"] == {"time": 24}
 
     def test_catalog_override(self):
         """
         Test the compact catalog override functionality
         """
-        reader = Reader(model="IFS", exp="test-tco79", source="short_override", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-tco79", source="short_override", loglevel=LOGLEVEL)
         assert reader.backend.metadata["test-key"] == "test-value"  # from the default
         assert reader.src_grid_name == "tco79-nn"  # overwritten key
 
-    def test_empty_dataset_error(self, reader_instance):
+    def test_empty_dataset_error(self, fesom_test_pi_original_2d_r200_fixfalse_reader):
         """
         Test that an empty dataset is returned when nonexistent variable is retrieved
         Check that we get an empty dataset (not None)
         """
-        result = reader_instance.retrieve(var="nonexistent_variable")
+        reader = fesom_test_pi_original_2d_r200_fixfalse_reader
+        result = reader.retrieve(var="nonexistent_variable")
         assert len(result.data_vars) == 0
 
-    def test_time_selection(self, reader_ifs_tco79_long):
+    def test_time_selection(self, ifs_tco79_long_reader):
         """
         Test that time selection works correctly, also beyond 2262
         """
-        reader = reader_ifs_tco79_long
+        reader = ifs_tco79_long_reader
 
         data = reader.retrieve(startdate="2020-03-01", enddate="2020-03-31")
 
@@ -201,7 +182,7 @@ class TestAqua:
         Test if the Reader class works with different combinations of arguments
         """
         model, exp, source, regrid, _ = reader_arguments
-        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=False, loglevel=loglevel)
+        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=False, loglevel=LOGLEVEL)
         data = reader.retrieve()
 
         # Check the time precision
@@ -230,7 +211,7 @@ class TestAqua:
                     model="ICON",
                     exp="test-healpix",
                     source="fake-ensemble-int",
-                    loglevel=loglevel,
+                    loglevel=LOGLEVEL,
                     areas=False,
                     realization=realization_input,
                 )
@@ -239,7 +220,7 @@ class TestAqua:
                 model="ICON",
                 exp="test-healpix",
                 source="fake-ensemble-int",
-                loglevel=loglevel,
+                loglevel=LOGLEVEL,
                 areas=False,
                 realization=realization_input,
             )
@@ -250,7 +231,7 @@ class TestAqua:
         Test that the realization parameter is correctly formatted from string.
         """
         reader = Reader(
-            model="ICON", exp="test-healpix", source="fake-ensemble-str", loglevel=loglevel, areas=False, realization="r2i1p1"
+            model="ICON", exp="test-healpix", source="fake-ensemble-str", loglevel=LOGLEVEL, areas=False, realization="r2i1p1"
         )
         assert reader.kwargs["realization"] == "r2i1p1"
 

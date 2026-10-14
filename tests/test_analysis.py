@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from jinja2 import UndefinedError
 
-from aqua.core.analysis import Analysis, cli_checker
+from aqua.core.analysis import Analysis
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -231,6 +231,30 @@ class TestConfigurationSetters:
         config = {}
         analysis.set_realization(args, config)
         assert analysis.realization == "r1"
+
+    def test_set_realization_ensemble_target(self, analysis):
+        """When target='ensemble', realization is set to 'ensemble' and returns early."""
+        args = argparse.Namespace(target="ensemble", realization=None)
+        config = {}
+
+        analysis.set_realization(args, config)
+        assert analysis.realization == "ensemble"
+
+    def test_set_realization_ensemble_target_overrides_realization(self, analysis):
+        """When target='ensemble', it takes precedence over realization argument."""
+        args = argparse.Namespace(target="ensemble", realization="r5")
+        config = {}
+
+        analysis.set_realization(args, config)
+        assert analysis.realization == "ensemble"
+
+    def test_set_realization_non_ensemble_target(self, analysis):
+        """When target is not 'ensemble', normal realization formatting applies."""
+        args = argparse.Namespace(target="single", realization="r3")
+        config = {}
+
+        analysis.set_realization(args, config)
+        assert analysis.realization == "r3"
 
     def test_set_output_directory_custom_path(self, analysis, tmp_path):
         """Output directory is constructed correctly with custom outputdir."""
@@ -737,7 +761,7 @@ class TestEdgeCases:
         analysis.catalog = "test_catalog"
         analysis.realization = "r1"
         analysis.output_dir = "/tmp/output"
-        analysis.aqua_core_path = "/fake/aqua/core"
+        analysis.aqua_diagnostics_path = "/fake/aqua/diagnostics"
 
         with patch.object(analysis, "run_command", return_value=0) as mock_cmd:
             result = analysis.run_setup_checker()
@@ -773,37 +797,3 @@ class TestEdgeCases:
         # Verify rmtree was called to clean up temp rendered config directory
         # Called at least once after running diagnostic tools
         assert mock_rm.call_count >= 1
-
-
-class TestCliChecker:
-    """Guards the code path every `aqua analysis` run takes: cli_checker with --yaml.
-
-    cli_checker reaches into Reader internals, and the backend refactor moved two of them
-    (`expcat`, and the `sample` kwarg of `retrieve`) with no test going red — see #3080.
-    The pre-existing checker test cannot catch that: it asserts the run exits 1, so a
-    regression that also exits 1 is indistinguishable from the failure it means to check.
-    """
-
-    def test_checker_writes_experiment_yaml(self, tmp_path):
-        """The --yaml branch must run to completion and produce the file."""
-        args = cli_checker.parse_arguments(
-            [
-                "--catalog",
-                "ci",
-                "--model",
-                "ERA5",
-                "--exp",
-                "era5-hpz3",
-                "--source",
-                "monthly",
-                "--yaml",
-                str(tmp_path),
-                "--no-rebuild",
-            ]
-        )
-        cli_checker.main(args)
-
-        experiment = load_yaml(str(tmp_path / "experiment.yaml"))
-        assert experiment["catalog"] == "ci"
-        assert experiment["model"] == "ERA5"
-        assert experiment["experiment"] == "era5-hpz3"

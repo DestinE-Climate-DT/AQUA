@@ -36,6 +36,7 @@ Pull requests can be created directly in the AQUA repository, creating your own 
 
 When creating a Pull Request, please make sure to:
 - add a meaningful title and description
+- use square bracker to identify the topic (e.g. [Console], [CI/CD])
 - reference the issue it solves in the description, if any
 - start from the `main` branch if your Pull Request wants to be merged in the `main` branch
 - point to the correct branch
@@ -47,10 +48,13 @@ If your Pull Request is adding some new dependencies, please make sure to state 
 We use conda-lock files to guarantee a fully reproducible environment. Tests use these files to reproduce always the exact same
 environment.
 
-If a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files.
-In this case you will also need to tun the `conda-relock` action, pointing to your branch. 
-This will create new conda-lock files.
-A new PR will be opened, pointing to your branch. If tests in that branch pass, you can merge it to update the lockfiles.
+If a new dependency has been added, please make sure to update the `environment.yml` and `pyproject.toml` files.
+In this case you will also need to regenerate the conda-lock files. To do so, add the `conda-lock` label to your Pull Request:
+this triggers the `conda-relock` workflow on your branch, which regenerates the lock files and opens a new PR
+(`[Conda-Lock] Relock AQUA-core for <your-branch>`) targeting your branch, with the `run tests` label already set.
+If tests in that PR pass, merge it into your branch to update the lockfiles. Remember to remove the label to avoid further triggering of relocking. 
+
+The relock workflow also runs every Monday on `main`, and can be launched manually from the GitHub Actions tab (`workflow_dispatch`), in which case it relocks `main`.
 
 ### Finalizing a Pull Request
 
@@ -62,10 +66,9 @@ A label `ready for review` can be added to the Pull Request to indicate that it 
 Before asking for a review, please make sure to:
 - Be up to date with the `main` branch
 - Run the tests successfully
-- If a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files and run the `conda-relock` action.
+- If a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files and relock the environment via the `conda-lock` label (see above).
 - Please notice that a lumi_install.sh script is available to install the framework on a LUMI machine.
   It is located in the `cli/lumi-install` folder.
-  If the environment has been modified, please make sure to update the files `environment_lumi.yml` and `pip_lumi.txt` accordingly.
 - If a new feature has been added, please make sure to update the documentation accordingly
 - Add docstrings to your code
 - Remove any file unrelated to your Pull Request

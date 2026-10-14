@@ -22,7 +22,7 @@ job:
 
     # Run a check analysis to test the configuration and the presence of needed data
     # This also rebuild the area files, to avoid error with corrupted files
-    run_checker: true
+    run_setup_checker: true
 
     # Default output directory for the analysis. Can be overridden by the command line arguments
     outputdir: "./output"
@@ -49,6 +49,7 @@ cluster:  # options for dask cluster (this works well on lumi)
 
 # List of available CLI tools (these belongs to AQUA diagnostics, but others can be added)
 cli:
+  #setup_checker:
   biases: "global_biases/cli_global_biases.py"
   lat_lon_profiles: "lat_lon_profiles/cli_lat_lon_profiles.py"
   drift: "ocean_drift/cli_ocean_drift.py"

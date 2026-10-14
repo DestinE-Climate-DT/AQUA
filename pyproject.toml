@@ -101,7 +101,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.16.10"
+    "ruff==0.17.0"
 ]
 all = [
     "aqua-core[docs]",
@@ -162,7 +162,7 @@ omit = [
 [tool.ruff]
 # --- Global Settings ---
 line-length = 127
-target-version = "py311"
+target-version = "py312"
 exclude = ["**/__init__.py"]
 
 [tool.ruff.lint]
