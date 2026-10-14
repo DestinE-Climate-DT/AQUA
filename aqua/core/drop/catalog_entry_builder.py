@@ -114,8 +114,8 @@ class CatalogEntryBuilder:
         Args:
             urlpath (str): Fully expanded glob path of the DROP outputs.
             output_format (str): Output format, 'netcdf' or 'zarr'. Defaults to 'netcdf'.
-            chunk_target (str or int): Target chunk size, as a Dask size string (e.g. '128MiB', '0.2GiB')
-                or a number of bytes. 'auto' leaves the chunking to Dask. Defaults to DEFAULT_DROP_CHUNK_TARGET.
+            chunk_target (str): Target chunk size, as a Dask size string (e.g. '128MiB', '0.2GiB').
+                'auto' leaves the chunking to Dask. Defaults to DEFAULT_DROP_CHUNK_TARGET.
 
         Returns:
             dict or str: Chunk size along each dimension, -1 for dimensions kept whole.
@@ -125,7 +125,7 @@ class CatalogEntryBuilder:
             self.logger.info("Chunks left to Dask auto chunking")
             return "auto"
 
-        target = parse_bytes(chunk_target) if isinstance(chunk_target, str) else int(chunk_target)
+        target = parse_bytes(chunk_target)
 
         files = sorted(glob.glob(urlpath))
         if not files:
@@ -200,7 +200,7 @@ class CatalogEntryBuilder:
             output_format (str): Output format for the catalog entry. Defaults to 'netcdf', alternative is 'zarr'.
             source_grid_name (str): Name of the source grid. Defaults to 'lon-lat'.
                 Can be AQUA grid, or 'False' if not applicable.
-            chunk_target (str or int): Target chunk size used to define the chunks of a new entry
+            chunk_target (str): Target chunk size used to define the chunks of a new entry
                 (e.g. '128MiB', '0.2GiB'), or 'auto' for Dask auto chunking. Chunks of an existing entry are not modified.
                 Defaults to DEFAULT_DROP_CHUNK_TARGET.
 

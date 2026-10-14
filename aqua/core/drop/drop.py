@@ -144,7 +144,7 @@ class Drop:
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.
-            chunk_target (str or int, opt): Target size of the read chunks defined in a new catalog
+            chunk_target (str, opt): Target size of the read chunks defined in a new catalog
                                      entry, e.g. '128MiB' or '0.2GiB', or 'auto' for Dask auto chunking.
                                      Existing entries are not modified.
                                      Default is DEFAULT_DROP_CHUNK_TARGET ('128MiB').

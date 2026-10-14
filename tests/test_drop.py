@@ -188,7 +188,7 @@ class TestOptimalChunks:
             # healpix-like 1D horizontal grid
             (("time", "cell"), (12, 3072), "128MiB", {"time": 12, "cell": -1}),
             # a single horizontal slice exceeds the target: horizontal dims are never split
-            (("time", "level", "lat", "lon"), (2, 3, 18, 36), 1000, {"time": 1, "level": 1, "lat": -1, "lon": -1}),
+            (("time", "level", "lat", "lon"), (2, 3, 18, 36), "1kB", {"time": 1, "level": 1, "lat": -1, "lon": -1}),
         ],
     )
     def test_chunk_size(self, builder, tmp_path, dims, sizes, chunk_target, expected):

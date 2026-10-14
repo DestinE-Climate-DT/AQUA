@@ -363,9 +363,9 @@ Controls processing behavior and performance settings:
   - ``cdo``: Use Climate Data Operators for NetCDF only. For Zarr, an error is logged and compaction is disabled.
   - ``null`` or omit: No compacting, keep monthly files
 
-- **chunk_target** (string or int, optional): Target size of the Dask chunks used to read the DROP output. Default: ``128MiB``
+- **chunk_target** (string, optional): Target size of the Dask chunks used to read the DROP output. Default: ``128MiB``
 
-  - Accepts a Dask size string (e.g. ``64MiB``, ``128MiB``, ``0.2GiB``) or a number of bytes. Available only in the configuration file.
+  - Accepts a Dask size string (e.g. ``64MiB``, ``128MiB``, ``0.2GiB``). Available only in the configuration file.
   - ``auto`` writes ``chunks: auto`` in the catalog entry, leaving the chunking to Dask (see the note below).
   - Used only when a **new** catalog entry is created: the ``chunks`` of an existing entry are never modified.
   - One output file per variable is inspected: horizontal dimensions are always kept whole, then time and vertical
