@@ -1,0 +1,78 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "ifs",
+  "title": "AQUA IFS test data",
+  "description": "IFS native, regridded, and teleconnection test datasets.",
+  "license": "proprietary",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          -90.0,
+          180.0,
+          90.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1989-01-01T00:00:00Z",
+          "2020-08-03T23:00:00Z"
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "aqua:model": [
+      "IFS"
+    ],
+    "assets:type": [
+      "application/x-netcdf"
+    ]
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./ifs.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ifs/ifs-long-regridded-r18x9.json",
+      "type": "application/geo+json",
+      "title": "regridded_r18x9.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ifs/ifs-short-ifs2d-tco79.json",
+      "type": "application/geo+json",
+      "title": "IFS2d.tco79.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ifs/ifs-teleconnections-enso-test.json",
+      "type": "application/geo+json",
+      "title": "enso_test.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ifs/ifs-teleconnections-nao-test.json",
+      "type": "application/geo+json",
+      "title": "nao_test.nc"
+    }
+  ]
+}

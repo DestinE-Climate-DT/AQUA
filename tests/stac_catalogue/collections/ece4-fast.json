@@ -1,0 +1,78 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "ece4-fast",
+  "title": "AQUA ECE4-FAST test data",
+  "description": "EC-Earth 4 FAST atmosphere, ocean, and sea-ice test datasets.",
+  "license": "proprietary",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          -90.0,
+          180.0,
+          90.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1990-02-15T00:00:00Z",
+          "1990-02-15T00:00:00Z"
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "aqua:model": [
+      "ECE4-FAST"
+    ],
+    "assets:type": [
+      "application/x-netcdf"
+    ]
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./ece4-fast.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ece4-fast/ece4-fast-test-t2pp-atm-cmip6-1m-1990-1990.json",
+      "type": "application/geo+json",
+      "title": "t2pp_atm_cmip6_1m_1990-1990.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ece4-fast/ece4-fast-test-t2pp-atm-cmip6-pl-1m-1990-1990.json",
+      "type": "application/geo+json",
+      "title": "t2pp_atm_cmip6_pl_1m_1990-1990.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ece4-fast/ece4-fast-test-t2pp-ice-1m-1990-1990.json",
+      "type": "application/geo+json",
+      "title": "t2pp_ice_1m_1990-1990.nc"
+    },
+    {
+      "rel": "item",
+      "href": "../items/ece4-fast/ece4-fast-test-t2pp-oce-1m-t-1990-1990.json",
+      "type": "application/geo+json",
+      "title": "t2pp_oce_1m_T_1990-1990.nc"
+    }
+  ]
+}

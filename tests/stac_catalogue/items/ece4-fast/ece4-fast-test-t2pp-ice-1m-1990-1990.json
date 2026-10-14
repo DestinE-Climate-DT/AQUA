@@ -1,0 +1,106 @@
+{
+  "type": "Feature",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "ece4-fast-test-t2pp-ice-1m-1990-1990",
+  "geometry": null,
+  "properties": {
+    "datetime": "1990-02-15T00:00:00Z",
+    "title": "t2pp_ice_1m_1990-1990.nc",
+    "aqua:model": "ECE4-FAST",
+    "aqua:relative_path": "ECE4-FAST/test/t2pp_ice_1m_1990-1990.nc",
+    "aqua:variables": [
+      "albedo",
+      "hfxcndbot",
+      "hfxcndtop",
+      "hfxsensib",
+      "nav_lat",
+      "nav_lon",
+      "normstr",
+      "qemp_ice",
+      "qns_ice",
+      "qsr_ice",
+      "qt_atm_oi",
+      "qt_ice",
+      "qt_oce_ai",
+      "qtr_ice_bot",
+      "qtr_ice_top",
+      "sfxice",
+      "sheastr",
+      "siapnd",
+      "siconc",
+      "siconcat",
+      "sidive",
+      "sig1_pnorm",
+      "sig2_pnorm",
+      "simsk",
+      "simsk05",
+      "simsk15",
+      "simskcat",
+      "sisalcat",
+      "sisali",
+      "sishea",
+      "sistre",
+      "sitbot",
+      "sitemcat",
+      "sitemp",
+      "sithic",
+      "sithicat",
+      "sitopcat",
+      "sitsni",
+      "sittop",
+      "sivelo",
+      "sivelu",
+      "sivelv",
+      "sivolu",
+      "sivpnd",
+      "sntemcat",
+      "sntemp",
+      "snthicat",
+      "snvolu",
+      "sss_m",
+      "sst_m",
+      "utau_ai",
+      "utau_oi",
+      "vfxice",
+      "vfxsnw",
+      "vtau_ai",
+      "vtau_oi"
+    ],
+    "aqua:datetime_source": "NetCDF coordinate time_counter"
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collections/ece4-fast.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../../collections/ece4-fast.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "self",
+      "href": "./ece4-fast-test-t2pp-ice-1m-1990-1990.json",
+      "type": "application/geo+json"
+    }
+  ],
+  "assets": {
+    "data": {
+      "href": "../../../../AQUA_tests/models/ECE4-FAST/test/t2pp_ice_1m_1990-1990.nc",
+      "title": "t2pp_ice_1m_1990-1990.nc",
+      "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
+      "type": "application/x-netcdf",
+      "roles": [
+        "data"
+      ]
+    }
+  },
+  "collection": "ece4-fast"
+}
