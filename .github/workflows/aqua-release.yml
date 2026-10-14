@@ -45,6 +45,7 @@ jobs:
       container-image: ''
       install-mode: 'release'
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
       AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
