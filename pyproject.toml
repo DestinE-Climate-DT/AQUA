@@ -67,8 +67,8 @@ dependencies = [
     "s3fs>=2026.1.0", # AWS for bucket access, setting a minimum to avoid installing a very old version
     "scipy",
     "seaborn",
-    "smmregrid==0.1.6",
-    # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
+    # "smmregrid==0.1.6",
+    "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git@main",  # for development
     "xarray>=2025.12.0",
     "zarr>=3.0"
 ]
