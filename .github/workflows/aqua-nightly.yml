@@ -39,17 +39,17 @@ jobs:
             platform: ubuntu-26.04
             fdb: false
             container: ''
-            markers: 'aqua or slow or graphics or catgen or polytope'
+            markers: 'aqua or console or graphics or catgen or polytope'
           - name: macos-latest
             platform: xcode-27
             fdb: false
             container: ''
-            markers: 'aqua or slow or graphics or catgen or polytope'
+            markers: 'aqua or console or graphics or catgen or polytope'
           - name: FDB container
             platform: ubuntu-latest
             fdb: true
             container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
-            markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+            markers: 'aqua or console or polytope or fdb or graphics or catgen'
     name: AQUA nightly (${{ matrix.name }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
