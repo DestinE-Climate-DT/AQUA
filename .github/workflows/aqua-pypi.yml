@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   # Call the reusable workflow with PyPI installation
