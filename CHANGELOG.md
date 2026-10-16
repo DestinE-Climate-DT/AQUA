@@ -10,6 +10,7 @@ ClimateDT workflow modification
 
 Unreleased in the current development version (target v1.2.2):
 
+- Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
 - CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
 - Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
 - Introduction of reusable modular actions to support portable GitHub workflow (#3198)
