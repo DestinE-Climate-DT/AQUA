@@ -5,11 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-ClimateDT workflow modification
+Unreleased in the current development version (target v1.2.3):
+
+## [v1.2.2]
+
+ClimateDT workflow modifications:
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
+- `aqua analysis ensemble` command is now ready for implementation in the workflow
 
-Unreleased in the current development version (target v1.2.2):
+Main changes:
+- the setup checker is now in the `aqua diagnostics` package, and the `cli_checker.py` is removed from the core package
+- `plot_timeseries` are updated to work with the new ensemble timeseries diagnostic
+- AQUA does not support anymore python 3.11
+- Various CI/CD refinements
+- Gregory plots can now use a time-colormap to color both trajectory lines and points
 
+Complete list:
 - Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
 - CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
 - Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
@@ -1596,7 +1607,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...HEAD
+[v1.2.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...v1.2.2
 [v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
