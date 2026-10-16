@@ -2,7 +2,7 @@ name: Set up FDB
 description: Configure FDB with AQUA test fixtures and run a smoke test.
 inputs:
   test-data-path:
-    description: Workspace-relative path to AQUA test data.
+    description: Workspace-relative path to AQUA test data (e.g. AQUA-diagnostics/AQUA_tests in aqua-diagnostics).
     required: false
     default: AQUA/AQUA_tests
   fdb-root:
