@@ -193,7 +193,13 @@ Tests are not run on every commit, since GitHub Actions hours are limited. They 
 | `conda-lock` 🐍 | regenerate the lock file (see [Conda-lock](#conda-lock)) |
 
 Once a label is set, the corresponding suite runs again at every push.
-Adding the label triggers a run only for the label just added: adding an unrelated label does not restart running tests.
+Adding the label triggers a run only for the label just added: adding an unrelated label does not restart running tests. Labels are matched by prefix (e.g. `release` ⛵ starts with `release`).
+
+> **Note:** every label added to a PR starts a run of each suite, skipped when the label is not the suite's own.
+> The PR checks panel shows only the most recent run of each workflow, so when several labels are added at once,
+> or a label is added after the tests ran, a suite may appear as *skipped* even though its real run is running or
+> has finished. The real results are in the **Actions** tab and still count for the PR status and the required check.
+> To refresh the panel, push a new commit: a push starts one run per suite, so the panel shows the real ones.
 A new push cancels the runs of the previous commit on the same PR.
 
 Dependabot PRs always run `aqua.yml`; pip/conda bumps also run the nightly suite, since they change the environment.
