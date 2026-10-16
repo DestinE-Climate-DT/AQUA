@@ -24,13 +24,19 @@ Example::
 import os
 import time
 
+import dask.array
 import icechunk
 import icechunk.xarray
 import numpy as np
 import pandas as pd
 import xarray as xr
+import zarr
 
 from .drop_writer_base import BaseWriter
+
+# Per-variable attribute with the exact last committed timestamp. Variables share one time axis,
+# so the axis end is not the variable end once several variables live in the same repo.
+LAST_TIME_ATTR = "AQUA_drop_last_time"
 
 
 class IcechunkWriter(BaseWriter):
@@ -172,6 +178,64 @@ class IcechunkWriter(BaseWriter):
             self.logger.error("Failed to write to icechunk session: %s", e)
             return False
 
+    def _write_month(self, data, var, clobber=False):
+        """
+        Write one month of ``var`` into the session without touching the other variables.
+
+        All variables share one time axis. Timestamps past its end extend it (NaN for every
+        time-dependent variable), a variable missing from the store is created lazily over the
+        axis, then the month is written in place with ``region="auto"``.
+
+        Args:
+            data: xarray Dataset/DataArray (already computed)
+            var: Variable name
+            clobber: If True and ``var`` is the only variable in the store, rewrite the store (mode='w')
+
+        Returns:
+            bool: True if successful
+        """
+        data = self._to_dataset(data, var)
+        session = self.main_session
+        try:
+            store = xr.open_zarr(session.store, consolidated=False)
+        except zarr.errors.GroupNotFoundError:  # empty repo
+            store = xr.Dataset()
+
+        try:
+            if "time" not in store.dims or (clobber and set(store.data_vars) <= {var}):
+                if not self._write_to_icechunk_session(data, session, mode="w"):
+                    return False
+            else:
+                new_times = data.time.values[data.time.values > store.time.values[-1]]
+                if len(new_times):
+                    tvars = [v for v in store.data_vars if "time" in store[v].dims]
+                    pad = store[tvars].drop_encoding().isel(time=slice(0, 0)).reindex(time=new_times)
+                    pad = pad.drop_vars([v for v in pad.variables if "time" not in pad[v].dims])
+                    icechunk.xarray.to_icechunk(pad, session, mode="a", append_dim="time")
+                    store = xr.open_zarr(session.store, consolidated=False)
+
+                if var not in store:
+                    sample = data[var].isel(time=0, drop=True)
+                    empty = dask.array.full((store.sizes["time"],) + sample.shape, np.nan, dtype=sample.dtype)
+                    template = xr.Dataset(
+                        {var: (("time",) + sample.dims, empty, data[var].attrs)},
+                        coords={"time": store.time.values, **sample.coords},
+                    ).transpose(*data[var].dims)
+                    # compute=False writes metadata and coordinates only; missing chunks read as NaN
+                    template.to_zarr(
+                        session.store, mode="a", compute=False, consolidated=False, encoding=self._get_encoding(template)
+                    )
+
+                region = data.drop_vars([v for v in data.variables if "time" not in data[v].dims])
+                icechunk.xarray.to_icechunk(region, session, mode="r+", region="auto")
+
+            zarr.open_group(session.store)[var].attrs[LAST_TIME_ATTR] = str(pd.Timestamp(data.time.values[-1]))
+            return True
+
+        except Exception as e:
+            self.logger.error("Failed to write %s to icechunk session: %s", var, e)
+            return False
+
     def _should_concat(self):
         """Not used: IcechunkWriter fully overrides write_variable()."""
         raise NotImplementedError("IcechunkWriter does not use concat; write_variable() is fully overridden")
@@ -261,6 +325,7 @@ class IcechunkWriter(BaseWriter):
             dict: {
                 'complete': bool,
                 'last_record': str (YYYYMMDD format) or None,
+                'last_time': pd.Timestamp (exact last committed timestamp), only when data exists,
                 'message': str
             }
         """
@@ -292,25 +357,28 @@ class IcechunkWriter(BaseWriter):
             if len(times) > 1 and not (np.diff(times) > np.timedelta64(0, "ns")).all():
                 return {"complete": False, "last_record": None, "message": "Unsorted timestamps"}
 
-            last_record = pd.to_datetime(times[-1]).strftime("%Y%m%d")
+            # Stores written before LAST_TIME_ATTR existed hold one variable: the axis end is its end
+            last_time = pd.Timestamp(da.attrs.get(LAST_TIME_ATTR, times[-1]))
+            last_record = last_time.strftime("%Y%m%d")
 
             # TODO: We would like to check for level as well, but we do not have info on the level name.
 
             # When an expected end date is provided, verify coverage.
             # Keep last_record so write_variable can resume from the right point.
             if end_date is not None:
-                last_store_ts = pd.Timestamp(times[-1])
                 end_ts = pd.Timestamp(end_date)
-                if last_store_ts < end_ts:
+                if last_time < end_ts:
                     return {
                         "complete": False,
                         "last_record": last_record,
+                        "last_time": last_time,
                         "message": (f"Variable {var} covers up to {last_record} but {end_ts.strftime('%Y%m%d')} is requested"),
                     }
 
             return {
                 "complete": True,
                 "last_record": last_record,
+                "last_time": last_time,
                 "message": f"Variable {var} complete ({len(times)} timesteps)",
             }
 
@@ -335,7 +403,7 @@ class IcechunkWriter(BaseWriter):
         1. Skip if variable is already complete and ``overwrite=False``
         2. Resume from last committed record when partial data exists and ``overwrite=False``
         3. Split data by year, then by month
-        4. Write each month directly to session (mode='w' for first write, 'a' for appends)
+        4. Write each month directly to session, preserving other variables in the repo (see ``_write_month``)
         5. Commit per month (atomic failure boundary)
         6. Run yearly GC if enabled
 
@@ -343,14 +411,15 @@ class IcechunkWriter(BaseWriter):
             data: xarray DataArray with processed data (history already applied)
             var: Variable name
             level: Optional level information
-            overwrite: If True, clobber existing data and restart from scratch.
+            overwrite: If True, rewrite the variable from scratch (the whole store only if it holds
+                       no other variable).
                        If False, skip completed variables and resume from the last committed record.
             definitive: Actually write files (vs dry-run)
             dask: If True, use Dask for distributed computing
             performance_reporting: Limit to first month only (for benchmarking)
 
         Returns:
-            bool: True if successful
+            bool: True if successful, False if a month failed (writing stops at the last good commit)
         """
         # Initialize repo on first write
         if not self.repo:
@@ -363,19 +432,17 @@ class IcechunkWriter(BaseWriter):
             self.logger.info("Variable %s already complete in repo; skipping", var)
             return True
 
-        # When not overwriting and partial data exists, resume from last committed record
-        last_record = integrity["last_record"] if not overwrite else None
-        if last_record:
-            resume_after = pd.Timestamp(last_record)
-            data = data.sel(time=data.time > resume_after)
-            self.logger.info("Resuming %s after %s (%d timesteps remaining)", var, last_record, len(data.time))
+        # When not overwriting and partial data exists, resume after the exact last committed timestamp
+        last_time = integrity.get("last_time") if not overwrite else None
+        if last_time is not None:
+            data = data.sel(time=data.time > last_time)
+            self.logger.info("Resuming %s after %s (%d timesteps remaining)", var, last_time, len(data.time))
             if len(data.time) == 0:
                 self.logger.info("No new data for %s after last committed record", var)
                 return True
 
-        # mode='w' clobbers; used only for the first write of a fresh/overwrite run.
-        # When resuming, all writes must append to the existing store.
-        first_session_write = last_record is None
+        # Only the first write of an overwrite run may rewrite the store, and only if no other variable is in it
+        clobber = overwrite
 
         for year, year_data in self._iter_years(data, performance_reporting):
             self.logger.info("Processing year %s...", str(year))
@@ -390,17 +457,13 @@ class IcechunkWriter(BaseWriter):
                     month_data = self._compute_data(month_data, dask=dask, performance_reporting=performance_reporting)
                     self._last_chunk_size_bytes = month_data.nbytes
 
-                    mode = "w" if first_session_write else "a"
-                    append_dim = None if first_session_write else "time"
-
-                    # Write to session
+                    # Any failure stops this variable: writing later months would leave a gap
+                    # that resume cannot detect. The next run resumes from the last good commit.
                     try:
-                        if not self._write_to_icechunk_session(
-                            month_data, self.main_session, mode=mode, append_dim=append_dim
-                        ):
-                            self.logger.error("Failed to write month %s-%02d; skipping", year, month)
+                        if not self._write_month(month_data, var, clobber=clobber):
+                            self.logger.error("Failed to write month %s-%02d; stopping %s", year, month, var)
                             self.main_session = self.repo.writable_session("main")
-                            continue
+                            return False
 
                         # Commit per month (atomic unit)
                         try:
@@ -408,36 +471,36 @@ class IcechunkWriter(BaseWriter):
                             self.logger.info("Month %s-%02d committed", year, month)
                             # Create new session for next write (current becomes read-only after commit)
                             self.main_session = self.repo.writable_session("main")
-                            first_session_write = False
+                            clobber = False
 
                         except Exception as e:
                             self.logger.error("Commit failed for month %s-%02d: %s", year, month, e)
                             self.main_session = self.repo.writable_session("main")
-                            continue
+                            return False
 
                         # Post-commit integrity check: verify committed snapshot is readable
                         # and the last timestamp matches what was just written.
-                        expected_last = pd.Timestamp(month_data.time.values[-1]).strftime("%Y%m%d")
+                        expected_last = pd.Timestamp(month_data.time.values[-1])
                         integrity = self.check_integrity(var)
-                        if not integrity["complete"] or integrity["last_record"] != expected_last:
+                        if not integrity["complete"] or integrity.get("last_time") != expected_last:
                             self.logger.error(
                                 "Post-commit integrity check failed for %s-%02d: %s",
                                 year,
                                 month,
                                 integrity["message"],
                             )
-                            continue
+                            return False
                         self.logger.debug(
-                            "Post-commit check passed for %s-%02d (last_record=%s)",
+                            "Post-commit check passed for %s-%02d (last_time=%s)",
                             year,
                             month,
-                            integrity["last_record"],
+                            integrity["last_time"],
                         )
 
                     except Exception as e:
                         self.logger.error("Write failed for month %s-%02d: %s", year, month, e)
                         self.main_session = self.repo.writable_session("main")
-                        continue
+                        return False
 
                     t_elapsed = time.time() - t_start
                     self.logger.info("Month %s-%02d execution time: %.2f seconds", year, month, t_elapsed)
