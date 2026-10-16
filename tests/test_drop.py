@@ -193,7 +193,7 @@ class TestDROP:
     """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
 
     # Sequential execution required: all tests write to the shared "drop_test/" outdir.
-    pytestmark = [pytest.mark.console, pytest.mark.xdist_group(name="dask_operations")]
+    pytestmark = pytest.mark.xdist_group(name="dask_operations")
 
     def test_definitive_false(self, drop_arguments, tmp_path):
         """Test DROP with definitive=False."""

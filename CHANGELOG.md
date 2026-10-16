@@ -5,12 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-ClimateDT workflow modification
+Unreleased in the current development version (target v1.2.3):
+- CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
+
+## [v1.2.2]
+
+ClimateDT workflow modifications:
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
+- `aqua analysis ensemble` command is now ready for implementation in the workflow
 
-Unreleased in the current development version (target v1.2.2):
-
+Main changes:
+- the setup checker is now in the `aqua diagnostics` package, and the `cli_checker.py` is removed from the core package
+- `plot_timeseries` are updated to work with the new ensemble timeseries diagnostic
+- AQUA does not support anymore python 3.11
+- Various CI/CD refinements
+- Gregory plots can now use a time-colormap to color both trajectory lines and points
 - Fix concurrent processes `SafeFileLock` issue (#3190)
+Complete list:
+- Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
+- CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
+- Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
+- Introduction of reusable modular actions to support portable GitHub workflow (#3198)
+- CI refinements: `aqua-release.yml` now runs weekly and reports failures only for scheduled/manual runs; one failure label per suite (`ci-failure:<suite> :clown_face:`); callers own the platform x Python matrix with `max-parallel`, `aqua-test-reusable.yml` takes a single `python-version`; on `labeled` events PR workflows check only the label just added, so unrelated labels no longer restart running tests (#3222)
 - `aqua analysis` checker renamed to setup checker (`--setup_checker`, `run_setup_checker`); `cli_checker.py` removed in favour of the `cli_setup_checker.py` from diagnostics (#3178)
 - `plot_timeseries` function now plot same color for monthly and annual ensemble timeseries (#3220)
 - Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
@@ -1592,7 +1608,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...HEAD
+[v1.2.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...v1.2.2
 [v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
