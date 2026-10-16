@@ -4,6 +4,13 @@
 
 **Code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
 
+### Human control of `main`
+
+- Only humans decide whether changes are integrated into `main`.
+- Never merge into or push directly to `main` without explicit human approval for the specific changes being integrated.
+- You may prepare branches and pull requests. Once ready, wait for human review and approval; passing tests or automated reviews does not constitute approval.
+- Never enable auto-merge or bypass required reviews or branch protections.
+
 ### Before implementing anything
 
 1. Search `aqua/core/` for an existing class handling similar logic
