@@ -169,6 +169,9 @@ def analysis_execute(args):
 
     logger.info("All diagnostic collections finished.")
 
+    if job_config.get("report", True):
+        analyzer.write_report(include_warnings=job_config.get("report_warnings", False))
+
 
 if __name__ == "__main__":
     args = analysis_parser().parse_args(sys.argv[1:])

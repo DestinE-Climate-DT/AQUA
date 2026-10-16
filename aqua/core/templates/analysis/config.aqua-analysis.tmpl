@@ -24,6 +24,10 @@ job:
     # This also rebuild the area files, to avoid error with corrupted files
     run_setup_checker: true
 
+    # Write a timestamped summary report (aqua-analysis-report_<date>.md) of logs and outputs at the end of the run
+    report: true
+    report_warnings: false  # list also the distinct WARNING messages in the report
+
     # Default output directory for the analysis. Can be overridden by the command line arguments
     outputdir: "./output"
 
