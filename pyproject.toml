@@ -36,9 +36,9 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0,<2.50",
-    "eccodeslib==2.48.2.27; sys_platform == 'linux'",
-    # This is the same pin as for z3fdb to avoid the eccodes/cartopy clash
+    "eccodes>=2.41.0,<2.51",
+    "eccodeslib>=2.41.0,<2.51; sys_platform == 'linux'",
+    # Kept below 2.50 on macOS until 2.50 is tested there (eccodes/cartopy clash, #3163)
     "eccodeslib>=2.41.0,<2.50; sys_platform != 'linux'",
     "netcdf4",
     "h5py>=3.12.1",
@@ -78,8 +78,7 @@ fdb = [
     "pyfdb",
     "polytope-client",
     "gsv-interface==2.13.1",
-    "z3fdb==5.23.2.27; sys_platform == 'linux'",
-    "z3fdb>=5.23.2.27; sys_platform != 'linux'",
+    "z3fdb>=5.23.2.27",
 ]
 docs = [
     "sphinx",
