@@ -10,6 +10,7 @@ ClimateDT workflow modification
 
 Unreleased in the current development version (target v1.2.2):
 
+- CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
 - Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
 - Introduction of reusable modular actions to support portable GitHub workflow (#3198)
 - CI refinements: `aqua-release.yml` now runs weekly and reports failures only for scheduled/manual runs; one failure label per suite (`ci-failure:<suite> :clown_face:`); callers own the platform x Python matrix with `max-parallel`, `aqua-test-reusable.yml` takes a single `python-version`; on `labeled` events PR workflows check only the label just added, so unrelated labels no longer restart running tests (#3222)

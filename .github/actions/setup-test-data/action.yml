@@ -8,6 +8,10 @@ inputs:
     description: Workspace-relative path to the checked-out DVC repository.
     required: false
     default: aqua-dvc
+  dvc-ref:
+    description: Git ref of the DVC repository to pull the data from.
+    required: false
+    default: main
   dvc-remote:
     description: DVC remote to configure.
     required: false
@@ -21,7 +25,7 @@ inputs:
     required: false
     default: '300'
   test-data-path:
-    description: Workspace-relative destination for the test data.
+    description: Workspace-relative destination for the test data (e.g. AQUA-diagnostics/AQUA_tests in aqua-diagnostics).
     required: false
     default: AQUA/AQUA_tests
   http-url:
@@ -85,9 +89,10 @@ runs:
       working-directory: ${{ inputs.dvc-repository-path }}
       env:
         DVC_DATA_GLOB: ${{ inputs.dvc-data-glob }}
+        DVC_REF: ${{ inputs.dvc-ref }}
         TEST_DATA_PATH: ${{ inputs.test-data-path }}
       run: |
-        git checkout main
+        git checkout "$DVC_REF"
         dvc pull -j 2 -R $DVC_DATA_GLOB
         destination="$GITHUB_WORKSPACE/$TEST_DATA_PATH"
         mkdir -p "$destination"
