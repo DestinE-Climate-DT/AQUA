@@ -10,7 +10,7 @@ ClimateDT workflow modification
 
 Unreleased in the current development version (target v1.2.2):
 
-- CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read` (#3241)
+- CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
 - Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
 - CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
 - Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
