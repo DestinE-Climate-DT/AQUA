@@ -4,6 +4,13 @@
 
 **Code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
 
+### Human control of `main`
+
+- Only humans decide whether changes are integrated into `main`. The preferred workflow is for a human to merge manually on GitHub after review.
+- Agents may prepare branches and pull requests, but must stop before merging. An agent may merge only when a human explicitly instructs it to perform that specific merge, identifying the pull request and the changes to be merged. That instruction does not authorize merging additional changes added afterward.
+- A positive human review, an approved pull request, passing tests, automated reviews, or a general request to complete a task never authorizes an agent to merge.
+- Never push directly to `main`, enable auto-merge, or bypass required reviews or branch protections.
+
 ### Before implementing anything
 
 1. Search `aqua/core/` for an existing class handling similar logic
