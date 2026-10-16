@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = pytest.mark.console
 
 
 class TestAquaConsoleGridBuilder:
