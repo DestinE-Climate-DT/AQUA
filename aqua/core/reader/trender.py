@@ -5,6 +5,9 @@ import xarray as xr
 
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util.time import pandas_freq_to_offset, xarray_to_pandas_freq
+from aqua.core.util.util import _preserve_reader_binding
+
+xr.set_options(keep_attrs=True)
 
 
 class Trender:
@@ -142,7 +145,8 @@ class Trender:
         else:
             raise ValueError("Input must be an xarray DataArray or Dataset.")
 
-        return log_history(final, f"{action} with polynomial of order {degree} along '{dim}' dimension")
+        final = log_history(final, f"{action} with polynomial of order {degree} along '{dim}' dimension")
+        return _preserve_reader_binding(data, final)  # Keep the input Reader without changing the global default.
 
     def _trend(self, data: xr.DataArray, dim: str, degree: int, skipna: bool) -> xr.DataArray:
         """

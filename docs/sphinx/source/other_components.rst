@@ -279,58 +279,47 @@ The levels are specified in the same units as they are stored in the archive
 Accessors
 ---------
 
-AQUA also provides a special ``aqua`` accessor to Xarray which allows
-to call most functions and methods of the reader
-class as if they were methods of a DataArray or Dataset.
-
-Basic usage
-^^^^^^^^^^^
-
-Reader methods like ``reader.regrid()`` or functions like ``plot_single_map()``
-can now also be accessed by appending the suffix ``aqua`` to a
-DataArray or Dataset, followed by the function of interest,
-like in ``data.aqua.regrid()``.
-
-This means that instead of writing:
+The ``aqua`` accessor exposes Reader operations on xarray Datasets and DataArrays:
 
 .. code-block:: python
 
-    reader.fldmean(reader.timmean(data.tcc, freq="Y"))
+    data = reader.retrieve(var="2t")
+    mean = data.aqua.timmean(freq="YS").aqua.fldmean()
 
-we can write:
+Objects returned by Reader operations retain that Reader for subsequent ``.aqua`` calls,
+without changing the global default. ``convert_data_units()``, ``select_season()``, and
+Trender operations also preserve an existing input binding.
 
-.. code-block:: python
-
-    data.tcc.aqua.timmean(freq="Y").aqua.fldmean()
-
-.. note::
-    The accessor always assumes that the Reader instance to be used is either
-    the one with which a Dataset was created or, for new derived objects and for **DataArrays of a Datasets**,
-    the last instantiated Reader or the last use of the ``retrieve()`` method.
-    This means that if more than one reader instance is used (for example to compare different datasets)
-    we recommend not to use the accessor.
+.. warning::
+    Ordinary xarray operations, including ``.sel()``, ``.isel()``, arithmetic, and
+    variable extraction such as ``data["2t"]``, can create objects that do not retain
+    the Reader binding. Their accessor uses the global default when first accessed.
+    With multiple Readers, this can select the wrong grid or cell areas.
 
 Usage with multiple Reader instances
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As an alternative the Reader class contains a special ``set_default()`` method which sets that reader
-as an accessor default in the following.
-The accessor itself also has a ``set_default()`` method
-(accepting a reader instance as an argument) which sets the default and returns the same object.
-
-Usage examples when multiple readers are used:
+Prefer explicit Reader calls after xarray selection:
 
 .. code-block:: python
 
-    from aqua import Reader
-    reader1=Reader(model="IFS", exp="test-tco79", source="short", regrid="r100")  # the default is now reader1
-    reader2=Reader(model="IFS", exp="test-tco79", source="short", regrid="r200")  # the default is now reader2
-    data1 = reader1.retrieve()  # the default is now reader1
-    data2 = reader2.retrieve()  # the default is now reader2
-    reader1.set_default()  # the default is now reader1
-    data1r = data1.aqua.regrid()
-    data2r = data2.aqua.regrid()  # data2 was created by retrieve(), so it remembers its default reader
-    data2r = data2['2t'].aqua.set_default(reader2).aqua.regrid()  # the default is set to reader2 before using a method
+    reader1 = Reader(model="IFS", exp="test-tco79", source="short", regrid="r100")
+    reader2 = Reader(model="IFS", exp="test-tco79", source="short", regrid="r200")
+    data1, data2 = reader1.retrieve(), reader2.retrieve()
+    field1 = data1["2t"].isel(time=slice(0, 5))
+    mean1 = reader1.fldmean(field1)
+    mean2 = reader2.fldmean(data2["2t"])
+
+Or explicitly bind the selected object before chaining:
+
+.. code-block:: python
+
+    mean1 = field1.aqua.set_default(reader1).aqua.fldmean()
+
+``field.aqua.set_default(reader)`` binds that object **and changes the global default**.
+``reader.set_default()`` only changes the default for new accessors; it does not rebind
+existing ones. Reader construction also sets the global default; retrieval does not.
+Further ordinary xarray operations may require binding again.
 
 Parallel Processing
 -------------------
