@@ -4,7 +4,7 @@ import os
 from tempfile import TemporaryDirectory
 
 import xarray as xr
-from smmregrid import CdoGenerate, GridInspector
+from smmregrid import CdoGenerate, GridInspector, cdo_version
 from smmregrid import Regridder as SMMRegridder
 
 from aqua.core.default import (
@@ -146,7 +146,7 @@ class Regridder:
             RuntimeError: If the CDO version is not supported by smmregrid.
         """
         cdo = get_cdo(cdo)
-        self.logger.debug("Going to use CDO in: %s", cdo)
+        self.logger.info("Using CDO %s from %s", cdo_version(cdo), cdo)
         return cdo
 
     def _get_info_from_data(self, data):
