@@ -547,7 +547,11 @@ class Drop:
             varname (str): Variable name to check
             level (int, float, or list, opt): Level(s) to check, default is None (all levels)
         """
-        result = self.writer.check_integrity(varname, level=level, overwrite=self.overwrite)
+        # Icechunk end_date compares against the last timestamp, so it is not restricted to year files
+        end_date = None if self.output_format == "icechunk" else self.enddate
+        result = self.writer.check_integrity(
+            varname, level=level, overwrite=self.overwrite, start_date=self.startdate, end_date=end_date
+        )
         self.check = result["complete"]
         self.last_record = result["last_record"]
 

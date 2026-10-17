@@ -12,6 +12,7 @@ from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.drop_writer_icechunk import IcechunkWriter
+from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
 from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 from aqua.core.lock import SafeFileLock
@@ -619,6 +620,49 @@ class TestDROP:
         assert "chunks=1" in summary_lines[0]
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+
+class TestIntegrityDateFilter:
+    """check_integrity restricted to the requested start/end dates (tiny NetCDF files, no zarr)."""
+
+    @pytest.fixture
+    def writer(self, tmp_path):
+        builder = OutputPathBuilder(
+            catalog="ci",
+            model="IFS",
+            exp="test",
+            resolution="r100",
+            frequency="monthly",
+            realization="r1",
+            region="global",
+            stat="mean",
+        )
+        writer = NetCDFWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), filename_builder=builder, loglevel=LOGLEVEL)
+        for year in (2019, 2020, 2021):
+            path = writer.get_filename("2t", year=year)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            if year == 2019:  # corrupted file
+                with open(path, "w") as f:
+                    f.write("not a netcdf")
+            else:
+                time = pd.date_range(f"{year}-01-01", periods=2, freq="MS")
+                xr.Dataset({"2t": ("time", [1.0, 2.0])}, coords={"time": time}).to_netcdf(path)
+        return writer
+
+    @pytest.mark.parametrize(
+        "start, end, complete, last_record",
+        [
+            (None, None, False, None),
+            ("2020-01-01", None, True, "20210201"),
+            ("2020-01-01", "2020-12-31", True, "20200201"),
+            (None, "2019-12-31", False, None),
+            ("2022-01-01", None, False, None),
+        ],
+    )
+    def test_date_filter(self, writer, start, end, complete, last_record):
+        result = writer.check_integrity("2t", start_date=start, end_date=end)
+        assert result["complete"] is complete
+        assert result["last_record"] == last_record
 
 
 class TestZarrWriter:

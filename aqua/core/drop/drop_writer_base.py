@@ -441,7 +441,39 @@ class BaseWriter(ABC):
         """
         pass
 
-    def check_integrity(self, var, level=None, overwrite=False, end_date=None):
+    def _filter_files_by_year(self, files, pattern, start_date=None, end_date=None):
+        """
+        Keep only yearly files whose year falls within [start_date, end_date].
+
+        Args:
+            files: List of file paths to filter
+            pattern: Pattern used to extract year from filenames (e.g., 'var_*_*.nc')
+            start_date: Optional lower bound; only yearly files from this year on are kept.
+            end_date: Optional upper bound; only yearly files up to this year are kept.
+
+        Returns:
+            list: Filtered list of file paths
+        """
+        start_year = pd.Timestamp(start_date).year if start_date is not None else None
+        end_year = pd.Timestamp(end_date).year if end_date is not None else None
+
+        # If both start_year and end_year are None, return all files
+        if start_year is None and end_year is None:
+            return files
+
+        prefix, _, suffix = pattern.partition("*")
+        selected = []
+        for f in files:
+            # Extract year from filename based on the pattern
+            year_str = f[len(prefix) : len(f) - len(suffix)] if suffix else f[len(prefix) :]
+            if not year_str.isdigit():
+                continue
+            year = int(year_str)
+            if (start_year is None or year >= start_year) and (end_year is None or year <= end_year):
+                selected.append(f)
+        return selected
+
+    def check_integrity(self, var, level=None, overwrite=False, end_date=None, start_date=None):
         """
         Check integrity of files/stores for a variable.
 
@@ -449,9 +481,9 @@ class BaseWriter(ABC):
             var: Variable name
             level: Level (optional, for filename generation)
             overwrite: If True, always report incomplete
-            end_date: Unused in the base implementation; accepted for interface
-                compatibility with subclasses (e.g. IcechunkWriter) that need
-                to verify coverage up to a specific date.
+            end_date: Optional upper bound; only yearly files up to this year are checked.
+                Subclasses (e.g. IcechunkWriter) also use it to verify coverage.
+            start_date: Optional lower bound; only yearly files from this year on are checked.
 
         Returns:
             dict: {
@@ -464,8 +496,8 @@ class BaseWriter(ABC):
             return {"complete": False, "last_record": None, "message": "Overwrite mode enabled"}
 
         # Check yearly files/stores
-        yearfiles = self.get_filename(var, level=level, year="*")
-        yearfiles = glob.glob(yearfiles)
+        pattern = self.get_filename(var, level=level, year="*")
+        yearfiles = self._filter_files_by_year(sorted(glob.glob(pattern)), pattern, start_date, end_date)
 
         if not yearfiles:
             return {"complete": False, "last_record": None, "message": "No files found"}
