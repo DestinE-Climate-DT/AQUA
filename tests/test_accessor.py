@@ -1,6 +1,11 @@
 """Testing if the accessor works"""
 
+import dask.array as da
 import pytest
+import xarray as xr
+from dask.callbacks import Callback
+
+from aqua import Reader
 
 
 # Aliases with module scope for fixtures
@@ -49,14 +54,92 @@ class TestAccessor:
         assert len(data2r.lon) == 180
 
         # Check if the accessor still works with the result
-        reader_instance.set_default()  # Make sure that the correct reader is used
+        reader_instance2.set_default()  # An unrelated default must not change the result's Reader
         avg = data1r.aqua.fldmean()["2t"].values
         assert avg[1] == pytest.approx(285.7543, rel=1e-4)
 
-        # Alternative way to do it
-        avg = data2r.aqua.set_default(reader_instance2).aqua.fldmean()["2t"].values
+        # Each regridded result keeps its own Reader without manual rebinding
+        reader_instance.set_default()
+        avg = data2r.aqua.fldmean()["2t"].values
         assert avg[1] == pytest.approx(285.7543, rel=1e-4)
 
         # Test accessor on dataarray (should be using the previous default)
         avgda = data2["2t"].aqua.fldmean().values
         assert avgda[1] == pytest.approx(285.7543, rel=1e-4)
+
+
+@pytest.fixture(scope="module")
+def binding_reader():
+    return Reader(model="IFS", exp="test-tco79", source="long", regrid="r100")
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+@pytest.mark.parametrize("use_accessor", [False, True], ids=["reader", "accessor"])
+@pytest.mark.parametrize("operation", ["select_area", "select_area_regridded", "regrid", "seldate", "histogram"])
+def test_transformed_result_keeps_reader(
+    binding_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, use_accessor, operation
+):
+    """Chained operations must use the originating Reader despite another global default."""
+    field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 2)).copy()
+    field.attrs["history"] = "AQUA-008 regression provenance"
+    field["2t"].attrs["history"] = field.attrs["history"]
+    if as_dataarray:
+        field = field["2t"]
+    if operation == "select_area_regridded":
+        field = binding_reader.regrid(field)
+    field.aqua.set_default(binding_reader)
+    reader_instance2.set_default()
+
+    method = "select_area" if operation == "select_area_regridded" else operation
+    kwargs = {}
+    if method == "select_area":
+        kwargs = {"lon": [0, 60], "lat": [0, 60]}
+    elif method == "seldate":
+        kwargs = {"startdate": str(field.time.isel(time=0).values)}
+    elif method == "histogram":
+        kwargs = {"bins": 10, "range": (150, 350), "weighted": False}
+
+    tasks = []
+    with Callback(posttask=lambda *args: tasks.append(1)):
+        result = getattr(field.aqua, method)(**kwargs) if use_accessor else getattr(binding_reader, method)(field, **kwargs)
+
+    # Changing the global default after the transform also checks that the binding is explicit.
+    reader_instance2.set_default()
+    assert result.aqua.instance is binding_reader
+    assert not tasks
+    values = result["2t"] if isinstance(result, xr.Dataset) else result
+    assert isinstance(values.data, da.Array)
+    assert "AQUA-008 regression provenance" in result.attrs["history"]
+
+    if method == "histogram":
+        expected_size = field["2t"].size if isinstance(field, xr.Dataset) else field.size
+        assert result.sum().compute().item() == expected_size
+    else:
+        expected = binding_reader.fldmean(result)
+        reader_instance2.set_default()
+        actual = result.aqua.fldmean()
+        assert actual.aqua.instance is binding_reader
+        xr.testing.assert_allclose(actual.compute(), expected.compute())
+
+
+@pytest.mark.aqua
+def test_retrieve_binds_preprocessed_result(reader_instance, reader_instance2, data, monkeypatch):
+    """Preprocessing may return a new object already associated with another Reader."""
+    field = data[["2t"]].isel(time=slice(0, 2))
+    monkeypatch.setattr(reader_instance.backend, "retrieve", lambda **kwargs: field.copy())
+
+    def preprocess(dataset):
+        assert dataset.aqua.instance is reader_instance
+        result = dataset.isel(time=slice(0, 1))
+        result.aqua.set_default(reader_instance2)
+        return result
+
+    monkeypatch.setattr(reader_instance, "preproc", preprocess)
+    result = reader_instance.retrieve(var="2t")
+    reader_instance2.set_default()
+    assert result.aqua.instance is reader_instance
+    assert result.sizes["time"] == 1
+    expected = reader_instance.fldmean(result)
+    reader_instance2.set_default()
+    xr.testing.assert_allclose(result.aqua.fldmean().compute(), expected.compute())

@@ -382,6 +382,7 @@ class Reader:
         # Preprocessing function
         if self.preproc:
             data = self.preproc(data)
+            data.aqua.set_default(self)
 
         return data
 
@@ -396,9 +397,10 @@ class Reader:
         """
         # We're keeping the fldstat call separate, however at the current stage there is
         # no difference in behavior between the src and tgt fldstat calls.
-        if _check_if_regridded(data) and self.tgt_fldstat:
-            return self.tgt_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
-        return self.src_fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
+        fldstat = self.tgt_fldstat if _check_if_regridded(data) and self.tgt_fldstat else self.src_fldstat
+        data = fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
+        data.aqua.set_default(self)
+        return data
 
     def set_default(self):
         """Sets this reader as the default for the accessor."""
@@ -419,6 +421,7 @@ class Reader:
         out = set_attrs(
             out, {"AQUA_regridded": 1, "AQUA_source_grid": self.src_grid_name, "AQUA_target_grid": self.tgt_grid_name}
         )
+        out.aqua.set_default(self)
         return out
 
     # def trend(self, data, dim='time', degree=1, skipna=False):
@@ -715,7 +718,9 @@ class Reader:
         """
         Wrapper for the histogram function
         """
-        return histogram(data, **kwargs)
+        data = histogram(data, **kwargs)
+        data.aqua.set_default(self)
+        return data
 
     # Other convenience wrappers for reader methods
 
@@ -737,7 +742,9 @@ class Reader:
         Returns:
             xr.Dataset or xr.DataArray: Sliced data.
         """
-        return self.backend.seldate(data, *args, **kwargs)
+        data = self.backend.seldate(data, *args, **kwargs)
+        data.aqua.set_default(self)
+        return data
 
 
 def _check_if_regridded(data):
