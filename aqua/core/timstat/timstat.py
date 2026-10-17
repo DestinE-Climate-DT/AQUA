@@ -88,7 +88,7 @@ class TimStat:
         if resample_freq is None:
             exclude_incomplete = False
             center_time = False
-            time_bnds = False
+            time_bounds = False
 
         if "time" not in data.dims:
             raise ValueError(f"Time dimension not found in the input data. Cannot compute tim{stat} statistic")

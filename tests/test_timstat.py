@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from aqua.core.histogram import histogram
 
@@ -156,6 +157,18 @@ class TestTimmean:
         assert avg["2t"].shape == (8, 9, 18)
         assert avg["time_bnds"].shape == (avg["2t"].shape[0], 2)
         assert np.all(avg["time_bnds"].isel(bnds=0) <= avg["time_bnds"].isel(bnds=1))
+
+    @pytest.mark.parametrize("center_time", [False, True])
+    @pytest.mark.parametrize("exclude_incomplete", [False, True])
+    def test_timmean_time_bounds_no_freq(self, reader, data_2t, center_time, exclude_incomplete):
+        """Total means disable time bounds and other resampling-only options."""
+        series = data_2t.isel(lon=0, lat=0)
+        avg = reader.timmean(
+            series, freq=None, time_bounds=True, center_time=center_time, exclude_incomplete=exclude_incomplete
+        )
+        assert "time" not in avg.dims
+        assert "time_bnds" not in avg
+        xr.testing.assert_allclose(avg, series.mean(dim="time"))
 
     def test_timmean_invalid_frequency(self, reader, data_2t):
         """Test for timmean method with an invalid frequency"""
