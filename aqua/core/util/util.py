@@ -103,7 +103,7 @@ def set_attrs(ds, attrs) -> xr.Dataset | xr.DataArray:
 def _preserve_reader_binding(source, result):
     """Copy an existing input accessor's Reader without choosing a default for unbound data."""
     # Inspect xarray's cache: accessing source.aqua would initialize it from the global default.
-    accessor = getattr(source, "_cache", {}).get("aqua")
+    accessor = getattr(source, "_cache", {}).get("aqua")  # HACK: Depends on xarray's private accessor cache.
     if accessor is not None:
         result.aqua._bind_reader(accessor.instance)
     return result
