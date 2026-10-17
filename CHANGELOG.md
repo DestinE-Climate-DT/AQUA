@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
-- Keep Reader results bound to their originating Reader after area/date selection, regridding, histogram computation, and preprocessing, so chained operations remain correct with multiple Readers (AQUA-008, #3233)
+- Keep Reader results bound to their originating Reader after area/date selection, regridding, histogram computation, and preprocessing (AQUA-008, #3233).
+  Bind retrieval and transformation outputs locally without changing the global Reader default; explicit `set_default()` calls retain their existing behavior.
+  Further ordinary xarray slicing or variable extraction still uses the global default for fresh accessors.
 - CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
 
 ## [v1.2.2]

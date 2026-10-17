@@ -76,7 +76,9 @@ def binding_reader():
 @pytest.mark.aqua
 @pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
 @pytest.mark.parametrize("use_accessor", [False, True], ids=["reader", "accessor"])
-@pytest.mark.parametrize("operation", ["select_area", "select_area_regridded", "regrid", "seldate", "histogram"])
+@pytest.mark.parametrize(
+    "operation", ["select_area", "select_area_regridded", "regrid", "seldate", "histogram", "timmean", "fldmean", "detrend"]
+)
 def test_transformed_result_keeps_reader(
     binding_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, use_accessor, operation
 ):
@@ -104,8 +106,7 @@ def test_transformed_result_keeps_reader(
     with Callback(posttask=lambda *args: tasks.append(1)):
         result = getattr(field.aqua, method)(**kwargs) if use_accessor else getattr(binding_reader, method)(field, **kwargs)
 
-    # Changing the global default after the transform also checks that the binding is explicit.
-    reader_instance2.set_default()
+    assert Reader.instance is reader_instance2
     assert result.aqua.instance is binding_reader
     assert not tasks
     values = result["2t"] if isinstance(result, xr.Dataset) else result
@@ -115,31 +116,62 @@ def test_transformed_result_keeps_reader(
     if method == "histogram":
         expected_size = field["2t"].size if isinstance(field, xr.Dataset) else field.size
         assert result.sum().compute().item() == expected_size
+    elif method == "fldmean":
+        xr.testing.assert_allclose(result.compute(), binding_reader.fldmean(field).compute())
     else:
         expected = binding_reader.fldmean(result)
-        reader_instance2.set_default()
+        assert Reader.instance is reader_instance2
         actual = result.aqua.fldmean()
+        assert Reader.instance is reader_instance2
         assert actual.aqua.instance is binding_reader
         xr.testing.assert_allclose(actual.compute(), expected.compute())
 
 
 @pytest.mark.aqua
-def test_retrieve_binds_preprocessed_result(reader_instance, reader_instance2, data, monkeypatch):
+@pytest.mark.parametrize("preprocessing", ["none", "identity", "slice", "other_reader"])
+def test_retrieve_binds_preprocessed_result(reader_instance, reader_instance2, data, monkeypatch, preprocessing):
     """Preprocessing may return a new object already associated with another Reader."""
     field = data[["2t"]].isel(time=slice(0, 2))
     monkeypatch.setattr(reader_instance.backend, "retrieve", lambda **kwargs: field.copy())
 
     def preprocess(dataset):
         assert dataset.aqua.instance is reader_instance
+        assert Reader.instance is reader_instance2
+        if preprocessing == "identity":
+            return dataset
         result = dataset.isel(time=slice(0, 1))
-        result.aqua.set_default(reader_instance2)
+        if preprocessing == "other_reader":
+            result.aqua.set_default(reader_instance2)
         return result
 
-    monkeypatch.setattr(reader_instance, "preproc", preprocess)
-    result = reader_instance.retrieve(var="2t")
+    monkeypatch.setattr(reader_instance, "preproc", None if preprocessing == "none" else preprocess)
     reader_instance2.set_default()
+    result = reader_instance.retrieve(var="2t")
+    assert Reader.instance is reader_instance2
     assert result.aqua.instance is reader_instance
-    assert result.sizes["time"] == 1
+    assert result.sizes["time"] == (2 if preprocessing in ("none", "identity") else 1)
     expected = reader_instance.fldmean(result)
     reader_instance2.set_default()
     xr.testing.assert_allclose(result.aqua.fldmean().compute(), expected.compute())
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+def test_public_default_and_xarray_slicing(reader_instance, reader_instance2, data, as_dataarray):
+    """Explicit defaults retain their behavior; raw xarray slices get fresh accessors."""
+    field = data[["2t"]].isel(time=slice(0, 2)).copy()
+    if as_dataarray:
+        field = field["2t"]
+    assert field.aqua.set_default(reader_instance) is field
+    assert Reader.instance is reader_instance
+    assert field.aqua.instance is reader_instance
+
+    reader_instance2.set_default()
+    assert Reader.instance is reader_instance2
+    assert field.aqua.instance is reader_instance
+    sliced = field.isel(time=slice(0, 1))
+    assert sliced.aqua.instance is reader_instance2
+
+    assert field.aqua.set_default(reader_instance2) is field
+    assert field.aqua.instance is reader_instance2
+    assert Reader.instance is reader_instance2

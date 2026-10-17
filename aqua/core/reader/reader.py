@@ -374,15 +374,12 @@ class Reader:
 
         data = self.backend.retrieve(var=var, level=level, level_coord=level_coord, startdate=startdate, enddate=enddate)
 
-        # This links the dataset accessor to this instance of the Reader class
-        # retrieve should always return a new dataset, so we set the default to this instance of the Reader class
-        # TODO: remove this -> if isinstance(data, xr.Dataset):
-        data.aqua.set_default(self)
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
 
         # Preprocessing function
         if self.preproc:
             data = self.preproc(data)
-            data.aqua.set_default(self)
+            data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
 
         return data
 
@@ -399,11 +396,11 @@ class Reader:
         # no difference in behavior between the src and tgt fldstat calls.
         fldstat = self.tgt_fldstat if _check_if_regridded(data) and self.tgt_fldstat else self.src_fldstat
         data = fldstat.select_area(data, lon=lon, lat=lat, **kwargs)
-        data.aqua.set_default(self)
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return data
 
     def set_default(self):
-        """Sets this reader as the default for the accessor."""
+        """Set the global default for new accessors; existing bindings are unchanged."""
 
         Reader.instance = self  # Refresh the latest reader instance used
 
@@ -421,7 +418,7 @@ class Reader:
         out = set_attrs(
             out, {"AQUA_regridded": 1, "AQUA_source_grid": self.src_grid_name, "AQUA_target_grid": self.tgt_grid_name}
         )
-        out.aqua.set_default(self)
+        out.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return out
 
     # def trend(self, data, dim='time', degree=1, skipna=False):
@@ -438,7 +435,7 @@ class Reader:
     #         DataArray or Dataset: The trend component.
     #     """
     #     final = self.trender.trend(data, dim=dim, degree=degree, skipna=skipna)
-    #     final.aqua.set_default(self)
+    #     final.aqua._bind_reader(self)
     #     return final
 
     def detrend(self, data, dim="time", degree=1, skipna=False):
@@ -455,7 +452,7 @@ class Reader:
             DataArray or Dataset: The detrended data.
         """
         final = self.trender.detrend(data, dim=dim, degree=degree, skipna=skipna)
-        final.aqua.set_default(self)
+        final.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return final
 
     def vertinterp(self, data, levels=None, level_coord="plev", units=None, method="linear"):
@@ -478,7 +475,7 @@ class Reader:
         """
 
         data = self.vertinterpolator.vertinterp(data=data, levels=levels, level_coord=level_coord, units=units, method=method)
-        data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
 
         return data
 
@@ -592,7 +589,7 @@ class Reader:
             **kwargs,
         )
 
-        data.aqua.set_default(self)
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return data
 
     # Field stats wrapper. If regridded, uses the target grid areas.
@@ -662,7 +659,7 @@ class Reader:
             center_time=center_time,
             **kwargs,
         )
-        data.aqua.set_default(self)  # accessor linking
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return data
 
     def timmean(self, data, **kwargs):
@@ -719,7 +716,7 @@ class Reader:
         Wrapper for the histogram function
         """
         data = histogram(data, **kwargs)
-        data.aqua.set_default(self)
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return data
 
     # Other convenience wrappers for reader methods
@@ -743,7 +740,7 @@ class Reader:
             xr.Dataset or xr.DataArray: Sliced data.
         """
         data = self.backend.seldate(data, *args, **kwargs)
-        data.aqua.set_default(self)
+        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return data
 
 

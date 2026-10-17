@@ -14,18 +14,22 @@ class AquaAccessor:
         self._obj = xarray_obj
         self.instance = Reader.instance  # by default use the latest available instance of the Reader class
 
+    def _bind_reader(self, reader):
+        """Bind this object's accessor without changing the global Reader default."""
+        self.instance = reader
+        return self._obj
+
     def set_default(self, reader):
-        """
-        Sets a specific reader instance as default for further accessor uses.
-        Arguments:
-            reader (object of class Reader): the reader to set as default
+        """Bind this accessor and set the global default for new accessors.
+
+        Args:
+            reader (Reader): Reader to bind and use as the global default.
 
         Returns:
-            None
+            xarray.Dataset or xarray.DataArray: The object associated with this accessor.
         """
-        reader.set_default()  # set this also as the next Reader default
-        self.instance = reader  # set as reader to be used for the accessor
-        return self._obj
+        reader.set_default()
+        return self._bind_reader(reader)
 
     def plot_single_map(self, **kwargs):
         """Plot contour or pcolormesh map of a single variable."""
