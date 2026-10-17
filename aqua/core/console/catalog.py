@@ -80,6 +80,9 @@ class CatalogMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
+        # deferred: heavy import, keep CLI startup fast
+        from aqua.core.reader.catalog import show_catalog_content as print_catalog
+
         print("Adding the AQUA catalog", args.catalog)
         self._check(silent=True)
 

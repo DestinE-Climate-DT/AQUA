@@ -22,6 +22,14 @@ from aqua.core.util.yaml import load_yaml
 from .context import ConfigContext
 
 
+def _open_catalog(catalog_file):
+    """Open an intake catalog, registering the AQUA intake drivers (gsv, icechunk, netcdf, zarr) first."""
+    # deferred: heavy import, only needed when a catalog is actually opened
+    import aqua.core.intake_drivers  # noqa: F401
+
+    return intake.open_catalog(catalog_file)
+
+
 class ConfigCatalog:
     """
     Manages catalog discovery, selection, file resolution, and browsing.
@@ -188,7 +196,7 @@ class ConfigCatalog:
         for catalog in self.catalog_available:
             self.logger.debug("Browsing catalog %s ...", catalog)
             catalog_file = self.get_catalog_filename(catalog)
-            cat = intake.open_catalog(catalog_file)
+            cat = _open_catalog(catalog_file)
             check, level, avail = self.scan_catalog(cat, model=model, exp=exp, source=source)
             if check:
                 self.logger.info("%s_%s_%s triplet found in in %s!", model, exp, source, catalog)
@@ -226,7 +234,7 @@ class ConfigCatalog:
         self.logger.debug("Final catalog to be used is %s", self.catalog)
         self.catalog_file = self.get_catalog_filename(self.catalog)
         self.machine_file = self.get_machine_filename(self.catalog)
-        return intake.open_catalog(self.catalog_file), self.catalog_file, self.machine_file
+        return _open_catalog(self.catalog_file), self.catalog_file, self.machine_file
 
     @staticmethod
     def scan_catalog(cat, model=None, exp=None, source=None):
@@ -288,7 +296,7 @@ class ConfigCatalog:
         for cat_name in catalogs_to_scan:
             try:
                 catalog_file = self.get_catalog_filename(catalog=cat_name)
-                cat = intake.open_catalog(catalog_file)
+                cat = _open_catalog(catalog_file)
             except (KeyError, FileNotFoundError, Exception) as exc:
                 self.logger.warning("Cannot open/scan catalog %s: %s", cat_name, exc)
                 continue

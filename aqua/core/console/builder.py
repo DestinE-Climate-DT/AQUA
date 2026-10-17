@@ -5,7 +5,6 @@ This module contains the CLI for the GridBuilder.
 import argparse
 import json
 
-from aqua import GridBuilder, Reader
 from aqua.core.util import get_arg, load_yaml
 
 
@@ -63,6 +62,9 @@ def builder_execute(args):
     """
     Execute the builder CLI with the provided arguments or configuration file.
     """
+    # deferred: heavy import, keep CLI startup fast
+    from aqua import GridBuilder, Reader
+
     config = {}
     reader_config = {}
     builder_config = {}

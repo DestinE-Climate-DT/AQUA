@@ -10,7 +10,6 @@ a configuration yaml file.
 import argparse
 import sys
 
-from aqua import Drop
 from aqua import __version__ as version
 from aqua.core.util import get_arg, load_yaml, to_list
 
@@ -300,6 +299,8 @@ def drop_cli(
         catalog_entry: catalog entry behaviour ('yes', 'no', 'only')
         exclude_incomplete: bool flag to exclude incomplete temporal chunks when averaging
     """
+    # deferred: heavy import, keep CLI startup fast
+    from aqua import Drop
 
     models = to_list(get_arg(args, "model", config["data"]))
     for model in models:

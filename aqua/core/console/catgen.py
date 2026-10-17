@@ -8,7 +8,6 @@ AQUA CLI wrapper for the FDB catalog generator.
 import argparse
 import sys
 
-from aqua import AquaFDBGenerator
 from aqua.core.util import get_arg
 
 
@@ -26,6 +25,8 @@ def catgen_parser(parser=None):
 
 def catgen_execute(args, configcontext=None):
     """Useful wrapper for the FDB catalog generator class"""
+    # deferred: heavy import, keep CLI startup fast
+    from aqua import AquaFDBGenerator
 
     dp_version = get_arg(args, "portfolio", "full")
     config_file = get_arg(args, "config", "config.yaml")

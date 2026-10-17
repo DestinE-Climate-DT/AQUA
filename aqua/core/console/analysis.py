@@ -5,7 +5,6 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from aqua.core.analysis import Analysis
 from aqua.core.logger import log_configure
 from aqua.core.util import expand_env_vars, get_arg
 
@@ -70,6 +69,9 @@ def analysis_execute(args):
     """
     Executing the AQUA analysis by parsing the arguments and configuring the machinery
     """
+    # deferred: heavy import, keep CLI startup fast
+    from aqua.core.analysis import Analysis
+
     loglevel = args.loglevel
     logger = log_configure(loglevel, "AQUA Analysis")
 
