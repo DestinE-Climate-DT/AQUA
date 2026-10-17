@@ -54,6 +54,7 @@ class Reader:
         chunks=None,
         preproc=None,
         engine=DEFAULT_ENGINE,
+        stac=None,
         **kwargs,
     ):
         """Initialize the Reader class to identify, retrieve, fix, and regrid climate data.
@@ -93,6 +94,9 @@ class Reader:
                 Defaults to None.
             engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope' or 'gsv'.
                 Defaults to DEFAULT_ENGINE ('gsv').
+            stac (dict, optional): Single-branch nested mapping selecting an asset from the STAC
+                catalog at `path`, for example ``{"collection": {"item": "asset"}}``.
+                When provided, data access uses the Intake STAC backend. Defaults to None.
             **kwargs: Additional keyword arguments forwarded to the catalog entry or backend.
 
         Keyword Args:
@@ -114,6 +118,7 @@ class Reader:
 
         # xarray native argument
         self.path = path
+        self.stac = stac
 
         # Create regridder metadata for filename templating (supports both catalog and path-based backends)
         self.regridder_metadata = RegridderMetadata.from_reader(model=model, exp=exp, source=source, path=path, **kwargs)
@@ -161,6 +166,7 @@ class Reader:
             exp=self.exp,
             source=self.source,
             path=self.path,
+            stac=self.stac,
             configurer=configurer,
             catalog=catalog,
             loglevel=self.loglevel,
