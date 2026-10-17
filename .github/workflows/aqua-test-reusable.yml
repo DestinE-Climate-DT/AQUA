@@ -97,7 +97,8 @@ jobs:
 
     concurrency:
       # github.event is the caller's event: PR runs cancel superseded runs, other events never do
-      group: aqua-${{ github.event.pull_request.number || github.run_id }}-${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ inputs.python-version }}
+      # github.workflow is the caller's name: suites running the same leg on a PR do not cancel each other
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}-${{ inputs.install-mode }}-${{ inputs.platform }}-fdb${{ inputs.enable-fdb }}-py${{ inputs.python-version }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
     container:
@@ -287,6 +288,13 @@ jobs:
           git fetch --tags --quiet
           echo "Installed PyPI version: $PYPI_VERSION"
           git checkout "v${PYPI_VERSION}"
+
+      - name: Print installed aqua-core version
+        env:
+          MODE: ${{ inputs.install-mode }}
+        run: |
+          echo "install-mode: $MODE"
+          python -c "import aqua.core.version; print('aqua-core version:', aqua.core.version.__version__)"
 
       - name: Save environment information
         run: |
