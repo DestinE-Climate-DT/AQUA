@@ -1,0 +1,4 @@
+grids:
+  awi-cm1-2d:
+    path: '{{ grids }}/AWI/awi_cm1_2d.nc'
+    space_coord: ["ncells"]

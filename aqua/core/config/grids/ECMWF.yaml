@@ -1,0 +1,5 @@
+grids:
+  # ECMWF NEMO grids
+  ecmwf-orca25-2d:
+    path: '{{ grids }}/ECMWF/ecmwf_ORCA25_2d.nc'
+    space_coord: ["j", "i"]

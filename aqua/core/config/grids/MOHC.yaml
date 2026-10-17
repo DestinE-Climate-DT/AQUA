@@ -1,0 +1,5 @@
+grids:
+  # Met Office Hadley Centre (MOHC)
+  hadgem3-orca12-2d:
+    path: '{{ grids }}/MOHC/hadgem3_ORCA12_2d.nc'
+    space_coord: ["i", "j"]
