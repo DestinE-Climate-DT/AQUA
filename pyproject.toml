@@ -94,7 +94,6 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo",
     "dvc>3.60.0",
     "dvc-s3"
 ]

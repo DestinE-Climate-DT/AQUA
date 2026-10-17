@@ -10,7 +10,7 @@ ClimateDT workflow modification
 
 Unreleased in the current development version (target v1.2.2):
 
-- Upgrade to `smmregrid==0.2.0`, requiring `cdo>=2.6.2,<=2.6.5` (#3231)
+- Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
 - Introduction of reusable modular actions to support portable GitHub workflow (#3198)
 - CI refinements: `aqua-release.yml` now runs weekly and reports failures only for scheduled/manual runs; one failure label per suite (`ci-failure:<suite> :clown_face:`); callers own the platform x Python matrix with `max-parallel`, `aqua-test-reusable.yml` takes a single `python-version`; on `labeled` events PR workflows check only the label just added, so unrelated labels no longer restart running tests (#3222)

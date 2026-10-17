@@ -1,7 +1,6 @@
 """New Regrid class independent from the Reader"""
 
 import os
-import shutil
 from tempfile import TemporaryDirectory
 
 import xarray as xr
@@ -14,7 +13,7 @@ from aqua.core.default import (
     DEFAULT_REGRID_METHOD,
 )
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list
+from aqua.core.util import get_cdo, to_list
 
 from .filename_handler import FilenameHandler
 from .grid_dict_handler import GridDictHandler
@@ -133,28 +132,22 @@ class Regridder:
 
     def _set_cdo(self, cdo=None):
         """
-        Check information on CDO to set the correct version.
+        Resolve the CDO executable through smmregrid and check its version.
 
         Args:
-            cdo (str, optional): The path to the CDO executable. If None, guess it from the system.
+            cdo (str, optional): The path to the CDO executable. If None, use the CDO
+                environment variable or guess it from the system path.
 
         Returns:
             str: The path to the CDO executable.
 
         Raises:
-            FileNotFoundError: If CDO is not found in the system path.
+            FileNotFoundError: If CDO is not found.
+            RuntimeError: If the CDO version is not supported by smmregrid.
         """
-        if cdo:
-            # TODO: add a subprocess call to add if cdo is available
-            self.logger.debug("Going to use CDO in: %s", cdo)
-            return cdo
-
-        cdo = shutil.which("cdo")
-        if cdo:
-            self.logger.debug("Found CDO path: %s", cdo)
-            return cdo
-
-        raise FileNotFoundError("CDO not found in path: Weight and area generation will fail.")
+        cdo = get_cdo(cdo)
+        self.logger.debug("Going to use CDO in: %s", cdo)
+        return cdo
 
     def _get_info_from_data(self, data):
         """
