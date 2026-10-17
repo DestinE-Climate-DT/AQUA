@@ -100,6 +100,15 @@ def set_attrs(ds, attrs) -> xr.Dataset | xr.DataArray:
     return ds
 
 
+def _preserve_reader_binding(source, result):
+    """Copy an existing input accessor's Reader without choosing a default for unbound data."""
+    # Inspect xarray's cache: accessing source.aqua would initialize it from the global default.
+    accessor = getattr(source, "_cache", {}).get("aqua")
+    if accessor is not None:
+        result.aqua._bind_reader(accessor.instance)
+    return result
+
+
 def extract_attrs(data, attr) -> list | None:
     """Extract attribute(s) from dataset or list of datasets.
     Args:
