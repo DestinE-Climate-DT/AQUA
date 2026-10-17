@@ -37,7 +37,7 @@ Or for a pip installation of AQUA-core after installing the dependencies:
 
 .. code-block:: bash
 
-    mamba create -n aquarium -c conda-forge python=3.14 cdo netcdf4 eccodes
+    mamba create -n aquarium -c conda-forge python=3.14 smmregrid netcdf4 eccodes
     mamba activate aquarium
     pip install aqua-core
 
@@ -45,6 +45,22 @@ The same conda dependencies (without ``aqua-core`` itself) are available in the 
 
 .. warning ::
     On MacOS, the installation is supported only for MacOS 15 and later.
+    CDO is not shipped with the conda-forge packages on MacOS: install it with Homebrew (``brew install cdo``)
+    before creating the environment. On Linux CDO is installed together with ``smmregrid``.
+
+.. note ::
+    AQUA and ``smmregrid`` use the CDO executable set in the ``CDO`` environment variable or, if it is not set,
+    the ``cdo`` found in the ``PATH``. To select a specific CDO, for example a Homebrew or HPC module installation:
+
+    .. code-block:: bash
+
+        # for the current shell or job script
+        export CDO=/path/to/cdo
+        # or permanently for the conda environment (re-activate it afterwards)
+        conda env config vars set CDO=/path/to/cdo
+
+    The CDO path and version in use are printed by the regridder at ``INFO`` log level.
+    The minimum supported CDO version is set by ``smmregrid``.
 
 .. note ::
     If you want to access ClimateDT data, you will need to run ``pip install aqua-core[fdb]``
