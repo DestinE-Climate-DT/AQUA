@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 - CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
+- `SafeFileLock` no longer overwrites the filelock owner record in the lock file: filelock read it as malformed and let a contender break a lock held for more than 2 s (fails `test_safelock.py` with filelock 4.2) (#PR)
 
 ## [v1.2.2]
 

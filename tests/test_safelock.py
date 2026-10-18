@@ -70,6 +70,20 @@ class TestSafeFileLock:
         lock1.release()
 
     @pytest.mark.aqua
+    def test_timeout_after_hold(self, lock_file):
+        """Test that a lock held for longer than filelock's malformed-marker threshold is not broken."""
+        lock1 = SafeFileLock(lock_file, timeout=2)
+        lock2 = SafeFileLock(lock_file, timeout=1)
+
+        lock1.acquire()
+        time.sleep(2.5)
+
+        with pytest.raises(Timeout):
+            lock2.acquire()
+
+        lock1.release()
+
+    @pytest.mark.aqua
     def test_stale_lock_cleanup(self, lock_file):
         """Test that stale locks are cleaned up."""
         # Create a stale lock file
@@ -104,7 +118,7 @@ class TestSafeFileLock:
 
     @pytest.mark.aqua
     def test_metadata_written(self, lock_file):
-        """Test that lock file contains PID and timestamp."""
+        """Test that lock file contains the PID of the holder."""
         lock = SafeFileLock(lock_file, timeout=5)
 
         lock.acquire()
@@ -112,8 +126,8 @@ class TestSafeFileLock:
         with open(lock_file, "r") as f:
             content = f.read()
 
-        assert f"pid={os.getpid()}" in content
-        assert "time=" in content
+        # filelock owner record: first line is the holder PID
+        assert content.splitlines()[0] == str(os.getpid())
 
         lock.release()
 

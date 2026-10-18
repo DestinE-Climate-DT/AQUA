@@ -50,14 +50,6 @@ class SafeFileLock:
             except OSError:
                 pass
 
-    def _write_metadata(self):
-        """Write PID + timestamp inside the lock file."""
-        try:
-            with open(self.lock_path, "w") as f:
-                f.write(f"pid={os.getpid()} time={time.time()}\n")
-        except Exception:
-            pass  # not fatal
-
     def _heartbeat(self):
         """Refresh mtime periodically to indicate lock holder is alive."""
         while not self._stop_event.is_set():
@@ -74,8 +66,9 @@ class SafeFileLock:
         self._remove_stale()
 
         try:
+            # Do not write into the lock file: filelock stores its own owner record (PID, hostname)
+            # there and treats any other content as a malformed lock that a contender may break.
             self.lock.acquire(timeout=self.timeout)
-            self._write_metadata()
             self.logger.debug("Acquired: %s", self.lock_path)
         except Timeout:
             raise Timeout(f"Timeout waiting for lock: {self.lock_path}")
