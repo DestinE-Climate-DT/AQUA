@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
+- Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes`/`eccodeslib` aligned to `>=2.50.0,<2.51` on all platforms (the Linux `eccodeslib==2.48.2.27` hard pin is removed), `z3fdb>=5.25.0` on all platforms
 - CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
 
 ## [v1.2.2]
