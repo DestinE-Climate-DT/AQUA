@@ -23,7 +23,6 @@ def run_query_with_input():
     return _run_query
 
 
-@pytest.mark.aqua
 @pytest.mark.console
 class TestQueryYesNo:
     """Tests for query_yes_no."""

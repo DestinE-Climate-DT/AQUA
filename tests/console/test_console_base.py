@@ -12,7 +12,7 @@ from aqua.core.util import load_yaml, to_list
 
 MACHINE = "github"
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = pytest.mark.console
 
 
 class TestAquaConsole:

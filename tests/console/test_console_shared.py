@@ -9,7 +9,7 @@ from aqua.core.console import catalog
 from aqua.core.gridbuilder.griddeploy import GridDeployer
 from aqua.core.util import dump_yaml, load_yaml, to_list
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = pytest.mark.console
 
 
 @pytest.mark.xdist_group(name="console_catalog_operations")

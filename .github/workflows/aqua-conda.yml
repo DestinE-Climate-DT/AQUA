@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   # Call the reusable workflow with Conda installation
@@ -29,7 +27,7 @@ jobs:
     with:
       platform: ${{ matrix.platform }}
       python-version: ${{ matrix.python-version }}
-      pytest-markers: 'aqua or slow or graphics or catgen'
+      pytest-markers: 'aqua or console or graphics or catgen'
       enable-parallel: true
       enable-coverage: false
       install-mode: 'conda'
