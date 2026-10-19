@@ -165,7 +165,7 @@ def test_failed_transfer_has_no_completion_message(tmp_path, monkeypatch):
 
 
 def test_content_generation_has_one_startup_message(tmp_path, monkeypatch):
-    """Content generation reports its target, directory, and log level once."""
+    """Content generation reports its target and directory once."""
     config = tmp_path / "grouping.yaml"
     config.write_text("diagnostics: {figures: figure}\n")
     log = Mock()
@@ -178,9 +178,8 @@ def test_content_generation_has_one_startup_message(tmp_path, monkeypatch):
         root=tmp_path,
     )
     log.info.assert_called_once_with(
-        "Generating %s content for %s in %s (log level %s)",
+        "Generating %s content for %s in %s",
         "svg",
         "catalog/model/experiment/r1",
         tmp_path / "content" / "svg",
-        "INFO",
     )

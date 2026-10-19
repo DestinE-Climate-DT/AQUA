@@ -275,11 +275,10 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
     content_dir = Path(root) / "content" / format
     logger.info(
-        "Generating %s content for %s in %s (log level %s)",
+        "Generating %s content for %s in %s",
         format,
         experiment or "all experiments",
         content_dir,
-        loglevel,
     )
 
     diagnostics = config.get("diagnostics", {})
