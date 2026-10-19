@@ -14,7 +14,7 @@ import push_s3  # noqa: E402
 
 
 @pytest.mark.parametrize("experiment,ensemble", [("catalog/model/experiment/r1", True), ("catalog/model/experiment", False)])
-def test_publish_local_repository(tmp_path, monkeypatch, experiment, ensemble):
+def test_publish_local_repository(tmp_path, monkeypatch, capfd, experiment, ensemble):
     """Publishing generates content for every format without changing cwd."""
     output = tmp_path / "output"
     source = output / experiment
@@ -54,6 +54,7 @@ def test_publish_local_repository(tmp_path, monkeypatch, experiment, ensemble):
     assert yaml.safe_load((repo / "content" / "experiments.yaml").read_text()) == expected
     assert experiment in (repo / "updated.txt").read_text()
     assert ("aqua-web", f"content/svg/{experiment}", "directory") in transfers
+    assert capfd.readouterr().out == ""
 
 
 def test_experiment_list_defaults_to_r1(tmp_path):
@@ -64,13 +65,14 @@ def test_experiment_list_defaults_to_r1(tmp_path):
 
 
 @pytest.mark.parametrize("code,exit_code", [("AccessDenied", 1), ("NoSuchBucket", 2), ("Other", 3)])
-def test_s3_errors_preserve_exit_codes(code, exit_code):
+def test_s3_errors_preserve_exit_codes(code, exit_code, capfd):
     """The S3 API exposes the documented CLI error codes."""
     client = Mock()
     client.upload_file.side_effect = ClientError({"Error": {"Code": code, "Message": code}}, "PutObject")
     with pytest.raises(push_s3.S3TransferError) as exc:
         push_s3.upload_file_to_s3(client, "aqua-web", "file.svg", "content/file.svg")
     assert exc.value.exit_code == exit_code
+    assert capfd.readouterr().out == ""
 
 
 def test_missing_s3_object_is_optional():
@@ -78,3 +80,12 @@ def test_missing_s3_object_is_optional():
     client = Mock()
     client.download_file.side_effect = ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
     assert push_s3.get_file_from_s3(client, "aqua-web", "content/experiments.yaml", "experiments.yaml") is False
+
+
+def test_s3_success_logs_without_stdout(capfd, monkeypatch):
+    """The S3 API sends transfer messages through the AQUA logger."""
+    log = Mock()
+    monkeypatch.setattr(push_s3, "logger", log)
+    push_s3.upload_file_to_s3(Mock(), "aqua-web", "figure.svg", "content/figure.svg")
+    assert capfd.readouterr().out == ""
+    log.info.assert_called_once_with("Uploaded %s to bucket %s as %s", "figure.svg", "aqua-web", "content/figure.svg")

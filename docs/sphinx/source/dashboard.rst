@@ -62,7 +62,7 @@ A script in the ``cli/aqua-web`` folder is available to push figures to the buck
 If you plan to use these scripts outside the AQUA container or environment to push figures to aqua-web,
 you will need the following scripts: ``push_analysis.py``, ``make_contents.py``
 and ``push_s3.py``.
-The following python packages will be needed: ``boto3``, ``pyYAML`` and ``pypdf``.
+Install AQUA in the Python environment, along with ``boto3``, ``pyYAML`` and ``pypdf``.
 
 Basic usage
 ^^^^^^^^^^^

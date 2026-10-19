@@ -6,7 +6,6 @@ Example: ``python push_analysis.py --no-update --repository local:/tmp/aqua-web 
 
 import argparse
 import getpass
-import logging
 import os
 import shutil
 import socket
@@ -18,7 +17,9 @@ from pathlib import Path
 from make_contents import main as make_contents
 from push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
-logger = logging.getLogger(__name__)
+from aqua.core.logger import log_configure
+
+logger = log_configure(log_level="INFO", log_name="push_analysis")
 FORMATS = ("pdf", "png", "svg")
 
 
@@ -106,6 +107,7 @@ def push_analysis(
     ensemble=True,
     update=True,
     rsync_target=None,
+    loglevel="INFO",
 ):
     """Collect, describe, and publish each experiment's analysis output.
 
@@ -119,7 +121,10 @@ def push_analysis(
         ensemble (bool): Use the four-level experiment structure.
         update (bool): Commit and push the aqua-web repository update.
         rsync_target (str, optional): Rsync destination in place of S3.
+        loglevel (str): AQUA logging level for the publishing commands.
     """
+    log_configure(log_level=loglevel, log_name="push_analysis")
+    log_configure(log_level=loglevel, log_name="push_s3")
     indir = Path(indir).expanduser().resolve()
     config = Path(config).expanduser().resolve()
     exps = Path(exps).expanduser()
@@ -160,7 +165,13 @@ def push_analysis(
             _get_experiments_file(repo, bucket, rsync_target, client)
             for fmt in formats:
                 make_contents(
-                    force=True, experiment=experiment, configfile=str(config), ensemble=ensemble, format=fmt, root=repo
+                    force=True,
+                    experiment=experiment,
+                    configfile=str(config),
+                    ensemble=ensemble,
+                    loglevel=loglevel,
+                    format=fmt,
+                    root=repo,
                 )
             _publish(repo, experiment, formats, bucket, rsync_target, client)
             updated.append(experiment)
@@ -189,10 +200,7 @@ def main(argv=None):
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
     if not formats or any(fmt not in FORMATS for fmt in formats):
         parser.error("--format must be a comma-separated selection of pdf,png,svg")
-    logging.basicConfig(
-        level=(logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL)[args.loglevel - 1],
-        format="%(levelname)s: %(message)s",
-    )
+    loglevel = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")[args.loglevel - 1]
     config = args.config
     if config is None:
         root = os.environ.get("AQUA_CONFIG") or str(Path.home() / ".aqua")
@@ -208,9 +216,9 @@ def main(argv=None):
             not args.no_ensemble,
             not args.no_update,
             args.rsync_target,
+            loglevel,
         )
     except S3TransferError as exc:
-        logger.error("S3 transfer failed: %s", exc)
         return exc.exit_code
     except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
         logger.error("Publishing failed: %s", exc)

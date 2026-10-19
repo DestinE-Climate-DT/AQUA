@@ -4,7 +4,6 @@
 
 import argparse
 import json
-import logging
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -15,8 +14,9 @@ import yaml
 from PIL import Image
 from pypdf import PdfReader
 
-# Get a logger instance
-logger = logging.getLogger("make_contents")
+from aqua.core.logger import log_configure
+
+logger = log_configure(log_level="INFO", log_name="make_contents")
 
 
 def deep_merge_dicts(d1, d2):
@@ -265,13 +265,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
         root (str or Path): Root of the aqua-web checkout. Defaults to the current directory.
     """
 
-    # Configure logging
-    logger.setLevel(loglevel.upper())
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter("%(asctime)s :: %(name)s :: %(levelname)s -> %(message)s")
-    handler.setFormatter(formatter)
-    if not logger.handlers:
-        logger.addHandler(handler)
+    log_configure(log_level=loglevel, log_name="make_contents")
 
     logger.info(f"Starting content generation with log level {loglevel}")
     try:

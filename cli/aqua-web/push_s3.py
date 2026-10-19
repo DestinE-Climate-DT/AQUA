@@ -16,6 +16,10 @@ import sys
 import boto3
 from botocore.client import Config
 
+from aqua.core.logger import log_configure
+
+logger = log_configure(log_level="INFO", log_name="push_s3")
+
 
 class S3TransferError(Exception):
     """Transfer failure carrying the existing command's exit code."""
@@ -50,18 +54,14 @@ def get_file_from_s3(client, bucket_name, object_name, dest_path):
     """Try to download a single file from an S3 bucket."""
     try:
         client.download_file(bucket_name, object_name, dest_path)
-        print(f"File '{object_name}' successfully downloaded from bucket '{bucket_name}' to '{dest_path}'.")
+        logger.info("Downloaded %s from bucket %s to %s", object_name, bucket_name, dest_path)
         return True
     except Exception as e:
-        print(f"Error downloading file: {e}")
         if "NoSuchKey" in str(e):
             # A missing index is expected for the first published experiment.
-            print("Warning: Object does not exist. Please check the object name.")
+            logger.warning("Object %s does not exist in bucket %s", object_name, bucket_name)
             return False
-        if "AccessDenied" in str(e):
-            print("Access denied. Please check your AWS credentials and permissions.")
-        elif "NoSuchBucket" in str(e):
-            print("Bucket does not exist. Please check the bucket name.")
+        logger.error("Error downloading %s from bucket %s: %s", object_name, bucket_name, e)
         raise _transfer_error(e) from e
 
 
@@ -69,13 +69,9 @@ def upload_file_to_s3(client, bucket_name, file_path, object_name):
     """Upload a single file to an S3 bucket."""
     try:
         client.upload_file(file_path, bucket_name, object_name)
-        print(f"File '{file_path}' successfully uploaded to bucket '{bucket_name}' as '{object_name}'.")
+        logger.info("Uploaded %s to bucket %s as %s", file_path, bucket_name, object_name)
     except Exception as e:
-        print(f"Error uploading file: {e}")
-        if "AccessDenied" in str(e):
-            print("Access denied. Please check your AWS credentials and permissions.")
-        elif "NoSuchBucket" in str(e):
-            print("Bucket does not exist. Please check the bucket name.")
+        logger.error("Error uploading %s to bucket %s: %s", file_path, bucket_name, e)
         raise _transfer_error(e) from e
 
 
