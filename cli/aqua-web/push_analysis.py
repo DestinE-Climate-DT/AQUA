@@ -22,6 +22,14 @@ from aqua.core.logger import log_configure
 
 logger = log_configure(log_level="INFO", log_name="push_analysis")
 FORMATS = ("pdf", "png", "svg")
+LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+
+
+def _parse_loglevel(value):
+    """Normalize a named or legacy numeric log level."""
+    if value.isdecimal() and 1 <= int(value) <= len(LOG_LEVELS):
+        return LOG_LEVELS[int(value) - 1]
+    return value.upper()
 
 
 def _run(*command, cwd=None):
@@ -186,7 +194,13 @@ def main(argv=None):
     parser.add_argument("--no-ensemble", action="store_true")
     parser.add_argument("-f", "--format", default=",".join(FORMATS))
     parser.add_argument(
-        "-l", "--loglevel", type=str.upper, choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), default="INFO"
+        "-l",
+        "--loglevel",
+        type=_parse_loglevel,
+        choices=LOG_LEVELS,
+        default="INFO",
+        metavar="LEVEL",
+        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: INFO)",
     )
     parser.add_argument("-s", "--rsync", dest="rsync_target")
     args = parser.parse_args(argv)

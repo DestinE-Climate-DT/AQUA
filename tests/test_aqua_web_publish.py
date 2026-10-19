@@ -88,23 +88,29 @@ def test_publisher_help_excludes_legacy_git_options(capsys):
         ("warning", "WARNING"),
         ("ErRoR", "ERROR"),
         ("critical", "CRITICAL"),
+        ("1", "DEBUG"),
+        ("2", "INFO"),
+        ("3", "WARNING"),
+        ("4", "ERROR"),
+        ("5", "CRITICAL"),
     ],
 )
-def test_publisher_accepts_named_log_levels(tmp_path, monkeypatch, level, expected):
+def test_publisher_accepts_named_and_numeric_log_levels(tmp_path, monkeypatch, level, expected):
     """The CLI passes standard AQUA log level names to the publisher."""
     publish = Mock()
     monkeypatch.setattr(push_analysis, "push_analysis", publish)
     arguments = [str(tmp_path), "catalog/model/experiment/r1"]
     if level is not None:
-        arguments.extend(["--loglevel", level])
+        arguments.extend(["-l" if level.isdecimal() else "--loglevel", level])
     assert push_analysis.main(arguments) == 0
     assert publish.call_args.kwargs["loglevel"] == expected
 
 
-def test_publisher_rejects_numeric_log_level(tmp_path):
-    """The old numeric shorthand is no longer accepted."""
+@pytest.mark.parametrize("level", ["0", "6", "TRACE"])
+def test_publisher_rejects_invalid_log_level(tmp_path, level):
+    """Unknown names and out-of-range numeric levels are rejected."""
     with pytest.raises(SystemExit) as exc:
-        push_analysis.main([str(tmp_path), "catalog/model/experiment/r1", "--loglevel", "1"])
+        push_analysis.main([str(tmp_path), "catalog/model/experiment/r1", "--loglevel", level])
     assert exc.value.code == 2
 
 
