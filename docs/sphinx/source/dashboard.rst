@@ -11,11 +11,6 @@ AQUA can act as a backend for an online web application (a "dashboard") to monit
 A series of scripts is used to automatize running of the diagnostics on experiment output, collecting the figures and storing them
 in a remote object storage. The figures are then used to update a website that shows the results of the analysis.
 
-Currently AQUA supports `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_ (The "AQUA Explorer"), providing a basic static webpage for showing aqua results,
-hosted in CSC Openshift and using the LUMI-O object storage.
-
-An alternative, more complete, dashboard is under development. The future dashboard will use the same LUMI-O storage already used by aqua-web.
-
 The full pipeline is composed of the following components:
 
 1.  The ``aqua-analysis.py`` script that runs several diagnostics for a single experiment on the HPC.
@@ -40,10 +35,6 @@ The full pipeline is composed of the following components:
     It also updates ``content/experiments.yaml`` on LUMI-O to list the available experiments.
 
     See the :ref:`aqua_push` section for more details.
-
-
-4.  The AQUA Explorer software is stored in the `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_
-    repository. The publisher sends figures and metadata to the ``aqua-web`` bucket on LUMI-O.
 
 
 More details on the available tools and on their dependencies are provided in the following.
@@ -207,7 +198,7 @@ Multiple experiment analysis submitter
 --------------------------------------
 
 A wrapper containing to facilitate automatic submission of analysis of multiple experiments
-in parallel and possible pushing to AQUA Explorer. This is used to implement overnight updates to AQUA Explorer.
+in parallel and possible pushing to a remote storage to be used by a dashboard.
 
 Basic usage
 ^^^^^^^^^^^
@@ -241,7 +232,7 @@ with the arguments ``-m``, ``-e`` and ``-s`` respectively.
 If run without arguments, the script will run the analysis on the default
 experiments specified in the list.
 
-Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
+Adding the ``-p`` or ``--push`` flag will push the results to a remote storage.
 
 The extra ``-f`` and ``-n`` flags are used for maintenance and debugging
 and can be used to
@@ -312,7 +303,7 @@ Options
 
 .. option:: -p, --push
 
-    Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
+    Flag to push to remote storage.
 
 .. option:: -f, --fresh
 
