@@ -13,6 +13,7 @@ from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.drop_writer_icechunk import IcechunkWriter
+from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
 from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 from aqua.core.lock import SafeFileLock
@@ -611,9 +612,9 @@ class TestDROP:
             ds = xr.open_dataset(feb_path)
         assert len(ds.time) == 1  # Only February data
         assert drop_arguments["var"] in ds.data_vars
-        if output_format == "netcdf":
-            # one on-disk chunk per horizontal slice
-            assert ds[drop_arguments["var"]].encoding["chunksizes"] == (1, 180, 360)
+        # one on-disk chunk per horizontal slice, for every output format
+        chunk_key = "chunksizes" if output_format == "netcdf" else "chunks"
+        assert tuple(ds[drop_arguments["var"]].encoding[chunk_key]) == (1, 180, 360)
         assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
@@ -768,18 +769,39 @@ class TestZarrWriter:
         ds.to_zarr(store, mode="w")
         assert writer.validate(store) is expected
 
-    def test_encoding_without_chunks(self, writer):
-        """_get_encoding returns None when chunks is not set."""
-        writer.chunks = None
-        ds = xr.Dataset(
-            {"var": xr.DataArray([1, 2, 3], dims=["time"], coords={"time": pd.date_range("2020-01-01", periods=3)})}
-        )
-        assert writer._get_encoding(ds) is None
-
     def test_write_error_path(self, writer):
         """_write_chunk_to_disk returns False when the write fails."""
         ds = xr.Dataset({"var": xr.DataArray([1.0], dims=["time"])})
         assert writer._write_chunk_to_disk(ds, "/proc/nonexistent/test.zarr", None) is False
+
+
+class TestDiskChunks:
+    """On-disk chunks shared by all writers: whole horizontal dimensions, 1 along all the others."""
+
+    @pytest.fixture(params=[NetCDFWriter, ZarrWriter, IcechunkWriter], ids=["netcdf", "zarr", "icechunk"])
+    def writer(self, request, tmp_path):
+        return request.param(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+
+    @staticmethod
+    def _chunks(writer, ds):
+        """Chunk sizes of the 'var' encoding, None if left to the backend default."""
+        encoding = writer._get_encoding(ds, "var")["var"]
+        return encoding.get("chunksizes" if isinstance(writer, NetCDFWriter) else "chunks")
+
+    @pytest.mark.parametrize(
+        "dims,sizes,expected",
+        [
+            (("time", "plev", "lat", "lon"), (3, 4, 5, 6), (1, 1, 5, 6)),
+            (("time", "lat", "lon"), (3, 5, 6), (1, 5, 6)),
+            (("time", "cell"), (3, 7), (1, 7)),
+            (("time",), (3,), None),
+        ],
+        ids=["3d", "2d", "unstructured", "no_horizontal"],
+    )
+    def test_disk_chunks(self, writer, dims, sizes, expected):
+        """Every writer encodes the same on-disk chunks."""
+        ds = xr.Dataset({"var": (dims, np.zeros(sizes))}, coords={"time": pd.date_range("2020-01-01", periods=3)})
+        assert self._chunks(writer, ds) == expected
 
 
 class TestIcechunkWriter:
