@@ -35,10 +35,12 @@ def _experiments(exps, ensemble):
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
             parts = line.split()
-            count = 4 if ensemble else 3
-            if len(parts) not in ((3, 4) if ensemble else (3,)) or any(part in (".", "..") or "/" in part for part in parts):
+            selected = parts[:4] if ensemble else parts[:3]
+            if len(selected) < 3 or any(part in (".", "..") or "/" in part for part in selected):
                 raise ValueError(f"Invalid experiment list entry: {line}")
-            yield "/".join(parts[:count] if len(parts) == count else [*parts, "r1"])
+            if ensemble and len(selected) == 3:
+                selected.append("r1")
+            yield "/".join(selected)
     else:
         parts = exps.as_posix().split("/")
         if len(parts) not in ((3, 4) if ensemble else (3,)) or any(part in ("", ".", "..") for part in parts):

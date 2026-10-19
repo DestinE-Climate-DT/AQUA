@@ -57,11 +57,20 @@ def test_publish_local_repository(tmp_path, monkeypatch, capfd, experiment, ense
     assert capfd.readouterr().out == ""
 
 
-def test_experiment_list_defaults_to_r1(tmp_path):
-    """Three-column list entries use the default realization."""
+@pytest.mark.parametrize(
+    "row,ensemble,expected",
+    [
+        ("catalog model experiment", True, "catalog/model/experiment/r1"),
+        ("climatedt-gen2 ICON-5km baseline-hist r1 default", True, "climatedt-gen2/ICON-5km/baseline-hist/r1"),
+        ("catalog model experiment r2 scenario source", True, "catalog/model/experiment/r2"),
+        ("catalog model experiment r2 scenario", False, "catalog/model/experiment"),
+    ],
+)
+def test_experiment_list_columns(tmp_path, row, ensemble, expected):
+    """List rows use the path columns and ignore optional metadata."""
     listing = tmp_path / "experiments.txt"
-    listing.write_text("# comment\n\ncatalog model experiment\n")
-    assert list(push_analysis._experiments(listing, ensemble=True)) == ["catalog/model/experiment/r1"]
+    listing.write_text(f"# comment\n\n{row}\n")
+    assert list(push_analysis._experiments(listing, ensemble=ensemble)) == [expected]
 
 
 @pytest.mark.parametrize("code,exit_code", [("AccessDenied", 1), ("NoSuchBucket", 2), ("Other", 3)])

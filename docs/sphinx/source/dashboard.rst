@@ -75,9 +75,9 @@ This script is used to push the figures produced by the AQUA analysis to the aqu
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5km/baseline-hist``
 or a text file containing a list of experiments.
-The file should be in the format "catalog model experiment realization".
-In case the compatibility flag ``--no-ensemble``
-has been specified, the file must be in the format "catalog model experiment".
+The file starts with ``catalog model experiment`` and optionally ``realization`` (default ``r1``).
+Trailing metadata columns such as ``kind`` and ``source`` are ignored.
+With ``--no-ensemble``, only the first three columns are used.
 It creates ``content.yaml`` files for each experiment, pushes the images to the ``aqua-web`` bucket on LUMI-O and
 updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
 
