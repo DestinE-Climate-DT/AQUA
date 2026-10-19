@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+ClimateDT workflow modifications:
+- `aqua push` substitutes `push_analysis.sh`. The API is unchanged and the tool returns the same error states as the script.
+
+Complete list:
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named and numeric log levels, log the AQUA version and experiment targets at startup, and report figure transfers and successful completion while keeping individual file messages at DEBUG (#3217).
 Unreleased in the current development version (target v1.2.3):
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
