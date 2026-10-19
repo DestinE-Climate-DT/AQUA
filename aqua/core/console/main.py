@@ -110,7 +110,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         analysis_execute(args)
 
     def push(self, args):
-        """Publish AQUA analysis figures to aqua-web."""
+        """Publish AQUA analysis figures to a remote site."""
         return push_execute(args)
 
     def drop(self, args):

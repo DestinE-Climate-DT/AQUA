@@ -54,7 +54,7 @@ def parse_arguments():
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
     catgen_subparser = catgen_parser(parser=catgen_subparser)
 
-    push_subparser = subparsers.add_parser("push", description="Publish AQUA analysis figures to aqua-web")
+    push_subparser = subparsers.add_parser("push", description="Publish AQUA analysis figures to a remote site.")
     push_parser(parser=push_subparser)
 
     # subparser with no arguments

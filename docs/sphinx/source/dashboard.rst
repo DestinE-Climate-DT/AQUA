@@ -28,18 +28,18 @@ The full pipeline is composed of the following components:
 
 2.  **(optional, not used in the workflow)** In order to submit several ``aqua-analysis.py`` jobs in parallel, for different experiments,
     the ``submit-aqua-web.py`` script can be used. This script reads a list of experiments from a file and submits the ``aqua-analysis``
-    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to the aqua-web website using ``aqua push``.
+    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to a remote site using ``aqua push``.
 
     See the :ref:`submit-aqua-web` section for more details.
 
 
 3.  The ``aqua push`` command sends the produced figures to a remote object store (LUMI-O for DestinE).
-    It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the ``aqua-web`` bucket on LUMI-O,
+    It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the selected bucket or rsync target,
     creates a ``content.yaml``/ ``content.json`` file for each experiment.
     It uses the ``experiment.yaml`` file for each experiment created by ``aqua-analysis.py`` to get the metadata.
     It also updates ``content/experiments.yaml`` on LUMI-O to list the available experiments.
 
-    See the :ref:`aqua_web` section for more details.
+    See the :ref:`aqua_push` section for more details.
 
 
 4.  The AQUA Explorer software is stored in the `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_
@@ -48,12 +48,12 @@ The full pipeline is composed of the following components:
 
 More details on the available tools and on their dependencies are provided in the following.
 
-.. _aqua_web:
+.. _aqua_push:
 
-Automatic uploading of figures and documentation to aqua-web
-------------------------------------------------------------
+Publishing figures and documentation to a remote site
+-----------------------------------------------------
 
-AQUA figures produced by the analysis can be uploaded to the ``aqua-web`` bucket for display on a dedicated website.
+AQUA figures produced by the analysis can be uploaded to a remote site for display on a dashboard.
 The installed AQUA command line tool can push figures directly.
 
 Basic usage
@@ -63,14 +63,14 @@ Basic usage
 
     aqua push [OPTIONS] INDIR EXPS
 
-This command pushes the figures produced by the AQUA analysis to the aqua-web object store.
+This command pushes the figures produced by the AQUA analysis to a remote site.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5km/baseline-hist``
 or a text file containing a list of experiments.
 The file starts with ``catalog model experiment`` and optionally ``realization`` (default ``r1``).
 Trailing metadata columns such as ``kind`` and ``source`` are ignored.
 With ``--no-ensemble``, only the first three columns are used.
-It creates ``content.yaml`` files for each experiment and pushes them with the images to the ``aqua-web`` bucket on LUMI-O.
+It creates ``content.yaml`` files for each experiment and pushes them with the images to the selected destination.
 
 The needed AWS credentials can be stored in the ``~/.aws/credentials`` file or in environment
 variables ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
@@ -80,7 +80,7 @@ Additional options
 
 .. option:: -b <bucket>, --bucket <bucket>
 
-    The bucket to use for the LUMI-O push (default is 'aqua-web').
+    The S3 bucket to use (the standard AQUA bucket by default).
 
 .. option:: -c <configfile>, --config <configfile>
 
@@ -120,7 +120,7 @@ If the rsync option option is used, it will return the return codes from the rsy
 Grouping configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The file ``config.grouping.yaml`` in the AQUA analysis configuration contains a custom configuration for the aqua-web portal, describing how to group diagnostics.
+The file ``config.grouping.yaml`` in the AQUA analysis configuration describes how to group diagnostics on the remote site.
 It is used by the ``make_contents`` module to create the ``content.yaml`` files for each experiment.
 A custom config file can be passed with the ``-c`` option.
 
@@ -153,7 +153,7 @@ The AWS credentials can be stored in the ``~/.aws/credentials`` file or in envir
 .. warning::
 
     This is a basic utility used by the publisher (but you could also use it directly).
-    Do not use this to push the results of AQUA analysis to LUMI-O for aqua-web but rather
+    Do not use this to push the results of AQUA analysis to the remote site but rather
     use ``aqua push`` described above.
 
 Basic usage

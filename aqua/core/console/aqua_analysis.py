@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect AQUA analysis figures and publish aqua-web content.
+"""Collect AQUA analysis figures and publish them to a remote site.
 
 Example: ``aqua push output catalog/model/experiment/r1``
 """
@@ -63,7 +63,7 @@ def _experiments(exps, ensemble):
 
 
 def _collect_figures(indir, workspace, experiment, formats):
-    """Copy analysis output and experiment metadata into aqua-web content."""
+    """Copy analysis output and experiment metadata into publishable content."""
     source = indir / experiment
     if not source.is_dir():
         raise FileNotFoundError(f"Experiment directory does not exist: {source}")
@@ -187,7 +187,7 @@ def push_analysis(
 def push_parser(parser=None):
     """Add the publishing options to a standalone or AQUA subcommand parser."""
     if parser is None:
-        parser = argparse.ArgumentParser(description="Publish AQUA analysis figures to aqua-web.")
+        parser = argparse.ArgumentParser(description="Publish AQUA analysis figures to a remote site.")
     parser.add_argument("indir", type=Path, help="Analysis output directory")
     parser.add_argument("exps", help="Experiment path or a text file listing experiments")
     parser.add_argument("-b", "--bucket", default="aqua-web")

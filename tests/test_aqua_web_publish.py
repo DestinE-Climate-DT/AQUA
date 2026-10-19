@@ -84,13 +84,26 @@ def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
 
 
 def test_publisher_help_excludes_legacy_git_options(capsys):
-    """The command no longer offers Git repository update options."""
+    """The publisher help describes a remote site without legacy Git options."""
     with pytest.raises(SystemExit) as exc:
         push_analysis.main(["--help"])
     assert exc.value.code == 0
     help_text = capsys.readouterr().out
+    assert "Publish AQUA analysis figures to a remote site." in help_text
+    assert "aqua-web" not in help_text
     assert "--no-update" not in help_text
     assert "--repository" not in help_text
+
+
+def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
+    """The installed AQUA subcommand uses the same generic description."""
+    monkeypatch.setattr(sys, "argv", ["aqua", "push", "--help"])
+    with pytest.raises(SystemExit) as exc:
+        console_main.main()
+    assert exc.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "Publish AQUA analysis figures to a remote site." in help_text
+    assert "aqua-web" not in help_text
 
 
 @pytest.mark.parametrize(
