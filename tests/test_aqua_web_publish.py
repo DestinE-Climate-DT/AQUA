@@ -43,6 +43,8 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     monkeypatch.setattr(push_analysis, "get_file_from_s3", fake_download)
     monkeypatch.setattr(push_analysis, "upload_file_to_s3", fake_upload_file)
     monkeypatch.setattr(push_analysis, "upload_directory_to_s3", fake_upload_directory)
+    log = Mock()
+    monkeypatch.setattr(push_analysis, "logger", log)
     cwd = Path.cwd()
     push_analysis.push_analysis(output, experiment, config, formats=("svg",), ensemble=ensemble)
 
@@ -52,6 +54,14 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     assert published["content"]["experiment"]["label"] == "Example"
     assert not published["source"].exists()
     assert ("aqua-web", f"content/svg/{experiment}", "directory") in transfers
+    assert log.info.call_args_list[0].args == ("Running push-analysis with AQUA version %s", push_analysis.aqua_version)
+    log.info.assert_any_call(
+        "Target: catalog=%s model=%s experiment=%s realization=%s",
+        "catalog",
+        "model",
+        "experiment",
+        "r1" if ensemble else "n/a",
+    )
     assert capfd.readouterr().out == ""
 
 
@@ -63,6 +73,15 @@ def test_publisher_help_excludes_legacy_git_options(capsys):
     help_text = capsys.readouterr().out
     assert "--no-update" not in help_text
     assert "--repository" not in help_text
+
+
+def test_publisher_logs_aqua_version_at_start(tmp_path, monkeypatch):
+    """The version is reported before input validation or publishing starts."""
+    log = Mock()
+    monkeypatch.setattr(push_analysis, "logger", log)
+    with pytest.raises(FileNotFoundError):
+        push_analysis.push_analysis(tmp_path / "missing", "catalog/model/experiment/r1", tmp_path / "missing.yaml")
+    log.info.assert_called_once_with("Running push-analysis with AQUA version %s", push_analysis.aqua_version)
 
 
 @pytest.mark.parametrize(

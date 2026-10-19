@@ -17,6 +17,7 @@ from pathlib import Path
 from make_contents import main as make_contents
 from push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
+from aqua import __version__ as aqua_version
 from aqua.core.logger import log_configure
 
 logger = log_configure(log_level="INFO", log_name="push_analysis")
@@ -122,6 +123,7 @@ def push_analysis(
         loglevel (str): AQUA logging level for the publishing commands.
     """
     log_configure(log_level=loglevel, log_name="push_analysis")
+    logger.info("Running push-analysis with AQUA version %s", aqua_version)
     log_configure(log_level=loglevel, log_name="push_s3")
     indir = Path(indir).expanduser().resolve()
     config = Path(config).expanduser().resolve()
@@ -135,11 +137,19 @@ def push_analysis(
     experiments = list(_experiments(exps, ensemble))
     if not experiments:
         raise ValueError("No experiments to publish")
+    for experiment in experiments:
+        catalog, model, exp, *members = experiment.split("/")
+        logger.info(
+            "Target: catalog=%s model=%s experiment=%s realization=%s",
+            catalog,
+            model,
+            exp,
+            members[0] if members else "n/a",
+        )
     with tempfile.TemporaryDirectory(prefix="aqua-web-") as tmp:
         workspace = Path(tmp)
         client = None if rsync_target else create_client()
         for experiment in experiments:
-            logger.info("Processing %s", experiment)
             _collect_figures(indir, workspace, experiment, formats)
             _get_experiments_file(workspace, bucket, rsync_target, client)
             for fmt in formats:
