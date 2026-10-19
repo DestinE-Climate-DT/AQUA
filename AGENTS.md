@@ -10,6 +10,7 @@
 - Agents may prepare branches and pull requests, but must stop before merging. An agent may merge only when a human explicitly instructs it to perform that specific merge, identifying the pull request and the changes to be merged. That instruction does not authorize merging additional changes added afterward.
 - A positive human review, an approved pull request, passing tests, automated reviews, or a general request to complete a task never authorizes an agent to merge.
 - Never push directly to `main`, enable auto-merge, or bypass required reviews or branch protections.
+- Add a label "ready for review" when the pull request is ready to be reviewed by a human.
 
 ### Before implementing anything
 
