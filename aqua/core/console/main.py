@@ -4,10 +4,11 @@
 AQUA command line main functions
 """
 
+import subprocess
+
 from aqua.core.logger import log_configure
 
 from .analysis import analysis_execute
-from .aqua_analysis import push_execute
 from .builder import builder_execute
 from .catalog import CatalogMixin
 from .catgen import catgen_execute
@@ -18,6 +19,9 @@ from .files import FilesMixin
 # this are used to check existence of aqua.diagnostics
 from .install import InstallMixin
 from .parser import parse_arguments
+from .push_analysis import logger as push_logger
+from .push_analysis import push_analysis, push_options
+from .push_s3 import S3TransferError
 
 
 class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
@@ -111,7 +115,19 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
 
     def push(self, args):
         """Publish AQUA analysis figures to a remote site."""
-        return push_execute(args)
+        try:
+            options = push_options(args)
+        except ValueError as exc:
+            self.logger.error("%s", exc)
+            return 2
+        try:
+            push_analysis(**options)
+        except S3TransferError as exc:
+            return exc.exit_code
+        except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
+            push_logger.error("Publishing failed: %s", exc)
+            return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 1
+        return 0
 
     def drop(self, args):
         """

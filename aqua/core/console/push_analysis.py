@@ -4,7 +4,6 @@
 Example: ``aqua push output catalog/model/experiment/r1``
 """
 
-import argparse
 import getpass
 import os
 import shutil
@@ -18,18 +17,10 @@ from aqua import __version__ as aqua_version
 from aqua.core.logger import log_configure
 
 from .make_contents import main as make_contents
-from .push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
+from .push_s3 import create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
 logger = log_configure(log_level="INFO", log_name="push_analysis")
 FORMATS = ("pdf", "png", "svg")
-LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-
-
-def _parse_loglevel(value):
-    """Normalize a named or legacy numeric log level."""
-    if value.isdecimal() and 1 <= int(value) <= len(LOG_LEVELS):
-        return LOG_LEVELS[int(value) - 1]
-    return value.upper()
 
 
 def _run(*command, cwd=None):
@@ -184,65 +175,22 @@ def push_analysis(
     logger.info("Transfer completed successfully")
 
 
-def push_parser(parser=None):
-    """Add the publishing options to a standalone or AQUA subcommand parser."""
-    if parser is None:
-        parser = argparse.ArgumentParser(description="Publish AQUA analysis figures to a remote site.")
-    parser.add_argument("indir", type=Path, help="Analysis output directory")
-    parser.add_argument("exps", help="Experiment path or a text file listing experiments")
-    parser.add_argument("-b", "--bucket", default="aqua-web")
-    parser.add_argument("-c", "--config", type=Path)
-    parser.add_argument("--no-ensemble", action="store_true")
-    parser.add_argument("-f", "--format", default=",".join(FORMATS))
-    parser.add_argument(
-        "-l",
-        "--loglevel",
-        type=_parse_loglevel,
-        choices=LOG_LEVELS,
-        default="INFO",
-        metavar="LEVEL",
-        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: INFO)",
-    )
-    parser.add_argument("-s", "--rsync", dest="rsync_target")
-    return parser
-
-
-def push_execute(args, parser=None):
-    """Run the publisher from parsed standalone or AQUA command arguments."""
+def push_options(args):
+    """Resolve parsed CLI arguments for the publishing routine."""
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
     if not formats or any(fmt not in FORMATS for fmt in formats):
-        if parser is not None:
-            parser.error("--format must be a comma-separated selection of pdf,png,svg")
-        logger.error("--format must be a comma-separated selection of pdf,png,svg")
-        return 2
+        raise ValueError("--format must be a comma-separated selection of pdf,png,svg")
     config = args.config
     if config is None:
         root = os.environ.get("AQUA_CONFIG") or str(Path.home() / ".aqua")
         config = Path(root) / "analysis" / "config.grouping.yaml"
-    try:
-        push_analysis(
-            args.indir,
-            args.exps,
-            config,
-            bucket=args.bucket,
-            formats=formats,
-            ensemble=not args.no_ensemble,
-            rsync_target=args.rsync_target,
-            loglevel=args.loglevel,
-        )
-    except S3TransferError as exc:
-        return exc.exit_code
-    except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
-        logger.error("Publishing failed: %s", exc)
-        return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 1
-    return 0
-
-
-def main(argv=None):
-    """Run the standalone publishing command and return its exit status."""
-    parser = push_parser()
-    return push_execute(parser.parse_args(argv), parser=parser)
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    return {
+        "indir": args.indir,
+        "exps": args.exps,
+        "config": config,
+        "bucket": args.bucket,
+        "formats": formats,
+        "ensemble": not args.no_ensemble,
+        "rsync_target": args.rsync_target,
+        "loglevel": args.loglevel,
+    }

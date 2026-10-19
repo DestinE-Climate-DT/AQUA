@@ -9,9 +9,8 @@ import pytest
 import yaml
 from botocore.exceptions import ClientError
 
-from aqua.core.console import aqua_analysis as push_analysis
 from aqua.core.console import main as console_main
-from aqua.core.console import make_contents, push_s3
+from aqua.core.console import make_contents, push_analysis, push_s3
 
 
 @pytest.mark.parametrize("experiment,ensemble", [("catalog/model/experiment/r1", True), ("catalog/model/experiment", False)])
@@ -79,24 +78,21 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
 def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
     """The AQUA entry point returns the publisher's failure status."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"])
-    monkeypatch.setattr(console_main, "push_execute", Mock(return_value=3))
+    monkeypatch.setattr(console_main, "push_analysis", Mock(side_effect=push_s3.S3TransferError("upload failed", 3)))
     assert console_main.main() == 3
 
 
-def test_publisher_help_excludes_legacy_git_options(capsys):
-    """The publisher help describes a remote site without legacy Git options."""
-    with pytest.raises(SystemExit) as exc:
-        push_analysis.main(["--help"])
-    assert exc.value.code == 0
-    help_text = capsys.readouterr().out
-    assert "Publish AQUA analysis figures to a remote site." in help_text
-    assert "aqua-web" not in help_text
-    assert "--no-update" not in help_text
-    assert "--repository" not in help_text
+def test_aqua_push_rejects_invalid_format(monkeypatch, tmp_path):
+    """Invalid formats fail before the publishing routine is called."""
+    monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "-f", "jpeg"])
+    publish = Mock()
+    monkeypatch.setattr(console_main, "push_analysis", publish)
+    assert console_main.main() == 2
+    publish.assert_not_called()
 
 
 def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
-    """The installed AQUA subcommand uses the same generic description."""
+    """The AQUA subcommand help describes a remote site without legacy Git options."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", "--help"])
     with pytest.raises(SystemExit) as exc:
         console_main.main()
@@ -104,6 +100,8 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
     help_text = capsys.readouterr().out
     assert "Publish AQUA analysis figures to a remote site." in help_text
     assert "aqua-web" not in help_text
+    assert "--no-update" not in help_text
+    assert "--repository" not in help_text
 
 
 @pytest.mark.parametrize(
@@ -125,19 +123,21 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
 def test_publisher_accepts_named_and_numeric_log_levels(tmp_path, monkeypatch, level, expected):
     """The CLI passes standard AQUA log level names to the publisher."""
     publish = Mock()
-    monkeypatch.setattr(push_analysis, "push_analysis", publish)
-    arguments = [str(tmp_path), "catalog/model/experiment/r1"]
+    monkeypatch.setattr(console_main, "push_analysis", publish)
+    arguments = ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"]
     if level is not None:
         arguments.extend(["-l" if level.isdecimal() else "--loglevel", level])
-    assert push_analysis.main(arguments) == 0
+    monkeypatch.setattr(sys, "argv", arguments)
+    assert console_main.main() == 0
     assert publish.call_args.kwargs["loglevel"] == expected
 
 
 @pytest.mark.parametrize("level", ["0", "6", "TRACE"])
-def test_publisher_rejects_invalid_log_level(tmp_path, level):
+def test_publisher_rejects_invalid_log_level(tmp_path, monkeypatch, level):
     """Unknown names and out-of-range numeric levels are rejected."""
+    monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "--loglevel", level])
     with pytest.raises(SystemExit) as exc:
-        push_analysis.main([str(tmp_path), "catalog/model/experiment/r1", "--loglevel", level])
+        console_main.main()
     assert exc.value.code == 2
 
 
