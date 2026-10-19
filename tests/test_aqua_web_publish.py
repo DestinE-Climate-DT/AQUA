@@ -78,15 +78,24 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
 def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
     """The AQUA entry point returns the publisher's failure status."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"])
-    monkeypatch.setattr(console_main, "push_analysis", Mock(side_effect=push_s3.S3TransferError("upload failed", 3)))
+    monkeypatch.setattr(push_analysis, "push_analysis", Mock(side_effect=push_s3.S3TransferError("upload failed", 3)))
     assert console_main.main() == 3
+
+
+def test_aqua_push_dispatches_to_push_execute(monkeypatch, tmp_path):
+    """The console forwards the push command to its executor."""
+    monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"])
+    execute = Mock(return_value=3)
+    monkeypatch.setattr(console_main, "push_execute", execute)
+    assert console_main.main() == 3
+    assert execute.call_count == 1
 
 
 def test_aqua_push_rejects_invalid_format(monkeypatch, tmp_path):
     """Invalid formats fail before the publishing routine is called."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "-f", "jpeg"])
     publish = Mock()
-    monkeypatch.setattr(console_main, "push_analysis", publish)
+    monkeypatch.setattr(push_analysis, "push_analysis", publish)
     assert console_main.main() == 2
     publish.assert_not_called()
 
@@ -123,7 +132,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
 def test_publisher_accepts_named_and_numeric_log_levels(tmp_path, monkeypatch, level, expected):
     """The CLI passes standard AQUA log level names to the publisher."""
     publish = Mock()
-    monkeypatch.setattr(console_main, "push_analysis", publish)
+    monkeypatch.setattr(push_analysis, "push_analysis", publish)
     arguments = ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"]
     if level is not None:
         arguments.extend(["-l" if level.isdecimal() else "--loglevel", level])

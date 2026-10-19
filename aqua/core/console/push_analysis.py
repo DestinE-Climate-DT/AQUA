@@ -17,7 +17,7 @@ from aqua import __version__ as aqua_version
 from aqua.core.logger import log_configure
 
 from .make_contents import main as make_contents
-from .push_s3 import create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
+from .push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
 logger = log_configure(log_level="INFO", log_name="push_analysis")
 FORMATS = ("pdf", "png", "svg")
@@ -194,3 +194,20 @@ def push_options(args):
         "rsync_target": args.rsync_target,
         "loglevel": args.loglevel,
     }
+
+
+def push_execute(args):
+    """Publish from parsed CLI arguments and return the process exit status."""
+    try:
+        options = push_options(args)
+    except ValueError as exc:
+        logger.error("%s", exc)
+        return 2
+    try:
+        push_analysis(**options)
+    except S3TransferError as exc:
+        return exc.exit_code
+    except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
+        logger.error("Publishing failed: %s", exc)
+        return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 1
+    return 0
