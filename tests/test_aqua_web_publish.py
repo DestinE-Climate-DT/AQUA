@@ -27,12 +27,20 @@ def test_publish_local_repository(tmp_path, monkeypatch, experiment, ensemble):
     repo.mkdir()
     transfers = []
 
-    def fake_transfer(client, bucket, path, destination=None, get=False):
-        transfers.append((bucket, destination, get))
-        return False if get else True
+    def fake_download(client, bucket, key, destination):
+        transfers.append((bucket, key, "download"))
+        return False
+
+    def fake_upload_file(client, bucket, path, key):
+        transfers.append((bucket, key, "file"))
+
+    def fake_upload_directory(client, bucket, path, prefix):
+        transfers.append((bucket, prefix, "directory"))
 
     monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
-    monkeypatch.setattr(push_analysis, "transfer", fake_transfer)
+    monkeypatch.setattr(push_analysis, "get_file_from_s3", fake_download)
+    monkeypatch.setattr(push_analysis, "upload_file_to_s3", fake_upload_file)
+    monkeypatch.setattr(push_analysis, "upload_directory_to_s3", fake_upload_directory)
     cwd = Path.cwd()
     push_analysis.push_analysis(
         output, experiment, config, repository=f"local:{repo}", formats=("svg",), ensemble=ensemble, update=False
@@ -45,7 +53,7 @@ def test_publish_local_repository(tmp_path, monkeypatch, experiment, ensemble):
     expected = {"catalog": {"model": {"experiment": ["r1"]} if ensemble else ["experiment"]}}
     assert yaml.safe_load((repo / "content" / "experiments.yaml").read_text()) == expected
     assert experiment in (repo / "updated.txt").read_text()
-    assert ("aqua-web", f"content/svg/{experiment}", False) in transfers
+    assert ("aqua-web", f"content/svg/{experiment}", "directory") in transfers
 
 
 def test_experiment_list_defaults_to_r1(tmp_path):

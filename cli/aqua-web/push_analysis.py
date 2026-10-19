@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 
 from make_contents import main as make_contents
-from push_s3 import S3TransferError, create_client, transfer
+from push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
 logger = logging.getLogger(__name__)
 FORMATS = ("pdf", "png", "svg")
@@ -75,7 +75,7 @@ def _get_experiments_file(repo, bucket, rsync_target, client):
         )
         if result.returncode:
             logger.warning("Could not retrieve experiments.yaml from %s: %s", rsync_target, result.stderr.strip())
-    elif not transfer(client, bucket, destination, "content/experiments.yaml", get=True):
+    elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination)):
         logger.info("No remote experiments.yaml found; creating it")
 
 
@@ -90,10 +90,10 @@ def _publish(repo, experiment, formats, bucket, rsync_target, client):
             _run("rsync", "-avz", "--relative", "--chmod=D775,F664", relative, f"{rsync_target}/", cwd=repo)
     else:
         if index.is_file():
-            transfer(client, bucket, index, "content/experiments.yaml")
+            upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml")
         for fmt in formats:
             source = repo / "content" / fmt / experiment
-            transfer(client, bucket, source, f"content/{fmt}/{experiment}")
+            upload_directory_to_s3(client, bucket, str(source), f"content/{fmt}/{experiment}")
 
 
 def push_analysis(
