@@ -4,6 +4,7 @@
 Example: ``aqua push output catalog/model/experiment/r1``
 """
 
+import argparse
 import getpass
 import os
 import shutil
@@ -21,6 +22,37 @@ from .push_s3 import S3TransferError, create_client, get_file_from_s3, upload_di
 
 logger = log_configure(log_level="INFO", log_name="push_analysis")
 FORMATS = ("pdf", "png", "svg")
+LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+
+
+def _parse_loglevel(value):
+    """Normalize a named or legacy numeric log level."""
+    if value.isdecimal() and 1 <= int(value) <= len(LOG_LEVELS):
+        return LOG_LEVELS[int(value) - 1]
+    return value.upper()
+
+
+def push_parser(parser=None):
+    """Add publishing options to a parser, creating one if needed."""
+    if parser is None:
+        parser = argparse.ArgumentParser(description="Publish AQUA analysis figures to a remote site.")
+    parser.add_argument("indir", type=Path, help="Analysis output directory")
+    parser.add_argument("exps", help="Experiment path or a text file listing experiments")
+    parser.add_argument("-b", "--bucket", default="aqua-web")
+    parser.add_argument("-c", "--config", type=Path)
+    parser.add_argument("--no-ensemble", action="store_true")
+    parser.add_argument("-f", "--format", default=",".join(FORMATS))
+    parser.add_argument(
+        "-l",
+        "--loglevel",
+        type=_parse_loglevel,
+        choices=LOG_LEVELS,
+        default="INFO",
+        metavar="LEVEL",
+        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: INFO)",
+    )
+    parser.add_argument("-s", "--rsync", dest="rsync_target")
+    return parser
 
 
 def _run(*command, cwd=None):

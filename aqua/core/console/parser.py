@@ -5,7 +5,6 @@ AQUA command line parser
 """
 
 import argparse
-from pathlib import Path
 
 from aqua import __version__ as version
 from aqua.core.configurer import ConfigPackages
@@ -14,37 +13,7 @@ from aqua.core.console.builder import builder_parser
 from aqua.core.console.catgen import catgen_parser
 from aqua.core.console.components import discover_aqua_components
 from aqua.core.console.drop import drop_parser
-from aqua.core.console.push_analysis import FORMATS
-
-LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-
-
-def _parse_loglevel(value):
-    """Normalize a named or legacy numeric log level."""
-    if value.isdecimal() and 1 <= int(value) <= len(LOG_LEVELS):
-        return LOG_LEVELS[int(value) - 1]
-    return value.upper()
-
-
-def push_parser(parser):
-    """Add publishing options to the AQUA subcommand parser."""
-    parser.add_argument("indir", type=Path, help="Analysis output directory")
-    parser.add_argument("exps", help="Experiment path or a text file listing experiments")
-    parser.add_argument("-b", "--bucket", default="aqua-web")
-    parser.add_argument("-c", "--config", type=Path)
-    parser.add_argument("--no-ensemble", action="store_true")
-    parser.add_argument("-f", "--format", default=",".join(FORMATS))
-    parser.add_argument(
-        "-l",
-        "--loglevel",
-        type=_parse_loglevel,
-        choices=LOG_LEVELS,
-        default="INFO",
-        metavar="LEVEL",
-        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: INFO)",
-    )
-    parser.add_argument("-s", "--rsync", dest="rsync_target")
-    return parser
+from aqua.core.console.push_analysis import push_parser
 
 
 def parse_arguments():
