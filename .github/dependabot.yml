@@ -14,7 +14,7 @@ updates:
     commit-message:
       prefix: "[Dependabot-conda]"
     labels:
-      - "dependabot"
+      - "dependabot :dependabot:"
     groups:
       netcdf:
         patterns:
@@ -31,7 +31,7 @@ updates:
     commit-message:
       prefix: "[Dependabot-pip]"
     labels:
-      - "dependabot"
+      - "dependabot :dependabot:"
     groups:
       eccodes:
         patterns:
@@ -46,7 +46,7 @@ updates:
     commit-message:
       prefix: "[Dependabot-github-actions]"
     labels:
-      - "dependabot"
+      - "dependabot :dependabot:"
 
   - package-ecosystem: "pre-commit"
     directory: "/"
@@ -58,4 +58,4 @@ updates:
     commit-message:
       prefix: "[Dependabot-pre-commit]"
     labels:
-      - "dependabot"
+      - "dependabot :dependabot:"

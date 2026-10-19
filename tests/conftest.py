@@ -5,12 +5,13 @@ Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 
 import matplotlib
 import pytest
-from utils_tests import TestCleanupRegistry
+from utils_tests import LOGLEVEL, TestCleanupRegistry
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
@@ -20,11 +21,6 @@ matplotlib.use("Agg")  # Non-interactive backend
 import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
-
-# Centralized setting for all tests
-DPI = 50
-APPROX_REL = 1e-4
-LOGLEVEL = "DEBUG"
 
 
 # ======================================================================
@@ -45,7 +41,9 @@ def pytest_configure(config):
     workerinput = getattr(config, "workerinput", None)
     if workerinput is not None:
         worker_id = workerinput.get("workerid", "master")
-        os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_")
+        # macOS default tmpdir is long: keep it short to fit the AF_UNIX socket path limit (~103 chars)
+        base = "/tmp" if sys.platform == "darwin" else None
+        os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_", dir=base)
 
 
 def pytest_sessionfinish(session, exitstatus):

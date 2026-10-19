@@ -4,12 +4,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.2.1):
 
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named and numeric log levels, log the AQUA version and experiment targets at startup, and report figure transfers and successful completion while keeping individual file messages at DEBUG (#3217).
+Unreleased in the current development version (target v1.2.3):
+- DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
+- Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
+- Fix the ICON-default `snlwrf` formula by removing a trailing operator; ICON-cycle3 and ICON-cycle4 inherit the correction (#3247)
+- CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
+
+## [v1.2.2]
+
+ClimateDT workflow modifications:
+- `--checker` rename to `--setup_checker` in `aqua analysis` command line
+- `aqua analysis ensemble` command is now ready for implementation in the workflow
+
+Main changes:
+- the setup checker is now in the `aqua diagnostics` package, and the `cli_checker.py` is removed from the core package
+- `plot_timeseries` are updated to work with the new ensemble timeseries diagnostic
+- AQUA does not support anymore python 3.11
+- Various CI/CD refinements
+- Gregory plots can now use a time-colormap to color both trajectory lines and points
+
+Complete list:
+- Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
+- CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
+- Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
+- Introduction of reusable modular actions to support portable GitHub workflow (#3198)
+- CI refinements: `aqua-release.yml` now runs weekly and reports failures only for scheduled/manual runs; one failure label per suite (`ci-failure:<suite> :clown_face:`); callers own the platform x Python matrix with `max-parallel`, `aqua-test-reusable.yml` takes a single `python-version`; on `labeled` events PR workflows check only the label just added, so unrelated labels no longer restart running tests (#3222)
+- `aqua analysis` checker renamed to setup checker (`--setup_checker`, `run_setup_checker`); `cli_checker.py` removed in favour of the `cli_setup_checker.py` from diagnostics (#3178)
+- `plot_timeseries` function now plot same color for monthly and annual ensemble timeseries (#3220)
+- Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
+- Hovmoller adjustments and possibility to plot uneven levels (#3203)
+- `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
+- The `aqua analysis ensemble` command now set realization to `ensemble` by default, to avoid falling to the default `r1` (#3192)
+- Split console tests in multiple modules and reintroduce parallel execution (#3199)
+- Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
 - `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
-- Drop support to python 3.12 (#3188)
+- Drop support to python 3.11 (#3188, #3214)
 - Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
 - Remove climatedt-phase1 from CI/CD (#3181)
 - Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
@@ -1580,7 +1612,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...HEAD
+[v1.2.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...v1.2.2
 [v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0

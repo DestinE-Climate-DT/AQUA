@@ -6,21 +6,24 @@ on:
   schedule:
     - cron: "0 4 * * 1" # run every Monday night at 4AM UTC
 
-concurrency:
-  group: conda-relock-${{ github.event.pull_request.head.ref || 'main' }}
-  cancel-in-progress: true
-
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
   relock:
+    # Non-PR events always run. On PRs (only 'labeled' events trigger this workflow) run only if the
+    # label just added starts with 'conda-lock': adding other labels later does not relock again
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
       (github.event_name == 'pull_request' &&
-      contains(join(github.event.pull_request.labels.*.name, '|'), 'conda-lock'))
+        startsWith(github.event.label.name, 'conda-lock'))
+    # Job-level concurrency: a run skipped by the condition above never enters the group, so adding another
+    # label together with 'conda-lock' does not cancel the real relock (workflow-level concurrency would)
+    concurrency:
+      group: conda-relock-${{ github.event.pull_request.head.ref || 'main' }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - name: Determine target branch
