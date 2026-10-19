@@ -2,7 +2,7 @@ name: Collect AQUA pytest reports
 description: Generate coverage reports, show xdist logs after pytest failures and upload test artifacts.
 inputs:
   project-path:
-    description: Workspace-relative path to the checked-out Python project.
+    description: Workspace-relative path to the checked-out Python project (e.g. AQUA-diagnostics in aqua-diagnostics).
     required: false
     default: AQUA
   enable-parallel:
@@ -16,6 +16,10 @@ inputs:
   codecov-token:
     description: Codecov upload token.
     required: false
+  codecov-name:
+    description: Name of the Codecov coverage upload.
+    required: false
+    default: codecov-aqua
   artifact-name:
     description: Name of the uploaded test artifact. Leave empty to skip the upload.
     required: false
@@ -49,7 +53,7 @@ runs:
         token: ${{ inputs.codecov-token }}
         files: ${{ inputs.project-path }}/coverage.xml
         flags: unittests
-        name: codecov-aqua
+        name: ${{ inputs.codecov-name }}
 
     - name: Upload test results to Codecov
       if: ${{ inputs.enable-coverage == 'true' && !cancelled() }}
