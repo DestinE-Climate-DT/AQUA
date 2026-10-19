@@ -17,8 +17,8 @@ from pathlib import Path
 from aqua import __version__ as aqua_version
 from aqua.core.logger import log_configure
 
-from .web_contents import main as make_contents
-from .web_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
+from .make_contents import main as make_contents
+from .push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
 logger = log_configure(log_level="INFO", log_name="push_analysis")
 FORMATS = ("pdf", "png", "svg")

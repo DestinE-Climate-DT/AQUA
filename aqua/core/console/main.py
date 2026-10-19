@@ -7,6 +7,7 @@ AQUA command line main functions
 from aqua.core.logger import log_configure
 
 from .analysis import analysis_execute
+from .aqua_analysis import push_execute
 from .builder import builder_execute
 from .catalog import CatalogMixin
 from .catgen import catgen_execute
@@ -17,7 +18,6 @@ from .files import FilesMixin
 # this are used to check existence of aqua.diagnostics
 from .install import InstallMixin
 from .parser import parse_arguments
-from .web_push import push_execute
 
 
 class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):

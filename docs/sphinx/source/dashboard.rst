@@ -54,8 +54,7 @@ Automatic uploading of figures and documentation to aqua-web
 ------------------------------------------------------------
 
 AQUA figures produced by the analysis can be uploaded to the ``aqua-web`` bucket for display on a dedicated website.
-The installed AQUA command line tool can push figures directly. The standalone
-``cli/aqua-web/push_analysis.py`` script remains available for existing workflows.
+The installed AQUA command line tool can push figures directly.
 
 Basic usage
 ^^^^^^^^^^^
@@ -122,7 +121,8 @@ Grouping configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The file ``config.grouping.yaml`` in the AQUA analysis configuration contains a custom configuration for the aqua-web portal, describing how to group diagnostics.
-It is used by ``make_contents.py``` to create the ``content.yaml`` files for each experiment. A custom config file can be passed with the ``-c`` option.
+It is used by the ``make_contents`` module to create the ``content.yaml`` files for each experiment.
+A custom config file can be passed with the ``-c`` option.
 
 
 AWS credentials file
@@ -152,7 +152,7 @@ The AWS credentials can be stored in the ``~/.aws/credentials`` file or in envir
 
 .. warning::
 
-    This is a basic utility used by the other scripts (but you could also use it directly).
+    This is a basic utility used by the publisher (but you could also use it directly).
     Do not use this to push the results of AQUA analysis to LUMI-O for aqua-web but rather
     use ``aqua push`` described above.
 
@@ -161,7 +161,7 @@ Basic usage
 
 .. code-block:: bash
 
-    python push_s3.py <bucket_name> <source> [-d <destination>] [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
+    python -m aqua.core.console.push_s3 <bucket_name> <source> [-d <destination>] [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
 
 Options
 ^^^^^^^

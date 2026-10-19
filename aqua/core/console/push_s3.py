@@ -6,7 +6,7 @@
 
 # The script uses the boto3 library to interact with the S3 service.
 # The script can be run as follows:
-# python push_s3.py <bucket_name> <source> [-d <destination>]
+# python -m aqua.core.console.push_s3 <bucket_name> <source> [-d <destination>]
 # [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
 
 import argparse

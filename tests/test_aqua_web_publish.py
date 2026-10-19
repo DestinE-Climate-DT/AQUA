@@ -1,4 +1,4 @@
-"""Tests for the standalone aqua-web publishing commands."""
+"""Tests for AQUA's aqua-web publishing commands."""
 
 import subprocess
 import sys
@@ -9,10 +9,9 @@ import pytest
 import yaml
 from botocore.exceptions import ClientError
 
+from aqua.core.console import aqua_analysis as push_analysis
 from aqua.core.console import main as console_main
-from aqua.core.console import web_contents as make_contents
-from aqua.core.console import web_push as push_analysis
-from aqua.core.console import web_s3 as push_s3
+from aqua.core.console import make_contents, push_s3
 
 
 @pytest.mark.parametrize("experiment,ensemble", [("catalog/model/experiment/r1", True), ("catalog/model/experiment", False)])

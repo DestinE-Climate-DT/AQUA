@@ -9,11 +9,11 @@ import argparse
 from aqua import __version__ as version
 from aqua.core.configurer import ConfigPackages
 from aqua.core.console.analysis import analysis_parser
+from aqua.core.console.aqua_analysis import push_parser
 from aqua.core.console.builder import builder_parser
 from aqua.core.console.catgen import catgen_parser
 from aqua.core.console.components import discover_aqua_components
 from aqua.core.console.drop import drop_parser
-from aqua.core.console.web_push import push_parser
 
 
 def parse_arguments():
