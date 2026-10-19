@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from .drop_util import zarr_encoding
 from .drop_writer_base import BaseWriter
 
 
@@ -121,7 +122,7 @@ class IcechunkWriter(BaseWriter):
         Returns:
             dict: Encoding configuration or None
         """
-        return self._build_zarr_encoding(data)
+        return zarr_encoding({var: self._disk_chunks(data[var]) for var in data.data_vars})
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """Not used: IcechunkWriter writes via _write_to_icechunk_session(), not tmpfiles."""
