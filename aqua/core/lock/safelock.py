@@ -67,6 +67,10 @@ class SafeFileLock:
         self._remove_stale()
 
         try:
+            # SoftFileLock uses the existence of the lock file to indicate that a process
+            # holds the lock. Let filelock manage this file automatically.
+            # Deleting or replacing it while the lock is held could allow another
+            # process to acquire the same lock, causing both processes to run at once.
             self.lock.acquire(timeout=self.timeout)
             self.logger.debug("Acquired: %s", self.lock_path)
         except Timeout:
