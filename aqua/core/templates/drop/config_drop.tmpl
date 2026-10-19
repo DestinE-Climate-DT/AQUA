@@ -54,6 +54,11 @@ options:
   # Compacting method: xarray, cdo, or null for no compacting
   compact: cdo
 
+  # Target size of the read chunks written in a new catalog entry (e.g. 64MiB, 128MiB, 0.2GiB)
+  # or 'auto' to leave chunking to Dask (chunks: auto)
+  # Existing catalog entries are not modified
+  chunk_target: 128MiB
+
   # Performance monitoring (creates HTML report)
   performance_reporting: False
 
