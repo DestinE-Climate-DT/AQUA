@@ -185,13 +185,14 @@ def main(argv=None):
     parser.add_argument("-c", "--config", type=Path)
     parser.add_argument("--no-ensemble", action="store_true")
     parser.add_argument("-f", "--format", default=",".join(FORMATS))
-    parser.add_argument("-l", "--loglevel", type=int, choices=range(1, 6), default=2)
+    parser.add_argument(
+        "-l", "--loglevel", type=str.upper, choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"), default="INFO"
+    )
     parser.add_argument("-s", "--rsync", dest="rsync_target")
     args = parser.parse_args(argv)
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
     if not formats or any(fmt not in FORMATS for fmt in formats):
         parser.error("--format must be a comma-separated selection of pdf,png,svg")
-    loglevel = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")[args.loglevel - 1]
     config = args.config
     if config is None:
         root = os.environ.get("AQUA_CONFIG") or str(Path.home() / ".aqua")
@@ -205,7 +206,7 @@ def main(argv=None):
             formats=formats,
             ensemble=not args.no_ensemble,
             rsync_target=args.rsync_target,
-            loglevel=loglevel,
+            loglevel=args.loglevel,
         )
     except S3TransferError as exc:
         return exc.exit_code

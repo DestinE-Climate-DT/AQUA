@@ -79,6 +79,35 @@ def test_publisher_help_excludes_legacy_git_options(capsys):
     assert "--repository" not in help_text
 
 
+@pytest.mark.parametrize(
+    "level,expected",
+    [
+        (None, "INFO"),
+        ("debug", "DEBUG"),
+        ("INFO", "INFO"),
+        ("warning", "WARNING"),
+        ("ErRoR", "ERROR"),
+        ("critical", "CRITICAL"),
+    ],
+)
+def test_publisher_accepts_named_log_levels(tmp_path, monkeypatch, level, expected):
+    """The CLI passes standard AQUA log level names to the publisher."""
+    publish = Mock()
+    monkeypatch.setattr(push_analysis, "push_analysis", publish)
+    arguments = [str(tmp_path), "catalog/model/experiment/r1"]
+    if level is not None:
+        arguments.extend(["--loglevel", level])
+    assert push_analysis.main(arguments) == 0
+    assert publish.call_args.kwargs["loglevel"] == expected
+
+
+def test_publisher_rejects_numeric_log_level(tmp_path):
+    """The old numeric shorthand is no longer accepted."""
+    with pytest.raises(SystemExit) as exc:
+        push_analysis.main([str(tmp_path), "catalog/model/experiment/r1", "--loglevel", "1"])
+    assert exc.value.code == 2
+
+
 def test_publisher_logs_aqua_version_at_start(tmp_path, monkeypatch):
     """The version is reported before input validation or publishing starts."""
     log = Mock()
