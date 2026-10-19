@@ -14,8 +14,8 @@ import push_s3  # noqa: E402
 
 
 @pytest.mark.parametrize("experiment,ensemble", [("catalog/model/experiment/r1", True), ("catalog/model/experiment", False)])
-def test_publish_local_repository(tmp_path, monkeypatch, capfd, experiment, ensemble):
-    """Publishing generates content for every format without changing cwd."""
+def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment, ensemble):
+    """Publishing builds content in a temporary workspace without Git."""
     output = tmp_path / "output"
     source = output / experiment
     source.mkdir(parents=True)
@@ -23,9 +23,8 @@ def test_publish_local_repository(tmp_path, monkeypatch, capfd, experiment, ense
     (source / "experiment.yaml").write_text("menu: Example\n")
     config = tmp_path / "grouping.yaml"
     config.write_text("diagnostics: {}\n")
-    repo = tmp_path / "aqua-web"
-    repo.mkdir()
     transfers = []
+    published = {}
 
     def fake_download(client, bucket, key, destination):
         transfers.append((bucket, key, "download"))
@@ -33,28 +32,37 @@ def test_publish_local_repository(tmp_path, monkeypatch, capfd, experiment, ense
 
     def fake_upload_file(client, bucket, path, key):
         transfers.append((bucket, key, "file"))
+        published["experiments"] = yaml.safe_load(Path(path).read_text())
 
     def fake_upload_directory(client, bucket, path, prefix):
         transfers.append((bucket, prefix, "directory"))
+        published["content"] = yaml.safe_load((Path(path) / "content.yaml").read_text())
+        published["source"] = Path(path)
 
     monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
     monkeypatch.setattr(push_analysis, "get_file_from_s3", fake_download)
     monkeypatch.setattr(push_analysis, "upload_file_to_s3", fake_upload_file)
     monkeypatch.setattr(push_analysis, "upload_directory_to_s3", fake_upload_directory)
     cwd = Path.cwd()
-    push_analysis.push_analysis(
-        output, experiment, config, repository=f"local:{repo}", formats=("svg",), ensemble=ensemble, update=False
-    )
+    push_analysis.push_analysis(output, experiment, config, formats=("svg",), ensemble=ensemble)
 
     assert Path.cwd() == cwd
-    content_dir = repo / "content" / "svg" / experiment
-    assert (content_dir / "content.yaml").is_file()
-    assert (content_dir / "content.json").is_file()
     expected = {"catalog": {"model": {"experiment": ["r1"]} if ensemble else ["experiment"]}}
-    assert yaml.safe_load((repo / "content" / "experiments.yaml").read_text()) == expected
-    assert experiment in (repo / "updated.txt").read_text()
+    assert published["experiments"] == expected
+    assert published["content"]["experiment"]["label"] == "Example"
+    assert not published["source"].exists()
     assert ("aqua-web", f"content/svg/{experiment}", "directory") in transfers
     assert capfd.readouterr().out == ""
+
+
+def test_publisher_help_excludes_legacy_git_options(capsys):
+    """The command no longer offers Git repository update options."""
+    with pytest.raises(SystemExit) as exc:
+        push_analysis.main(["--help"])
+    assert exc.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "--no-update" not in help_text
+    assert "--repository" not in help_text
 
 
 @pytest.mark.parametrize(

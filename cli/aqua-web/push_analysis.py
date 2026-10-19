@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Collect AQUA analysis figures and publish aqua-web content.
 
-Example: ``python push_analysis.py --no-update --repository local:/tmp/aqua-web output catalog/model/experiment/r1``
+Example: ``python push_analysis.py output catalog/model/experiment/r1``
 """
 
 import argparse
@@ -24,7 +24,7 @@ FORMATS = ("pdf", "png", "svg")
 
 
 def _run(*command, cwd=None):
-    """Run a Git or rsync command without invoking a shell."""
+    """Run rsync without invoking a shell."""
     subprocess.run(command, cwd=cwd, check=True)
 
 
@@ -48,13 +48,13 @@ def _experiments(exps, ensemble):
         yield "/".join(parts if len(parts) == (4 if ensemble else 3) else [*parts, "r1"])
 
 
-def _collect_figures(indir, repo, experiment, formats):
+def _collect_figures(indir, workspace, experiment, formats):
     """Copy analysis output and experiment metadata into aqua-web content."""
     source = indir / experiment
     if not source.is_dir():
         raise FileNotFoundError(f"Experiment directory does not exist: {source}")
     for fmt in formats:
-        dest = repo / "content" / fmt / experiment
+        dest = workspace / "content" / fmt / experiment
         dest.mkdir(parents=True, exist_ok=True)
         for figure in source.rglob(f"*.{fmt}"):
             shutil.copy2(figure, dest / figure.name)
@@ -65,9 +65,9 @@ def _collect_figures(indir, repo, experiment, formats):
             shutil.copy2(metadata, dest / metadata.name)
 
 
-def _get_experiments_file(repo, bucket, rsync_target, client):
+def _get_experiments_file(workspace, bucket, rsync_target, client):
     """Retrieve the current list so make_contents can merge into it."""
-    destination = repo / "content" / "experiments.yaml"
+    destination = workspace / "content" / "experiments.yaml"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if rsync_target:
         result = subprocess.run(
@@ -82,20 +82,20 @@ def _get_experiments_file(repo, bucket, rsync_target, client):
         logger.info("No remote experiments.yaml found; creating it")
 
 
-def _publish(repo, experiment, formats, bucket, rsync_target, client):
+def _publish(workspace, experiment, formats, bucket, rsync_target, client):
     """Publish the merged index and the selected experiment's figures."""
-    index = repo / "content" / "experiments.yaml"
+    index = workspace / "content" / "experiments.yaml"
     if rsync_target:
         if index.is_file():
             _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml")
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
-            _run("rsync", "-avz", "--relative", "--chmod=D775,F664", relative, f"{rsync_target}/", cwd=repo)
+            _run("rsync", "-avz", "--relative", "--chmod=D775,F664", relative, f"{rsync_target}/", cwd=workspace)
     else:
         if index.is_file():
             upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml")
         for fmt in formats:
-            source = repo / "content" / fmt / experiment
+            source = workspace / "content" / fmt / experiment
             upload_directory_to_s3(client, bucket, str(source), f"content/{fmt}/{experiment}")
 
 
@@ -103,11 +103,9 @@ def push_analysis(
     indir,
     exps,
     config,
-    repository="DestinE-Climate-DT/aqua-web",
     bucket="aqua-web",
     formats=FORMATS,
     ensemble=True,
-    update=True,
     rsync_target=None,
     loglevel="INFO",
 ):
@@ -117,11 +115,9 @@ def push_analysis(
         indir (str or Path): Root directory containing analysis output.
         exps (str or Path): Experiment path or file listing experiments.
         config (str or Path): Diagnostic grouping YAML file.
-        repository (str): GitHub repository or ``local:PATH``.
         bucket (str): Destination S3 bucket.
         formats (tuple[str]): Image formats to publish.
         ensemble (bool): Use the four-level experiment structure.
-        update (bool): Commit and push the aqua-web repository update.
         rsync_target (str, optional): Rsync destination in place of S3.
         loglevel (str): AQUA logging level for the publishing commands.
     """
@@ -139,32 +135,13 @@ def push_analysis(
     experiments = list(_experiments(exps, ensemble))
     if not experiments:
         raise ValueError("No experiments to publish")
-    if rsync_target:
-        update = False
-
     with tempfile.TemporaryDirectory(prefix="aqua-web-") as tmp:
-        if repository.startswith("local:"):
-            repo = Path(repository.removeprefix("local:")).expanduser().resolve()
-            if not repo.is_dir():
-                raise FileNotFoundError(f"Local repository does not exist: {repo}")
-        else:
-            repo = Path(tmp) / "aqua-web"
-            if update:
-                _run("git", "clone", f"git@github.com:{repository}.git", str(repo))
-            else:
-                repo.mkdir()
-        if update:
-            _run("git", "pull", "--ff-only", cwd=repo)
-
+        workspace = Path(tmp)
         client = None if rsync_target else create_client()
-        updated = [
-            f"Updated figures in bucket {bucket}",
-            f"on {datetime.now().astimezone().isoformat()} for the following experiments:",
-        ]
         for experiment in experiments:
             logger.info("Processing %s", experiment)
-            _collect_figures(indir, repo, experiment, formats)
-            _get_experiments_file(repo, bucket, rsync_target, client)
+            _collect_figures(indir, workspace, experiment, formats)
+            _get_experiments_file(workspace, bucket, rsync_target, client)
             for fmt in formats:
                 make_contents(
                     force=True,
@@ -173,16 +150,9 @@ def push_analysis(
                     ensemble=ensemble,
                     loglevel=loglevel,
                     format=fmt,
-                    root=repo,
+                    root=workspace,
                 )
-            _publish(repo, experiment, formats, bucket, rsync_target, client)
-            updated.append(experiment)
-        (repo / "updated.txt").write_text("\n".join(updated) + "\n")
-
-        if update:
-            _run("git", "add", "updated.txt", cwd=repo)
-            _run("git", "commit", "-m", "update figures", cwd=repo)
-            _run("git", "push", cwd=repo)
+            _publish(workspace, experiment, formats, bucket, rsync_target, client)
 
 
 def main(argv=None):
@@ -192,11 +162,9 @@ def main(argv=None):
     parser.add_argument("exps", help="Experiment path or a text file listing experiments")
     parser.add_argument("-b", "--bucket", default="aqua-web")
     parser.add_argument("-c", "--config", type=Path)
-    parser.add_argument("-d", "--no-update", action="store_true")
     parser.add_argument("--no-ensemble", action="store_true")
     parser.add_argument("-f", "--format", default=",".join(FORMATS))
     parser.add_argument("-l", "--loglevel", type=int, choices=range(1, 6), default=2)
-    parser.add_argument("-r", "--repository", default="DestinE-Climate-DT/aqua-web")
     parser.add_argument("-s", "--rsync", dest="rsync_target")
     args = parser.parse_args(argv)
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
@@ -212,13 +180,11 @@ def main(argv=None):
             args.indir,
             args.exps,
             config,
-            args.repository,
-            args.bucket,
-            formats,
-            not args.no_ensemble,
-            not args.no_update,
-            args.rsync_target,
-            loglevel,
+            bucket=args.bucket,
+            formats=formats,
+            ensemble=not args.no_ensemble,
+            rsync_target=args.rsync_target,
+            loglevel=loglevel,
         )
     except S3TransferError as exc:
         return exc.exit_code

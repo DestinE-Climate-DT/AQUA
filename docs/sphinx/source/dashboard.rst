@@ -35,17 +35,15 @@ The full pipeline is composed of the following components:
 
 3.  The ``push_analysis.py`` Python script is used to push the produced figures to a remote object store (LUMI-O for DestinE).
     It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the ``aqua-web`` bucket on LUMI-O,
-    creates a ``content.yaml``/ ``content.json`` file for each experiment, and
-    updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
+    creates a ``content.yaml``/ ``content.json`` file for each experiment.
     It uses the ``experiment.yaml`` file for each experiment created by ``aqua-analysis.py`` to get the metadata.
-    It also generates a general ``experiments.yaml`` file listing all experiments available, stored on LUMI-O in ``s3://aqua-web/content/png``.
+    It also updates ``content/experiments.yaml`` on LUMI-O to list the available experiments.
 
     See the :ref:`aqua_web` section for more details.
 
 
-4.  The AQUA Explorer software is stored on github in the repository `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_.
-    Any commit in the `aqua-web` repository will trigger a rebuild of the enclosed Dockerfile by the CSC `Rahti 2 service <https://research.csc.fi/-/rahti>`_ using OpenShift. The resulting container will run serving the web pages.
-    As described in the corresponding Dockerfile, contents (figures and documentation) are downloaded from the ``aqua-web`` bucket on LUMI-O, appropriate markdown files are created and  we use python package `mkdocs` to construct static web pages from the markdown files.
+4.  The AQUA Explorer software is stored in the `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_
+    repository. The publisher sends figures and metadata to the ``aqua-web`` bucket on LUMI-O.
 
 
 More details on the available tools and on their dependencies are provided in the following.
@@ -55,8 +53,7 @@ More details on the available tools and on their dependencies are provided in th
 Automatic uploading of figures and documentation to aqua-web
 ------------------------------------------------------------
 
-AQUA figures produced by the analysis can be uploaded to the `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_
-repository to publish them automatically on a dedicated website.
+AQUA figures produced by the analysis can be uploaded to the ``aqua-web`` bucket for display on a dedicated website.
 A script in the ``cli/aqua-web`` folder is available to push figures to the bucket shown by aqua-web.
 
 If you plan to use these scripts outside the AQUA container or environment to push figures to aqua-web,
@@ -71,15 +68,14 @@ Basic usage
 
     python push_analysis.py [OPTIONS] INDIR EXPS
 
-This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
+This script is used to push the figures produced by the AQUA analysis to the aqua-web object store.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5km/baseline-hist``
 or a text file containing a list of experiments.
 The file starts with ``catalog model experiment`` and optionally ``realization`` (default ``r1``).
 Trailing metadata columns such as ``kind`` and ``source`` are ignored.
 With ``--no-ensemble``, only the first three columns are used.
-It creates ``content.yaml`` files for each experiment, pushes the images to the ``aqua-web`` bucket on LUMI-O and
-updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
+It creates ``content.yaml`` files for each experiment and pushes them with the images to the ``aqua-web`` bucket on LUMI-O.
 
 The needed AWS credentials can be stored in the ``~/.aws/credentials`` file or in environment
 variables ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
@@ -96,10 +92,6 @@ Additional options
     Alternate config file for make_contents (default is ``analysis/config.grouping.yaml``
     under ``AQUA_CONFIG`` or ``~/.aqua``).
 
-.. option:: -d, --no-update
-
-    Do not update the aqua-web Github repository.
-
 .. option:: --no-ensemble
 
     Compatibility flag to process experiments with old 3-level structure (``catalog/model/experiment``).
@@ -115,11 +107,6 @@ Additional options
 .. option:: -l <level>, --loglevel <level>
 
     Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
-
-.. option:: -r <repository>, --repository <repository>
-
-    The remote aqua-web repository to update (default is 'DestinE-Climate-DT/aqua-web').
-    If it starts with 'local:', a local directory is used.
 
 .. option:: --rsync <target>
 
