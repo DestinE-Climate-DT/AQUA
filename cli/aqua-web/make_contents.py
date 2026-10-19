@@ -267,7 +267,6 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
     log_configure(log_level=loglevel, log_name="make_contents")
 
-    logger.info(f"Starting content generation with log level {loglevel}")
     try:
         with open(configfile, "r") as file:
             config = yaml.safe_load(file)
@@ -275,7 +274,13 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
         raise FileNotFoundError(f"Configuration file not found: {configfile}") from exc
 
     content_dir = Path(root) / "content" / format
-    logger.info("Using content directory %s", content_dir)
+    logger.info(
+        "Generating %s content for %s in %s (log level %s)",
+        format,
+        experiment or "all experiments",
+        content_dir,
+        loglevel,
+    )
 
     diagnostics = config.get("diagnostics", {})
     if not diagnostics:
@@ -283,7 +288,6 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
     config_experiments = config.get("experiments", {})
 
     if experiment:
-        logger.info(f"Processing single experiment: {experiment}")
         parts = experiment.split("/")
 
         if len(parts) == 3:
@@ -296,7 +300,6 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
         make_content(catalog, model, exp, realization, diagnostics, config_experiments, force, content_dir)
     else:  # run through all subdirs
-        logger.info("Processing all subdirectories...")
         experiments_file = content_dir.parent / "experiments.yaml"
         if experiments_file.exists():  # Let's start fresh
             logger.info("Removing existing experiments.yaml to start fresh.")

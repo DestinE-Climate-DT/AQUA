@@ -107,6 +107,7 @@ Additional options
 .. option:: -l <level>, --loglevel <level>
 
     Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
+    Individual transferred files are logged at DEBUG; each figure format and successful completion are logged at INFO.
 
 .. option:: --rsync <target>
 

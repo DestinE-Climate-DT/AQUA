@@ -26,7 +26,12 @@ FORMATS = ("pdf", "png", "svg")
 
 def _run(*command, cwd=None):
     """Run rsync without invoking a shell."""
-    subprocess.run(command, cwd=cwd, check=True)
+    result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
+    for line in result.stdout.splitlines():
+        logger.debug("%s", line)
+    if result.returncode:
+        logger.error("Rsync failed: %s", result.stderr.strip())
+        raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
 
 
 def _experiments(exps, ensemble):
@@ -77,6 +82,8 @@ def _get_experiments_file(workspace, bucket, rsync_target, client):
             text=True,
             check=False,
         )
+        for line in result.stdout.splitlines():
+            logger.debug("%s", line)
         if result.returncode:
             logger.warning("Could not retrieve experiments.yaml from %s: %s", rsync_target, result.stderr.strip())
     elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination)):
@@ -91,13 +98,16 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client):
             _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml")
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
+            logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
             _run("rsync", "-avz", "--relative", "--chmod=D775,F664", relative, f"{rsync_target}/", cwd=workspace)
     else:
         if index.is_file():
             upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml")
         for fmt in formats:
             source = workspace / "content" / fmt / experiment
-            upload_directory_to_s3(client, bucket, str(source), f"content/{fmt}/{experiment}")
+            destination = f"content/{fmt}/{experiment}"
+            logger.info("Transferring %s figures to s3://%s/%s", fmt, bucket, destination)
+            upload_directory_to_s3(client, bucket, str(source), destination)
 
 
 def push_analysis(
@@ -163,6 +173,7 @@ def push_analysis(
                     root=workspace,
                 )
             _publish(workspace, experiment, formats, bucket, rsync_target, client)
+    logger.info("Transfer completed successfully")
 
 
 def main(argv=None):

@@ -54,7 +54,7 @@ def get_file_from_s3(client, bucket_name, object_name, dest_path):
     """Try to download a single file from an S3 bucket."""
     try:
         client.download_file(bucket_name, object_name, dest_path)
-        logger.info("Downloaded %s from bucket %s to %s", object_name, bucket_name, dest_path)
+        logger.debug("Downloaded %s from bucket %s to %s", object_name, bucket_name, dest_path)
         return True
     except Exception as e:
         if "NoSuchKey" in str(e):
@@ -69,7 +69,7 @@ def upload_file_to_s3(client, bucket_name, file_path, object_name):
     """Upload a single file to an S3 bucket."""
     try:
         client.upload_file(file_path, bucket_name, object_name)
-        logger.info("Uploaded %s to bucket %s as %s", file_path, bucket_name, object_name)
+        logger.debug("Uploaded %s to bucket %s as %s", file_path, bucket_name, object_name)
     except Exception as e:
         logger.error("Error uploading %s to bucket %s: %s", file_path, bucket_name, e)
         raise _transfer_error(e) from e

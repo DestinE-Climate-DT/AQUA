@@ -1,5 +1,6 @@
 """Tests for the standalone aqua-web publishing commands."""
 
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import Mock
@@ -9,6 +10,7 @@ import yaml
 from botocore.exceptions import ClientError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cli" / "aqua-web"))
+import make_contents  # noqa: E402
 import push_analysis  # noqa: E402
 import push_s3  # noqa: E402
 
@@ -62,6 +64,8 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
         "experiment",
         "r1" if ensemble else "n/a",
     )
+    log.info.assert_any_call("Transferring %s figures to s3://%s/%s", "svg", "aqua-web", f"content/svg/{experiment}")
+    assert log.info.call_args_list[-1].args == ("Transfer completed successfully",)
     assert capfd.readouterr().out == ""
 
 
@@ -123,5 +127,60 @@ def test_s3_success_logs_without_stdout(capfd, monkeypatch):
     log = Mock()
     monkeypatch.setattr(push_s3, "logger", log)
     push_s3.upload_file_to_s3(Mock(), "aqua-web", "figure.svg", "content/figure.svg")
+    push_s3.get_file_from_s3(Mock(), "aqua-web", "content/experiments.yaml", "experiments.yaml")
     assert capfd.readouterr().out == ""
-    log.info.assert_called_once_with("Uploaded %s to bucket %s as %s", "figure.svg", "aqua-web", "content/figure.svg")
+    log.debug.assert_any_call("Uploaded %s to bucket %s as %s", "figure.svg", "aqua-web", "content/figure.svg")
+    log.debug.assert_any_call("Downloaded %s from bucket %s to %s", "content/experiments.yaml", "aqua-web", "experiments.yaml")
+    log.info.assert_not_called()
+
+
+def test_rsync_transfer_details_use_debug(monkeypatch):
+    """Rsync output is routed through the AQUA logger at DEBUG level."""
+    log = Mock()
+    monkeypatch.setattr(push_analysis, "logger", log)
+    run = Mock(return_value=subprocess.CompletedProcess(["rsync"], 0, stdout="figure.svg\nsent 123 bytes\n", stderr=""))
+    monkeypatch.setattr(push_analysis.subprocess, "run", run)
+    push_analysis._run("rsync", "source", "destination")
+    log.debug.assert_any_call("%s", "figure.svg")
+    log.info.assert_not_called()
+    run.assert_called_once_with(("rsync", "source", "destination"), cwd=None, capture_output=True, text=True, check=False)
+
+
+def test_failed_transfer_has_no_completion_message(tmp_path, monkeypatch):
+    """A failed upload cannot emit the overall success message."""
+    output = tmp_path / "output" / "catalog" / "model" / "experiment" / "r1"
+    output.mkdir(parents=True)
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {}\n")
+    monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
+    monkeypatch.setattr(push_analysis, "get_file_from_s3", Mock(return_value=False))
+    monkeypatch.setattr(push_analysis, "make_contents", Mock())
+    monkeypatch.setattr(push_analysis, "upload_file_to_s3", Mock())
+    monkeypatch.setattr(push_analysis, "upload_directory_to_s3", Mock(side_effect=push_s3.S3TransferError("upload failed", 3)))
+    log = Mock()
+    monkeypatch.setattr(push_analysis, "logger", log)
+    with pytest.raises(push_s3.S3TransferError):
+        push_analysis.push_analysis(output.parents[3], "catalog/model/experiment/r1", config, formats=("svg",))
+    assert all(call.args != ("Transfer completed successfully",) for call in log.info.call_args_list)
+
+
+def test_content_generation_has_one_startup_message(tmp_path, monkeypatch):
+    """Content generation reports its target, directory, and log level once."""
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {figures: figure}\n")
+    log = Mock()
+    monkeypatch.setattr(make_contents, "logger", log)
+    monkeypatch.setattr(make_contents, "make_content", Mock())
+    make_contents.main(
+        experiment="catalog/model/experiment/r1",
+        configfile=config,
+        format="svg",
+        root=tmp_path,
+    )
+    log.info.assert_called_once_with(
+        "Generating %s content for %s in %s (log level %s)",
+        "svg",
+        "catalog/model/experiment/r1",
+        tmp_path / "content" / "svg",
+        "INFO",
+    )

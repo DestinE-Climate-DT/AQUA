@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 Unreleased in the current development version (target v1.2.1):
 
-- Port `push_analysis.sh` to `push_analysis.py`, with callable APIs for content generation and S3 transfers; remove the legacy Git repository update and `updated.txt` write, and log the AQUA version and experiment targets at startup (#3217).
+- Port `push_analysis.sh` to `push_analysis.py`, with callable APIs for content generation and S3 transfers; remove the legacy Git repository update and `updated.txt` write, log the AQUA version and experiment targets at startup, and report figure transfers and successful completion while keeping individual file messages at DEBUG (#3217).
 - `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
 - Fix missing test markers (#3187)
 - Drop support to python 3.12 (#3188)
