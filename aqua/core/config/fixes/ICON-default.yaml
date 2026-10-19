@@ -18,7 +18,7 @@ fixer_name:
             lsprate:
                 src_units: kg m**-2 s**-1
             snlwrf:
-                derived: rlds-rlus+
+                derived: rlds-rlus
             tnlwrf:
                 derived: -rlut
             snswrf:
