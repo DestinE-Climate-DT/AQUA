@@ -14,7 +14,6 @@ from time import time
 import numpy as np
 import pandas as pd
 import xarray as xr
-import zarr
 from dask.diagnostics import ProgressBar
 from dask.distributed import progress
 from dask.distributed.diagnostics import MemorySampler
@@ -160,28 +159,6 @@ class BaseWriter(ABC):
             self.logger.warning("No horizontal dimensions found for %s, using default chunking", data.name)
             return None
         return tuple(size if dim in horizontal_dims else 1 for dim, size in data.sizes.items())
-
-    def _build_zarr_encoding(self, data, compressor_level=1):
-        """
-        Build per-variable zarr encoding with the on-disk chunks of :meth:`_disk_chunks`.
-
-        Shared by ZarrWriter and IcechunkWriter.
-
-        Args:
-            data: xarray Dataset
-            compressor_level (int): Compression level for GzipCodec (1-9)
-
-        Returns:
-            dict: Encoding configuration or None if data has no data_vars.
-        """
-        encoding = {}
-        compressor = zarr.codecs.GzipCodec(level=compressor_level)
-        for var_name in data.data_vars:
-            encoding[var_name] = {"compressors": (compressor,)}
-            chunks = self._disk_chunks(data[var_name])
-            if chunks:
-                encoding[var_name]["chunks"] = chunks
-        return encoding or None
 
     def _compute_data(self, data, dask=False, performance_reporting=False):
         """

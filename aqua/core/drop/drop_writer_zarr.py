@@ -13,6 +13,7 @@ import shutil
 import xarray as xr
 import zarr
 
+from aqua.core.drop.drop_util import zarr_encoding
 from aqua.core.drop.drop_writer_base import BaseWriter
 from aqua.core.util.io_util import file_is_complete
 
@@ -75,7 +76,7 @@ class ZarrWriter(BaseWriter):
         Returns:
             dict: Encoding configuration or None
         """
-        return self._build_zarr_encoding(data)
+        return zarr_encoding({var: self._disk_chunks(data[var]) for var in data.data_vars})
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """

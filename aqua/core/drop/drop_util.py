@@ -3,6 +3,8 @@
 import os
 import shutil
 
+import zarr
+
 
 def move_tmp_files(tmp_directory, output_directory):
     """
@@ -34,3 +36,26 @@ def move_tmp_files(tmp_directory, output_directory):
             if os.path.exists(new_file_path):
                 shutil.rmtree(new_file_path)
             shutil.move(tmp_file_path, new_file_path)
+
+
+def zarr_encoding(chunks, compressor_level=1):
+    """
+    Build zarr v3 encoding with gzip compression and explicit on-disk chunks.
+
+    Shared by ZarrWriter and IcechunkWriter.
+
+    Args:
+        chunks (dict): Chunk sizes for each variable, as returned by BaseWriter._disk_chunks.
+            Variables with None chunks use the zarr default chunking.
+        compressor_level (int): Compression level for GzipCodec (1-9). Defaults to 1.
+
+    Returns:
+        dict: Encoding configuration or None if chunks is empty.
+    """
+    compressor = zarr.codecs.GzipCodec(level=compressor_level)
+    encoding = {}
+    for var_name, var_chunks in chunks.items():
+        encoding[var_name] = {"compressors": (compressor,)}
+        if var_chunks:
+            encoding[var_name]["chunks"] = var_chunks
+    return encoding or None
