@@ -23,17 +23,17 @@ unset SINGULARITY_BIND  # Lumi specific fix for singularity
 
 if [[ "{{ nativeaqua }}" == "true" ]]; then
     if [[ "{{ ensemble }}" == "true" ]]; then
-        python $AQUA/cli/aqua-web/push_analysis.py $OUTDIR {{ explist }}
+        aqua push $OUTDIR {{ explist }}
     else
-        python $AQUA/cli/aqua-web/push_analysis.py --no-ensemble $OUTDIR {{ explist }}
+        aqua push --no-ensemble $OUTDIR {{ explist }}
     fi
 else
     bash $AQUA/cli/aqua-container/load-aqua-container.sh {{ machine }} <<EOF
 #!/bin/bash
     if [[ "{{ ensemble }}" == "true" ]]; then
-        python $AQUA/cli/aqua-web/push_analysis.py $OUTDIR {{ explist }}
+        aqua push $OUTDIR {{ explist }}
     else
-        python $AQUA/cli/aqua-web/push_analysis.py --no-ensemble $OUTDIR {{ explist }}
+        aqua push --no-ensemble $OUTDIR {{ explist }}
     fi
 EOF
 fi

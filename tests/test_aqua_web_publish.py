@@ -9,14 +9,15 @@ import pytest
 import yaml
 from botocore.exceptions import ClientError
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cli" / "aqua-web"))
-import make_contents  # noqa: E402
-import push_analysis  # noqa: E402
-import push_s3  # noqa: E402
+from aqua.core.console import main as console_main
+from aqua.core.console import web_contents as make_contents
+from aqua.core.console import web_push as push_analysis
+from aqua.core.console import web_s3 as push_s3
 
 
 @pytest.mark.parametrize("experiment,ensemble", [("catalog/model/experiment/r1", True), ("catalog/model/experiment", False)])
-def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment, ensemble):
+@pytest.mark.parametrize("entrypoint", ["api", "aqua"])
+def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment, ensemble, entrypoint):
     """Publishing builds content in a temporary workspace without Git."""
     output = tmp_path / "output"
     source = output / experiment
@@ -48,7 +49,14 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     log = Mock()
     monkeypatch.setattr(push_analysis, "logger", log)
     cwd = Path.cwd()
-    push_analysis.push_analysis(output, experiment, config, formats=("svg",), ensemble=ensemble)
+    if entrypoint == "aqua":
+        argv = ["aqua", "push", str(output), experiment, "-c", str(config), "-f", "svg"]
+        if not ensemble:
+            argv.append("--no-ensemble")
+        monkeypatch.setattr(sys, "argv", argv)
+        assert console_main.main() == 0
+    else:
+        push_analysis.push_analysis(output, experiment, config, formats=("svg",), ensemble=ensemble)
 
     assert Path.cwd() == cwd
     expected = {"catalog": {"model": {"experiment": ["r1"]} if ensemble else ["experiment"]}}
@@ -67,6 +75,13 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     log.info.assert_any_call("Transferring %s figures to s3://%s/%s", "svg", "aqua-web", f"content/svg/{experiment}")
     assert log.info.call_args_list[-1].args == ("Transfer completed successfully",)
     assert capfd.readouterr().out == ""
+
+
+def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
+    """The AQUA entry point returns the publisher's failure status."""
+    monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"])
+    monkeypatch.setattr(console_main, "push_execute", Mock(return_value=3))
+    assert console_main.main() == 3
 
 
 def test_publisher_help_excludes_legacy_git_options(capsys):

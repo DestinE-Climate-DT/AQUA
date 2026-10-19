@@ -13,6 +13,7 @@ from aqua.core.console.builder import builder_parser
 from aqua.core.console.catgen import catgen_parser
 from aqua.core.console.components import discover_aqua_components
 from aqua.core.console.drop import drop_parser
+from aqua.core.console.web_push import push_parser
 
 
 def parse_arguments():
@@ -52,6 +53,9 @@ def parse_arguments():
 
     catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
     catgen_subparser = catgen_parser(parser=catgen_subparser)
+
+    push_subparser = subparsers.add_parser("push", description="Publish AQUA analysis figures to aqua-web")
+    push_parser(parser=push_subparser)
 
     # subparser with no arguments
     subparsers.add_parser("uninstall", description="Remove the current AQUA installation")

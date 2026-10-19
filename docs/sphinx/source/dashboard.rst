@@ -28,12 +28,12 @@ The full pipeline is composed of the following components:
 
 2.  **(optional, not used in the workflow)** In order to submit several ``aqua-analysis.py`` jobs in parallel, for different experiments,
     the ``submit-aqua-web.py`` script can be used. This script reads a list of experiments from a file and submits the ``aqua-analysis``
-    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to aqua-web wesite using ``push_analysis.py``.
+    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to the aqua-web website using ``aqua push``.
 
     See the :ref:`submit-aqua-web` section for more details.
 
 
-3.  The ``push_analysis.py`` Python script is used to push the produced figures to a remote object store (LUMI-O for DestinE).
+3.  The ``aqua push`` command sends the produced figures to a remote object store (LUMI-O for DestinE).
     It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the ``aqua-web`` bucket on LUMI-O,
     creates a ``content.yaml``/ ``content.json`` file for each experiment.
     It uses the ``experiment.yaml`` file for each experiment created by ``aqua-analysis.py`` to get the metadata.
@@ -54,21 +54,17 @@ Automatic uploading of figures and documentation to aqua-web
 ------------------------------------------------------------
 
 AQUA figures produced by the analysis can be uploaded to the ``aqua-web`` bucket for display on a dedicated website.
-A script in the ``cli/aqua-web`` folder is available to push figures to the bucket shown by aqua-web.
-
-If you plan to use these scripts outside the AQUA container or environment to push figures to aqua-web,
-you will need the following scripts: ``push_analysis.py``, ``make_contents.py``
-and ``push_s3.py``.
-Install AQUA in the Python environment, along with ``boto3``, ``pyYAML`` and ``pypdf``.
+The installed AQUA command line tool can push figures directly. The standalone
+``cli/aqua-web/push_analysis.py`` script remains available for existing workflows.
 
 Basic usage
 ^^^^^^^^^^^
 
 .. code-block:: bash
 
-    python push_analysis.py [OPTIONS] INDIR EXPS
+    aqua push [OPTIONS] INDIR EXPS
 
-This script is used to push the figures produced by the AQUA analysis to the aqua-web object store.
+This command pushes the figures produced by the AQUA analysis to the aqua-web object store.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5km/baseline-hist``
 or a text file containing a list of experiments.
@@ -158,7 +154,7 @@ The AWS credentials can be stored in the ``~/.aws/credentials`` file or in envir
 
     This is a basic utility used by the other scripts (but you could also use it directly).
     Do not use this to push the results of AQUA analysis to LUMI-O for aqua-web but rather
-    use ``push_analysis.py`` described above.
+    use ``aqua push`` described above.
 
 Basic usage
 ^^^^^^^^^^^

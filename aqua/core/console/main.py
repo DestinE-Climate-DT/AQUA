@@ -17,6 +17,7 @@ from .files import FilesMixin
 # this are used to check existence of aqua.diagnostics
 from .install import InstallMixin
 from .parser import parse_arguments
+from .web_push import push_execute
 
 
 class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
@@ -56,6 +57,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
             "analysis": self.analysis,
             "drop": self.drop,
             "catgen": self.catgen,
+            "push": self.push,
         }
 
     def execute(self):
@@ -94,7 +96,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
                     parser_dict[command].print_help()
             # default
             else:
-                method(args)
+                return method(args)
 
     def analysis(self, args):
         """
@@ -106,6 +108,10 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
 
         print("Running the AQUA analysis")
         analysis_execute(args)
+
+    def push(self, args):
+        """Publish AQUA analysis figures to aqua-web."""
+        return push_execute(args)
 
     def drop(self, args):
         """
@@ -142,4 +148,4 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
 def main():
     """AQUA main installation tool"""
     aquacli = AquaConsole()
-    aquacli.execute()
+    return aquacli.execute()
