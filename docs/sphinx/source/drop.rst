@@ -371,7 +371,8 @@ Controls processing behavior and performance settings:
   - One output file per variable is inspected: horizontal dimensions are always kept whole, then time and vertical
     dimensions are filled until the chunk reaches the target size. The time chunk cannot exceed the length of a single file.
     If a single horizontal slice is larger than the target, the chunk holds one slice.
-  - NetCDF files are written with one on-disk chunk per horizontal slice (one time step, one level), so read chunks are always aligned.
+  - NetCDF, Zarr and Icechunk outputs are written with one on-disk chunk per horizontal slice (one time step, one level),
+    so read chunks are always aligned.
 
   .. note::
 

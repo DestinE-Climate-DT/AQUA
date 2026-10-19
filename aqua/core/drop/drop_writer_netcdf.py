@@ -10,7 +10,6 @@ import subprocess
 
 import numpy as np
 import xarray as xr
-from smmregrid import GridType
 
 from aqua.core.drop.drop_writer_base import BaseWriter
 from aqua.core.util.io_util import file_is_complete
@@ -73,8 +72,7 @@ class NetCDFWriter(BaseWriter):
         """
         Get NetCDF encoding configuration.
 
-        On-disk chunks hold a single horizontal slice (one time step, one level),
-        so that any read chunking along time and vertical dimensions is aligned with them.
+        On-disk chunks are defined by :meth:`BaseWriter._disk_chunks`.
 
         Args:
             data: xarray Dataset/DataArray
@@ -86,18 +84,10 @@ class NetCDFWriter(BaseWriter):
         data_vars = list(data.data_vars) if isinstance(data, xr.Dataset) else [data.name]
         var_name = var if var in data_vars else data_vars[0]
         var_encoding = dict(self.var_encoding)
-        chunksizes = self._get_chunksizes(data[var_name] if isinstance(data, xr.Dataset) else data)
+        chunksizes = self._disk_chunks(data[var_name] if isinstance(data, xr.Dataset) else data)
         if chunksizes:
             var_encoding["chunksizes"] = chunksizes
         return {"time": self.time_encoding, var_name: var_encoding}
-
-    def _get_chunksizes(self, data):
-        """On-disk chunk sizes: whole horizontal dimensions, 1 along all the others."""
-        horizontal_dims = GridType(dims=data.dims).horizontal_dims
-        if not horizontal_dims:
-            self.logger.warning("No horizontal dimensions found for %s, using default netCDF chunking", data.name)
-            return None
-        return tuple(size if dim in horizontal_dims else 1 for dim, size in data.sizes.items())
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """
