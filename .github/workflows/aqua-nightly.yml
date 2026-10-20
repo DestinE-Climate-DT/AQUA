@@ -1,6 +1,6 @@
 name: AQUA nightly
 # Builds the environment from environment.yml (no lock file) to catch dependency breakages.
-# Runs nightly, manually, on Dependabot pip/conda PRs, and on PRs whose label contains 'nightly'.
+# Runs nightly, manually, on Dependabot pip/conda PRs, and on PRs whose label starts with 'nightly'.
 # Other Dependabot PRs (github-actions, pre-commit) do not change the environment and only need aqua.yml/ruff.
 # The 'ubuntu-latest (FDB container)' entry runs inside the FDB container to check the FDB installation.
 # When the scheduled run fails, an issue listing the broken tests is opened (or updated).
@@ -28,9 +28,9 @@ jobs:
       (github.event.action != 'labeled' && (
         startsWith(github.head_ref, 'dependabot/pip/') ||
         startsWith(github.head_ref, 'dependabot/conda/') ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'nightly'))) ||
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|nightly'))) ||
       (github.event.action == 'labeled' &&
-        contains(github.event.label.name, 'nightly'))
+        startsWith(github.event.label.name, 'nightly'))
     strategy:
       fail-fast: false
       matrix:
@@ -39,17 +39,17 @@ jobs:
             platform: ubuntu-26.04
             fdb: false
             container: ''
-            markers: 'aqua or slow or graphics or catgen or polytope'
+            markers: 'aqua or console or graphics or catgen or polytope'
           - name: macos-latest
             platform: xcode-27
             fdb: false
             container: ''
-            markers: 'aqua or slow or graphics or catgen or polytope'
+            markers: 'aqua or console or graphics or catgen or polytope'
           - name: FDB container
             platform: ubuntu-latest
             fdb: true
             container: 'ghcr.io/destine-climate-dt/ubuntu26.04-fdb5.19.0-eccodes2.47.0-aqua:aqua-base-container'
-            markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+            markers: 'aqua or console or polytope or fdb or graphics or catgen'
     name: AQUA nightly (${{ matrix.name }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:

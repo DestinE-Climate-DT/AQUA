@@ -7,9 +7,8 @@ import pytest
 from aqua.core.console.drop import drop_parser
 from aqua.core.util import template_parse_arguments
 
-pytestmark = pytest.mark.aqua
 
-
+@pytest.mark.aqua
 def test_template_parse_arguments():
     """Test that template_parse_arguments adds all expected arguments."""
     parser = argparse.ArgumentParser()
@@ -48,6 +47,7 @@ def test_template_parse_arguments():
     assert args.enddate == "2020-12-31"
 
 
+@pytest.mark.aqua
 def test_template_parse_arguments_optional():
     """Test that all arguments are optional."""
     parser = argparse.ArgumentParser()
@@ -71,6 +71,7 @@ def test_template_parse_arguments_optional():
     assert args.enddate is None
 
 
+@pytest.mark.console
 class TestDROPParserLevel:
     """Tests for DROP CLI parser level argument parsing."""
 

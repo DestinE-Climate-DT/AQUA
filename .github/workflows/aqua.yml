@@ -26,17 +26,17 @@ jobs:
       github.event_name == 'push' ||
       (github.event.action != 'labeled' && (
         github.event.pull_request.user.login == 'dependabot[bot]' ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'run tests') ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'ready for review') ||
-        contains(join(github.event.pull_request.labels.*.name, '|'), 'ready to merge'))) ||
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|run tests') ||
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|ready for review') ||
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|ready to merge'))) ||
       (github.event.action == 'labeled' && (
-        contains(github.event.label.name, 'run tests') ||
-        contains(github.event.label.name, 'ready for review') ||
-        contains(github.event.label.name, 'ready to merge')))
+        startsWith(github.event.label.name, 'run tests') ||
+        startsWith(github.event.label.name, 'ready for review') ||
+        startsWith(github.event.label.name, 'ready to merge')))
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-version: '3.14'
-      pytest-markers: 'aqua or slow or polytope or fdb or graphics or catgen'
+      pytest-markers: 'aqua or console or polytope or fdb or graphics or catgen'
       enable-parallel: true
       enable-coverage: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
       install-mode: 'local'

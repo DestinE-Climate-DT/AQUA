@@ -6,7 +6,7 @@ import pytest
 
 from aqua.core.util import dump_yaml
 
-pytestmark = [pytest.mark.aqua, pytest.mark.console]
+pytestmark = pytest.mark.console
 
 
 @pytest.mark.xdist_group(name="console_analysis_operations")

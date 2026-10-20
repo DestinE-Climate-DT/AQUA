@@ -64,89 +64,24 @@ please create an issue on the GitHub repository and/or submit a pull request wit
 Testing
 -------
 
-Testing is an essential part of developing and maintaining a robust Python package.
-Our package uses ``pytest``, a widely-used testing framework in the Python ecosystem,
-for writing and running tests.
+AQUA is tested with ``pytest``. Continuous Integration is handled by GitHub Actions through several test suites
+(PR tests, nightly, release, PyPI and Conda), each checking a different way of installing AQUA.
+On Pull Requests, tests are triggered by labels (e.g. ``run tests``, ``nightly``, ``release``).
 
-Continuous Integration/Continuous Deployment (CI/CD) is currently handled by GitHub Actions,
-which runs the test suite on various Python versions whenever changes are pushed to the repository.
-In the future (CI/CD) will also be run on HPC systems.
-
-Running Tests Locally
-^^^^^^^^^^^^^^^^^^^^^
-
-Before running tests locally, ensure you have installed all the necessary dependencies, including ``pytest``.
-To run the test suite, navigate to the root directory of the project and run the following:
+To run the core tests locally, download the test data into ``AQUA_tests/`` in the repository root
+from the HTTP mirror, configure AQUA with the ``ci`` catalog and run ``pytest``:
 
 .. code-block:: bash
 
-    ./download_data_for_tests.sh
-
-.. warning::
-    Since September 2025, AQUA data used in the tests is stored and versioned using DVC (Data Version Control).
-    The current script still point to the older archive on SWIFT but it will be deprecated in the near future.
-
-This will download the data needed for the tests and change the catalog name in the ``config/config-aqua.yaml`` to ``ci``.
-Remember to change it to your catalog name after the tests are finished.
-
-Then, run the following command:
-
-.. code-block:: bash
-
-    pytest -m aqua
-
-This will run the basic test suite and print the results to the terminal.
-Have a look at the ``tests`` directory for more tests.
+    mkdir -p AQUA_tests && cd AQUA_tests
+    wget -nv -r -np -nH -R "index.html*" --cut-dirs=3 http://wilma.to.isac.cnr.it/paolo/aqua-tests/data-tests/
+    cd ..
+    pytest -n 4 --dist loadgroup -m aqua
 
 .. note::
-   The ``-m aqua`` flag is used to run only the tests that are marked with the ``aqua`` marker.
-   More markers are available such as ``slow`` and ``graphics``.
-   To run the graphics tests, you will need to download the teleconnections data by running the ``tests/teleconnections/download_data_for_tests.sh`` script.
+   The ``download_data_for_tests.sh`` script is deprecated. Test data is versioned with DVC,
+   but pulling it requires credentials for the DVC remote.
 
-Running Tests in Parallel
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To speed up test execution, AQUA supports parallel testing using the ``pytest-xdist`` plugin.
-This allows tests to run on multiple CPU cores simultaneously, significantly reducing the total test runtime.
-
-To run the tests in parallel, use the ``-n`` flag followed by the number of cores you want to use.
-
-.. code-block:: bash
-
-    pytest -n 4
-
-This will run the test suite using 4 parallel workers. You can adjust this number based on your available CPU cores.
-For more control over parallel execution, you can also use the ``--max-worker-restart`` option to automatically restart workers that fail:
-
-.. code-block:: bash
-
-    pytest -n 4 --max-worker-restart=3
-
-.. note::
-   Some tests in AQUA use the ``xdist_group`` marker to ensure they run on the same worker process.
-   This is necessary for tests that perform operations that could conflict when run in parallel,
-   such as Dask operations or diagnostic setup. These groups include:
-
-   - ``dask_operations``: Tests that perform distributed computing operations
-   - ``diagnostic_setup_class``: Tests that set up diagnostic classes with shared state
-
-   You don't need to worry about these groups when running tests - pytest will automatically handle them.
-
-Writing Tests
-^^^^^^^^^^^^^
-
-Tests for our package are written using the pytest framework. Here's a basic template for a test function:
-
-.. code-block:: python
-
-    def test_function_name():
-        # setup code
-        result = function_to_test(argument1, argument2)
-        expected_result = ...  # what you expect the result to be
-        assert result == expected_result, "optional error message"
-
-Remember to follow these guidelines when writing tests:
-
-- Each test function should focus on one small aspect of a function's behavior.
-- Test functions should be named descriptively, so it's clear what they're testing.
-- Use assertions to check that the function's actual output matches the expected output.
+The full testing strategy (suites, PR labels, reusable workflow and composite actions, pytest markers,
+parallelism, artifacts, failure reports, local setup and guidelines to change the CI) is documented in the
+`CONTRIBUTING.md <https://github.com/DestinE-Climate-DT/AQUA/blob/main/CONTRIBUTING.md#testing>`_ file.

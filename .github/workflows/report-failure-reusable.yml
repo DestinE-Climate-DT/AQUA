@@ -1,5 +1,9 @@
 name: Report test failure (reusable)
 
+# Can be called from other repositories (e.g. aqua-diagnostics):
+#   uses: DestinE-Climate-DT/AQUA/.github/workflows/report-failure-reusable.yml@main
+# The github context and token are the caller's, so the issue is opened in the calling repository.
+
 on:
   workflow_call:
     inputs:
