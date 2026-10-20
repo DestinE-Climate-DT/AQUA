@@ -25,7 +25,7 @@ Main changes:
 - AQUA does not support anymore python 3.11
 - Various CI/CD refinements
 - Gregory plots can now use a time-colormap to color both trajectory lines and points
-
+- Fix concurrent processes `SafeFileLock` issue (#3221)
 Complete list:
 - Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
 - CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
