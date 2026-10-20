@@ -7,6 +7,7 @@ In this section we will provide a step-by-step guide to install the Python packa
 AQUA is developed and tested with Python 3.14 and it supports Python>=3.12,<3.15.
 
 .. note ::
+
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
 
 .. _installation-conda:
@@ -44,11 +45,13 @@ Or for a pip installation of AQUA-core after installing the dependencies:
 The same conda dependencies (without ``aqua-core`` itself) are available in the AQUA-core GitHub repository in the ``environment-pypi.yml`` file.
 
 .. warning ::
+
     On MacOS, the installation is supported only for MacOS 15 and later.
     CDO is not shipped with the conda-forge packages on MacOS: install it with Homebrew (``brew install cdo``)
     before creating the environment. On Linux CDO is installed together with ``smmregrid``.
 
 .. note ::
+
     AQUA and ``smmregrid`` use the CDO executable set in the ``CDO`` environment variable or, if it is not set,
     the ``cdo`` found in the ``PATH``. To select a specific CDO, for example a Homebrew or HPC module installation:
 
@@ -63,9 +66,11 @@ The same conda dependencies (without ``aqua-core`` itself) are available in the 
     The minimum supported CDO version is set by ``smmregrid``.
 
 .. note ::
+
     If you want to access ClimateDT data, you will need to run ``pip install aqua-core[fdb]``
 
 .. note ::
+
     If you need to access data written in a local FDB database (not polytope), you need to install the FDB5 library.
     The FDB5 library is not available in the conda-forge repository, but can be installed on unix systems with the ``sudo apt-get install fdb5`` command.
     If you are working on a supported HPC, you can check the corresponding section for more information in the :ref:`HPC installation <installation-hpc>` section.
