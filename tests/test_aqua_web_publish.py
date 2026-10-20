@@ -1,5 +1,6 @@
-"""Tests for AQUA's aqua-web publishing commands."""
+"""Tests for AQUA's figure publishing commands."""
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -8,6 +9,8 @@ from unittest.mock import Mock
 import pytest
 import yaml
 from botocore.exceptions import ClientError
+from PIL import Image, PngImagePlugin
+from pypdf import PdfWriter
 
 from aqua.core.console import main as console_main
 from aqua.core.console import make_contents, push_analysis, push_s3
@@ -73,6 +76,100 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     log.info.assert_any_call("Transferring %s figures to s3://%s/%s", "svg", "aqua-web", f"content/svg/{experiment}")
     assert log.info.call_args_list[-1].args == ("Transfer completed successfully",)
     assert capfd.readouterr().out == ""
+
+
+def test_publish_list_merges_existing_experiments(tmp_path, monkeypatch):
+    """Publishing several realizations preserves the remote experiment index."""
+    output = tmp_path / "output"
+    for realization in ("r1", "r2"):
+        source = output / "catalog" / "model" / "experiment" / realization
+        source.mkdir(parents=True)
+        (source / f"figure-{realization}.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    listing = tmp_path / "experiments.txt"
+    listing.write_text("catalog model experiment r1 default\ncatalog model experiment r2 default\n")
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {}\n")
+    remote = {"catalog": {"model": ["previous"]}}
+    published = {}
+
+    def download(client, bucket, key, destination):
+        Path(destination).write_text(yaml.safe_dump(remote))
+        return True
+
+    def upload_index(client, bucket, path, key):
+        nonlocal remote
+        remote = yaml.safe_load(Path(path).read_text())
+
+    def upload_figures(client, bucket, path, prefix):
+        published[prefix] = yaml.safe_load((Path(path) / "content.yaml").read_text())
+
+    monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
+    monkeypatch.setattr(push_analysis, "get_file_from_s3", download)
+    monkeypatch.setattr(push_analysis, "upload_file_to_s3", upload_index)
+    monkeypatch.setattr(push_analysis, "upload_directory_to_s3", upload_figures)
+
+    push_analysis.push_analysis(output, listing, config, formats=("svg",))
+
+    assert remote == {"catalog": {"model": {"previous": ["r1"], "experiment": ["r1", "r2"]}}}
+    assert set(published) == {
+        "content/svg/catalog/model/experiment/r1",
+        "content/svg/catalog/model/experiment/r2",
+    }
+    for realization in ("r1", "r2"):
+        key = f"content/svg/catalog/model/experiment/{realization}"
+        assert f"catalog/model/experiment/{realization}/figure-{realization}.svg" in published[key]["files"]
+
+
+@pytest.mark.parametrize("figure_status", [0, 23])
+def test_aqua_push_rsync_status(tmp_path, monkeypatch, figure_status):
+    """Rsync publication keeps its transfer status and never needs S3."""
+    experiment = "catalog/model/experiment/r1"
+    source = tmp_path / "output" / experiment
+    source.mkdir(parents=True)
+    (source / "figure.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {}\n")
+    commands = []
+
+    def fake_run(command, **kwargs):
+        commands.append(command)
+        if command[2].startswith("user@example:"):
+            return subprocess.CompletedProcess(command, 23, stdout="", stderr="remote index missing")
+        return subprocess.CompletedProcess(
+            command, figure_status if "--relative" in command else 0, stdout="", stderr="transfer failed"
+        )
+
+    monkeypatch.setattr(push_analysis.subprocess, "run", fake_run)
+    monkeypatch.setattr(push_analysis, "create_client", Mock(side_effect=AssertionError("S3 must not be used")))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "aqua",
+            "push",
+            str(tmp_path / "output"),
+            experiment,
+            "-c",
+            str(config),
+            "-f",
+            "svg",
+            "--rsync",
+            "user@example:/site",
+        ],
+    )
+    logger = Mock()
+    monkeypatch.setattr(push_analysis, "logger", logger)
+
+    assert console_main.main() == figure_status
+    assert len(commands) == 3  # optional index download, index upload, figure transfer
+    assert "--relative" in commands[-1]
+    if figure_status:
+        logger.info.assert_any_call(
+            "Transferring %s figures to %s/%s", "svg", "user@example:/site", f"content/svg/{experiment}/"
+        )
+        assert all(call.args != ("Transfer completed successfully",) for call in logger.info.call_args_list)
+    else:
+        assert logger.info.call_args_list[-1].args == ("Transfer completed successfully",)
 
 
 def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
@@ -205,6 +302,44 @@ def test_s3_success_logs_without_stdout(capfd, monkeypatch):
     log.info.assert_not_called()
 
 
+def test_s3_cli_uploads_nested_directory(tmp_path, monkeypatch):
+    """The standalone S3 command preserves relative paths in an uploaded directory."""
+    source = tmp_path / "figures"
+    figure = source / "nested" / "figure.svg"
+    figure.parent.mkdir(parents=True)
+    figure.write_text("<svg/>")
+    client = Mock()
+    monkeypatch.setattr(push_s3, "create_client", Mock(return_value=client))
+
+    assert push_s3.cli_main(["bucket", str(source), "-d", "content/svg"]) == 0
+    client.upload_file.assert_called_once_with(str(figure), "bucket", "content/svg/nested/figure.svg")
+
+
+@pytest.mark.parametrize("code,expected", [("AccessDenied", 1), ("NoSuchBucket", 2), ("InternalError", 3)])
+def test_s3_cli_reports_upload_failures(tmp_path, monkeypatch, code, expected):
+    """The standalone command returns the documented S3 failure status."""
+    figure = tmp_path / "figure.svg"
+    figure.write_text("<svg/>")
+    client = Mock()
+    client.upload_file.side_effect = ClientError({"Error": {"Code": code, "Message": code}}, "PutObject")
+    monkeypatch.setattr(push_s3, "create_client", Mock(return_value=client))
+
+    assert push_s3.cli_main(["bucket", str(figure)]) == expected
+
+
+@pytest.mark.parametrize("code,expected", [(None, 0), ("NoSuchKey", 0), ("AccessDenied", 1)])
+def test_s3_cli_download_status(tmp_path, monkeypatch, code, expected):
+    """A missing index is optional; access failures abort the download command."""
+    client = Mock()
+    if code is not None:
+        client.download_file.side_effect = ClientError({"Error": {"Code": code, "Message": code}}, "GetObject")
+    monkeypatch.setattr(push_s3, "create_client", Mock(return_value=client))
+    destination = tmp_path / "experiments.yaml"
+
+    assert push_s3.cli_main(["-g", "bucket", str(destination), "-d", "content/experiments.yaml"]) == expected
+    client.download_file.assert_called_once_with("bucket", "content/experiments.yaml", str(destination))
+
+
 def test_rsync_transfer_details_use_debug(monkeypatch):
     """Rsync output is routed through the AQUA logger at DEBUG level."""
     log = Mock()
@@ -254,3 +389,52 @@ def test_content_generation_has_one_startup_message(tmp_path, monkeypatch):
         "catalog/model/experiment/r1",
         tmp_path / "content" / "svg",
     )
+
+
+@pytest.mark.parametrize("ensemble", [True, False])
+def test_content_generation_scans_all_experiments(tmp_path, ensemble):
+    """A full scan rebuilds the index and content for both layout styles."""
+    root = tmp_path / "site"
+    experiment = "catalog/model/experiment/r1" if ensemble else "catalog/model/experiment"
+    source = root / "content" / "svg" / experiment
+    source.mkdir(parents=True)
+    (source / "figure.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    index = root / "content" / "experiments.yaml"
+    index.write_text("stale: value\n")
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {Figures: figure}\n")
+
+    make_contents.main(configfile=config, root=root, format="svg", ensemble=ensemble)
+
+    expected = {"catalog": {"model": {"experiment": ["r1"]} if ensemble else ["experiment"]}}
+    assert yaml.safe_load(index.read_text()) == expected
+    content = yaml.safe_load((source / "content.yaml").read_text())
+    assert content["diagnostics"] == ["Figures"]
+    assert json.loads((source / "content.json").read_text()) == content
+
+
+@pytest.mark.parametrize("fmt", ["png", "pdf"])
+def test_content_generation_reads_figure_metadata(tmp_path, fmt):
+    """Generated content includes embedded metadata for non-SVG figures."""
+    source = tmp_path / "content" / fmt / "catalog" / "model" / "experiment" / "r1"
+    source.mkdir(parents=True)
+    figure = source / f"figure.{fmt}"
+    if fmt == "png":
+        metadata = PngImagePlugin.PngInfo()
+        metadata.add_text("name", "Example")
+        Image.new("RGB", (1, 1)).save(figure, pnginfo=metadata)
+    else:
+        writer = PdfWriter()
+        writer.add_blank_page(width=10, height=10)
+        writer.add_metadata({"/Title": "Example"})
+        with figure.open("wb") as stream:
+            writer.write(stream)
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {Figures: figure}\n")
+
+    make_contents.main(experiment="catalog/model/experiment/r1", configfile=config, root=tmp_path, format=fmt)
+
+    content = yaml.safe_load((source / "content.yaml").read_text())
+    entry = content["files"][f"catalog/model/experiment/r1/figure.{fmt}"]
+    assert entry["grouping"] == "Figures"
+    assert entry["name" if fmt == "png" else "title"] == "Example"
