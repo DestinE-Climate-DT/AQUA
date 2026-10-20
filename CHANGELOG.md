@@ -11,6 +11,8 @@ ClimateDT workflow modifications:
 Complete list:
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named and numeric log levels, log the AQUA version and experiment targets at startup, and report figure transfers and successful completion while keeping individual file messages at DEBUG (#3217).
 Unreleased in the current development version (target v1.2.3):
+
+- Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
 - Fix the ICON-default `snlwrf` formula by removing a trailing operator; ICON-cycle3 and ICON-cycle4 inherit the correction (#3247)
@@ -28,7 +30,7 @@ Main changes:
 - AQUA does not support anymore python 3.11
 - Various CI/CD refinements
 - Gregory plots can now use a time-colormap to color both trajectory lines and points
-
+- Fix concurrent processes `SafeFileLock` issue (#3221)
 Complete list:
 - Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
 - CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
