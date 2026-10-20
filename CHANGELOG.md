@@ -23,7 +23,7 @@ Main changes:
 - AQUA does not support anymore python 3.11
 - Various CI/CD refinements
 - Gregory plots can now use a time-colormap to color both trajectory lines and points
-
+- Fix concurrent processes `SafeFileLock` issue (#3221)
 Complete list:
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
