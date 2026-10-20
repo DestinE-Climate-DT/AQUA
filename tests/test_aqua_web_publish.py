@@ -15,6 +15,8 @@ from pypdf import PdfWriter
 from aqua.core.console import main as console_main
 from aqua.core.console import make_contents, push_analysis, push_s3
 
+pytestmark = pytest.mark.aqua
+
 
 @pytest.mark.parametrize("experiment,ensemble", [("catalog/model/experiment/r1", True), ("catalog/model/experiment", False)])
 @pytest.mark.parametrize("entrypoint", ["api", "aqua"])
