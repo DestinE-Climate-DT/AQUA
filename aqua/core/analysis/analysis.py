@@ -15,6 +15,9 @@ from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
+# reserved template variable holding the resolved experiment kind name
+KIND_KEY = "kind"
+
 
 class Analysis:
     """Structured class for running AQUA diagnostic collections and managing configurations."""
@@ -450,14 +453,25 @@ class Analysis:
 
         Args:
             exp_kind (str): The experiment kind to configure (e.g "historical").
+                If None, the "default" kind is used.
             exp_kind_file (str): YAML file containing kind configurations (e.g. "startdate").
+                Each kind is deep-merged on top of the "default" kind, so it only needs to list overrides.
+                The resolved kind name is available to the templates as ``kind``.
+                If None, no templating is performed.
+
+        Raises:
+            FileNotFoundError: If the experiment kind file does not exist.
+            KeyError: If no "default" kind is defined or the requested kind is unknown.
+            ValueError: If the kind file defines the reserved ``kind`` key.
         """
 
-        if exp_kind_file and not exp_kind:
-            exp_kind = "default"
-
-        if exp_kind is None:
+        if not exp_kind_file:
+            if exp_kind:
+                self.logger.warning("Experiment kind '%s' requested but no experiment kind file set: no templating", exp_kind)
             return None
+
+        if not exp_kind:
+            exp_kind = "default"
 
         if not os.path.exists(exp_kind_file):
             raise FileNotFoundError(f"Experiment kind config file '{exp_kind_file}' not found.")
@@ -465,13 +479,8 @@ class Analysis:
         self.logger.info("Configuring experiment kind: %s using config file: %s", exp_kind, exp_kind_file)
         complete_dictionary = load_yaml(exp_kind_file)
 
-        if exp_kind not in complete_dictionary:
-            self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
-            if "default" not in complete_dictionary:
-                raise KeyError(
-                    f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
-                )
-        self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
+        self.exp_kind_dict = resolve_experiment_kind(complete_dictionary, exp_kind)
+        self.logger.debug("Resolved experiment kind '%s': %s", exp_kind, self.exp_kind_dict)
 
     def configure_template_configs(self, cfgs):
         """
@@ -543,3 +552,52 @@ class Analysis:
             if value is not None:
                 args += f" --{flag} {value}"
         return args
+
+
+def resolve_experiment_kind(kinds, kind):
+    """
+    Resolve an experiment kind on top of the "default" kind, as used for the templates of ``aqua analysis --kind``.
+
+    Args:
+        kinds (dict): Content of the experiment kind file, one entry per kind. "default" is mandatory.
+        kind (str): Name of the kind to resolve.
+
+    Returns:
+        dict: The kind deep-merged on top of "default", with its name under the reserved ``kind`` key.
+
+    Raises:
+        KeyError: If "default" is missing or the requested kind is unknown.
+        ValueError: If the kind file defines the reserved ``kind`` key.
+    """
+    if "default" not in kinds:
+        raise KeyError("Default experiment kind not found in the experiment kind file. Please ensure it is defined.")
+    if kind not in kinds:
+        raise KeyError(f"Experiment kind '{kind}' not found. Available kinds: {', '.join(kinds)}")
+
+    # each kind only lists its overrides: resolve it on top of the default kind
+    resolved = _deep_merge(kinds["default"], kinds[kind])
+    if KIND_KEY in resolved:
+        raise ValueError(f"'{KIND_KEY}' is a reserved key in the experiment kind file.")
+    # expose the kind name to the templates
+    resolved[KIND_KEY] = kind
+    return resolved
+
+
+def _deep_merge(base, override):
+    """
+    Recursively merge two dictionaries, with priority to the override values.
+
+    Args:
+        base (dict): Base dictionary providing the default values.
+        override (dict): Dictionary whose values replace the base ones. Nested dictionaries are merged.
+
+    Returns:
+        dict: A new merged dictionary. Inputs are not modified.
+    """
+    merged = dict(base)
+    for key, value in (override or {}).items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged

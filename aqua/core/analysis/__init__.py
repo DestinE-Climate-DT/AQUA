@@ -1,3 +1,3 @@
-from .analysis import Analysis
+from .analysis import Analysis, resolve_experiment_kind
 
-__all__ = ['Analysis']
+__all__ = ['Analysis', 'resolve_experiment_kind']

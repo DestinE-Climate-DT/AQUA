@@ -1,7 +1,11 @@
-Template for default for jinja templates for reference datasets wirh --kins option:
+# Template of an experiment kind file for the jinja templates used with the --kind option.
+#
+# Each top-level key is an experiment kind. The "default" kind is mandatory and holds every
+# definition used by the templates. Any other kind is deep-merged on top of "default", so it
+# only needs to list the keys it overrides. An unknown kind raises an error.
+# The resolved kind name is available to the templates as "kind" (reserved key).
 
 # default: default date range for all analyses
-
 # startdate, enddate: values for the date range for references to be used in the analysis
 # std_startdate, std_enddate: standard deviation for references to be used in the analysis
 
@@ -11,3 +15,9 @@ default:
     enddate: "2014-12-31"
     std_startdate: "1990-01-01"
     std_enddate: "2014-12-31"
+
+# Example of a kind overriding only the reference period end date.
+# The resolved kind keeps startdate, std_startdate and std_enddate from "default".
+# extended:
+#   default:
+#     enddate: "2024-12-31"
