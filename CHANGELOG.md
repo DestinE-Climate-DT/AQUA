@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- `aqua analysis --kind`: experiment kinds are deep-merged on top of the `default` kind, so they only list overrides; unknown kinds fall back to the `default` dictionary (#PRNUM)
 - Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)

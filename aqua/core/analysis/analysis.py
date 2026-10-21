@@ -450,14 +450,23 @@ class Analysis:
 
         Args:
             exp_kind (str): The experiment kind to configure (e.g "historical").
+                If None, the "default" kind is used. Unknown kinds fall back to "default".
             exp_kind_file (str): YAML file containing kind configurations (e.g. "startdate").
+                Each kind is deep-merged on top of the "default" kind, so it only needs to list overrides.
+                If None, no templating is performed.
+
+        Raises:
+            FileNotFoundError: If the experiment kind file does not exist.
+            KeyError: If the requested kind is unknown and no "default" kind is defined.
         """
 
-        if exp_kind_file and not exp_kind:
-            exp_kind = "default"
-
-        if exp_kind is None:
+        if not exp_kind_file:
+            if exp_kind:
+                self.logger.warning("Experiment kind '%s' requested but no experiment kind file set: no templating", exp_kind)
             return None
+
+        if not exp_kind:
+            exp_kind = "default"
 
         if not os.path.exists(exp_kind_file):
             raise FileNotFoundError(f"Experiment kind config file '{exp_kind_file}' not found.")
@@ -466,12 +475,18 @@ class Analysis:
         complete_dictionary = load_yaml(exp_kind_file)
 
         if exp_kind not in complete_dictionary:
-            self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
             if "default" not in complete_dictionary:
                 raise KeyError(
                     f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
                 )
-        self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
+            self.logger.warning(
+                "Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file
+            )
+            exp_kind = "default"
+
+        # each kind only lists its overrides: resolve it on top of the default kind
+        self.exp_kind_dict = _deep_merge(complete_dictionary.get("default", {}), complete_dictionary[exp_kind])
+        self.logger.debug("Resolved experiment kind '%s': %s", exp_kind, self.exp_kind_dict)
 
     def configure_template_configs(self, cfgs):
         """
@@ -543,3 +558,23 @@ class Analysis:
             if value is not None:
                 args += f" --{flag} {value}"
         return args
+
+
+def _deep_merge(base, override):
+    """
+    Recursively merge two dictionaries, with priority to the override values.
+
+    Args:
+        base (dict): Base dictionary providing the default values.
+        override (dict): Dictionary whose values replace the base ones. Nested dictionaries are merged.
+
+    Returns:
+        dict: A new merged dictionary. Inputs are not modified.
+    """
+    merged = dict(base)
+    for key, value in (override or {}).items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
