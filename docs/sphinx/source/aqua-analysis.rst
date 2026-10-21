@@ -163,6 +163,8 @@ The experiment kind file (``experiment_kind`` key of the ``job`` section) must d
 which holds every definition used by the templates.
 Any other kind is recursively merged on top of ``default``, so it only needs to list the keys it overrides.
 If the requested kind is not found in the file, a warning is issued and the ``default`` kind is used.
+The name of the resolved kind is available to the templates as ``kind`` (e.g. ``{% if kind == 'storyline' %}``),
+so ``kind`` is a reserved key that cannot be defined in the experiment kind file.
 If no experiment kind file is set, the configuration files are used as they are, without templating.
 
 Job

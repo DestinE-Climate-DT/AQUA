@@ -3,6 +3,7 @@
 # Each top-level key is an experiment kind. The "default" kind is mandatory and holds every
 # definition used by the templates. Any other kind is deep-merged on top of "default", so it
 # only needs to list the keys it overrides. An unknown kind falls back to "default".
+# The resolved kind name is available to the templates as "kind" (reserved key).
 
 # default: default date range for all analyses
 # startdate, enddate: values for the date range for references to be used in the analysis

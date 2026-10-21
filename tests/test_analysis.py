@@ -629,7 +629,7 @@ class TestTemplating:
     def test_configure_experiment_kind_unknown_falls_back_to_default(self, analysis, kinds_yaml):
         """Unknown kind falls back to the 'default' dict, not to the string 'default'."""
         analysis.configure_experiment_kind("unknown_kind", kinds_yaml)
-        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "unknown"}
+        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "unknown", "kind": "default"}
 
     def test_configure_experiment_kind_no_file(self, analysis):
         """Without a kind file no templating is configured, even if a kind is requested."""
@@ -656,7 +656,7 @@ class TestTemplating:
             },
         )
         analysis.configure_experiment_kind("scenario", str(kinds_file))
-        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "SSP5-8.5"}
+        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "SSP5-8.5", "kind": "scenario"}
 
     def test_configure_experiment_kind_nested_partial_override(self, analysis, tmp_path):
         """Nested blocks are merged recursively and the 'default' kind is not modified."""
@@ -683,12 +683,12 @@ class TestTemplating:
         assert resolved["references"]["era5"] == {"catalog": "obs", "model": "ECMWF", "exp": "era5", "source": "daily"}
 
         analysis.configure_experiment_kind("default", str(kinds_file))
-        assert analysis.exp_kind_dict == default
+        assert analysis.exp_kind_dict == {**default, "kind": "default"}
 
     def test_configure_experiment_kind_full_kind_unchanged(self, analysis, kinds_yaml):
         """A fully specified kind resolves exactly to itself (backward compatibility)."""
         analysis.configure_experiment_kind("scenario", kinds_yaml)
-        assert analysis.exp_kind_dict == load_yaml(kinds_yaml)["scenario"]
+        assert analysis.exp_kind_dict == {**load_yaml(kinds_yaml)["scenario"], "kind": "scenario"}
 
     def test_configure_experiment_kind_multiple_kinds(self, analysis, kinds_yaml):
         """Different kinds return independent sub-dictionaries."""
@@ -697,6 +697,27 @@ class TestTemplating:
 
         analysis.configure_experiment_kind("scenario", kinds_yaml)
         assert analysis.exp_kind_dict["forcing"] == "SSP5-8.5"
+
+    def test_configure_experiment_kind_name_exposed(self, analysis, temp_env, kinds_yaml):
+        """The resolved kind name is available to templates as 'kind'."""
+        analysis.configure_experiment_kind("scenario", kinds_yaml)
+        cfg = os.path.join(temp_env["config"], "kind.yaml")
+        with open(cfg, "w") as f:
+            f.write("kind: '{{ kind }}'\n{% if kind == 'scenario' %}\nextra: true\n{% endif %}\n")
+        rendered = load_yaml(analysis.configure_template_configs([cfg])[0])
+        assert rendered == {"kind": "scenario", "extra": True}
+
+    def test_configure_experiment_kind_name_unknown_is_default(self, analysis, kinds_yaml):
+        """An unknown kind is reported with the name of the kind actually used."""
+        analysis.configure_experiment_kind("unknown_kind", kinds_yaml)
+        assert analysis.exp_kind_dict["kind"] == "default"
+
+    def test_configure_experiment_kind_reserved_key_raises(self, analysis, tmp_path):
+        """A kind file defining the reserved 'kind' key raises ValueError."""
+        kinds_file = tmp_path / "kinds_reserved.yaml"
+        dump_yaml(str(kinds_file), {"default": {"period": "unknown"}, "scenario": {"kind": "custom"}})
+        with pytest.raises(ValueError):
+            analysis.configure_experiment_kind("scenario", str(kinds_file))
 
     def test_configure_template_configs_jinja_substitution(self, analysis, temp_env, kinds_yaml):
         """Jinja placeholders are replaced by exp_kind_dict values."""

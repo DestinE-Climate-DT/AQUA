@@ -15,6 +15,9 @@ from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
+# reserved template variable holding the resolved experiment kind name
+KIND_KEY = "kind"
+
 
 class Analysis:
     """Structured class for running AQUA diagnostic collections and managing configurations."""
@@ -453,11 +456,13 @@ class Analysis:
                 If None, the "default" kind is used. Unknown kinds fall back to "default".
             exp_kind_file (str): YAML file containing kind configurations (e.g. "startdate").
                 Each kind is deep-merged on top of the "default" kind, so it only needs to list overrides.
+                The resolved kind name is available to the templates as ``kind``.
                 If None, no templating is performed.
 
         Raises:
             FileNotFoundError: If the experiment kind file does not exist.
             KeyError: If no "default" kind is defined.
+            ValueError: If the kind file defines the reserved ``kind`` key.
         """
 
         if not exp_kind_file:
@@ -484,7 +489,12 @@ class Analysis:
             exp_kind = "default"
 
         # each kind only lists its overrides: resolve it on top of the default kind
-        self.exp_kind_dict = _deep_merge(complete_dictionary["default"], complete_dictionary[exp_kind])
+        resolved = _deep_merge(complete_dictionary["default"], complete_dictionary[exp_kind])
+        if KIND_KEY in resolved:
+            raise ValueError(f"'{KIND_KEY}' is a reserved key in experiment kind file '{exp_kind_file}'.")
+        # expose the resolved kind name to the templates
+        resolved[KIND_KEY] = exp_kind
+        self.exp_kind_dict = resolved
         self.logger.debug("Resolved experiment kind '%s': %s", exp_kind, self.exp_kind_dict)
 
     def configure_template_configs(self, cfgs):
