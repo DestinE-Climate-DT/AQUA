@@ -457,7 +457,7 @@ class Analysis:
 
         Raises:
             FileNotFoundError: If the experiment kind file does not exist.
-            KeyError: If the requested kind is unknown and no "default" kind is defined.
+            KeyError: If no "default" kind is defined.
         """
 
         if not exp_kind_file:
@@ -474,18 +474,17 @@ class Analysis:
         self.logger.info("Configuring experiment kind: %s using config file: %s", exp_kind, exp_kind_file)
         complete_dictionary = load_yaml(exp_kind_file)
 
+        if "default" not in complete_dictionary:
+            raise KeyError(f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined.")
+
         if exp_kind not in complete_dictionary:
-            if "default" not in complete_dictionary:
-                raise KeyError(
-                    f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
-                )
             self.logger.warning(
                 "Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file
             )
             exp_kind = "default"
 
         # each kind only lists its overrides: resolve it on top of the default kind
-        self.exp_kind_dict = _deep_merge(complete_dictionary.get("default", {}), complete_dictionary[exp_kind])
+        self.exp_kind_dict = _deep_merge(complete_dictionary["default"], complete_dictionary[exp_kind])
         self.logger.debug("Resolved experiment kind '%s': %s", exp_kind, self.exp_kind_dict)
 
     def configure_template_configs(self, cfgs):

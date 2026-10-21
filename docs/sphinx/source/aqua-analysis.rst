@@ -91,7 +91,7 @@ so that the script can be used in a batch job or in a workflow. These override c
 
 .. option:: -k <kind>, --kind <kind>
 
-    Experiment kind to run (e.g. ``historical``, ``scenario``, ``storyline``).
+    Experiment kind to run (e.g. ``climatedt-hist-cmip7``, ``climatedt-projections-cmip6``, ``storyline``).
     This works in combination with the jinja template configuration files available in `AQUA-diagnostics <https://aqua-diagnostics.readthedocs.io/en/latest/>`_,
     and allow for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
     Kinds inherit from the ``default`` kind and only list their overrides (see the Configuration file section below).

@@ -638,12 +638,12 @@ class TestTemplating:
         analysis.configure_experiment_kind("historical", None)
         assert analysis.exp_kind_dict is None
 
-    def test_configure_experiment_kind_no_default_valid_kind(self, analysis, tmp_path):
-        """A known kind still works when no 'default' kind is defined."""
+    def test_configure_experiment_kind_no_default_valid_kind_raises(self, analysis, tmp_path):
+        """The 'default' kind is mandatory, even when the requested kind exists."""
         kinds_file = tmp_path / "kinds_no_default.yaml"
         dump_yaml(str(kinds_file), {"historical": {"period": "past"}})
-        analysis.configure_experiment_kind("historical", str(kinds_file))
-        assert analysis.exp_kind_dict == {"period": "past"}
+        with pytest.raises(KeyError):
+            analysis.configure_experiment_kind("historical", str(kinds_file))
 
     def test_configure_experiment_kind_merge_override(self, analysis, tmp_path):
         """A kind only listing overrides inherits the other keys from 'default'."""
