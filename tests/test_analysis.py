@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from jinja2 import UndefinedError
 
-from aqua.core.analysis import Analysis
+from aqua.core.analysis import Analysis, resolve_experiment_kind
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -626,10 +626,11 @@ class TestTemplating:
         with pytest.raises(KeyError):
             analysis.configure_experiment_kind("unknown_kind", str(kinds_file))
 
-    def test_configure_experiment_kind_unknown_falls_back_to_default(self, analysis, kinds_yaml):
-        """Unknown kind falls back to the 'default' dict, not to the string 'default'."""
-        analysis.configure_experiment_kind("unknown_kind", kinds_yaml)
-        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "unknown", "kind": "default"}
+    def test_configure_experiment_kind_unknown_raises(self, analysis, kinds_yaml):
+        """An unknown kind (e.g. a typo) raises KeyError listing the available kinds."""
+        with pytest.raises(KeyError, match="historical"):
+            analysis.configure_experiment_kind("unknown_kind", kinds_yaml)
+        assert analysis.exp_kind_dict is None
 
     def test_configure_experiment_kind_no_file(self, analysis):
         """Without a kind file no templating is configured, even if a kind is requested."""
@@ -707,17 +708,22 @@ class TestTemplating:
         rendered = load_yaml(analysis.configure_template_configs([cfg])[0])
         assert rendered == {"kind": "scenario", "extra": True}
 
-    def test_configure_experiment_kind_name_unknown_is_default(self, analysis, kinds_yaml):
-        """An unknown kind is reported with the name of the kind actually used."""
-        analysis.configure_experiment_kind("unknown_kind", kinds_yaml)
-        assert analysis.exp_kind_dict["kind"] == "default"
-
     def test_configure_experiment_kind_reserved_key_raises(self, analysis, tmp_path):
         """A kind file defining the reserved 'kind' key raises ValueError."""
         kinds_file = tmp_path / "kinds_reserved.yaml"
         dump_yaml(str(kinds_file), {"default": {"period": "unknown"}, "scenario": {"kind": "custom"}})
         with pytest.raises(ValueError):
             analysis.configure_experiment_kind("scenario", str(kinds_file))
+
+    def test_resolve_experiment_kind(self):
+        """The public helper resolves a kind from a dictionary, without a kind file."""
+        kinds = {"default": {"a": {"x": 1, "y": 2}}, "other": {"a": {"y": 3}}}
+        assert resolve_experiment_kind(kinds, "other") == {"a": {"x": 1, "y": 3}, "kind": "other"}
+        assert kinds["default"] == {"a": {"x": 1, "y": 2}}
+        with pytest.raises(KeyError):
+            resolve_experiment_kind(kinds, "missing")
+        with pytest.raises(KeyError):
+            resolve_experiment_kind({"other": {}}, "other")
 
     def test_configure_template_configs_jinja_substitution(self, analysis, temp_env, kinds_yaml):
         """Jinja placeholders are replaced by exp_kind_dict values."""
