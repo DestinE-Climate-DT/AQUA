@@ -2,7 +2,6 @@
 
 from smmregrid import CdoGrid
 from aqua.logger import log_configure
-from aqua.util import to_list
 from .regridder_util import check_existing_file
 
 
@@ -137,10 +136,7 @@ class GridDictHandler:
                 return {self.default_dimension: path}
             if check_existing_file(path):
                 self.logger.debug("Grid path %s is a valid file path.", path)
-                # A single file may contain a different ocean mask at each level.
-                # Preserve the declared coordinates so weights are generated per level.
-                vertical_dims = to_list(grid_dict.get('vert_coord')) or [self.default_dimension]
-                return {dim: path for dim in vertical_dims}
+                return {self.default_dimension: path}
             raise FileNotFoundError(f"Grid file '{path}' does not exist.")
 
         # case path is a dictionary: check if the values are valid file paths

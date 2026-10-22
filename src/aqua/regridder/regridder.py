@@ -571,27 +571,13 @@ class Regridder():
             data (xarray.Dataset, xarray.DataArray): The dataset to be regridded.
         """
 
-        if not isinstance(data, (xr.Dataset, xr.DataArray)):
-            raise ValueError("Data must be an xarray Dataset or DataArray.")
-
-        # The fixer can rename the sole vertical coordinate (e.g. level to depth).
-        # Its helper index preserves the association with the original weights.
-        vertical_dims = [dim for dim in self.src_vertical_dim
-                         if dim not in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK]]
-        renamed_coords = {}
-        if len(vertical_dims) == 1 and vertical_dims[0] not in data.coords:
-            indices = [coord for coord in data.coords
-                       if coord.startswith('idx_') and coord[4:] in data.coords]
-            if len(indices) == 1:
-                renamed_coords = {indices[0][4:]: vertical_dims[0],
-                                  indices[0]: f'idx_{vertical_dims[0]}'}
-                data = data.rename(renamed_coords)
-
         # expand the dimensions of the dataset to include the vertical dimensions
         if isinstance(data, xr.Dataset):
             data = data.map(self._expand_dims, vertical_dims=list(self.src_vertical_dim))
         elif isinstance(data, xr.DataArray):
             data = self._expand_dims(data, vertical_dims=list(self.src_vertical_dim))
+        else:
+            raise ValueError("Data must be an xarray Dataset or DataArray.")
 
         # get which variables share the same dimensions
         shared_vars = self._group_shared_dims(data)
@@ -601,9 +587,6 @@ class Regridder():
             data = data.map(self._apply_regrid, shared_vars=shared_vars)
         elif isinstance(data, xr.DataArray):
             data = self._apply_regrid(data, shared_vars)
-
-        if renamed_coords:
-            data = data.rename({value: key for key, value in renamed_coords.items()})
 
         return data
 
