@@ -8,84 +8,84 @@
 grids:
   # v3: DestinE O-25.1, ClimateDT gen2
   icon-R02B09-hpz10-nested-v3:  # 3686446 missing values
-    path: '{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_v3.nc'
+    path: "{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B09-hpz10-nested-3d-v3:
     path:
-      level: '{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_level_full_v3.nc'
+      level: "{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_level_full_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B09-hpz7-nested-v3:  # 57642 missing values
-    path: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_v3.nc'
+    path: "{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B09-hpz7-nested-3d-v3:
     path:
-      level: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_level_full_v3.nc'
+      level: "{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_level_full_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B08-hpz9-nested-v3:  # 924355 missing values
-    path: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_v3.nc'
+    path: "{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B08-hpz9-nested-3d-v3:
     path:
-      level: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_level_full_v3.nc'
+      level: "{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_level_full_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B08-hpz7-nested-v3:
-    path: '{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_v3.nc'
+    path: "{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B08-hpz7-nested-3d-v3:
     path:
-      level: '{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_level_full_v3.nc'
+      level: "{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_level_full_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B08-hpz6-nested-v3:  # 14415 missing values
-    path: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_v3.nc'
+    path: "{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-R02B08-hpz6-nested-3d-v3:
     path:
-      level: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_level_full_v3.nc'
+      level: "{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_level_full_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
 
   # ClimateDT phase1/phase2
   icon-hpz10-nested:
-    path: '{{ grids }}/HealPix/icon_hpz10_nested_oce.nc'
+    path: "{{ grids }}/HealPix/icon_hpz10_nested_oce.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   icon-hpz10-nested-3d:
     path:
-      level: '{{ grids }}/HealPix/icon_hpz10_nested_oce_level.nc'
-    cdo_options: '--force'
+      level: "{{ grids }}/HealPix/icon_hpz10_nested_oce_level.nc"
+    cdo_options: "--force"
 
   # nextGEMS: HEALPix at any zoom (Reader zoom argument).
   # The 2dm grid is used for variables with attribute component=ocean.
   icon-R02B08-hp-nested:  # nextGEMS cycle4, 72 depth_full levels
     path:
-      2d: '{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc'
-      2dm: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_v1.nc'
-      depth_full: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_full_v1.nc'
-      depth_half: '{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_half_v1.nc'
+      2d: "{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc"
+      2dm: "{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_v1.nc"
+      depth_full: "{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_full_v1.nc"
+      depth_half: "{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_half_v1.nc"
     space_coord: ["cell"]
     masked:
       component: ocean
   icon-R02B09-hp-nested:  # nextGEMS cycle3, 128 depth_full levels
     path:
-      2d: '{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc'
-      2dm: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_v1.nc'
-      depth_full: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_full_v1.nc'
-      depth_half: '{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_half_v1.nc'
+      2d: "{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc"
+      2dm: "{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_v1.nc"
+      depth_full: "{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_full_v1.nc"
+      depth_half: "{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_half_v1.nc"
     space_coord: ["cell"]
     masked:
       component: ocean
 
   # Native R02B09 mesh: nextGEMS cycle3
   R02B09:
-    path: '{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc'
+    path: "{{ grids }}/ICON/icon_grid_0015_R02B09_G.nc"
     space_coord: ["cell"]
     cdo_extra: -selname,cell_index

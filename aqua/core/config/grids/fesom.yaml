@@ -10,137 +10,137 @@
 grids:
   # v4: DestinE O-26.1, ClimateDT gen2
   fesom-NG5-hpz10-nested-v4:
-    path: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_v4.nc'
+    path: "{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz10-nested-3d-v4:
     path:
-      level: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_level_v4.nc'
+      level: "{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_level_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz9-nested-v4:
-    path: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_v4.nc'
+    path: "{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz9-nested-3d-v4:
     path:
-      level: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_level_v4.nc'
+      level: "{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_level_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz7-nested-v4:
-    path: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_v4.nc'
+    path: "{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz7-nested-3d-v4:
     path:
-      level: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_level_v4.nc'
+      level: "{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_level_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-DARS2-hpz7-nested-v4:
-    path: '{{ grids }}/FESOM/fesom-DARS2_hpz7_nested_oce_v4.nc'
+    path: "{{ grids }}/FESOM/fesom-DARS2_hpz7_nested_oce_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-DARS2-hpz7-nested-3d-v4:
     path:
-      level: '{{ grids }}/FESOM/fesom-DARS2_hpz7_nested_oce_level_v4.nc'
+      level: "{{ grids }}/FESOM/fesom-DARS2_hpz7_nested_oce_level_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-CORE2-hpz5-nested-v4:
-    path: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_v4.nc'
+    path: "{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-CORE2-hpz5-nested-3d-v4:
     path:
-      level: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_level_v4.nc'
+      level: "{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_level_v4.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
 
   # v3: DestinE O-25.1
   fesom-NG5-hpz10-nested-v3:
-    path: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_v3.nc'
+    path: "{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz10-nested-3d-v3:
     path:
-      level: '{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_level_v3.nc'
+      level: "{{ grids }}/FESOM/fesom-NG5_hpz10_nested_oce_level_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz9-nested-v3:
-    path: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_v3.nc'
+    path: "{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz9-nested-3d-v3:
     path:
-      level: '{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_level_v3.nc'
+      level: "{{ grids }}/FESOM/fesom-NG5_hpz9_nested_oce_level_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz7-nested-v3:
-    path: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_v3.nc'
+    path: "{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz7-nested-3d-v3:
     path:
-      level: '{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_level_v3.nc'
+      level: "{{ grids }}/FESOM/fesom-NG5_hpz7_nested_oce_level_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-CORE2-hpz5-nested-v3:
-    path: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_v3.nc'
+    path: "{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-CORE2-hpz5-nested-3d-v3:
     path:
-      level: '{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_level_v3.nc'
+      level: "{{ grids }}/FESOM/fesom-CORE2_hpz5_nested_oce_level_v3.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
 
   # v2: nextGEMS cycle4, ClimateDT phase1/phase2
   fesom-NG5-hpz10-nested-v2:
-    path: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_v2.nc'
+    path: "{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_v2.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz10-nested-3d-v2:
     path:
-      level: '{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_level_v2.nc'
+      level: "{{ grids }}/HealPix/fesom-NG5_hpz10_nested_oce_level_v2.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz9-nested-v2:  # 984749 missing values
-    path: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_v2.nc'
+    path: "{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_v2.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz9-nested-3d-v2:
     path:
-      level: '{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level_v2.nc'
+      level: "{{ grids }}/HealPix/fesom-NG5_hpz9_nested_oce_level_v2.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz7-nested-v2:  # 57831 missing values
-    path: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_v2.nc'
+    path: "{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_v2.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-NG5-hpz7-nested-3d-v2:
     path:
-      level: '{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_level_v2.nc'
+      level: "{{ grids }}/HealPix/fesom-NG5_hpz7_nested_oce_level_v2.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
 
   # D3 mesh: ClimateDT phase2 (MN5)
   fesom-D3-hpz7-nested:
-    path: '{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce.nc'
+    path: "{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
   fesom-D3-hpz7-nested-3d:
     path:
-      level: '{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce_level.nc'
+      level: "{{ grids }}/HealPix/fesom-D3_hpz7_nested_oce_level.nc"
     space_coord: ["ncells"]
-    cdo_options: '--force'
+    cdo_options: "--force"
 
   # NG5 native mesh (nodes and elements): nextGEMS, ClimateDT phase1
   ng5-nodes-2d:
-    path: '{{ grids }}/FESOM/AQUA_NG5_griddes_nodes_IFS.nc'
+    path: "{{ grids }}/FESOM/AQUA_NG5_griddes_nodes_IFS.nc"
     space_coord: ["nod2"]
   ng5-nodes-3d:
     path:
-      nz: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz.nc'
-      nz1: '{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz1.nc'
+      nz: "{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz.nc"
+      nz1: "{{ grids }}/FESOM/NG5_nodes_fesom_mask_nz1.nc"
     space_coord: ["nod2"]
     cdo_extra:
       - -setgrid,'{{ grids }}/FESOM/NG5_griddes_nodes_IFS.nc'
@@ -150,7 +150,7 @@ grids:
       - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc'
   ng5-elems-3d:
     path:
-      nz1: '{{ grids }}/FESOM/NG5_elem_fesom_mask_nz1.nc'
+      nz1: "{{ grids }}/FESOM/NG5_elem_fesom_mask_nz1.nc"
     space_coord: ["elem"]
     cdo_extra:
       - -setgrid,'{{ grids }}/FESOM/NG5_griddes_elems_IFS.nc'

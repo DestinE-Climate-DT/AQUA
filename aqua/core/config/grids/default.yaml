@@ -23,7 +23,7 @@ areas:
   template_default: cell_area_{model}_{exp}_{source}.nc
   template_grid: cell_area_{grid}.nc
 cdo-paths:
-  download: '{{ weights }}'
+  download: "{{ weights }}"
   icon: /pool/data/ICON
 
 grids:
@@ -37,7 +37,7 @@ grids:
     space_coord: ["longitude", "latitude"]
   lon-lat-r100:
     path:
-      2d: '{{ grids }}/lonlat/r100_grid.nc'
+      2d: "{{ grids }}/lonlat/r100_grid.nc"
     space_coord: ["lon", "lat"]
 
   # Regular lon-lat target grids: rXXXs are staggered (poles included)
