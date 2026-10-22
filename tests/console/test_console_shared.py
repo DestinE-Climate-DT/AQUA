@@ -173,7 +173,7 @@ class TestCatalogListingAndErrors:
         assert "ci" in out
         assert "ciccio (editable" in out
         assert "ifs.yaml" in out
-        assert "HealPix.yaml" in out
+        assert "healpix.yaml" in out
 
         run_aqua(["avail", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
         out, _ = capfd.readouterr()

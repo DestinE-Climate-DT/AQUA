@@ -1,0 +1,43 @@
+# Generic HEALPix grids (nested ordering, full globe, no land-sea mask).
+# Ocean HEALPix grids with model land-sea mask are in fesom.yaml, nemo.yaml and icon.yaml.
+
+grids:
+  hpz0-nested:
+    path: '{{ grids }}/HealPix/hpz0_nested_atm.nc'
+    cdo_options: '--force'
+  hpz1-nested:
+    path: '{{ grids }}/HealPix/hpz1_nested_atm.nc'
+    cdo_options: '--force'
+  hpz2-nested:
+    path: '{{ grids }}/HealPix/hpz2_nested_atm.nc'
+    cdo_options: '--force'
+  hpz3-nested:
+    path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
+    cdo_options: '--force'
+  hpz4-nested:
+    path: '{{ grids }}/HealPix/hpz4_nested_atm.nc'
+    cdo_options: '--force'
+  hpz5-nested:
+    path: '{{ grids }}/HealPix/hpz5_nested_atm.nc'
+    cdo_options: '--force'
+  hpz6-nested:
+    path: '{{ grids }}/HealPix/hpz6_nested_atm.nc'
+    cdo_options: '--force'
+  hpz7-nested:
+    path: '{{ grids }}/HealPix/hpz7_nested_atm.nc'
+    cdo_options: '--force'
+  hpz8-nested:
+    path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
+    cdo_options: '--force'
+  hpz9-nested:
+    path: '{{ grids }}/HealPix/hpz9_nested_atm.nc'
+    cdo_options: '--force'
+  hpz10-nested:
+    path: '{{ grids }}/HealPix/hpz10_nested_atm.nc'
+    cdo_options: '--force'
+
+  # Same as hpz8-nested with explicit space_coord (nextGEMS cycle4)
+  hpz8-nested-nextgems4:
+    path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
+    space_coord: [cell]
+    cdo_options: '--force'
