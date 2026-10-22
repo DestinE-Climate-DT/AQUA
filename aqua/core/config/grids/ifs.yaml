@@ -11,22 +11,22 @@ grids:
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
     masked:
-      vars: [ci, sst]
+      vars: ["ci", "sst"]
   tco399:
     path:
       2d: '{{ grids }}/IFS/tco399_grid.nc'
       2dm: '{{ grids }}/IFS/tco399_grid_masked.nc'
     masked:
-      vars: [ci, sst]
+      vars: ["ci", "sst"]
   tco1279:
     path:
       2d: '{{ grids }}/IFS/tco1279_grid.nc'
       2dm: '{{ grids }}/IFS/tco1279_grid_masked.nc'
     masked:
-      vars: [ci, sst]
+      vars: ["ci", "sst"]
   tco2559:
     path:
       2d: '{{ grids }}/IFS/tco2559_grid.nc'
       2dm: '{{ grids }}/IFS/tco2559_grid_masked.nc'
     masked:
-      vars: [ci, sst]
+      vars: ["ci", "sst"]

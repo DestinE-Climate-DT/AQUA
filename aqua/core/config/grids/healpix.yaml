@@ -39,5 +39,5 @@ grids:
   # Same as hpz8-nested with explicit space_coord (nextGEMS cycle4)
   hpz8-nested-nextgems4:
     path: '{{ grids }}/HealPix/hpz8_nested_atm.nc'
-    space_coord: [cell]
+    space_coord: ["cell"]
     cdo_options: '--force'

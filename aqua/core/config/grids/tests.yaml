@@ -7,7 +7,7 @@ grids:
       2d: '{{ grids }}/IFS/tco79_grid.nc'
       2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
     masked:
-      vars: ['2t']
+      vars: ["2t"]
   tco79-nn:
     path: '{{ grids }}/IFS/tco79_grid.nc'
     regrid_method: nn
@@ -42,23 +42,23 @@ grids:
   # HEALPix
   test-hpz3-nested:
     path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
-    space_coord: [cells]
+    space_coord: ["cells"]
     cdo_options: '--force'
   test-hpz3-nested-nn:
     path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
-    space_coord: [cells]
+    space_coord: ["cells"]
     cdo_options: '--force'
     regrid_method: nn
   test-hpz7-nested-fdb:
     path: '{{ grids }}/HealPix/hpz7_nested_atm.nc'
-    space_coord: [ncells]
+    space_coord: ["ncells"]
     cdo_options: '--force'
   test-hpz3-nested-fesom:
     path: '{{ grids }}/HealPix/fesom_hpz3_nested_oce.nc'
-    space_coord: [cells]
+    space_coord: ["cells"]
     cdo_options: '--force'
   test-hpz3-nested-fesom-3d:
     path:
       level: '{{ grids }}/HealPix/fesom_hpz3_nested_oce_level.nc'
-    space_coord: [cells]
+    space_coord: ["cells"]
     cdo_options: '--force'

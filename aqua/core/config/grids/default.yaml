@@ -29,16 +29,16 @@ cdo-paths:
 grids:
   # Generic regular lon-lat grids, read from the data
   lon-lat:
-    space_coord: [lon, lat]
+    space_coord: ["lon", "lat"]
   lon-lat-depth:
-    space_coord: [lon, lat]
-    vert_coord: [depth]
+    space_coord: ["lon", "lat"]
+    vert_coord: ["depth"]
   longitude-latitude:
-    space_coord: [longitude, latitude]
+    space_coord: ["longitude", "latitude"]
   lon-lat-r100:
     path:
       2d: '{{ grids }}/lonlat/r100_grid.nc'
-    space_coord: [lon, lat]
+    space_coord: ["lon", "lat"]
 
   # Regular lon-lat target grids: rXXXs are staggered (poles included)
   r005s: r7200x3601

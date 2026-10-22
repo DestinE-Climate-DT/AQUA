@@ -6,14 +6,14 @@ grids:
     path: '{{ grids }}/IFS/tl255_grid.nc'
   tl63-ece:
     path: '{{ grids }}/EC-EARTH4/tl63.nc'
-    space_coord: [cell]
+    space_coord: ["cell"]
 
   # Ocean (NEMO ORCA). The -ice entries are currently identical to the ocean ones.
   ORCA2-ece:
     path:
       2d: '{{ grids }}/EC-EARTH4/ORCA2_mesh_sfc_grid_T.nc'
       depth: '{{ grids }}/EC-EARTH4/ORCA2_mesh_3d_grid_T.nc'
-    space_coord: [x, y]
+    space_coord: ["x", "y"]
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_ORCA2_T.nc'
     cellareas_var: area
     regrid_method: bil
@@ -21,7 +21,7 @@ grids:
     path:
       2d: '{{ grids }}/EC-EARTH4/ORCA2_mesh_sfc_grid_T.nc'
       depth: '{{ grids }}/EC-EARTH4/ORCA2_mesh_3d_grid_T.nc'
-    space_coord: [x, y]
+    space_coord: ["x", "y"]
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_ORCA2_T.nc'
     cellareas_var: area
     regrid_method: bil
@@ -29,7 +29,7 @@ grids:
     path:
       2d: '{{ grids }}/EC-EARTH4/eORCA1_mesh_sfc_grid_T.nc'
       depth: '{{ grids }}/EC-EARTH4/eORCA1_mesh_3d_grid_T.nc'
-    space_coord: [x, y]
+    space_coord: ["x", "y"]
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_eORCA1_T.nc'
     cellareas_var: area
     regrid_method: bil
@@ -37,7 +37,7 @@ grids:
     path:
       2d: '{{ grids }}/EC-EARTH4/eORCA1_mesh_sfc_grid_T.nc'
       depth: '{{ grids }}/EC-EARTH4/eORCA1_mesh_3d_grid_T.nc'
-    space_coord: [x, y]
+    space_coord: ["x", "y"]
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_eORCA1_T.nc'
     cellareas_var: area
     regrid_method: bil
@@ -47,7 +47,7 @@ grids:
     path:
       2d: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_sfc_grid_T-pd.nc'
       depth: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_3d_grid_T-pd.nc'
-    space_coord: [x, y]
+    space_coord: ["x", "y"]
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_PALEORCA2_T.nc'
     cellareas_var: area
     regrid_method: bil
@@ -55,7 +55,7 @@ grids:
     path:
       2d: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_sfc_grid_T-eo.nc'
       depth: '{{ grids }}/EC-EARTH4/PALEORCA2_mesh_3d_grid_T-eo.nc'
-    space_coord: [x, y]
+    space_coord: ["x", "y"]
     cellareas: '{{ grids }}/EC-EARTH4/cellarea_PALEORCA2_T.nc'
     cellareas_var: area
     regrid_method: bil
