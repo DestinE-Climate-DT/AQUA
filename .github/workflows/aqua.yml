@@ -5,9 +5,8 @@ on:
     branches: [ main, v0.13-operational, v0.19-operational, v0.19-development ]
   pull_request:
     branches: [ main, v0.13-operational, v0.19-operational, v0.19-development ]
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
 
 permissions:
   contents: read
@@ -27,14 +26,20 @@ defaults:
     shell: bash -l -eo pipefail {0}
 jobs:
   aqua_test:
-    # NOTE: this option can be uncommented to run the job only when
-    #       a pull request contains a label with the name "Run Tests" or "Ready to Merge" or if run by Dependabot.
-    if: >
-      contains(github.event.pull_request.labels.*.name, 'run tests') ||
-      contains(github.event.pull_request.labels.*.name, 'ready to merge') ||
-      github.actor == 'dependabot[bot]' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule'
+    # Push and manual runs always run. On PRs:
+    #  - opened/synchronize/reopened: run if the PR has a test label
+    #  - labeled: run only if the label just added is a test label
+    # Labels carry an emoji suffix (e.g. 'run tests :runner:'), so match on the prefix.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.action != 'labeled' && (
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|run tests') ||
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|ready for review') ||
+        contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|ready to merge'))) ||
+      (github.event.action == 'labeled' && (
+        startsWith(github.event.label.name, 'run tests') ||
+        startsWith(github.event.label.name, 'ready for review') ||
+        startsWith(github.event.label.name, 'ready to merge')))
     env:
       DEBIAN_FRONTEND: noninteractive
       GRID_DEFINITION_PATH: /tmp
