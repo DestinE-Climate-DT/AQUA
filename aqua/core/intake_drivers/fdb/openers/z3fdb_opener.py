@@ -567,7 +567,7 @@ def open_z3fdb(
 
     ds.attrs.update(
         {
-            "mars_request": "; ".join(mars_str_list) if len(mars_list) > 1 else mars_list[0],
+            "mars_request": "; ".join(mars_str_list),
         }
     )
 
