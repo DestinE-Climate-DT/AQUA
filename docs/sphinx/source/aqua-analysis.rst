@@ -141,6 +141,8 @@ To get an overview of the run, at the end of the analysis a Markdown report
 (``<outputdir>/<catalog>/<model>/<exp>/<realization>``), next to the logfiles.
 The timestamp is the start of the run, so that reports of successive runs in the same folder are kept.
 The report is meant to be human readable and can be pasted as it is in a GitLab or GitHub issue.
+It uses plain Unicode emoji and almost no HTML, so it is readable also from a terminal,
+e.g. with ``less`` or rendered with `glow <https://github.com/charmbracelet/glow>`_ (``glow -p <report>.md``).
 
 The report contains:
 

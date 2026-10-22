@@ -184,7 +184,8 @@ def test_analysis_records_tool_results(analysis, tmp_path):
 
     with open(analysis.write_report(), encoding="utf-8") as f:
         text = f.read()
-    assert ":x: **1 of 1 tools failed**" in text
+    assert "\u274c **1 of 1 tools failed**" in text
+    assert ":x:" not in text and "<sub>" not in text  # readable in a terminal
     assert "Something broke" in text
 
 

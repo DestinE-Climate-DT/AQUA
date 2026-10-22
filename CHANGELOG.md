@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
-- `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files (#3242)
+- `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files, readable both on GitHub/GitLab and in a terminal (#3242)
 - Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
