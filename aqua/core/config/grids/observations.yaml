@@ -1,80 +1,80 @@
-grids:
-  # OBSERVATIONS
+# Observational and reanalysis datasets grids.
 
+grids:
   # AVISO
   aviso:
     space_coord: ["longitude", "latitude"]
+
   # EN4
   en4:
     path:
-      2d: '{{ grids }}/EN4/en4-grid.nc'
-      lev: '{{ grids }}/EN4/en4-grid.nc'
+      2d: "{{ grids }}/EN4/en4-grid.nc"
+      lev: "{{ grids }}/EN4/en4-grid.nc"
     space_coord: ["lon", "lat"]
 
   # ERA5
   era5-n320:
-    path: '{{ grids }}/ERA5/n320_unstructured.nc'
+    path: "{{ grids }}/ERA5/n320_unstructured.nc"
     space_coord: ["values"]
   era5-r025s:
     path:
-      2d: '{{ grids }}/ERA5/r025_grid.nc'
-      2dm: '{{ grids }}/ERA5/r025_grid_masked.nc'
+      2d: "{{ grids }}/ERA5/r025_grid.nc"
+      2dm: "{{ grids }}/ERA5/r025_grid_masked.nc"
+    space_coord: ["lon", "lat"]
     masked:
       vars: ["SSTK", "sst", "tos"]
-    space_coord: ["lon", "lat"]
 
-
-  # OSI-SAF
-  # osi-saf-nh:
-  #   path: '{{ grids }}/OSI-SAF/grid_osi-saf_nh.nc'
-  #   space_coord: ['xc', 'yc']
-  #   cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc'
-  #   cellareas_var: areacello
-  #   regrid_method: 'bil'
-
-  # osi-saf-sh:
-  #   path: '{{ grids }}/OSI-SAF/grid_osi-saf_sh.nc'
-  #   space_coord: ['xc', 'yc']
-  #   cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc'
-  #   cellareas_var: areacello
-  #   regrid_method: 'bil'
-
+  # OSI-SAF sea-ice concentration, EASE2-250 polar grids (432x432), one per hemisphere.
+  # osi-saf-nh/sh: daily sources (osi-saf-450, osi-saf-amsr, osi-saf-aqua, osi-saf-ssmis)
+  # osi-saf-nh/sh-aqua: monthly sources (osi-saf-aqua)
+  # Both pairs use the same grid and cell area files.
+  osi-saf-nh:
+    path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_nh.nc"
+    space_coord: ["xc", "yc"]
+    cellareas: "{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc"
+    cellareas_var: areacello
+    regrid_method: bil
+  osi-saf-sh:
+    path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_sh.nc"
+    space_coord: ["xc", "yc"]
+    cellareas: "{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc"
+    cellareas_var: areacello
+    regrid_method: bil
   osi-saf-nh-aqua:
-    path: '{{ grids }}/OSI-SAF/grid_osi-saf-aqua_nh.nc'
-    space_coord: ['xc', 'yc']
-    cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc'
+    path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_nh.nc"
+    space_coord: ["xc", "yc"]
+    cellareas: "{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc"
     cellareas_var: areacello
-    regrid_method: 'bil'
-
+    regrid_method: bil
   osi-saf-sh-aqua:
-    path: '{{ grids }}/OSI-SAF/grid_osi-saf-aqua_sh.nc'
-    space_coord: ['xc', 'yc']
-    cellareas: '{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc'
+    path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_sh.nc"
+    space_coord: ["xc", "yc"]
+    cellareas: "{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc"
     cellareas_var: areacello
-    regrid_method: 'bil'
+    regrid_method: bil
+
+  # PSC (PIOMAS, GIOMAS)
+  psc-piomas:
+    path: "{{ grids }}/PSC/grid_piomas_new.nc"
+    space_coord: ["x", "y"]
+    cellareas: "{{ grids }}/PSC/cellarea_piomas.nc"
+    cellareas_var: areacello
+    regrid_method: bil
+  psc-giomas:
+    path: "{{ grids }}/PSC/grid_giomas_new.nc"
+    space_coord: ["x", "y"]
+    cellareas: "{{ grids }}/PSC/cellarea_giomas.nc"
+    cellareas_var: areacello
+    regrid_method: bil
+
+  # WAGHC
+  waghc:
+    path:
+      depth: "{{ grids }}/WAGHC/grid-waghc.nc"
+    space_coord: ["lon", "lat"]
 
   # WOA
   woa:
     path:
-      depth: '{{ grids }}/WOA18/grid-woa18.nc'
+      depth: "{{ grids }}/WOA18/grid-woa18.nc"
     space_coord: ["lon", "lat"]
-
-  # PSC
-  psc-piomas:
-    space_coord: ["x", "y"]
-    cellareas: '{{ grids }}/PSC/cellarea_piomas.nc'
-    cellareas_var: areacello
-    path: '{{ grids }}/PSC/grid_piomas_new.nc'
-    regrid_method: 'bil'
-  psc-giomas:
-    space_coord: ["x", "y"]
-    cellareas: '{{ grids }}/PSC/cellarea_giomas.nc'
-    cellareas_var: areacello
-    path: '{{ grids }}/PSC/grid_giomas_new.nc'
-    regrid_method: 'bil'
-
-  # WAGHC
-  waghc:
-    space_coord: ["lon", "lat"]
-    path:
-      depth: '{{ grids }}/WAGHC/grid-waghc.nc'

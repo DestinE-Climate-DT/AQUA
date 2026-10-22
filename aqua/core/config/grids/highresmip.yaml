@@ -1,0 +1,29 @@
+# HighResMIP atmospheric grids, one entry per model.
+
+grids:
+  bcc-csm2-hr-atm:
+    path: "{{ grids }}/BCC/bcc-csm2-hr_atm.nc"
+    space_coord: ["lat", "lon"]
+  cmcc-cm2-vhr4-atm:
+    path: "{{ grids }}/CMCC/cmcc-cm2-vhr4_atm.nc"
+    space_coord: ["lon", "lat"]
+  cnrm-cm6-1-hr-atm:
+    path: "{{ grids }}/CNRM/cnrm-cm6-1-hr_atm.nc"
+    space_coord: ["lon", "lat"]
+  ec-earth3p-hr-atm:
+    path: "{{ grids }}/EC-EARTH3/ec-earth3p-hr_atm.nc"
+    space_coord: ["lon", "lat"]
+  ecmwf-ifs-hr-atm:
+    path: "{{ grids }}/ECMWF/ecmwf-ifs-hr_atm.nc"
+    space_coord: ["lat", "lon"]
+  hadgem3-gc31-hh-atm-2d:
+    path: "{{ grids }}/MOHC/hadgem3-gc31-hh_atm_2d.nc"
+    space_coord: ["lon", "lat"]
+  inm-cm5-h-atm:
+    path: "{{ grids }}/INM/inm-cm5-h_atm.nc"
+    space_coord: ["lon", "lat"]
+  mpi-esm1-2-xr-atm:
+    path:
+      lev: "{{ grids }}/MPI/mpi-esm1-2-xr_atm.nc"
+    space_coord: ["lat", "lon"]
+    vert_coord: lev

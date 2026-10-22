@@ -1,37 +1,46 @@
-# This is the configuration file for the regridder.
-# Grids are split in multiple files, here there is the default configuration.
+# Regridder configuration: filename templates and generic grids.
+# Grid definitions are split across all the YAML files of this folder,
+# which are merged at load time: every grid name must be defined only once.
+#
+# Any valid CDO grid name (e.g. r360x180, F256, hpz7) can also be passed
+# directly to the Reader without a dedicated entry.
+#
+# Available keys for each grid entry:
+#   path: grid file or CDO grid name, or a dictionary {vertical_dim: path}
+#   space_coord: horizontal dimensions of the source data
+#   vert_coord: vertical dimension of the source data
+#   cdo_options: extra CDO options (e.g. --force)
+#   cdo_extra: extra CDO operators applied before generating the weights
+#   cellareas, cellareas_var: precomputed cell area file and variable
+#   regrid_method: interpolation method (default: con)
+#   masked: variables/attributes selecting the masked (2dm) grid
 
-# Templates
+# Filename templates
 weights:
   template_default: weights_{model}_{exp}_{source}_{method}_{targetgrid}_l{level}.nc
   template_grid: weights_{sourcegrid}_{method}_{targetgrid}_l{level}.nc
 areas:
   template_default: cell_area_{model}_{exp}_{source}.nc
   template_grid: cell_area_{grid}.nc
-cdo-paths: # to be checked
-  download: '{{ weights }}'
+cdo-paths:
+  download: "{{ weights }}"
   icon: /pool/data/ICON
 
-# Available grids
-# cdo_extra is an extra special cdo command to be applied before generating the weights
-# cdo_options similarly to be used to pass to cdo specific options
 grids:
-  # default
+  # Generic regular lon-lat grids, read from the data
   lon-lat:
-    space_coord: [lon, lat]
+    space_coord: ["lon", "lat"]
   lon-lat-depth:
+    space_coord: ["lon", "lat"]
     vert_coord: ["depth"]
-    space_coord: [lon, lat]
   longitude-latitude:
-    space_coord: [longitude, latitude]
+    space_coord: ["longitude", "latitude"]
   lon-lat-r100:
     path:
-      2d: '{{ grids }}/lonlat/r100_grid.nc'
-    space_coord: [lon, lat]
+      2d: "{{ grids }}/lonlat/r100_grid.nc"
+    space_coord: ["lon", "lat"]
 
-  # target regrid
-  # Regular lon/lat grids
-  # rxxxs are staggered grids
+  # Regular lon-lat target grids: rXXXs are staggered (poles included)
   r005s: r7200x3601
   r005: r7200x3600
   r010s: r3600x1801
@@ -48,4 +57,3 @@ grids:
   r200: r180x90
   r250s: r144x73
   r250: r144x72
-  # full Gaussian grids -> these can be now used with a string in the reader's regrid arg
