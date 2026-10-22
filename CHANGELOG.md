@@ -9,6 +9,13 @@ AQUA core complete list:
 
 AQUA diagnostics complete list:
 
+## [v0.19.14]
+
+AQUA core complete list:
+- Fixed incorrect 2d grid interpretation of 3d ICON grids (#3267)
+
+AQUA diagnostics complete list:
+
 ## [v0.19.13]
 
 AQUA core complete list:
@@ -1290,7 +1297,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers. 
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.13
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/HEAD...v0.19.14
+[v0.19.13]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.13...v0.19.14
 [v0.19.13]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.12...v0.19.13
 [v0.19.12]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.11...v0.19.12
 [v0.19.11]: https://github.com/DestinE-Climate-DT/AQUA/compare/v0.19.10...v0.19.11
