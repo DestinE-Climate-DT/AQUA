@@ -211,6 +211,7 @@ grids:
     path: '{{ grids }}/FESOM/fesom_tco2559_interpolated_2d.nc'
     space_coord: ["lon", "lat"]
   fesom-interpolated-3d:
-    path: '{{ grids }}/FESOM/fesom_tco2559_interpolated_3d.nc'
+    path:
+      level: '{{ grids }}/FESOM/fesom_tco2559_interpolated_3d.nc'
     space_coord: ["lon", "lat"]
     vert_coord: depth

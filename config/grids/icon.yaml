@@ -55,7 +55,8 @@ grids:
     space_coord: ["cell"]
   icon-R02B08-hpz9-nested-3d-v2: #ClimateDT cycle2, 72 levels starting at 1, 924355 missing values
     cdo_options: '--force'
-    path: '{{ grids }}/HealPix/icon-R02B08_hpz9_nested_oce_level_full_v2.nc'
+    path:
+      level: '{{ grids }}/HealPix/icon-R02B08_hpz9_nested_oce_level_full_v2.nc'
     space_coord: ["cell"]
     vert_coord: ["level"]
   icon-R02B09-hpz7-nested-v2: #ClimateDT cycle2, 57642 missing values
@@ -64,7 +65,8 @@ grids:
     space_coord: ["cell"]
   icon-R02B09-hpz7-nested-3d-v2: #ClimateDT cycle2, 72 levels starting at 1, 57642 missing values
     cdo_options: '--force'
-    path: '{{ grids }}/HealPix/icon-R02B09_hpz7_nested_oce_level_full_v2.nc'
+    path:
+      level: '{{ grids }}/HealPix/icon-R02B09_hpz7_nested_oce_level_full_v2.nc'
     space_coord: ["cell"]
     vert_coord: ["level"]
   icon-R02B08-hpz6-nested-v2: #ClimateDT cycle2, 14415 missing values
@@ -73,7 +75,8 @@ grids:
     space_coord: ["cell"]
   icon-R02B08-hpz6-nested-3d-v2: #ClimateDT cycle2, 72 levels starting at 1, 14415 missing values
     cdo_options: '--force'
-    path: '{{ grids }}/HealPix/icon-R02B08_hpz6_nested_oce_level_full_v2.nc'
+    path:
+      level: '{{ grids }}/HealPix/icon-R02B08_hpz6_nested_oce_level_full_v2.nc'
     space_coord: ["cell"]
     vert_coord: ["level"]
 
@@ -87,7 +90,8 @@ grids:
     space_coord: ["ncells"]
   icon-R02B09-hpz10-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 3686446 missing values - same as v1
     cdo_options: '--force'
-    path: '{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_level_full_v3.nc'
+    path:
+      level: '{{ grids }}/ICON/icon-R02B09_hpz10_nested_oce_level_full_v3.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
   icon-R02B08-hpz9-nested-v3: #ClimateDT cycle2, 924355 missing values
@@ -96,7 +100,8 @@ grids:
     space_coord: ["ncells"]
   icon-R02B08-hpz9-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 924355 missing values
     cdo_options: '--force'
-    path: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_level_full_v3.nc'
+    path:
+      level: '{{ grids }}/ICON/icon-R02B08_hpz9_nested_oce_level_full_v3.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
   icon-R02B08-hpz7-nested-v3:
@@ -105,7 +110,8 @@ grids:
     space_coord: ["ncells"]
   icon-R02B08-hpz7-nested-3d-v3:
     cdo_options: '--force'
-    path: '{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_level_full_v3.nc'
+    path:
+      level: '{{ grids }}/ICON/icon-R02B08_hpz7_nested_oce_level_full_v3.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
   icon-R02B09-hpz7-nested-v3: #ClimateDT cycle2, 57642 missing values
@@ -114,15 +120,16 @@ grids:
     space_coord: ["ncells"]
   icon-R02B09-hpz7-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 57642 missing values
     cdo_options: '--force'
-    path: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_level_full_v3.nc'
+    path:
+      level: '{{ grids }}/ICON/icon-R02B09_hpz7_nested_oce_level_full_v3.nc'
     space_coord: ["ncells"]
-    vert_coord: ["level"]
   icon-R02B08-hpz6-nested-v3: #ClimateDT cycle2, 14415 missing values
     cdo_options: '--force'
     path: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_v3.nc'
     space_coord: ["ncells"]
   icon-R02B08-hpz6-nested-3d-v3: #ClimateDT cycle2, 72 levels starting at 1, 14415 missing values
     cdo_options: '--force'
-    path: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_level_full_v3.nc'
+    path:
+      level: '{{ grids }}/ICON/icon-R02B08_hpz6_nested_oce_level_full_v3.nc'
     space_coord: ["ncells"]
     vert_coord: ["level"]
