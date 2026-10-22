@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- Restructure the fixes in `aqua/core/config/fixes`: one file per model (`ifs`, `icon`, `fesom`, `ec-earth4`), `climatedt.yaml` for the catgen default fixes, `observations.yaml`, unused fixes moved to `deprecated.yaml`; fixer names unchanged; new tests for duplicated fixer names and parent inheritance
 - Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
