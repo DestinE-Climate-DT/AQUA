@@ -37,6 +37,11 @@ grids:
       level: '{{ grids }}/NEMO/test-eorca1_3D.nc'
     cdo_extra:
       - -selname,dummy
+  test-eORCA1-skipna:
+    path:
+      skipna: '{{ grids }}/NEMO/test-eorca1_3D.nc'
+    cdo_extra:
+      - -selname,dummy
   # Healpix
   test-hpz3-nested:
     path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'

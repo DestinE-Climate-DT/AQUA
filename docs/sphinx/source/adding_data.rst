@@ -457,6 +457,11 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   but can include multiple files as a function of the grid used.
   ``2d`` refers to the default grids, ``2dm`` to the grid for masked variables,
   any other key refers to specific 3d vertical masked structures, as ``depth_full``, ``depth_half``, ``level``, etc.
+  Alternatively, a single ``skipna`` key enables the smmregrid ``skipna`` option: missing source points are skipped
+  and the weights renormalized at each call, so that a single 2D weights matrix handles all variables and levels,
+  including masks varying in time or along any dimension (a target cell is NaN if more than half of its weights are missing,
+  as without skipna). It cannot be combined with other keys
+  (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
 - ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
   There is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 - ``masked``: (if applicable): Keys to define variables which are masked.
