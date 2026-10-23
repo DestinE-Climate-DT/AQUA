@@ -699,6 +699,23 @@ class TestSTACBackendIntegration:
         backend.asset = "sst"
         assert (backend.model, backend.exp, backend.source) == ("NEMO", "eorca1", "sst")
 
+    @pytest.mark.parametrize("item", ["ifs-short-ifs2d-tco79", "IFS2d.tco79.nc", "ifs-short-ifs2d-tco79.json"])
+    @pytest.mark.parametrize("fixer_name", ["ifs-short-fixer", False])
+    def test_backend_factory_stac_metadata_by_id(self, sample_stac_collection_path, item, fixer_name):
+        """Item aliases resolve metadata by canonical ID, including a disabled fixer."""
+        factory = BackendFactory(configurer=ConfigContext(), model="ifs", exp="item1", source="data")
+        factory.backend_type = "intake_stac"
+        factory.esmcat = IntakeSTACSource(urlpath=sample_stac_collection_path, item=item, asset="data")
+        factory.metadata = {
+            "fixer_name": {"ifs-short-ifs2d-tco79": fixer_name},
+            "source_grid_name": {"ifs-short-ifs2d-tco79": "tco79-grid"},
+        }
+
+        fixer, grid, _, _ = factory.get_metadata()
+        assert fixer == fixer_name
+        assert grid == "tco79-grid"
+        assert factory.esmcat.item_name == item
+
     def test_backend_factory_stac_metadata_dict(self, sample_stac_collection_path):
         """Test BackendFactory.get_metadata resolves dict-based fixer_name and source_grid_name per item for STAC."""
         configurer = ConfigContext()

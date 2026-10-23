@@ -247,7 +247,7 @@ class BackendFactory:
             # If the backend_type is stac we can specify a dict of
             # fixer_names and grid names for each item
             # TODO This is not entirely modular, but neither get_metadata is
-            item = self.esmcat.item_name
+            item = (self.esmcat.stac_item or {}).get("id")
             if isinstance(fixer_name, dict):
                 fixer_name = fixer_name.get(item) if item else None
             if isinstance(src_grid_name, dict):
