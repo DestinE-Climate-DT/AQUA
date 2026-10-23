@@ -2,6 +2,7 @@
 
 import json
 import tempfile
+from unittest.mock import Mock
 
 import intake
 import numpy as np
@@ -14,7 +15,7 @@ from aqua.core.backend import BackendFactory
 from aqua.core.backend.catalog_mixin import CatalogMixin
 from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
-from aqua.core.intake_drivers.stac.stac import _resolve_href
+from aqua.core.intake_drivers.stac.stac import _find_item_in_collection, _resolve_href
 
 xr.set_options(keep_attrs=True)
 
@@ -108,8 +109,67 @@ class TestSTACHrefResolution:
         assert _resolve_href("catalog/item.json", "../data.nc") == str(tmp_path / "data.nc")
 
 
+class TestSTACItemLookup:
+    """Only missing resources should trigger another lookup candidate."""
+
+    @pytest.mark.parametrize("lookup", ["linked", "api", "sibling"])
+    @pytest.mark.parametrize(
+        "error", [PermissionError("denied"), OSError("connection failed"), json.JSONDecodeError("bad JSON", "", 0)]
+    )
+    def test_lookup_preserves_errors(self, monkeypatch, lookup, error):
+        links = {
+            "linked": [{"rel": "item", "id": "requested", "href": "item.json"}],
+            "api": [{"rel": "items", "href": "items"}],
+            "sibling": [],
+        }[lookup]
+        expected_url = {
+            "linked": "https://example.org/item.json",
+            "api": "https://example.org/items/requested",
+            "sibling": "https://example.org/requested",
+        }[lookup]
+        opened = Mock(side_effect=error)
+        monkeypatch.setattr("aqua.core.intake_drivers.stac.stac.fsspec.open", opened)
+
+        with pytest.raises(type(error)) as caught:
+            _find_item_in_collection({"links": links}, "requested", "https://example.org/collection.json")
+
+        assert caught.value is error
+        assert any(expected_url in note for note in caught.value.__notes__)
+        opened.assert_called_once_with(expected_url, "r")
+
+    @pytest.mark.parametrize("api", [False, True])
+    def test_missing_item_remains_key_error(self, monkeypatch, api):
+        collection = {"id": "test", "links": [{"rel": "items", "href": "items"}] if api else []}
+        opened = Mock(side_effect=FileNotFoundError("missing"))
+        monkeypatch.setattr("aqua.core.intake_drivers.stac.stac.fsspec.open", opened)
+
+        with pytest.raises(KeyError, match="Item 'requested' not found in STAC collection 'test'"):
+            _find_item_in_collection(collection, "requested", "https://example.org/collection.json")
+
+        assert opened.call_count == (3 if api else 2)
+
+    @pytest.mark.parametrize("api", [False, True])
+    def test_missing_candidates_allow_sibling_lookup(self, tmp_path, api):
+        item = {"type": "Feature", "id": "requested", "assets": {}}
+        item_path = tmp_path / "requested.json"
+        item_path.write_text(json.dumps(item))
+        collection = {"links": [{"rel": "items", "href": "items"}] if api else []}
+
+        loaded, path = _find_item_in_collection(collection, "requested", str(tmp_path / "collection.json"))
+
+        assert loaded == item
+        assert path == str(item_path)
+
+
 class TestSTACDriver:
     """Driver registration and individual STAC items."""
+
+    @pytest.mark.parametrize("argument", ["urlpath", "path"])
+    @pytest.mark.parametrize("document", [{}, {"type": "Feature", "id": "example", "assets": {}}])
+    def test_rejects_dictionary_input(self, argument, document):
+        """Require a document location for both source path arguments."""
+        with pytest.raises(TypeError, match="must be a STAC JSON path or URL, not a dictionary"):
+            IntakeSTACSource(**{argument: document})
 
     def test_stac_driver_registration(self):
         """Verify that 'stac' driver is registered in intake."""
@@ -608,6 +668,64 @@ class TestSTACCollectionDiscovery:
         assert item.asset_name == "data"
         assert item.describe()["available_assets"] == ["data"]
 
+    @pytest.mark.parametrize("selectable_stac_source", ["direct"], indirect=True)
+    @pytest.mark.parametrize("selector", ["item", "asset"])
+    @pytest.mark.parametrize("matching_default", [False, True])
+    @pytest.mark.parametrize("access", ["entry", "backend"])
+    def test_entry_selector_overrides_parent_default(
+        self, selectable_stac_source, tmp_path, selector, matching_default, access
+    ):
+        """Named item and asset entries retain their selection when defaults are forwarded."""
+        selected = "second" if selector == "item" else "data"
+        defaults = {"item": "first", "asset": "shared"}
+        if matching_default:
+            defaults[selector] = selected
+        catalog_path = tmp_path / "parameterized.yaml"
+        catalog_path.write_text(
+            json.dumps(
+                {
+                    "sources": {
+                        "collection": {
+                            "driver": "stac",
+                            "parameters": {
+                                key: {"description": key, "type": "str", "default": value} for key, value in defaults.items()
+                            },
+                            "args": {
+                                "urlpath": selectable_stac_source.base_urlpath,
+                                "item": "{{ item }}",
+                                "asset": "{{ asset }}",
+                            },
+                        }
+                    }
+                }
+            )
+        )
+        catalog = intake.open_catalog(str(catalog_path))
+
+        if access == "entry":
+            parent = catalog["collection"] if selector == "item" else catalog["collection"]["first"]
+            source = parent._entries[selected](**defaults, chunks={"time": 1})
+        else:
+            if selector == "item":
+                root_path = tmp_path / "root.yaml"
+                root_path.write_text(
+                    json.dumps({"sources": {"model": {"driver": "yaml_file_cat", "args": {"path": str(catalog_path)}}}})
+                )
+                catalog = intake.open_catalog(str(root_path))
+            configurer = Mock()
+            configurer.deliver_intake_catalog.return_value = (catalog, str(catalog_path), None)
+            configurer.get_machine_info.return_value = ({}, {})
+            backend = CatalogMixin()
+            backend.logger = Mock()
+            model, exp = ("model", "collection") if selector == "item" else ("collection", "first")
+            backend.setup_catalog(model, exp, selected, configurer, chunks={"time": 1})
+            assert backend.kwargs[selector] == defaults[selector]
+            source = backend.esmcat
+
+        assert source.item_name == (selected if selector == "item" else "first")
+        assert source.asset_name == ("shared" if selector == "item" else selected)
+        assert source.extra_kwargs["chunks"] == {"time": 1}
+
 
 class TestSTACBackendIntegration:
     """Backend selectors and item metadata."""
@@ -698,6 +816,23 @@ class TestSTACBackendIntegration:
         backend.item = "eorca1"
         backend.asset = "sst"
         assert (backend.model, backend.exp, backend.source) == ("NEMO", "eorca1", "sst")
+
+    @pytest.mark.parametrize("item", ["ifs-short-ifs2d-tco79", "IFS2d.tco79.nc", "ifs-short-ifs2d-tco79.json"])
+    @pytest.mark.parametrize("fixer_name", ["ifs-short-fixer", False])
+    def test_backend_factory_stac_metadata_by_id(self, sample_stac_collection_path, item, fixer_name):
+        """Item aliases resolve metadata by canonical ID, including a disabled fixer."""
+        factory = BackendFactory(configurer=ConfigContext(), model="ifs", exp="item1", source="data")
+        factory.backend_type = "intake_stac"
+        factory.esmcat = IntakeSTACSource(urlpath=sample_stac_collection_path, item=item, asset="data")
+        factory.metadata = {
+            "fixer_name": {"ifs-short-ifs2d-tco79": fixer_name},
+            "source_grid_name": {"ifs-short-ifs2d-tco79": "tco79-grid"},
+        }
+
+        fixer, grid, _, _ = factory.get_metadata()
+        assert fixer == fixer_name
+        assert grid == "tco79-grid"
+        assert factory.esmcat.item_name == item
 
     def test_backend_factory_stac_metadata_dict(self, sample_stac_collection_path):
         """Test BackendFactory.get_metadata resolves dict-based fixer_name and source_grid_name per item for STAC."""

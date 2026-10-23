@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- Remove the STAC driver's global Zarr metadata parser patch; catalogues containing a nested .zmetadata entry require an upstream correction (#3281)
+- Require a STAC JSON path or URL when constructing a source, removing incomplete dictionary-input support (#3281)
+- New intake driver to access stac collections and items (#3161)
+- Preserve STAC entry selections when forwarding parent parameter defaults, and propagate item access and parsing errors with the attempted path or URL (#3281)
+- Resolve STAC per-item fixer and grid metadata by canonical item ID when selecting items by title or filename (#3281)
 - Make gribscan user-installed and optional, retaining the STAC driver's conditional import (#3161)
 - Keep STAC item/asset navigation consistent and re-evaluate inferred asset defaults and roles when switching items (#3161)
 - Resolve relative STAC links for object-store URLs and remote root-relative paths while preserving URL hosts, queries, and fragments (#3161)
@@ -22,7 +27,6 @@ Unreleased in the current development version (target v1.2.3):
 
 ## [v1.2.2]
 
-- New intake driver to access stac collections and items (#3161)
 ClimateDT workflow modifications:
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
 - `aqua analysis ensemble` command is now ready for implementation in the workflow
