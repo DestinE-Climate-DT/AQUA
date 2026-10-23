@@ -8,7 +8,7 @@ import fsspec
 import xarray as xr
 from intake import readers
 
-from aqua.core.intake_drivers.xarray.base import IntakeXarraySourceAdapter
+from aqua.core.intake_drivers.xarray.base import IntakeXarraySourceAdapter, _merge_xarray_kwargs
 from aqua.core.intake_drivers.xarray.readers import TolerantXArrayDatasetReader
 from aqua.core.logger import log_configure
 
@@ -322,7 +322,8 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         metadata (dict, optional): Extra catalog metadata to merge with STAC metadata.
         xarray_kwargs (dict, optional): Additional kwargs for xarray open calls.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
-        **kwargs: Further parameters forwarded to the reader (e.g. chunks).
+        **kwargs: Further parameters forwarded to the reader (e.g. chunks). These override
+            matching ``xarray_kwargs`` entries, including explicit ``None`` values.
     """
 
     name = "stac"
@@ -489,20 +490,16 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
         # Detect format and configure reader
         fmt = format.lower() if format else _detect_format(asset_info.get("type"), asset_href)
-        xarray_kwargs = dict(xarray_kwargs or {})
+        xarray_kwargs = _merge_xarray_kwargs(xarray_kwargs, kwargs)
 
         if fmt == "zarr":
-            if "chunks" not in xarray_kwargs:
-                kwargs.setdefault("chunks", {})
             asset_storage = storage_options if (storage_options and _is_fsspec_urlpath(asset_href)) else None
             data = readers.datatypes.Zarr(asset_href, storage_options=asset_storage, metadata=combined_metadata)
-            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata, **kwargs)
+            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata)
         else:  # netcdf
             xarray_kwargs.setdefault("engine", "netcdf4")
-            if "chunks" not in xarray_kwargs:
-                kwargs.setdefault("chunks", {})
             data = readers.datatypes.NetCDF3(asset_href, storage_options=storage_options, metadata=combined_metadata)
-            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata, **kwargs)
+            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata)
 
         self.reader = reader
         self.stac_item = item_dict
