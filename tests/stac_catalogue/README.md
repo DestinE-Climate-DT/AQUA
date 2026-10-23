@@ -1,8 +1,13 @@
 # AQUA local STAC catalog
 
-This directory contains a static STAC 1.0.0 catalog for the NetCDF fixtures in
+This directory contains a generator for a static STAC 1.0.0 catalog for the NetCDF fixtures in
 `AQUA_tests/models` at the AQUA repository root. The fixture directory is
 downloaded separately in CI and is not stored in Git.
+
+Tests that need the catalog generate its JSON files once per test session using
+`generate_catalog.py`. All generated JSON files, including `catalog.json`, are
+ignored by Git and remain in this directory after the tests finish for inspection
+or reuse. Only the generator and this README are version controlled.
 
 - `catalog.json`: root catalog
 - `collections/*.json`: one collection per model family
@@ -26,6 +31,21 @@ python3 tests/stac_catalogue/generate_catalog.py
 The generator finds `AQUA_tests/models` from its location and writes the JSON
 files next to itself. It fails if the fixture directory or NetCDF files are
 missing.
+
+## Reuse in tests
+
+The session-scoped `stac_catalogue_dir` fixture in `tests/conftest.py` is available
+to every test module. Request it to generate the catalog and obtain its directory:
+
+```python
+def test_collection(stac_catalogue_dir):
+    collection_path = stac_catalogue_dir / "collections" / "ifs.json"
+    assert collection_path.is_file()
+```
+
+Generation runs once across all workers when using pytest-xdist. The fixture
+requires `ncdump` and skips dependent tests if `AQUA_tests/models` is unavailable.
+It does not remove the generated files during teardown.
 
 ## PySTAC
 

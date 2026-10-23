@@ -2,40 +2,85 @@
 
 import json
 import tempfile
-from pathlib import Path
 
 import intake
 import numpy as np
 import pytest
 import xarray as xr
+from dask.base import is_dask_collection
 
+from aqua import Reader
 from aqua.core.backend import BackendFactory
 from aqua.core.backend.catalog_mixin import CatalogMixin
 from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
+from aqua.core.lock import SafeFileLock
+from aqua.core.util import dump_yaml
+
+xr.set_options(keep_attrs=True)
 
 pytestmark = pytest.mark.aqua
 
 
 @pytest.fixture(scope="session")
-def stac_catalogue_dir():
-    """Use the committed STAC catalogue with the separately downloaded NetCDF fixtures."""
-    catalogue_dir = Path(__file__).resolve().parent / "stac_catalogue"
-    if not (catalogue_dir.parent.parent / "AQUA_tests" / "models").is_dir():
-        pytest.skip("AQUA_tests/models is not available")
-    return catalogue_dir
-
-
-@pytest.fixture(scope="session")
 def sample_stac_netcdf_path(stac_catalogue_dir):
-    """Path to the committed IFS STAC item."""
+    """Path to the generated IFS STAC item."""
     return str(stac_catalogue_dir / "items" / "ifs" / "ifs-long-regridded-r18x9.json")
 
 
 @pytest.fixture(scope="session")
 def sample_stac_collection_path(stac_catalogue_dir):
-    """Path to the committed IFS STAC collection."""
+    """Path to the generated IFS STAC collection."""
     return str(stac_catalogue_dir / "collections" / "ifs.json")
+
+
+@pytest.fixture
+def stac_reader_catalog(stac_catalogue_dir, tmp_path, monkeypatch):
+    """Configure Reader with isolated Intake entries for the generated collections."""
+    context = ConfigContext()
+    fixer_folder, regrid_folder = context.get_reader_folders()
+    for folder in ("fixes", "data_model"):
+        (tmp_path / folder).symlink_to(context.get_folder(folder), target_is_directory=True)
+    catalog_path = tmp_path / "catalog.yaml"
+    machine_path = tmp_path / "machine.yaml"
+    configuration = {
+        "catalog": ["stac"],
+        "machine": "default",
+        "reader": {
+            "catalog": str(catalog_path),
+            "machine": str(machine_path),
+            "fixer": fixer_folder,
+            "regrid": regrid_folder,
+        },
+    }
+    catalog = {
+        "sources": {
+            model: {
+                "driver": "stac",
+                "args": {"urlpath": str(stac_catalogue_dir / "collections" / f"{model}.json")},
+                "metadata": metadata,
+            }
+            for model, metadata in {
+                "ifs": {
+                    "fixer_name": {
+                        "ifs-long-regridded-r18x9": "ifs-ci-test",
+                        "ifs-short-ifs2d-tco79": "ifs-ci-test",
+                    },
+                    "source_grid_name": {
+                        "ifs-long-regridded-r18x9": "lon-lat",
+                        "ifs-short-ifs2d-tco79": "tco79",
+                    },
+                },
+                "nemo": {"source_grid_name": "eORCA1-2d"},
+            }.items()
+        }
+    }
+    with SafeFileLock(str(tmp_path / "config.lock")):
+        dump_yaml(tmp_path / "config-aqua.yaml", configuration)
+        dump_yaml(catalog_path, catalog)
+        dump_yaml(machine_path, {"default": {"paths": {key: str(tmp_path) for key in ("grids", "weights", "areas")}}})
+    monkeypatch.setenv("AQUA_CONFIG", str(tmp_path))
+    return "stac"
 
 
 class TestSTACDriver:
@@ -496,6 +541,44 @@ class TestSTACCollectionDiscovery:
 
 class TestSTACBackendIntegration:
     """Backend selectors and item metadata."""
+
+    @pytest.mark.parametrize(
+        ("model", "item", "variable", "grid", "fixer"),
+        [
+            ("ifs", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test"),
+            ("ifs", "ifs-short-ifs2d-tco79", "2t", "tco79", "ifs-ci-test"),
+            ("nemo", "nemo-eorca1-eorca1-sst-2d", "sst", "eORCA1-2d", None),
+        ],
+    )
+    @pytest.mark.parametrize("use_aliases", [False, True], ids=["model-exp-source", "collection-item-asset"])
+    def test_reader_stac_catalogue(self, stac_reader_catalog, model, item, variable, grid, fixer, use_aliases):
+        """Retrieve generated STAC examples through Reader, including fixes and provenance."""
+        selectors = (
+            {"collection": model, "item": item, "asset": "data"}
+            if use_aliases
+            else {"model": model, "exp": item, "source": "data"}
+        )
+        reader = Reader(catalog=stac_reader_catalog, chunks={"time": 1}, areas=False, **selectors)
+        data = reader.retrieve(var=variable)
+
+        assert isinstance(reader.backend.esmcat, IntakeSTACSource)
+        assert reader.backend.esmcat.item_name == item
+        assert reader.backend.esmcat.asset_name == "data"
+        assert reader.metadata["aqua:model"] == model.upper()
+        assert reader.src_grid_name == grid
+        assert reader.fixer_name == fixer
+        assert isinstance(data, xr.Dataset)
+        assert list(data.data_vars) == [variable]
+        assert all(size > 0 for size in data.sizes.values())
+        assert is_dask_collection(data[variable])
+        assert set(data[variable].chunksizes["time"]) == {1}
+        assert data.aqua.instance is reader
+        assert data.attrs["history"]
+        assert data.isel(time=slice(0, 1)).attrs["history"] == data.attrs["history"]
+        for key, value in {"catalog": reader.catalog, "model": model, "exp": item, "source": "data"}.items():
+            assert data[variable].attrs[f"AQUA_{key}"] == value
+        if fixer:
+            assert data[variable].attrs["donald"] == "duck"
 
     def test_backend_factory_stac_aliases(self):
         """STAC naming aliases stay in sync with the established backend selectors."""

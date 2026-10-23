@@ -5,6 +5,7 @@ Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -15,12 +16,32 @@ from utils_tests import LOGLEVEL, TestCleanupRegistry
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
+from aqua.core.lock import SafeFileLock
 
 matplotlib.use("Agg")  # Non-interactive backend
 
 import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
+
+
+@pytest.fixture(scope="session")
+def stac_catalogue_dir(request, tmp_path_factory):
+    """Generate the example STAC catalogue once per run and leave it for inspection."""
+    catalogue_dir = Path(__file__).resolve().parent / "stac_catalogue"
+    if not (catalogue_dir.parent.parent / "AQUA_tests" / "models").is_dir():
+        pytest.skip("AQUA_tests/models is not available")
+
+    # Workers share the completion marker so none rewrites files another is reading.
+    shared_tmp = tmp_path_factory.getbasetemp()
+    if hasattr(request.config, "workerinput"):
+        shared_tmp = shared_tmp.parent
+    ready = shared_tmp / "stac_catalogue.ready"
+    with SafeFileLock(str(shared_tmp / "stac_catalogue.lock"), loglevel=LOGLEVEL):
+        if not ready.exists():
+            subprocess.run([sys.executable, str(catalogue_dir / "generate_catalog.py")], check=True)
+            ready.touch()
+    return catalogue_dir
 
 
 # ======================================================================
