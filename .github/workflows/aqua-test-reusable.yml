@@ -134,7 +134,7 @@ jobs:
 
       - name: Install GH Actions dependencies (macOS)
         if: ${{ runner.os == 'macOS' }}
-        run: brew install wget
+        run: brew install wget cdo
 
       # ========================================
       # 2. CHECKOUT REPOSITORIES
