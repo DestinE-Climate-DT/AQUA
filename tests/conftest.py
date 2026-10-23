@@ -24,24 +24,15 @@ import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
 
+STAC_CATALOGUE_DIR = Path(__file__).resolve().parent / "stac_catalogue"
+
 
 @pytest.fixture(scope="session")
-def stac_catalogue_dir(request, tmp_path_factory):
-    """Generate the example STAC catalogue once per run and leave it for inspection."""
-    catalogue_dir = Path(__file__).resolve().parent / "stac_catalogue"
-    if not (catalogue_dir.parent.parent / "AQUA_tests" / "models").is_dir():
+def stac_catalogue_dir():
+    """Return the example STAC catalogue prepared before test collection."""
+    if not (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
         pytest.skip("AQUA_tests/models is not available")
-
-    # Workers share the completion marker so none rewrites files another is reading.
-    shared_tmp = tmp_path_factory.getbasetemp()
-    if hasattr(request.config, "workerinput"):
-        shared_tmp = shared_tmp.parent
-    ready = shared_tmp / "stac_catalogue.ready"
-    with SafeFileLock(str(shared_tmp / "stac_catalogue.lock"), loglevel=LOGLEVEL):
-        if not ready.exists():
-            subprocess.run([sys.executable, str(catalogue_dir / "generate_catalog.py")], check=True)
-            ready.touch()
-    return catalogue_dir
+    return STAC_CATALOGUE_DIR
 
 
 # ======================================================================
@@ -51,6 +42,7 @@ def pytest_configure(config):
     """
     Runs once at session start on controller and workers with xdist.
     Cache configdir before any test can modify HOME.
+    Generate STAC JSON on the controller before catalog discovery during collection.
     Set per-worker TMPDIR to avoid CDO/temp contention in parallel runs.
     """
     try:
@@ -60,6 +52,11 @@ def pytest_configure(config):
         config._stored_configdir = None
 
     workerinput = getattr(config, "workerinput", None)
+    if workerinput is None and (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
+        # The controller configures before xdist starts workers, so no reader sees partial JSON.
+        with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
+            subprocess.run([sys.executable, str(STAC_CATALOGUE_DIR / "generate_catalog.py")], check=True)
+
     if workerinput is not None:
         worker_id = workerinput.get("workerid", "master")
         # macOS default tmpdir is long: keep it short to fit the AF_UNIX socket path limit (~103 chars)

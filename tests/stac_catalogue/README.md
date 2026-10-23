@@ -4,10 +4,10 @@ This directory contains a generator for a static STAC 1.0.0 catalog for the NetC
 `AQUA_tests/models` at the AQUA repository root. The fixture directory is
 downloaded separately in CI and is not stored in Git.
 
-Tests that need the catalog generate its JSON files once per test session using
-`generate_catalog.py`. All generated JSON files, including `catalog.json`, are
-ignored by Git and remain in this directory after the tests finish for inspection
-or reuse. Only the generator and this README are version controlled.
+Pytest generates the JSON files once per test session using `generate_catalog.py`,
+before test collection or catalog discovery. All generated JSON files, including
+`catalog.json`, are ignored by Git and remain in this directory after the tests
+finish for inspection or reuse. Only the generator and this README are version controlled.
 
 - `catalog.json`: root catalog
 - `collections/*.json`: one collection per model family
@@ -35,7 +35,7 @@ missing.
 ## Reuse in tests
 
 The session-scoped `stac_catalogue_dir` fixture in `tests/conftest.py` is available
-to every test module. Request it to generate the catalog and obtain its directory:
+to every test module. Request it to obtain the directory prepared before collection:
 
 ```python
 def test_collection(stac_catalogue_dir):
@@ -43,9 +43,11 @@ def test_collection(stac_catalogue_dir):
     assert collection_path.is_file()
 ```
 
-Generation runs once across all workers when using pytest-xdist. The fixture
-requires `ncdump` and skips dependent tests if `AQUA_tests/models` is unavailable.
-It does not remove the generated files during teardown.
+Generation runs in the controller's `pytest_configure` hook, before pytest-xdist
+starts workers. A shared lock protects generation, and workers only read the
+completed catalog. Generation requires `ncdump` and is skipped if
+`AQUA_tests/models` is unavailable; the fixture then skips dependent tests.
+Generated files are retained after the session for inspection.
 
 Reader integration tests use the STAC Intake examples in the installed `ci`
 catalog from [Climate-DT-catalog](https://github.com/DestinE-Climate-DT/Climate-DT-catalog).
