@@ -47,6 +47,12 @@ Generation runs once across all workers when using pytest-xdist. The fixture
 requires `ncdump` and skips dependent tests if `AQUA_tests/models` is unavailable.
 It does not remove the generated files during teardown.
 
+Reader integration tests use the STAC Intake examples in the installed `ci`
+catalog from [Climate-DT-catalog](https://github.com/DestinE-Climate-DT/Climate-DT-catalog).
+Install `ci` before running the tests, as in the standard AQUA test setup. The
+tests generate only the STAC JSON files; they reuse the installed Intake YAML
+entries under `stac` (`ifs`, `nemo`, and `ifs-items`).
+
 ## PySTAC
 
 ```python
