@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- Remove the STAC driver's global Zarr metadata parser patch; catalogues containing a nested .zmetadata entry require an upstream correction (#3281)
 - Require a STAC JSON path or URL when constructing a source, removing incomplete dictionary-input support (#3281)
 - New intake driver to access stac collections and items (#3161)
 - Preserve STAC entry selections when forwarding parent parameter defaults, and propagate item access and parsing errors with the attempted path or URL (#3281)

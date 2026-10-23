@@ -21,43 +21,6 @@ except ImportError:
     pass
 
 
-def _patch_zarr_v3_consolidated():
-    """Workaround for Zarr 3.x bug when consolidated v2 .zmetadata contains the '.zmetadata' key."""
-    try:
-        import zarr
-        from zarr.core.group import AsyncGroup
-    except (ImportError, AttributeError):
-        return
-
-    if getattr(AsyncGroup, "_aqua_zarr_v2_patched", False):
-        return
-
-    orig_from_bytes_v2 = AsyncGroup._from_bytes_v2
-
-    @classmethod
-    def _safe_from_bytes_v2(cls, store_path, zgroup_bytes, zattrs_bytes, consolidated_metadata_bytes):
-        if consolidated_metadata_bytes is not None:
-            import json
-
-            try:
-                data = json.loads(consolidated_metadata_bytes.to_bytes())
-                meta = data.get("metadata")
-                if isinstance(meta, dict) and ".zmetadata" in meta:
-                    meta.pop(".zmetadata", None)
-                    consolidated_metadata_bytes = zarr.core.buffer.core.default_buffer_prototype().buffer.from_bytes(
-                        json.dumps(data).encode()
-                    )
-            except Exception:
-                pass
-        return orig_from_bytes_v2(store_path, zgroup_bytes, zattrs_bytes, consolidated_metadata_bytes)
-
-    AsyncGroup._from_bytes_v2 = _safe_from_bytes_v2
-    AsyncGroup._aqua_zarr_v2_patched = True
-
-
-_patch_zarr_v3_consolidated()
-
-
 def _is_fsspec_urlpath(urlpath):
     """Return True if urlpath (str or list of str) carries an fsspec protocol (e.g. ``s3://``)."""
     paths = urlpath if isinstance(urlpath, (list, tuple, set)) else [urlpath]
