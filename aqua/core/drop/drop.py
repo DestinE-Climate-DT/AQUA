@@ -33,7 +33,7 @@ from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
 
 from .catalog_entry_builder import CatalogEntryBuilder
-from .drop_util import estimate_time_chunk_size, move_tmp_files
+from .drop_util import move_tmp_files
 from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
@@ -84,7 +84,6 @@ class Drop:
         compact="xarray",
         engine="gsv",
         output_format="netcdf",
-        zarr_chunks=None,
         chunk_target=DEFAULT_DROP_CHUNK_TARGET,
         **kwargs,
     ):
@@ -200,7 +199,6 @@ class Drop:
         # configure output format and compacting
         self.output_format = output_format
         self.compact = compact
-        self.zarr_chunks = zarr_chunks
         self.chunk_target = chunk_target
 
         # whether to regrid before time statistics
@@ -418,12 +416,6 @@ class Drop:
 
         self.logger.info("Retrieving data...")
         self.data = self.reader.retrieve(var=self.var, level=self.level)
-
-        # Set time chunk size for icechunk writer if needed
-        if self.output_format == "icechunk":
-            freq = self.reader.timemodule.orig_freq
-            self.writer.time_chunk_size = estimate_time_chunk_size(freq)
-            self.logger.info("Precomputed time_chunk_size: %d for frequency %s", self.writer.time_chunk_size, freq)
 
         self.logger.debug(self.data)
 
