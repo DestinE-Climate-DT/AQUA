@@ -71,7 +71,7 @@ The same conda dependencies (without ``aqua-core`` itself) are available in the 
 
 .. note ::
 
-    If you need to access data written in a local FDB database (not polytope or z3fdb), you need to install the FDB5 library.
+    If you need to access data written in a local FDB database (not polytope), you need to install the FDB5 library.
     The FDB5 library is not available in the conda-forge repository, but can be installed on unix systems with the ``sudo apt-get install fdb5`` command.
     If you are working on a supported HPC, you can check the corresponding section for more information in the :ref:`HPC installation <installation-hpc>` section.
 
