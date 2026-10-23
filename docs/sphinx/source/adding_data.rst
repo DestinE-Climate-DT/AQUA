@@ -142,6 +142,9 @@ Links that specify their own URL scheme are preserved unchanged.
 Pass xarray options in ``args.xarray_kwargs``, using ``engine: netcdf4`` for
 NetCDF or ``engine: zarr`` for Zarr; set chunk sizes with ``args.chunks``.
 
+Some DKRZ STAC catalogues require ``gribscan``. Install it separately when needed;
+the driver imports it if available, but AQUA does not require it.
+
 For example, add a collection to the top-level ``catalog.yaml`` of an AQUA
 catalog installed as ``stac-example`` (see :ref:`new-catalog`):
 

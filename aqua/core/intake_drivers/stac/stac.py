@@ -14,6 +14,12 @@ from aqua.core.logger import log_configure
 
 xr.set_options(keep_attrs=True)
 
+# Optional, user-installed support for reading some DKRZ STAC catalogues.
+try:
+    import gribscan  # noqa: F401
+except ImportError:
+    pass
+
 
 def _patch_zarr_v3_consolidated():
     """Workaround for Zarr 3.x bug when consolidated v2 .zmetadata contains the '.zmetadata' key."""
