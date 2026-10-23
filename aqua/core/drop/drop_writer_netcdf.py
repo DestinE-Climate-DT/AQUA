@@ -6,12 +6,13 @@ into yearly files. Supports both xarray and CDO for file concatenation.
 """
 
 import shutil
-import subprocess
 
 import numpy as np
 import xarray as xr
+from smmregrid import GridType
 
 from aqua.core.drop.drop_writer_base import BaseWriter
+from aqua.core.util.cdo import run_cdo
 from aqua.core.util.io_util import file_is_complete
 
 # default encoding for netCDF files
@@ -19,6 +20,7 @@ TIME_ENCODING = {"units": "days since 1850-01-01 00:00:00", "calendar": "standar
 VAR_ENCODING = {"dtype": "float64", "zlib": True, "complevel": 1, "_FillValue": np.nan}
 
 # default CDO options for concatenation
+# CDO default chunking already holds one horizontal slice per chunk, as the xarray encoding below
 CDO_OPTIONS = ["-f", "nc4", "-z", "zip_1"]  # default CDO options for NetCDF output
 
 
@@ -71,6 +73,9 @@ class NetCDFWriter(BaseWriter):
         """
         Get NetCDF encoding configuration.
 
+        On-disk chunks hold a single horizontal slice (one time step, one level),
+        so that any read chunking along time and vertical dimensions is aligned with them.
+
         Args:
             data: xarray Dataset/DataArray
             var: Variable name
@@ -80,7 +85,19 @@ class NetCDFWriter(BaseWriter):
         """
         data_vars = list(data.data_vars) if isinstance(data, xr.Dataset) else [data.name]
         var_name = var if var in data_vars else data_vars[0]
-        return {"time": self.time_encoding, var_name: self.var_encoding}
+        var_encoding = dict(self.var_encoding)
+        chunksizes = self._get_chunksizes(data[var_name] if isinstance(data, xr.Dataset) else data)
+        if chunksizes:
+            var_encoding["chunksizes"] = chunksizes
+        return {"time": self.time_encoding, var_name: var_encoding}
+
+    def _get_chunksizes(self, data):
+        """On-disk chunk sizes: whole horizontal dimensions, 1 along all the others."""
+        horizontal_dims = GridType(dims=data.dims).horizontal_dims
+        if not horizontal_dims:
+            self.logger.warning("No horizontal dimensions found for %s, using default netCDF chunking", data.name)
+            return None
+        return tuple(size if dim in horizontal_dims else 1 for dim, size in data.sizes.items())
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """
@@ -132,18 +149,14 @@ class NetCDFWriter(BaseWriter):
         # Concatenate using CDO or xarray
         try:
             if self.compact == "cdo":
-                command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_year_file]
-                self.logger.debug("Using CDO: %s", " ".join(command[:4]) + " ...")
-                subprocess.check_output(command, stderr=subprocess.STDOUT)
+                self.logger.debug("Using CDO cat with options %s", self.cdo_options)
+                run_cdo([*self.cdo_options, "cat", *tmp_monthly_files, tmp_year_file])
             else:
                 self.logger.debug("Using xarray for concatenation")
                 # Reuse class method for opening files
                 ds = self._open_files(tmp_monthly_files)
                 var_name = list(ds.data_vars)[0]
-                ds.to_netcdf(
-                    tmp_year_file,
-                    encoding={"time": self.time_encoding, var_name: self.var_encoding},
-                )
+                ds.to_netcdf(tmp_year_file, encoding=self._get_encoding(ds, var_name))
 
             # Move yearly file to output and cleanup monthly files
             shutil.move(tmp_year_file, year_file)

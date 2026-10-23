@@ -116,7 +116,7 @@ class TestRegridder:
         assert len(src_area.lon) == 18
         assert len(src_area.lat) == 9
 
-        tgt_area = regridder.areas(tgt_grid_name="n32")
+        tgt_area = regridder.areas(tgt_grid_name="F32")
         assert len(tgt_area.lon) == 128
         assert len(tgt_area.lat) == 64
 

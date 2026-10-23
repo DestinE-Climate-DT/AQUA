@@ -40,6 +40,7 @@ DEFAULT_CALENDAR = "gregorian"
 
 # Drop defaults
 DEFAULT_DROP_GRID = "lon-lat-r100"
+DEFAULT_DROP_CHUNK_TARGET = "128MiB"  # target size of the read chunks written in DROP catalog entries
 
 # Regridder defaults
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
