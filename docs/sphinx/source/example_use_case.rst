@@ -9,7 +9,7 @@ We suppose that AQUA core is installed in our favourite machine and we have adde
 
 .. note ::
 
-    Data from the ``climate-dt-phase1`` catalog can also be accessed with Polytope from your local machine.
+    Data from the ``climate-dt-phase1`` catalog can also be accessed with Polytope or z3fdb from your local machine.
     Please refer to the :ref:`polytope` section for more information.
 
 We will walk you through an example using AQUA core to interpolate atmospherically
@@ -34,7 +34,7 @@ Notice that ``fix=True`` is the default option, so we could have omitted it.
 
     reader = Reader(catalog='climatedt-gen2', model="IFS-NEMO-5km", exp="baseline-hist", source="hourly-hpz7-sfc",
                     regrid='r100', fix=True)
-    # add engine='polytope' if you want to use polytope for data access
+    # add engine='polytope' or engine='z3fdb' if you want to use polytope or z3fdb for data access
     reader = Reader(catalog='climatedt-gen2', model="IFS-NEMO-5km", exp="baseline-hist", source="hourly-hpz7-sfc",
                     regrid='r100', fix=True, engine='polytope')
 

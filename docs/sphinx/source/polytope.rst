@@ -4,8 +4,8 @@ Climate-DT data access
 ======================
 
 It is possible to access ClimateDT data available on the Databridge for the DestinE ClimateDT also remotely, from other machines,
-using the polytope access.
-AQUA can use the polytope engine. Here we describe the necessary steps to set it up.
+using the Polytope or z3fdb access.
+AQUA can use both the Polytope and z3fdb engines. Here we describe the necessary steps to set them up.
 
 Obtain the credentials
 ----------------------
