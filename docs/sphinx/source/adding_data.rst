@@ -182,6 +182,10 @@ shared by all items or dictionaries keyed by item ID, as above. A missing
 key leaves that setting unspecified.
 Optional ``args.item`` and ``args.asset`` provide default selections when
 accessing the collection directly through Intake.
+An item configured in ``args.item`` is a read default: collection keys still list
+items. Indexing or calling with ``item=`` selects an item view whose keys list
+assets. When switching items, inferred defaults and asset roles are resolved again
+for the new item; explicit asset selectors are retained unless overridden.
 
 Alternatively, describe individual items in a nested YAML catalog. Add this
 entry alongside ``ifs`` in the top-level ``sources`` mapping:

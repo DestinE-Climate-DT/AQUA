@@ -33,6 +33,37 @@ def sample_stac_collection_path(stac_catalogue_dir):
     return str(stac_catalogue_dir / "collections" / "ifs.json")
 
 
+@pytest.fixture
+def selectable_stac_source(tmp_path, sample_stac_netcdf_path, request):
+    """Build selectable metadata around an existing NetCDF asset, directly or through YAML."""
+    with open(sample_stac_netcdf_path, encoding="utf-8") as handle:
+        template = json.load(handle)
+    asset = template["assets"]["data"]
+    href = _resolve_href(sample_stac_netcdf_path, asset["href"])
+    links = []
+    for item_id, data_key in (("first", "data"), ("second", "primary"), ("data", "data")):
+        assets = {
+            data_key: {**asset, "href": href, "roles": ["data"]},
+            "shared": {**asset, "href": href, "roles": []},
+            f"preview-{item_id}": {**asset, "href": href, "roles": ["thumbnail"]},
+        }
+        if item_id == "first":
+            assets["only-first"] = {**asset, "href": href, "roles": []}
+        item_path = tmp_path / f"{item_id}.json"
+        item_path.write_text(json.dumps({**template, "id": item_id, "assets": assets}))
+        links.append({"rel": "item", "id": item_id, "href": item_path.name})
+    collection_path = tmp_path / "collection.json"
+    collection_path.write_text(json.dumps({"type": "Collection", "id": "selectable", "links": links}))
+    if request.param == "direct":
+        return IntakeSTACSource(urlpath=str(collection_path), item="first")
+    catalog_path = tmp_path / "catalog.yaml"
+    catalog_path.write_text(
+        f"sources:\n  selectable:\n    driver: stac\n    args:\n"
+        f"      urlpath: {json.dumps(str(collection_path))}\n      item: first\n      asset: shared\n"
+    )
+    return intake.open_catalog(str(catalog_path))["selectable"](asset=None)
+
+
 class TestSTACHrefResolution:
     """Resolve STAC links without depending on the remote filesystem."""
 
@@ -227,6 +258,51 @@ sources:
 class TestSTACCollections:
     """Selecting and reading items from collections."""
 
+    @pytest.mark.parametrize("selectable_stac_source", ["direct", "yaml"], indirect=True)
+    @pytest.mark.parametrize("asset, expected", [(None, "primary"), ("shared", "shared"), ("thumbnail", "preview-second")])
+    def test_item_change_preserves_asset_selector(self, selectable_stac_source, asset, expected):
+        """Re-evaluate inferred defaults and roles without losing an explicit asset selector."""
+        source = selectable_stac_source(asset=asset)(chunks={"time": 1})
+        changed = source(item="second")
+        assert changed.item_name == "second"
+        assert changed.asset_name == expected
+        assert changed.asset_arg == asset
+        assert source(item="second", asset="shared").asset_name == "shared"
+
+    @pytest.mark.parametrize("selectable_stac_source", ["direct", "yaml"], indirect=True)
+    def test_item_change_rejects_missing_explicit_asset(self, selectable_stac_source):
+        """An explicit asset must not silently fall back to the new item's default."""
+        source = selectable_stac_source(asset="only-first")
+        with pytest.raises(KeyError, match="Asset 'only-first' not found"):
+            source(item="second")
+        assert source(item="second", asset=None).asset_name == "primary"
+
+    @pytest.mark.parametrize("selectable_stac_source", ["direct", "yaml"], indirect=True)
+    @pytest.mark.parametrize("selection", ["index", "call", "entry"])
+    def test_item_navigation_exposes_only_assets(self, selectable_stac_source, selection):
+        """Item views agree on indexing, iteration, membership, and Intake entries."""
+        collection = selectable_stac_source(chunks={"time": 1})
+        assert set(collection.keys()) == {"first", "second", "data"}
+        assert set(collection._entries) == set(collection.keys())
+        assert "shared" not in collection
+        with pytest.raises(KeyError, match="Item 'shared' not found"):
+            collection["shared"]
+        item = {
+            "index": lambda: collection["first"],
+            "call": lambda: collection(item="first"),
+            "entry": lambda: collection._entries["first"](),
+        }[selection]()
+        item = item(chunks={"time": 1})
+        assert set(item.keys()) == {"data", "shared", "preview-first", "only-first"}
+        assert set(item._entries) == set(item.keys())
+        assert all(key in item for key in item.keys())
+        assert "second" not in item
+        with pytest.raises(KeyError, match="Asset 'second' not found"):
+            item["second"]
+        assert item["data"].item_name == "first"
+        assert item["data"].asset_arg == "data"
+        assert item._entries["data"]().item_name == "first"
+
     def test_stac_read_collection(self, sample_stac_collection_path):
         """Test reading a NetCDF-backed STAC item through a STAC collection."""
         source = IntakeSTACSource(
@@ -382,7 +458,7 @@ sources:
             assert "skt" in ds3.data_vars
 
             # Invalid asset
-            with pytest.raises(KeyError, match="not an available item in collection"):
+            with pytest.raises(KeyError, match="Asset 'nonexistent' not found"):
                 cat["ifs"]["ifs-short-ifs2d-tco79"]["nonexistent"]
 
 
@@ -441,7 +517,7 @@ class TestSTACCollectionDiscovery:
         assert "my-dataset.2D_hourly" in source.keys()
 
         # 2. Select item by title and asset by key
-        item_source = IntakeSTACSource(urlpath=str(coll_file), item="my-dataset.2D_hourly", asset="preview")
+        item_source = IntakeSTACSource(urlpath=str(coll_file))(item="my-dataset.2D_hourly", asset="preview")
         assert item_source.asset_name == "preview"
         assert item_source["preview"] is item_source
         assert item_source["dkrz-disk"].asset_name == "dkrz-disk"

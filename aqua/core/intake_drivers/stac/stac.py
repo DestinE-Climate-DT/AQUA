@@ -264,6 +264,8 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
     (e.g. ``cat["ifs"](item="item_id", asset="asset_name")``).
     It extracts metadata and properties, resolves the target asset (defaulting to
     ``data`` or the first asset), and loads it into an xarray Dataset via NetCDF or Zarr.
+    A configured item is a read default; the collection remains browsable. Select an
+    item via indexing or an ``item=`` call to browse only that item's assets.
 
     Example usage in an Intake YAML catalog for a STAC Item::
 
@@ -553,6 +555,11 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 ) from e
             raise
 
+    @property
+    def _is_collection_view(self):
+        """Whether navigation exposes collection items rather than item assets."""
+        return self.is_collection and not self._is_item
+
     def __getitem__(self, key: str):
         """Index into a collection or item to select a STAC item or asset.
 
@@ -564,7 +571,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             IntakeSTACSource: A source configured for the requested item or asset.
         """
         # If this source belongs to a collection and key matches an item in the collection:
-        if self.is_collection and key in self.available_items:
+        if self._is_collection_view and key in self.available_items:
             child = IntakeSTACSource(
                 urlpath=self.raw_dict if isinstance(self.target_url, dict) else self.base_urlpath,
                 item=key,
@@ -582,8 +589,8 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             return child
 
         # If an item is already selected, check if key is an asset in that item:
-        if self.item_name is not None and key in self.assets:
-            if key == self.asset_name:
+        if not self._is_collection_view and key in self.assets:
+            if key == self.asset_arg:
                 return self
             child = IntakeSTACSource(
                 urlpath=self.base_urlpath,
@@ -601,30 +608,22 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 child._entry = self._entry
             return child
 
-        # Neither item nor asset
-        if self.item_name is not None:
-            if self.is_collection:
-                coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
-                raise KeyError(
-                    f"'{key}' is not an available item in collection '{coll_id}' "
-                    f"({self.available_items}) nor an asset in item '{self.item_name}' ({list(self.assets.keys())})."
-                )
-            raise KeyError(
-                f"Asset '{key}' not found in STAC item '{self.item_name}'. Available assets: {list(self.assets.keys())}"
-            )
-
-        coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
-        raise KeyError(f"Item '{key}' not found in STAC collection '{coll_id}'. Available items: {self.available_items}")
+        if self._is_collection_view:
+            coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+            raise KeyError(f"Item '{key}' not found in STAC collection '{coll_id}'. Available items: {self.available_items}")
+        raise KeyError(
+            f"Asset '{key}' not found in STAC item '{self.item_name}'. Available assets: {list(self.assets.keys())}"
+        )
 
     def __iter__(self):
         """Iterate over item identifiers if in collection mode, or asset names if in item mode."""
-        if self.is_collection and not self._is_item:
+        if self._is_collection_view:
             return iter(self.available_items)
         return iter(self.assets.keys())
 
     def __contains__(self, key: str) -> bool:
         """Check if item or asset key is available."""
-        if self.is_collection and not self._is_item:
+        if self._is_collection_view:
             return key in self.available_items
         return key in self.assets
 
@@ -635,15 +634,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
     @property
     def _entries(self) -> dict[str, STACCatalogEntry]:
         """Return a mapping of catalog entries for items (if collection) or assets (if item)."""
-        entries = {}
-        if getattr(self, "assets", None):
-            for k in self.assets:
-                entries[k] = STACCatalogEntry(self, k, is_item=False)
-        if getattr(self, "available_items", None):
-            for k in self.available_items:
-                if k not in entries:
-                    entries[k] = STACCatalogEntry(self, k, is_item=True)
-        return entries
+        return {key: STACCatalogEntry(self, key, is_item=self._is_collection_view) for key in self}
 
     @property
     def entries(self) -> dict[str, STACCatalogEntry]:
@@ -654,13 +645,14 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         """Re-configure or select item/asset dynamically."""
         if kwargs:
             new_item = kwargs.get("item", self.item_name)
-            new_asset = kwargs.get("asset", self.asset_name)
+            new_asset = kwargs.get("asset", self.asset_arg)
+            is_item = new_item is not None and (self._is_item or "item" in kwargs)
             if getattr(self, "_entry", None) is not None and not isinstance(self._entry, STACCatalogEntry):
                 call_kwargs = dict(kwargs)
                 if new_item is not None and "item" not in call_kwargs:
                     call_kwargs["item"] = new_item
-                if new_asset is not None and "asset" not in call_kwargs:
-                    call_kwargs["asset"] = new_asset
+                call_kwargs.setdefault("asset", new_asset)
+                call_kwargs["_is_item"] = is_item
                 child = self._entry.get(**call_kwargs)
                 if getattr(child, "_entry", None) is None:
                     child._entry = self._entry
@@ -675,7 +667,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
                 metadata=kwargs.get("metadata", self.orig_metadata),
                 xarray_kwargs=kwargs.get("xarray_kwargs", self.xarray_kwargs_arg),
                 loglevel=kwargs.get("loglevel", self.loglevel),
-                _is_item=True if new_item is not None else False,
+                _is_item=is_item,
                 **{
                     **self.extra_kwargs,
                     **{
@@ -707,7 +699,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             d = super().describe()
         except Exception:
             d = {}
-        if self.item_name is None:
+        if self._is_collection_view:
             d["available_items"] = self.available_items
         else:
             d["item"] = self.item_name
