@@ -2,39 +2,33 @@
 
 import json
 import tempfile
-from pathlib import Path
 
 import intake
 import numpy as np
 import pytest
 import xarray as xr
+from dask.base import is_dask_collection
 
+from aqua import Reader
 from aqua.core.backend import BackendFactory
 from aqua.core.backend.catalog_mixin import CatalogMixin
 from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
 
+xr.set_options(keep_attrs=True)
+
 pytestmark = pytest.mark.aqua
 
 
 @pytest.fixture(scope="session")
-def stac_catalogue_dir():
-    """Use the committed STAC catalogue with the separately downloaded NetCDF fixtures."""
-    catalogue_dir = Path(__file__).resolve().parent / "stac_catalogue"
-    if not (catalogue_dir.parent.parent / "AQUA_tests" / "models").is_dir():
-        pytest.skip("AQUA_tests/models is not available")
-    return catalogue_dir
-
-
-@pytest.fixture(scope="session")
 def sample_stac_netcdf_path(stac_catalogue_dir):
-    """Path to the committed IFS STAC item."""
+    """Path to the generated IFS STAC item."""
     return str(stac_catalogue_dir / "items" / "ifs" / "ifs-long-regridded-r18x9.json")
 
 
 @pytest.fixture(scope="session")
 def sample_stac_collection_path(stac_catalogue_dir):
-    """Path to the committed IFS STAC collection."""
+    """Path to the generated IFS STAC collection."""
     return str(stac_catalogue_dir / "collections" / "ifs.json")
 
 
@@ -496,6 +490,50 @@ class TestSTACCollectionDiscovery:
 
 class TestSTACBackendIntegration:
     """Backend selectors and item metadata."""
+
+    @pytest.mark.parametrize(
+        ("exp", "item", "variable", "grid", "fixer"),
+        [
+            ("ifs", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test"),
+            ("ifs", "ifs-short-ifs2d-tco79", "2t", "tco79", False),
+            ("nemo", "nemo-eorca1-eorca1-sst-2d", "sst", "eORCA1-2d", False),
+            ("nemo", "nemo-eorca1-eorca1-salinity-3d", "avg_so", "test-eORCA1-3d", False),
+            ("ifs-items", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test"),
+            ("ifs-items", "ifs-short-ifs2d-tco79", "2t", "tco79", None),
+        ],
+    )
+    @pytest.mark.parametrize("use_aliases", [False, True], ids=["model-exp-source", "collection-item-asset"])
+    def test_reader_stac_catalogue(self, stac_catalogue_dir, exp, item, variable, grid, fixer, use_aliases):
+        """Retrieve generated STAC examples through the installed CI catalogue and Reader."""
+        selectors = (
+            {"collection": "stac", "item": exp, "asset": item}
+            if use_aliases
+            else {"model": "stac", "exp": exp, "source": item}
+        )
+        reader = Reader(catalog="ci", chunks={"time": 1}, areas=False, **selectors)
+        data = reader.retrieve(var=variable)
+
+        assert isinstance(reader.backend.esmcat, IntakeSTACSource)
+        assert reader.backend.esmcat.item_name == item
+        assert reader.backend.esmcat.asset_name == "data"
+        assert reader.metadata["aqua:model"] == item.split("-", 1)[0].upper()
+        assert reader.src_grid_name == grid
+        assert reader.fixer_name == fixer
+        assert reader.fix is (fixer is not False)
+        assert isinstance(data, xr.Dataset)
+        assert list(data.data_vars) == [variable]
+        assert all(size > 0 for size in data.sizes.values())
+        assert is_dask_collection(data[variable])
+        if "time" in data.dims:
+            assert set(data[variable].chunksizes["time"]) == {1}
+        assert data.aqua.instance is reader
+        assert data.attrs["history"]
+        first_dim = data[variable].dims[0]
+        assert data.isel({first_dim: slice(0, 1)}).attrs["history"] == data.attrs["history"]
+        for key, value in {"catalog": "ci", "model": "stac", "exp": exp, "source": item}.items():
+            assert data[variable].attrs[f"AQUA_{key}"] == value
+        if fixer:
+            assert data[variable].attrs["donald"] == "duck"
 
     def test_backend_factory_stac_aliases(self):
         """STAC naming aliases stay in sync with the established backend selectors."""
