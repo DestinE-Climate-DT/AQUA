@@ -77,7 +77,7 @@ dependencies = [
 fdb = [
     "pyfdb",
     "polytope-client",
-    "gsv-interface==2.13.1",
+    "gsv-interface>=2.18.0",
     "z3fdb==5.23.2.27; sys_platform == 'linux'",
     "z3fdb>=5.23.2.27; sys_platform != 'linux'",
 ]
