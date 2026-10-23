@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+ClimateDT workflow modifications:
+- `aqua push` substitutes `push_analysis.sh`. The API is unchanged and the tool returns the same exit codes for transfer errors as the script.
+
+Complete list:
+- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named and numeric log levels, log the AQUA version and experiment targets at startup, and report figure transfers and successful completion while keeping individual file messages at DEBUG (#3217).
 Unreleased in the current development version (target v1.2.3):
 
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)

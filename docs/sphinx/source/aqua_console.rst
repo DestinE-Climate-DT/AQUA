@@ -33,6 +33,7 @@ It has the following subcommands:
 - :ref:`aqua-grids`
 - :ref:`aqua-drop`
 - :ref:`aqua-analysis`
+- :ref:`aqua_push` (``aqua push``)
 
 The main command has some options listed below:
 
