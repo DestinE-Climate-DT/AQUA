@@ -36,7 +36,7 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0,<2.50",
+    "eccodes>=2.41.0,<2.51",
     "eccodeslib==2.48.2.27; sys_platform == 'linux'",
     # This is the same pin as for z3fdb to avoid the eccodes/cartopy clash
     "eccodeslib>=2.41.0,<2.50; sys_platform != 'linux'",
