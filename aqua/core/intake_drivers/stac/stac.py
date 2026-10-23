@@ -110,6 +110,16 @@ def _detect_format(media_type: str | None, href: str) -> str:
     return "netcdf"
 
 
+def _load_stac_item(urlpath: str, storage_options: dict | None) -> dict:
+    """Load item JSON, preserving read errors with the attempted path or URL."""
+    try:
+        with fsspec.open(urlpath, "r", **(storage_options or {})) as handle:
+            return json.load(handle)
+    except Exception as exc:
+        exc.add_note(f"Failed to load STAC item from {urlpath!r}.")
+        raise
+
+
 def _find_item_in_collection(
     collection_dict: dict,
     item_id: str,
@@ -162,27 +172,21 @@ def _find_item_in_collection(
             items_base = _resolve_href(base_urlpath, items_link["href"])
             candidate = f"{items_base.rstrip('/')}/{item_id}"
             try:
-                with fsspec.open(candidate, "r", **(storage_options or {})) as f:
-                    item_dict = json.load(f)
-                return item_dict, candidate
-            except Exception:
+                return _load_stac_item(candidate, storage_options), candidate
+            except FileNotFoundError:
                 pass
 
     # If target_href was found from item links, load it
     if target_href:
         resolved_item_path = _resolve_href(base_urlpath, target_href)
-        with fsspec.open(resolved_item_path, "r", **(storage_options or {})) as f:
-            item_dict = json.load(f)
-        return item_dict, resolved_item_path
+        return _load_stac_item(resolved_item_path, storage_options), resolved_item_path
 
     # Fallback: check if item_id can be resolved directly relative to collection path
     for candidate in (item_id, f"{item_id}.json"):
         resolved = _resolve_href(base_urlpath, candidate)
         try:
-            with fsspec.open(resolved, "r", **(storage_options or {})) as f:
-                item_dict = json.load(f)
-            return item_dict, resolved
-        except Exception:
+            return _load_stac_item(resolved, storage_options), resolved
+        except FileNotFoundError:
             continue
 
     coll_id = collection_dict.get("id", base_urlpath)
@@ -244,10 +248,9 @@ class STACCatalogEntry:
         }
 
     def get(self, **kwargs):
-        if self._is_item:
-            res = self._source(item=self._name, **kwargs)
-        else:
-            res = self._source(asset=self._name, **kwargs)
+        # The named entry takes precedence over inherited parent defaults.
+        kwargs["item" if self._is_item else "asset"] = self._name
+        res = self._source(**kwargs)
         if not hasattr(res, "_entry") or res._entry is None:
             res._entry = self
         return res

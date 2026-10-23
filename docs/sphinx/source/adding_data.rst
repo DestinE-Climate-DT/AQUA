@@ -189,6 +189,10 @@ An item configured in ``args.item`` is a read default: collection keys still lis
 items. Indexing or calling with ``item=`` selects an item view whose keys list
 assets. When switching items, inferred defaults and asset roles are resolved again
 for the new item; explicit asset selectors are retained unless overridden.
+Named item and asset entries take precedence over inherited parameter defaults
+when AQUA rebuilds an entry. Missing API or sibling-file candidates allow lookup
+to continue; access, connection, and JSON parsing failures are reported with the
+attempted path or URL.
 
 Alternatively, describe individual items in a nested YAML catalog. Add this
 entry alongside ``ifs`` in the top-level ``sources`` mapping:
