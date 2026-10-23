@@ -320,10 +320,10 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             inferred from the asset's type or href.
         storage_options (dict, optional): Parameters passed to fsspec for reading.
         metadata (dict, optional): Extra catalog metadata to merge with STAC metadata.
-        xarray_kwargs (dict, optional): Additional kwargs for xarray open calls.
+        xarray_kwargs (dict, optional): Additional kwargs for xarray open calls. Explicit
+            source kwargs override matching entries, including explicit ``None`` values.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
-        **kwargs: Further parameters forwarded to the reader (e.g. chunks). These override
-            matching ``xarray_kwargs`` entries, including explicit ``None`` values.
+        **kwargs: Further parameters forwarded to the reader (e.g. chunks).
     """
 
     name = "stac"
