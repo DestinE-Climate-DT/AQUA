@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
-- Mention z3fdb alongside FDB and Polytope in documentation, CLI options, and docstrings
+- Mention z3fdb alongside FDB and Polytope in documentation, CLI options, and docstrings (#3287)
 - Make gribscan user-installed and optional, retaining the STAC driver's conditional import (#3161)
 - Keep STAC item/asset navigation consistent and re-evaluate inferred asset defaults and roles when switching items (#3161)
 - Resolve relative STAC links for object-store URLs and remote root-relative paths while preserving URL hosts, queries, and fragments (#3161)
