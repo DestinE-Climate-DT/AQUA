@@ -145,6 +145,22 @@ NetCDF or ``engine: zarr`` for Zarr; set chunk sizes with ``args.chunks``.
 Some DKRZ STAC catalogues require ``gribscan``. Install it separately when needed;
 the driver imports it if available, but AQUA does not require it.
 
+The local examples below require the separately downloaded ``AQUA_tests``
+directory at the AQUA repository root and the ``ncdump`` command.
+Before using either example, generate the STAC JSON documents from the
+repository root:
+
+.. code-block:: console
+
+    python3 tests/stac_catalogue/generate_catalog.py
+
+This creates ``tests/stac_catalogue/collections/ifs.json`` and the Item
+JSON files referenced by these examples. Run the examples from the
+repository root so their relative paths resolve correctly.
+
+For other datasets, replace ``urlpath`` and the metadata with their
+corresponding values.
+
 For example, add a collection to the top-level ``catalog.yaml`` of an AQUA
 catalog installed as ``stac-example`` (see :ref:`new-catalog`):
 
@@ -163,10 +179,6 @@ catalog installed as ``stac-example`` (see :ref:`new-catalog`):
             ifs-short-ifs2d-tco79: tco79
           fixer_name:
             ifs-long-regridded-r18x9: ifs-ci-test
-
-This local example requires running from the AQUA repository root with the
-separately downloaded ``AQUA_tests`` directory present. For other datasets,
-replace ``urlpath`` and the metadata with their corresponding values.
 
 In this layout, ``collection``, ``item`` and ``asset`` select the collection
 entry, item ID and asset key. These are aliases for ``model``, ``exp`` and
