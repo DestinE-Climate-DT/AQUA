@@ -20,6 +20,7 @@ from time import time
 
 import dask
 import pandas as pd
+import xarray as xr
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
@@ -37,6 +38,8 @@ from .drop_util import estimate_time_chunk_size, move_tmp_files
 from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
+
+xr.set_options(keep_attrs=True)
 
 # available statistics are synchronized with the TimStat class
 available_stats = TimStat().available_stats
@@ -570,11 +573,21 @@ class Drop:
             self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
 
     def _remove_regridded(self, data):
-        """Remove regridded attribute to avoid issues with Reader"""
-
-        if "AQUA_regridded" in data.attrs:
-            self.logger.debug("Removing regridding attribute...")
-            del data.attrs["AQUA_regridded"]
+        """Remove regridded attribute to avoid issues with Reader on output files."""
+        if data is None:
+            return None
+        if isinstance(data, xr.Dataset):
+            for var in data.data_vars:
+                if "AQUA_regridded" in data[var].attrs:
+                    self.logger.debug("Removing regridding attribute from %s...", var)
+                    del data[var].attrs["AQUA_regridded"]
+            if "AQUA_regridded" in data.attrs:
+                self.logger.debug("Removing regridding attribute from dataset...")
+                del data.attrs["AQUA_regridded"]
+        elif isinstance(data, xr.DataArray):
+            if "AQUA_regridded" in data.attrs:
+                self.logger.debug("Removing regridding attribute...")
+                del data.attrs["AQUA_regridded"]
         return data
 
     def _apply_regrid(self, data):
@@ -585,7 +598,6 @@ class Drop:
             return None
         if self.resolution and self.resolution != "native":
             data = self.reader.regrid(data)
-            data = self._remove_regridded(data)
         return data
 
     def _apply_time_stat(self, data):
@@ -643,6 +655,9 @@ class Drop:
 
         # Apply history once to the dataset (xarray preserves it during slicing)
         temp_data = self.append_history(temp_data)
+
+        # Remove regridded attribute before persisting to avoid issues with Reader on output files
+        temp_data = self._remove_regridded(temp_data)
 
         self.writer.write_variable(
             data=temp_data,

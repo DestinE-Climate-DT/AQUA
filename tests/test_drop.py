@@ -339,7 +339,43 @@ class TestDROP:
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
         assert xfield.lat.min() > 35
         assert xfield.lat.max() < 70
+        assert "AQUA_regridded" not in xfield.attrs
+        assert "AQUA_regridded" not in xfield["2t"].attrs
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_regridded_attribute_in_pipeline(self, drop_arguments, tmp_path):
+        """Test that AQUA_regridded attribute is preserved during pipeline and removed before write."""
+        region = {"name": "europe", "lon": [-10, 30], "lat": [35, 70]}
+
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="daily",
+            definitive=False,
+            loglevel=LOGLEVEL,
+            region=region,
+        )
+
+        test.retrieve()
+        temp_data = test.data["2t"].sel(time="2020-01-20")
+
+        # After _apply_regrid, AQUA_regridded should still be present in attrs
+        regridded_data = test._apply_regrid(temp_data)
+        assert regridded_data.attrs.get("AQUA_regridded") == 1
+
+        # _apply_region should successfully operate on the regridded data using tgt_fldstat
+        region_data = test._apply_region(regridded_data)
+        assert region_data is not None
+
+        # _remove_regridded strips it for both Dataset and DataArray
+        cleaned_da = test._remove_regridded(region_data)
+        assert "AQUA_regridded" not in cleaned_da.attrs
+
+        cleaned_ds = test._remove_regridded(regridded_data.to_dataset(name="2t"))
+        assert "AQUA_regridded" not in cleaned_ds.attrs
+        assert "AQUA_regridded" not in cleaned_ds["2t"].attrs
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
     def test_dask_overwrite(self, drop_arguments, tmp_path, output_format):
