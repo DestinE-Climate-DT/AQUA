@@ -6,13 +6,13 @@ into yearly files. Supports both xarray and CDO for file concatenation.
 """
 
 import shutil
-import subprocess
 
 import numpy as np
 import xarray as xr
 from smmregrid import GridType
 
 from aqua.core.drop.drop_writer_base import BaseWriter
+from aqua.core.util.cdo import run_cdo
 from aqua.core.util.io_util import file_is_complete
 
 # default encoding for netCDF files
@@ -149,9 +149,8 @@ class NetCDFWriter(BaseWriter):
         # Concatenate using CDO or xarray
         try:
             if self.compact == "cdo":
-                command = ["cdo", *self.cdo_options, "cat", *tmp_monthly_files, tmp_year_file]
-                self.logger.debug("Using CDO: %s", " ".join(command[:4]) + " ...")
-                subprocess.check_output(command, stderr=subprocess.STDOUT)
+                self.logger.debug("Using CDO cat with options %s", self.cdo_options)
+                run_cdo([*self.cdo_options, "cat", *tmp_monthly_files, tmp_year_file])
             else:
                 self.logger.debug("Using xarray for concatenation")
                 # Reuse class method for opening files
