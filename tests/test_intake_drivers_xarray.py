@@ -1,5 +1,6 @@
 """Tests for aqua.core.intake_drivers.xarray: the AQUA-provided netcdf/zarr intake drivers."""
 
+import json
 from copy import deepcopy
 from functools import partial
 
@@ -190,7 +191,7 @@ class TestXarrayKwargsPassthrough:
 
 
 @pytest.fixture(params=["netcdf", "netcdf-pattern", "zarr", "stac-netcdf", "stac-zarr"])
-def kwargs_source_factory(request):
+def kwargs_source_factory(request, tmp_path):
     """Construct each reader variant without creating or opening data files."""
     driver = request.param
     if driver.startswith("stac-"):
@@ -205,7 +206,9 @@ def kwargs_source_factory(request):
                 }
             },
         }
-        return partial(IntakeSTACSource, urlpath=item)
+        item_path = tmp_path / "item.json"
+        item_path.write_text(json.dumps(item))
+        return partial(IntakeSTACSource, urlpath=str(item_path))
     if driver == "zarr":
         return partial(IntakeZarrSource, "dummy.zarr")
     urlpath = "dummy_{year}.nc" if driver == "netcdf-pattern" else "dummy.nc"
