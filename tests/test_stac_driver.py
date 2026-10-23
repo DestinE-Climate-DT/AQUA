@@ -164,6 +164,13 @@ class TestSTACItemLookup:
 class TestSTACDriver:
     """Driver registration and individual STAC items."""
 
+    @pytest.mark.parametrize("argument", ["urlpath", "path"])
+    @pytest.mark.parametrize("document", [{}, {"type": "Feature", "id": "example", "assets": {}}])
+    def test_rejects_dictionary_input(self, argument, document):
+        """Require a document location for both source path arguments."""
+        with pytest.raises(TypeError, match="must be a STAC JSON path or URL, not a dictionary"):
+            IntakeSTACSource(**{argument: document})
+
     def test_stac_driver_registration(self):
         """Verify that 'stac' driver is registered in intake."""
         registered = intake.registry.drivers.registered()

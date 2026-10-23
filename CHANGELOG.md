@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- Require a STAC JSON path or URL when constructing a source, removing incomplete dictionary-input support (#3281)
 - New intake driver to access stac collections and items (#3161)
 - Preserve STAC entry selections when forwarding parent parameter defaults, and propagate item access and parsing errors with the attempted path or URL (#3281)
 - Resolve STAC per-item fixer and grid metadata by canonical item ID when selecting items by title or filename (#3281)

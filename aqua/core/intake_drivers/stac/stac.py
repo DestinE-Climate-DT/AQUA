@@ -326,6 +326,10 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         xarray_kwargs (dict, optional): Additional kwargs for xarray open calls.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         **kwargs: Further parameters forwarded to the reader (e.g. chunks).
+
+    Raises:
+        TypeError: If ``urlpath`` or ``path`` is a dictionary.
+        ValueError: If no STAC JSON path or URL is provided.
     """
 
     name = "stac"
@@ -346,6 +350,8 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.logger = log_configure(log_level=loglevel, log_name="IntakeSTACSource")
         self.loglevel = loglevel
 
+        if isinstance(urlpath, dict) or isinstance(path, dict):
+            raise TypeError("'urlpath' (or 'path') must be a STAC JSON path or URL, not a dictionary.")
         target_url = urlpath or path
         if not target_url:
             raise ValueError("Must provide 'urlpath' (or 'path') pointing to a STAC JSON.")
@@ -364,14 +370,10 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.extra_kwargs = kwargs
 
         # Read the STAC JSON
-        if isinstance(target_url, dict):
-            raw_dict = target_url
-            base_urlpath = ""
-        else:
-            base_urlpath = str(target_url)
-            self.logger.debug("Loading STAC JSON from %s", base_urlpath)
-            with fsspec.open(base_urlpath, "r", **(storage_options or {})) as f:
-                raw_dict = json.load(f)
+        base_urlpath = str(target_url)
+        self.logger.debug("Loading STAC JSON from %s", base_urlpath)
+        with fsspec.open(base_urlpath, "r", **(storage_options or {})) as f:
+            raw_dict = json.load(f)
 
         self.base_urlpath = base_urlpath
         self.raw_dict = raw_dict
@@ -577,7 +579,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         # If this source belongs to a collection and key matches an item in the collection:
         if self._is_collection_view and key in self.available_items:
             child = IntakeSTACSource(
-                urlpath=self.raw_dict if isinstance(self.target_url, dict) else self.base_urlpath,
+                urlpath=self.base_urlpath,
                 item=key,
                 asset=self.asset_arg,
                 format=self.format_arg,
