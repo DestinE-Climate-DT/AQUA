@@ -2,7 +2,7 @@
 
 import json
 import os
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import fsspec
 import xarray as xr
@@ -73,10 +73,16 @@ def _resolve_href(base_urlpath: str, href: str) -> str:
     Returns:
         str: Resolved path or URL.
     """
-    if not base_urlpath or "://" in href or os.path.isabs(href):
+    if not base_urlpath or urlsplit(href).scheme:
         return href
-    if "://" in base_urlpath:
-        return urljoin(base_urlpath, href)
+    scheme, separator, path = base_urlpath.partition("://")
+    if separator:
+        # Join without the scheme so urljoin also works for s3/gs/etc.
+        resolved = urljoin("//" + path, href)
+        # Preserve the empty authority in file:/// and memory:/// URLs.
+        return scheme + ":" + (resolved if resolved.startswith("//") else "//" + resolved)
+    if os.path.isabs(href):
+        return href
     base_dir = os.path.dirname(os.path.abspath(base_urlpath))
     return os.path.normpath(os.path.join(base_dir, href))
 

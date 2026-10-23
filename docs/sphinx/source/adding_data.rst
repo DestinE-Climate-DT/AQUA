@@ -137,6 +137,8 @@ STAC-based sources
 The ``stac`` Intake driver accesses NetCDF or Zarr assets through a STAC
 Collection or Item JSON, supplied as a local path or URL in ``args.urlpath``.
 Relative links inside the JSON are resolved against that document's location.
+For remote documents, links starting with ``/`` use the server or bucket root.
+Links that specify their own URL scheme are preserved unchanged.
 Pass xarray options in ``args.xarray_kwargs``, using ``engine: netcdf4`` for
 NetCDF or ``engine: zarr`` for Zarr; set chunk sizes with ``args.chunks``.
 

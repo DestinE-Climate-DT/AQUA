@@ -14,6 +14,7 @@ from aqua.core.backend import BackendFactory
 from aqua.core.backend.catalog_mixin import CatalogMixin
 from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
+from aqua.core.intake_drivers.stac.stac import _resolve_href
 
 xr.set_options(keep_attrs=True)
 
@@ -30,6 +31,50 @@ def sample_stac_netcdf_path(stac_catalogue_dir):
 def sample_stac_collection_path(stac_catalogue_dir):
     """Path to the generated IFS STAC collection."""
     return str(stac_catalogue_dir / "collections" / "ifs.json")
+
+
+class TestSTACHrefResolution:
+    """Resolve STAC links without depending on the remote filesystem."""
+
+    @pytest.mark.parametrize(
+        ("base_urlpath", "href", "expected"),
+        [
+            ("https://example.org/catalog/item.json", "../data.nc", "https://example.org/data.nc"),
+            ("s3://bucket/catalog/item.json", "../data.nc", "s3://bucket/data.nc"),
+            ("gs://bucket/catalog/item.json", "./data.nc", "gs://bucket/catalog/data.nc"),
+            ("memory://bucket/catalog/item.json", "../data.nc", "memory://bucket/data.nc"),
+            ("memory:///catalog/item.json", "../data.nc", "memory:///data.nc"),
+            ("file:///catalog/item.json", "../data.nc", "file:///data.nc"),
+            ("https://example.org/catalog/item.json", "/data/file.nc", "https://example.org/data/file.nc"),
+            ("s3://bucket/catalog/item.json", "/data/file.nc", "s3://bucket/data/file.nc"),
+            ("https://example.org/catalog/item.json", "//cdn.example.org/file.nc", "https://cdn.example.org/file.nc"),
+            ("s3://bucket/catalog/item.json", "//other-bucket/data.nc", "s3://other-bucket/data.nc"),
+            ("s3://bucket", "../data.nc", "s3://bucket/data.nc"),
+            ("s3://bucket/catalog/item.json", "../store.zarr/", "s3://bucket/store.zarr/"),
+            (
+                "https://example.org/catalog/item.json?old=1",
+                "../data.nc?version=2#part",
+                "https://example.org/data.nc?version=2#part",
+            ),
+            ("s3://bucket/item.json?version=1", "#part", "s3://bucket/item.json?version=1#part"),
+            ("s3://bucket/item.json?version=1", "?version=2", "s3://bucket/item.json?version=2"),
+            ("s3://bucket/item.json", "https://example.org/data.nc", "https://example.org/data.nc"),
+            ("https://example.org/item.json", "s3://bucket/data.nc", "s3://bucket/data.nc"),
+            ("https://example.org/item.json", "file:///data/file.nc", "file:///data/file.nc"),
+            ("/catalog/item.json", "../data.nc", "/data.nc"),
+            ("/catalog/item.json", "/data/file.nc", "/data/file.nc"),
+            ("/catalog/item.json", "file:///data/file.nc", "file:///data/file.nc"),
+            ("", "../data.nc", "../data.nc"),
+        ],
+    )
+    def test_resolve_href(self, base_urlpath, href, expected):
+        """Preserve URL components while resolving local and remote references."""
+        assert _resolve_href(base_urlpath, href) == expected
+
+    def test_relative_local_base(self, tmp_path, monkeypatch):
+        """Resolve a relative filesystem base against the working directory."""
+        monkeypatch.chdir(tmp_path)
+        assert _resolve_href("catalog/item.json", "../data.nc") == str(tmp_path / "data.nc")
 
 
 class TestSTACDriver:
