@@ -7,11 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
-- Make gribscan user-installed and optional, retaining the STAC driver's conditional import (#3161)
-- Keep STAC item/asset navigation consistent and re-evaluate inferred asset defaults and roles when switching items (#3161)
-- Resolve relative STAC links for object-store URLs and remote root-relative paths while preserving URL hosts, queries, and fragments (#3161)
-- Generate STAC test catalogues before pytest collection and xdist worker startup so catalog discovery works from a clean checkout (#3161)
-- Generate STAC test catalogues with a reusable session fixture, retain ignored JSON files for inspection, and add Reader integration coverage using the installed CI catalogue (#3161)
+- Implement Intake STAC driver (#3161)
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
 - Add instructions for human control of main to AGENTS.md (#3232)
