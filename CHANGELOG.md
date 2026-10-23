@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- New intake driver to access stac collections and items (#3161)
 - Preserve STAC entry selections when forwarding parent parameter defaults, and propagate item access and parsing errors with the attempted path or URL (#3281)
 - Resolve STAC per-item fixer and grid metadata by canonical item ID when selecting items by title or filename (#3281)
 - Make gribscan user-installed and optional, retaining the STAC driver's conditional import (#3161)
@@ -24,7 +25,6 @@ Unreleased in the current development version (target v1.2.3):
 
 ## [v1.2.2]
 
-- New intake driver to access stac collections and items (#3161)
 ClimateDT workflow modifications:
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
 - `aqua analysis ensemble` command is now ready for implementation in the workflow
