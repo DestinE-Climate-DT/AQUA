@@ -11,7 +11,7 @@ Unreleased in the current development version (target v1.2.3):
 - `conda-relock` workflow: add `--filter-extras`, so only the `tests` and `fdb` extras are solved and the self-referencing `all` extra is not resolved against `aqua-core` from PyPI (#3290)
 - Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes` bindings aligned to `>=2.50.0,<2.51`. `eccodeslib` is no longer a dependency: from 2.49 its `eckitlib` bundles PROJ/sqlite that crash with the conda ones used by cartopy (#3163); `z3fdb==5.23.2.27` stays pinned on Linux for the same reason
 - Implement Intake STAC driver (#3161)
-- Update the `fdb` extra to `gsv-interface>=2.18.0` (was hard-pinned to `==2.13.1`) (#3276)
+- Update the `fdb` extra to `gsv-interface>=2.18.0` (was hard-pinned to `==2.13.1`) (#3277)
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
 - Add instructions for human control of main to AGENTS.md (#3232)
