@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
-- In DROP, preserve the `AQUA_regridded` attribute during in-memory pipeline execution so downstream operations like regional selection properly route to the target grid, stripping it before persisting to disk (#3286)
+- In DROP, preserve the `AQUA_regridded` attribute during in-memory pipeline execution so downstream operations like regional selection properly route to the target grid, stripping it before persisting to disk (#3288)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
 - Fix the ICON-default `snlwrf` formula by removing a trailing operator; ICON-cycle3 and ICON-cycle4 inherit the correction (#3247)
