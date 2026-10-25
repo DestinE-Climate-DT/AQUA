@@ -202,6 +202,39 @@ class TestSTACDriver:
         with pytest.raises(KeyError, match="Asset 'missing' not found"):
             source["missing"]
 
+    @pytest.mark.parametrize("method", ["read", "to_dask", "discover", "read_chunked"])
+    @pytest.mark.parametrize(
+        ("error_type", "message"),
+        [
+            (ValueError, "not enough values to unpack (expected 2, got 1)"),
+            (PermissionError, "access denied"),
+            (OSError, "connection failed"),
+        ],
+    )
+    def test_read_preserves_error(self, sample_stac_netcdf_path, method, error_type, message):
+        """Keep the original read exception and identify the asset's resolved location."""
+        source = IntakeSTACSource(urlpath=sample_stac_netcdf_path, asset="data")
+        error = error_type(message)
+        source.reader = Mock()
+        source.reader.return_value = source.reader
+        source.reader.read.side_effect = error
+
+        with pytest.raises(error_type) as caught:
+            getattr(source, method)()
+
+        assert caught.value is error
+        assert str(caught.value) == message
+        note = caught.value.__notes__[-1]
+        assert "STAC asset 'data'" in note
+        assert str(source.data.url) in note
+
+    @pytest.mark.parametrize("method", ["read", "to_dask", "discover", "read_chunked"])
+    def test_read_access_modes(self, sample_stac_netcdf_path, method):
+        """Eager and lazy aliases preserve the corresponding read behavior."""
+        source = IntakeSTACSource(urlpath=sample_stac_netcdf_path, chunks={"time": 1})
+        with getattr(source, method)() as data:
+            assert is_dask_collection(data["2t"]) == (method in ("to_dask", "read_chunked"))
+
     def test_stac_read_zarr(self, tmp_path):
         """Test reading a Zarr-backed STAC item with relative href."""
         zarr_dir = tmp_path / "sample.zarr"
@@ -386,15 +419,14 @@ class TestSTACCollections:
         assert "2t" in ds.data_vars
         assert "ttr" in ds.data_vars
 
-    def test_stac_collection_missing_item_error(self, sample_stac_collection_path):
+    @pytest.mark.parametrize("method", ["read", "to_dask", "discover", "read_chunked"])
+    def test_stac_collection_missing_item_error(self, sample_stac_collection_path, method):
         """Test that reading directly from a collection without selecting an item raises ValueError."""
         source = IntakeSTACSource(urlpath=sample_stac_collection_path)
         assert source.item_name is None
         assert "ifs-short-ifs2d-tco79" in source.keys()
         with pytest.raises(ValueError, match="cannot be read directly"):
-            source.read()
-        with pytest.raises(ValueError, match="cannot be read directly"):
-            source.to_dask()
+            getattr(source, method)()
 
     def test_stac_collection_unknown_item_error(self, sample_stac_collection_path):
         """Test that requesting an unknown item from a collection raises KeyError with available items."""

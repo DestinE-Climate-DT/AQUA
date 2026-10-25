@@ -484,44 +484,29 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
     def read(self):
         """Read data into an in-memory xarray Dataset."""
-        if self.reader is None:
-            coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
-            raise ValueError(
-                f"STAC Collection '{coll_id}' cannot be read directly. "
-                "Please specify an item to load, for example:\n"
-                f"  cat['{self.name}']['item_id'].read() or cat['{self.name}'](item='item_id').read()"
-            )
-        try:
-            return super().read()
-        except Exception as e:
-            if "not enough values to unpack" in str(e):
-                href = self.asset_info.get("href", "")
-                raise RuntimeError(
-                    f"Failed to read asset '{self.asset_name}' from '{href}'. "
-                    "The remote server returned an HTTP error (such as 404 Not Found), which Zarr "
-                    f"could not parse. Original error: {e}"
-                ) from e
-            raise
+        return self._read_asset(super().read)
 
     def to_dask(self):
         """Read data into a dask-backed xarray Dataset."""
+        return self._read_asset(super().to_dask)
+
+    discover = read
+    read_chunked = to_dask
+
+    def _read_asset(self, read):
+        """Read a selected asset, preserving errors with the resolved source location."""
         if self.reader is None:
             coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+            method = read.__name__
             raise ValueError(
                 f"STAC Collection '{coll_id}' cannot be read directly. "
                 "Please specify an item to load, for example:\n"
-                f"  cat['{self.name}']['item_id'].to_dask() or cat['{self.name}'](item='item_id').to_dask()"
+                f"  cat['{self.name}']['item_id'].{method}() or cat['{self.name}'](item='item_id').{method}()"
             )
         try:
-            return super().to_dask()
-        except Exception as e:
-            if "not enough values to unpack" in str(e):
-                href = self.asset_info.get("href", "")
-                raise RuntimeError(
-                    f"Failed to read asset '{self.asset_name}' from '{href}'. "
-                    "The remote server returned an HTTP error (such as 404 Not Found), which Zarr "
-                    f"could not parse. Original error: {e}"
-                ) from e
+            return read()
+        except Exception as exc:
+            exc.add_note(f"While reading STAC asset {self.asset_name!r} from {self.data.url!r}.")
             raise
 
     @property
