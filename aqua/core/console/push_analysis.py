@@ -11,8 +11,10 @@ import shutil
 import socket
 import subprocess
 import tempfile
-from datetime import datetime
 from pathlib import Path
+
+import pandas as pd
+from dateutil.tz import tzlocal
 
 from aqua import __version__ as aqua_version
 from aqua.core.logger import log_configure
@@ -95,7 +97,7 @@ def _collect_figures(indir, workspace, experiment, formats):
         dest.mkdir(parents=True, exist_ok=True)
         for figure in source.rglob(f"*.{fmt}"):
             shutil.copy2(figure, dest / figure.name)
-        stamp = f"{datetime.now().astimezone().isoformat()} {getpass.getuser()} @ {socket.gethostname()}\n"
+        stamp = f"{pd.Timestamp.now(tz=tzlocal()).isoformat()} {getpass.getuser()} @ {socket.gethostname()}\n"
         (dest / "last_update.txt").write_text(stamp)
         metadata = source / "experiment.yaml"
         if metadata.is_file():
