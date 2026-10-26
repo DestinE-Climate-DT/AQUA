@@ -574,20 +574,8 @@ class Drop:
 
     def _remove_regridded(self, data):
         """Remove regridded attribute to avoid issues with Reader on output files."""
-        if data is None:
-            return None
-        if isinstance(data, xr.Dataset):
-            for var in data.data_vars:
-                if "AQUA_regridded" in data[var].attrs:
-                    self.logger.debug("Removing regridding attribute from %s...", var)
-                    del data[var].attrs["AQUA_regridded"]
-            if "AQUA_regridded" in data.attrs:
-                self.logger.debug("Removing regridding attribute from dataset...")
-                del data.attrs["AQUA_regridded"]
-        elif isinstance(data, xr.DataArray):
-            if "AQUA_regridded" in data.attrs:
-                self.logger.debug("Removing regridding attribute...")
-                del data.attrs["AQUA_regridded"]
+        if hasattr(data, "attrs"):
+            data.attrs.pop("AQUA_regridded", None)
         return data
 
     def _apply_regrid(self, data):
