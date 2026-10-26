@@ -19,6 +19,7 @@ Unreleased in the current development version (target v1.2.3):
 - Regridder: a `skipna` key in the grid `path` enables the smmregrid `skipna` option, with a single 2D weights matrix (`_lskipna` in the weights filename) for all variables and levels; masks varying in time or along any dimension are handled at regridding time, with `na_thres=0.5` as without `skipna`. Off by default (#3274)
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
+- Add pull request review instructions to AGENTS.md (#3285)
 - Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
