@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
+
 - Homogenize/centralize the size and style of the label/axis/title into core graphics methods (#3294)
 - Restructure the fixes in `aqua/core/config/fixes`: one file per model (`ifs`, `icon`, `fesom`, `ec-earth4`), `climatedt.yaml` for the catgen default fixes, `observations.yaml`, unused fixes moved to `deprecated.yaml`; fixer names unchanged; new tests for duplicated fixer names and parent inheritance (#3270)
 - Keep `Fixer` monthly `deltat` configuration immutable and compute `days_in_month` time corrections per dataset (#3233)

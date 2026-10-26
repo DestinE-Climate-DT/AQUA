@@ -413,7 +413,7 @@ def plot_single_map_diff(
             else:
                 fmt[level] = f"{level:.{decimals}f}"
 
-        add_contour_labels(ds, loglevel=loglevel, fmt=fmt, fontsize=6, inline=True)
+        add_contour_labels(ds, loglevel=loglevel, fmt=fmt, fontsize="xx-small", inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)
