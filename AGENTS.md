@@ -18,6 +18,11 @@
 - When opening an issue follow the issue template (provided in `.github/ISSUE_TEMPLATE.md`) choosing an appropriate issue type from the given options.
 - Update also the CHANGELOG.md with the new version and the changes introduced in the current version following the same format as other entries in that file.
 
+### Reviewing pull requests
+- If user asks for a review of a pull request, review it looking for consistency, bugs, and if the code is clean and consistent with the general style of the rest of AQUA software. It should be compact, clean, and easy to maintain also by humans.
+- Check with specific attention if there is any code redundancy or if some of new features can be replaced by existing features.
+- Prepare a report with possible action points - ranked with a priority scale (serious, high, low, negligible) - which we will address later.
+
 ### Before implementing anything
 
 1. Search `aqua/core/` for an existing class handling similar logic
