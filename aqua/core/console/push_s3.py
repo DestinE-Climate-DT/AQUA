@@ -14,6 +14,7 @@ import os
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 
 from aqua.core.logger import log_configure
 
@@ -55,7 +56,20 @@ def get_file_from_s3(client, bucket_name, object_name, dest_path, loglevel="WARN
         logger.debug("Downloaded %s from bucket %s to %s", object_name, bucket_name, dest_path)
         return True
     except Exception as e:
-        if "NoSuchKey" in str(e):
+        code = e.response.get("Error", {}).get("Code") if isinstance(e, ClientError) else None
+        if code in ("404", "NotFound"):
+            # HeadObject returns 404 for a missing key; verify that the bucket exists.
+            try:
+                client.head_bucket(Bucket=bucket_name)
+            except Exception as bucket_error:
+                logger.error("Error accessing bucket %s: %s", bucket_name, bucket_error)
+                if isinstance(bucket_error, ClientError) and bucket_error.response.get("Error", {}).get("Code") in (
+                    "404",
+                    "NoSuchBucket",
+                ):
+                    raise S3TransferError(str(bucket_error), 2) from bucket_error
+                raise _transfer_error(bucket_error) from bucket_error
+        if code in ("NoSuchKey", "404", "NotFound") or "NoSuchKey" in str(e):
             # A missing index is expected for the first published experiment.
             logger.warning("Object %s does not exist in bucket %s", object_name, bucket_name)
             return False

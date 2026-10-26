@@ -69,6 +69,10 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     assert published["content"]["experiment"]["label"] == "Example"
     assert not published["source"].exists()
     assert ("aqua-web", f"content/svg/{experiment}", "directory") in transfers
+    assert transfers[-2:] == [
+        ("aqua-web", f"content/svg/{experiment}", "directory"),
+        ("aqua-web", "content/experiments.yaml", "file"),
+    ]
     assert log.info.call_args_list[0].args == ("Running push-analysis with AQUA version %s", push_analysis.aqua_version)
     log.info.assert_any_call(
         "Target: catalog=%s model=%s experiment=%s realization=%s",
@@ -139,7 +143,7 @@ def test_aqua_push_rsync_status(tmp_path, monkeypatch, figure_status):
     def fake_run(command, **kwargs):
         commands.append(command)
         if command[2].startswith("user@example:"):
-            return subprocess.CompletedProcess(command, 23, stdout="", stderr="remote index missing")
+            return subprocess.CompletedProcess(command, 23, stdout="", stderr="No such file or directory")
         return subprocess.CompletedProcess(
             command, figure_status if "--relative" in command else 0, stdout="", stderr="transfer failed"
         )
@@ -166,15 +170,42 @@ def test_aqua_push_rsync_status(tmp_path, monkeypatch, figure_status):
     monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=logger))
 
     assert console_main.main() == figure_status
-    assert len(commands) == 3  # optional index download, index upload, figure transfer
-    assert "--relative" in commands[-1]
+    assert len(commands) == (2 if figure_status else 3)
+    assert "--relative" in commands[1]
     if figure_status:
         logger.info.assert_any_call(
             "Transferring %s figures to %s/%s", "svg", "user@example:/site", f"content/svg/{experiment}/"
         )
         assert all(call.args != ("Transfer completed successfully",) for call in logger.info.call_args_list)
     else:
+        assert commands[-1][2].endswith("experiments.yaml")
         assert logger.info.call_args_list[-1].args == ("Transfer completed successfully",)
+
+
+@pytest.mark.parametrize(
+    "stderr,expected_status",
+    [
+        ('rsync: [sender] link_stat "/site/content/experiments.yaml" failed: No such file or directory (2)', 0),
+        ("rsync: permission denied", 23),
+        ("rsync: connection unexpectedly closed", 12),
+    ],
+)
+def test_rsync_index_read_only_ignores_missing_file(tmp_path, monkeypatch, stderr, expected_status):
+    """A failed index read must stop publishing unless the remote file is absent."""
+    command = ("rsync", "-avz", "remote/content/experiments.yaml", "local")
+    status = 12 if "connection" in stderr else 23
+    monkeypatch.setattr(
+        push_analysis,
+        "_rsync",
+        Mock(return_value=subprocess.CompletedProcess(command, status, stdout="", stderr=stderr)),
+    )
+    args = (tmp_path, "bucket", "remote", None, Mock(), "INFO")
+    if expected_status:
+        with pytest.raises(subprocess.CalledProcessError) as exc:
+            push_analysis._get_experiments_file(*args)
+        assert exc.value.returncode == expected_status
+    else:
+        push_analysis._get_experiments_file(*args)
 
 
 def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
@@ -193,13 +224,14 @@ def test_aqua_push_dispatches_to_push_execute(monkeypatch, tmp_path):
     assert execute.call_count == 1
 
 
-def test_aqua_push_rejects_invalid_format(monkeypatch, tmp_path):
+def test_aqua_push_rejects_invalid_format(monkeypatch, tmp_path, capfd):
     """Invalid formats fail before the publishing routine is called."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "-f", "jpeg"])
     publish = Mock()
     monkeypatch.setattr(push_analysis, "push_analysis", publish)
     assert console_main.main() == 2
     publish.assert_not_called()
+    assert "--format must be a comma-separated selection of pdf, png, svg" in capfd.readouterr().err
 
 
 def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
@@ -317,11 +349,26 @@ def test_s3_errors_preserve_exit_codes(code, exit_code, capfd):
     assert capfd.readouterr().out == ""
 
 
-def test_missing_s3_object_is_optional():
+@pytest.mark.parametrize("code", ["NoSuchKey", "404"])
+def test_missing_s3_object_is_optional(code):
     """A missing remote index can be created during the first publish."""
     client = Mock()
-    client.download_file.side_effect = ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
+    client.download_file.side_effect = ClientError({"Error": {"Code": code}}, "HeadObject")
     assert push_s3.get_file_from_s3(client, "aqua-web", "content/experiments.yaml", "experiments.yaml") is False
+    if code == "404":
+        client.head_bucket.assert_called_once_with(Bucket="aqua-web")
+    else:
+        client.head_bucket.assert_not_called()
+
+
+def test_s3_404_does_not_hide_missing_bucket():
+    """A generic object 404 only means a missing index when the bucket exists."""
+    client = Mock()
+    client.download_file.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
+    client.head_bucket.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadBucket")
+    with pytest.raises(push_s3.S3TransferError) as exc:
+        push_s3.get_file_from_s3(client, "aqua-web", "content/experiments.yaml", "experiments.yaml")
+    assert exc.value.exit_code == 2
 
 
 def test_s3_success_logs_without_stdout(capfd, monkeypatch):
@@ -416,6 +463,7 @@ def test_failed_transfer_has_no_completion_message(tmp_path, monkeypatch):
     monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     with pytest.raises(push_s3.S3TransferError):
         push_analysis.push_analysis(output.parents[3], "catalog/model/experiment/r1", config, formats=("svg",))
+    push_analysis.upload_file_to_s3.assert_not_called()
     assert all(call.args != ("Transfer completed successfully",) for call in log.info.call_args_list)
 
 
