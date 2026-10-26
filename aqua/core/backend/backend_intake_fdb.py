@@ -64,7 +64,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                                            Defaults to None (use the catalog default).
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to standardize coordinates. Defaults to None.
-            engine (str, optional): Engine used for GSV retrieval, 'gsv' or 'polytope'. Defaults to 'gsv'.
+            engine (str, optional): Engine used for GSV retrieval, 'gsv', 'polytope' or 'z3fdb'. Defaults to 'gsv'.
             databridge (str, optional): Only for the polytope engine: 'lumi' or 'mn5'. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional intake parameters forwarded to the catalog source entry.

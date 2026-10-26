@@ -1,0 +1,19 @@
+# ClimateDT fixes shared by all models (IFS-NEMO, IFS-FESOM, ICON).
+# climatedt-phase2-production/reduced are the default fixes of catgen
+# and are used by climatedt-gen2, O-25.1 and phase2 catalogs.
+
+fixer_name:
+  climatedt-phase2-production:
+    convention: eccodes
+    deltat: 3600  # valid only for the atmosphere
+
+  climatedt-phase2-reduced:
+    convention: eccodes
+    deltat: monthly
+
+  # ICON phase2 freeze (lumi-phase2). Identical to icon-destine-v1-lra in icon.yaml
+  climatedt-phase2-ICON-freeze:
+    convention: eccodes
+    vars:
+      tcc:
+        src_units: frac

@@ -3,6 +3,7 @@
 import os
 import threading
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -103,19 +104,63 @@ class TestSafeFileLock:
         lock.release()
 
     @pytest.mark.aqua
-    def test_metadata_written(self, lock_file):
-        """Test that lock file contains PID and timestamp."""
+    def test_marker_not_overwritten(self, lock_file):
+        """Preserve filelock's marker, including older versions that leave it empty."""
+        lock = SafeFileLock(lock_file, timeout=5)
+        acquire = lock.lock.acquire
+        markers = []
+
+        def acquire_and_capture(*args, **kwargs):
+            """Capture the marker before SafeFileLock resumes acquisition."""
+            proxy = acquire(*args, **kwargs)
+            markers.append(Path(lock_file).read_bytes())
+            return proxy
+
+        with patch.object(lock.lock, "acquire", side_effect=acquire_and_capture):
+            with lock:
+                assert Path(lock_file).read_bytes() == markers[0]
+
+    @pytest.mark.aqua
+    def test_held_lock_not_broken(self, lock_file):
+        """Test that a lock held for a few seconds is not broken by a contender (#3190)."""
+        lock1 = SafeFileLock(lock_file, timeout=5, heartbeat_interval=60)
+        lock2 = SafeFileLock(lock_file, timeout=4)
+
+        with lock1:
+            # Exercise both mtime-based expiry and filelock 4.2's observation clock.
+            time.sleep(2.5)
+            with pytest.raises(Timeout), lock2:
+                pass
+
+    @pytest.mark.aqua
+    def test_release_stops_heartbeat(self, lock_file):
+        """Release stops an active heartbeat before its next scheduled refresh."""
+        lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=60)
+        refreshed = threading.Event()
+        utime = os.utime
+
+        def refresh_and_signal(*args, **kwargs):
+            """Signal after the heartbeat starts refreshing its marker."""
+            utime(*args, **kwargs)
+            refreshed.set()
+
+        with patch("aqua.core.lock.safelock.os.utime", side_effect=refresh_and_signal):
+            with lock:
+                assert refreshed.wait(timeout=5)
+                heartbeat = lock._heartbeat_thread
+
+            assert not heartbeat.is_alive()
+            assert not os.path.exists(lock_file)
+
+    @pytest.mark.aqua
+    def test_stale_check_lock_vanishing(self, lock_file):
+        """Test that the lock file disappearing during the stale check does not raise (#3190)."""
+        Path(lock_file).touch()
         lock = SafeFileLock(lock_file, timeout=5)
 
-        lock.acquire()
-
-        with open(lock_file, "r") as f:
-            content = f.read()
-
-        assert f"pid={os.getpid()}" in content
-        assert "time=" in content
-
-        lock.release()
+        # Lock exists when checked, but is released before its mtime is read
+        with patch("aqua.core.lock.safelock.os.path.getmtime", side_effect=FileNotFoundError):
+            assert not lock._is_stale()
 
     @pytest.mark.aqua
     def test_sequential_access(self, lock_file, shared_file):

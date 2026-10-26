@@ -36,10 +36,10 @@ classifiers = [
 ]
 dependencies = [
     # binaries
-    "eccodes>=2.41.0,<2.50",
-    "eccodeslib==2.48.2.27; sys_platform == 'linux'",
-    # This is the same pin as for z3fdb to avoid the eccodes/cartopy clash
-    "eccodeslib>=2.41.0,<2.50; sys_platform != 'linux'",
+    # python bindings only: the ecCodes library comes from conda (environment.yml), keep the versions aligned.
+    # eccodeslib is not required on purpose: its eckitlib (>=2.3) bundles PROJ and sqlite, which clash with
+    # the conda ones used by cartopy and crash the interpreter on Linux (#3163)
+    "eccodes>=2.50.0,<2.51",
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -67,7 +67,7 @@ dependencies = [
     "s3fs>=2026.1.0", # AWS for bucket access, setting a minimum to avoid installing a very old version
     "scipy",
     "seaborn",
-    "smmregrid==0.1.6",
+    "smmregrid==0.2.0",
     # "smmregrid @ git+https://github.com/jhardenberg/smmregrid.git",  # for development
     "xarray>=2025.12.0",
     "zarr>=3.0"
@@ -77,7 +77,8 @@ dependencies = [
 fdb = [
     "pyfdb",
     "polytope-client",
-    "gsv-interface==2.13.1",
+    "gsv-interface>=2.18.0",
+    # z3fdb pins fdb5lib, eccodeslib and eckitlib: 5.23.2.27 is the last with an eckitlib without bundled PROJ (#3163)
     "z3fdb==5.23.2.27; sys_platform == 'linux'",
     "z3fdb>=5.23.2.27; sys_platform != 'linux'",
 ]
@@ -94,13 +95,12 @@ tests = [
     "pytest-timeout",
     "pytest-xdist",
     "coverage",
-    "cdo",
     "dvc>3.60.0",
     "dvc-s3"
 ]
 style = [
     "pre-commit",
-    "ruff==0.17.0"
+    "ruff==0.17.1"
 ]
 all = [
     "aqua-core[docs]",
