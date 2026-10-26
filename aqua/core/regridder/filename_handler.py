@@ -5,7 +5,10 @@ import re
 
 from smmregrid.util import check_gridfile
 
-from aqua.core.default import DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, DEFAULT_WEIGHTS_AREAS_PARAMETERS
+from aqua.core.default import (
+    DEFAULT_2D_DIMENSIONS,
+    DEFAULT_WEIGHTS_AREAS_PARAMETERS,
+)
 from aqua.core.logger import log_configure
 
 from .regridder_util import get_grid_path
@@ -49,7 +52,7 @@ class FilenameHandler:
 
     def weights_filename(self, tgt_grid_name, src_grid_path, regrid_method, mask_dim, regridder_metadata):
         """Generate the weights filename (grid-based, catalog-based or path-based)."""
-        levname = mask_dim if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else f"3d-{mask_dim}"
+        levname = mask_dim if mask_dim in DEFAULT_2D_DIMENSIONS else f"3d-{mask_dim}"
         weights_dict = self.cfg_grid_dict.get("weights")
 
         if not weights_dict:

@@ -339,7 +339,28 @@ class TestDROP:
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
         assert xfield.lat.min() > 35
         assert xfield.lat.max() < 70
+        assert "AQUA_regridded" not in xfield.attrs
+        assert "AQUA_regridded" not in xfield["2t"].attrs
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_remove_regridded(self):
+        """Test that _remove_regridded removes AQUA_regridded from attributes."""
+        drop = Drop.__new__(Drop)
+
+        # DataArray
+        da = xr.DataArray([1.0], attrs={"AQUA_regridded": 1, "units": "K"})
+        cleaned_da = drop._remove_regridded(da)
+        assert "AQUA_regridded" not in cleaned_da.attrs
+        assert cleaned_da.attrs["units"] == "K"
+
+        # Dataset (removes from both dataset-level and data variables)
+        ds = xr.Dataset({"2t": da}, attrs={"AQUA_regridded": 1, "title": "test"})
+        cleaned_ds = drop._remove_regridded(ds)
+        assert "AQUA_regridded" not in cleaned_ds.attrs
+        assert "AQUA_regridded" not in cleaned_ds["2t"].attrs
+        assert cleaned_ds.attrs["title"] == "test"
+
+        assert drop._remove_regridded(None) is None
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
     def test_dask_overwrite(self, drop_arguments, tmp_path, output_format):

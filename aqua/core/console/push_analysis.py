@@ -115,7 +115,11 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, logger, logle
             check=False,
         )
         if result.returncode:
-            logger.warning("Could not retrieve experiments.yaml from %s: %s", rsync_target, result.stderr.strip())
+            if result.returncode == 23 and "No such file or directory" in result.stderr:
+                logger.info("No remote experiments.yaml found; creating it")
+            else:
+                logger.error("Rsync failed: %s", result.stderr.strip())
+                raise subprocess.CalledProcessError(result.returncode, result.args, output=result.stdout, stderr=result.stderr)
     elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination), loglevel=loglevel):
         logger.info("No remote experiments.yaml found; creating it")
 
@@ -124,8 +128,6 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logge
     """Publish the merged index and the selected experiment's figures."""
     index = workspace / "content" / "experiments.yaml"
     if rsync_target:
-        if index.is_file():
-            _rsync(str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
             logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
@@ -138,14 +140,16 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logge
                 logger=logger,
                 cwd=workspace,
             )
-    else:
         if index.is_file():
-            upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml", loglevel=loglevel)
+            _rsync(str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
+    else:
         for fmt in formats:
             source = workspace / "content" / fmt / experiment
             destination = f"content/{fmt}/{experiment}"
             logger.info("Transferring %s figures to s3://%s/%s", fmt, bucket, destination)
             upload_directory_to_s3(client, bucket, str(source), destination, loglevel=loglevel)
+        if index.is_file():
+            upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml", loglevel=loglevel)
 
 
 def push_analysis(
@@ -217,7 +221,7 @@ def push_options(args):
     """Resolve parsed CLI arguments for the publishing routine."""
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
     if not formats or any(fmt not in FORMATS for fmt in formats):
-        raise ValueError("--format must be a comma-separated selection of {', '.join(FORMATS)}")
+        raise ValueError(f"--format must be a comma-separated selection of {', '.join(FORMATS)}")
     config = args.config
     if config is None:
         root = os.environ.get("AQUA_CONFIG") or str(Path.home() / ".aqua")
