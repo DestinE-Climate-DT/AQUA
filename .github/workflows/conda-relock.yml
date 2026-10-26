@@ -56,8 +56,10 @@ jobs:
 
       - name: Relock with FDB
         shell: bash -l {0}
+        # --filter-extras: solve only the requested extras. Otherwise the self-referencing 'all' extra
+        # (aqua-core[fdb], ...) is resolved against aqua-core from PyPI, whose pins can conflict with ours
         run: |
-          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests -e fdb
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests -e fdb --filter-extras
 
       - name: Open PR
         uses: peter-evans/create-pull-request@v8

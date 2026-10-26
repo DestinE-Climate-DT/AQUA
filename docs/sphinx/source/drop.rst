@@ -184,7 +184,7 @@ Key configuration options include:
 - ``frequency``: target temporal frequency (e.g., ``monthly``, ``daily``, ``3hourly``)
 - ``stat``: statistic to compute (``mean``, ``std``, ``max``, ``min``)
 - ``region``: spatial subsetting configuration
-- ``engine``: The engine used for the GSV retrieval, options are 'fdb' and 'polytope'.
+- ``engine``: The engine used for the GSV retrieval, options are 'fdb', 'polytope' and 'z3fdb'.
 
 .. warning::
     Catalog detection is automatic, but specify the catalog name explicitly in the configuration
@@ -313,9 +313,10 @@ Controls processing behavior and performance settings:
 
 - **engine** (string, optional): Data retrieval engine. Default: ``fdb``
 
-  - needed only for GSV retrieval, options are 'fdb' and 'polytope'
+  - needed only for GSV retrieval, options are 'fdb', 'polytope' and 'z3fdb'
   - ``fdb``: Fields DataBase, you should be on the same machine where the database is located
   - ``polytope``: Polytope service (remote access). Be sure to have the correct credentials and network access to use this option.
+  - ``z3fdb``: Alternative FDB engine wrapping FDB GRIB messages into a lazy zarr-like interface.
 
 - **loglevel** (string, optional): Logging verbosity. Default: ``WARNING``
 
@@ -607,7 +608,7 @@ Usage
 
 .. option:: --engine
 
-    The engine used for the GSV retrieval, options are 'fdb' (default) and 'polytope'.
+    The engine used for the GSV retrieval, options are 'fdb' (default), 'polytope' and 'z3fdb'.
 
 .. option:: --driver
 
