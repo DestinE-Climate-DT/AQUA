@@ -56,15 +56,16 @@ def push_parser(parser=None):
     return parser
 
 
-def _run(*command, cwd=None, loglevel="WARNING"):
-    """Run rsync without invoking a shell."""
+def _run(*command, cwd=None, loglevel="WARNING", check=True):
+    """Run a command without a shell, optionally allowing a nonzero exit status."""
     logger = log_configure(log_level=loglevel, log_name="push_analysis")
     result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
     for line in result.stdout.splitlines():
         logger.debug("%s", line)
-    if result.returncode:
-        logger.error("Rsync failed: %s", result.stderr.strip())
+    if check and result.returncode:
+        logger.error("%s failed: %s", command[0], result.stderr.strip())
         raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
+    return result
 
 
 def _experiments(exps, ensemble):
@@ -116,10 +117,12 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WAR
     destination = workspace / "content" / "experiments.yaml"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if rsync_target:
-        result = subprocess.run(
-            ["rsync", "-avz", f"{rsync_target}/content/experiments.yaml", str(destination)],
-            capture_output=True,
-            text=True,
+        result = _run(
+            "rsync",
+            "-avz",
+            f"{rsync_target}/content/experiments.yaml",
+            str(destination),
+            loglevel=loglevel,
             check=False,
         )
         if result.returncode:

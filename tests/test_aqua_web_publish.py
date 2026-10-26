@@ -390,6 +390,20 @@ def test_rsync_transfer_details_use_debug(monkeypatch):
     run.assert_called_once_with(("rsync", "source", "destination"), cwd=None, capture_output=True, text=True, check=False)
 
 
+def test_run_reports_command_failure(monkeypatch):
+    """The shared runner preserves a command's exit code and names it in the log."""
+    log = Mock()
+    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
+    run = Mock(return_value=subprocess.CompletedProcess(["copy"], 17, stdout="", stderr="permission denied"))
+    monkeypatch.setattr(push_analysis.subprocess, "run", run)
+
+    with pytest.raises(subprocess.CalledProcessError) as exc:
+        push_analysis._run("copy", "source", "destination")
+
+    assert exc.value.returncode == 17
+    log.error.assert_called_once_with("%s failed: %s", "copy", "permission denied")
+
+
 def test_failed_transfer_has_no_completion_message(tmp_path, monkeypatch):
     """A failed upload cannot emit the overall success message."""
     output = tmp_path / "output" / "catalog" / "model" / "experiment" / "r1"
