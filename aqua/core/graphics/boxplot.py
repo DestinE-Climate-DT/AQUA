@@ -23,6 +23,7 @@ def boxplot(
     add_mean_line: bool = True,
     title: str = None,
     style: str = None,
+    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
     loglevel: str = "WARNING",
 ):
     """
@@ -37,6 +38,7 @@ def boxplot(
         add_mean_line (bool, optional): Whether to add dashed lines for means.
         title (str, optional): Title for the plot.
         style (str, optional): Style to apply to the plot.
+        figsize (tuple, optional): Figure size.
         loglevel (str): Logging level, unused but kept for compatibility.
 
     Returns:
@@ -87,7 +89,7 @@ def boxplot(
     df = pd.DataFrame.from_records(records)
 
     # Create figure
-    fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE_HORIZONTAL)
+    fig, ax = plt.subplots(figsize=figsize)
 
     # Explicit order for variables and models
     order = [labels[v] for v in variables]
