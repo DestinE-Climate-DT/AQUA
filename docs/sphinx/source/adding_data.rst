@@ -145,6 +145,22 @@ NetCDF or ``engine: zarr`` for Zarr; set chunk sizes with ``args.chunks``.
 Some DKRZ STAC catalogues require ``gribscan``. Install it separately when needed;
 the driver imports it if available, but AQUA does not require it.
 
+The local examples below require the separately downloaded ``AQUA_tests``
+directory at the AQUA repository root and the ``ncdump`` command.
+Before using either example, generate the STAC JSON documents from the
+repository root:
+
+.. code-block:: console
+
+    python3 tests/stac_catalogue/generate_catalog.py
+
+This creates ``tests/stac_catalogue/collections/ifs.json`` and the Item
+JSON files referenced by these examples. Run the examples from the
+repository root so their relative paths resolve correctly.
+
+For other datasets, replace ``urlpath`` and the metadata with their
+corresponding values.
+
 For example, add a collection to the top-level ``catalog.yaml`` of an AQUA
 catalog installed as ``stac-example`` (see :ref:`new-catalog`):
 
@@ -163,10 +179,6 @@ catalog installed as ``stac-example`` (see :ref:`new-catalog`):
             ifs-short-ifs2d-tco79: tco79
           fixer_name:
             ifs-long-regridded-r18x9: ifs-ci-test
-
-This local example requires running from the AQUA repository root with the
-separately downloaded ``AQUA_tests`` directory present. For other datasets,
-replace ``urlpath`` and the metadata with their corresponding values.
 
 In this layout, ``collection``, ``item`` and ``asset`` select the collection
 entry, item ID and asset key. These are aliases for ``model``, ``exp`` and
@@ -189,6 +201,10 @@ An item configured in ``args.item`` is a read default: collection keys still lis
 items. Indexing or calling with ``item=`` selects an item view whose keys list
 assets. When switching items, inferred defaults and asset roles are resolved again
 for the new item; explicit asset selectors are retained unless overridden.
+Named item and asset entries take precedence over inherited parameter defaults
+when AQUA rebuilds an entry. Missing API or sibling-file candidates allow lookup
+to continue; access, connection, and JSON parsing failures are reported with the
+attempted path or URL.
 
 Alternatively, describe individual items in a nested YAML catalog. Add this
 entry alongside ``ifs`` in the top-level ``sources`` mapping:
@@ -548,6 +564,12 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   but can include multiple files as a function of the grid used.
   ``2d`` refers to the default grids, ``2dm`` to the grid for masked variables,
   any other key refers to specific 3d vertical masked structures, as ``depth_full``, ``depth_half``, ``level``, etc.
+  Alternatively, a single ``skipna`` key pointing to a 2D grid file enables the smmregrid ``skipna`` option:
+  missing source points are skipped and the weights renormalized at each call,
+  so that a single 2D weights matrix handles all variables and levels,
+  including masks varying in time or along any dimension (a target cell is NaN if more than half of its weights are missing,
+  as without skipna). It cannot be combined with other keys
+  (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
 - ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
   There is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 - ``masked``: (if applicable): Keys to define variables which are masked.
