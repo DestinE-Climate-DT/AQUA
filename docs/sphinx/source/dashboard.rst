@@ -71,7 +71,7 @@ Additional options
 
 .. option:: -b <bucket>, --bucket <bucket>
 
-    The S3 bucket to use (the standard AQUA bucket by default).
+    The S3 bucket to use (the standard AQUA bucket ``aqua-web`` by default).
 
 .. option:: -c <configfile>, --config <configfile>
 
