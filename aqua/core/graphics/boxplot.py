@@ -8,6 +8,7 @@ import xarray as xr
 from matplotlib import colors as mcolors
 from metpy.units import units
 
+from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list, unit_to_latex
 
@@ -45,7 +46,6 @@ def boxplot(
     # Constants for formatting
     line_length_title = 50
     line_length_labels = 14
-    fontsize = 18
 
     logger = log_configure(loglevel, "boxplot")
     ConfigStyle(style=style, loglevel=loglevel)
@@ -87,7 +87,7 @@ def boxplot(
     df = pd.DataFrame.from_records(records)
 
     # Create figure
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE_HORIZONTAL)
 
     # Explicit order for variables and models
     order = [labels[v] for v in variables]
@@ -98,7 +98,7 @@ def boxplot(
 
     wrapped_labels = [textwrap.fill(lbl, line_length_labels) for lbl in order]
     ax.set_xticks(range(len(wrapped_labels)))
-    ax.set_xticklabels(wrapped_labels, fontsize=fontsize)
+    ax.set_xticklabels(wrapped_labels)
 
     # --- Add dashed mean lines for each box ---
     if add_mean_line:
@@ -141,14 +141,14 @@ def boxplot(
 
     # Title and labels
     if title:
-        ax.set_title(title, fontsize=fontsize + 2)
+        ax.set_title(title)
     else:
         vars_str = ", ".join(labels[v] for v in variables)
         # models_str = ', '.join(model_names)
         wrapped_title = textwrap.fill(f"Boxplot of {vars_str}", line_length_title)
-        ax.set_title(wrapped_title, fontsize=fontsize + 2)
+        ax.set_title(wrapped_title)
 
-    ax.set_xlabel("Variables", fontsize=fontsize)
+    ax.set_xlabel("Variables")
 
     # Y-axis label from units
     global_units_found = set().union(*unit_sets.values())
@@ -156,13 +156,11 @@ def boxplot(
         first_var = variables[0][1:] if variables[0].startswith("-") else variables[0]
         units_str = fldmeans[0][first_var].attrs.get("units", "")
         units_latex = unit_to_latex(units_str) if units_str else ""
-        ax.set_ylabel(units_latex, fontsize=fontsize, labelpad=12)
+        ax.set_ylabel(units_latex, labelpad=12)
     else:
-        ax.set_ylabel("Values (various units)", fontsize=fontsize, labelpad=12)
+        ax.set_ylabel("Values (various units)", labelpad=12)
 
-    ax.tick_params(axis="x", labelsize=fontsize - 4)
-    ax.tick_params(axis="y", labelsize=fontsize - 4)
-    ax.legend(loc="upper right", fontsize=fontsize)
+    ax.legend(loc="upper right")
     ax.grid(True)
     fig.tight_layout()
     return fig, ax
