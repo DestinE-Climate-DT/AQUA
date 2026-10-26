@@ -6,6 +6,7 @@ Example: ``aqua push output catalog/model/experiment/r1``
 
 import argparse
 import getpass
+import logging
 import os
 import shutil
 import socket
@@ -20,7 +21,7 @@ from aqua.core.logger import log_configure
 from .make_contents import main as make_contents
 from .push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
-logger = log_configure(log_level="INFO", log_name="push_analysis")
+logger = logging.getLogger("push_analysis")
 FORMATS = ("pdf", "png", "svg")
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 
@@ -47,9 +48,9 @@ def push_parser(parser=None):
         "--loglevel",
         type=_parse_loglevel,
         choices=LOG_LEVELS,
-        default="INFO",
+        default="WARNING",
         metavar="LEVEL",
-        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: INFO)",
+        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: WARNING)",
     )
     parser.add_argument("-s", "--rsync", dest="rsync_target")
     return parser
@@ -149,7 +150,7 @@ def push_analysis(
     formats=FORMATS,
     ensemble=True,
     rsync_target=None,
-    loglevel="INFO",
+    loglevel="WARNING",
 ):
     """Collect, describe, and publish each experiment's analysis output.
 
@@ -161,7 +162,7 @@ def push_analysis(
         formats (tuple[str]): Image formats to publish.
         ensemble (bool): Use the four-level experiment structure.
         rsync_target (str, optional): Rsync destination in place of S3.
-        loglevel (str): AQUA logging level for the publishing commands.
+        loglevel (str): AQUA logging level for the publishing commands. Defaults to WARNING.
     """
     log_configure(log_level=loglevel, log_name="push_analysis")
     logger.info("Running push-analysis with AQUA version %s", aqua_version)
@@ -233,6 +234,7 @@ def push_execute(args):
     try:
         options = push_options(args)
     except ValueError as exc:
+        log_configure(log_level=args.loglevel, log_name="push_analysis")
         logger.error("%s", exc)
         return 2
     try:

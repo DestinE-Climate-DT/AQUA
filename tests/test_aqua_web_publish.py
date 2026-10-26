@@ -1,6 +1,7 @@
 """Tests for AQUA's figure publishing commands."""
 
 import json
+import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -207,6 +208,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
     assert exc.value.code == 0
     help_text = capsys.readouterr().out
     assert "Publish AQUA analysis figures to a remote site." in help_text
+    assert "default: WARNING" in help_text
     assert "aqua-web" not in help_text
     assert "--no-update" not in help_text
     assert "--repository" not in help_text
@@ -215,7 +217,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
 @pytest.mark.parametrize(
     "level,expected",
     [
-        (None, "INFO"),
+        (None, "WARNING"),
         ("debug", "DEBUG"),
         ("INFO", "INFO"),
         ("warning", "WARNING"),
@@ -256,6 +258,22 @@ def test_publisher_logs_aqua_version_at_start(tmp_path, monkeypatch):
     with pytest.raises(FileNotFoundError):
         push_analysis.push_analysis(tmp_path / "missing", "catalog/model/experiment/r1", tmp_path / "missing.yaml")
     log.info.assert_called_once_with("Running push-analysis with AQUA version %s", push_analysis.aqua_version)
+
+
+@pytest.mark.parametrize("level", ["WARNING", "DEBUG"])
+def test_publisher_configures_loggers_at_execution(tmp_path, level):
+    """Direct publishing configures both its logger and S3 transfers on each call."""
+    with pytest.raises(FileNotFoundError):
+        push_analysis.push_analysis(tmp_path, "catalog/model/experiment/r1", tmp_path / "missing.yaml", loglevel=level)
+    assert push_analysis.logger.level == getattr(logging, level)
+    assert push_s3.logger.level == getattr(logging, level)
+
+
+def test_content_generator_configures_logger_at_execution(tmp_path):
+    """The content generator honors its requested level before reading config."""
+    with pytest.raises(FileNotFoundError):
+        make_contents.main(configfile=tmp_path / "missing.yaml", loglevel="DEBUG")
+    assert make_contents.logger.level == logging.DEBUG
 
 
 @pytest.mark.parametrize(
@@ -315,6 +333,7 @@ def test_s3_cli_uploads_nested_directory(tmp_path, monkeypatch):
 
     assert push_s3.cli_main(["bucket", str(source), "-d", "content/svg"]) == 0
     client.upload_file.assert_called_once_with(str(figure), "bucket", "content/svg/nested/figure.svg")
+    assert push_s3.logger.level == logging.WARNING
 
 
 @pytest.mark.parametrize("code,expected", [("AccessDenied", 1), ("NoSuchBucket", 2), ("InternalError", 3)])

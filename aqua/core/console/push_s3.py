@@ -10,6 +10,7 @@
 # [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
 
 import argparse
+import logging
 import os
 
 import boto3
@@ -17,7 +18,7 @@ from botocore.client import Config
 
 from aqua.core.logger import log_configure
 
-logger = log_configure(log_level="INFO", log_name="push_s3")
+logger = logging.getLogger("push_s3")
 
 
 class S3TransferError(Exception):
@@ -94,6 +95,7 @@ def main(argv=None):
     variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments.
     """
 
+    log_configure(log_level="WARNING", log_name="push_s3")
     parser = argparse.ArgumentParser(description="Upload the contents of a directory or a single file to a S3 bucket.")
     parser.add_argument("bucket_name", help="The name of the S3 bucket.")
     parser.add_argument("source", help="The path to the directory or file to upload.")

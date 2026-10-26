@@ -4,6 +4,7 @@
 
 import argparse
 import json
+import logging
 import os
 import sys
 import xml.etree.ElementTree as ET
@@ -16,7 +17,7 @@ from pypdf import PdfReader
 
 from aqua.core.logger import log_configure
 
-logger = log_configure(log_level="INFO", log_name="make_contents")
+logger = logging.getLogger("make_contents")
 
 
 def deep_merge_dicts(d1, d2):
@@ -251,7 +252,7 @@ def make_content(catalog, model, exp, realization, diagnostics, config_experimen
         logger.info(f"Content files for {path} already exist. Skipping. Use --force to overwrite.")
 
 
-def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, loglevel="INFO", format="png", root="."):
+def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, loglevel="WARNING", format="png", root="."):
     """
     Main function to create content.yaml and content.json files for each experiment in the content/png directory.
 
@@ -260,7 +261,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
         ensemble (bool): If True, assumes a new structure with 4 levels (catalog/model/experiment/realization).
         experiment (str): Specific experiment for which to create content (in format "$catalog/$model/$experiment")
         configfile (str): Alternate confg file path (default "config.yaml" - used by aqua-web)
-        loglevel (str): The logging level to use (e.g., 'INFO', 'DEBUG').
+        loglevel (str): The logging level to use (e.g., 'WARNING', 'DEBUG'). Defaults to WARNING.
         format (str): Image format subdirectory to process.
         root (str or Path): Root of the aqua-web checkout. Defaults to the current directory.
     """
@@ -369,8 +370,8 @@ def parse_arguments(arguments):
         "-l",
         "--loglevel",
         type=str,
-        default="INFO",
-        help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is INFO.",
+        default="WARNING",
+        help="Set the logging level (e.g., DEBUG, INFO, WARNING). Default is WARNING.",
     )
     parser.add_argument(
         "--format", type=str, default="png", help="Input data formats to work on (png, pdf or svg). Default: png"
