@@ -70,6 +70,7 @@ def _run(*command, cwd=None, loglevel="WARNING"):
 def _experiments(exps, ensemble):
     """Resolve an experiment path or read a list of experiments."""
     if exps.is_file():
+        experiments = []
         for line in exps.read_text().splitlines():
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
@@ -81,13 +82,15 @@ def _experiments(exps, ensemble):
                 raise ValueError(f"Invalid experiment list entry: {line}")
             if ensemble and len(selected) == 3:
                 selected.append("r1")
-            yield "/".join(selected)
-    else:
-        parts = exps.as_posix().split("/")
-        if len(parts) not in ((3, 4) if ensemble else (3,)) or any(part in ("", ".", "..") for part in parts):
-            raise ValueError("EXPS must be catalog/model/experiment[/realization] or a list file")
-        # A direct three-part ensemble path also defaults to realization r1.
-        yield "/".join(parts if len(parts) == (4 if ensemble else 3) else [*parts, "r1"])
+            experiments.append("/".join(selected))
+        return experiments
+    parts = exps.as_posix().split("/")
+    if len(parts) not in ((3, 4) if ensemble else (3,)) or any(part in ("", ".", "..") for part in parts):
+        raise ValueError("EXPS must be catalog/model/experiment[/realization] or a list file")
+    # A direct three-part ensemble path also defaults to realization r1.
+    if ensemble and len(parts) == 3:
+        parts.append("r1")
+    return ["/".join(parts)]
 
 
 def _collect_figures(indir, workspace, experiment, formats):
@@ -188,7 +191,7 @@ def push_analysis(
         raise FileNotFoundError(f"Configuration file not found: {config}")
     if not indir.is_dir():
         raise FileNotFoundError(f"Input directory does not exist: {indir}")
-    experiments = list(_experiments(exps, ensemble))
+    experiments = _experiments(exps, ensemble)
     if not experiments:
         raise ValueError("No experiments to publish")
     for experiment in experiments:

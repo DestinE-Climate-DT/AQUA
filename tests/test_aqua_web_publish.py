@@ -306,7 +306,7 @@ def test_experiment_list_columns(tmp_path, row, ensemble, expected):
     """List rows use the path columns and ignore optional metadata."""
     listing = tmp_path / "experiments.txt"
     listing.write_text(f"# comment\n\n{row}\n")
-    assert list(push_analysis._experiments(listing, ensemble=ensemble)) == [expected]
+    assert push_analysis._experiments(listing, ensemble=ensemble) == [expected]
 
 
 @pytest.mark.parametrize("code,exit_code", [("AccessDenied", 1), ("NoSuchBucket", 2), ("Other", 3)])
