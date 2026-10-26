@@ -40,10 +40,10 @@ def push_parser(parser=None):
         parser = argparse.ArgumentParser(description="Publish AQUA analysis figures to a remote site.")
     parser.add_argument("indir", type=Path, help="Analysis output directory")
     parser.add_argument("exps", help="Experiment path or a text file listing experiments")
-    parser.add_argument("-b", "--bucket", default="aqua-web")
-    parser.add_argument("-c", "--config", type=Path)
-    parser.add_argument("--no-ensemble", action="store_true")
-    parser.add_argument("-f", "--format", default=",".join(FORMATS))
+    parser.add_argument("-b", "--bucket", default="aqua-web", help="Name of the S3 bucket to publish to")
+    parser.add_argument("-c", "--config", type=Path, help="Configuration file path")
+    parser.add_argument("--no-ensemble", action="store_true", help="Do not assume ensemble structure")
+    parser.add_argument("-f", "--format", default=",".join(FORMATS), help="Formats to publish")
     parser.add_argument(
         "-l",
         "--loglevel",
@@ -51,9 +51,9 @@ def push_parser(parser=None):
         choices=LOG_LEVELS,
         default="WARNING",
         metavar="LEVEL",
-        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5 (default: WARNING)",
+        help="DEBUG, INFO, WARNING, ERROR, CRITICAL, or 1-5",
     )
-    parser.add_argument("-s", "--rsync", dest="rsync_target")
+    parser.add_argument("-s", "--rsync", dest="rsync_target", help="rsync target directory, e.g. user@host:/path")
     return parser
 
 
@@ -226,7 +226,7 @@ def push_options(args):
     """Resolve parsed CLI arguments for the publishing routine."""
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
     if not formats or any(fmt not in FORMATS for fmt in formats):
-        raise ValueError("--format must be a comma-separated selection of pdf,png,svg")
+        raise ValueError("--format must be a comma-separated selection of {', '.join(FORMATS)}")
     config = args.config
     if config is None:
         root = os.environ.get("AQUA_CONFIG") or str(Path.home() / ".aqua")
