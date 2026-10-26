@@ -30,6 +30,42 @@ class TestAqua:
         assert reader.model == "FESOM"
         assert reader.exp == "test-pi"
         assert reader.source == "original_2d"
+        assert reader.collection == "FESOM"
+        assert reader.item == "test-pi"
+        assert reader.asset == "original_2d"
+
+    def test_reader_synonyms(self):
+        """
+        Test collection, item, asset synonyms in Reader
+        """
+        reader = Reader(collection="FESOM", item="test-pi", asset="original_2d", fix=False, loglevel=LOGLEVEL)
+        assert reader.model == "FESOM"
+        assert reader.exp == "test-pi"
+        assert reader.source == "original_2d"
+        assert reader.collection == "FESOM"
+        assert reader.item == "test-pi"
+        assert reader.asset == "original_2d"
+
+        # Test data retrieval works end-to-end with synonyms
+        data = reader.retrieve(var="a_ice")
+        assert len(data) > 0
+        assert data.a_ice.shape == (2, 3140)
+
+        # Test setters
+        reader.collection = "IFS"
+        reader.item = "test-exp"
+        reader.asset = "test-asset"
+        assert reader.model == "IFS"
+        assert reader.exp == "test-exp"
+        assert reader.source == "test-asset"
+
+        # Test conflict errors
+        with pytest.raises(ValueError, match="Conflicting values provided for model"):
+            Reader(model="FESOM", collection="IFS", exp="test-pi", source="original_2d", fix=False)
+        with pytest.raises(ValueError, match="Conflicting values provided for exp"):
+            Reader(model="FESOM", exp="test-pi", item="other-exp", source="original_2d", fix=False)
+        with pytest.raises(ValueError, match="Conflicting values provided for source"):
+            Reader(model="FESOM", exp="test-pi", source="original_2d", asset="other-asset", fix=False)
 
     def test_retrieve_data(self, fesom_test_pi_original_2d_r200_fixfalse_data):
         """

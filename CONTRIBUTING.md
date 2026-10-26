@@ -16,7 +16,7 @@ If you open a pull request to close some issues, please reference the issue it s
 
 If you find a bug in the source code, you can help us by opening an issue in the AQUA repository.
 If you have a solution to it, you can submit a Pull Request with a fix.
-Please use the `bug` label for bugs issue and the `fix` label for Pull Requests with a fix.
+Please use the **Bug report** issue template, which sets the `Bug` issue type, and the `fix :hammer_and_wrench:` label for Pull Requests with a fix.
 
 When describing the bug, please include as much information as possible. This includes:
 - short description of the bug
@@ -80,7 +80,8 @@ Do not merge your Pull Request yourself, it will be merged by the AQUA team.
 
 ### Suggesting enhancements
 
-Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository. Please use the `improvements` label for existing features and the `enhancement` label for new features.
+Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository.
+Please use the **Feature request** issue template, which sets the `Feature` issue type.
 
 ### Coding style checks with ruff and pre-commit in a Pull Request
 
@@ -161,7 +162,7 @@ dependency or packaging problem is caught by the suite that owns it, not by the 
 
 | Workflow | Suite | When it runs | Platforms | Python | Install mode | FDB | Coverage |
 |---|---|---|---|---|---|---|---|
-| `aqua.yml` | PR tests | PR with a test label, Dependabot PRs, push to `main`, manual | `ubuntu-latest` in FDB container | 3.14 | `local` | yes | yes (not on Dependabot) |
+| `aqua.yml` | PR tests | PR with the `run tests` label, Dependabot PRs, push to `main`, manual | `ubuntu-latest` in FDB container | 3.14 | `local` | yes | yes (not on Dependabot) |
 | `aqua-nightly.yml` | Nightly | every night (03:00 UTC), PR with `nightly` label, Dependabot pip/conda PRs, manual | `ubuntu-26.04`, `xcode-27`, `ubuntu-latest` in FDB container | 3.14 | `environment` | container only | no |
 | `aqua-release.yml` | Release | every Monday (05:00 UTC), PR with `release` label, manual | `ubuntu-22.04`, `ubuntu-26.04`, `macos-15`, `xcode-27` | 3.12, 3.13, 3.14 | `release` | no | no |
 | `aqua-pypi.yml` | PyPI | every Tuesday (02:00 UTC), push to `pypi-test`, manual | `ubuntu-latest`, `macos-latest` | 3.12, 3.13, 3.14 | `pypi` | no | no |
@@ -187,7 +188,7 @@ Tests are not run on every commit, since GitHub Actions hours are limited. They 
 
 | Label | Effect |
 |---|---|
-| `run tests` 🏃, `ready for review` 🏂, `ready to merge` 🌈 | run `aqua.yml` |
+| `run tests` 🏃 | run `aqua.yml` |
 | `nightly` 🌙 | run `aqua-nightly.yml` (use it when changing dependencies or platform-specific code) |
 | `release` ⛵ | run the full `aqua-release.yml` matrix (use it on release PRs) |
 | `conda-lock` 🐍 | regenerate the lock file (see [Conda-lock](#conda-lock)) |
