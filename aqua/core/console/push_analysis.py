@@ -57,13 +57,14 @@ def push_parser(parser=None):
     return parser
 
 
-def _run(*command, logger, cwd=None, check=True):
-    """Run a command without a shell, optionally allowing a nonzero exit status."""
+def _rsync(*args, logger, cwd=None, check=True):
+    """Run rsync, optionally allowing a nonzero exit status."""
+    command = ("rsync", *args)
     result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
     for line in result.stdout.splitlines():
         logger.debug("%s", line)
     if check and result.returncode:
-        logger.error("%s failed: %s", command[0], result.stderr.strip())
+        logger.error("Rsync failed: %s", result.stderr.strip())
         raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
     return result
 
@@ -116,8 +117,7 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, logger, logle
     destination = workspace / "content" / "experiments.yaml"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if rsync_target:
-        result = _run(
-            "rsync",
+        result = _rsync(
             "-avz",
             f"{rsync_target}/content/experiments.yaml",
             str(destination),
@@ -135,13 +135,12 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logge
     index = workspace / "content" / "experiments.yaml"
     if rsync_target:
         if index.is_file():
-            _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
+            _rsync("-avz", str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
             logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
             # --relative recreates the content/format/experiment path at the remote root.
-            _run(
-                "rsync",
+            _rsync(
                 "-avz",
                 "--relative",
                 "--chmod=D775,F664",

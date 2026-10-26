@@ -385,23 +385,23 @@ def test_rsync_transfer_details_use_debug(monkeypatch):
     log = Mock()
     run = Mock(return_value=subprocess.CompletedProcess(["rsync"], 0, stdout="figure.svg\nsent 123 bytes\n", stderr=""))
     monkeypatch.setattr(push_analysis.subprocess, "run", run)
-    push_analysis._run("rsync", "source", "destination", logger=log)
+    push_analysis._rsync("source", "destination", logger=log)
     log.debug.assert_any_call("%s", "figure.svg")
     log.info.assert_not_called()
     run.assert_called_once_with(("rsync", "source", "destination"), cwd=None, capture_output=True, text=True, check=False)
 
 
-def test_run_reports_command_failure(monkeypatch):
-    """The shared runner preserves a command's exit code and names it in the log."""
+def test_rsync_reports_failure_status(monkeypatch):
+    """The rsync helper preserves its exit code and logs the transfer failure."""
     log = Mock()
-    run = Mock(return_value=subprocess.CompletedProcess(["copy"], 17, stdout="", stderr="permission denied"))
+    run = Mock(return_value=subprocess.CompletedProcess(["rsync"], 17, stdout="", stderr="permission denied"))
     monkeypatch.setattr(push_analysis.subprocess, "run", run)
 
     with pytest.raises(subprocess.CalledProcessError) as exc:
-        push_analysis._run("copy", "source", "destination", logger=log)
+        push_analysis._rsync("source", "destination", logger=log)
 
     assert exc.value.returncode == 17
-    log.error.assert_called_once_with("%s failed: %s", "copy", "permission denied")
+    log.error.assert_called_once_with("Rsync failed: %s", "permission denied")
 
 
 def test_failed_transfer_has_no_completion_message(tmp_path, monkeypatch):
