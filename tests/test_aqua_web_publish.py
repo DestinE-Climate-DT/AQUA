@@ -79,7 +79,7 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     )
     log.info.assert_any_call("Transferring %s figures to s3://%s/%s", "svg", "aqua-web", f"content/svg/{experiment}")
     assert log.info.call_args_list[-1].args == ("Transfer completed successfully",)
-    configure.assert_called_once_with(log_level="WARNING", log_name="push_analysis")
+    configure.assert_called_once_with(log_level="INFO", log_name="push_analysis")
     assert capfd.readouterr().out == ""
 
 
@@ -210,7 +210,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
     assert exc.value.code == 0
     help_text = capsys.readouterr().out
     assert "Publish AQUA analysis figures to a remote site." in help_text
-    assert "default: WARNING" in help_text
+    assert "default: INFO" in " ".join(help_text.split())
     assert "aqua-web" not in help_text
     assert "--no-update" not in help_text
     assert "--repository" not in help_text
@@ -219,34 +219,29 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
 @pytest.mark.parametrize(
     "level,expected",
     [
-        (None, "WARNING"),
+        (None, "INFO"),
         ("debug", "DEBUG"),
         ("INFO", "INFO"),
         ("warning", "WARNING"),
         ("ErRoR", "ERROR"),
         ("critical", "CRITICAL"),
-        ("1", "DEBUG"),
-        ("2", "INFO"),
-        ("3", "WARNING"),
-        ("4", "ERROR"),
-        ("5", "CRITICAL"),
     ],
 )
-def test_publisher_accepts_named_and_numeric_log_levels(tmp_path, monkeypatch, level, expected):
+def test_publisher_accepts_named_log_levels(tmp_path, monkeypatch, level, expected):
     """The CLI passes standard AQUA log level names to the publisher."""
     publish = Mock()
     monkeypatch.setattr(push_analysis, "push_analysis", publish)
     arguments = ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"]
     if level is not None:
-        arguments.extend(["-l" if level.isdecimal() else "--loglevel", level])
+        arguments.extend(["--loglevel", level])
     monkeypatch.setattr(sys, "argv", arguments)
     assert console_main.main() == 0
     assert publish.call_args.kwargs["loglevel"] == expected
 
 
-@pytest.mark.parametrize("level", ["0", "6", "TRACE"])
+@pytest.mark.parametrize("level", ["0", "1", "2", "3", "4", "5", "6", "TRACE"])
 def test_publisher_rejects_invalid_log_level(tmp_path, monkeypatch, level):
-    """Unknown names and out-of-range numeric levels are rejected."""
+    """Numeric levels and unknown names are rejected."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "--loglevel", level])
     with pytest.raises(SystemExit) as exc:
         console_main.main()
