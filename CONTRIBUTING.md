@@ -16,7 +16,7 @@ If you open a pull request to close some issues, please reference the issue it s
 
 If you find a bug in the source code, you can help us by opening an issue in the AQUA repository.
 If you have a solution to it, you can submit a Pull Request with a fix.
-Please use the `bug` label for bugs issue and the `fix` label for Pull Requests with a fix.
+Please use the **Bug report** issue template, which sets the `Bug` issue type, and the `fix :hammer_and_wrench:` label for Pull Requests with a fix.
 
 When describing the bug, please include as much information as possible. This includes:
 - short description of the bug
@@ -80,7 +80,8 @@ Do not merge your Pull Request yourself, it will be merged by the AQUA team.
 
 ### Suggesting enhancements
 
-Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository. Please use the `improvements` label for existing features and the `enhancement` label for new features.
+Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository.
+Please use the **Feature request** issue template, which sets the `Feature` issue type.
 
 ### Coding style checks with ruff and pre-commit in a Pull Request
 

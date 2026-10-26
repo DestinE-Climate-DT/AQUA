@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 - CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them
+- Restructure the fixes in `aqua/core/config/fixes`: one file per model (`ifs`, `icon`, `fesom`, `ec-earth4`), `climatedt.yaml` for the catgen default fixes, `observations.yaml`, unused fixes moved to `deprecated.yaml`; fixer names unchanged; new tests for duplicated fixer names and parent inheritance (#3270)
+- Keep `Fixer` monthly `deltat` configuration immutable and compute `days_in_month` time corrections per dataset (#3233)
+- Pin `python-dateutil<3` in `environment.yml`: botocore does not support python-dateutil 3.0.0, which made the conda relock backtrack through all boto3 releases (#3290)
+- `conda-relock` workflow: add `--filter-extras`, so only the `tests` and `fdb` extras are solved and the self-referencing `all` extra is not resolved against `aqua-core` from PyPI (#3290)
+- Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes` bindings aligned to `>=2.50.0,<2.51`. `eccodeslib` is no longer a dependency: from 2.49 its `eckitlib` bundles PROJ/sqlite that crash with the conda ones used by cartopy (#3163); `z3fdb==5.23.2.27` stays pinned on Linux for the same reason
+- Implement Intake STAC driver (#3161)
+- Update the `fdb` extra to `gsv-interface>=2.18.0` (was hard-pinned to `==2.13.1`) (#3277)
+- Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
+- ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
+- Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
 - Fix the ICON-default `snlwrf` formula by removing a trailing operator; ICON-cycle3 and ICON-cycle4 inherit the correction (#3247)
@@ -14,6 +24,7 @@ Unreleased in the current development version (target v1.2.3):
 
 ## [v1.2.2]
 
+- New intake driver to access stac collections and items (#3161)
 ClimateDT workflow modifications:
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
 - `aqua analysis ensemble` command is now ready for implementation in the workflow
@@ -24,6 +35,7 @@ Main changes:
 - AQUA does not support anymore python 3.11
 - Various CI/CD refinements
 - Gregory plots can now use a time-colormap to color both trajectory lines and points
+- Fix concurrent processes `SafeFileLock` issue (#3221)
 
 Complete list:
 - Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
