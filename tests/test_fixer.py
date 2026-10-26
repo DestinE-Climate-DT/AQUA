@@ -1,10 +1,13 @@
 """Test fixer functionality for Reader"""
 
+import dask.array as da
 import numpy as np
+import pandas as pd
 import pytest
+import xarray as xr
 
 from aqua import Reader
-from aqua.core.fixer import EvaluateFormula
+from aqua.core.fixer import EvaluateFormula, Fixer
 
 LOGLEVEL = "DEBUG"
 
@@ -166,6 +169,67 @@ def test_fixer_deltat():
     assert data_metadata.equals(data_fixer)
     assert reader1.fixer.deltat == 3600
     assert reader2.fixer.deltat == 3600
+
+
+@pytest.mark.aqua
+def test_fixer_monthly_repeated_retrievals(data_ifs_tco79_long_fixfalse):
+    """Check that monthly deltat fixer stays immutable and computes days_in_month per retrieval."""
+    base = data_ifs_tco79_long_fixfalse[["ttr"]].isel(time=slice(0, 1))
+
+    def _make_month_ds(timestamp_str, days):
+        ds = base.assign_coords(time=[pd.Timestamp(timestamp_str)])
+        # Set value to days * 86400 J m-2 so that dividing by (86400 * days_in_month) yields 1.0 W m-2
+        ds["ttr"] = xr.ones_like(ds["ttr"]) * (days * 86400.0)
+        ds["ttr"].attrs = {"units": "J m**-2"}
+        return ds
+
+    ds_jan = _make_month_ds("2020-01-15", 31)  # 31 days
+    ds_feb_leap = _make_month_ds("2020-02-15", 29)  # 29 days (leap year)
+    ds_feb_nonleap = _make_month_ds("2021-02-15", 28)  # 28 days
+
+    fixes_dict = {
+        "fixer_name": {
+            "monthly-test": {
+                "convention": "eccodes",
+                "deltat": "monthly",
+                "vars": {
+                    "tnlwrf": {
+                        "source": "ttr",
+                        "grib": True,
+                    }
+                },
+            }
+        }
+    }
+
+    shared_fixer = Fixer(fixer_name="monthly-test", fixes_dictionary=fixes_dict, loglevel=LOGLEVEL)
+
+    # Forward order: Jan -> leap Feb -> non-leap Feb
+    out_jan = shared_fixer.fixer(ds_jan.copy(deep=True), destvar=["tnlwrf"])
+    assert shared_fixer.deltat == "monthly"
+    assert shared_fixer.time_correction is False
+    assert isinstance(out_jan["tnlwrf"].data, da.Array)
+
+    out_feb_leap = shared_fixer.fixer(ds_feb_leap.copy(deep=True), destvar=["tnlwrf"])
+    assert shared_fixer.deltat == "monthly"
+    assert shared_fixer.time_correction is False
+    assert isinstance(out_feb_leap["tnlwrf"].data, da.Array)
+
+    out_feb_nonleap = shared_fixer.fixer(ds_feb_nonleap.copy(deep=True), destvar=["tnlwrf"])
+
+    # Compare against fresh Fixer instances and reversed order
+    fresh_feb_leap = Fixer(fixer_name="monthly-test", fixes_dictionary=fixes_dict, loglevel=LOGLEVEL).fixer(
+        ds_feb_leap.copy(deep=True), destvar=["tnlwrf"]
+    )
+    fresh_jan = Fixer(fixer_name="monthly-test", fixes_dictionary=fixes_dict, loglevel=LOGLEVEL).fixer(
+        ds_jan.copy(deep=True), destvar=["tnlwrf"]
+    )
+
+    assert np.allclose(out_jan["tnlwrf"].values, 1.0)
+    assert np.allclose(out_feb_leap["tnlwrf"].values, 1.0)
+    assert np.allclose(out_feb_nonleap["tnlwrf"].values, 1.0)
+    assert out_feb_leap["tnlwrf"].equals(fresh_feb_leap["tnlwrf"])
+    assert out_jan["tnlwrf"].equals(fresh_jan["tnlwrf"])
 
 
 @pytest.fixture

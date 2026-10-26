@@ -1,0 +1,333 @@
+# Observational and reanalysis datasets fixes.
+
+fixer_name:
+  # ERA5 monthly means, uppercase AQUA variable names
+  ERA5-destine-v1:
+    convention: eccodes
+    vars:
+      ie:
+        source: E
+        src_units: m/day
+      tprate:
+        source: TP
+        src_units: m/day
+      slhtf:
+        source: SLHF
+        src_units: J m**-2 day**-1
+      ishf:
+        source: SSHF
+        src_units: J m**-2 day**-1
+      snswrf:
+        source: SSR
+        src_units: J m**-2 day**-1
+      sdswrf:
+        source: SSRD
+        src_units: J m**-2 day**-1
+      snlwrf:
+        source: STR
+        src_units: J m**-2 day**-1
+      sdlwrf:
+        source: STRD
+        src_units: J m**-2 day**-1
+      tnswrf:
+        source: TSR
+        src_units: J m**-2 day**-1
+      tnlwrf:
+        source: TTR
+        src_units: J m**-2 day**-1
+
+  # ERA5 monthly means, lowercase eccodes variable names
+  ERA5-destine-v2:
+    convention: eccodes
+    vars:
+      ie:
+        source: e
+        src_units: m/day
+      tprate:
+        source: tp
+        src_units: m/day
+      slhtf:
+        source: slhf
+        src_units: J m**-2 day**-1
+      ishf:
+        source: sshf
+        src_units: J m**-2 day**-1
+      snswrf:
+        source: ssr
+        src_units: J m**-2 day**-1
+      sdswrf:
+        source: ssrd
+        src_units: J m**-2 day**-1
+      snlwrf:
+        source: str
+        src_units: J m**-2 day**-1
+      sdlwrf:
+        source: strd
+        src_units: J m**-2 day**-1
+      tnswrf:
+        source: tsr
+        src_units: J m**-2 day**-1
+      tnlwrf:
+        source: ttr
+        src_units: J m**-2 day**-1
+      snswrfcs:
+        source: ssrc
+        src_units: J m**-2 day**-1
+      snlwrfcs:
+        source: strc
+        src_units: J m**-2 day**-1
+      tnswrfcs:
+        source: tsrc
+        src_units: J m**-2 day**-1
+      tnlwrfcs:
+        source: ttrc
+        src_units: J m**-2 day**-1
+
+  # ERA5 daily means of hourly accumulations
+  ERA5-daily-destine-v1:
+    convention: eccodes
+    delete:
+      - SLHF
+      - SSHF
+      - SSR
+      - SSRD
+      - STR
+      - STRD
+      - TSR
+      - TTR
+    vars:
+      slhtf:
+        derived: SLHF*24
+        src_units: J m**-2 day**-1
+      ishf:
+        derived: SSHF*24
+        src_units: J m**-2 day**-1
+      snswrf:
+        derived: SSR*24
+        src_units: J m**-2 day**-1
+      sdswrf:
+        derived: SSRD*24
+        src_units: J m**-2 day**-1
+      snlwrf:
+        derived: STR*24
+        src_units: J m**-2 day**-1
+      sdlwrf:
+        derived: STRD*24
+        src_units: J m**-2 day**-1
+      tnswrf:
+        derived: TSR*24
+        src_units: J m**-2 day**-1
+      tnlwrf:
+        derived: TTR*24
+        src_units: J m**-2 day**-1
+      ie:
+        derived: E*24
+        src_units: m/day
+      tprate:
+        derived: TP*24
+        src_units: m/day
+
+  # ERA5 from Earth Data Hub and ARCO
+  era5-earth-data-hub:
+    convention: eccodes
+    coords:
+      time:
+        source: valid_time
+      plev:
+        source: isobaricInhPa
+
+  era5-arco:
+    convention: eccodes
+    data_model: false
+    coords:
+      lat:
+        source: latitude
+      lon:
+        source: longitude
+
+  # CERES. The fixer cannot multiply by negative numbers: sign changes use 0.-x
+  ceres-ebaf-sfc-destine-v1:
+    convention: eccodes
+    data_model: false
+    vars:
+      snlwrf:
+        derived: sfc_net_lw_all_mon
+      snswrf:
+        source: sfc_net_sw_all_mon
+
+  ceres-ebaf-toa-destine-v1:
+    convention: eccodes
+    data_model: false
+    vars:
+      tnlwrf:
+        derived: 0.-toa_lw_all_mon
+        attributes:
+          valid_min: -500
+          valid_max: 0
+          positive: down
+      tnswrf:
+        derived: solar_mon-toa_sw_all_mon
+        attributes:
+          valid_min: 0
+          valid_max: 1400
+          positive: down
+      tnlwrfcs:
+        derived: 0.-toa_lw_clr_c_mon
+        attributes:
+          valid_min: -500
+          valid_max: 0
+          positive: down
+      tnswrfcs:
+        derived: solar_mon-toa_sw_clr_c_mon
+        attributes:
+          valid_min: 0
+          valid_max: 1400
+          positive: down
+
+  # CERES SYN daily, energy balanced with the EBAF scaling factors
+  ceres-syn-destine-v1:
+    convention: eccodes
+    data_model: false
+    vars:
+      toa_lw_all_daily_eb:
+        derived: toa_lw_all_daily*1.0060667743
+        attributes:
+          long_name: Observed Top of the Atmosphere Longwave Flux, All-sky conditions, Daily Means, Energy balanced
+          standard_name: toa_outgoing_longwave_flux
+          units: W m-2
+          valid_min: 0
+          valid_max: 500
+          positive: up
+      toa_sw_all_daily_eb:
+        derived: toa_sw_all_daily*1.0198334952
+        attributes:
+          long_name: Observed Top of the Atmosphere Shortwave Flux, All-sky conditions, Daily Means, Energy balanced
+          standard_name: toa_outgoing_shortwave_flux
+          units: W m-2
+          valid_min: 0
+          valid_max: 1400
+          positive: up
+      toa_solar_all_daily_eb:
+        derived: toa_sw_all_daily+toa_lw_all_daily+toa_net_all_daily-0.01632
+        attributes:
+          long_name: Observed Top of the Atmosphere incoming Solar Flux, Daily Means, Energy balanced
+          units: W m-2
+          valid_min: 0
+          valid_max: 1400
+          positive: down
+      tnlwrf:
+        derived: 0.-toa_lw_all_daily_eb
+        grib: true
+        attributes:
+          valid_min: -500
+          valid_max: 0
+          positive: down
+      tnswrf:
+        derived: toa_solar_all_daily_eb-toa_sw_all_daily_eb
+        grib: true
+        attributes:
+          valid_min: 0
+          valid_max: 1400
+          positive: down
+
+  # E-OBS daily
+  eobs-destine-v1:
+    convention: eccodes
+    data_model: false
+    deltat: 86400
+    coords:
+      lat:
+        source: latitude
+      lon:
+        source: longitude
+    vars:
+      2t:
+        source: tg
+      tprate:
+        source: rr
+      mn2t24:  # possible 24h mismatch with the GRIB definition
+        source: tn
+      mx2t24:  # possible 24h mismatch with the GRIB definition
+        source: tx
+
+  # EN4
+  EN4-default:
+    convention: eccodes
+    data_model: false
+    vars:
+      so:
+        src_units: psu
+
+  # GPM, converted to the GRIB units
+  GPM-default:
+    convention: eccodes
+    vars:
+      tprate:
+        source: precipitationCal
+
+  # MSWEP
+  MSWEP-default:
+    convention: eccodes
+    vars:
+      tprate:
+        source: precipitation
+
+  # OSI-SAF
+  OSI-SAF-default:
+    convention: eccodes
+    data_model: false
+
+  # PHC3
+  PHC3-default:
+    convention: eccodes
+    data_model: false
+    vars:
+      thetao:
+        src_units: C
+      so:
+        src_units: psu
+
+  # PSC: GIOMAS and PIOMAS (identical fixes)
+  GIOMAS:
+    convention: eccodes
+    data_model: false
+    delete: [latitude, longitude]
+    vars:
+      sftof:
+        source: sftof
+        src_units: frac
+        units: frac
+
+  PIOMAS:
+    convention: eccodes
+    data_model: false
+    delete: [latitude, longitude]
+    vars:
+      sftof:
+        source: sftof
+        src_units: frac
+        units: frac
+
+  # Sea surface height (AVISO absolute dynamic topography). No convention applied
+  ssh-adt:
+    data_model: false
+    vars:
+      zos:
+        source: adt
+
+  # WAGHC
+  WAGHC:
+    convention: eccodes
+    data_model: false
+    coords:
+      lat:
+        source: latitude
+      lon:
+        source: longitude
+    vars:
+      tos:
+        source: temperature
+        src_units: C
+      sos:
+        source: salinity
+        src_units: psu
