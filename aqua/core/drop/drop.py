@@ -576,6 +576,8 @@ class Drop:
         """Remove regridded attribute to avoid issues with Reader on output files."""
         if hasattr(data, "attrs"):
             data.attrs.pop("AQUA_regridded", None)
+            for var in getattr(data, "data_vars", {}).values():
+                var.attrs.pop("AQUA_regridded", None)
         return data
 
     def _apply_regrid(self, data):

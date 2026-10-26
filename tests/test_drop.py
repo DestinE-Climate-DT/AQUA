@@ -346,10 +346,20 @@ class TestDROP:
     def test_remove_regridded(self):
         """Test that _remove_regridded removes AQUA_regridded from attributes."""
         drop = Drop.__new__(Drop)
+
+        # DataArray
         da = xr.DataArray([1.0], attrs={"AQUA_regridded": 1, "units": "K"})
-        cleaned = drop._remove_regridded(da)
-        assert "AQUA_regridded" not in cleaned.attrs
-        assert cleaned.attrs["units"] == "K"
+        cleaned_da = drop._remove_regridded(da)
+        assert "AQUA_regridded" not in cleaned_da.attrs
+        assert cleaned_da.attrs["units"] == "K"
+
+        # Dataset (removes from both dataset-level and data variables)
+        ds = xr.Dataset({"2t": da}, attrs={"AQUA_regridded": 1, "title": "test"})
+        cleaned_ds = drop._remove_regridded(ds)
+        assert "AQUA_regridded" not in cleaned_ds.attrs
+        assert "AQUA_regridded" not in cleaned_ds["2t"].attrs
+        assert cleaned_ds.attrs["title"] == "test"
+
         assert drop._remove_regridded(None) is None
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
