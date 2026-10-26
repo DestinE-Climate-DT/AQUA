@@ -5,7 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v1.2.3):
+Unreleased in the current development version (target v1.2.4):
+
+## [v1.2.3]
+
+Main changes:
+- Upgrade to `smmregrid==0.2.0`: CDO is no longer a direct dependency and `python-cdo` is removed
+- Upgrade to eccodes 2.50, `eccodeslib` no longer a dependency
+- New Intake STAC driver
+- Regridder supports the smmregrid `skipna` option
+- `aqua analysis` writes a Markdown report at the end of the run
+- Fixes in `aqua/core/config/fixes` restructured with one file per model
+- DROP read chunks defined from the size of the output data
+- Various CI/CD refinements
+
+Complete list:
 - CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them
 - `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files, readable both on GitHub/GitLab and in a terminal (#3242)
 - Mention z3fdb alongside FDB and Polytope in documentation, CLI options, and docstrings (#3287)
@@ -1627,7 +1641,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.3...HEAD
+[v1.2.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...v1.2.3
 [v1.2.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...v1.2.2
 [v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
 [v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
