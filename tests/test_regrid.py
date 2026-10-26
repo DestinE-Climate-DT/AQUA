@@ -246,11 +246,13 @@ class TestRegridder:
         Test the 'skipna' grid path key on NEMO 3D: a single 2D weights matrix
         reproduces the 3D-masked regridding
         """
-        kwargs = dict(model="NEMO", exp="test-eORCA1", regrid="r200", datamodel=False, fix=False, loglevel=LOGLEVEL)
+        kwargs = dict(
+            model="NEMO", exp="test-eORCA1", regrid="r200", rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL
+        )
         reader = Reader(source="short-3d", **kwargs)
         ref = reader.regrid(reader.retrieve(var="avg_so"))
 
-        reader = Reader(source="short-3d-skipna", rebuild=True, **kwargs)
+        reader = Reader(source="short-3d-skipna", **kwargs)
         assert reader.regridder.skipna
         assert list(reader.regridder.smmregridder) == ["skipna"]
         filename = reader.regridder.filenames.weights_filename(
