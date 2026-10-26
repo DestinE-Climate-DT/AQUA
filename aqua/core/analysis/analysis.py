@@ -8,12 +8,17 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from importlib import resources as pypath
+
+import pandas as pd
 
 from aqua.core.configurer import ConfigCatalog, ConfigContext
 from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
+
+from .report import AnalysisReport
 
 
 class Analysis:
@@ -63,6 +68,11 @@ class Analysis:
         # dask
         self.serial = False
         self.dask_cluster = DaskCluster(loglevel=loglevel)
+
+        # run bookkeeping for the final report: files older than run_start belong to earlier runs
+        self.run_start = pd.Timestamp.now()
+        self.tool_results = []
+        self._results_lock = threading.Lock()
 
     def get_config(self):
         """Load the configuration file and return the config dictionary."""
@@ -286,18 +296,24 @@ class Analysis:
             script_path (str): Path to the diagnostic tool script.
             extra_args (str): Additional arguments for the script.
             logfile (str): Path to the logfile for capturing the command output.
+
+        Returns:
+            int: The exit code of the tool.
         """
 
         self.logger.info("Running tool %s for diagnostic collection %s", tool, collection)
         cmd = f"python {script_path} {extra_args} -l {self.loglevel}"
         self.logger.debug("Command: %s", cmd)
 
+        start = pd.Timestamp.now()
         result = self.run_command(cmd, logfile)
+        self.record_tool_result(collection, tool, logfile, result, start)
 
         if result != 0:
             self.logger.error("Tool %s for diagnostic collection %s failed with exit code %s", tool, collection, result)
         else:
             self.logger.info("Tool %s for diagnostic collection %s completed successfully.", tool, collection)
+        return result
 
     def run_setup_checker(
         self,
@@ -334,9 +350,13 @@ class Analysis:
         )
         self.logger.debug("Command: %s", cmd)
 
+        start = pd.Timestamp.now()
         result = self.run_command(cmd, logfile)
+        self.record_tool_result("setup_checker", "setup_checker", logfile, result, start)
         if result == 1:
             self.logger.critical("Setup checker failed, exiting.")
+            # no diagnostic has run yet: report only on the setup checker log
+            self.write_report(scan_outputs=False)
             sys.exit(1)
         elif result == 0:
             self.logger.info("Setup checker completed successfully.")
@@ -443,6 +463,84 @@ class Analysis:
                 temp_cfg_dir = os.path.dirname(cfgs[0])
                 shutil.rmtree(temp_cfg_dir, ignore_errors=True)
                 self.logger.debug("Removed temporary config directory: %s", temp_cfg_dir)
+
+    def record_tool_result(self, collection, tool, logfile, exit_code, start):
+        """
+        Store the outcome of a tool run, to be used by the analysis report (thread-safe).
+
+        Args:
+            collection (str): Name of the diagnostic collection.
+            tool (str): Name of the diagnostic tool.
+            logfile (str): Path to the logfile of the tool.
+            exit_code (int): Exit code of the tool.
+            start (pd.Timestamp): Start time of the tool.
+        """
+        with self._results_lock:
+            self.tool_results.append(
+                {
+                    "collection": collection,
+                    "tool": tool,
+                    "logfile": os.path.expandvars(logfile),
+                    "exit_code": exit_code,
+                    "start": start,
+                    "end": pd.Timestamp.now(),
+                }
+            )
+
+    def write_report(self, filename=None, include_warnings=False, scan_outputs=True):
+        """
+        Write the Markdown summary report of the tools run so far in the output directory.
+
+        Args:
+            filename (str, optional): Report file. Defaults to a timestamped file in the output directory.
+            include_warnings (bool, optional): List the distinct WARNING messages as well. Defaults to False.
+            scan_outputs (bool, optional): Count the figures and NetCDF files of the run. Defaults to True.
+
+        Returns:
+            str: Path of the written report, or None if it could not be produced.
+        """
+        if not self.output_dir:
+            self.logger.warning("Output directory not set, cannot write the analysis report.")
+            return None
+
+        metadata = {
+            "catalog": self.catalog,
+            "model": self.model,
+            "exp": self.exp,
+            "source": self.source,
+            "source_oce": self.source_oce,
+            "realization": self.realization,
+            "startdate": self.startdate,
+            "enddate": self.enddate,
+            "regrid": self.regrid,
+            "config": self.config_file_path,
+        }
+        try:
+            report = AnalysisReport(
+                self.output_dir,
+                run_start=self.run_start,
+                tool_results=self.tool_results,
+                metadata=metadata,
+                include_warnings=include_warnings,
+                scan_outputs=scan_outputs,
+                loglevel=self.loglevel,
+            )
+            summary = report.collect()
+            report_file = report.write(filename)
+        except OSError as e:
+            # the report must never make a completed analysis fail
+            self.logger.error("Could not write the analysis report: %s", e)
+            return None
+
+        status = summary["status"]
+        self.logger.info(
+            "Analysis report: %d tools, %d failed, %d with logged errors. Written to %s",
+            summary["tools"],
+            status.get("FAILED", 0),
+            status.get("ERRORS", 0),
+            report_file,
+        )
+        return report_file
 
     def configure_experiment_kind(self, exp_kind, exp_kind_file):
         """

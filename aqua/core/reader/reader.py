@@ -97,7 +97,7 @@ class Reader:
                 Defaults to None (uses catalog default).
             preproc (callable, optional): Preprocessing function to apply to the dataset upon retrieval.
                 Defaults to None.
-            engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope' or 'gsv'.
+            engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope', 'z3fdb' or 'gsv'.
                 Defaults to DEFAULT_ENGINE ('gsv').
             collection (str, optional): Synonym for `model` (e.g. in STAC catalogs). Defaults to None.
             item (str, optional): Synonym for `exp` (e.g. in STAC catalogs). Defaults to None.
