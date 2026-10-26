@@ -74,7 +74,9 @@ def _experiments(exps, ensemble):
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
             parts = line.split()
+            # Analysis may add a simulation-kind column; only path columns are published.
             selected = parts[:4] if ensemble else parts[:3]
+            # Keep each column a single safe path component.
             if len(selected) < 3 or any(part in (".", "..") or "/" in part for part in selected):
                 raise ValueError(f"Invalid experiment list entry: {line}")
             if ensemble and len(selected) == 3:
@@ -84,6 +86,7 @@ def _experiments(exps, ensemble):
         parts = exps.as_posix().split("/")
         if len(parts) not in ((3, 4) if ensemble else (3,)) or any(part in ("", ".", "..") for part in parts):
             raise ValueError("EXPS must be catalog/model/experiment[/realization] or a list file")
+        # A direct three-part ensemble path also defaults to realization r1.
         yield "/".join(parts if len(parts) == (4 if ensemble else 3) else [*parts, "r1"])
 
 
