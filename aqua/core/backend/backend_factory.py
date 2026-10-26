@@ -22,17 +22,18 @@ class BackendFactory:
     """
 
     BACKEND_TYPES = {
-        "fdb": BackendIntakeFDB,
-        "icechunk": BackendIntakeIcechunk,
-        "netcdf": BackendIntakeXarray,
-        "zarr": BackendIntakeXarray,
+        "intake_fdb": BackendIntakeFDB,
+        "intake_icechunk": BackendIntakeIcechunk,
+        "intake_netcdf": BackendIntakeXarray,
+        "intake_zarr": BackendIntakeXarray,
+        "intake_stac": BackendIntakeXarray,
         "xarray": BackendXarray,
     }
 
     # Parameters accepted by each driver's backend constructor.
-    # netcdf and zarr share the same intake-xarray signature.
+    # netcdf, zarr, and stac share the same intake-xarray signature.
     _BACKEND_PARAMS = {
-        "fdb": {
+        "intake_fdb": {
             "model",
             "exp",
             "source",
@@ -45,7 +46,7 @@ class BackendFactory:
             "databridge",
             "loglevel",
         },
-        "netcdf": {
+        "intake_netcdf": {
             "model",
             "exp",
             "source",
@@ -56,7 +57,7 @@ class BackendFactory:
             "datamodel",
             "loglevel",
         },
-        "zarr": {
+        "intake_zarr": {
             "model",
             "exp",
             "source",
@@ -67,7 +68,21 @@ class BackendFactory:
             "datamodel",
             "loglevel",
         },
-        "icechunk": {
+        "intake_stac": {
+            "model",
+            "exp",
+            "source",
+            "configurer_catalog",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+            "collection",
+            "item",
+            "asset",
+        },
+        "intake_icechunk": {
             "model",
             "exp",
             "source",
@@ -97,13 +112,22 @@ class BackendFactory:
         path: str = None,
         catalog: str = None,
         loglevel: str = "WARNING",
+        collection: str = None,
+        item: str = None,
+        asset: str = None,
     ):
+        if model is not None and collection is not None and model != collection:
+            raise ValueError(f"Conflicting values provided for model ({model!r}) and collection ({collection!r})")
+        if exp is not None and item is not None and exp != item:
+            raise ValueError(f"Conflicting values provided for exp ({exp!r}) and item ({item!r})")
+        if source is not None and asset is not None and source != asset:
+            raise ValueError(f"Conflicting values provided for source ({source!r}) and asset ({asset!r})")
+
         # Set the provided parameters as instance attributes
         self.catalog = catalog
-        self.model = model
-        self.exp = exp
-        self.source = source
-        self.catalog = catalog
+        self.model = model if model is not None else collection
+        self.exp = exp if exp is not None else item
+        self.source = source if source is not None else asset
         self.path = path
 
         self.configurer = configurer
@@ -117,10 +141,37 @@ class BackendFactory:
         self.catalog_file = None
         self.machine_file = None
         self.esmcat = None
-        self.driver = None
+        self.backend_type = None
         self.metadata = None
         self.machine_paths = None
         self.configurer_catalog = None
+
+    @property
+    def collection(self):
+        """Synonym for model."""
+        return self.model
+
+    @collection.setter
+    def collection(self, value):
+        self.model = value
+
+    @property
+    def item(self):
+        """Synonym for exp."""
+        return self.exp
+
+    @item.setter
+    def item(self, value):
+        self.exp = value
+
+    @property
+    def asset(self):
+        """Synonym for source."""
+        return self.source
+
+    @asset.setter
+    def asset(self, value):
+        self.source = value
 
     def select_backend(self):
         """
@@ -151,17 +202,19 @@ class BackendFactory:
         self.machine_paths, intake_vars = self.configurer_catalog.get_machine_info()
 
         # Extract the source catalog and explore it
-        self.esmcat = self.cat(**intake_vars)[self.model][self.exp]._entries[self.source]()
-        self.driver = self.esmcat._entry._driver
-        if self.driver == "gsv":
-            self.driver = "fdb"
+        self.esmcat = self.cat(**intake_vars)[self.model][self.exp][self.source]
+        self.backend_type = "intake_" + self.esmcat._entry._driver
+        if self.backend_type == "intake_gsv":
+            self.backend_type = "intake_fdb"
             warnings.warn(
-                "The driver gsv is deprecated and will be removed in a future release. Use fdb instead.",
+                "The gsv driver is deprecated and will be removed in a future release. Use fdb instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
-        if self.driver not in self.BACKEND_TYPES:
-            raise ValueError(f"Unsupported driver: {self.driver}. Supported drivers are: {list(self.BACKEND_TYPES.keys())}")
+        if self.backend_type not in self.BACKEND_TYPES:
+            raise ValueError(
+                f"Unsupported driver: {self.backend_type}. Supported drivers are: {list(self.BACKEND_TYPES.keys())}"
+            )
 
         self.metadata = self.esmcat.reader.metadata
 
@@ -169,7 +222,7 @@ class BackendFactory:
         """
         Activate the driver for xarray
         """
-        self.driver = "xarray"
+        self.backend_type = "xarray"
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         # TODO: this is a temporary solution to avoid errors when using the xarray backend without a catalog.
         #       Notice that a path could be defined in config-aqua.yaml and used when solving the TODO above.
@@ -189,6 +242,21 @@ class BackendFactory:
         fixer_name = fixer_name or self.metadata.get("fixer_name") if self.metadata else None
         # Catalog template writes 'source_grid_name'
         src_grid_name = src_grid_name or self.metadata.get("source_grid_name") if self.metadata else None
+
+        if self.backend_type == "intake_stac":  # dictionaries implemented only for stac
+            # If the backend_type is stac we can specify a dict of
+            # fixer_names and grid names for each item
+            # TODO This is not entirely modular, but neither get_metadata is
+            item = self.esmcat.item_name
+            if isinstance(fixer_name, dict):
+                fixer_name = fixer_name.get(item) if item else None
+            if isinstance(src_grid_name, dict):
+                src_grid_name = src_grid_name.get(item) if item else None
+
+        if fixer_name is not None:
+            self.logger.debug(f"Fixer name: {fixer_name}")
+        if src_grid_name is not None:
+            self.logger.debug(f"Grid name: {src_grid_name}")
 
         convention = convention or self.metadata.get("convention", DEFAULT_CONVENTION) if self.metadata else DEFAULT_CONVENTION
         # An explicit datamodel=False must be preserved to disable the data model, so we
@@ -235,10 +303,10 @@ class BackendFactory:
         )
         # Store all kwargs for debugging/logging purposes
         # Filter kwargs to only include those accepted by the selected backend plus any additional kwargs provided by the user
-        accepted = self._BACKEND_PARAMS[self.driver] | set(kwargs.keys())
+        accepted = self._BACKEND_PARAMS[self.backend_type] | set(kwargs.keys())
         filtered = {k: v for k, v in all_kwargs.items() if k in accepted}
-        self.logger.debug("Creating backend %s with kwargs: %s", self.driver, list(filtered))
-        return self.BACKEND_TYPES[self.driver](**filtered)
+        self.logger.debug("Creating backend %s with kwargs: %s", self.backend_type, list(filtered))
+        return self.BACKEND_TYPES[self.backend_type](**filtered)
 
     def _check_required_params(self):
         """Check if the required parameters are provided."""
