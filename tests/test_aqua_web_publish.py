@@ -79,7 +79,7 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     )
     log.info.assert_any_call("Transferring %s figures to s3://%s/%s", "svg", "aqua-web", f"content/svg/{experiment}")
     assert log.info.call_args_list[-1].args == ("Transfer completed successfully",)
-    configure.assert_called_once_with(log_level="WARNING", log_name="push_analysis")
+    configure.assert_called_once_with(log_level="INFO", log_name="push_analysis")
     assert capfd.readouterr().out == ""
 
 
@@ -210,7 +210,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
     assert exc.value.code == 0
     help_text = capsys.readouterr().out
     assert "Publish AQUA analysis figures to a remote site." in help_text
-    assert "default: WARNING" in " ".join(help_text.split())
+    assert "default: INFO" in " ".join(help_text.split())
     assert "aqua-web" not in help_text
     assert "--no-update" not in help_text
     assert "--repository" not in help_text
@@ -219,7 +219,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
 @pytest.mark.parametrize(
     "level,expected",
     [
-        (None, "WARNING"),
+        (None, "INFO"),
         ("debug", "DEBUG"),
         ("INFO", "INFO"),
         ("warning", "WARNING"),

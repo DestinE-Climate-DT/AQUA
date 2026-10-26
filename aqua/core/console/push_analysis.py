@@ -41,8 +41,8 @@ def push_parser(parser=None):
         "--loglevel",
         type=str.upper,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default="WARNING",
-        help="DEBUG, INFO, WARNING, ERROR, CRITICAL (default: WARNING)",
+        default="INFO",
+        help="DEBUG, INFO, WARNING, ERROR, CRITICAL (default: INFO)",
     )
     parser.add_argument("-s", "--rsync", dest="rsync_target", help="rsync target directory, e.g. user@host:/path")
     return parser
@@ -156,7 +156,7 @@ def push_analysis(
     formats=FORMATS,
     ensemble=True,
     rsync_target=None,
-    loglevel="WARNING",
+    loglevel="INFO",
 ):
     """Collect, describe, and publish each experiment's analysis output.
 
@@ -168,7 +168,7 @@ def push_analysis(
         formats (tuple[str]): Image formats to publish.
         ensemble (bool): Use the four-level experiment structure.
         rsync_target (str, optional): Rsync destination in place of S3.
-        loglevel (str): AQUA logging level for the publishing commands. Defaults to WARNING.
+        loglevel (str): AQUA logging level for the publishing commands. Defaults to INFO.
     """
     logger = log_configure(log_level=loglevel, log_name="push_analysis")
     logger.info("Running push-analysis with AQUA version %s", aqua_version)

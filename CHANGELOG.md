@@ -9,7 +9,7 @@ ClimateDT workflow modifications:
 - `aqua push` substitutes `push_analysis.sh`. The API is unchanged and the tool returns the same exit codes for transfer errors as the script.
 
 Complete list:
-- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (WARNING by default), log the AQUA version and experiment targets at INFO, and report figure transfers and successful completion at INFO while keeping individual file messages at DEBUG (#3219).
+- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default), log the AQUA version and experiment targets at INFO, and report figure transfers and successful completion at INFO while keeping individual file messages at DEBUG (#3219).
 Unreleased in the current development version (target v1.2.3):
 
 - Add instructions for human control of main to AGENTS.md (#3232)
