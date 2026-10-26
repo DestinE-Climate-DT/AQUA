@@ -103,7 +103,7 @@ def _collect_figures(indir, workspace, experiment, formats):
 
 
 def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WARNING"):
-    """Retrieve the current list so make_contents can merge into it."""
+    """Retrieve the current experiments.yaml, used by the dashboard to keep track of the experiments to display."""
     logger = log_configure(log_level=loglevel, log_name="push_analysis")
     destination = workspace / "content" / "experiments.yaml"
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -114,8 +114,6 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WAR
             text=True,
             check=False,
         )
-        for line in result.stdout.splitlines():
-            logger.debug("%s", line)
         if result.returncode:
             logger.warning("Could not retrieve experiments.yaml from %s: %s", rsync_target, result.stderr.strip())
     elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination), loglevel=loglevel):
