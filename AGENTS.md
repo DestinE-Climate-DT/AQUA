@@ -81,7 +81,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 All data *read paths* must go through Intake catalogs unless explicitly justified:
 
 - Do not hardcode file access patterns already representable in catalog YAML
-- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope, `icechunk/` for IceChunk); do not bypass Intake
+- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope/z3fdb, `icechunk/` for IceChunk); do not bypass Intake
 - AQUA uses intake ≥2 (pinned in `pyproject.toml`) with v1-style YAML catalogs; the `netcdf`, `zarr`, `gsv` and `icechunk` drivers are registered by AQUA itself (see `aqua/core/intake_drivers/__init__.py`)
 
 ---
