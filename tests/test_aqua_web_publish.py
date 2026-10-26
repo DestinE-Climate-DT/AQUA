@@ -388,7 +388,9 @@ def test_rsync_transfer_details_use_debug(monkeypatch):
     push_analysis._rsync("source", "destination", logger=log)
     log.debug.assert_any_call("%s", "figure.svg")
     log.info.assert_not_called()
-    run.assert_called_once_with(("rsync", "source", "destination"), cwd=None, capture_output=True, text=True, check=False)
+    run.assert_called_once_with(
+        ("rsync", "-avz", "source", "destination"), cwd=None, capture_output=True, text=True, check=False
+    )
 
 
 def test_rsync_reports_failure_status(monkeypatch):

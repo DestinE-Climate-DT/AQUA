@@ -57,9 +57,9 @@ def push_parser(parser=None):
     return parser
 
 
-def _rsync(*args, logger, cwd=None, check=True):
+def _rsync(*args, logger, cwd=None, check=True, options="-avz"):
     """Run rsync, optionally allowing a nonzero exit status."""
-    command = ("rsync", *args)
+    command = ("rsync", options, *args)
     result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
     for line in result.stdout.splitlines():
         logger.debug("%s", line)
@@ -118,7 +118,6 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, logger, logle
     destination.parent.mkdir(parents=True, exist_ok=True)
     if rsync_target:
         result = _rsync(
-            "-avz",
             f"{rsync_target}/content/experiments.yaml",
             str(destination),
             logger=logger,
@@ -135,13 +134,12 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logge
     index = workspace / "content" / "experiments.yaml"
     if rsync_target:
         if index.is_file():
-            _rsync("-avz", str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
+            _rsync(str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
             logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
             # --relative recreates the content/format/experiment path at the remote root.
             _rsync(
-                "-avz",
                 "--relative",
                 "--chmod=D775,F664",
                 relative,
