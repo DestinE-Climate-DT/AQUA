@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
+from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list, unit_to_latex
 
@@ -16,7 +17,7 @@ def plot_histogram(
     style: str | None = None,
     fig: plt.Figure | None = None,
     ax: plt.Axes | None = None,
-    figsize: tuple = (10, 6),
+    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
     title: str | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
@@ -28,7 +29,7 @@ def plot_histogram(
     ymin: float | None = None,
     smooth: bool = False,
     smooth_window: int = 5,
-    labelsize: int = 13,
+    labelsize: int | None = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -55,7 +56,7 @@ def plot_histogram(
         ymin (float | None, optional): Minimum value for y-axis.
         smooth (bool, optional): Apply smoothing to the data.
         smooth_window (int, optional): Window size for smoothing.
-        labelsize (int, optional): Font size for labels.
+        labelsize (int | None, optional): Font size for labels. Defaults to the style one.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -126,7 +127,7 @@ def plot_histogram(
 
     # Finalize plot
     if data_labels or ref_label:
-        ax.legend(fontsize="small", loc="upper right")
+        ax.legend(loc="upper right")
 
     ax.grid(True, linestyle="-", alpha=0.3)
 
@@ -152,7 +153,7 @@ def plot_histogram(
         else:
             xlabel = "Value"
 
-    ax.set_xlabel(xlabel, fontsize=labelsize)
+    ax.set_xlabel(xlabel, fontsize=labelsize or plt.rcParams["axes.labelsize"])
 
     if ylabel is None:
         # Determine if this is a PDF or histogram based on data units attribute
@@ -168,11 +169,11 @@ def plot_histogram(
         else:
             ylabel = "Counts"
 
-    ax.set_ylabel(ylabel, fontsize=labelsize)
+    ax.set_ylabel(ylabel, fontsize=labelsize or plt.rcParams["axes.labelsize"])
 
     # Set title if provided
     if title:
-        ax.set_title(title, fontsize=13)
+        ax.set_title(title)
 
     return fig, ax
 

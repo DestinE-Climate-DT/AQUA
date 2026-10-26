@@ -22,7 +22,7 @@ def plot_vertical_profile(
     vmax: Optional[float] = None,
     nlevels: int = 18,
     title: Optional[str] = None,
-    title_size: Optional[int] = 16,
+    title_size: Optional[int] = None,
     style: Optional[str] = None,
     logscale: bool = False,
     grid: bool = True,
@@ -51,7 +51,7 @@ def plot_vertical_profile(
         vmax (float, optional): Maximum colorbar limit.
         nlevels (int): Number of contour levels. Default is 18.
         title (str, optional): Plot title.
-        title_size (int, optional): Title font size. Default is 16.
+        title_size (int, optional): Title font size. Default is None (style title size).
         style (str, optional): Plot style (default aqua style).
         logscale (bool, optional): Use log scale for y-axis if True.
         grid (bool, optional): If True, display grid lines on the plot.
@@ -113,7 +113,7 @@ def plot_vertical_profile(
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         logger.debug("Returning figure and axes")
@@ -136,7 +136,7 @@ def plot_vertical_profile_diff(
     add_contour: bool = False,
     nlevels: int = 18,
     title: Optional[str] = None,
-    title_size: Optional[int] = 16,
+    title_size: Optional[int] = None,
     style: Optional[str] = None,
     return_fig: bool = False,
     fig: Optional[plt.Figure] = None,
@@ -165,7 +165,7 @@ def plot_vertical_profile_diff(
         add_contour (bool, optional): If True, overlay contour lines from reference data.
         nlevels (int, optional): Number of contour levels.
         title (str, optional): Plot title.
-        title_size (int, optional): Title font size. Default is 16.
+        title_size (int, optional): Title font size. Default is None (style title size).
         style (str, optional): Plot style (default aqua style).
         return_fig (bool, optional): If True, return (fig, ax).
         fig (plt.Figure, optional): Optional figure to plot on.
@@ -212,7 +212,7 @@ def plot_vertical_profile_diff(
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         logger.debug("Returning figure and axes")

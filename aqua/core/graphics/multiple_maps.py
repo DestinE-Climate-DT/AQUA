@@ -27,7 +27,7 @@ def plot_maps(
     vmax: float = None,
     nlevels: int = 11,
     title: str = None,
-    title_size: int = 16,
+    title_size: int = None,
     titles: list = None,
     titles_size: int = None,
     cmap="RdBu_r",
@@ -56,7 +56,7 @@ def plot_maps(
         vmax (float,opt):     maximum value for the colorbar, default is None
         nlevels (int,opt):    number of levels for the colorbar, default is 11
         title (str,opt):      super title for the figure
-        title_size (int,opt):  size of the super title, default is 16
+        title_size (int,opt):  size of the super title, default is None (style figure title size)
         titles (list,opt):    list of titles for the maps
         titles_size (int,opt): size of the titles, default is None
         cmap (str,opt):       colormap, default is 'RdBu_r'
@@ -143,7 +143,7 @@ def plot_maps(
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=title_size)
+        fig.suptitle(title, fontsize=title_size or plt.rcParams["figure.titlesize"])
 
     if return_fig:
         return fig
@@ -299,7 +299,7 @@ def plot_maps_diff(
     # Add a super title
     if title:
         logger.debug("Setting super title to %s", title)
-        fig.suptitle(title, fontsize=16)
+        fig.suptitle(title)
 
     if return_fig:
         return fig

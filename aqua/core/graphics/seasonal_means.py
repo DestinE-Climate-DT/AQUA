@@ -104,13 +104,13 @@ def plot_seasonal_lat_lon_profiles(
 
         # Show legend only on the first subplot
         if i == 0:
-            ax.legend(fontsize="small", loc="upper right")
+            ax.legend(loc="upper right")
         elif hasattr(ax, "legend_") and ax.legend_:
             ax.legend_.remove()
 
     # Add overall title if provided
     if title:
-        fig.suptitle(title, fontsize=14, y=0.98)
+        fig.suptitle(title, y=0.98)
 
     fig.set_layout_engine("tight")
 
