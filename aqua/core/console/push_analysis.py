@@ -6,6 +6,7 @@ Example: ``aqua push output catalog/model/experiment/r1``
 
 import argparse
 import getpass
+import logging
 import os
 import shutil
 import socket
@@ -56,9 +57,8 @@ def push_parser(parser=None):
     return parser
 
 
-def _run(*command, cwd=None, loglevel="WARNING", check=True):
+def _run(*command, logger, cwd=None, check=True):
     """Run a command without a shell, optionally allowing a nonzero exit status."""
-    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
     for line in result.stdout.splitlines():
         logger.debug("%s", line)
@@ -111,9 +111,8 @@ def _collect_figures(indir, workspace, experiment, formats):
             shutil.copy2(metadata, dest / metadata.name)
 
 
-def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WARNING"):
+def _get_experiments_file(workspace, bucket, rsync_target, client, logger, loglevel):
     """Retrieve the current experiments.yaml, used by the dashboard to keep track of the experiments to display."""
-    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     destination = workspace / "content" / "experiments.yaml"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if rsync_target:
@@ -122,7 +121,7 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WAR
             "-avz",
             f"{rsync_target}/content/experiments.yaml",
             str(destination),
-            loglevel=loglevel,
+            logger=logger,
             check=False,
         )
         if result.returncode:
@@ -131,13 +130,12 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WAR
         logger.info("No remote experiments.yaml found; creating it")
 
 
-def _publish(workspace, experiment, formats, bucket, rsync_target, client, loglevel="WARNING"):
+def _publish(workspace, experiment, formats, bucket, rsync_target, client, logger, loglevel):
     """Publish the merged index and the selected experiment's figures."""
-    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     index = workspace / "content" / "experiments.yaml"
     if rsync_target:
         if index.is_file():
-            _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml", loglevel=loglevel)
+            _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
             logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
@@ -149,8 +147,8 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logle
                 "--chmod=D775,F664",
                 relative,
                 f"{rsync_target}/",
+                logger=logger,
                 cwd=workspace,
-                loglevel=loglevel,
             )
     else:
         if index.is_file():
@@ -212,7 +210,7 @@ def push_analysis(
         client = None if rsync_target else create_client()
         for experiment in experiments:
             _collect_figures(indir, workspace, experiment, formats)
-            _get_experiments_file(workspace, bucket, rsync_target, client, loglevel)
+            _get_experiments_file(workspace, bucket, rsync_target, client, logger, loglevel)
             for fmt in formats:
                 make_contents(
                     force=True,
@@ -223,7 +221,7 @@ def push_analysis(
                     format=fmt,
                     root=workspace,
                 )
-            _publish(workspace, experiment, formats, bucket, rsync_target, client, loglevel)
+            _publish(workspace, experiment, formats, bucket, rsync_target, client, logger, loglevel)
     logger.info("Transfer completed successfully")
 
 
@@ -248,12 +246,13 @@ def push_options(args):
     }
 
 
-def push_execute(args):
+def push_execute(args, logger=None):
     """Publish from parsed CLI arguments and return the process exit status."""
+    if logger is None:
+        logger = logging.getLogger("AQUA")
     try:
         options = push_options(args)
     except ValueError as exc:
-        logger = log_configure(log_level=args.loglevel, log_name="push_analysis")
         logger.error("%s", exc)
         return 2
     try:
@@ -261,7 +260,6 @@ def push_execute(args):
     except S3TransferError as exc:
         return exc.exit_code
     except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
-        logger = log_configure(log_level=args.loglevel, log_name="push_analysis")
         logger.error("Publishing failed: %s", exc)
         # Keep rsync's exit status so callers can distinguish transfer failures.
         return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 1

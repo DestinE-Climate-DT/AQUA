@@ -51,7 +51,8 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     monkeypatch.setattr(push_analysis, "upload_file_to_s3", fake_upload_file)
     monkeypatch.setattr(push_analysis, "upload_directory_to_s3", fake_upload_directory)
     log = Mock()
-    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
+    configure = Mock(return_value=log)
+    monkeypatch.setattr(push_analysis, "log_configure", configure)
     cwd = Path.cwd()
     if entrypoint == "aqua":
         argv = ["aqua", "push", str(output), experiment, "-c", str(config), "-f", "svg"]
@@ -78,6 +79,7 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     )
     log.info.assert_any_call("Transferring %s figures to s3://%s/%s", "svg", "aqua-web", f"content/svg/{experiment}")
     assert log.info.call_args_list[-1].args == ("Transfer completed successfully",)
+    configure.assert_called_once_with(log_level="WARNING", log_name="push_analysis")
     assert capfd.readouterr().out == ""
 
 
@@ -381,10 +383,9 @@ def test_s3_cli_download_status(tmp_path, monkeypatch, code, expected):
 def test_rsync_transfer_details_use_debug(monkeypatch):
     """Rsync output is routed through the AQUA logger at DEBUG level."""
     log = Mock()
-    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     run = Mock(return_value=subprocess.CompletedProcess(["rsync"], 0, stdout="figure.svg\nsent 123 bytes\n", stderr=""))
     monkeypatch.setattr(push_analysis.subprocess, "run", run)
-    push_analysis._run("rsync", "source", "destination")
+    push_analysis._run("rsync", "source", "destination", logger=log)
     log.debug.assert_any_call("%s", "figure.svg")
     log.info.assert_not_called()
     run.assert_called_once_with(("rsync", "source", "destination"), cwd=None, capture_output=True, text=True, check=False)
@@ -393,12 +394,11 @@ def test_rsync_transfer_details_use_debug(monkeypatch):
 def test_run_reports_command_failure(monkeypatch):
     """The shared runner preserves a command's exit code and names it in the log."""
     log = Mock()
-    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     run = Mock(return_value=subprocess.CompletedProcess(["copy"], 17, stdout="", stderr="permission denied"))
     monkeypatch.setattr(push_analysis.subprocess, "run", run)
 
     with pytest.raises(subprocess.CalledProcessError) as exc:
-        push_analysis._run("copy", "source", "destination")
+        push_analysis._run("copy", "source", "destination", logger=log)
 
     assert exc.value.returncode == 17
     log.error.assert_called_once_with("%s failed: %s", "copy", "permission denied")
