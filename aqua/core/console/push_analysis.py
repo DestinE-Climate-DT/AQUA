@@ -41,8 +41,8 @@ def push_parser(parser=None):
         "--loglevel",
         type=str.upper,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default="INFO",
-        help="DEBUG, INFO, WARNING, ERROR, CRITICAL",
+        default="WARNING",
+        help="DEBUG, INFO, WARNING, ERROR, CRITICAL (default: WARNING)",
     )
     parser.add_argument("-s", "--rsync", dest="rsync_target", help="rsync target directory, e.g. user@host:/path")
     return parser

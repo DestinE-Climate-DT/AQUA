@@ -93,7 +93,7 @@ Additional options
 .. option:: -l <level>, --loglevel <level>
 
     Set the log level to DEBUG, INFO, WARNING, ERROR, or CRITICAL (case insensitive).
-    The numeric aliases 1, 2, 3, 4, and 5 remain available in that order. Default is WARNING (3).
+    Default is WARNING.
     Use INFO to log progress and successful completion, or DEBUG to log individual transferred files.
 
 .. option:: --rsync <target>
