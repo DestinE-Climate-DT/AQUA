@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
-
+- Keep `Fixer` monthly `deltat` configuration immutable and compute `days_in_month` time corrections per dataset (#3233)
 - Pin `python-dateutil<3` in `environment.yml`: botocore does not support python-dateutil 3.0.0, which made the conda relock backtrack through all boto3 releases (#3290)
 - `conda-relock` workflow: add `--filter-extras`, so only the `tests` and `fdb` extras are solved and the self-referencing `all` extra is not resolved against `aqua-core` from PyPI (#3290)
 - Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes` bindings aligned to `>=2.50.0,<2.51`. `eccodeslib` is no longer a dependency: from 2.49 its `eckitlib` bundles PROJ/sqlite that crash with the conda ones used by cartopy (#3163); `z3fdb==5.23.2.27` stays pinned on Linux for the same reason
