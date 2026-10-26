@@ -33,15 +33,15 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     transfers = []
     published = {}
 
-    def fake_download(client, bucket, key, destination):
+    def fake_download(client, bucket, key, destination, **kwargs):
         transfers.append((bucket, key, "download"))
         return False
 
-    def fake_upload_file(client, bucket, path, key):
+    def fake_upload_file(client, bucket, path, key, **kwargs):
         transfers.append((bucket, key, "file"))
         published["experiments"] = yaml.safe_load(Path(path).read_text())
 
-    def fake_upload_directory(client, bucket, path, prefix):
+    def fake_upload_directory(client, bucket, path, prefix, **kwargs):
         transfers.append((bucket, prefix, "directory"))
         published["content"] = yaml.safe_load((Path(path) / "content.yaml").read_text())
         published["source"] = Path(path)
@@ -51,7 +51,7 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     monkeypatch.setattr(push_analysis, "upload_file_to_s3", fake_upload_file)
     monkeypatch.setattr(push_analysis, "upload_directory_to_s3", fake_upload_directory)
     log = Mock()
-    monkeypatch.setattr(push_analysis, "logger", log)
+    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     cwd = Path.cwd()
     if entrypoint == "aqua":
         argv = ["aqua", "push", str(output), experiment, "-c", str(config), "-f", "svg"]
@@ -95,15 +95,15 @@ def test_publish_list_merges_existing_experiments(tmp_path, monkeypatch):
     remote = {"catalog": {"model": ["previous"]}}
     published = {}
 
-    def download(client, bucket, key, destination):
+    def download(client, bucket, key, destination, **kwargs):
         Path(destination).write_text(yaml.safe_dump(remote))
         return True
 
-    def upload_index(client, bucket, path, key):
+    def upload_index(client, bucket, path, key, **kwargs):
         nonlocal remote
         remote = yaml.safe_load(Path(path).read_text())
 
-    def upload_figures(client, bucket, path, prefix):
+    def upload_figures(client, bucket, path, prefix, **kwargs):
         published[prefix] = yaml.safe_load((Path(path) / "content.yaml").read_text())
 
     monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
@@ -161,7 +161,7 @@ def test_aqua_push_rsync_status(tmp_path, monkeypatch, figure_status):
         ],
     )
     logger = Mock()
-    monkeypatch.setattr(push_analysis, "logger", logger)
+    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=logger))
 
     assert console_main.main() == figure_status
     assert len(commands) == 3  # optional index download, index upload, figure transfer
@@ -254,26 +254,43 @@ def test_publisher_rejects_invalid_log_level(tmp_path, monkeypatch, level):
 def test_publisher_logs_aqua_version_at_start(tmp_path, monkeypatch):
     """The version is reported before input validation or publishing starts."""
     log = Mock()
-    monkeypatch.setattr(push_analysis, "logger", log)
+    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     with pytest.raises(FileNotFoundError):
         push_analysis.push_analysis(tmp_path / "missing", "catalog/model/experiment/r1", tmp_path / "missing.yaml")
     log.info.assert_called_once_with("Running push-analysis with AQUA version %s", push_analysis.aqua_version)
 
 
 @pytest.mark.parametrize("level", ["WARNING", "DEBUG"])
-def test_publisher_configures_loggers_at_execution(tmp_path, level):
-    """Direct publishing configures both its logger and S3 transfers on each call."""
+def test_publisher_configures_logger_at_execution(tmp_path, level):
+    """Direct publishing configures its logger before input validation."""
     with pytest.raises(FileNotFoundError):
         push_analysis.push_analysis(tmp_path, "catalog/model/experiment/r1", tmp_path / "missing.yaml", loglevel=level)
-    assert push_analysis.logger.level == getattr(logging, level)
-    assert push_s3.logger.level == getattr(logging, level)
+    assert logging.getLogger("push_analysis").level == getattr(logging, level)
+
+
+def test_publisher_passes_debug_level_to_s3(tmp_path, monkeypatch):
+    """S3 transfer helpers retain the requested log level during publication."""
+    experiment = "catalog/model/experiment/r1"
+    source = tmp_path / "output" / experiment
+    source.mkdir(parents=True)
+    (source / "figure.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {}\n")
+    client = Mock()
+    client.download_file.side_effect = ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
+    monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=client))
+
+    push_analysis.push_analysis(tmp_path / "output", experiment, config, formats=("svg",), loglevel="DEBUG")
+
+    assert client.upload_file.called
+    assert logging.getLogger("push_s3").level == logging.DEBUG
 
 
 def test_content_generator_configures_logger_at_execution(tmp_path):
     """The content generator honors its requested level before reading config."""
     with pytest.raises(FileNotFoundError):
         make_contents.main(configfile=tmp_path / "missing.yaml", loglevel="DEBUG")
-    assert make_contents.logger.level == logging.DEBUG
+    assert logging.getLogger("make_contents").level == logging.DEBUG
 
 
 @pytest.mark.parametrize(
@@ -313,7 +330,7 @@ def test_missing_s3_object_is_optional():
 def test_s3_success_logs_without_stdout(capfd, monkeypatch):
     """The S3 API sends transfer messages through the AQUA logger."""
     log = Mock()
-    monkeypatch.setattr(push_s3, "logger", log)
+    monkeypatch.setattr(push_s3, "log_configure", Mock(return_value=log))
     push_s3.upload_file_to_s3(Mock(), "aqua-web", "figure.svg", "content/figure.svg")
     push_s3.get_file_from_s3(Mock(), "aqua-web", "content/experiments.yaml", "experiments.yaml")
     assert capfd.readouterr().out == ""
@@ -333,7 +350,7 @@ def test_s3_cli_uploads_nested_directory(tmp_path, monkeypatch):
 
     assert push_s3.cli_main(["bucket", str(source), "-d", "content/svg"]) == 0
     client.upload_file.assert_called_once_with(str(figure), "bucket", "content/svg/nested/figure.svg")
-    assert push_s3.logger.level == logging.WARNING
+    assert logging.getLogger("push_s3").level == logging.WARNING
 
 
 @pytest.mark.parametrize("code,expected", [("AccessDenied", 1), ("NoSuchBucket", 2), ("InternalError", 3)])
@@ -364,7 +381,7 @@ def test_s3_cli_download_status(tmp_path, monkeypatch, code, expected):
 def test_rsync_transfer_details_use_debug(monkeypatch):
     """Rsync output is routed through the AQUA logger at DEBUG level."""
     log = Mock()
-    monkeypatch.setattr(push_analysis, "logger", log)
+    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     run = Mock(return_value=subprocess.CompletedProcess(["rsync"], 0, stdout="figure.svg\nsent 123 bytes\n", stderr=""))
     monkeypatch.setattr(push_analysis.subprocess, "run", run)
     push_analysis._run("rsync", "source", "destination")
@@ -385,7 +402,7 @@ def test_failed_transfer_has_no_completion_message(tmp_path, monkeypatch):
     monkeypatch.setattr(push_analysis, "upload_file_to_s3", Mock())
     monkeypatch.setattr(push_analysis, "upload_directory_to_s3", Mock(side_effect=push_s3.S3TransferError("upload failed", 3)))
     log = Mock()
-    monkeypatch.setattr(push_analysis, "logger", log)
+    monkeypatch.setattr(push_analysis, "log_configure", Mock(return_value=log))
     with pytest.raises(push_s3.S3TransferError):
         push_analysis.push_analysis(output.parents[3], "catalog/model/experiment/r1", config, formats=("svg",))
     assert all(call.args != ("Transfer completed successfully",) for call in log.info.call_args_list)
@@ -396,7 +413,7 @@ def test_content_generation_has_one_startup_message(tmp_path, monkeypatch):
     config = tmp_path / "grouping.yaml"
     config.write_text("diagnostics: {figures: figure}\n")
     log = Mock()
-    monkeypatch.setattr(make_contents, "logger", log)
+    monkeypatch.setattr(make_contents, "log_configure", Mock(return_value=log))
     monkeypatch.setattr(make_contents, "make_content", Mock())
     make_contents.main(
         experiment="catalog/model/experiment/r1",

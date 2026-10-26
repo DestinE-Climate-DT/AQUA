@@ -6,7 +6,6 @@ Example: ``aqua push output catalog/model/experiment/r1``
 
 import argparse
 import getpass
-import logging
 import os
 import shutil
 import socket
@@ -21,7 +20,6 @@ from aqua.core.logger import log_configure
 from .make_contents import main as make_contents
 from .push_s3 import S3TransferError, create_client, get_file_from_s3, upload_directory_to_s3, upload_file_to_s3
 
-logger = logging.getLogger("push_analysis")
 FORMATS = ("pdf", "png", "svg")
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 
@@ -56,8 +54,9 @@ def push_parser(parser=None):
     return parser
 
 
-def _run(*command, cwd=None):
+def _run(*command, cwd=None, loglevel="WARNING"):
     """Run rsync without invoking a shell."""
+    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     result = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
     for line in result.stdout.splitlines():
         logger.debug("%s", line)
@@ -103,8 +102,9 @@ def _collect_figures(indir, workspace, experiment, formats):
             shutil.copy2(metadata, dest / metadata.name)
 
 
-def _get_experiments_file(workspace, bucket, rsync_target, client):
+def _get_experiments_file(workspace, bucket, rsync_target, client, loglevel="WARNING"):
     """Retrieve the current list so make_contents can merge into it."""
+    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     destination = workspace / "content" / "experiments.yaml"
     destination.parent.mkdir(parents=True, exist_ok=True)
     if rsync_target:
@@ -118,28 +118,38 @@ def _get_experiments_file(workspace, bucket, rsync_target, client):
             logger.debug("%s", line)
         if result.returncode:
             logger.warning("Could not retrieve experiments.yaml from %s: %s", rsync_target, result.stderr.strip())
-    elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination)):
+    elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination), loglevel=loglevel):
         logger.info("No remote experiments.yaml found; creating it")
 
 
-def _publish(workspace, experiment, formats, bucket, rsync_target, client):
+def _publish(workspace, experiment, formats, bucket, rsync_target, client, loglevel="WARNING"):
     """Publish the merged index and the selected experiment's figures."""
+    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     index = workspace / "content" / "experiments.yaml"
     if rsync_target:
         if index.is_file():
-            _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml")
+            _run("rsync", "-avz", str(index), f"{rsync_target}/content/experiments.yaml", loglevel=loglevel)
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
             logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
-            _run("rsync", "-avz", "--relative", "--chmod=D775,F664", relative, f"{rsync_target}/", cwd=workspace)
+            _run(
+                "rsync",
+                "-avz",
+                "--relative",
+                "--chmod=D775,F664",
+                relative,
+                f"{rsync_target}/",
+                cwd=workspace,
+                loglevel=loglevel,
+            )
     else:
         if index.is_file():
-            upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml")
+            upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml", loglevel=loglevel)
         for fmt in formats:
             source = workspace / "content" / fmt / experiment
             destination = f"content/{fmt}/{experiment}"
             logger.info("Transferring %s figures to s3://%s/%s", fmt, bucket, destination)
-            upload_directory_to_s3(client, bucket, str(source), destination)
+            upload_directory_to_s3(client, bucket, str(source), destination, loglevel=loglevel)
 
 
 def push_analysis(
@@ -164,9 +174,8 @@ def push_analysis(
         rsync_target (str, optional): Rsync destination in place of S3.
         loglevel (str): AQUA logging level for the publishing commands. Defaults to WARNING.
     """
-    log_configure(log_level=loglevel, log_name="push_analysis")
+    logger = log_configure(log_level=loglevel, log_name="push_analysis")
     logger.info("Running push-analysis with AQUA version %s", aqua_version)
-    log_configure(log_level=loglevel, log_name="push_s3")
     indir = Path(indir).expanduser().resolve()
     config = Path(config).expanduser().resolve()
     exps = Path(exps).expanduser()
@@ -193,7 +202,7 @@ def push_analysis(
         client = None if rsync_target else create_client()
         for experiment in experiments:
             _collect_figures(indir, workspace, experiment, formats)
-            _get_experiments_file(workspace, bucket, rsync_target, client)
+            _get_experiments_file(workspace, bucket, rsync_target, client, loglevel)
             for fmt in formats:
                 make_contents(
                     force=True,
@@ -204,7 +213,7 @@ def push_analysis(
                     format=fmt,
                     root=workspace,
                 )
-            _publish(workspace, experiment, formats, bucket, rsync_target, client)
+            _publish(workspace, experiment, formats, bucket, rsync_target, client, loglevel)
     logger.info("Transfer completed successfully")
 
 
@@ -234,7 +243,7 @@ def push_execute(args):
     try:
         options = push_options(args)
     except ValueError as exc:
-        log_configure(log_level=args.loglevel, log_name="push_analysis")
+        logger = log_configure(log_level=args.loglevel, log_name="push_analysis")
         logger.error("%s", exc)
         return 2
     try:
@@ -242,6 +251,7 @@ def push_execute(args):
     except S3TransferError as exc:
         return exc.exit_code
     except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
+        logger = log_configure(log_level=args.loglevel, log_name="push_analysis")
         logger.error("Publishing failed: %s", exc)
         return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 1
     return 0

@@ -10,15 +10,12 @@
 # [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
 
 import argparse
-import logging
 import os
 
 import boto3
 from botocore.client import Config
 
 from aqua.core.logger import log_configure
-
-logger = logging.getLogger("push_s3")
 
 
 class S3TransferError(Exception):
@@ -50,8 +47,9 @@ def create_client(aws_access_key_id=None, aws_secret_access_key=None, endpoint_u
     )
 
 
-def get_file_from_s3(client, bucket_name, object_name, dest_path):
+def get_file_from_s3(client, bucket_name, object_name, dest_path, loglevel="WARNING"):
     """Try to download a single file from an S3 bucket."""
+    logger = log_configure(log_level=loglevel, log_name="push_s3")
     try:
         client.download_file(bucket_name, object_name, dest_path)
         logger.debug("Downloaded %s from bucket %s to %s", object_name, bucket_name, dest_path)
@@ -65,8 +63,9 @@ def get_file_from_s3(client, bucket_name, object_name, dest_path):
         raise _transfer_error(e) from e
 
 
-def upload_file_to_s3(client, bucket_name, file_path, object_name):
+def upload_file_to_s3(client, bucket_name, file_path, object_name, loglevel="WARNING"):
     """Upload a single file to an S3 bucket."""
+    logger = log_configure(log_level=loglevel, log_name="push_s3")
     try:
         client.upload_file(file_path, bucket_name, object_name)
         logger.debug("Uploaded %s to bucket %s as %s", file_path, bucket_name, object_name)
@@ -75,7 +74,7 @@ def upload_file_to_s3(client, bucket_name, file_path, object_name):
         raise _transfer_error(e) from e
 
 
-def upload_directory_to_s3(client, bucket_name, source, dest):
+def upload_directory_to_s3(client, bucket_name, source, dest, loglevel="WARNING"):
     """Upload the contents of a directory to an S3 bucket."""
 
     for root, dirs, files in os.walk(source):
@@ -86,7 +85,7 @@ def upload_directory_to_s3(client, bucket_name, source, dest):
                 dest_path = os.path.join(dest, dest_path)
             else:
                 dest_path = file_path
-            upload_file_to_s3(client, bucket_name, file_path, dest_path)
+            upload_file_to_s3(client, bucket_name, file_path, dest_path, loglevel)
 
 
 def main(argv=None):
@@ -95,7 +94,6 @@ def main(argv=None):
     variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY or pass them as arguments.
     """
 
-    log_configure(log_level="WARNING", log_name="push_s3")
     parser = argparse.ArgumentParser(description="Upload the contents of a directory or a single file to a S3 bucket.")
     parser.add_argument("bucket_name", help="The name of the S3 bucket.")
     parser.add_argument("source", help="The path to the directory or file to upload.")
