@@ -6,12 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 ClimateDT workflow modifications:
-- `aqua push` substitutes `push_analysis.sh`. The API is unchanged and the tool returns the same exit codes for transfer errors as the script.
+- `aqua push` substitutes `push_analysis.sh`.
+   API changes: removal of `--repository` and `--no-update` (unnecessary).
+   Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
-Complete list:
-- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default), log the AQUA version and experiment targets at INFO, and report figure transfers and successful completion at INFO while keeping individual file messages at DEBUG (#3219).
 Unreleased in the current development version (target v1.2.3):
-
+Complete list:
+- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 - Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
