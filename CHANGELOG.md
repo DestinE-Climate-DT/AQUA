@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 - In DROP, preserve the `AQUA_regridded` attribute during in-memory pipeline execution so downstream operations like regional selection properly route to the target grid, stripping it before persisting to disk (#3288)
+- Implement Intake STAC driver (#3161, #3181)
 - CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them
 - `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files, readable both on GitHub/GitLab and in a terminal (#3242)
 - Mention z3fdb alongside FDB and Polytope in documentation, CLI options, and docstrings (#3287)
@@ -29,7 +30,6 @@ Unreleased in the current development version (target v1.2.3):
 
 ## [v1.2.2]
 
-- New intake driver to access stac collections and items (#3161)
 ClimateDT workflow modifications:
 - `--checker` rename to `--setup_checker` in `aqua analysis` command line
 - `aqua analysis ensemble` command is now ready for implementation in the workflow
