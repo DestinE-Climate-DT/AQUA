@@ -20,7 +20,8 @@
 
 ### Reviewing pull requests
 - If user asks for a review of a pull request, review it looking for consistency, bugs, and if the code is clean and consistent with the general style of the rest of AQUA software. It should be compact, clean, and easy to maintain also by humans.
-- Prepare a report with possible action points which we will address later.
+- Check with specific attention if there is any code redundancy or if some of new features can be replaced by existing features.
+- Prepare a report with possible action points - ranked with a priority scale (serious, high, low, negligible) - which we will address later.
 
 ### Before implementing anything
 
