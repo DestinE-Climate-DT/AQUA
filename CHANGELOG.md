@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.3):
 
 - Homogenize/centralize the size and style of the label/axis/title into core graphics methods (#3294)
+- In DROP, preserve the `AQUA_regridded` attribute during in-memory pipeline execution so downstream operations like regional selection properly route to the target grid, stripping it before persisting to disk (#3288)
 - Implement Intake STAC driver (#3161, #3181)
 - CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them
 - `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files, readable both on GitHub/GitLab and in a terminal (#3242)
