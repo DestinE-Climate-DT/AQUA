@@ -4,6 +4,20 @@
 
 **Code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
 
+### Human control of `main`
+
+- Only humans decide whether changes are integrated into `main`. The preferred workflow is for a human to merge manually on GitHub after review.
+- Agents may prepare branches and pull requests, but must stop before merging. An agent may merge only when a human explicitly instructs it to perform that specific merge, identifying the pull request and the changes to be merged. That instruction does not authorize merging additional changes added afterward.
+- A positive human review, an approved pull request, passing tests, automated reviews, or a general request to complete a task never authorizes an agent to merge.
+- Never push directly to `main`, enable auto-merge, or bypass required reviews or branch protections.
+- Add a label "ready for review" when the pull request is ready to be reviewed by a human.
+
+### Creating issues and pull requests
+- Prefix the title of new pull requests or issues with a topic in square brackets, e.g. `[Drop]` and capitalize the first letter of the topic and the first letter of the title.
+- When opening a PR follow the Standard PR template (provided in `.github/PULL_REQUEST_TEMPLATE.md`), keeping only checkboxes that are relevant. When working on the PR check boxes as needed.
+- When opening an issue follow the issue template (provided in `.github/ISSUE_TEMPLATE.md`) choosing an appropriate issue type from the given options.
+- Update also the CHANGELOG.md with the new version and the changes introduced in the current version following the same format as other entries in that file.
+
 ### Before implementing anything
 
 1. Search `aqua/core/` for an existing class handling similar logic
