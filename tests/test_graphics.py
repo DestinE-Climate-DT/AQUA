@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
+from matplotlib.font_manager import FontProperties
 from utils_tests import DPI, LOGLEVEL
 
 from aqua import Reader
@@ -263,12 +264,15 @@ class TestVerticalProfiles:
             vmin=-0.002,
             vmax=0.002,
             nlevels=8,
+            title="Test vertical profile",
             return_fig=True,
             loglevel=loglevel,
         )
 
         assert fig is not None
         assert ax is not None
+        # Without title_size the title follows the style title size, not the generic font.size
+        assert ax.title.get_fontsize() == FontProperties(size=plt.rcParams["axes.titlesize"]).get_size_in_points()
 
         fig.savefig(tmp_path / "test_plot_vertical_profile.png", dpi=DPI)
 
@@ -287,12 +291,15 @@ class TestVerticalProfiles:
             vmax_contour=0.002,
             add_contour=True,
             nlevels=8,
+            title="Test vertical profile diff",
+            title_size=16,
             return_fig=True,
             loglevel=loglevel,
         )
 
         assert fig is not None
         assert ax is not None
+        assert ax.title.get_fontsize() == 16
 
         fig.savefig(tmp_path / "test_plot_vertical_profile_diff.png", dpi=DPI)
 
@@ -433,6 +440,7 @@ class TestHovmoller:
             cbar_label="test-label",
             nlevels=10,
             sym=True,
+            title="Test hovmoller",
             loglevel=loglevel,
         )
 
