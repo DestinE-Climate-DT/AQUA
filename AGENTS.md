@@ -18,6 +18,11 @@
 - When opening an issue follow the issue template (provided in `.github/ISSUE_TEMPLATE.md`) choosing an appropriate issue type from the given options.
 - Update also the CHANGELOG.md with the new version and the changes introduced in the current version following the same format as other entries in that file.
 
+### Reviewing pull requests
+- If user asks for a review of a pull request, review it looking for consistency, bugs, and if the code is clean and consistent with the general style of the rest of AQUA software. It should be compact, clean, and easy to maintain also by humans.
+- Check with specific attention if there is any code redundancy or if some of new features can be replaced by existing features.
+- Prepare a report with possible action points - ranked with a priority scale (serious, high, low, negligible) - which we will address later.
+
 ### Before implementing anything
 
 1. Search `aqua/core/` for an existing class handling similar logic
@@ -81,7 +86,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 All data *read paths* must go through Intake catalogs unless explicitly justified:
 
 - Do not hardcode file access patterns already representable in catalog YAML
-- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope, `icechunk/` for IceChunk); do not bypass Intake
+- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope/z3fdb, `icechunk/` for IceChunk); do not bypass Intake
 - AQUA uses intake ≥2 (pinned in `pyproject.toml`) with v1-style YAML catalogs; the `netcdf`, `zarr`, `gsv` and `icechunk` drivers are registered by AQUA itself (see `aqua/core/intake_drivers/__init__.py`)
 
 ---
