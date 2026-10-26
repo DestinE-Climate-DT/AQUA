@@ -81,6 +81,7 @@ def upload_directory_to_s3(client, bucket_name, source, dest, loglevel="WARNING"
         for file in files:
             file_path = os.path.join(root, file)
             if dest:
+                # Retain subdirectories beneath source in each S3 object key.
                 dest_path = os.path.relpath(file_path, source)
                 dest_path = os.path.join(dest, dest_path)
             else:
@@ -120,7 +121,8 @@ def main(argv=None):
             dest_path = args.destination
         else:
             dest_path = os.path.basename(args.source)
-        get_file_from_s3(s3, args.bucket_name, dest_path, args.source)  # source and destination are flipped in meaning
+        # In download mode, -d is the remote key and source is the local output path.
+        get_file_from_s3(s3, args.bucket_name, dest_path, args.source)
     else:
         if os.path.isdir(args.source):
             upload_directory_to_s3(s3, args.bucket_name, args.source, args.destination)

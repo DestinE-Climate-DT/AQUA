@@ -80,7 +80,7 @@ def make_content(
     """
     logger = log_configure(log_level=loglevel, log_name="make_contents")
 
-    # Update or create experiments.yaml
+    # All figure formats share the index one level above their content directories.
     content_dir = Path(content_dir)
     experiments_file = content_dir / ".." / "experiments.yaml"
     if not experiments_file.exists():
@@ -119,6 +119,7 @@ def make_content(
             with (experiment_dir / "experiment.yaml").open("r") as file:
                 experiment = yaml.safe_load(file)
 
+                # Older experiment files nest display fields under dashboard.
                 if "dashboard" in experiment:
                     experiment.update(experiment.pop("dashboard"))
 
@@ -195,6 +196,7 @@ def make_content(
                 filename_list.append(fn_line)
             elif fn.endswith(".svg"):
                 root = ET.parse(experiment_dir / fn).getroot()
+                # SVG elements use the XML namespace, including desc.
                 desc = root.find("{http://www.w3.org/2000/svg}desc")
                 metadata = {}
                 if desc is not None and desc.text:
@@ -234,6 +236,7 @@ def make_content(
                 prop = properties.get(v, {})
                 if prop:
                     for kk, vv in prop.items():
+                        # PDF metadata keys start with /; normalize keys for content files.
                         keystr = str(kk).lstrip("/").lower()
                         content["files"][v][keystr] = str(vv)
 

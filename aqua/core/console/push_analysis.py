@@ -138,6 +138,7 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logle
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
             logger.info("Transferring %s figures to %s/%s", fmt, rsync_target, relative)
+            # --relative recreates the content/format/experiment path at the remote root.
             _run(
                 "rsync",
                 "-avz",
@@ -259,5 +260,6 @@ def push_execute(args):
     except (FileNotFoundError, ValueError, subprocess.CalledProcessError) as exc:
         logger = log_configure(log_level=args.loglevel, log_name="push_analysis")
         logger.error("Publishing failed: %s", exc)
+        # Keep rsync's exit status so callers can distinguish transfer failures.
         return exc.returncode if isinstance(exc, subprocess.CalledProcessError) else 1
     return 0
