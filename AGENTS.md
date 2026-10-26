@@ -73,6 +73,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
 - **Backward compatibility**: public API changes require a CHANGELOG entry; new parameters must have defaults so existing call sites keep working
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
+- **Pandas is preferred over datetime**: we prefer to use pandas instead of datetime functions. datetime allowed only if the pandas solution would much more complicated.
 
 ---
 
