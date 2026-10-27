@@ -1,20 +1,22 @@
 """New Regrid class independent from the Reader"""
 
 import os
-import shutil
 from tempfile import TemporaryDirectory
 
 import xarray as xr
-from smmregrid import CdoGenerate, GridInspector
+from smmregrid import CdoGenerate, GridInspector, cdo_version
 from smmregrid import Regridder as SMMRegridder
 
 from aqua.core.default import (
+    DEFAULT_2D_DIMENSIONS,
     DEFAULT_DIMENSION,
     DEFAULT_DIMENSION_MASK,
+    DEFAULT_DIMENSION_SKIPNA,
+    DEFAULT_NA_THRES,
     DEFAULT_REGRID_METHOD,
 )
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list
+from aqua.core.util import get_cdo, to_list
 
 from .filename_handler import FilenameHandler
 from .grid_dict_handler import GridDictHandler
@@ -66,6 +68,8 @@ class Regridder:
             masked_attrs (dict): The masked attributes.
             masked_vars (list): The masked variables.
             extra_dims (dict): The extra dimensions (from cfg_grid_dict) to be sent to smmregrid.
+            skipna (bool): True if the grid path has the 'skipna' key: smmregrid skips missing source points
+                           and renormalizes the weights at each call.
         """
 
         if src_grid_name is None and data is None:
@@ -91,6 +95,12 @@ class Regridder:
         # this not used but can be shipped back to the reader
         self.src_horizontal_dims = self.src_grid_dict.get("space_coord", None)
         self.src_mask_dim = list(self.src_grid_path.keys())
+        # a 'skipna' path key: missing source points are skipped at regridding time, single 2D weights
+        self.skipna = DEFAULT_DIMENSION_SKIPNA in self.src_mask_dim
+        if self.skipna and len(self.src_mask_dim) > 1:
+            raise ValueError(
+                f"The '{DEFAULT_DIMENSION_SKIPNA}' path key cannot be combined with other keys: {self.src_mask_dim}"
+            )
         self.tgt_horizontal_dims = None
         self.error = None
 
@@ -133,28 +143,22 @@ class Regridder:
 
     def _set_cdo(self, cdo=None):
         """
-        Check information on CDO to set the correct version.
+        Resolve the CDO executable through smmregrid and check its version.
 
         Args:
-            cdo (str, optional): The path to the CDO executable. If None, guess it from the system.
+            cdo (str, optional): The path to the CDO executable. If None, use the CDO
+                environment variable or guess it from the system path.
 
         Returns:
             str: The path to the CDO executable.
 
         Raises:
-            FileNotFoundError: If CDO is not found in the system path.
+            FileNotFoundError: If CDO is not found.
+            RuntimeError: If the CDO version is not supported by smmregrid.
         """
-        if cdo:
-            # TODO: add a subprocess call to add if cdo is available
-            self.logger.debug("Going to use CDO in: %s", cdo)
-            return cdo
-
-        cdo = shutil.which("cdo")
-        if cdo:
-            self.logger.debug("Found CDO path: %s", cdo)
-            return cdo
-
-        raise FileNotFoundError("CDO not found in path: Weight and area generation will fail.")
+        cdo = get_cdo(cdo)
+        self.logger.info("Using CDO %s from %s", cdo_version(cdo), cdo)
+        return cdo
 
     def _get_info_from_data(self, data):
         """
@@ -338,7 +342,7 @@ class Regridder:
         # loop over the vertical coordinates: DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, or any other
         for mask_dim in self.src_grid_path:
             # define the vertical coordinate in the smmregrid world
-            smm_mask_dim = None if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
+            smm_mask_dim = None if mask_dim in DEFAULT_2D_DIMENSIONS else mask_dim
 
             weights_filename = self.filenames.weights_filename(
                 tgt_grid_name, self.src_grid_path, regrid_method, mask_dim, regridder_metadata
@@ -363,6 +367,8 @@ class Regridder:
                     cdo_extra=cdo_extra,
                     cdo_options=cdo_options,
                     cdo=self.cdo,
+                    skipna=self.skipna,
+                    na_thres=DEFAULT_NA_THRES,
                     loglevel=self.loglevel,
                 )
 
@@ -393,13 +399,15 @@ class Regridder:
 
         for mask_dim in weights.keys():
             # define the vertical coordinate in the smmregrid world
-            smm_mask_dim = None if mask_dim in [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK] else mask_dim
+            smm_mask_dim = None if mask_dim in DEFAULT_2D_DIMENSIONS else mask_dim
 
             # initialize the regridder
             self.smmregridder[mask_dim] = SMMRegridder(
                 weights=weights[mask_dim],
                 horizontal_dims=self.src_horizontal_dims,
                 mask_dim=smm_mask_dim,
+                skipna=self.skipna,
+                na_thres=DEFAULT_NA_THRES,
                 loglevel=self.loglevel,
             )
 
@@ -427,6 +435,11 @@ class Regridder:
         Return:
             shared_vars (dict): A dictionary of variables that share the same vertical dimensions.
         """
+
+        # with skipna a single regridder handles all the variables, masks are managed by smmregrid
+        if self.skipna:
+            variables = list(data.data_vars) if isinstance(data, xr.Dataset) else [data.name]
+            return {DEFAULT_DIMENSION_SKIPNA: variables}
 
         shared_vars = {}
         # TODO: masked vars based on attributes are still missing

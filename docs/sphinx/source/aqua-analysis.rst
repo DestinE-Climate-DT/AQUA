@@ -131,6 +131,40 @@ so that the script can be used in a batch job or in a workflow. These override c
     By default the script will run all the state-of-the-art diagnostics available in AQUA.
     It is possible to run only a subset of the diagnostics by modifying the ``run`` key in the configuration file.
 
+.. _aqua-analysis-report:
+
+Analysis report
+---------------
+
+Each diagnostic tool writes its own logfile, so a run can easily produce tens of logs.
+To get an overview of the run, at the end of the analysis a Markdown report
+``aqua-analysis-report_<YYYYmmdd-HHMMSS>.md`` is written in the run directory
+(``<outputdir>/<catalog>/<model>/<exp>/<realization>``), next to the logfiles.
+The timestamp is the start of the run, so that reports of successive runs in the same folder are kept.
+The report is meant to be human readable and can be pasted as it is in a GitLab or GitHub issue.
+It uses plain Unicode emoji and almost no HTML, so it is readable also from a terminal,
+e.g. with ``less`` or rendered with `glow <https://github.com/charmbracelet/glow>`_ (``glow -p <report>.md``).
+
+The report contains:
+
+- the run metadata (catalog, model, experiment, source, dates, host, user, AQUA version and duration);
+- a summary with the number of failed tools, the number of ``CRITICAL``/``ERROR``/``WARNING`` messages
+  and Python tracebacks, and the number of figures and NetCDF files written by the run;
+- one line per tool with its status (``FAILED`` for a non-zero exit code, ``ERRORS`` if errors or tracebacks
+  were logged, ``OK`` otherwise), exit code, duration, message counts and the files saved by the tool
+  (the latter only when the run uses ``INFO`` or ``DEBUG`` log level);
+- the number of output files per output folder and extension. Since the analysis is often re-run in the same folder,
+  files older than the start of the run are counted separately as *stale*, and empty files are flagged;
+- the distinct error messages of each logfile with their number of occurrences
+  (messages differing only by file paths are grouped together), and the tracebacks in collapsible blocks.
+
+Only the logfiles of the tools launched by the current run are considered: logfiles left in the folder
+by earlier runs are ignored. If the setup checker fails, the analysis stops and the report covers
+only the setup checker log.
+
+The report can be disabled with ``report: false`` in the ``job`` section of the configuration file,
+while ``report_warnings: true`` lists also the distinct ``WARNING`` messages.
+
 Configuration file
 ------------------
 
@@ -183,6 +217,8 @@ The job section contains the following keys:
 - ``script_path_base``: the base path for the diagnostic scripts. Default is ``${AQUA}/diagnostics``, but it is going to be updated.
 - ``startdate``: the start date to limit the time range for the analysis. Default is ``null``.
 - ``enddate``: the end date to limit the time range for the analysis. Default is ``null``.
+- ``report``: write the analysis report at the end of the run (see :ref:`aqua-analysis-report`). Default is ``true``.
+- ``report_warnings``: list also the distinct ``WARNING`` messages in the report. Default is ``false``.
 
 .. note::
 
