@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
-- Add Asimov's first two laws adapted for AI agents at the top of `AGENTS.md`, require signatures on agent-opened issues and pull requests, and clarify when PR checklist items apply (#3299).
+- Require signatures on agent-opened issues and pull requests, and clarify when PR checklist items apply in `AGENTS.md` (#3299).
 - Homogenize/centralize the size and style of the label/axis/title into core graphics methods (#3294)
 - Fix time bounds for total time statistics and when excluding incomplete periods, including centered and empty outputs (#3249)
 - CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them (#3258)
