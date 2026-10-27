@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.3):
 
+- Require a signature identifying the agent at the bottom of new agent-opened issues and pull requests in `AGENTS.md`.
 - Homogenize/centralize the size and style of the label/axis/title into core graphics methods (#3294)
 - Fix time bounds for total time statistics and when excluding incomplete periods, including centered and empty outputs (#3249)
 - CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them (#3258)
