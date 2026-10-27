@@ -6,9 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.3):
+- Fix time bounds for total time statistics and when excluding incomplete periods, including centered and empty outputs (#3249)
+- CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them (#3258)
 - In DROP, preserve the `AQUA_regridded` attribute during in-memory pipeline execution so downstream operations like regional selection properly route to the target grid, stripping it before persisting to disk (#3288)
 - Implement Intake STAC driver (#3161, #3181)
-- CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them
 - `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files, readable both on GitHub/GitLab and in a terminal (#3242)
 - Mention z3fdb alongside FDB and Polytope in documentation, CLI options, and docstrings (#3287)
 - Restructure the fixes in `aqua/core/config/fixes`: one file per model (`ifs`, `icon`, `fesom`, `ec-earth4`), `climatedt.yaml` for the catgen default fixes, `observations.yaml`, unused fixes moved to `deprecated.yaml`; fixer names unchanged; new tests for duplicated fixer names and parent inheritance (#3270)
