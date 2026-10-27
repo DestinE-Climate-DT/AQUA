@@ -21,7 +21,8 @@ The Third Law is intentionally omitted.
 
 ### Creating issues and pull requests
 - Prefix the title of new pull requests or issues with a topic in square brackets, e.g. `[Drop]` and capitalize the first letter of the topic and the first letter of the title.
-- When opening a PR follow the Standard PR template (provided in `.github/PULL_REQUEST_TEMPLATE.md`), keeping only checkboxes that are relevant. When working on the PR check boxes as needed.
+- When opening a PR follow the Standard PR template (provided in `.github/PULL_REQUEST_TEMPLATE.md`). Keep only checkboxes whose conditions apply to the actual changes, and check them only when the required work is complete. Remove irrelevant checkboxes instead of marking them complete.
+- The "Documentation is included if a new feature is included" checkbox applies only when the PR introduces a new feature and includes its user documentation. Edits to agent instructions (`AGENTS.md`) or `CHANGELOG.md` alone do not make this checkbox relevant.
 - When opening an issue follow the issue template (provided in `.github/ISSUE_TEMPLATE.md`) choosing an appropriate issue type from the given options.
 - End the body of every new issue or pull request opened by an agent (Claude, Gemini, Codex, etc.) with a short signature:
   `🤖 Generated with [Agent name](official-product-url)`, using the actual agent's name and official product URL.
