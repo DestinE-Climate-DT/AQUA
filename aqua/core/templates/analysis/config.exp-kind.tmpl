@@ -4,20 +4,62 @@
 # definition used by the templates. Any other kind is deep-merged on top of "default", so it
 # only needs to list the keys it overrides. An unknown kind raises an error.
 # The resolved kind name is available to the templates as "kind" (reserved key).
-
-# default: default date range for all analyses
+#
+# Keys and blocks:
+# regrid: target grid of the reference datasets
+# loglevel: log level of the diagnostics
+# output: figure settings shared by all the templates (save_format, dpi, rebuild)
+# sources: every observational dataset available to the templates (catalog, model, exp, source),
+#          each with a YAML anchor. Not read by the templates: references point to these anchors.
+# references: one slot per template, named <collection>_<quantity> after the template file
+#             config-<collection>-<quantity>.j2. A kind swaps the dataset of a slot by pointing
+#             it to another source.
+# period: date ranges of the references
+#   default: main date range for all analyses
+#   timeseries: date range for timeseries analyses
+#
+# Date keys:
 # startdate, enddate: values for the date range for references to be used in the analysis
 # std_startdate, std_enddate: standard deviation for references to be used in the analysis
+#
+# Usage in a template:
+#   model: '{{ references.atmosphere2d_surface.model }}'
+#   regrid: '{{ regrid }}'
+#   startdate: '{{ period.default.startdate }}'
+#   std_enddate: '{{ period.timeseries.std_enddate }}'
+#   save_format: {{ output.save_format }}
 
 default:
-  default:
-    startdate: "1990-01-01"
-    enddate: "2014-12-31"
-    std_startdate: "1990-01-01"
-    std_enddate: "2014-12-31"
+  regrid: r100
+  loglevel: WARNING
+  output:
+    save_format: [png, pdf, svg]
+    dpi: 300
+    rebuild: true
+  sources:
+    era5: &era5 {catalog: obs, model: ECMWF, exp: era5, source: monthly}
+    berkeley_earth: &berkeley_earth {catalog: obs, model: BERKELEY-EARTH, exp: aqua-filled, source: r100-monthly}
+  references:
+    atmosphere2d_surface: *era5                # surface fields
+    atmosphere2d_temperature: *berkeley_earth  # 2m temperature
+  period:
+    default:
+      startdate: "1990-01-01"
+      enddate: "2014-12-31"
+      std_startdate: "1990-01-01"
+      std_enddate: "2014-12-31"
+    timeseries:
+      startdate: "1990-01-01"
+      enddate: "2014-12-31"
+      std_startdate: "1990-01-01"
+      std_enddate: "2014-12-31"
 
-# Example of a kind overriding only the reference period end date.
-# The resolved kind keeps startdate, std_startdate and std_enddate from "default".
+# Example of a kind overriding the reference of one template and the end dates.
+# The resolved kind keeps every other key from "default".
 # extended:
-#   default:
-#     enddate: "2024-12-31"
+#   references:
+#     atmosphere2d_temperature: *era5
+#   period:
+#     default:
+#       enddate: "2024-12-31"
+#       std_enddate: "2024-12-31"

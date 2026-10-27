@@ -661,10 +661,13 @@ class TestTemplating:
 
     def test_configure_experiment_kind_nested_partial_override(self, analysis, tmp_path):
         """Nested blocks are merged recursively and the 'default' kind is not modified."""
+        era5 = {"catalog": "obs", "model": "ECMWF", "exp": "era5", "source": "monthly"}
         default = {
-            "default": {"startdate": "1990-01-01", "enddate": "2014-12-31"},
-            "timeseries": {"startdate": "1990-01-01", "enddate": "2014-12-31"},
-            "references": {"era5": {"catalog": "obs", "model": "ECMWF", "exp": "era5", "source": "monthly"}},
+            "references": {"atmosphere2d_surface": era5},
+            "period": {
+                "default": {"startdate": "1990-01-01", "enddate": "2014-12-31"},
+                "timeseries": {"startdate": "1990-01-01", "enddate": "2014-12-31"},
+            },
         }
         kinds_file = tmp_path / "kinds_nested.yaml"
         dump_yaml(
@@ -672,16 +675,16 @@ class TestTemplating:
             {
                 "default": default,
                 "storyline": {
-                    "default": {"startdate": "2017-01-01"},
-                    "references": {"era5": {"source": "daily"}},
+                    "references": {"atmosphere2d_surface": {"source": "daily"}},
+                    "period": {"default": {"startdate": "2017-01-01"}},
                 },
             },
         )
         analysis.configure_experiment_kind("storyline", str(kinds_file))
         resolved = analysis.exp_kind_dict
-        assert resolved["default"] == {"startdate": "2017-01-01", "enddate": "2014-12-31"}
-        assert resolved["timeseries"] == default["timeseries"]
-        assert resolved["references"]["era5"] == {"catalog": "obs", "model": "ECMWF", "exp": "era5", "source": "daily"}
+        assert resolved["period"]["default"] == {"startdate": "2017-01-01", "enddate": "2014-12-31"}
+        assert resolved["period"]["timeseries"] == default["period"]["timeseries"]
+        assert resolved["references"]["atmosphere2d_surface"] == {**era5, "source": "daily"}
 
         analysis.configure_experiment_kind("default", str(kinds_file))
         assert analysis.exp_kind_dict == {**default, "kind": "default"}
