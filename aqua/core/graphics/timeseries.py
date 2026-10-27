@@ -9,6 +9,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
 
@@ -35,7 +36,7 @@ def plot_timeseries(
     style: Optional[str] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
-    figsize: tuple = (10, 5),
+    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
     title: Optional[str] = None,
     colors: Optional[list] = None,
     loglevel: str = "WARNING",
@@ -177,12 +178,12 @@ def plot_timeseries(
         )
 
     if legend and (data_labels != empty_label or ref_label != empty_label or ens_label != empty_label):
-        ax.legend(fontsize="small")
+        ax.legend()
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     if title:
         wrapped_title = textwrap.fill(title, width=70)
-        ax.set_title(wrapped_title, fontsize=12)
+        ax.set_title(wrapped_title)
     else:
         ax.set_title("")
 
@@ -223,13 +224,12 @@ def plot_seasonalcycle(
     """
 
     logger = log_configure(loglevel, "PlotSeasonalCycle")
+    ConfigStyle(style=style, loglevel=loglevel)
 
     if fig is None:
         fig = plt.figure(figsize=figsize)
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
-
-    ConfigStyle(style=style, loglevel=loglevel)
 
     months_numeric = range(0, 13 + 1)  # Numeric months
     months_names = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
@@ -255,7 +255,7 @@ def plot_seasonalcycle(
         except Exception as e:
             logger.debug(f"Error plotting std data: {e}")
 
-    ax.legend(fontsize="small")
+    ax.legend()
     ax.set_xticks(months_numeric)
     ax.set_xticklabels(months_names)
     ax.set_xlim(0.5, 12.5)
@@ -264,7 +264,7 @@ def plot_seasonalcycle(
 
     if title is not None:
         wrapped_title = textwrap.fill(title, width=60)
-        ax.set_title(wrapped_title, fontsize=12)
+        ax.set_title(wrapped_title)
     else:
         ax.set_title("")
 
