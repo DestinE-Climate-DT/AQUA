@@ -101,6 +101,7 @@ def plot_maps(
             contour=contour,
             proj=proj,
             extent=extent,
+            style=style,
             vmin=vmin,
             vmax=vmax,
             nlevels=nlevels,
