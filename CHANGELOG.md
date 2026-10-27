@@ -25,6 +25,7 @@ Unreleased in the current development version (target v1.2.3):
 - Add pull request review instructions to AGENTS.md (#3285)
 - Add instructions for human control of main to AGENTS.md (#3232)
 - DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
+- DROP NetCDF, Zarr and Icechunk writers share the same on-disk chunks (one horizontal slice); Icechunk time chunks are no longer estimated from the frequency, and the unused `zarr_chunks` argument of `Drop` is removed (#3256)
 - Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
 - Fix the ICON-default `snlwrf` formula by removing a trailing operator; ICON-cycle3 and ICON-cycle4 inherit the correction (#3247)
 - CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
