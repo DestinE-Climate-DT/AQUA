@@ -224,13 +224,12 @@ def plot_seasonalcycle(
     """
 
     logger = log_configure(loglevel, "PlotSeasonalCycle")
+    ConfigStyle(style=style, loglevel=loglevel)
 
     if fig is None:
         fig = plt.figure(figsize=figsize)
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
-
-    ConfigStyle(style=style, loglevel=loglevel)
 
     months_numeric = range(0, 13 + 1)  # Numeric months
     months_names = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D", ""]
