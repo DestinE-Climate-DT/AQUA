@@ -94,6 +94,7 @@ def plot_seasonal_lat_lon_profiles(
             ref_std_data=season_ref_std_data,
             ref_label=ref_label,
             data_labels=data_labels,
+            style=style,
             fig=fig,
             ax=ax,
             loglevel=loglevel,
