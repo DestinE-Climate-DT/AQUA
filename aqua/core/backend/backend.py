@@ -81,6 +81,15 @@ class Backend(ABC):
         """Set AQUA-specific metadata on the dataset."""
         aqua_metadata = {f"AQUA_{key}": str(value) for key, value in metadata.items()}
         data = set_attrs(data, aqua_metadata)
+        return self._stringify_dict_attrs(data)
+
+    def _stringify_dict_attrs(self, data: xr.Dataset) -> xr.Dataset:
+        """Convert dict attributes (e.g. ``_earthkit`` from GRIB-to-zarr) to str: NetCDF cannot store them."""
+        for obj in (data, *data.variables.values()):
+            for key, value in obj.attrs.items():
+                if isinstance(value, dict):
+                    self.logger.warning("Attribute '%s' is a dict, converting it to string to allow NetCDF writing", key)
+                    obj.attrs[key] = str(value)
         return data
 
     def _postprocess_data(
