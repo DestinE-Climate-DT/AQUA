@@ -224,14 +224,17 @@ def test_aqua_push_dispatches_to_push_execute(monkeypatch, tmp_path):
     assert execute.call_count == 1
 
 
-def test_aqua_push_rejects_invalid_format(monkeypatch, tmp_path, capfd):
+def test_aqua_push_rejects_invalid_format(monkeypatch, tmp_path):
     """Invalid formats fail before the publishing routine is called."""
     monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "-f", "jpeg"])
     publish = Mock()
+    logger = Mock()
     monkeypatch.setattr(push_analysis, "push_analysis", publish)
+    monkeypatch.setattr(console_main, "log_configure", Mock(return_value=logger))
     assert console_main.main() == 2
     publish.assert_not_called()
-    assert "--format must be a comma-separated selection of pdf, png, svg" in capfd.readouterr().err
+    logger.error.assert_called_once()
+    assert str(logger.error.call_args.args[1]) == "--format must be a comma-separated selection of pdf, png, svg"
 
 
 def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
@@ -535,3 +538,45 @@ def test_content_generation_reads_figure_metadata(tmp_path, fmt):
     entry = content["files"][f"catalog/model/experiment/r1/figure.{fmt}"]
     assert entry["grouping"] == "Figures"
     assert entry["name" if fmt == "png" else "title"] == "Example"
+
+
+def test_content_generation_normalizes_legacy_experiment_metadata(tmp_path):
+    """Older metadata keys and dashboard fields remain usable in published content."""
+    source = tmp_path / "content" / "svg" / "catalog" / "model" / "experiment" / "r2"
+    source.mkdir(parents=True)
+    (source / "figure.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    (source / "experiment.yaml").write_text(
+        "catalog: catalog\nmodel: model\nexp: experiment\nexpver: v1\n"
+        "resolution: 5km\nrealization: custom\ndashboard:\n  menu: Baseline\n"
+    )
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {}\n")
+
+    make_contents.main(experiment="catalog/model/experiment/r2", configfile=config, root=tmp_path, format="svg")
+
+    metadata = yaml.safe_load((source / "content.yaml").read_text())["experiment"]
+    assert metadata["experiment"] == "experiment"
+    assert metadata["expid"] == "v1"
+    assert metadata["resolution_id"] == "5km"
+    assert metadata["title"] == metadata["label"] == "Baseline (5km,v1)"
+    assert metadata["realization"] == "custom"
+
+
+def test_content_cli_respects_force(tmp_path, monkeypatch):
+    """The standalone entry point preserves content until --force is requested."""
+    monkeypatch.chdir(tmp_path)
+    source = tmp_path / "content" / "svg" / "catalog" / "model" / "experiment" / "r1"
+    source.mkdir(parents=True)
+    (source / "figure.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
+    config = tmp_path / "grouping.yaml"
+    config.write_text("diagnostics: {}\n")
+    args = ["-e", "catalog/model/experiment/r1", "-c", str(config), "--format", "svg"]
+
+    assert make_contents.cli_main(args) == 0
+    content = source / "content.yaml"
+    content.write_text("sentinel: true\n")
+    assert make_contents.cli_main(args) == 0
+    assert content.read_text() == "sentinel: true\n"
+
+    assert make_contents.cli_main([*args, "--force"]) == 0
+    assert "experiment" in yaml.safe_load(content.read_text())
