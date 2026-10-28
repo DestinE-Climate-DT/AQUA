@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.4):
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
+- Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
 
 ## [v1.2.3]
 
