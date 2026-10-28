@@ -79,7 +79,7 @@ fdb = [
     "polytope-client",
     "gsv-interface>=2.18.0",
     # z3fdb pins fdb5lib, eccodeslib and eckitlib: 5.23.2.27 is the last with an eckitlib without bundled PROJ (#3163)
-    "z3fdb==5.23.2.27; sys_platform == 'linux'",
+    "z3fdb==5.25.0.33; sys_platform == 'linux'",
     "z3fdb>=5.23.2.27; sys_platform != 'linux'",
 ]
 docs = [
