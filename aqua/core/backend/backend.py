@@ -88,7 +88,7 @@ class Backend(ABC):
         for obj in (data, *data.variables.values()):
             for key, value in obj.attrs.items():
                 if isinstance(value, dict):
-                    self.logger.warning("Attribute '%s' is a dict, converting it to string to allow NetCDF writing", key)
+                    self.logger.info("Attribute '%s' is a dict, converting it to string to allow NetCDF writing", key)
                     obj.attrs[key] = str(value)
         return data
 
