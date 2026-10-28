@@ -171,7 +171,7 @@ def plot_gregory_monthly(
 
         # Optimized text rendering
         for m, x, y in zip(range(1, 13), t2m_ref.values[:-1], net_toa_ref.values[:-1]):
-            ax.annotate(str(m), (x, y), color="white", fontsize=8, ha="center", va="center", zorder=4)
+            ax.annotate(str(m), (x, y), color="white", fontsize="small", ha="center", va="center", zorder=4)
 
     return fig, ax
 
@@ -281,8 +281,10 @@ def plot_gregory_annual(
             # We plot the first and last points with different markers
             ax.plot(t2m_annual[0], net_toa_annual[0], marker=">", color="tab:green")
             ax.plot(t2m_annual[-1], net_toa_annual[-1], marker="<", color="tab:red")
-        ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize=8, ha="right")
-        ax.annotate(str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize=8, ha="right")
+        ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize="small", ha="right")
+        ax.annotate(
+            str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize="small", ha="right"
+        )
     if cmap:
         _add_time_evolution(ax, t2m_annual_data, net_toa_annual_data, cmap, labels)
     if ref:

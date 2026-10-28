@@ -2,7 +2,7 @@
 
 from intake import readers
 
-from .base import IntakeXarraySourceAdapter
+from .base import IntakeXarraySourceAdapter, _merge_xarray_kwargs
 from .readers import TolerantXArrayDatasetReader
 
 
@@ -55,15 +55,13 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
         metadata (dict, optional): Catalog metadata for this source.
         xarray_kwargs (dict, optional): Additional kwargs for the xarray open call.
         kwargs: Further parameters forwarded to the reader (e.g. chunks, consolidated).
+            These override matching ``xarray_kwargs`` entries, including explicit ``None`` values.
     """
 
     name = "zarr"
 
     def __init__(self, urlpath, storage_options=None, metadata=None, xarray_kwargs=None, **kwargs):
-        xarray_kwargs = dict(xarray_kwargs or {})
-        # a single store takes the same eager ``xr.open_dataset`` route as a single netcdf file
-        if "chunks" not in xarray_kwargs:
-            kwargs.setdefault("chunks", {})
+        xarray_kwargs = _merge_xarray_kwargs(xarray_kwargs, kwargs)
 
         # zarr rejects storage_options on a plain local-path store: it is only honoured
         # when the store is opened as an fsspec URI, so drop it for local urlpaths
@@ -71,5 +69,5 @@ class IntakeZarrSource(IntakeXarraySourceAdapter):
             storage_options = None
 
         data = readers.datatypes.Zarr(urlpath, storage_options=storage_options, metadata=metadata)
-        self.reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
+        self.reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=metadata)
         super().__init__(data, xarray_kwargs, metadata)
