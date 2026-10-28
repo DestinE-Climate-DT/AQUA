@@ -76,7 +76,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
 - **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
-- **Backward compatibility**: public API changes require a CHANGELOG entry; new parameters must have defaults so existing call sites keep working
+- **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
 
 ---
@@ -229,4 +229,4 @@ def method(self, arg1, arg2=None):
 - [ ] xarray outputs for AQUA chaining call `data.aqua.set_default(self)`
 - [ ] Operations remain lazy until write/output boundaries
 - [ ] No new dependency added unless explicitly requested
-- [ ] Public API changes have a CHANGELOG entry and new parameters have defaults
+- [ ] Public API changes have a CHANGELOG entry (citing only the PR, not the issue) and new parameters have defaults

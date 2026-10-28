@@ -236,15 +236,15 @@ def plot_hovmoller(
             verticalalignment="top",
             horizontalalignment="right",
             transform=ax.transAxes,
-            fontsize=12,
+            fontsize="medium",
             bbox=dict(facecolor="white", alpha=0.5),
         )
     if text:
         logger.debug("Adding text in the plot: %s", text)
-        ax.text(-0.3, 0.33, text, fontsize=15, color="dimgray", rotation=90, transform=ax.transAxes, ha="center")
+        ax.text(-0.3, 0.33, text, fontsize="large", color="dimgray", rotation=90, transform=ax.transAxes, ha="center")
 
     if title:
-        ax.set_title(title, fontsize=14)
+        ax.set_title(title)
 
     if return_fig:
         logger.debug("Returning figure and axes")
