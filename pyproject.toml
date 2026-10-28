@@ -90,7 +90,7 @@ notebooks = [
     "ipykernel"
 ]
 tests = [
-    "pytest",
+    "pytest<9.2",  # pytest 9.2 breaks xdist 3.8 loadgroup (pytest-dev/pytest-xdist#1386): remove with xdist >3.8.0
     "pytest-cov",
     "pytest-timeout",
     "pytest-xdist",
