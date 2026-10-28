@@ -9,7 +9,8 @@ Unreleased in the current development version (target v1.2.4):
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
 - Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
 
-- Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`)
+- Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
+- Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 ## [v1.2.3]
 
