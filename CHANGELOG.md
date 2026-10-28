@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.4):
 
+- Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does
+
 ## [v1.2.3]
 
 Main changes:
