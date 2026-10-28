@@ -19,6 +19,11 @@ grids:
   # default
   lon-lat:
     space_coord: [lon, lat]
+  # grid taken from the data, with smmregrid skipna: missing points skipped, masks may vary along any dimension
+  lon-lat-skipna:
+    path:
+      skipna: data
+    space_coord: [lon, lat]
   lon-lat-depth:
     vert_coord: ["depth"]
     space_coord: [lon, lat]

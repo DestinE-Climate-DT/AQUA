@@ -42,10 +42,14 @@ DEFAULT_CALENDAR = "gregorian"
 DEFAULT_DROP_GRID = "lon-lat-r100"
 DEFAULT_DROP_CHUNK_TARGET = "128MiB"  # target size of the read chunks written in DROP catalog entries
 
+# Graphics defaults (font sizes are set in the aqua.mplstyle style file)
+DEFAULT_FIGSIZE_HORIZONTAL = (10, 5)
+
 # Regridder defaults
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
 DEFAULT_DIMENSION = "2d"
 DEFAULT_DIMENSION_MASK = "2dm"
+DEFAULT_GRID_DATA = "data"  # reserved grid path value: the grid is taken from the dataset
 DEFAULT_DIMENSION_SKIPNA = "skipna"  # single grid path regridded with smmregrid skipna
 # grid path keys regridded with 2D weights (no mask_dim in smmregrid)
 DEFAULT_2D_DIMENSIONS = [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, DEFAULT_DIMENSION_SKIPNA]

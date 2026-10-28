@@ -230,25 +230,10 @@ fixer_name:
           valid_max: 1400
           positive: down
 
-  # E-OBS daily
-  eobs-destine-v1:
+  # E-OBS monthly: variables are monthly means of daily values (rr in mm/day)
+  eobs-eccodes-monthly:
     convention: eccodes
-    data_model: false
     deltat: 86400
-    coords:
-      lat:
-        source: latitude
-      lon:
-        source: longitude
-    vars:
-      2t:
-        source: tg
-      tprate:
-        source: rr
-      mn2t24:  # possible 24h mismatch with the GRIB definition
-        source: tn
-      mx2t24:  # possible 24h mismatch with the GRIB definition
-        source: tx
 
   # EN4
   EN4-default:

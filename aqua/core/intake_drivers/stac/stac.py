@@ -8,7 +8,7 @@ import fsspec
 import xarray as xr
 from intake import readers
 
-from aqua.core.intake_drivers.xarray.base import IntakeXarraySourceAdapter
+from aqua.core.intake_drivers.xarray.base import IntakeXarraySourceAdapter, _merge_xarray_kwargs
 from aqua.core.intake_drivers.xarray.readers import TolerantXArrayDatasetReader
 from aqua.core.logger import log_configure
 
@@ -19,43 +19,6 @@ try:
     import gribscan  # noqa: F401
 except ImportError:
     pass
-
-
-def _patch_zarr_v3_consolidated():
-    """Workaround for Zarr 3.x bug when consolidated v2 .zmetadata contains the '.zmetadata' key."""
-    try:
-        import zarr
-        from zarr.core.group import AsyncGroup
-    except (ImportError, AttributeError):
-        return
-
-    if getattr(AsyncGroup, "_aqua_zarr_v2_patched", False):
-        return
-
-    orig_from_bytes_v2 = AsyncGroup._from_bytes_v2
-
-    @classmethod
-    def _safe_from_bytes_v2(cls, store_path, zgroup_bytes, zattrs_bytes, consolidated_metadata_bytes):
-        if consolidated_metadata_bytes is not None:
-            import json
-
-            try:
-                data = json.loads(consolidated_metadata_bytes.to_bytes())
-                meta = data.get("metadata")
-                if isinstance(meta, dict) and ".zmetadata" in meta:
-                    meta.pop(".zmetadata", None)
-                    consolidated_metadata_bytes = zarr.core.buffer.core.default_buffer_prototype().buffer.from_bytes(
-                        json.dumps(data).encode()
-                    )
-            except Exception:
-                pass
-        return orig_from_bytes_v2(store_path, zgroup_bytes, zattrs_bytes, consolidated_metadata_bytes)
-
-    AsyncGroup._from_bytes_v2 = _safe_from_bytes_v2
-    AsyncGroup._aqua_zarr_v2_patched = True
-
-
-_patch_zarr_v3_consolidated()
 
 
 def _is_fsspec_urlpath(urlpath):
@@ -110,6 +73,16 @@ def _detect_format(media_type: str | None, href: str) -> str:
     return "netcdf"
 
 
+def _load_stac_item(urlpath: str, storage_options: dict | None) -> dict:
+    """Load item JSON, preserving read errors with the attempted path or URL."""
+    try:
+        with fsspec.open(urlpath, "r", **(storage_options or {})) as handle:
+            return json.load(handle)
+    except Exception as exc:
+        exc.add_note(f"Failed to load STAC item from {urlpath!r}.")
+        raise
+
+
 def _find_item_in_collection(
     collection_dict: dict,
     item_id: str,
@@ -162,27 +135,21 @@ def _find_item_in_collection(
             items_base = _resolve_href(base_urlpath, items_link["href"])
             candidate = f"{items_base.rstrip('/')}/{item_id}"
             try:
-                with fsspec.open(candidate, "r", **(storage_options or {})) as f:
-                    item_dict = json.load(f)
-                return item_dict, candidate
-            except Exception:
+                return _load_stac_item(candidate, storage_options), candidate
+            except FileNotFoundError:
                 pass
 
     # If target_href was found from item links, load it
     if target_href:
         resolved_item_path = _resolve_href(base_urlpath, target_href)
-        with fsspec.open(resolved_item_path, "r", **(storage_options or {})) as f:
-            item_dict = json.load(f)
-        return item_dict, resolved_item_path
+        return _load_stac_item(resolved_item_path, storage_options), resolved_item_path
 
     # Fallback: check if item_id can be resolved directly relative to collection path
     for candidate in (item_id, f"{item_id}.json"):
         resolved = _resolve_href(base_urlpath, candidate)
         try:
-            with fsspec.open(resolved, "r", **(storage_options or {})) as f:
-                item_dict = json.load(f)
-            return item_dict, resolved
-        except Exception:
+            return _load_stac_item(resolved, storage_options), resolved
+        except FileNotFoundError:
             continue
 
     coll_id = collection_dict.get("id", base_urlpath)
@@ -244,10 +211,9 @@ class STACCatalogEntry:
         }
 
     def get(self, **kwargs):
-        if self._is_item:
-            res = self._source(item=self._name, **kwargs)
-        else:
-            res = self._source(asset=self._name, **kwargs)
+        # The named entry takes precedence over inherited parent defaults.
+        kwargs["item" if self._is_item else "asset"] = self._name
+        res = self._source(**kwargs)
         if not hasattr(res, "_entry") or res._entry is None:
             res._entry = self
         return res
@@ -320,9 +286,14 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             inferred from the asset's type or href.
         storage_options (dict, optional): Parameters passed to fsspec for reading.
         metadata (dict, optional): Extra catalog metadata to merge with STAC metadata.
-        xarray_kwargs (dict, optional): Additional kwargs for xarray open calls.
+        xarray_kwargs (dict, optional): Additional kwargs for xarray open calls. Explicit
+            source kwargs override matching entries, including explicit ``None`` values.
         loglevel (str, optional): Logging level. Defaults to 'WARNING'.
         **kwargs: Further parameters forwarded to the reader (e.g. chunks).
+
+    Raises:
+        TypeError: If ``urlpath`` or ``path`` is a dictionary.
+        ValueError: If no STAC JSON path or URL is provided.
     """
 
     name = "stac"
@@ -343,6 +314,8 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.logger = log_configure(log_level=loglevel, log_name="IntakeSTACSource")
         self.loglevel = loglevel
 
+        if isinstance(urlpath, dict) or isinstance(path, dict):
+            raise TypeError("'urlpath' (or 'path') must be a STAC JSON path or URL, not a dictionary.")
         target_url = urlpath or path
         if not target_url:
             raise ValueError("Must provide 'urlpath' (or 'path') pointing to a STAC JSON.")
@@ -361,14 +334,10 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         self.extra_kwargs = kwargs
 
         # Read the STAC JSON
-        if isinstance(target_url, dict):
-            raw_dict = target_url
-            base_urlpath = ""
-        else:
-            base_urlpath = str(target_url)
-            self.logger.debug("Loading STAC JSON from %s", base_urlpath)
-            with fsspec.open(base_urlpath, "r", **(storage_options or {})) as f:
-                raw_dict = json.load(f)
+        base_urlpath = str(target_url)
+        self.logger.debug("Loading STAC JSON from %s", base_urlpath)
+        with fsspec.open(base_urlpath, "r", **(storage_options or {})) as f:
+            raw_dict = json.load(f)
 
         self.base_urlpath = base_urlpath
         self.raw_dict = raw_dict
@@ -489,20 +458,16 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
         # Detect format and configure reader
         fmt = format.lower() if format else _detect_format(asset_info.get("type"), asset_href)
-        xarray_kwargs = dict(xarray_kwargs or {})
+        xarray_kwargs = _merge_xarray_kwargs(xarray_kwargs, kwargs)
 
         if fmt == "zarr":
-            if "chunks" not in xarray_kwargs:
-                kwargs.setdefault("chunks", {})
             asset_storage = storage_options if (storage_options and _is_fsspec_urlpath(asset_href)) else None
             data = readers.datatypes.Zarr(asset_href, storage_options=asset_storage, metadata=combined_metadata)
-            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata, **kwargs)
+            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata)
         else:  # netcdf
             xarray_kwargs.setdefault("engine", "netcdf4")
-            if "chunks" not in xarray_kwargs:
-                kwargs.setdefault("chunks", {})
             data = readers.datatypes.NetCDF3(asset_href, storage_options=storage_options, metadata=combined_metadata)
-            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata, **kwargs)
+            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=combined_metadata)
 
         self.reader = reader
         self.stac_item = item_dict
@@ -516,44 +481,29 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
 
     def read(self):
         """Read data into an in-memory xarray Dataset."""
-        if self.reader is None:
-            coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
-            raise ValueError(
-                f"STAC Collection '{coll_id}' cannot be read directly. "
-                "Please specify an item to load, for example:\n"
-                f"  cat['{self.name}']['item_id'].read() or cat['{self.name}'](item='item_id').read()"
-            )
-        try:
-            return super().read()
-        except Exception as e:
-            if "not enough values to unpack" in str(e):
-                href = self.asset_info.get("href", "")
-                raise RuntimeError(
-                    f"Failed to read asset '{self.asset_name}' from '{href}'. "
-                    "The remote server returned an HTTP error (such as 404 Not Found), which Zarr "
-                    f"could not parse. Original error: {e}"
-                ) from e
-            raise
+        return self._read_asset(super().read)
 
     def to_dask(self):
         """Read data into a dask-backed xarray Dataset."""
+        return self._read_asset(super().to_dask)
+
+    discover = read
+    read_chunked = to_dask
+
+    def _read_asset(self, read):
+        """Read a selected asset, preserving errors with the resolved source location."""
         if self.reader is None:
             coll_id = self.collection_info.get("id", self.base_urlpath) if self.collection_info else self.base_urlpath
+            method = read.__name__
             raise ValueError(
                 f"STAC Collection '{coll_id}' cannot be read directly. "
                 "Please specify an item to load, for example:\n"
-                f"  cat['{self.name}']['item_id'].to_dask() or cat['{self.name}'](item='item_id').to_dask()"
+                f"  cat['{self.name}']['item_id'].{method}() or cat['{self.name}'](item='item_id').{method}()"
             )
         try:
-            return super().to_dask()
-        except Exception as e:
-            if "not enough values to unpack" in str(e):
-                href = self.asset_info.get("href", "")
-                raise RuntimeError(
-                    f"Failed to read asset '{self.asset_name}' from '{href}'. "
-                    "The remote server returned an HTTP error (such as 404 Not Found), which Zarr "
-                    f"could not parse. Original error: {e}"
-                ) from e
+            return read()
+        except Exception as exc:
+            exc.add_note(f"While reading STAC asset {self.asset_name!r} from {self.data.url!r}.")
             raise
 
     @property
@@ -574,7 +524,7 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
         # If this source belongs to a collection and key matches an item in the collection:
         if self._is_collection_view and key in self.available_items:
             child = IntakeSTACSource(
-                urlpath=self.raw_dict if isinstance(self.target_url, dict) else self.base_urlpath,
+                urlpath=self.base_urlpath,
                 item=key,
                 asset=self.asset_arg,
                 format=self.format_arg,
