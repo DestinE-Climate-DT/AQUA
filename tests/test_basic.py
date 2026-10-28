@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import xarray as xr
 from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
@@ -245,3 +246,15 @@ class TestAqua:
         assert reader.regridder is None
         with pytest.raises(NoRegridError):
             reader.regrid(data)
+
+
+@pytest.mark.aqua
+def test_set_metadata_stringifies_dict_attrs(dummy_backend, tmp_path):
+    """Dict attributes (e.g. `_earthkit`) are converted to str so the data can be written to NetCDF."""
+    ds = xr.Dataset({"var": ("x", [1.0, 2.0])})
+    ds["var"].attrs["_earthkit"] = {"bitsPerValue": 24}
+    ds.attrs["extra"] = {"a": 1}
+    ds = dummy_backend._set_metadata(ds, {"model": "m"})
+    assert ds["var"].attrs["_earthkit"] == "{'bitsPerValue': 24}"
+    assert isinstance(ds.attrs["extra"], str)
+    ds.to_netcdf(tmp_path / "out.nc")
