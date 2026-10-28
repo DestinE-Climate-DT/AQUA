@@ -278,6 +278,38 @@ class TestRegridder:
         with pytest.raises(ValueError, match="cannot be combined"):
             Regridder(cfg, src_grid_name="mixed", loglevel=LOGLEVEL)
 
+    def test_skipna_from_data(self):
+        """The 'data' path value takes the grid from the dataset: masks varying in time are handled"""
+        cfg = {"grids": {"lonlat-skipna": {"path": {"skipna": "data"}, "space_coord": ["lon", "lat"]}}}
+        gdh = GridDictHandler(cfg)
+        assert gdh.normalize_grid_dict("lonlat-skipna")["path"] == {"skipna": "data"}
+        assert GridDictHandler({"grids": {"d": {"path": "data"}}}).normalize_grid_dict("d")["path"] == {"2d": "data"}
+
+        data = np.full((3, 18, 36), 280.0)
+        data[1, 2:6, 4:10] = np.nan  # the mask changes with time
+        da = xr.DataArray(
+            data,
+            coords={"time": np.arange(3), "lat": np.arange(-85, 90, 10.0), "lon": np.arange(5, 360, 10.0)},
+            dims=("time", "lat", "lon"),
+            name="temp",
+        )
+        da.lat.attrs.update({"standard_name": "latitude", "units": "degrees_north"})
+        da.lon.attrs.update({"standard_name": "longitude", "units": "degrees_east"})
+
+        # without the dataset the grid is not available
+        assert Regridder(cfg, src_grid_name="lonlat-skipna", loglevel=LOGLEVEL).error
+
+        regridder = Regridder(cfg, src_grid_name="lonlat-skipna", data=da.isel(time=0), loglevel=LOGLEVEL)
+        assert regridder.skipna and not regridder.error
+        assert cfg["grids"]["lonlat-skipna"]["path"] == {"skipna": "data"}  # configuration untouched
+        regridder.weights(tgt_grid_name="r18x9", regrid_method="ycon", rebuild=True)
+        assert list(regridder.smmregridder) == ["skipna"]
+        out = regridder.regrid(da)
+        assert out.sizes["lon"] == 18 and out.sizes["lat"] == 9
+        # constant field: any mask gives the same value, no garbage
+        assert float(out.min()) == pytest.approx(280.0) and float(out.max()) == pytest.approx(280.0)
+        assert out.isel(time=1).notnull().sum() > 0.8 * out.isel(time=1).size
+
     def test_levels_and_regrid(self):
         """
         Test regridding selected levels.
