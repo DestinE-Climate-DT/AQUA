@@ -12,6 +12,7 @@ from aqua.core.default import (
     DEFAULT_DIMENSION,
     DEFAULT_DIMENSION_MASK,
     DEFAULT_DIMENSION_SKIPNA,
+    DEFAULT_GRID_DATA,
     DEFAULT_NA_THRES,
     DEFAULT_REGRID_METHOD,
 )
@@ -26,6 +27,11 @@ from .regridder_util import check_existing_file, get_grid_path
 # to check and if a grid is a cdo grid,
 # a file on the disk or xarray dataset. Possible inclusion of CDOgrid object is considered
 # but should be likely developed on the smmregrid side.
+
+
+def _is_data(value):
+    """True for the reserved grid path value that takes the grid from the dataset."""
+    return isinstance(value, str) and value == DEFAULT_GRID_DATA
 
 
 class Regridder:
@@ -119,8 +125,8 @@ class Regridder:
             self.logger.warning(self.error)
             return
 
-        # check if the grid path has been defined
-        if not self.src_grid_path:
+        # check if the grid path has been defined (a 'data' value needs the dataset)
+        if not self.src_grid_path or any(_is_data(v) for v in self.src_grid_path.values()):
             self.error = "Source grid path not found. Please provide a dataset."
             self.logger.warning(self.error)
             return
@@ -187,6 +193,10 @@ class Regridder:
             self.logger.info("Using provided dataset as a grid path for %s", vdim)
             self.src_grid_dict = {"path": {vdim: data}}
             self.src_grid_path = self.src_grid_dict.get("path")
+
+        # a 'data' path value (e.g. skipna: data) takes the grid from the dataset
+        self.src_grid_path = {k: data if _is_data(v) else v for k, v in self.src_grid_path.items()}
+        self.src_grid_dict = {**self.src_grid_dict, "path": self.src_grid_path}
 
     def areas(self, tgt_grid_name=None, rebuild=False, regridder_metadata=None):
         """
