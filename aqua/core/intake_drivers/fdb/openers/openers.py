@@ -7,6 +7,7 @@ catalog). The heavy lifting lives in :class:`aqua.core.intake_drivers.fdb.opener
 which builds on the backend-agnostic :class:`aqua.core.intake_drivers.fdb.openers.fdb_source.FDBSource`.
 """
 
+from .earthkit_source import EarthkitPolytopeSource
 from .gsv_source import GSVSource
 from .polytope_source import PolytopeSource
 
@@ -64,9 +65,9 @@ def open_polytope(
     **kwargs,
 ):
     """
-    Open GSV data as a dask-enabled xarray dataset directly.
+    Open Polytope data as a dask-enabled xarray dataset.
 
-    This function wraps the GSVSource intake driver, allowing it to be used
+    This function wraps a Polytope source, allowing it to be used
     as a standalone function. This is useful for direct testing, calling from
     other code without a catalog, and for adaptation to Intake 2.
 
@@ -88,7 +89,7 @@ def open_polytope(
         metadata (dict, optional): Metadata containing paths to FDB.
         level (int, float, list, optional): level(s) to be read.
         loglevel (str, optional): The loglevel. Defaults to "WARNING".
-        engine (str, optional): Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to None.
+        engine (str, optional): 'polytope-earthkit' for Earthkit or 'polytope' for GSV. Defaults to None (GSV).
         databridge (str, optional): Databridge to be used. Defaults to None.
         kwargs: other keyword arguments.
 
@@ -96,7 +97,8 @@ def open_polytope(
         xr.Dataset: A lazy dask-enabled xarray dataset.
     """
 
-    source = PolytopeSource(
+    source_class = EarthkitPolytopeSource if kwargs.get("engine") == "polytope-earthkit" else PolytopeSource
+    source = source_class(
         request=request,
         *args,
         **kwargs,

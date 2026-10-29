@@ -12,4 +12,5 @@ dependencies:
   # smmregrid brings CDO on Linux; on macOS install CDO with Homebrew (brew install cdo)
   - smmregrid==0.2.0
   - eccodes>=2.50.0,<2.51 # keep aligned with eccodes/eccodeslib in pyproject.toml
+  - earthkit-data>=1.3.1 # Polytope full-field access; keep aligned with the polytope extra
   - pip
