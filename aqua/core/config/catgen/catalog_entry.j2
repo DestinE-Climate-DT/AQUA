@@ -10,7 +10,6 @@
         realization: {% if num_of_realizations > 1 %}{% raw %}'{{ realization }}'{% endraw %}{% else %}1{% endif %}
         resolution: {{ resolution }}
         expver: {{ expver }}  # To be overwritten by workflow/config file
-        expid: {{ expid }}
         type: fc
         stream: {{ stream }}
         {% if stream == 'clmn' %}
@@ -45,6 +44,7 @@
     description: {{ description }}
     driver: gsv
     metadata:
+        expid: {{ expid }}
         fdb_home: {{ fdb_home }}
         {% if fdb_home_bridge %}
         fdb_home_bridge: {{ fdb_home_bridge }}
