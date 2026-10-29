@@ -43,6 +43,8 @@ from aqua.core.util.eccodes import get_eccodes_attr
 
 from .timeutil import FDBTimeMixin
 
+xr.set_options(keep_attrs=True)
+
 
 class FDBSource(ABC, FDBTimeMixin):
     """Abstract intake source that reads FDB/MARS-like data in time/level partitions.
@@ -322,7 +324,7 @@ class FDBSource(ABC, FDBTimeMixin):
         self._check_dates()
 
         if self.dask_access:  # We need a better schema for dask access
-            if not self._ds or not self._da:  # we still have to retrieve a sample dataset
+            if self._ds is None or self._da is None:  # we still have to retrieve a sample dataset
                 self._ds = self._get_partition(0, var=self._var, first=True, onelevel=self.onelevel)
 
                 var = list(self._ds.data_vars)[0]
