@@ -90,6 +90,29 @@ def test_custom_service_and_serialization(source_args, earthkit_mock):
     xr.testing.assert_equal(restored.compute(scheduler="synchronous"), data.compute(scheduler="synchronous"))
 
 
+@pytest.mark.parametrize(
+    "start,end,first,month",
+    [
+        ("19900101", "19900301", True, "1"),
+        ("19900101", "19900301", False, "1/to/3"),
+        ("19900901", "19900901", False, "9"),
+        ("19901001", "19901201", False, "10/to/12"),
+    ],
+)
+def test_monthly_polytope_request(earthkit_mock, start, end, first, month):
+    """MARS month enums must be unpadded, including the Reader initialization probe."""
+    from_source, _ = earthkit_mock
+    source = EarthkitPolytopeSource(
+        {"param": [235087], "levtype": "sfc", "stream": "clmn"},
+        data_start_date=start, data_end_date=end,
+        timestep="h", savefreq="MS", chunks="YS", timestyle="yearmonth",
+    )
+    source._get_partition(0, first=first)
+    request = from_source.call_args.args[2]
+    assert request["year"] == "1990"
+    assert request["month"] == month
+
+
 @pytest.mark.parametrize("chunk_key", ["level", "vertical"])
 def test_level_selection_physical_values_and_chunking(source_args, earthkit_mock, chunk_key):
     from_source, fields = earthkit_mock
