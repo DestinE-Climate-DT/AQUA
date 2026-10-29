@@ -14,6 +14,8 @@ Unreleased in the current development version (target v1.2.4):
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
+- `aqua analysis --kind`: experiment kinds are deep-merged on top of the `default` kind, so they only list overrides; unknown kinds raise an error listing the available kinds; the kind name is exposed to the templates as `kind`; new `aqua.core.analysis.resolve_experiment_kind` helper (#3266)
+
 ## [v1.2.3]
 
 Main changes:

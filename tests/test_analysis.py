@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from jinja2 import UndefinedError
 
-from aqua.core.analysis import Analysis
+from aqua.core.analysis import Analysis, resolve_experiment_kind
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -626,15 +626,73 @@ class TestTemplating:
         with pytest.raises(KeyError):
             analysis.configure_experiment_kind("unknown_kind", str(kinds_file))
 
-    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml):
-        """When unknown kind is passed with 'default' key present, uses default dict."""
-        # Note: The implementation has a subtle bug where it returns string "default" as fallback
-        # instead of complete_dictionary["default"]. But if default key exists and exp_kind matches,
-        # it works correctly. This test ensures the valid path works.
-        analysis.configure_experiment_kind("historical", kinds_yaml)
-        assert isinstance(analysis.exp_kind_dict, dict)
-        assert analysis.exp_kind_dict["period"] == "past"
-        assert analysis.exp_kind_dict["forcing"] == "CMIP6"
+    def test_configure_experiment_kind_unknown_raises(self, analysis, kinds_yaml):
+        """An unknown kind (e.g. a typo) raises KeyError listing the available kinds."""
+        with pytest.raises(KeyError, match="historical"):
+            analysis.configure_experiment_kind("unknown_kind", kinds_yaml)
+        assert analysis.exp_kind_dict is None
+
+    def test_configure_experiment_kind_no_file(self, analysis):
+        """Without a kind file no templating is configured, even if a kind is requested."""
+        analysis.configure_experiment_kind(None, None)
+        assert analysis.exp_kind_dict is None
+        analysis.configure_experiment_kind("historical", None)
+        assert analysis.exp_kind_dict is None
+
+    def test_configure_experiment_kind_no_default_valid_kind_raises(self, analysis, tmp_path):
+        """The 'default' kind is mandatory, even when the requested kind exists."""
+        kinds_file = tmp_path / "kinds_no_default.yaml"
+        dump_yaml(str(kinds_file), {"historical": {"period": "past"}})
+        with pytest.raises(KeyError):
+            analysis.configure_experiment_kind("historical", str(kinds_file))
+
+    def test_configure_experiment_kind_merge_override(self, analysis, tmp_path):
+        """A kind only listing overrides inherits the other keys from 'default'."""
+        kinds_file = tmp_path / "kinds_merge.yaml"
+        dump_yaml(
+            str(kinds_file),
+            {
+                "default": {"period": "unknown", "forcing": "unknown"},
+                "scenario": {"forcing": "SSP5-8.5"},
+            },
+        )
+        analysis.configure_experiment_kind("scenario", str(kinds_file))
+        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "SSP5-8.5", "kind": "scenario"}
+
+    def test_configure_experiment_kind_nested_partial_override(self, analysis, tmp_path):
+        """Nested blocks are merged recursively and the 'default' kind is not modified."""
+        era5 = {"catalog": "obs", "model": "ECMWF", "exp": "era5", "source": "monthly"}
+        default = {
+            "references": {"atmosphere2d_surface": era5},
+            "period": {
+                "default": {"startdate": "1990-01-01", "enddate": "2014-12-31"},
+                "timeseries": {"startdate": "1990-01-01", "enddate": "2014-12-31"},
+            },
+        }
+        kinds_file = tmp_path / "kinds_nested.yaml"
+        dump_yaml(
+            str(kinds_file),
+            {
+                "default": default,
+                "storyline": {
+                    "references": {"atmosphere2d_surface": {"source": "daily"}},
+                    "period": {"default": {"startdate": "2017-01-01"}},
+                },
+            },
+        )
+        analysis.configure_experiment_kind("storyline", str(kinds_file))
+        resolved = analysis.exp_kind_dict
+        assert resolved["period"]["default"] == {"startdate": "2017-01-01", "enddate": "2014-12-31"}
+        assert resolved["period"]["timeseries"] == default["period"]["timeseries"]
+        assert resolved["references"]["atmosphere2d_surface"] == {**era5, "source": "daily"}
+
+        analysis.configure_experiment_kind("default", str(kinds_file))
+        assert analysis.exp_kind_dict == {**default, "kind": "default"}
+
+    def test_configure_experiment_kind_full_kind_unchanged(self, analysis, kinds_yaml):
+        """A fully specified kind resolves exactly to itself (backward compatibility)."""
+        analysis.configure_experiment_kind("scenario", kinds_yaml)
+        assert analysis.exp_kind_dict == {**load_yaml(kinds_yaml)["scenario"], "kind": "scenario"}
 
     def test_configure_experiment_kind_multiple_kinds(self, analysis, kinds_yaml):
         """Different kinds return independent sub-dictionaries."""
@@ -643,6 +701,32 @@ class TestTemplating:
 
         analysis.configure_experiment_kind("scenario", kinds_yaml)
         assert analysis.exp_kind_dict["forcing"] == "SSP5-8.5"
+
+    def test_configure_experiment_kind_name_exposed(self, analysis, temp_env, kinds_yaml):
+        """The resolved kind name is available to templates as 'kind'."""
+        analysis.configure_experiment_kind("scenario", kinds_yaml)
+        cfg = os.path.join(temp_env["config"], "kind.yaml")
+        with open(cfg, "w") as f:
+            f.write("kind: '{{ kind }}'\n{% if kind == 'scenario' %}\nextra: true\n{% endif %}\n")
+        rendered = load_yaml(analysis.configure_template_configs([cfg])[0])
+        assert rendered == {"kind": "scenario", "extra": True}
+
+    def test_configure_experiment_kind_reserved_key_raises(self, analysis, tmp_path):
+        """A kind file defining the reserved 'kind' key raises ValueError."""
+        kinds_file = tmp_path / "kinds_reserved.yaml"
+        dump_yaml(str(kinds_file), {"default": {"period": "unknown"}, "scenario": {"kind": "custom"}})
+        with pytest.raises(ValueError):
+            analysis.configure_experiment_kind("scenario", str(kinds_file))
+
+    def test_resolve_experiment_kind(self):
+        """The public helper resolves a kind from a dictionary, without a kind file."""
+        kinds = {"default": {"a": {"x": 1, "y": 2}}, "other": {"a": {"y": 3}}}
+        assert resolve_experiment_kind(kinds, "other") == {"a": {"x": 1, "y": 3}, "kind": "other"}
+        assert kinds["default"] == {"a": {"x": 1, "y": 2}}
+        with pytest.raises(KeyError):
+            resolve_experiment_kind(kinds, "missing")
+        with pytest.raises(KeyError):
+            resolve_experiment_kind({"other": {}}, "other")
 
     def test_configure_template_configs_jinja_substitution(self, analysis, temp_env, kinds_yaml):
         """Jinja placeholders are replaced by exp_kind_dict values."""
