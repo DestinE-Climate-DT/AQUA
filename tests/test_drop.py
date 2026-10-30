@@ -829,6 +829,22 @@ class TestIcechunkWriter:
         assert result["complete"] is False
         assert "bar" in result["message"]
 
+    def test_multivar_subdaily_resume(self, tmp_path):
+        """A new variable keeps the others (AQUA-001); resume starts after the exact last timestamp (AQUA-007)."""
+        writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+        writer.time_chunk_size = 2
+        times = pd.date_range("2020-01-31", periods=4, freq="12h")  # Jan 31 00/12, Feb 1 00/12
+        full = xr.DataArray(np.arange(8.0).reshape(4, 2), dims=["time", "lat"], coords={"time": times, "lat": [0.0, 1.0]})
+
+        assert writer.write_variable(full[:3].rename("a"), var="a")  # a interrupted after Feb 1 00:00
+        assert writer.write_variable((full * 10).rename("b"), var="b")  # new var extending the shared time axis
+        assert writer.write_variable(full.rename("a"), var="a")  # resume a: only Feb 1 12:00 is missing
+
+        ds = writer._open_files(writer.repo_path)
+        assert list(ds.time.values) == list(times.values)
+        np.testing.assert_array_equal(ds["a"].values, full.values)
+        np.testing.assert_array_equal(ds["b"].values, full.values * 10)
+
     def test_resume(self, drop_arguments, tmp_path):
         """IcechunkWriter appends only the missing months on a second run."""
         common = dict(

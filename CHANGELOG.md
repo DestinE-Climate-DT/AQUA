@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
+- DROP icechunk writer: adding a variable no longer wipes the other variables of the repo, and resume restarts after the exact last committed timestamp (no duplicated sub-daily records); a failed month now stops the variable and `write_variable` returns `False` (AQUA-001, AQUA-007 in #3233)
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
