@@ -76,7 +76,7 @@ class Backend(ABC):
             # and to change the default numpy datetime64 resolution to microseconds
             if self.coords.time in data.coords:
                 # Fix the calendar to Gregorian if needed
-                data = fix_calendar(data, loglevel=self.loglevel)
+                data = fix_calendar(data, loglevel=self.loglevel, dim=self.coords.time)
         return data
 
     def _set_metadata(self, data: xr.Dataset, metadata: dict) -> xr.Dataset:

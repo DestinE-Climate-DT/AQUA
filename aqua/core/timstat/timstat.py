@@ -77,7 +77,7 @@ class TimStat:
             raise TypeError("stat must be a string or a callable function")
 
         # Align calendar to Gregorian if needed
-        data = fix_calendar(data, loglevel=self.loglevel)
+        data = fix_calendar(data, loglevel=self.loglevel, dim=self.coords.time)
 
         if stat == "histogram":  # convert to callable function
             stat = histogram
@@ -149,10 +149,12 @@ class TimStat:
             self.logger.info("Checking if incomplete chunks has been produced...")
             if "Q" in resample_freq:
                 boolean_mask = check_seasonal_chunk_completeness(
-                    data, resample_frequency=resample_freq, loglevel=self.loglevel
+                    data, resample_frequency=resample_freq, loglevel=self.loglevel, dim=self.coords.time
                 )
             else:
-                boolean_mask = check_chunk_completeness(data, resample_frequency=resample_freq, loglevel=self.loglevel)
+                boolean_mask = check_chunk_completeness(
+                    data, resample_frequency=resample_freq, loglevel=self.loglevel, dim=self.coords.time
+                )
             out = out.where(boolean_mask, drop=True)
 
         # Set time:

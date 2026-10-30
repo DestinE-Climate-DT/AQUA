@@ -17,6 +17,7 @@ from aqua.core.logger import log_configure
 
 from .sci_util import check_coordinates
 from .string import unit_to_latex
+from .timedim import resolve_time_dim
 
 
 def add_cyclic_lon(da: xr.DataArray):
@@ -221,7 +222,8 @@ def set_map_title(
     units = set_units if set_units is not None else data.attrs.get("units", None)
     model = data.attrs["AQUA_model"] if "AQUA_model" in data.attrs else None
     exp = data.attrs["AQUA_exp"] if "AQUA_exp" in data.attrs else None
-    time = data.time.values if "time" in data.dims else None
+    time_dim = resolve_time_dim()
+    time = data[time_dim].values if time_dim in data.dims else None
 
     if varname and not skip_varname:
         title += varname

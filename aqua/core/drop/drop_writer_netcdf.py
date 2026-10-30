@@ -66,7 +66,7 @@ class NetCDFWriter(BaseWriter):
         Returns:
             bool: True if file is valid, False otherwise
         """
-        return file_is_complete(filepath, loglevel=self.logger.level)
+        return file_is_complete(filepath, loglevel=self.logger.level, dim=self.coords.time)
 
     def _get_encoding(self, data, var=None):
         """

@@ -264,7 +264,7 @@ class Reader:
             )
 
         self.trender = Trender(loglevel=self.loglevel, data_model=self.coords.data_model)
-        self.vertinterpolator = VertInterpolator(loglevel=self.loglevel)
+        self.vertinterpolator = VertInterpolator(loglevel=self.loglevel, data_model=self.coords.data_model)
 
     @property
     def collection(self):

@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure
 
 from .styles import ConfigStyle
@@ -40,6 +41,7 @@ def index_plot(
         fig, ax: Figure and Axes objects
     """
     logger = log_configure(loglevel, "index_plot")
+    coords = AquaCoordNames()
     ConfigStyle(style=style, loglevel=loglevel)
 
     logger.debug("Loading data in memory")
@@ -55,10 +57,22 @@ def index_plot(
 
     # Plot the index
     ax.fill_between(
-        x=index.time, y1=thresh, y2=index.values, where=index.values >= thresh, alpha=0.6, color="red", interpolate=True
+        x=index[coords.time],
+        y1=thresh,
+        y2=index.values,
+        where=index.values >= thresh,
+        alpha=0.6,
+        color="red",
+        interpolate=True,
     )
     ax.fill_between(
-        index.time, y1=-thresh, y2=index.values, where=index.values < -thresh, alpha=0.6, color="blue", interpolate=True
+        index[coords.time],
+        y1=-thresh,
+        y2=index.values,
+        where=index.values < -thresh,
+        alpha=0.6,
+        color="blue",
+        interpolate=True,
     )
     index.plot(ax=ax, color="black", alpha=0.8, label=label)
 
