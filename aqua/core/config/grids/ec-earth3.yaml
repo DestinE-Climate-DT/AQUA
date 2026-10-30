@@ -1,0 +1,6 @@
+# HighResMIP atmospheric grids: EC-Earth3.
+
+grids:
+  ec-earth3p-hr-atm:
+    path: "{{ grids }}/EC-EARTH3/ec-earth3p-hr_atm.nc"
+    space_coord: ["lon", "lat"]

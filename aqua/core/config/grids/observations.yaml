@@ -25,21 +25,6 @@ grids:
       vars: ["SSTK", "sst", "tos"]
 
   # OSI-SAF sea-ice concentration, EASE2-250 polar grids (432x432), one per hemisphere.
-  # osi-saf-nh/sh: daily sources (osi-saf-450, osi-saf-amsr, osi-saf-aqua, osi-saf-ssmis)
-  # osi-saf-nh/sh-aqua: monthly sources (osi-saf-aqua)
-  # Both pairs use the same grid and cell area files.
-  osi-saf-nh:
-    path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_nh.nc"
-    space_coord: ["xc", "yc"]
-    cellareas: "{{ grids }}/OSI-SAF/cellarea_osi-saf_nh.nc"
-    cellareas_var: areacello
-    regrid_method: bil
-  osi-saf-sh:
-    path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_sh.nc"
-    space_coord: ["xc", "yc"]
-    cellareas: "{{ grids }}/OSI-SAF/cellarea_osi-saf_sh.nc"
-    cellareas_var: areacello
-    regrid_method: bil
   osi-saf-nh-aqua:
     path: "{{ grids }}/OSI-SAF/grid_osi-saf-aqua_nh.nc"
     space_coord: ["xc", "yc"]
