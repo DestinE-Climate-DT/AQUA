@@ -1,11 +1,21 @@
 """Tests for the aqua.datamodel module."""
 
+import copy
+import os
+import subprocess
+import sys
+from dataclasses import FrozenInstanceError
+
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
 from aqua import Reader
-from aqua.core.data_model import CoordIdentifier, CoordTransformer, scan_coord
+from aqua.core.data_model import AquaCoordNames, CoordIdentifier, CoordTransformer, scan_coord
+from aqua.core.fldstat import FldStat
+from aqua.core.reader.trender import Trender
+from aqua.core.timstat import TimStat
 
 
 @pytest.mark.aqua
@@ -177,6 +187,64 @@ class TestDataModel:
         with pytest.raises(ValueError):
             scan_coord("nonexistent")
 
-        # Test a non existing data model, returns default
-        default_name_model = scan_coord("latitude", data_model="nonexistent_model", default="default_coord")
-        assert default_name_model == "default_coord"
+        # A non existing data model raises
+        with pytest.raises(FileNotFoundError):
+            scan_coord("latitude", data_model="nonexistent_model")
+
+    def test_aqua_coords(self):
+        """Test for the cached, frozen AquaCoordNames class."""
+        coords = AquaCoordNames()
+        assert (coords.time, coords.lat, coords.lon) == ("time", "lat", "lon")
+        assert (coords.isobaric, coords.depth, coords.height) == ("plev", "depth", "height")
+        assert AquaCoordNames() is coords  # cached
+        with pytest.raises(FrozenInstanceError):
+            coords.time = "valid_time"
+        with pytest.raises(FileNotFoundError):
+            AquaCoordNames("nonexistent_model")
+
+
+@pytest.fixture
+def custom_data_model(monkeypatch):
+    """Register a 'custom' data model, with renamed time and isobaric coordinates."""
+    from aqua.core.data_model import coord_utils
+
+    model = copy.deepcopy(coord_utils.get_data_model("aqua"))
+    model["data_model"]["time"]["name"] = "valid_time"
+    model["data_model"]["isobaric"]["name"] = "pressure"
+    original = coord_utils.get_data_model
+    monkeypatch.setattr(coord_utils, "get_data_model", lambda name="aqua": model if name == "custom" else original(name))
+    AquaCoordNames._instances.pop("custom", None)
+    yield "custom"
+    AquaCoordNames._instances.pop("custom", None)
+
+
+@pytest.mark.aqua
+class TestCoordNamesPlumbing:
+    """The data model chosen by the user reaches the classes that use coordinate names."""
+
+    def test_custom_names(self, custom_data_model):
+        coords = AquaCoordNames(custom_data_model)
+        assert (coords.time, coords.lat, coords.lon, coords.isobaric) == ("valid_time", "lat", "lon", "pressure")
+        assert AquaCoordNames().time == "time"
+
+    def test_timstat(self, custom_data_model):
+        time = pd.date_range("2000-01-01", periods=24, freq="MS")
+        data = xr.DataArray(np.arange(24.0), dims="valid_time", coords={"valid_time": time}, name="x")
+        out = TimStat(data_model=custom_data_model).timstat(data, stat="mean", freq="YS", time_bounds=True)
+        assert out["x"].sizes["valid_time"] == 2
+        assert "valid_time_bnds" in out
+        with pytest.raises(ValueError):
+            TimStat().timstat(data, stat="mean", freq="YS")  # default model expects 'time'
+
+    def test_fldstat_trender(self, custom_data_model):
+        assert FldStat(data_model=custom_data_model).coords.time == "valid_time"
+        assert FldStat(data_model=custom_data_model).area_selection.coords.isobaric == "pressure"
+        assert Trender(data_model=custom_data_model).coords.time == "valid_time"
+
+
+@pytest.mark.aqua
+def test_import_without_config(tmp_path):
+    """Importing aqua must not read the configuration: it does not exist before `aqua install`."""
+    env = {**os.environ, "AQUA_CONFIG": str(tmp_path / "missing"), "HOME": str(tmp_path)}
+    result = subprocess.run([sys.executable, "-c", "import aqua.core"], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr[-1500:]

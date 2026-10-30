@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
 from aqua.core.util.graphics import add_contour_labels
@@ -14,8 +15,8 @@ from .styles import ConfigStyle
 def plot_vertical_profile(
     data: xr.DataArray,
     var: str = None,
-    lev_name: str = "plev",
-    x_coord: str = "lat",
+    lev_name: Optional[str] = None,
+    x_coord: Optional[str] = None,
     lev_min: Optional[float] = None,
     lev_max: Optional[float] = None,
     vmin: Optional[float] = None,
@@ -43,8 +44,8 @@ def plot_vertical_profile(
     Args:
         data: DataArray to plot.
         var (str): Variable name for labeling purposes.
-        lev_name (str): Name of the vertical levels (default 'plev').
-        x_coord (str): Name of the horizontal coordinate (default 'lat').
+        lev_name (str): Name of the vertical levels (default is the data model isobaric coordinate).
+        x_coord (str): Name of the horizontal coordinate (default is the data model latitude coordinate).
         lev_min (float, optional): Minimum vertical level to plot.
         lev_max (float, optional): Maximum vertical level to plot.
         vmin (float, optional): Minimum colorbar limit.
@@ -66,6 +67,9 @@ def plot_vertical_profile(
         ax_pos (Tuple[int, int, int], optional): Position of subplot.
         loglevel (str, optional): Logging level.
     """
+    coords = AquaCoordNames()
+    lev_name = lev_name if lev_name is not None else coords.isobaric
+    x_coord = x_coord if x_coord is not None else coords.lat
     logger = log_configure(loglevel, "plot_vertical_profile")
     ConfigStyle(style=style, loglevel=loglevel)
 
@@ -95,8 +99,8 @@ def plot_vertical_profile(
     cax = ax.contourf(data[x_coord], data[lev_name], data, cmap=cmap, levels=levels, extend="both")
     if logscale:
         ax.set_yscale("log")
-    ax.set_xlabel("Latitude") if x_coord == "lat" else x_coord
-    ax.set_ylabel("Pressure Level (Pa)" if lev_name == "plev" else lev_name)
+    ax.set_xlabel("Latitude") if x_coord == coords.lat else x_coord
+    ax.set_ylabel("Pressure Level (Pa)" if lev_name == coords.isobaric else lev_name)
     ax.invert_yaxis()
     if cbar:
         if cbar_label is None:
@@ -124,8 +128,8 @@ def plot_vertical_profile_diff(
     data: xr.DataArray,
     data_ref: xr.DataArray,
     var: str,
-    lev_name: str = "plev",
-    x_coord: str = "lat",
+    lev_name: Optional[str] = None,
+    x_coord: Optional[str] = None,
     lev_min: Optional[float] = None,
     lev_max: Optional[float] = None,
     vmin: Optional[float] = None,
@@ -153,7 +157,7 @@ def plot_vertical_profile_diff(
         data (xr.DataArray): Dataset to plot.
         data_ref (xr.DataArray): DataArrays to compare. A contour of this will be added if add_contour is True.
         var (str): Variable name for labeling purposes.
-        lev_name (str): Name of the vertical levels. Default is 'plev'.
+        lev_name (str): Name of the vertical levels. Default is the data model isobaric coordinate.
         x_coord (str): Name of the horizontal coordinate.
         lev_min (float, optional): Minimum vertical level to plot.
         lev_max (float, optional): Maximum vertical level to plot.
@@ -174,6 +178,9 @@ def plot_vertical_profile_diff(
         loglevel (str, optional): Logging level.
         **kwargs: Additional arguments passed to plot_vertical_profile.
     """
+    coords = AquaCoordNames()
+    lev_name = lev_name if lev_name is not None else coords.isobaric
+    x_coord = x_coord if x_coord is not None else coords.lat
     logger = log_configure(loglevel, "plot_vertical_profile_diff")
     ConfigStyle(style=style, loglevel=loglevel)
 

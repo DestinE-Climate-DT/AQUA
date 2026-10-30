@@ -2,23 +2,27 @@
 
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 
 
 class VertInterpolator:
     """A class to perform vertical interpolation on xarray objects."""
 
-    def __init__(self, loglevel: str = "WARNING"):
+    def __init__(self, loglevel: str = "WARNING", data_model: str = DEFAULT_DATAMODEL):
         """
         Initialize the VertInterpolator class with optional default settings.
 
         Args:
             loglevel (str): Logging level. Default is 'WARNING'.
+            data_model (str): Data model providing the coordinate names. Default is 'aqua'.
         """
         self.loglevel = loglevel
+        self.coords = AquaCoordNames(data_model)
         self.logger = log_configure(self.loglevel, "VertInterpolator")
 
-    def vertinterp(self, data, levels=None, level_coord="plev", units=None, method="linear"):
+    def vertinterp(self, data, levels=None, level_coord=None, units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
         of xarray within AQUA. Given an xarray object, will interpolate the
@@ -30,7 +34,7 @@ class VertInterpolator:
             data (DataArray, Dataset): your dataset
             levels (float, or list): The level you want to interpolate the vertical coordinate
             units (str, optional, ): The units of your vertical axis. Default 'Pa'
-            level_coord (str, optional): The name of the vertical coordinate. Default 'plev'
+            level_coord (str, optional): The name of the vertical coordinate. Default is the data model isobaric coordinate
             method (str, optional): The type of interpolation method supported by interp()
 
         Return
@@ -39,6 +43,8 @@ class VertInterpolator:
 
         if levels is None:
             raise KeyError("Levels for interpolation must be specified")
+
+        level_coord = level_coord if level_coord is not None else self.coords.isobaric
 
         # error if level_coord is not there
         if level_coord not in data.coords:
@@ -71,7 +77,8 @@ class VertInterpolator:
 
         return final
 
-    def _vertinterp(self, data, levels=None, units="Pa", level_coord="plev", method="linear"):
+    def _vertinterp(self, data, levels=None, units="Pa", level_coord=None, method="linear"):
+        level_coord = level_coord if level_coord is not None else self.coords.isobaric
 
         # verify units are good
         if data[level_coord].units != units:

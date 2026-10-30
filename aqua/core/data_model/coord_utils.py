@@ -76,28 +76,29 @@ def get_data_model(name: str = "aqua"):
     return _load_data_model(name)
 
 
-def scan_coord(internal_name: str, default: str = None, data_model: str = "aqua") -> str:
+def scan_coord(internal_name: str, data_model: str = "aqua") -> str:
     """
     Get the coordinate name used by a given data model for an internal coordinate type
-    (e.g. 'depth', 'isobaric'), so that diagnostics do not need to hard-code coordinate names.
+    (e.g. 'depth', 'isobaric', 'latitude'), so that no coordinate name needs to be hard-coded.
 
     Args:
         internal_name (str): Internal coordinate type (e.g. 'depth', 'isobaric', 'latitude').
-        default (str): Fallback name returned if the coordinate is not defined in the data model.
         data_model (str): Data model name. Default is 'aqua'.
 
     Returns:
-        str: Coordinate name as defined by the data model, or the default if not found.
+        str: Coordinate name as defined by the data model.
+
+    Raises:
+        ValueError: If internal_name is not a valid internal coordinate name.
+        FileNotFoundError: If the data model file does not exist.
+        KeyError: If the coordinate or its name is not defined in the data model.
     """
     if internal_name not in AQUA_COORDS:
         raise ValueError(f"'{internal_name}' is not a valid internal coordinate name. Allowed values are {AQUA_COORDS}.")
     try:
-        coord = get_data_model(data_model)["data_model"][internal_name]
-    except FileNotFoundError:
-        return default
-    except KeyError:
-        raise KeyError(f"Coordinate '{internal_name}' not found in data model '{data_model}'.")
-    return coord.get("name", default)
+        return get_data_model(data_model)["data_model"][internal_name]["name"]
+    except KeyError as e:
+        raise KeyError(f"Coordinate '{internal_name}' with a 'name' not found in data model '{data_model}'.") from e
 
 
 # Function to get the conversion factor

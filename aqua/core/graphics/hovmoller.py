@@ -9,6 +9,7 @@ import numpy as np
 import xarray as xr
 from matplotlib.colors import BoundaryNorm
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
 
@@ -16,6 +17,9 @@ from .styles import ConfigStyle
 
 # set default options for xarray
 xr.set_options(keep_attrs=True)
+
+# Sentinel: default dimension is the data model longitude, while None means no averaging
+DEFAULT_DIM = object()
 
 
 def plot_hovmoller(
@@ -27,7 +31,7 @@ def plot_hovmoller(
     sym=False,
     style=None,
     contour=True,
-    dim="lon",
+    dim=DEFAULT_DIM,
     figsize=(8, 13),
     vmin=None,
     vmax=None,
@@ -59,7 +63,7 @@ def plot_hovmoller(
         sym (bool): If True, the color limits will be symmetric around zero.
         style (str): The style to be used for the plot. Default is None, which uses the default AQUA style.
         contour (bool): If True, contours will be plotted. If False, pcolormesh will be used.
-        dim (str): The dimension to be averaged over. Default is 'lon'.
+        dim (str): The dimension to be averaged over. Default is the data model longitude coordinate, None to skip the average.
         figsize (tuple): Size of the figure. Default is (8, 13).
         vmin (float): Minimum value for the color limits. If None, it will be evaluated from the data.
         vmax (float): Maximum value for the color limits. If None, it will be evaluated from the data.
@@ -83,6 +87,8 @@ def plot_hovmoller(
         plt.Figure: The matplotlib figure object containing the hovmoller plot.
         plt.Axes: The matplotlib axes object containing the hovmoller plot.
     """
+    coords = AquaCoordNames()
+    dim = coords.lon if dim is DEFAULT_DIM else dim
     logger = log_configure(log_level=loglevel, log_name="Hovmoller")
     ConfigStyle(style=style, loglevel=loglevel)
 
@@ -120,17 +126,17 @@ def plot_hovmoller(
     if invert_axis:
         logger.debug("Inverting axis for plot")
         x = data_mean.coords[space_dim]
-        y = data_mean.coords["time"]
+        y = data_mean.coords[coords.time]
         ax.set_xlabel(space_label)
-        ax.set_ylabel("time")
+        ax.set_ylabel(coords.time)
         if invert_time:
             plt.gca().invert_yaxis()
         if invert_space_coord:
             plt.gca().invert_xaxis()
     else:
-        x = data_mean.coords["time"]
+        x = data_mean.coords[coords.time]
         y = data_mean.coords[space_dim]
-        ax.set_xlabel("time")
+        ax.set_xlabel(coords.time)
         ax.set_ylabel(space_label)
         if invert_time:
             plt.gca().invert_xaxis()
@@ -178,7 +184,7 @@ def plot_hovmoller(
 
     if space_limits is None:
         # Leave out the bands where the data are NaN at every time (e.g. below the sea floor)
-        has_data = data_mean.notnull().any(dim="time").values
+        has_data = data_mean.notnull().any(dim=coords.time).values
         if has_data.any() and not has_data.all():
             valid_coords = data_mean[space_dim].values[has_data]
             space_limits = (valid_coords.min(), valid_coords.max())

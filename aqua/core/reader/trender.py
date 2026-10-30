@@ -3,6 +3,8 @@
 import numpy as np
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util.time import pandas_freq_to_offset, xarray_to_pandas_freq
 
@@ -12,54 +14,56 @@ class Trender:
     A class to handle trend and detrending of xarray objects using polynomial fitting.
     """
 
-    def __init__(self, loglevel: str = "WARNING"):
+    def __init__(self, loglevel: str = "WARNING", data_model: str = DEFAULT_DATAMODEL):
         """
         Initialize the Trender class with optional default settings.
 
         Args:
             loglevel (str): Logging level. Default is 'WARNING'.
+            data_model (str): Data model providing the coordinate names. Default is 'aqua'.
         """
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "Trender")
+        self.coords = AquaCoordNames(data_model)
 
     def trend(
-        self, data: xr.DataArray | xr.Dataset, dim: str = "time", degree: int = 1, skipna: bool = False
+        self, data: xr.DataArray | xr.Dataset, dim: str = None, degree: int = 1, skipna: bool = False
     ) -> xr.DataArray | xr.Dataset:
         """
         Estimate the trend of an xarray object using polynomial fitting.
 
         Args:
             data (DataArray or Dataset): The input data.
-            dim (str): Dimension to apply trend along. Defaults to 'time'.
+            dim (str): Dimension to apply trend along. Defaults to data_model's 'time'.
             degree (int): Degree of the polynomial. Defaults to 1.
             skipna (bool): Whether to skip NaNs. Defaults to False.
 
         Returns:
             DataArray or Dataset: The trend component.
         """
-        return self._apply_trend_or_detrend(data, self._trend, dim, degree, skipna)
+        return self._apply_trend_or_detrend(data, self._trend, dim or self.coords.time, degree, skipna)
 
     def detrend(
-        self, data: xr.DataArray | xr.Dataset, dim: str = "time", degree: int = 1, skipna: bool = False
+        self, data: xr.DataArray | xr.Dataset, dim: str = None, degree: int = 1, skipna: bool = False
     ) -> xr.DataArray | xr.Dataset:
         """
         Remove the trend from an xarray object using polynomial fitting.
 
         Args:
             data (DataArray or Dataset): The input data.
-            dim (str): Dimension to apply detrend along. Defaults to 'time'.
+            dim (str): Dimension to apply detrend along. Defaults to data_model's 'time'.
             degree (int): Degree of the polynomial. Defaults to 1.
             skipna (bool): Whether to skip NaNs. Defaults to False.
 
         Returns:
             DataArray or Dataset: The detrended data.
         """
-        return self._apply_trend_or_detrend(data, self._detrend, dim, degree, skipna)
+        return self._apply_trend_or_detrend(data, self._detrend, dim or self.coords.time, degree, skipna)
 
     def coeffs(
         self,
         data: xr.DataArray | xr.Dataset,
-        dim: str = "time",
+        dim: str = None,
         degree: int = 1,
         skipna: bool = False,
         normalize: bool = False,
@@ -68,7 +72,7 @@ class Trender:
         Compute the polynomial coefficients for the trend.
         """
 
-        return self._apply_trend_or_detrend(data, self._coeffs, dim, degree, skipna, normalize=normalize)
+        return self._apply_trend_or_detrend(data, self._coeffs, dim or self.coords.time, degree, skipna, normalize=normalize)
 
     def _coeffs(
         self, data: xr.DataArray | xr.Dataset, dim: str, degree: int, skipna: bool, normalize: bool
@@ -95,15 +99,15 @@ class Trender:
 
         # time axis are scaled to nanoseconds, which is not very user-friendly.
         # we try to adjust the coefficients to the input data frequency
-        if dim == "time" and normalize:
+        if dim == self.coords.time and normalize:
             self.logger.debug("Normalizing coefficients for time dimension.")
             # get the inferred frequency of the time dimension and convert to pandas offset
             time_values = data[dim].to_index()
             inferred_freq = xarray_to_pandas_freq(time_values)
-            self.logger.debug("Inferred frequency for 'time' dimension: %s", inferred_freq)
+            self.logger.debug("Inferred frequency for %s dimension: %s", dim, inferred_freq)
             if inferred_freq is None:
                 raise ValueError(
-                    "Inferred frequency for 'time' dimension is None. "
+                    f"Inferred frequency for {self.coords.time} dimension is None. "
                     "Ensure that the time dimension has a pandas compatible frequency."
                 )
             offset = pandas_freq_to_offset(inferred_freq)

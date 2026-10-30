@@ -4,6 +4,7 @@ import dask.array as da
 import numpy as np
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure
 from aqua.core.util import convert_data_units
 
@@ -39,7 +40,7 @@ def histogram(
 
     Raises:
         TypeError: If the input data is not an xarray DataArray.
-        ValueError: If no range is provided or if the DataArray does not have a 'lat' coordinate when weighted is True.
+        ValueError: If no range is provided or if the DataArray does not have a latitude coordinate when weighted is True.
 
     Returns:
         xarray.DataArray: The histogram of the input data.
@@ -62,10 +63,11 @@ def histogram(
             raise ValueError("Weights must have the same size as the data.")
     elif weighted:
         logger.debug("Using latitudinal weights")
-        if "lat" not in data.coords:
-            raise ValueError("DataArray must have a 'lat' coordinate for weighted histogram.")
+        lat = AquaCoordNames().lat
+        if lat not in data.coords:
+            raise ValueError(f"DataArray must have a '{lat}' coordinate for weighted histogram.")
         weights = xr.ones_like(data)
-        weights = weights * weights.lat
+        weights = weights * weights[lat]
         weights = np.cos(np.radians(weights))
 
     if dask and isinstance(data.data, da.Array):

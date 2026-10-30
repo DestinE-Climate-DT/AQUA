@@ -5,6 +5,8 @@ import regionmask
 import xarray as xr
 from smmregrid import GridInspector
 
+from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import multiply_units
 
@@ -25,6 +27,7 @@ class FldStat:
         horizontal_dims: list[str] | None = None,
         grid_name: str | None = None,
         loglevel: str = "WARNING",
+        data_model: str = DEFAULT_DATAMODEL,
     ):
         """
         Initialize the FldStat.
@@ -43,7 +46,10 @@ class FldStat:
         self.horizontal_dims = horizontal_dims
 
         # Initialize area selection
-        self.area_selection = AreaSelection(loglevel=loglevel)
+        self.area_selection = AreaSelection(loglevel=loglevel, data_model=data_model)
+
+        # define AQUA data model coordinates for lon, lat and time
+        self.coords = AquaCoordNames(data_model)
 
         if self.area is None:
             self.logger.warning("No area provided, no weighted area can be provided.")
@@ -145,6 +151,8 @@ class FldStat:
                 data,
                 lon=lon_limits,
                 lat=lat_limits,
+                lon_name=self.coords.lon,
+                lat_name=self.coords.lat,
                 region=region,
                 region_sel=region_sel,
                 mask_kwargs=mask_kwargs,
@@ -182,8 +190,8 @@ class FldStat:
         lat: list | None = None,
         box_brd: bool = True,
         drop: bool = False,
-        lat_name: str = "lat",
-        lon_name: str = "lon",
+        lat_name: str = None,
+        lon_name: str = None,
         region: regionmask.Regions | None = None,
         region_sel: str | int | list | None = None,
         mask_kwargs: dict = {},
@@ -204,8 +212,8 @@ class FldStat:
             lat=lat,
             box_brd=box_brd,
             drop=drop,
-            lat_name=lat_name,
-            lon_name=lon_name,
+            lat_name=lat_name if lat_name is not None else self.coords.lat,
+            lon_name=lon_name if lon_name is not None else self.coords.lon,
             region=region,
             region_sel=region_sel,
             mask_kwargs=mask_kwargs,
@@ -327,7 +335,7 @@ class FldStat:
 
         # area.coords should be only lon-lat
         for coord in area.coords:
-            if coord in data.coords and coord != "time":
+            if coord in data.coords and coord != self.coords.time:
                 area_coord = area[coord]
                 data_coord = data[coord]
 

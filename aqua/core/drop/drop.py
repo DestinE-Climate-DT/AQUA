@@ -24,7 +24,8 @@ import xarray as xr
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
-from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET
+from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL, DEFAULT_DROP_CHUNK_TARGET
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -42,7 +43,7 @@ from .drop_writer_zarr import ZarrWriter
 xr.set_options(keep_attrs=True)
 
 # available statistics are synchronized with the TimStat class
-available_stats = TimStat().available_stats
+available_stats = TimStat.available_stats
 
 
 class Drop:
@@ -175,6 +176,9 @@ class Drop:
         self.nthreads = int(nthreads)
         self.rebuild = rebuild
         self.kwargs = kwargs
+
+        # coordinate names of the data model (the Reader may select another one from the catalog metadata)
+        self.coords = AquaCoordNames(kwargs.get("datamodel") or DEFAULT_DATAMODEL)
         self.fix = fix
 
         # configure retrieve parameters
@@ -411,6 +415,11 @@ class Drop:
             **self.kwargs,
         )
 
+        # if the reader selected a different data model, align coordinate names and writer
+        if self.reader.coords.data_model != self.coords.data_model:
+            self.coords = AquaCoordNames(self.reader.coords.data_model)
+            self._set_writer()
+
         self.logger.info("Accessing catalog for %s-%s-%s...", self.model, self.exp, self.source)
 
         if self.catalog is None:
@@ -514,6 +523,7 @@ class Drop:
                 compact=self.compact,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
             self.logger.info("Using NetCDF writer")
         elif self.output_format == "zarr":
@@ -523,6 +533,7 @@ class Drop:
                 compact=self.compact,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
             self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
         elif self.output_format == "icechunk":
@@ -531,6 +542,7 @@ class Drop:
                 outdir=self.outdir,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
             self.logger.info("Using IcechunkWriter (git-like versioning, single-store zarr)")
 
@@ -593,7 +605,7 @@ class Drop:
                 func_kwargs=self.stat_kwargs,
             )
             # data could be empty after time statistics if everything was excluded
-            if "time" in data.coords and len(data.time) == 0:
+            if self.coords.time in data.coords and len(data[self.coords.time]) == 0:
                 self.logger.warning("No data available after time statistics, skipping...")
                 return None
         return data

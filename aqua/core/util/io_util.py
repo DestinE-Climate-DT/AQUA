@@ -11,6 +11,7 @@ import xarray as xr
 from aqua.core.logger import log_configure
 from aqua.core.version import __version__ as version
 
+from .timedim import resolve_time_dim
 from .util import to_list
 
 
@@ -47,7 +48,7 @@ def create_folder(folder, loglevel="WARNING"):
         logger.info("Folder %s already exists", folder)
 
 
-def file_is_complete(filename, loglevel="WARNING"):
+def file_is_complete(filename, loglevel="WARNING", dim=None):
     """
     Check if a file or store exists and contains valid, non-NaN data.
 
@@ -58,11 +59,13 @@ def file_is_complete(filename, loglevel="WARNING"):
     Args:
         filename: Path to a NetCDF file or Zarr store.
         loglevel: Logging level.
+        dim: Name of the time dimension. Defaults to the data model time coordinate.
 
     Returns:
         bool: True if the file/store is complete and valid, False otherwise.
     """
     logger = log_configure(loglevel, "file_is_complete")
+    dim = resolve_time_dim(dim)
 
     # Detect format: Zarr store is a directory whose path contains '.zarr'
     is_zarr = os.path.isdir(filename) and ".zarr" in str(filename)
@@ -85,18 +88,18 @@ def file_is_complete(filename, loglevel="WARNING"):
             return False
 
         # Time dimension is required
-        if "time" not in xfield.dims:
+        if dim not in xfield.dims:
             logger.error("File %s has no time dimension!", filename)
             return False
 
         # Time sanity checks
-        if len(xfield.time) == 0:
+        if len(xfield[dim]) == 0:
             logger.error("File %s has empty time dimension!", filename)
             return False
-        if len(xfield.time) != len(set(xfield.time.values)):
+        if len(xfield[dim]) != len(set(xfield[dim].values)):
             logger.error("File %s has duplicate time steps!", filename)
             return False
-        if len(xfield.time) > 1 and not (xfield.time.diff("time") > np.timedelta64(0, "ns")).all():
+        if len(xfield[dim]) > 1 and not (xfield[dim].diff(dim) > np.timedelta64(0, "ns")).all():
             logger.error("File %s has unsorted time steps!", filename)
             return False
 
@@ -107,7 +110,7 @@ def file_is_complete(filename, loglevel="WARNING"):
             mindate = xfield[varname].attrs.get("mindate")
             if mindate is not None:
                 logger.warning("All NaN and mindate found: %s", mindate)
-                if xfield[varname].time.max() < np.datetime64(mindate):
+                if xfield[varname][dim].max() < np.datetime64(mindate):
                     logger.info("File %s is full of NaN but it is ok according to mindate", filename)
                     return True
                 logger.error("File %s is full of NaN and not ok according to mindate", filename)
@@ -116,7 +119,7 @@ def file_is_complete(filename, loglevel="WARNING"):
             return False
 
         # Check NaN pattern is consistent across time steps
-        mydims = [dim for dim in xfield[varname].dims if dim != "time"]
+        mydims = [d for d in xfield[varname].dims if d != dim]
         nan_count = np.isnan(xfield[varname]).sum(dim=mydims)
         if all(value == nan_count[0] for value in nan_count):
             logger.info("File %s seems ok!", filename)
@@ -126,7 +129,7 @@ def file_is_complete(filename, loglevel="WARNING"):
         mindate = xfield[varname].attrs.get("mindate")
         if mindate is not None:
             logger.warning("Some NaN and mindate found: %s", mindate)
-            last_nan = xfield.time[np.where(nan_count == nan_count[0])].max()
+            last_nan = xfield[dim][np.where(nan_count == nan_count[0])].max()
             if pd.Timestamp(mindate) > last_nan:
                 logger.info(
                     "File %s has some NaN up to %s but it is ok according to mindate %s",

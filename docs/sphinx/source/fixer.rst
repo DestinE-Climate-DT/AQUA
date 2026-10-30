@@ -335,6 +335,40 @@ This will rename the coordinate to ``lon``. A similar fix can be applied to dime
     When possible, prefer a **data model** treatment of coordinates and use the **coords**
     block as second option.
 
+.. _coord-names:
+
+Coordinate names in the code
+""""""""""""""""""""""""""""
+
+Once the data model is applied, the coordinates have the names defined in the data model YAML file
+(e.g. ``time``, ``lat``, ``lon``, ``plev``, ``depth``, ``height`` for the **aqua** data model).
+To avoid hard-coding these names, AQUA code reads them from the data model through
+``aqua.core.data_model.AquaCoordNames``, a cached and immutable object:
+
+.. code-block:: python
+
+    from aqua.core.data_model import AquaCoordNames
+
+    coords = AquaCoordNames()            # default 'aqua' data model
+    coords.time, coords.lat, coords.lon  # 'time', 'lat', 'lon'
+    coords.isobaric, coords.depth, coords.height
+
+    data.sel({coords.time: slice("2000", "2001")}).mean(coords.lon)
+
+Classes that can work with different data models (``Reader``, ``TimStat``, ``FldStat``, ``Fixer``, ``Drop`` and its writers, ...)
+accept a ``data_model`` argument, which defaults to ``aqua``, and store ``self.coords = AquaCoordNames(data_model)``.
+The ``Reader`` passes its own data model to all the components it creates, so that the names are consistent
+along the whole processing chain. The mapping from the internal (abstract) name to the name of a data model
+is also available with ``aqua.core.data_model.scan_coord``, which raises an error if the data model
+or the coordinate is not defined.
+
+.. note::
+    Regridded data always have ``lat`` and ``lon`` coordinates, since they are produced by
+    ``smmregrid`` on the target grid, independently of the data model.
+
+A new coordinate-dependent function should receive the name from ``AquaCoordNames`` rather than writing ``"time"``
+or ``"plev"``: the test ``tests/test_hardcoded_coords.py`` checks that this is the case in ``aqua/core``.
+
 Similarly, if units are ill-defined in the dataset, it is possible to override them with the same fixer structure.
 Of course, this feature is valid only for **coords**:
 

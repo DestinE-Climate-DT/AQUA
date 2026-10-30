@@ -5,6 +5,7 @@ from matplotlib import rcParams
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, to_list
 
@@ -88,6 +89,7 @@ def plot_gregory_monthly(
         tuple: Figure and Axes objects.
     """
     logger = log_configure(loglevel, "plot_gregory_monthly")
+    coords = AquaCoordNames()
     ConfigStyle(style=style, loglevel=loglevel)
     rcParams["text.usetex"] = False  # Disable LaTeX rendering for speed
 
@@ -125,8 +127,8 @@ def plot_gregory_monthly(
 
     # Create a cycle that is the average of the available ref data
     if ref:
-        t2m_ref = t2m_monthly_ref.groupby("time.month").mean(dim="time")
-        net_toa_ref = net_toa_monthly_ref.groupby("time.month").mean(dim="time")
+        t2m_ref = t2m_monthly_ref.groupby(f"{coords.time}.month").mean(dim=coords.time)
+        net_toa_ref = net_toa_monthly_ref.groupby(f"{coords.time}.month").mean(dim=coords.time)
         # Add an extra point same as the first one to close the loop
         t2m_ref = xr.concat([t2m_ref, t2m_ref.isel(month=0)], dim="month", coords="different", compat="equals")
         net_toa_ref = xr.concat([net_toa_ref, net_toa_ref.isel(month=0)], dim="month", coords="different", compat="equals")
@@ -220,6 +222,7 @@ def plot_gregory_annual(
         tuple: Figure and Axes objects.
     """
     logger = log_configure(loglevel, "plot_gregory_annual")
+    coords = AquaCoordNames()
     ConfigStyle(style=style, loglevel=loglevel)
 
     labels = to_list(labels) if labels else [None for _ in range(len(t2m_annual_data))]
@@ -271,8 +274,8 @@ def plot_gregory_annual(
         ax.set_xlim(t2m_min, t2m_max)
         ax.set_ylim(toa_min, toa_max)
 
-        logger.debug(f"Annual x-axis limits: {t2m_min} to {t2m_max}")
-        logger.debug(f"Annual y-axis limits: {toa_min} to {toa_max}")
+        logger.debug("Annual x-axis limits: %s to %s", t2m_min, t2m_max)
+        logger.debug("Annual y-axis limits: %s to %s", toa_min, toa_max)
 
     for i, (t2m_annual, net_toa_annual) in enumerate(zip(t2m_annual_data, net_toa_annual_data)):
         if not cmap:
@@ -281,15 +284,17 @@ def plot_gregory_annual(
             # We plot the first and last points with different markers
             ax.plot(t2m_annual[0], net_toa_annual[0], marker=">", color="tab:green")
             ax.plot(t2m_annual[-1], net_toa_annual[-1], marker="<", color="tab:red")
-        ax.annotate(str(t2m_annual.time.dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize="small", ha="right")
         ax.annotate(
-            str(t2m_annual.time.dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize="small", ha="right"
+            str(t2m_annual[coords.time].dt.year[0].values), (t2m_annual[0], net_toa_annual[0]), fontsize="small", ha="right"
+        )
+        ax.annotate(
+            str(t2m_annual[coords.time].dt.year[-1].values), (t2m_annual[-1], net_toa_annual[-1]), fontsize="small", ha="right"
         )
     if cmap:
         _add_time_evolution(ax, t2m_annual_data, net_toa_annual_data, cmap, labels)
     if ref:
-        t2m_mean = t2m_annual_ref.mean(dim="time")
-        net_toa_mean = net_toa_annual_ref.mean(dim="time")
+        t2m_mean = t2m_annual_ref.mean(dim=coords.time)
+        net_toa_mean = net_toa_annual_ref.mean(dim=coords.time)
         ax.axhspan(
             net_toa_mean - net_toa_std, net_toa_mean + net_toa_std, color="lightgreen", alpha=0.3, label=r"1 $\sigma$ band"
         )
