@@ -3,8 +3,7 @@
 import numpy as np
 import xarray as xr
 
-from aqua.core.data_model import scan_coord
-from aqua.core.default import AQUA_TIME
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util.time import pandas_freq_to_offset, xarray_to_pandas_freq
 
@@ -23,7 +22,7 @@ class Trender:
         """
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "Trender")
-        self.AQUA_TIME = scan_coord(AQUA_TIME)
+        self.coords = AquaCoordNames()
 
     def trend(
         self, data: xr.DataArray | xr.Dataset, dim: str = None, degree: int = 1, skipna: bool = False
@@ -40,7 +39,7 @@ class Trender:
         Returns:
             DataArray or Dataset: The trend component.
         """
-        return self._apply_trend_or_detrend(data, self._trend, dim or self.AQUA_TIME, degree, skipna)
+        return self._apply_trend_or_detrend(data, self._trend, dim or self.coords.time, degree, skipna)
 
     def detrend(
         self, data: xr.DataArray | xr.Dataset, dim: str = None, degree: int = 1, skipna: bool = False
@@ -57,7 +56,7 @@ class Trender:
         Returns:
             DataArray or Dataset: The detrended data.
         """
-        return self._apply_trend_or_detrend(data, self._detrend, dim or self.AQUA_TIME, degree, skipna)
+        return self._apply_trend_or_detrend(data, self._detrend, dim or self.coords.time, degree, skipna)
 
     def coeffs(
         self,
@@ -71,7 +70,7 @@ class Trender:
         Compute the polynomial coefficients for the trend.
         """
 
-        return self._apply_trend_or_detrend(data, self._coeffs, dim or self.AQUA_TIME, degree, skipna, normalize=normalize)
+        return self._apply_trend_or_detrend(data, self._coeffs, dim or self.coords.time, degree, skipna, normalize=normalize)
 
     def _coeffs(
         self, data: xr.DataArray | xr.Dataset, dim: str, degree: int, skipna: bool, normalize: bool
@@ -98,7 +97,7 @@ class Trender:
 
         # time axis are scaled to nanoseconds, which is not very user-friendly.
         # we try to adjust the coefficients to the input data frequency
-        if dim == self.AQUA_TIME and normalize:
+        if dim == self.coords.time and normalize:
             self.logger.debug("Normalizing coefficients for time dimension.")
             # get the inferred frequency of the time dimension and convert to pandas offset
             time_values = data[dim].to_index()
@@ -106,7 +105,7 @@ class Trender:
             self.logger.debug("Inferred frequency for %s dimension: %s", dim, inferred_freq)
             if inferred_freq is None:
                 raise ValueError(
-                    f"Inferred frequency for {self.AQUA_TIME} dimension is None. "
+                    f"Inferred frequency for {self.coords.time} dimension is None. "
                     "Ensure that the time dimension has a pandas compatible frequency."
                 )
             offset = pandas_freq_to_offset(inferred_freq)

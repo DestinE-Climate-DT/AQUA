@@ -87,7 +87,7 @@ class NetCDFWriter(BaseWriter):
         chunksizes = self._disk_chunks(data[var_name] if isinstance(data, xr.Dataset) else data)
         if chunksizes:
             var_encoding["chunksizes"] = chunksizes
-        return {self.AQUA_TIME: self.time_encoding, var_name: var_encoding}
+        return {self.coords.time: self.time_encoding, var_name: var_encoding}
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """

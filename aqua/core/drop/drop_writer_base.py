@@ -19,8 +19,7 @@ from dask.distributed import progress
 from dask.distributed.diagnostics import MemorySampler
 from smmregrid import GridType
 
-from aqua.core.data_model import scan_coord
-from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, AQUA_TIME
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.drop.drop_util import move_tmp_files
 from aqua.core.logger import log_configure
 
@@ -72,9 +71,7 @@ class BaseWriter(ABC):
         self._last_chunk_size_bytes = None
 
         # data model coordiante names
-        self.AQUA_TIME = scan_coord(AQUA_TIME)
-        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
-        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
+        self.coords = AquaCoordNames()
 
     @abstractmethod
     def get_extension(self):
@@ -232,11 +229,11 @@ class BaseWriter(ABC):
         Yields:
             tuple: (year, year_data) where year_data has original attrs restored.
         """
-        years = sorted(set(data[self.AQUA_TIME].dt.year.values))
+        years = sorted(set(data[self.coords.time].dt.year.values))
         if performance_reporting:
             years = [years[0]]
         for year in years:
-            yield year, data.sel({self.AQUA_TIME: data[self.AQUA_TIME].dt.year == year})
+            yield year, data.sel({self.coords.time: data[self.coords.time].dt.year == year})
 
     def _iter_months_in_year(self, year_data, performance_reporting):
         """Yield (month, month_data) pairs with Dataset-level attrs preserved after slicing.
@@ -248,11 +245,11 @@ class BaseWriter(ABC):
         Yields:
             tuple: (month, month_data) where month_data has original attrs restored.
         """
-        months = sorted(set(year_data[self.AQUA_TIME].dt.month.values))
+        months = sorted(set(year_data[self.coords.time].dt.month.values))
         if performance_reporting:
             months = [months[0]]
         for month in months:
-            yield month, year_data.sel({self.AQUA_TIME: year_data[self.AQUA_TIME].dt.month == month})
+            yield month, year_data.sel({self.coords.time: year_data[self.coords.time].dt.month == month})
 
     def _write_chunk(self, data, var, year, month, level=None, dask=False, performance_reporting=False):
         """
@@ -480,7 +477,7 @@ class BaseWriter(ABC):
             try:
                 # xr.open_mfdataset works with both single and multiple files
                 ds = self._open_files(yearfiles)
-                last_record = ds[self.AQUA_TIME][-1].values
+                last_record = ds[self.coords.time][-1].values
                 last_record_str = pd.to_datetime(last_record).strftime("%Y%m%d")
                 return {
                     "complete": True,

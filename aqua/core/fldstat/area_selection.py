@@ -2,8 +2,8 @@ import numpy as np
 import regionmask
 import xarray as xr
 
-from aqua.core.data_model import scan_coord
-from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, DEFAULT_COORDS
+from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_COORDS
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 
@@ -22,8 +22,7 @@ class AreaSelection:
             loglevel (str, optional): The logging level. Default is "WARNING".
         """
         self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
-        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
-        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
+        self.coords = AquaCoordNames()
 
     def select_area(
         self,
@@ -76,8 +75,8 @@ class AreaSelection:
         """
         # By default we work with the AQUA data_model but we keep the
         # flexibility to adapt to other data models.
-        lat_name = lat_name if lat_name is not None else self.AQUA_LATITUDE
-        lon_name = lon_name if lon_name is not None else self.AQUA_LONGITUDE
+        lat_name = lat_name if lat_name is not None else self.coords.lat
+        lon_name = lon_name if lon_name is not None else self.coords.lon
         if lat_name not in data.coords or lon_name not in data.coords:
             raise KeyError(
                 f"Latitude or Longitude coordinates not found. Expected '{lat_name}' and '{lon_name}'."

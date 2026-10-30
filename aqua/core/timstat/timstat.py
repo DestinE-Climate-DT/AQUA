@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from aqua.core.data_model import scan_coord
-from aqua.core.default import AQUA_TIME
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import (
@@ -28,7 +27,7 @@ class TimStat:
         self.loglevel = loglevel
         self.orig_freq = None
         self.logger = log_configure(loglevel, "TimStat")
-        self.AQUA_TIME = scan_coord(AQUA_TIME)
+        self.coords = AquaCoordNames()
 
     @property
     def available_stats(self):
@@ -93,12 +92,12 @@ class TimStat:
             center_time = False
             time_bounds = False
 
-        if self.AQUA_TIME not in data.dims:
+        if self.coords.time not in data.dims:
             raise ValueError(f"Time dimension not found in the input data. Cannot compute tim{stat} statistic")
 
         # Get original frequency (for history)
-        if len(data[self.AQUA_TIME]) > 1:
-            time_values = pd.to_datetime(data[self.AQUA_TIME].values[:2])
+        if len(data[self.coords.time]) > 1:
+            time_values = pd.to_datetime(data[self.coords.time].values[:2])
             self.orig_freq = pd.tseries.frequencies.to_offset(time_values[1] - time_values[0])
             # orig_freq = (time_values[1] - time_values[0]).total_seconds() / 3600
             # self.orig_freq = round(orig_freq)
@@ -114,7 +113,7 @@ class TimStat:
         if resample_freq is not None:
             try:
                 # Resample to the desired frequency
-                resample_data = data.resample({self.AQUA_TIME: resample_freq})
+                resample_data = data.resample({self.coords.time: resample_freq})
             except ValueError as exc:
                 raise ValueError(
                     f"Cannot find a frequency to resample, using resample_freq={resample_freq} not work, aborting!"
@@ -128,13 +127,15 @@ class TimStat:
         if isinstance(stat, str):  # we already checked if it is one of the allowable stats
             self.logger.info(f"Resampling to %s frequency and computing {stat}...", str(resample_freq))
             # use the kwargs to feed the time dimension to define the method and its options
-            extra_kwargs = {} if resample_freq is not None else {"dim": self.AQUA_TIME}
+            extra_kwargs = {} if resample_freq is not None else {"dim": self.coords.time}
             out = getattr(resample_data, stat)(**extra_kwargs)
 
             # This is needed because first and last resample the data but label them with the group label
             if stat in ["first", "last"]:
-                resampled_times = getattr(data[self.AQUA_TIME].resample({self.AQUA_TIME: resample_freq}), stat)(**extra_kwargs)
-                out = out.assign_coords({self.AQUA_TIME: resampled_times})
+                resampled_times = getattr(data[self.coords.time].resample({self.coords.time: resample_freq}), stat)(
+                    **extra_kwargs
+                )
+                out = out.assign_coords({self.coords.time: resampled_times})
 
         else:  # we can safely assume that it is a callable function now
             self.logger.info("Resampling to %s frequency and computing custom function...", str(resample_freq))
@@ -161,22 +162,22 @@ class TimStat:
 
         # Check time is correct
         if resample_freq is not None:
-            if np.any(np.isnat(out[self.AQUA_TIME])):
+            if np.any(np.isnat(out[self.coords.time])):
                 raise ValueError("Resampling cannot produce output for all frequency step, is your input data correct?")
 
         out = log_history(out, f"resampled from frequency {self.orig_freq} to frequency {freq} by AQUA tim{stat}")
 
         # Add a variable to create time_bounds
         if time_bounds:
-            resampled = data[self.AQUA_TIME].resample({self.AQUA_TIME: resample_freq})
+            resampled = data[self.coords.time].resample({self.coords.time: resample_freq})
             time_bnds = xr.concat([resampled.min(), resampled.max()], dim="bnds", coords="different").transpose()
             if exclude_incomplete:
                 time_bnds = time_bnds.where(boolean_mask, drop=True)
-            time_bnds[self.AQUA_TIME] = out[self.AQUA_TIME]
-            time_bnds.name = f"{self.AQUA_TIME}_bnds"
+            time_bnds[self.coords.time] = out[self.coords.time]
+            time_bnds.name = f"{self.coords.time}_bnds"
             out = xr.merge([out, time_bnds])
-            if np.any(np.isnat(out[f"{self.AQUA_TIME}_bnds"])):
-                raise ValueError(f"Resampling cannot produce output for all {self.AQUA_TIME}_bnds step!")
+            if np.any(np.isnat(out[f"{self.coords.time}_bnds"])):
+                raise ValueError(f"Resampling cannot produce output for all {self.coords.time}_bnds step!")
             log_history(out, f"time_bnds added by by AQUA tim{stat}")
 
         return out
@@ -197,7 +198,7 @@ class TimStat:
         literal, numeric = extract_literal_and_numeric(resample_freq)
         self.logger.debug("Frequency is %s with numeric part %s", literal, numeric)
 
-        start = pd.to_datetime(avg_data[self.AQUA_TIME])
+        start = pd.to_datetime(avg_data[self.coords.time])
         if literal in ["M", "ME", "MS"]:
             offset = pd.DateOffset(months=numeric)
         elif literal in ["Y", "YE", "YS"]:
@@ -208,6 +209,6 @@ class TimStat:
         end = start + offset
 
         # Calculate midpoint for each period (works for variable durations like months)
-        avg_data[self.AQUA_TIME] = start + (end - start) / 2
+        avg_data[self.coords.time] = start + (end - start) / 2
 
         return avg_data

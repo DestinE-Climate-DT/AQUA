@@ -5,8 +5,7 @@ import regionmask
 import xarray as xr
 from smmregrid import GridInspector
 
-from aqua.core.data_model import scan_coord
-from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, AQUA_TIME
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import multiply_units
 
@@ -48,9 +47,7 @@ class FldStat:
         self.area_selection = AreaSelection(loglevel=loglevel)
 
         # define AQUA data model coordinates for lon, lat and time
-        self.AQUA_TIME = scan_coord(AQUA_TIME)
-        self.AQUA_LONGITUDE = scan_coord(AQUA_LONGITUDE)
-        self.AQUA_LATITUDE = scan_coord(AQUA_LATITUDE)
+        self.coords = AquaCoordNames()
 
         if self.area is None:
             self.logger.warning("No area provided, no weighted area can be provided.")
@@ -152,8 +149,8 @@ class FldStat:
                 data,
                 lon=lon_limits,
                 lat=lat_limits,
-                lon_name=self.AQUA_LONGITUDE,
-                lat_name=self.AQUA_LATITUDE,
+                lon_name=self.coords.lon,
+                lat_name=self.coords.lat,
                 region=region,
                 region_sel=region_sel,
                 mask_kwargs=mask_kwargs,
@@ -213,8 +210,8 @@ class FldStat:
             lat=lat,
             box_brd=box_brd,
             drop=drop,
-            lat_name=lat_name if lat_name is not None else self.AQUA_LATITUDE,
-            lon_name=lon_name if lon_name is not None else self.AQUA_LONGITUDE,
+            lat_name=lat_name if lat_name is not None else self.coords.lat,
+            lon_name=lon_name if lon_name is not None else self.coords.lon,
             region=region,
             region_sel=region_sel,
             mask_kwargs=mask_kwargs,
@@ -336,7 +333,7 @@ class FldStat:
 
         # area.coords should be only lon-lat
         for coord in area.coords:
-            if coord in data.coords and coord != self.AQUA_TIME:
+            if coord in data.coords and coord != self.coords.time:
                 area_coord = area[coord]
                 data_coord = data[coord]
 

@@ -103,7 +103,7 @@ class IcechunkWriter(BaseWriter):
             return False
         try:
             ds = self._open_files(store_path)
-            return self.AQUA_TIME in ds.dims and len(ds[self.AQUA_TIME]) > 0
+            return self.coords.time in ds.dims and len(ds[self.coords.time]) > 0
         except Exception:
             return False
 
@@ -273,10 +273,10 @@ class IcechunkWriter(BaseWriter):
                 return {"complete": False, "last_record": None, "message": f"Variable {var} not found"}
 
             da = ds[var]
-            if len(da[self.AQUA_TIME]) == 0:
+            if len(da[self.coords.time]) == 0:
                 return {"complete": False, "last_record": None, "message": "No time data"}
 
-            times = da[self.AQUA_TIME].values
+            times = da[self.coords.time].values
 
             # Check for duplicates and sorted
             if len(times) != len(set(times)):
@@ -351,7 +351,7 @@ class IcechunkWriter(BaseWriter):
 
         # Check existing state to decide whether to skip or resume.
         # Pass end_date so check_integrity can verify the repo covers the full requested range.
-        integrity = self.check_integrity(var, overwrite=overwrite, end_date=data[self.AQUA_TIME].values[-1])
+        integrity = self.check_integrity(var, overwrite=overwrite, end_date=data[self.coords.time].values[-1])
         if integrity["complete"] and not overwrite:
             self.logger.info("Variable %s already complete in repo; skipping", var)
             return True
@@ -360,9 +360,9 @@ class IcechunkWriter(BaseWriter):
         last_record = integrity["last_record"] if not overwrite else None
         if last_record:
             resume_after = pd.Timestamp(last_record)
-            data = data.sel({self.AQUA_TIME: data[self.AQUA_TIME] > resume_after})
-            self.logger.info("Resuming %s after %s (%d timesteps remaining)", var, last_record, len(data[self.AQUA_TIME]))
-            if len(data[self.AQUA_TIME]) == 0:
+            data = data.sel({self.coords.time: data[self.coords.time] > resume_after})
+            self.logger.info("Resuming %s after %s (%d timesteps remaining)", var, last_record, len(data[self.coords.time]))
+            if len(data[self.coords.time]) == 0:
                 self.logger.info("No new data for %s after last committed record", var)
                 return True
 
@@ -384,7 +384,7 @@ class IcechunkWriter(BaseWriter):
                     self._last_chunk_size_bytes = month_data.nbytes
 
                     mode = "w" if first_session_write else "a"
-                    append_dim = None if first_session_write else self.AQUA_TIME
+                    append_dim = None if first_session_write else self.coords.time
 
                     # Write to session
                     try:
@@ -410,7 +410,7 @@ class IcechunkWriter(BaseWriter):
 
                         # Post-commit integrity check: verify committed snapshot is readable
                         # and the last timestamp matches what was just written.
-                        expected_last = pd.Timestamp(month_data[self.AQUA_TIME].values[-1]).strftime("%Y%m%d")
+                        expected_last = pd.Timestamp(month_data[self.coords.time].values[-1]).strftime("%Y%m%d")
                         integrity = self.check_integrity(var)
                         if not integrity["complete"] or integrity["last_record"] != expected_last:
                             self.logger.error(

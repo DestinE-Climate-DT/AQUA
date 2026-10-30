@@ -5,9 +5,8 @@ import pandas as pd
 import xarray as xr
 from smmregrid import GridInspector
 
-from aqua.core.data_model import DataModel, scan_coord
+from aqua.core.data_model import AquaCoordNames, DataModel
 from aqua.core.data_model.coordidentifier import CoordIdentifier
-from aqua.core.default import AQUA_TIME
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
 from aqua.core.util import fix_calendar, set_attrs, to_list
@@ -34,7 +33,7 @@ class Backend(ABC):
         self.datamodel = datamodel
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
-        self.AQUA_TIME = scan_coord(AQUA_TIME)
+        self.coords = AquaCoordNames()
 
     @abstractmethod
     def retrieve(
@@ -74,7 +73,7 @@ class Backend(ABC):
             data = self.datamodel.apply(data)
             # Time threatment: we want to ensure that time is always in Gregorian calendar
             # and to change the default numpy datetime64 resolution to microseconds
-            if self.AQUA_TIME in data.coords:
+            if self.coords.time in data.coords:
                 # Fix the calendar to Gregorian if needed
                 data = fix_calendar(data, loglevel=self.loglevel)
         return data
@@ -193,7 +192,7 @@ class Backend(ABC):
         else:
             t_end = None
 
-        return data.sel({self.AQUA_TIME: slice(t_start, t_end)})
+        return data.sel({self.coords.time: slice(t_start, t_end)})
 
     def _sellevel(
         self,
