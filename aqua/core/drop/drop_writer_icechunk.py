@@ -28,6 +28,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from aqua.core.default import DEFAULT_DATAMODEL
+
 from .drop_util import zarr_encoding
 from .drop_writer_base import BaseWriter
 
@@ -54,6 +56,7 @@ class IcechunkWriter(BaseWriter):
         repo_path=None,
         garbage_collect_yearly=False,
         loglevel="WARNING",
+        data_model=DEFAULT_DATAMODEL,
     ):
         """
         Initialize Icechunk writer.
@@ -65,8 +68,9 @@ class IcechunkWriter(BaseWriter):
             repo_path: Custom repo path (default: outdir/archive.zarr)
             garbage_collect_yearly: Enable yearly garbage collection of snapshots
             loglevel: Logging level
+            data_model: Data model providing the coordinate names
         """
-        super().__init__(tmpdir, outdir, filename_builder, loglevel)
+        super().__init__(tmpdir, outdir, filename_builder, loglevel, data_model)
 
         # Icechunk repo configuration
         self.repo_path = repo_path or os.path.join(outdir, "archive.zarr")

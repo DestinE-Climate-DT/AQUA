@@ -469,10 +469,6 @@ class Reader:
 
         out = self.regridder.regrid(data)
 
-        # the regridded coordinates come from the target grid: bring them to the data model names
-        if self.datamodel:
-            out = self.datamodel.apply(out, flip_coords=False)
-
         # set regridded attribute to 1 for all vars
         out = set_attrs(
             out, {"AQUA_regridded": 1, "AQUA_source_grid": self.src_grid_name, "AQUA_target_grid": self.tgt_grid_name}

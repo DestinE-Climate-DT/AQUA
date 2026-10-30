@@ -25,7 +25,7 @@ import xarray as xr
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
 from aqua.core.data_model import AquaCoordNames
-from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET
+from aqua.core.default import DEFAULT_DATAMODEL, DEFAULT_DROP_CHUNK_TARGET
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -165,7 +165,6 @@ class Drop:
         self.engine = engine
         self.logger = log_configure(loglevel, "DROP")
         self.loglevel = loglevel
-        self.coords = AquaCoordNames()
 
         # save parameters
         self.resolution = resolution
@@ -177,6 +176,9 @@ class Drop:
         self.nthreads = int(nthreads)
         self.rebuild = rebuild
         self.kwargs = kwargs
+
+        # coordinate names of the data model (the Reader may select another one from the catalog metadata)
+        self.coords = AquaCoordNames(kwargs.get("datamodel") or DEFAULT_DATAMODEL)
         self.fix = fix
 
         # configure retrieve parameters
@@ -413,9 +415,10 @@ class Drop:
             **self.kwargs,
         )
 
-        # coordinate names follow the data model actually used by the reader
-        self.coords = self.reader.coords
-        self.writer.coords = self.coords
+        # if the reader selected a different data model, align coordinate names and writer
+        if self.reader.coords.data_model != self.coords.data_model:
+            self.coords = AquaCoordNames(self.reader.coords.data_model)
+            self._set_writer()
 
         self.logger.info("Accessing catalog for %s-%s-%s...", self.model, self.exp, self.source)
 
@@ -520,6 +523,7 @@ class Drop:
                 compact=self.compact,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
             self.logger.info("Using NetCDF writer")
         elif self.output_format == "zarr":
@@ -529,6 +533,7 @@ class Drop:
                 compact=self.compact,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
             self.logger.info("Using Zarr writer (metadata consolidation enabled on yearly archives)")
         elif self.output_format == "icechunk":
@@ -537,6 +542,7 @@ class Drop:
                 outdir=self.outdir,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
             self.logger.info("Using IcechunkWriter (git-like versioning, single-store zarr)")
 
