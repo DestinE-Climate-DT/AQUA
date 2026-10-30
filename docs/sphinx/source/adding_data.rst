@@ -9,8 +9,9 @@ If you need to add data in a new catalog, please refer to :ref:`new-catalog` bef
 
 - To add your data to AQUA, you have to provide an ``intake`` catalog that describes your data,
   and in particular, the location of the data.
-  This can be done in two different way, by adding a standard entry in the form of files (:ref:`file-based-sources`)
-  or by adding a source from the FDB (:ref:`FDB-based-sources`) with the specific AQUA FDB interface.
+  The source can refer to files directly (:ref:`file-based-sources`), select a NetCDF or Zarr asset
+  through a STAC collection or item (:ref:`stac-based-sources`), or retrieve data from the FDB
+  (:ref:`FDB-based-sources`).
 - A set of pre-existing fixes can be applied to the data, or you can modify or create your own fixes (see :ref:`fixer`).
 - To exploit the regridding functionalities, you will also need to verify the grid is available in the ``aqua/core/config/grids`` folder
   or to add it (see :ref:`grid_definition`).
@@ -127,6 +128,112 @@ You can add fixes to your dataset by following examples in the ``aqua/core/confi
     The ``netcdf`` and ``zarr`` drivers are provided by AQUA itself
     (``aqua.core.intake_drivers.xarray``), keeping the same catalog syntax as
     the former intake-xarray ones.
+
+.. _stac-based-sources:
+
+STAC-based sources
+------------------
+
+The ``stac`` Intake driver accesses NetCDF or Zarr assets through a STAC
+Collection or Item JSON, supplied as a local path or URL in ``args.urlpath``.
+Relative links inside the JSON are resolved against that document's location.
+For remote documents, links starting with ``/`` use the server or bucket root.
+Links that specify their own URL scheme are preserved unchanged.
+Pass xarray options in ``args.xarray_kwargs``, using ``engine: netcdf4`` for
+NetCDF or ``engine: zarr`` for Zarr; set chunk sizes with ``args.chunks``.
+
+Some DKRZ STAC catalogues require ``gribscan``. Install it separately when needed;
+the driver imports it if available, but AQUA does not require it.
+
+The local examples below require the separately downloaded ``AQUA_tests``
+directory at the AQUA repository root and the ``ncdump`` command.
+Before using either example, generate the STAC JSON documents from the
+repository root:
+
+.. code-block:: console
+
+    python3 tests/stac_catalogue/generate_catalog.py
+
+This creates ``tests/stac_catalogue/collections/ifs.json`` and the Item
+JSON files referenced by these examples. Run the examples from the
+repository root so their relative paths resolve correctly.
+
+For other datasets, replace ``urlpath`` and the metadata with their
+corresponding values.
+
+For example, add a collection to the top-level ``catalog.yaml`` of an AQUA
+catalog installed as ``stac-example`` (see :ref:`new-catalog`):
+
+.. code-block:: yaml
+
+    sources:
+      ifs:
+        driver: stac
+        args:
+          urlpath: tests/stac_catalogue/collections/ifs.json
+          chunks: {time: 12}
+          xarray_kwargs: {engine: netcdf4}
+        metadata:
+          source_grid_name:
+            ifs-long-regridded-r18x9: lon-lat
+            ifs-short-ifs2d-tco79: tco79
+          fixer_name:
+            ifs-long-regridded-r18x9: ifs-ci-test
+
+In this layout, ``collection``, ``item`` and ``asset`` select the collection
+entry, item ID and asset key. These are aliases for ``model``, ``exp`` and
+``source``, respectively:
+
+.. code-block:: python
+
+    from aqua import Reader
+
+    reader = Reader(catalog="stac-example", collection="ifs",
+                    item="ifs-short-ifs2d-tco79", asset="data", areas=False)
+    data = reader.retrieve()
+
+``source_grid_name`` and ``fixer_name`` may be scalars
+shared by all items or dictionaries keyed by item ID, as above. A missing
+key leaves that setting unspecified.
+Optional ``args.item`` and ``args.asset`` provide default selections when
+accessing the collection directly through Intake.
+An item configured in ``args.item`` is a read default: collection keys still list
+items. Indexing or calling with ``item=`` selects an item view whose keys list
+assets. When switching items, inferred defaults and asset roles are resolved again
+for the new item; explicit asset selectors are retained unless overridden.
+Named item and asset entries take precedence over inherited parameter defaults
+when AQUA rebuilds an entry. Missing API or sibling-file candidates allow lookup
+to continue; access, connection, and JSON parsing failures are reported with the
+attempted path or URL.
+
+Alternatively, describe individual items in a nested YAML catalog. Add this
+entry alongside ``ifs`` in the top-level ``sources`` mapping:
+
+.. code-block:: yaml
+
+    ifs-items:
+      driver: yaml_file_cat
+      args:
+        path: "{{CATALOG_DIR}}/catalog/ifs/main.yaml"
+
+In ``catalog/ifs/main.yaml``, point each entry to its Item JSON and specify
+its metadata directly:
+
+.. code-block:: yaml
+
+    sources:
+      ifs-long-regridded-r18x9:
+        driver: stac
+        args:
+          urlpath: tests/stac_catalogue/items/ifs/ifs-long-regridded-r18x9.json
+          xarray_kwargs: {engine: netcdf4}
+        metadata:
+          source_grid_name: lon-lat
+          fixer_name: ifs-ci-test
+
+Use ``Reader(catalog="stac-example", model="ifs-items",
+exp="ifs-long-regridded-r18x9", source="data", areas=False)`` for this entry.
+The YAML item name supplies ``exp``; ``source`` still selects the STAC asset.
 
 .. _FDB-based-sources:
 
@@ -457,6 +564,15 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   but can include multiple files as a function of the grid used.
   ``2d`` refers to the default grids, ``2dm`` to the grid for masked variables,
   any other key refers to specific 3d vertical masked structures, as ``depth_full``, ``depth_half``, ``level``, etc.
+  Alternatively, a single ``skipna`` key pointing to a 2D grid file enables the smmregrid ``skipna`` option:
+  missing source points are skipped and the weights renormalized at each call,
+  so that a single 2D weights matrix handles all variables and levels,
+  including masks varying in time or along any dimension (a target cell is NaN if more than half of its weights are missing,
+  as without skipna). It cannot be combined with other keys
+  (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
+  A path value can be the reserved word ``data``: the grid is then taken from the dataset itself,
+  as for grids without ``path``. ``path: {skipna: data}`` is the default ``lon-lat-skipna`` grid
+  (regular lon-lat data with missing values varying in time).
 - ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
   There is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 - ``masked``: (if applicable): Keys to define variables which are masked.

@@ -30,6 +30,11 @@ grids:
   # Generic regular lon-lat grids, read from the data
   lon-lat:
     space_coord: ["lon", "lat"]
+  # Grid taken from the data, with smmregrid skipna: missing points skipped, masks may vary along any dimension
+  lon-lat-skipna:
+    path:
+      skipna: data
+    space_coord: ["lon", "lat"]
   lon-lat-depth:
     space_coord: ["lon", "lat"]
     vert_coord: ["depth"]

@@ -1,5 +1,7 @@
 """Test for some of the utils"""
 
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,6 +16,8 @@ from aqua.core.util import (
     extract_literal_and_numeric,
     file_is_complete,
     format_realization,
+    get_cdo,
+    run_cdo,
     to_list,
 )
 from aqua.core.util.string import lat_to_phrase, strlist_to_phrase
@@ -433,3 +437,26 @@ def test_xarray_to_pandas_freq_edge_cases():
 def test_pandas_freq_to_offset(freq_str, expected_offset):
     """Test converting pandas frequency strings to offsets."""
     assert pandas_freq_to_offset(freq_str) == expected_offset
+
+
+@pytest.mark.aqua
+class TestCdoHelpers:
+    """Tests for the CDO helpers resolved through smmregrid"""
+
+    def test_get_cdo(self):
+        """The resolved CDO is an existing executable"""
+        cdo = get_cdo()
+        assert os.path.isfile(cdo)
+
+    def test_get_cdo_missing(self):
+        """A missing executable raises FileNotFoundError"""
+        with pytest.raises(FileNotFoundError):
+            get_cdo("cdo-does-not-exist")
+
+    def test_run_cdo(self, tmp_path):
+        """A CDO command writes its output, a failing one raises with the CDO message"""
+        output = tmp_path / "const.nc"
+        run_cdo(["-O", "-f", "nc4", "const,1,r10x5", str(output)])
+        assert xr.open_dataset(output).sizes["lon"] == 10
+        with pytest.raises(RuntimeError, match="failed"):
+            run_cdo(["not_an_operator", str(output)])

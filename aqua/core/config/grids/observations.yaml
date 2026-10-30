@@ -22,7 +22,7 @@ grids:
       2dm: "{{ grids }}/ERA5/r025_grid_masked.nc"
     space_coord: ["lon", "lat"]
     masked:
-      vars: ["SSTK", "sst", "tos"]
+      vars: ["SSTK", "sst", "avg_tos", "tos", "CI", "ci", "avg_siconc", "siconc"]
 
   # OSI-SAF sea-ice concentration, EASE2-250 polar grids (432x432), one per hemisphere.
   osi-saf-nh-aqua:
