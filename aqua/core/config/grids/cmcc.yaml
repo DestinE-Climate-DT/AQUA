@@ -1,6 +1,6 @@
+# HighResMIP atmospheric grids: CMCC.
+
 grids:
   cmcc-cm2-vhr4-atm:
-    path: '{{ grids }}/CMCC/cmcc-cm2-vhr4_atm.nc'
-    space_coord:
-    - lon
-    - lat
+    path: "{{ grids }}/CMCC/cmcc-cm2-vhr4_atm.nc"
+    space_coord: ["lon", "lat"]

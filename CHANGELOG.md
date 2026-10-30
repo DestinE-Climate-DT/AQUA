@@ -11,7 +11,7 @@ Unreleased in the current development version (target v1.2.4):
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
 - Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
-
+- Restructure the grid definitions in `aqua/core/config/grids`: unused grids moved to `deprecated.yaml`, duplicated `tl63`/`tl159` removed from the EC-Earth4 file, sections ordered by model cycle, `HealPix.yaml`/`EC-EARTH4.yaml`/`EC-EARTH3.yaml` renamed to lowercase; the duplicated OSI-SAF grids are not defined anymore (`osi-saf-nh-aqua`/`osi-saf-sh-aqua` are to be used); `load_multi_yaml` has a new `check_duplicates` option to detect entries defined in more than one file, used in a test on the grids folder (#3269)
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)

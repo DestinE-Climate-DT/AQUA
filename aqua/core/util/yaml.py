@@ -63,7 +63,11 @@ yaml.SafeLoader.add_constructor("tag:yaml.org,2002:merge", construct_yaml_merge)
 
 
 def load_multi_yaml(
-    folder_path: str | None = None, filenames: list | None = None, definitions: str | dict | None = None, **kwargs
+    folder_path: str | None = None,
+    filenames: list | None = None,
+    definitions: str | dict | None = None,
+    check_duplicates: bool = False,
+    **kwargs,
 ):
     """
     Load and merge yaml files.
@@ -77,6 +81,9 @@ def load_multi_yaml(
         filenames (list, optional): the list of the yaml files to be merged.
         definitions (str or dict, optional): name of the section containing string template
                                                 definitions or a dictionary with the same
+        check_duplicates (bool, optional): if True, raise a ValueError when the same entry is defined
+                                           in more than one file of the folder, since the result would
+                                           depend on the (arbitrary) file order. Default is False.
 
     Keyword Args:
         loglevel (str, optional): the loglevel to be used, default is 'WARNING'
@@ -88,14 +95,16 @@ def load_multi_yaml(
 
     if isinstance(definitions, str):  # if definitions is a string we need to read twice
         yaml_dict = _load_merge(
-            folder_path=folder_path, definitions=None, filenames=filenames, **kwargs
+            folder_path=folder_path, definitions=None, filenames=filenames, check_duplicates=check_duplicates, **kwargs
         )  # Read without definitions
         definitions = yaml_dict.get(definitions)
         yaml_dict = _load_merge(
-            folder_path=folder_path, definitions=definitions, filenames=filenames, **kwargs
+            folder_path=folder_path, definitions=definitions, filenames=filenames, check_duplicates=check_duplicates, **kwargs
         )  # Read again with definitions
     else:  # if a dictionary or None has been passed for definitions we read only once
-        yaml_dict = _load_merge(folder_path=folder_path, definitions=definitions, filenames=filenames, **kwargs)
+        yaml_dict = _load_merge(
+            folder_path=folder_path, definitions=definitions, filenames=filenames, check_duplicates=check_duplicates, **kwargs
+        )
 
     return yaml_dict
 
@@ -198,6 +207,7 @@ def _load_merge(
     filenames: list | None = None,
     definitions: str | dict | None = None,
     merged_dict: dict | None = None,
+    check_duplicates: bool = False,
     loglevel: str = "WARNING",
 ):
     """
@@ -212,13 +222,15 @@ def _load_merge(
         definitions (str or dict, optional): name of the section containing string template
                                              definitions or a dictionary with the same content
         merged_dict (dict, optional):        the dictionary to be updated with the yaml files
+        check_duplicates (bool, optional):   raise if an entry is defined in more than one file of the folder
         loglevel (str, optional):            the loglevel to be used, default is 'WARNING'
 
     Returns:
         A dictionary containing the merged contents of all the yaml files.
 
     Raises:
-        ValueError: if both folder_path and filenames are None or if both are not None.
+        ValueError: if both folder_path and filenames are None or if both are not None,
+                    or if check_duplicates is True and an entry is defined in more than one file of the folder.
     """
     logger = log_configure(log_name="yaml", log_level=loglevel)
 
@@ -242,11 +254,20 @@ def _load_merge(
         logger.debug("Folder to be merged: %s", folder_path)
         if not os.path.exists(folder_path):
             raise FileNotFoundError(f"ERROR: {folder_path} not found: it is required to have this folder!")
+        defined_in = {}
         for filename in os.listdir(folder_path):
             if filename.endswith((".yml", ".yaml")):
                 file_path = os.path.join(folder_path, filename)
                 yaml_dict = load_yaml(file_path, definitions)
                 for key, value in yaml_dict.items():
+                    if check_duplicates and isinstance(value, dict):
+                        for name in value:
+                            if (key, name) in defined_in:
+                                raise ValueError(
+                                    f"ERROR: '{name}' in section '{key}' is defined in both "
+                                    f"{defined_in[(key, name)]} and {filename}"
+                                )
+                            defined_in[(key, name)] = filename
                     merged_dict[key].update(value)
 
     logger.debug("Dictionary updated")
