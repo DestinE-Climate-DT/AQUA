@@ -40,6 +40,7 @@ dependencies = [
     # eccodeslib is not required on purpose: its eckitlib (>=2.3) bundles PROJ and sqlite, which clash with
     # the conda ones used by cartopy and crash the interpreter on Linux (#3163)
     "eccodes>=2.50.0,<2.51",
+    "findlibs>=0.1.4", # 0.1.3 and older make eccodes/z3fdb and cartopy crash when loaded together on Linux
     "netcdf4",
     "h5py>=3.12.1",
     # shared with conda
@@ -78,9 +79,9 @@ fdb = [
     "pyfdb",
     "polytope-client",
     "gsv-interface>=2.18.0",
-    # z3fdb pins fdb5lib, eccodeslib and eckitlib: 5.23.2.27 is the last with an eckitlib without bundled PROJ (#3163)
-    "z3fdb==5.23.2.27; sys_platform == 'linux'",
-    "z3fdb>=5.23.2.27; sys_platform != 'linux'",
+    # z3fdb pins fdb5lib, eccodeslib and eckitlib. Their bundled PROJ clashed with the conda one used by cartopy (#3163),
+    # which is solved by findlibs>=0.1.4
+    "z3fdb>=5.25.0.33",
 ]
 docs = [
     "sphinx",
