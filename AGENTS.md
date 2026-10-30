@@ -70,6 +70,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 | YAML load/merge/dump | `from aqua.core.util import load_yaml, load_multi_yaml, dump_yaml` |
 | Lock shared config writes | `from aqua.core.lock import SafeFileLock` |
 | Coordinate standardization | `from aqua.core.data_model import DataModel` |
+| Coordinate names (time, lat, lon, isobaric, depth, height) | `from aqua.core.data_model import AquaCoordNames` |
 | Variable/unit fixing | `from aqua.core.fixer import Fixer` |
 | Regridding | `from aqua.core.regridder import Regridder` |
 | Field statistics | `from aqua.core.fldstat import FldStat` |
@@ -88,6 +89,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
 - **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
+- **No hard-coded coordinate names**: never write `"time"`, `"plev"` or `.time` in `aqua/core`; use `self.coords = AquaCoordNames(data_model)` (`coords.time`, `coords.lat`, ...) and give classes a `data_model` argument defaulting to `DEFAULT_DATAMODEL`; `tests/test_hardcoded_coords.py` enforces it
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
 
 ---

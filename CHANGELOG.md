@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
-- Apply abstract AQUA coordinate names (`scan_coord`) to DROP, timstat, fldstat, graphics and other core modules (#3124)
+- Abstract coordinate names: new cached `AquaCoordNames` class (`time`, `lat`, `lon`, `isobaric`, `depth`, `height`) read from the data model and used instead of hard-coded names in `Reader`, `Fixer`, `Backend`, `TimStat`, `FldStat`, `Drop` and its writers, time utilities and graphics; classes accept a `data_model` argument passed down by the `Reader`; `scan_coord` now raises if the data model or coordinate is missing (#3124)
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
