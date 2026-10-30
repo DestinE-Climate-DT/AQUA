@@ -1,11 +1,13 @@
 """Tests for the aqua.datamodel module."""
 
+from dataclasses import FrozenInstanceError
+
 import numpy as np
 import pytest
 import xarray as xr
 
 from aqua import Reader
-from aqua.core.data_model import CoordIdentifier, CoordTransformer, scan_coord
+from aqua.core.data_model import CoordIdentifier, CoordTransformer, aqua_coords, scan_coord
 
 
 @pytest.mark.aqua
@@ -177,6 +179,17 @@ class TestDataModel:
         with pytest.raises(ValueError):
             scan_coord("nonexistent")
 
-        # Test a non existing data model, returns default
-        default_name_model = scan_coord("latitude", data_model="nonexistent_model", default="default_coord")
-        assert default_name_model == "default_coord"
+        # A non existing data model raises
+        with pytest.raises(FileNotFoundError):
+            scan_coord("latitude", data_model="nonexistent_model")
+
+    def test_aqua_coords(self):
+        """Test for the cached, frozen CoordNames helper."""
+        coords = aqua_coords()
+        assert (coords.time, coords.lat, coords.lon) == ("time", "lat", "lon")
+        assert (coords.isobaric, coords.depth, coords.height) == ("plev", "depth", "height")
+        assert aqua_coords() is coords  # cached
+        with pytest.raises(FrozenInstanceError):
+            coords.time = "valid_time"
+        with pytest.raises(FileNotFoundError):
+            aqua_coords("nonexistent_model")
