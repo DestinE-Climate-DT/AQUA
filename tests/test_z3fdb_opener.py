@@ -1,6 +1,7 @@
 """Tests for z3fdb_opener module in AQUA, specifically focusing on _build_mars_requests."""
 
 import pickle
+from copy import deepcopy
 from unittest.mock import Mock
 
 import dask.array as da
@@ -9,8 +10,10 @@ import pytest
 import xarray as xr
 import zarr
 
+from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
+from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
 
 CMIP6_MARS_REQ = {
     "class": "d1",
@@ -86,6 +89,64 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
         assert restored.attrs["mars_request"] == expected_request
         assert restored.attrs["history"] == data.attrs["history"]
         xr.testing.assert_equal(restored, sliced)
+
+
+@pytest.mark.parametrize(
+    "levelist, levels, level_values, expected_ids, expected_values",
+    [
+        ([1000, 900, 800], None, None, [1000, 900, 800], [1000, 900, 800]),
+        ([1000, 900, 800], [900, 800], None, [900, 800], [900, 800]),
+        ([1000, 900, 800], [800, 1000], None, [800, 1000], [800, 1000]),
+        ([1000, 900, 800], [900, 800], [999.99, 899.99, 799.99], [900, 800], [899.99, 799.99]),
+        ([1000, 900, 800], [800, 1000], [999.99, 899.99, 799.99], [800, 1000], [799.99, 999.99]),
+        ([1000, 900, 800], 900, None, [900], [900]),
+        (1000, None, None, [1000], [1000]),
+        (1000, 1000, 999.99, [1000], [999.99]),
+        (0, 0, 0, [0], [0]),
+    ],
+    ids=[
+        "all",
+        "subset",
+        "reordered",
+        "physical-subset",
+        "physical-reordered",
+        "scalar-selection",
+        "scalar-default",
+        "scalar-physical",
+        "zero-level",
+    ],
+)
+def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, level_values, expected_ids, expected_values):
+    """Keep selected level IDs and coordinates consistent across HPC/bridge/HPC parts."""
+    zarr_array = zarr.zeros(shape=(1, 1, len(expected_ids), 5), chunks=(1, 1, len(expected_ids), 5), dtype="float32")
+    monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
+    builder = Mock()
+    monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
+    monkeypatch.setattr(z3fdb_opener, "ExtractorType", Mock(), raising=False)
+    monkeypatch.setattr(z3fdb_opener.zarr, "open_array", Mock(return_value=zarr_array))
+
+    request = {"param": [130], "levtype": "pl", "levelist": levelist}
+    original_request = deepcopy(request)
+    data = Z3FDB(
+        request=request,
+        metadata={"levels": level_values} if level_values is not None else {},
+        level=levels,
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date="20200101T0100",
+        bridge_end_date="20200101T0100",
+    )
+    result = Z3FDBDatasetReader(data).read()
+
+    assert request == original_request
+    assert data.level_values == level_values
+    assert isinstance(result.var130.data, da.Array)
+    assert result.sizes["time"] == 3
+    assert result.level.to_numpy().tolist() == expected_values
+    assert result.level.attrs["units"] == "hPa"
+    assert builder.add_part.call_count == 3
+    assert all(call.args[0]["levelist"] == expected_ids for call in builder.add_part.call_args_list)
 
 
 def test_build_mars_requests_years_and_dates_parsing():

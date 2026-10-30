@@ -477,7 +477,7 @@ def open_z3fdb(
     Args:
         request (dict): Dictionary containing the FDB request. Keys outside MARS_KEYS are ignored.
         variables (list, optional): List of variables to request. Defaults to None.
-        levels (list, optional): List of levels to request. Defaults to None.
+        levels (int or list, optional): Level IDs to request. Defaults to the request levelist.
         config (str, optional): Path to the configuration file. Defaults to "./config.yaml".
         years (range, optional): Range of years to request. Defaults to None.
         startdate (str, optional): Start date of the data. Defaults to None.
@@ -490,7 +490,8 @@ def open_z3fdb(
             Chunking.FixedSizeChunk is used with that chunk size.
             If the value is 1 (or 'single', True), Chunking.SINGLE_VALUE is used.
             The time axis is always chunked as single values. Defaults to None.
-        level_values (list, optional): List of physical values of levels. Defaults to None.
+        level_values (float or list, optional): Physical values matching the full request levelist.
+            Defaults to the level IDs.
         grid (str, optional): Name of the grid. Defaults to None.
 
     Returns:
@@ -514,14 +515,12 @@ def open_z3fdb(
     if not isinstance(variables, (list, tuple, range)):
         variables = [variables]
 
-    levelist = request.get("levelist")
-    if levels:
+    levelist = to_list(request.get("levelist")) or None
+    levels = to_list(levels) or levelist
+    if levels is not None:
         request["levelist"] = levels
-    else:
-        levels = levelist
 
-    if not level_values:
-        level_values = levels
+    level_values = to_list(level_values) or levelist or levels
 
     if level_values and levelist:
         level_values = [level_values[levelist.index(l)] for l in levels]
