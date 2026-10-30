@@ -34,6 +34,7 @@ FDB_HOME = "/app"
 pytestmark = pytest.mark.aqua
 
 
+@pytest.mark.parametrize("extra_keys", [{}, {"expid": "o031", "unknown": "ignored"}], ids=["valid-keys", "extra-keys"])
 @pytest.mark.parametrize(
     "startdate, enddate, expected_request",
     [
@@ -51,22 +52,30 @@ pytestmark = pytest.mark.aqua
     ],
     ids=["single-request", "multiple-requests"],
 )
-def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, expected_request):
-    """MARS metadata must survive slicing and a NetCDF round trip as a string."""
+def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, expected_request, extra_keys):
+    """Only valid MARS keys reach FDB, serialization and NetCDF metadata."""
     # Replace FDB access with an in-memory Zarr array so this runs without an FDB installation.
     zarr_array = zarr.zeros(shape=(2, 2, 12), chunks=(1, 1, 12), dtype="float32")
     monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
     monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
-    monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(), raising=False)
+    builder = Mock()
+    monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
     monkeypatch.setattr(z3fdb_opener, "ExtractorType", Mock(), raising=False)
     monkeypatch.setattr(z3fdb_opener.zarr, "open_array", Mock(return_value=zarr_array))
 
+    request = {"param": [167, 168], "levtype": "sfc", "expver": "0001", **extra_keys}
+    original_request = request.copy()
     data = z3fdb_opener.open_z3fdb(
-        request={"param": [167, 168], "levtype": "sfc"},
+        request=request,
         startdate=startdate,
         enddate=enddate,
         freq="h",
     )
+    assert request == original_request
+    requests = [call.args[0] for call in builder.add_part.call_args_list]
+    assert all("expid" not in req and "unknown" not in req and req["expver"] == "0001" for req in requests)
+    assert builder.build.return_value._mars == requests
+    expected_request = expected_request.replace("levtype=sfc,", "levtype=sfc,expver=0001,")
     assert isinstance(data["var167"].data, da.Array)
     data.attrs["history"] = "z3fdb NetCDF regression test"
     sliced = data.isel(time=0)

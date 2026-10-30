@@ -7,10 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.4):
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
+- Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
 - Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
 
+- Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
