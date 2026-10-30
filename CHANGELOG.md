@@ -4,15 +4,121 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
-Unreleased in the current development version (target v1.2.0):
+
+Unreleased in the current development version (target v1.2.4):
+- eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
+- Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
+- eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
+- Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
+- Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
+
+- Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
+- Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
+- Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
+
+## [v1.2.3]
 
 Main changes:
+- Upgrade to `smmregrid==0.2.0`: CDO is no longer a direct dependency and `python-cdo` is removed
+- Upgrade to eccodes 2.50: `eccodeslib` is no longer a dependency
+- New Intake STAC driver
+- Regridder supports the smmregrid `skipna` option
+- `aqua analysis` writes a Markdown report at the end of the run
+- Fixes in `aqua/core/config/fixes` restructured with one file per model
+- DROP: read chunks defined from the size of the output data, same on-disk chunks for all writers
+- Fix time bounds in time statistics
+- Label, axis and title style centralized in core graphics
+- Various CI/CD refinements
+
+Complete list:
+- Homogenize/centralize the size and style of the label/axis/title into core graphics methods (#3294)
+- Fix time bounds for total time statistics and when excluding incomplete periods, including centered and empty outputs (#3249)
+- CI: `aqua.yml` tests are triggered only by the `run tests` label; `ready for review` and `ready to merge` no longer start them (#3258)
+- In DROP, preserve the `AQUA_regridded` attribute during in-memory pipeline execution so downstream operations like regional selection properly route to the target grid, stripping it before persisting to disk (#3288)
+- Implement Intake STAC driver (#3161)
+- `aqua analysis` writes at the end of the run a timestamped Markdown report (`aqua-analysis-report_<date>.md`) summarising tool exit codes, logged errors, tracebacks and output files, readable both on GitHub/GitLab and in a terminal (#3242)
+- Mention z3fdb alongside FDB and Polytope in documentation, CLI options, and docstrings (#3287)
+- Restructure the fixes in `aqua/core/config/fixes`: one file per model (`ifs`, `icon`, `fesom`, `ec-earth4`), `climatedt.yaml` for the catgen default fixes, `observations.yaml`, unused fixes moved to `deprecated.yaml`; fixer names unchanged; new tests for duplicated fixer names and parent inheritance (#3270)
+- Keep `Fixer` monthly `deltat` configuration immutable and compute `days_in_month` time corrections per dataset (#3233)
+- Pin `python-dateutil<3` in `environment.yml`: botocore does not support python-dateutil 3.0.0, which made the conda relock backtrack through all boto3 releases (#3290)
+- `conda-relock` workflow: add `--filter-extras`, so only the `tests` and `fdb` extras are solved and the self-referencing `all` extra is not resolved against `aqua-core` from PyPI (#3290)
+- Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes` bindings aligned to `>=2.50.0,<2.51`. `eccodeslib` is no longer a dependency: from 2.49 its `eckitlib` bundles PROJ/sqlite that crash with the conda ones used by cartopy (#3163); `z3fdb==5.23.2.27` stays pinned on Linux for the same reason (#3253)
+- Update the `fdb` extra to `gsv-interface>=2.18.0` (was hard-pinned to `==2.13.1`) (#3277)
+- Regridder: a `skipna` key in the grid `path` enables the smmregrid `skipna` option, with a single 2D weights matrix (`_lskipna` in the weights filename) for all variables and levels; masks varying in time or along any dimension are handled at regridding time, with `na_thres=0.5` as without `skipna`. Off by default (#3274)
+- Let user kwargs override catalog xarray options consistently in the NetCDF, Zarr, and STAC Intake drivers, preserving explicit None values and effective backend read options (#3282)
+- Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
+- ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
+- Add pull request review instructions to AGENTS.md (#3285)
+- Add instructions for human control of main to AGENTS.md (#3232)
+- DROP catalog entries define read chunks from the size of the output data (new `chunk_target` option, default `128MiB`), splitting vertical levels when needed; NetCDF output is written with one on-disk chunk per horizontal slice (#3228)
+- DROP NetCDF, Zarr and Icechunk writers share the same on-disk chunks (one horizontal slice); Icechunk time chunks are no longer estimated from the frequency, and the unused `zarr_chunks` argument of `Drop` is removed (#3256)
+- Store z3fdb `mars_request` metadata as a string for single requests so datasets can be written to NetCDF (#3243)
+- Fix the ICON-default `snlwrf` formula by removing a trailing operator; ICON-cycle3 and ICON-cycle4 inherit the correction (#3247)
+- CI aligned with aqua-diagnostics: labels matched by prefix, workflow name in the test concurrency group, aqua-core version printed in every job, PR checks panel limit documented in `CONTRIBUTING.md`; PyPI/Conda workflows only need `contents: read`; `conda-relock` concurrency at job level, so adding another label together with `conda-lock` no longer cancels the relock (#3241)
+
+## [v1.2.2]
+
+ClimateDT workflow modifications:
+- `--checker` rename to `--setup_checker` in `aqua analysis` command line
+- `aqua analysis ensemble` command is now ready for implementation in the workflow
+
+Main changes:
+- the setup checker is now in the `aqua diagnostics` package, and the `cli_checker.py` is removed from the core package
+- `plot_timeseries` are updated to work with the new ensemble timeseries diagnostic
+- AQUA does not support anymore python 3.11
+- Various CI/CD refinements
+- Gregory plots can now use a time-colormap to color both trajectory lines and points
+- Fix concurrent processes `SafeFileLock` issue (#3221)
+
+Complete list:
+- Remove `space_coord` hardcoded name in the HealPix atmospheric grids (#3230)
+- CI composite actions and `report-failure-reusable.yml` usable from aqua-diagnostics: new `dvc-ref` and `codecov-name` inputs, defaults unchanged (#3235)
+- Testing strategy documented in `CONTRIBUTING.md`; `slow` pytest marker removed, console tests marked only with `console` and selected in CI
+- Introduction of reusable modular actions to support portable GitHub workflow (#3198)
+- CI refinements: `aqua-release.yml` now runs weekly and reports failures only for scheduled/manual runs; one failure label per suite (`ci-failure:<suite> :clown_face:`); callers own the platform x Python matrix with `max-parallel`, `aqua-test-reusable.yml` takes a single `python-version`; on `labeled` events PR workflows check only the label just added, so unrelated labels no longer restart running tests (#3222)
+- `aqua analysis` checker renamed to setup checker (`--setup_checker`, `run_setup_checker`); `cli_checker.py` removed in favour of the `cli_setup_checker.py` from diagnostics (#3178)
+- `plot_timeseries` function now plot same color for monthly and annual ensemble timeseries (#3220)
+- Fix macOS nightly failures: shorter per-worker TMPDIR for AF_UNIX sockets, longer cli_checker test timeout; ruff target set to py312 (#3214)
+- Hovmoller adjustments and possibility to plot uneven levels (#3203)
+- `aqua add` validates only the newly added catalog, removing misleading warnings when installing the first catalog (#3212)
+- The `aqua analysis ensemble` command now set realization to `ensemble` by default, to avoid falling to the default `r1` (#3192)
+- Split console tests in multiple modules and reintroduce parallel execution (#3199)
+- Refactor GitHub API call to reduce the total number and avoid hitting rate limits (#3204)
+- `conda-relock` workflow can be triggered on a PR by adding the `conda-lock` label: it relocks against the PR branch and opens a relock PR targeting it (#3201)
+- Fix missing test markers (#3187)
+- Drop support to python 3.11 (#3188, #3214)
+- Refactor CI: lean `aqua.yml`, new `aqua-nightly.yml` (free-running environment, FDB container, failure issue) and `aqua-release.yml` (environment-pypi.yml + local install); `environment-pypi.yml` no longer installs aqua-core (#3188)
+- Remove climatedt-phase1 from CI/CD (#3181)
+- Add optional time-colormap support to Gregory plots, mapping both trajectory lines and points (#3175)
+
+## [v1.2.1]
+
+Complete list:
+- Area selection: fix regions crossing the dateline and add fractional-coverage selection (#3179)
+- Fix for pyproject to avoid core-dump due to cartopy/eccodes conflict 
+- Fix zarr compressor error which was breaking Drop for both Icechunk and Zarr writer (#3165)
+- Fix convevention table for ocean variables and logger error for incommensurate units  (#3176)
+
+## [v1.2.0]
 
 ClimateDT workflow modifications:
 - The aqua analysis and drop cli has been made uniform: both receive now `--nworkers` and `--nthreads` to control dask cluster properties.
   The most relevant change in terms of API is that `-w, --workers` become `-w, --nworkers`.
 
+Main changes: 
+1. Generalised installation option for aqua packages (as aqua-diagnostics) via plugins
+2. Various fixes to the Backend and to the Console
+
 Complete list:
+- Implement MacOS CI/CD test (#3158)
+- `aqua analysis` support for ensemble analysis with the `aqua analysis ensemble` subcommand (#3159)
+- `aqua grids build` now supports `reader_kwargs` option to pass extra arguments to the Reader (#3136)
+- `aqua grids build` now supports `--datamodel` option to apply the data model to the original source before building the grid (#3136)
+- Remove the `intake_xarray` compatibility stub (#3147)
+- Container are now created with conda-lock file (#3133)
+- Allow update to latest matplotlib in AQUA-diagnostics (#3138)
+- Adapt tests involving Polytope to `climatedt-gen2` catalog (#3137)
+- Adapt z3fdb reader to recent API change (#3100)
 - Simplify `lumi_install.sh` so that specific environment file is no longer necessary (#3130)
 - Allow `compact: null` to disable monthly-to-yearly concatenation for Zarr DROP output. (#3125)
 - Update GSV paths and container name logic for `load-aqua-container.sh` bash script (#3123)
@@ -43,6 +149,7 @@ Main changes:
 ClimateDT workflow modifications:
 
 Complete list:
+- Fix area selection for regionmask regions crossing the Greenwich meridian (#3058)
 - Remove intake-xarray dependency (#2958)
 - Update load_aqua_container script for both core and diagnostics (#3043)
 - Remove deprecated idx_level coordinates for FDB access (#3063)
@@ -1550,7 +1657,11 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.3...HEAD
+[v1.2.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...v1.2.3
+[v1.2.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...v1.2.2
+[v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1
+[v1.2.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.1.0...v1.2.0
 [v1.1.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.1...v1.1.0
 [v1.0.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0...v1.0.1
 [v1.0.0]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.0.0a6...v1.0.0

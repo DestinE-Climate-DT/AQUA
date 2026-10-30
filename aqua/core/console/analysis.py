@@ -24,13 +24,17 @@ def analysis_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Run AQUA diagnostics.")
     # fmt: off
+    # optional sub-target selecting a different default pipeline/config (e.g. "ensemble")
+    parser.add_argument("target", nargs="?", choices=["ensemble"], default=None,
+                        help="Optional sub-target selecting a dedicated pipeline (e.g. 'ensemble')")
+
     # sources
     parser.add_argument("-c", "--catalog", type=str, help="Catalog")
     parser.add_argument("-m", "--model", type=str, help="Model (atmospheric and oceanic)")
     parser.add_argument("-e", "--exp", type=str, help="Experiment")
     parser.add_argument("-s", "--source", type=str, help="Source")
     parser.add_argument("--source_oce", type=str,
-        help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
+                        help="Extra source for oceanic data when --source is used for atmospheric data and both are needed")
     parser.add_argument("--realization", type=str, help="Realization (default: None)")
 
     # default options for diagnostics
@@ -43,7 +47,7 @@ def analysis_parser(parser=None):
     parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
     parser.add_argument("--config", type=str, help="Configuration file")
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
-    parser.add_argument("--checker", action="store_true", help="Run the setup checker")
+    parser.add_argument("--setup_checker", action="store_true", help="Run the setup checker")
 
     # computation
     parser.add_argument("--serial", action="store_true", help="Disable dask cluster parallel execution")
@@ -53,7 +57,6 @@ def analysis_parser(parser=None):
                         help="Number of dask threads per worker to use in the cluster (overrides config file)")
     parser.add_argument("--nmaxprocesses", type=int, default=-1,
                         help="Maximum number of processes to use in the ThreadPoolExecutor. Default==-1 (no limit)")
-
 
     # logger
     parser.add_argument("-l", "--loglevel", type=str.upper,
@@ -70,8 +73,12 @@ def analysis_execute(args):
     loglevel = args.loglevel
     logger = log_configure(loglevel, "AQUA Analysis")
 
+    # target selects a dedicated default config/pipeline (e.g. "ensemble"), reusing the same engine
+    target = getattr(args, "target", None)
+    default_config_name = f"config.aqua-analysis-{target}.yaml" if target else "config.aqua-analysis.yaml"
+
     # Initialize analyzer
-    analyzer = Analysis(config_file_path=args.config, loglevel=loglevel)
+    analyzer = Analysis(config_file_path=args.config, loglevel=loglevel, default_config_name=default_config_name)
 
     # Load config and get AQUA paths
     config = analyzer.get_config()
@@ -107,10 +114,19 @@ def analysis_execute(args):
     exp_kind_file = job_config.get("experiment_kind")
     analyzer.configure_experiment_kind(args.kind, exp_kind_file)
 
-    # cli checker setup and run
-    run_checker = get_arg(args, "checker", False, config=job_config, key="run_checker")
-    if run_checker:
-        _ = analyzer.run_setup_checker()
+    # read cli definitions and prepend script path
+    cli = config.get("cli", {})
+    script_dir = job_config.get("script_path_base", "")  # we were not using this key
+    if script_dir:
+        for diag in cli:
+            cli[diag] = os.path.join(script_dir, cli[diag])
+
+    # setup checker: run the setup checker if requested
+    run_setup_checker = get_arg(args, "setup_checker", False, config=job_config, key="run_setup_checker")
+    setup_checker_script = os.path.join(script_dir, cli.get("setup_checker", ""))
+    setup_checker_script = setup_checker_script if os.path.isfile(setup_checker_script) else None
+    if run_setup_checker:
+        _ = analyzer.run_setup_checker(script_path=setup_checker_script)
 
     # running or not
     run = config.get("run", [])
@@ -120,13 +136,6 @@ def analysis_execute(args):
 
     if not analyzer.serial:
         analyzer.configure_dask_cluster(args, cluster_config)
-
-    # read cli definitions and prepend script path
-    cli = config.get("cli", {})
-    script_dir = job_config.get("script_path_base")  # we were not using this key
-    if script_dir:
-        for diag in cli:
-            cli[diag] = os.path.join(script_dir, cli[diag])
 
     # Internal naming scheme:
     # collection: the name of the wrapper metadiagnostic, e.g. atmosphere2d, climate_metrics, etc.
@@ -159,6 +168,9 @@ def analysis_execute(args):
     analyzer.close_dask_cluster()
 
     logger.info("All diagnostic collections finished.")
+
+    if job_config.get("report", True):
+        analyzer.write_report(include_warnings=job_config.get("report_warnings", False))
 
 
 if __name__ == "__main__":

@@ -26,7 +26,30 @@ convention_name:
           - T2M # AQUA ERA5
           - tas # cmor
           - t2m
+          - tg # E-OBS
         grib: 167
+      max_2t: # Time-maximum 2 metre temperature
+        source:
+          - 237167 # original GRIB2 code
+          - 201 # mx2t
+          - 51 # mx2t24
+          - max_2t
+          - mx2t # legacy eccodes
+          - mx2t24 # legacy eccodes
+          - tx # E-OBS
+          - tasmax # cmor
+        grib: 237167
+      min_2t: # Time-minimum 2 metre temperature
+        source:
+          - 238167 # original GRIB2 code
+          - 202 # mn2t
+          - 52 # mn2t24
+          - min_2t
+          - mn2t # legacy eccodes
+          - mn2t24 # legacy eccodes
+          - tn # E-OBS
+          - tasmin # cmor
+        grib: 238167
       10si: # 10 metre wind speed
         source:
           - 207 # original GRIB2 code
@@ -495,6 +518,7 @@ convention_name:
           - tp
           - TP # AQUA ERA5
           - rr # E-OBS
+          - precipitation # GPM IMERG V07, MSWEP
           - pr # cmor
         grib: 260048
       tsrwe: # Total snowfall rate water equivalent
@@ -568,7 +592,7 @@ convention_name:
           - salt # PHC3
           - avg_so
           - so # cmor
-        grid: 262500
+        grib: 262500
       thetao: # Sea water potential temperature
         source:
           - 150129 # ocpt
@@ -579,7 +603,7 @@ convention_name:
           - ocpt
           - to
           - thetao # cmor
-        grid: 262501
+        grib: 262501
       uoe: # Sea water zonal current (eastward)
         source:
           - 262506 # original GRIB2 code

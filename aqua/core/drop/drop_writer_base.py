@@ -14,10 +14,10 @@ from time import time
 import numpy as np
 import pandas as pd
 import xarray as xr
-import zarr
 from dask.diagnostics import ProgressBar
 from dask.distributed import progress
 from dask.distributed.diagnostics import MemorySampler
+from smmregrid import GridType
 
 from aqua.core.data_model import scan_coord
 from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE, AQUA_TIME
@@ -148,28 +148,24 @@ class BaseWriter(ABC):
             xarray.Dataset: Opened dataset
         """
 
-    def _build_zarr_encoding(self, data, time_chunk, compressor_level=1):
+    def _disk_chunks(self, data):
         """
-        Build per-variable chunk encoding with explicit time chunking and full spatial dims.
+        On-disk chunk sizes shared by all writers: whole horizontal dimensions, 1 along all the others.
 
-        Shared by ZarrWriter and IcechunkWriter. For each variable in ``data``,
-        constructs a chunk tuple where the ``time`` dimension uses ``time_chunk``
-        and all other dimensions use the full dimension size (no chunking).
+        Each chunk holds a single horizontal slice (one time step, one level), so that any
+        read chunking along time and vertical dimensions is aligned with the on-disk chunks.
 
         Args:
-            data: xarray Dataset
-            time_chunk (int): Number of time steps per chunk.
-            compressor_level (int): Compression level for GzipCodec (1-9)
+            data: xarray DataArray
 
         Returns:
-            dict: Encoding configuration or None if data has no data_vars.
+            tuple: Chunk size along each dimension, or None if no horizontal dimension is found.
         """
-        encoding = {}
-        compressor = zarr.codecs.GzipCodec(level=compressor_level)
-        for var_name in data.data_vars:
-            chunks = tuple(time_chunk if dim == self.AQUA_TIME else data[var_name].sizes[dim] for dim in data[var_name].dims)
-            encoding[var_name] = {"chunks": chunks, "compressor": compressor}
-        return encoding or None
+        horizontal_dims = GridType(dims=data.dims).horizontal_dims
+        if not horizontal_dims:
+            self.logger.warning("No horizontal dimensions found for %s, using default chunking", data.name)
+            return None
+        return tuple(size if dim in horizontal_dims else 1 for dim, size in data.sizes.items())
 
     def _compute_data(self, data, dask=False, performance_reporting=False):
         """

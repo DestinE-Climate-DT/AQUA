@@ -3,15 +3,17 @@ import re
 import shutil
 
 import icechunk
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 from aqua.core.drop.drop import available_stats
 from aqua.core.drop.drop_writer_icechunk import IcechunkWriter
+from aqua.core.drop.drop_writer_netcdf import NetCDFWriter
 from aqua.core.drop.drop_writer_zarr import ZarrWriter
 from aqua.core.drop.output_path_builder import OutputPathBuilder
 from aqua.core.lock import SafeFileLock
@@ -82,11 +84,11 @@ class TestCatalogEntryBuilder:
     """Class containing tests for CatalogEntryBuilder."""
 
     @pytest.mark.parametrize(
-        "resolution, frequency, realization, region, stat, source_grid_name, chunks",
+        "resolution, frequency, realization, region, stat, source_grid_name",
         [
-            ("r100", "monthly", "r1", "global", "mean", "lon-lat-r100", {"time": 12, "lat": 180, "lon": 360}),
-            ("r200", "daily", "r1", "global", "mean", "lon-lat", {"time": 365, "lat": 90, "lon": 180}),
-            ("r050s", "monthly", "r4", "europe", "max", "lon-lat", {"time": 12, "lat": 361, "lon": 720}),
+            ("r100", "monthly", "r1", "global", "mean", "lon-lat-r100"),
+            ("r200", "daily", "r1", "global", "mean", "lon-lat"),
+            ("r050s", "monthly", "r4", "europe", "max", "lon-lat"),
         ],
     )
     def test_create_entry_name(
@@ -98,7 +100,6 @@ class TestCatalogEntryBuilder:
         region,
         stat,
         source_grid_name,
-        chunks,
     ):
         """Test creation of entry name."""
         builder = CatalogEntryBuilder(
@@ -128,6 +129,8 @@ class TestCatalogEntryBuilder:
         assert block["driver"] == "netcdf"
         assert block["parameters"].keys() == {"realization", "stat", "region"}
         assert block_zarr["driver"] == "zarr"
+        # no output on disk: chunks cannot be defined
+        assert block["args"]["chunks"] == {}
 
         builder2 = CatalogEntryBuilder(
             catalog="ci",
@@ -146,7 +149,69 @@ class TestCatalogEntryBuilder:
         )
         assert newblock["args"]["urlpath"] == block["args"]["urlpath"]
         assert newblock["parameters"]["realization"]["allowed"] == [realization, "r2"]
-        assert newblock["args"]["chunks"] == chunks
+        # chunks of an existing entry are not modified
+        block["args"]["chunks"] = {"time": 7}
+        newblock = builder2.create_entry_details(basedir=drop_arguments["outdir"], catblock=block)
+        assert newblock["args"]["chunks"] == {"time": 7}
+
+
+class TestOptimalChunks:
+    """Tests for CatalogEntryBuilder.define_optimal_chunks on synthetic DROP outputs."""
+
+    @staticmethod
+    def _write(path, var, dims, sizes, output_format="netcdf"):
+        """Write a lazy-zero variable with the given dims and sizes."""
+        coords = {"time": pd.date_range("2000-01-01", periods=sizes[0], freq="MS")}
+        if "lat" in dims:
+            coords.update(lat=np.linspace(-89.5, 89.5, sizes[dims.index("lat")]))
+            coords.update(lon=np.linspace(0.5, 359.5, sizes[dims.index("lon")]))
+        ds = xr.DataArray(np.zeros(sizes), dims=dims, coords=coords, name=var).to_dataset()
+        if output_format == "zarr":
+            ds.to_zarr(path, mode="w", consolidated=False)
+        else:
+            ds.to_netcdf(path)
+
+    @pytest.fixture
+    def builder(self, drop_arguments):
+        return CatalogEntryBuilder(catalog="ci", **drop_arguments, resolution="r100", frequency="monthly", loglevel=LOGLEVEL)
+
+    @pytest.mark.parametrize(
+        "dims, sizes, chunk_target, expected",
+        [
+            # default case: r100 monthly 2D, the time chunk is capped by the yearly file
+            (("time", "lat", "lon"), (12, 180, 360), "128MiB", {"time": 12, "lat": -1, "lon": -1}),
+            # r100 monthly 3D: vertical levels are split to stay within the target
+            (("time", "level", "lat", "lon"), (12, 75, 180, 360), "128MiB", {"time": 12, "level": 21, "lat": -1, "lon": -1}),
+            (("time", "level", "lat", "lon"), (12, 75, 180, 360), "64MiB", {"time": 12, "level": 10, "lat": -1, "lon": -1}),
+            (("time", "level", "lat", "lon"), (12, 75, 180, 360), "0.2GiB", {"time": 12, "level": 34, "lat": -1, "lon": -1}),
+            # ocean depth is a smmregrid mask dim, also treated as vertical
+            (("time", "depth", "lat", "lon"), (12, 75, 180, 360), "128MiB", {"time": 12, "depth": 21, "lat": -1, "lon": -1}),
+            # healpix-like 1D horizontal grid
+            (("time", "cell"), (12, 3072), "128MiB", {"time": 12, "cell": -1}),
+            # a single horizontal slice exceeds the target: horizontal dims are never split
+            (("time", "level", "lat", "lon"), (2, 3, 18, 36), "1kB", {"time": 1, "level": 1, "lat": -1, "lon": -1}),
+        ],
+    )
+    def test_chunk_size(self, builder, tmp_path, dims, sizes, chunk_target, expected):
+        """Chunks are derived from the size of the data and the target size."""
+        self._write(tmp_path / "var_2000.nc", "var", dims, sizes)
+        chunks = builder.define_optimal_chunks(str(tmp_path / "*.nc"), chunk_target=chunk_target)
+        assert chunks == expected
+
+    @pytest.mark.parametrize("output_format, ext", [("netcdf", ".nc"), ("zarr", ".zarr")])
+    def test_merge_variables(self, builder, tmp_path, output_format, ext):
+        """2D and 3D variables in the same entry share a single chunks dictionary."""
+        for year in (2000, 2001, 2002):
+            self._write(tmp_path / f"tos_{year}{ext}", "tos", ("time", "lat", "lon"), (12, 180, 360), output_format)
+            self._write(
+                tmp_path / f"thetao_{year}{ext}", "thetao", ("time", "level", "lat", "lon"), (12, 75, 180, 360), output_format
+            )
+        chunks = builder.define_optimal_chunks(str(tmp_path / f"*{ext}"), output_format=output_format)
+        assert chunks == {"time": 12, "level": 21, "lat": -1, "lon": -1}
+
+    def test_no_files(self, builder, tmp_path):
+        """No output on disk returns empty chunks."""
+        assert builder.define_optimal_chunks(str(tmp_path / "*.nc")) == {}
 
 
 class TestDROPLevelParameter:
@@ -193,7 +258,7 @@ class TestDROP:
     """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
 
     # Sequential execution required: all tests write to the shared "drop_test/" outdir.
-    pytestmark = [pytest.mark.console, pytest.mark.xdist_group(name="dask_operations")]
+    pytestmark = pytest.mark.xdist_group(name="dask_operations")
 
     def test_definitive_false(self, drop_arguments, tmp_path):
         """Test DROP with definitive=False."""
@@ -275,7 +340,28 @@ class TestDROP:
         xfield = xr.open_dataset(file_path).where(lambda x: x.notnull(), drop=True)
         assert xfield.lat.min() > 35
         assert xfield.lat.max() < 70
+        assert "AQUA_regridded" not in xfield.attrs
+        assert "AQUA_regridded" not in xfield["2t"].attrs
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+
+    def test_remove_regridded(self):
+        """Test that _remove_regridded removes AQUA_regridded from attributes."""
+        drop = Drop.__new__(Drop)
+
+        # DataArray
+        da = xr.DataArray([1.0], attrs={"AQUA_regridded": 1, "units": "K"})
+        cleaned_da = drop._remove_regridded(da)
+        assert "AQUA_regridded" not in cleaned_da.attrs
+        assert cleaned_da.attrs["units"] == "K"
+
+        # Dataset (removes from both dataset-level and data variables)
+        ds = xr.Dataset({"2t": da}, attrs={"AQUA_regridded": 1, "title": "test"})
+        cleaned_ds = drop._remove_regridded(ds)
+        assert "AQUA_regridded" not in cleaned_ds.attrs
+        assert "AQUA_regridded" not in cleaned_ds["2t"].attrs
+        assert cleaned_ds.attrs["title"] == "test"
+
+        assert drop._remove_regridded(None) is None
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
     def test_dask_overwrite(self, drop_arguments, tmp_path, output_format):
@@ -345,6 +431,10 @@ class TestDROP:
         else:  # zarr
             source_name = "lra-r100-monthly-zarr"
 
+        # monthly files hold a single time step, horizontal dims are kept whole
+        cat_file = load_yaml(os.path.join(test.configdir, "catalogs", test.catalog, "catalog", test.model, test.exp + ".yaml"))
+        assert cat_file["sources"][source_name]["args"]["chunks"] == {"time": 1, "lat": -1, "lon": -1}
+
         # Use Reader to access the newly created source through intake
         reader = Reader(
             catalog="ci",
@@ -357,6 +447,8 @@ class TestDROP:
         # Read data through intake and verify it matches
         data = reader.retrieve(var=drop_arguments["var"])
         assert "2t" in data.data_vars, f"Variable '2t' not found in {output_format} intake data"
+        # the catalog chunks are used by the intake driver
+        assert data["2t"].data.chunksize == (1, 180, 360)
         assert len(data.time) == 6, f"{output_format} Reader data should have 6 timesteps instead of {len(data.time)}"
 
         catalogfile = os.path.join(test.configdir, "catalogs", test.catalog, "catalog", test.model, test.exp + ".yaml")
@@ -520,6 +612,9 @@ class TestDROP:
             ds = xr.open_dataset(feb_path)
         assert len(ds.time) == 1  # Only February data
         assert drop_arguments["var"] in ds.data_vars
+        # one on-disk chunk per horizontal slice, for every output format
+        chunk_key = "chunksizes" if output_format == "netcdf" else "chunks"
+        assert tuple(ds[drop_arguments["var"]].encoding[chunk_key]) == (1, 180, 360)
         assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
 
         shutil.rmtree(os.path.join(drop_arguments["outdir"]))
@@ -674,18 +769,39 @@ class TestZarrWriter:
         ds.to_zarr(store, mode="w")
         assert writer.validate(store) is expected
 
-    def test_encoding_without_chunks(self, writer):
-        """_get_encoding returns None when chunks is not set."""
-        writer.chunks = None
-        ds = xr.Dataset(
-            {"var": xr.DataArray([1, 2, 3], dims=["time"], coords={"time": pd.date_range("2020-01-01", periods=3)})}
-        )
-        assert writer._get_encoding(ds) is None
-
     def test_write_error_path(self, writer):
         """_write_chunk_to_disk returns False when the write fails."""
         ds = xr.Dataset({"var": xr.DataArray([1.0], dims=["time"])})
         assert writer._write_chunk_to_disk(ds, "/proc/nonexistent/test.zarr", None) is False
+
+
+class TestDiskChunks:
+    """On-disk chunks shared by all writers: whole horizontal dimensions, 1 along all the others."""
+
+    @pytest.fixture(params=[NetCDFWriter, ZarrWriter, IcechunkWriter], ids=["netcdf", "zarr", "icechunk"])
+    def writer(self, request, tmp_path):
+        return request.param(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+
+    @staticmethod
+    def _chunks(writer, ds):
+        """Chunk sizes of the 'var' encoding, None if left to the backend default."""
+        encoding = writer._get_encoding(ds, "var")["var"]
+        return encoding.get("chunksizes" if isinstance(writer, NetCDFWriter) else "chunks")
+
+    @pytest.mark.parametrize(
+        "dims,sizes,expected",
+        [
+            (("time", "plev", "lat", "lon"), (3, 4, 5, 6), (1, 1, 5, 6)),
+            (("time", "lat", "lon"), (3, 5, 6), (1, 5, 6)),
+            (("time", "cell"), (3, 7), (1, 7)),
+            (("time",), (3,), None),
+        ],
+        ids=["3d", "2d", "unstructured", "no_horizontal"],
+    )
+    def test_disk_chunks(self, writer, dims, sizes, expected):
+        """Every writer encodes the same on-disk chunks."""
+        ds = xr.Dataset({"var": (dims, np.zeros(sizes))}, coords={"time": pd.date_range("2020-01-01", periods=3)})
+        assert self._chunks(writer, ds) == expected
 
 
 class TestIcechunkWriter:
@@ -706,7 +822,7 @@ class TestIcechunkWriter:
         writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
         writer._init_repo()
         ds = xr.Dataset({"foo": xr.DataArray([1.0], dims=["time"], coords={"time": [pd.Timestamp("2020-01-01")]})})
-        writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
+        assert writer._write_to_icechunk_session(ds, writer.main_session, mode="w")
         writer.main_session.commit("test")
 
         result = writer.check_integrity("bar")

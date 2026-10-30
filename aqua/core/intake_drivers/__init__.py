@@ -3,14 +3,15 @@ import intake  # Import this first to avoid circular imports during discovery.
 # from intake.container import register_container
 from .fdb import IntakeFDBSource, open_gsv, open_polytope, open_z3fdb
 from .icechunk import IntakeIcechunkSource
-from .xarray import IntakeNetCDFSource, IntakeZarrSource, install_intake_xarray_stub
+from .stac import IntakeSTACSource
+from .xarray import IntakeNetCDFSource, IntakeZarrSource
 
 __all__ = [
     "IntakeFDBSource",
     "IntakeIcechunkSource",
     "IntakeNetCDFSource",
+    "IntakeSTACSource",
     "IntakeZarrSource",
-    "install_intake_xarray_stub",
     "open_gsv",
     "open_polytope",
     "open_z3fdb",
@@ -32,9 +33,6 @@ except ValueError:
 # .data/.metadata/.xarray_kwargs attributes).
 intake.registry.drivers.register_driver('netcdf', IntakeNetCDFSource, clobber=True)
 intake.registry.drivers.register_driver('zarr', IntakeZarrSource, clobber=True)
-
-# Legacy catalogs may still import intake_xarray through their 'plugins' block:
-# when the real package is absent, install a stub mapping it to the AQUA sources.
-install_intake_xarray_stub()
+intake.registry.drivers.register_driver('stac', IntakeSTACSource, clobber=True)
 
 ## register_container('gsv', GSVSource)

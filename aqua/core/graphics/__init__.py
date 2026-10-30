@@ -14,6 +14,7 @@ The following functions are available:
 - plot_seasonalcycle: Plot a seasonal cycle
 - plot_maps: Plot multiple maps using plot_single_map
 """
+import aqua.core.util  # noqa: F401  (load util before data_model: configurer <-> util import cycle)
 from .gregory import plot_gregory_monthly, plot_gregory_annual
 from .histogram import plot_histogram
 from .hovmoller import plot_hovmoller

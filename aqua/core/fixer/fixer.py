@@ -70,12 +70,7 @@ class Fixer:
             A xarray.Dataset containing the fixed data and target units, factors and offsets in variable attributes.
         """
 
-        # OLD NAMING SCHEME
-        # unit: name of 'units' attribute
-        # src_units: name of fixer source units
-        # newunits: name of fixer target units
-
-        # NEW NAMING SCHEME
+        # NAMING SCHEME
         # tgt_units: target unit
         # fixer_src_units: name of fixer source units
         # fixer_tgt_units: name of fixer target units
@@ -90,15 +85,14 @@ class Fixer:
         if self.fixes is None:
             return data
 
-        # Default input datamodel
-        # src_datamodel = self.fixes_dictionary["defaults"].get("src_datamodel", None)
-        # self.logger.debug("Default input datamodel: %s", src_datamodel)
-
-        # Special case for monthly deltat
+        # Special case for monthly deltat: compute per-dataset values without mutating instance state
         if self.deltat == "monthly":
             self.logger.info("%s deltat found, we will estimate a correction based on number of days per month", self.deltat)
-            self.deltat = 3600 * 24
-            self.time_correction = data.time.dt.days_in_month
+            deltat = 3600 * 24
+            time_correction = data.time.dt.days_in_month
+        else:
+            deltat = self.deltat
+            time_correction = self.time_correction
 
         jump = self.fixes.get("jump", None)  # if to correct for a monthly accumulation jump
 
@@ -244,7 +238,7 @@ class Fixer:
                     if data[source].units != tgt_units:
                         log_history(data[source], f"Converting units of {var}: from {data[source].units} to {tgt_units}")
                     conversion_dictionary = convert_units(
-                        data[source].units, tgt_units, deltat=self.deltat, var=var, loglevel=self.loglevel
+                        data[source].units, tgt_units, deltat=deltat, var=var, loglevel=self.loglevel
                     )
 
                     # if some unit conversion is defined, modify the attributes and history for later usage
@@ -254,7 +248,7 @@ class Fixer:
                             data[source].attrs.update({key: value})
                             self.logger.debug("Fixing %s to %s. Unit fix: %s=%f", source, var, key, float(value))
                             log_history(data[source], f"Fixing {source} to {var}. Unit fix: {key}={value}")
-                    elif conversion_dictionary == {} and data[source].units != tgt_units:
+                    elif not conversion_dictionary and data[source].units != tgt_units:
                         self.logger.info(
                             "No conversion needed for %s, but units are renamed from %s to %s",
                             var,
@@ -279,7 +273,7 @@ class Fixer:
 
         # decumulate if necessary and fix first of month if necessary
         if vars_to_fix:
-            data = self.operator.wrapper_decumulate(data, self.deltat, vars_to_fix, varlist, jump)
+            data = self.operator.wrapper_decumulate(data, deltat, vars_to_fix, varlist, jump)
             if nanfirst_enddate:  # This is a temporary fix for IFS data, run ony if an end date is specified
                 data = self.operator.wrapper_nanfirst(
                     data, vars_to_fix, varlist, startdate=nanfirst_startdate, enddate=nanfirst_enddate
@@ -287,7 +281,7 @@ class Fixer:
 
         if apply_unit_fix:
             for var in data.data_vars:
-                data[var] = self.operator.apply_unit_fix(data[var], time_correction=self.time_correction)
+                data[var] = self.operator.apply_unit_fix(data[var], time_correction=time_correction)
 
         # apply time shift if necessary
         data = self.operator.timeshifter(data)

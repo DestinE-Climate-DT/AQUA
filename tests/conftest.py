@@ -5,15 +5,18 @@ Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
 import os
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 import matplotlib
 import pytest
-from utils_tests import TestCleanupRegistry
+from utils_tests import LOGLEVEL, TestCleanupRegistry
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
+from aqua.core.lock import SafeFileLock
 
 matplotlib.use("Agg")  # Non-interactive backend
 
@@ -21,10 +24,15 @@ import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
 
-# Centralized setting for all tests
-DPI = 50
-APPROX_REL = 1e-4
-LOGLEVEL = "DEBUG"
+STAC_CATALOGUE_DIR = Path(__file__).resolve().parent / "stac_catalogue"
+
+
+@pytest.fixture(scope="session")
+def stac_catalogue_dir():
+    """Return the example STAC catalogue prepared before test collection."""
+    if not (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
+        pytest.skip("AQUA_tests/models is not available")
+    return STAC_CATALOGUE_DIR
 
 
 # ======================================================================
@@ -34,6 +42,7 @@ def pytest_configure(config):
     """
     Runs once at session start on controller and workers with xdist.
     Cache configdir before any test can modify HOME.
+    Generate STAC JSON on the controller before catalog discovery during collection.
     Set per-worker TMPDIR to avoid CDO/temp contention in parallel runs.
     """
     try:
@@ -43,9 +52,16 @@ def pytest_configure(config):
         config._stored_configdir = None
 
     workerinput = getattr(config, "workerinput", None)
+    if workerinput is None and (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
+        # The controller configures before xdist starts workers, so no reader sees partial JSON.
+        with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
+            subprocess.run([sys.executable, str(STAC_CATALOGUE_DIR / "generate_catalog.py")], check=True)
+
     if workerinput is not None:
         worker_id = workerinput.get("workerid", "master")
-        os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_")
+        # macOS default tmpdir is long: keep it short to fit the AF_UNIX socket path limit (~103 chars)
+        base = "/tmp" if sys.platform == "darwin" else None
+        os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_", dir=base)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -278,12 +294,12 @@ def nemo_test_e_orca1_long_2d_data(nemo_test_e_orca1_long_2d_reader):
 
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_short_3d_reader():
-    return Reader(model="NEMO", exp="test-eORCA1", source="short-3d", loglevel=LOGLEVEL)
+    return Reader(model="NEMO", exp="test-eORCA1", source="short-3d", loglevel=LOGLEVEL, fix=False)
 
 
 @pytest.fixture(scope="session")
 def nemo_test_e_orca1_short_3d_data(nemo_test_e_orca1_short_3d_reader):
-    return nemo_test_e_orca1_short_3d_reader.retrieve(var="so")
+    return nemo_test_e_orca1_short_3d_reader.retrieve(var="avg_so")
 
 
 # ======================================================================

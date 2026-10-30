@@ -1,21 +1,91 @@
 """Tests for z3fdb_opener module in AQUA, specifically focusing on _build_mars_requests."""
 
 import pickle
+from unittest.mock import Mock
 
+import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
+import zarr
 
+from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
 
-CMIP6_MARS_REQ = (
-    "class=d1,dataset=climate-dt,activity=CMIP6,experiment=hist,generation=1,"
-    "model=IFS-NEMO,realization=1,resolution=standard,expver=a0h3,type=fc,"
-    "stream=clte,date=19900101,time=0000,param=164,levtype=sfc"
-)
+CMIP6_MARS_REQ = {
+    "class": "d1",
+    "dataset": "climate-dt",
+    "activity": "CMIP6",
+    "experiment": "hist",
+    "generation": 1,
+    "model": "IFS-NEMO",
+    "realization": 1,
+    "resolution": "standard",
+    "expver": "a0h3",
+    "type": "fc",
+    "stream": "clte",
+    "date": "19900101",
+    "time": "0000",
+    "param": 164,
+    "levtype": "sfc",
+}
 FDB_HOME = "/app"
 
 pytestmark = pytest.mark.aqua
+
+
+@pytest.mark.parametrize("extra_keys", [{}, {"expid": "o031", "unknown": "ignored"}], ids=["valid-keys", "extra-keys"])
+@pytest.mark.parametrize(
+    "startdate, enddate, expected_request",
+    [
+        (
+            "2020-01-01T00:00:00",
+            "2020-01-01T01:00:00",
+            "param=167/168,levtype=sfc,date=20200101,time=0000/to/0100/by/1",
+        ),
+        (
+            "2020-01-01T23:00:00",
+            "2020-01-02T00:00:00",
+            "param=167/168,levtype=sfc,date=20200101,time=2300/to/2300/by/1; "
+            "param=167/168,levtype=sfc,date=20200102,time=0000/to/0000/by/1",
+        ),
+    ],
+    ids=["single-request", "multiple-requests"],
+)
+def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, expected_request, extra_keys):
+    """Only valid MARS keys reach FDB, serialization and NetCDF metadata."""
+    # Replace FDB access with an in-memory Zarr array so this runs without an FDB installation.
+    zarr_array = zarr.zeros(shape=(2, 2, 12), chunks=(1, 1, 12), dtype="float32")
+    monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
+    builder = Mock()
+    monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
+    monkeypatch.setattr(z3fdb_opener, "ExtractorType", Mock(), raising=False)
+    monkeypatch.setattr(z3fdb_opener.zarr, "open_array", Mock(return_value=zarr_array))
+
+    request = {"param": [167, 168], "levtype": "sfc", "expver": "0001", **extra_keys}
+    original_request = request.copy()
+    data = z3fdb_opener.open_z3fdb(
+        request=request,
+        startdate=startdate,
+        enddate=enddate,
+        freq="h",
+    )
+    assert request == original_request
+    requests = [call.args[0] for call in builder.add_part.call_args_list]
+    assert all("expid" not in req and "unknown" not in req and req["expver"] == "0001" for req in requests)
+    assert builder.build.return_value._mars == requests
+    expected_request = expected_request.replace("levtype=sfc,", "levtype=sfc,expver=0001,")
+    assert isinstance(data["var167"].data, da.Array)
+    data.attrs["history"] = "z3fdb NetCDF regression test"
+    sliced = data.isel(time=0)
+    output = tmp_path / "z3fdb.nc"
+    sliced.to_netcdf(output)
+
+    with xr.open_dataset(output) as restored:
+        assert restored.attrs["mars_request"] == expected_request
+        assert restored.attrs["history"] == data.attrs["history"]
+        xr.testing.assert_equal(restored, sliced)
 
 
 def test_build_mars_requests_years_and_dates_parsing():
@@ -34,8 +104,8 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert start == "2020-01-01"
     assert len(mars_list) == 1
     # Since it's daily, request elements like date are mapped, and year/month are removed from the query
-    assert "date=20200101/to/20201231/by/1" in mars_list[0]
-    assert "year=" not in mars_list[0]
+    expected = {"param": 129, "date": "20200101/to/20201231/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
     # 2. years=None, start_date=None, end_date=None, request['year'] is a list
     request_list = {"year": [2020, 2021], "param": 129}
@@ -43,7 +113,8 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert pd_freq == "1D"
     assert start == "2020-01-01"
     assert len(mars_list) == 1
-    assert "date=20200101/to/20211231/by/1" in mars_list[0]
+    expected = {"param": 129, "date": "20200101/to/20211231/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
     # 3. Raising ValueError when only start_date is provided
     with pytest.raises(ValueError, match="provide both start_date and end_date"):
@@ -60,7 +131,8 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert pd_freq == "1D"
     assert start == "2020-05-01"
     assert len(mars_list) == 1
-    assert "date=20200501/to/20200510/by/1" in mars_list[0]
+    expected = {"param": 129, "date": "20200501/to/20200510/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
 
 def test_build_mars_requests_hourly_partial_days():
@@ -87,9 +159,12 @@ def test_build_mars_requests_hourly_partial_days():
     assert pd_freq == "1h"
     assert start == "2020-01-01T12:00:00"
     assert len(mars_list) == 3
-    assert "date=20200101,time=1200/to/2300/by/1" in mars_list[0]
-    assert "date=20200102,time=0000/to/2300/by/1" in mars_list[1]
-    assert "date=20200103,time=0000/to/1200/by/1" in mars_list[2]
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
+    assert expected.items() <= mars_list[0].items()
+    expected = {"param": 129, "date": "20200102", "time": "0000/to/2300/by/1"}
+    assert expected.items() <= mars_list[1].items()
+    expected = {"param": 129, "date": "20200103", "time": "0000/to/1200/by/1"}
+    assert expected.items() <= mars_list[2].items()
 
     # Case B: ts_start.hour > 0, ts_end.hour < 23, and day_start_full < day_end_full
     # ts_start = 2020-01-01T12:00:00
@@ -101,9 +176,12 @@ def test_build_mars_requests_hourly_partial_days():
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-04T12:00:00"
     )
     assert len(mars_list) == 3
-    assert "date=20200101,time=1200/to/2300/by/1" in mars_list[0]
-    assert "date=20200102/to/20200103/by/1,time=0000/to/2300/by/1" in mars_list[1]
-    assert "date=20200104,time=0000/to/1200/by/1" in mars_list[2]
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
+    assert expected.items() <= mars_list[0].items()
+    expected = {"param": 129, "date": "20200102/to/20200103/by/1", "time": "0000/to/2300/by/1"}
+    assert expected.items() <= mars_list[1].items()
+    expected = {"param": 129, "date": "20200104", "time": "0000/to/1200/by/1"}
+    assert expected.items() <= mars_list[2].items()
 
 
 def test_build_mars_requests_daily_and_monthly_start():
@@ -124,8 +202,8 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert pd_freq == "1D"
     assert start == "2020-01-01"
     assert len(mars_list) == 1
-    assert "date=20200101/to/20200105/by/1" in mars_list[0]
-    assert "time=0000" in mars_list[0]
+    expected = {"param": 129, "date": "20200101/to/20200105/by/1", "time": "0000"}
+    assert expected.items() <= mars_list[0].items()
 
     # 2. Monthly start frequency with matching month patterns across years (lines 186-187, 198)
     # ts_start = 2020-01-01, ts_end = 2021-12-01 (all 12 months in 2020 and 2021)
@@ -136,10 +214,8 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert pd_freq == "MS"
     assert start == "2020-01-01"
     assert len(mars_list) == 1
-    assert "year=2020/2021" in mars_list[0]
-    assert "month=1/2/3/4/5/6/7/8/9/10/11/12" in mars_list[0]
-    assert "date=" not in mars_list[0]
-    assert "time=" not in mars_list[0]
+    expected = {"param": 129, "year": "2020/2021", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
+    assert expected.items() <= mars_list[0].items()
 
     # 3. Monthly start frequency with non-matching month patterns across years (lines 188-191, 193)
     # ts_start = 2020-01-01, ts_end = 2021-02-01
@@ -153,10 +229,10 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert pd_freq == "MS"
     assert start == "2020-01-01"
     assert len(mars_list) == 2
-    assert "year=2020" in mars_list[0]
-    assert "month=1/2/3/4/5/6/7/8/9/10/11/12" in mars_list[0]
-    assert "year=2021" in mars_list[1]
-    assert "month=1/2" in mars_list[1]
+    expected = {"param": 129, "year": "2020", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
+    assert expected.items() <= mars_list[0].items()
+    expected = {"param": 129, "year": "2021", "month": "1/2"}
+    assert expected.items() <= mars_list[1].items()
 
 
 def test_z3fdb_store_pickling() -> None:
@@ -197,7 +273,7 @@ def test_z3fdb_rebuild_parameters() -> None:
         pytest.skip("z3fdb not available")
 
     serialized_axes = [(["date", "time"], "SINGLE_VALUE")]
-    # Test with mars as string
+    # Test with mars as single dict
     try:
         store1 = rebuild_fdb_zarr_store(
             config=None, mars=CMIP6_MARS_REQ, serialized_axes=serialized_axes, extractor_type_str="GRIB"
@@ -263,3 +339,57 @@ def test_z3fdb_lonlat_mismatch_aborts() -> None:
     ds = xr.Dataset(coords={"cell": np.arange(5)})
     ds_out = add_lonlat_coordinates(ds)
     assert ds_out.equals(ds)
+
+
+def test_build_zarr_axes_chunking() -> None:
+    """Test time and vertical chunking options in _build_zarr_axes."""
+    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_zarr_axes, z3fdb_available
+
+    if not z3fdb_available:
+        pytest.skip("z3fdb not available")
+
+    from z3fdb import Chunking
+
+    # Default without chunks
+    axes = _build_zarr_axes("h", levels=[1000, 850])
+    assert axes[0].chunking == Chunking.SINGLE_VALUE
+    assert axes[0].keys == ["date", "time"]
+    assert axes[2].chunking == Chunking.WHOLE_AXIS
+
+    # Time chunking with FixedSizeChunk via dict
+    axes_time = _build_zarr_axes("h", levels=None, chunks={"time": 24})
+    assert isinstance(axes_time[0].chunking, Chunking.FixedSizeChunk)
+    assert axes_time[0].chunking.chunkShape == 24
+
+    # Monthly frequency time chunking
+    axes_ms = _build_zarr_axes("MS", levels=None, chunks={"time": 12})
+    assert axes_ms[0].keys == ["year", "month"]
+    assert isinstance(axes_ms[0].chunking, Chunking.FixedSizeChunk)
+    assert axes_ms[0].chunking.chunkShape == 12
+
+    # String chunk representation and single value fallback
+    axes_single = _build_zarr_axes("h", levels=None, chunks={"time": 1})
+    assert axes_single[0].chunking == Chunking.SINGLE_VALUE
+    axes_str = _build_zarr_axes("h", levels=None, chunks={"time": "6"})
+    assert isinstance(axes_str[0].chunking, Chunking.FixedSizeChunk)
+    assert axes_str[0].chunking.chunkShape == 6
+
+    # Vertical chunking with FixedSizeChunk
+    axes_vert = _build_zarr_axes("h", levels=[1000, 850, 700, 500], chunks={"vertical": 2})
+    assert isinstance(axes_vert[2].chunking, Chunking.FixedSizeChunk)
+    assert axes_vert[2].chunking.chunkShape == 2
+
+    # Vertical chunking with 'level' key and string representation
+    axes_vert_str = _build_zarr_axes("h", levels=[1000, 850, 700, 500], chunks={"level": "2"})
+    assert isinstance(axes_vert_str[2].chunking, Chunking.FixedSizeChunk)
+    assert axes_vert_str[2].chunking.chunkShape == 2
+
+    # Vertical chunk size 1 (SINGLE_VALUE) and equal to n_levels (WHOLE_AXIS)
+    axes_vert_1 = _build_zarr_axes("h", levels=[1000, 850], chunks={"vertical": 1})
+    assert axes_vert_1[2].chunking == Chunking.SINGLE_VALUE
+    axes_vert_all = _build_zarr_axes("h", levels=[1000, 850], chunks={"vertical": 2})
+    assert axes_vert_all[2].chunking == Chunking.WHOLE_AXIS
+
+    # Non-divisor vertical chunk size fallback to SINGLE_VALUE
+    axes_fallback = _build_zarr_axes("h", levels=[1000, 850, 700], chunks={"vertical": 2})
+    assert axes_fallback[2].chunking == Chunking.SINGLE_VALUE

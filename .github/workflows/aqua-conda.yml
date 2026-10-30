@@ -3,7 +3,7 @@ name: AQUA Conda tests
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+    - cron: "0 3 * * 2" # run every Tuesday night at 3AM UTC
   push:
     # if you want to edit this workflow, create a branch called "conda-test" and push to it
     branches:
@@ -11,25 +11,32 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   # Call the reusable workflow with Conda installation
   aqua-conda-tests:
+    strategy:
+      fail-fast: false
+      # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
+      max-parallel: 3
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+        python-version: ['3.12', '3.13', '3.14']
+    name: AQUA Conda (${{ matrix.platform }}, py${{ matrix.python-version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.11", "3.12", "3.13", "3.14"]'
-      pytest-markers: 'aqua or slow or graphics or catgen'
+      platform: ${{ matrix.platform }}
+      python-version: ${{ matrix.python-version }}
+      pytest-markers: 'aqua or console or graphics or catgen'
       enable-parallel: true
       enable-coverage: false
-      fail-fast: false
       install-mode: 'conda'
       enable-fdb: false
       container-image: ''
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
       BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -37,3 +44,14 @@ jobs:
       POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  report-failure:
+    needs: aqua-conda-tests
+    if: ${{ always() && needs.aqua-conda-tests.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: Conda

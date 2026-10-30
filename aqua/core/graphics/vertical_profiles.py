@@ -6,6 +6,7 @@ import xarray as xr
 
 from aqua.core.logger import log_configure
 from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+from aqua.core.util.graphics import add_contour_labels
 
 from .styles import ConfigStyle
 
@@ -21,7 +22,7 @@ def plot_vertical_profile(
     vmax: Optional[float] = None,
     nlevels: int = 18,
     title: Optional[str] = None,
-    title_size: Optional[int] = 16,
+    title_size: Optional[int] = None,
     style: Optional[str] = None,
     logscale: bool = False,
     grid: bool = True,
@@ -50,7 +51,7 @@ def plot_vertical_profile(
         vmax (float, optional): Maximum colorbar limit.
         nlevels (int): Number of contour levels. Default is 18.
         title (str, optional): Plot title.
-        title_size (int, optional): Title font size. Default is 16.
+        title_size (int, optional): Title font size. Default is None (style title size).
         style (str, optional): Plot style (default aqua style).
         logscale (bool, optional): Use log scale for y-axis if True.
         grid (bool, optional): If True, display grid lines on the plot.
@@ -112,7 +113,7 @@ def plot_vertical_profile(
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         logger.debug("Returning figure and axes")
@@ -135,7 +136,7 @@ def plot_vertical_profile_diff(
     add_contour: bool = False,
     nlevels: int = 18,
     title: Optional[str] = None,
-    title_size: Optional[int] = 16,
+    title_size: Optional[int] = None,
     style: Optional[str] = None,
     return_fig: bool = False,
     fig: Optional[plt.Figure] = None,
@@ -164,7 +165,7 @@ def plot_vertical_profile_diff(
         add_contour (bool, optional): If True, overlay contour lines from reference data.
         nlevels (int, optional): Number of contour levels.
         title (str, optional): Plot title.
-        title_size (int, optional): Title font size. Default is 16.
+        title_size (int, optional): Title font size. Default is None (style title size).
         style (str, optional): Plot style (default aqua style).
         return_fig (bool, optional): If True, return (fig, ax).
         fig (plt.Figure, optional): Optional figure to plot on.
@@ -207,11 +208,11 @@ def plot_vertical_profile_diff(
 
         cs = ax.contour(data_common[x_coord], data_common[lev_name], data_common, levels=levels, colors="k", linewidths=0.5)
         fmt = {lvl: f"{lvl:.1e}" if (abs(lvl) < 0.1 or abs(lvl) > 1000) else f"{lvl:.1f}" for lvl in cs.levels}
-        ax.clabel(cs, fmt=fmt, fontsize=6, inline=True)
+        add_contour_labels(cs, loglevel=loglevel, fmt=fmt, fontsize="xx-small", inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         logger.debug("Returning figure and axes")

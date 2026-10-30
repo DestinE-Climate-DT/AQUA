@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
-from conftest import DPI, LOGLEVEL
+from matplotlib.font_manager import FontProperties
+from utils_tests import DPI, LOGLEVEL
 
 from aqua import Reader
 from aqua.core.graphics import (
@@ -263,12 +264,15 @@ class TestVerticalProfiles:
             vmin=-0.002,
             vmax=0.002,
             nlevels=8,
+            title="Test vertical profile",
             return_fig=True,
             loglevel=loglevel,
         )
 
         assert fig is not None
         assert ax is not None
+        # Without title_size the title follows the style title size, not the generic font.size
+        assert ax.title.get_fontsize() == FontProperties(size=plt.rcParams["axes.titlesize"]).get_size_in_points()
 
         fig.savefig(tmp_path / "test_plot_vertical_profile.png", dpi=DPI)
 
@@ -287,12 +291,15 @@ class TestVerticalProfiles:
             vmax_contour=0.002,
             add_contour=True,
             nlevels=8,
+            title="Test vertical profile diff",
+            title_size=16,
             return_fig=True,
             loglevel=loglevel,
         )
 
         assert fig is not None
         assert ax is not None
+        assert ax.title.get_fontsize() == 16
 
         fig.savefig(tmp_path / "test_plot_vertical_profile_diff.png", dpi=DPI)
 
@@ -433,6 +440,7 @@ class TestHovmoller:
             cbar_label="test-label",
             nlevels=10,
             sym=True,
+            title="Test hovmoller",
             loglevel=loglevel,
         )
 
@@ -507,6 +515,41 @@ class TestHovmoller:
 
         fig.savefig(tmp_path / "test_hovmoller_sym.png", dpi=DPI)
         assert os.path.exists(tmp_path / "test_hovmoller_sym.png")
+
+
+@pytest.fixture
+def depth_section():
+    """Monthly (time, depth) field within (0, 1), NaN below the sea floor at the deepest level"""
+    time = np.arange("2000-01", "2001-01", dtype="datetime64[M]")
+    depth = [5.0, 100.0, 1000.0, 3000.0, 6000.0]
+    values = np.random.default_rng(0).uniform(size=(time.size, len(depth)))
+    values[:, -1] = np.nan
+    return xr.DataArray(values, dims=("time", "depth"), coords={"time": time, "depth": ("depth", depth, {"units": "m"})})
+
+
+@pytest.mark.graphics
+def test_plot_hovmoller_space_axis(depth_section):
+    """The space axis is labelled with its units and leaves out the NaN-only band"""
+    _, ax = plot_hovmoller(data=depth_section, dim=None, invert_space_coord=True, return_fig=True, loglevel=loglevel)
+    assert ax.get_ylabel() == "depth (m)"
+    assert ax.get_ylim() == (3000.0, 5.0)
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("vmin, vmax, extend", [(0, 1, "neither"), (0.2, 1, "min"), (0, 0.8, "max"), (0.2, 0.8, "both")])
+def test_plot_hovmoller_extend(depth_section, vmin, vmax, extend):
+    """The colorbar is extended only on the sides where the data exceed vmin/vmax"""
+    _, ax = plot_hovmoller(data=depth_section, dim=None, vmin=vmin, vmax=vmax, return_fig=True, loglevel=loglevel)
+    assert ax.collections[-1].extend == extend
+
+
+@pytest.mark.graphics
+def test_plot_hovmoller_levels(depth_section):
+    """Uneven levels replace vmin, vmax and nlevels"""
+    levels = [0.1, 0.2, 0.5, 0.9]
+    _, ax = plot_hovmoller(data=depth_section, dim=None, levels=levels, return_fig=True, loglevel=loglevel)
+    assert list(ax.collections[-1].levels) == levels
+    assert ax.collections[-1].extend == "both"
 
 
 @pytest.mark.graphics
@@ -927,6 +970,59 @@ class TestBoxplot:
 
         assert ax.get_ylabel() == "Values (various units)"
         plt.close(fig)
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("plot_func", [plot_gregory_monthly, plot_gregory_annual])
+def test_gregory_time_colormap_is_applied_to_lines(plot_func):
+    """Time colors should map consistently to trajectory segments and points."""
+    times = np.array(["2000-01-01", "2001-01-01", "2002-01-01"], dtype="datetime64[D]")
+    t2m = xr.DataArray([1.0, 2.0, 3.0], dims="time", coords={"time": times})
+    net_toa = xr.DataArray([4.0, 2.0, 5.0], dims="time", coords={"time": times})
+
+    fig, ax = plot_func(t2m, net_toa, cmap="viridis")
+
+    assert len(ax.collections) == 2
+    assert np.allclose(ax.collections[0].get_array(), [0.25, 0.75])
+    assert np.allclose(ax.collections[1].get_array(), [0.0, 0.5, 1.0])
+    assert len(fig.axes) == 1
+    plt.close(fig)
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("cmap", [None, "viridis"])
+def test_plot_gregory_monthly_accepts_lists_of_model_data(cmap):
+    """Each item in the monthly data lists should plot as a separate dataset."""
+    times = np.array(["2000-01-01", "2001-01-01", "2002-01-01"], dtype="datetime64[D]")
+    t2m = xr.DataArray([1.0, 2.0, 3.0], dims="time", coords={"time": times})
+    net_toa = xr.DataArray([4.0, 2.0, 5.0], dims="time", coords={"time": times})
+
+    fig, ax = plot_gregory_monthly(
+        [t2m, t2m + 1],
+        [net_toa, net_toa + 1],
+        labels=["model-1", "model-2"],
+        cmap=cmap,
+    )
+
+    assert ax.get_legend_handles_labels()[1] == ["model-1", "model-2"]
+    assert len(ax.collections) == 4 if cmap else len(ax.lines) == 3
+    plt.close(fig)
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("cmap", [None, "viridis"])
+def test_plot_gregory_annual_endpoint_triangles_follow_cmap(cmap):
+    """Endpoint triangles are only needed when time coloring is disabled."""
+    times = np.array(["2000-01-01", "2001-01-01", "2002-01-01"], dtype="datetime64[D]")
+    t2m = xr.DataArray([1.0, 2.0, 3.0], dims="time", coords={"time": times})
+    net_toa = xr.DataArray([4.0, 2.0, 5.0], dims="time", coords={"time": times})
+
+    _, ax = plot_gregory_annual(t2m, net_toa, cmap=cmap)
+
+    markers = [line.get_marker() for line in ax.lines]
+    assert (">" in markers) is (cmap is None)
+    assert ("<" in markers) is (cmap is None)
+    plt.close(ax.figure)
 
 
 @pytest.mark.graphics

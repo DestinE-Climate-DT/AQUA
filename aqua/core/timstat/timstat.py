@@ -91,7 +91,7 @@ class TimStat:
         if resample_freq is None:
             exclude_incomplete = False
             center_time = False
-            time_bnds = False
+            time_bounds = False
 
         if self.AQUA_TIME not in data.dims:
             raise ValueError(f"Time dimension not found in the input data. Cannot compute tim{stat} statistic")
@@ -170,6 +170,8 @@ class TimStat:
         if time_bounds:
             resampled = data[self.AQUA_TIME].resample({self.AQUA_TIME: resample_freq})
             time_bnds = xr.concat([resampled.min(), resampled.max()], dim="bnds", coords="different").transpose()
+            if exclude_incomplete:
+                time_bnds = time_bnds.where(boolean_mask, drop=True)
             time_bnds[self.AQUA_TIME] = out[self.AQUA_TIME]
             time_bnds.name = f"{self.AQUA_TIME}_bnds"
             out = xr.merge([out, time_bnds])

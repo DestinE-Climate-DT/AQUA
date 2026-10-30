@@ -29,7 +29,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import get_decimals, isnpixok, prettify_levels
+from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -53,7 +53,7 @@ def plot_single_map(
     cbar_label: Optional[str] = None,
     norm: Optional[object] = None,
     title: Optional[str] = None,
-    title_size: Optional[int] = 12,
+    title_size: Optional[int] = None,
     transform_first: bool = False,
     cyclic_lon: bool = True,
     add_land: bool = False,
@@ -86,7 +86,7 @@ def plot_single_map(
         cbar (bool, optional):       If True, add a colorbar. Defaults to True.
         cbar_label (str, optional):  Colorbar label. Defaults to None.
         title (str, optional):       Title of the figure. Defaults to None.
-        title_size (int, optional):   Title size. Defaults to None.
+        title_size (int, optional):   Title size. Defaults to None (style title size).
         transform_first (bool, optional): If True, transform the data before plotting. Defaults to False.
         cyclic_lon (bool, optional): If True, add cyclic longitude. Defaults to True.
         add_land (bool, optional):   If True, add land to the map. Defaults to False.
@@ -249,7 +249,7 @@ def plot_single_map(
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         logger.debug("Returning figure and axes")
@@ -276,7 +276,7 @@ def plot_single_map_diff(
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
     title: Optional[str] = None,
-    title_size: Optional[int] = 12,
+    title_size: Optional[int] = None,
     gridlines: bool = False,
     loglevel: str = "WARNING",
     **kwargs,
@@ -305,7 +305,7 @@ def plot_single_map_diff(
         fig (plt.Figure, optional):     Figure to plot on. By default a new figure is created.
         ax (plt.Axes, optional):        Axes to plot on. By default a new axes is created.
         title (str, optional):          Title of the figure. Defaults to None.
-        title_size (int, optional):     Title size. Defaults to 12.
+        title_size (int, optional):     Title size. Defaults to None (style title size).
         gridlines (bool, optional):     If True, add gridlines. Defaults to False.
         loglevel (str, optional):       Log level. Defaults to 'WARNING'.
         **kwargs:                       Keyword arguments for plot_single_map.
@@ -413,11 +413,11 @@ def plot_single_map_diff(
             else:
                 fmt[level] = f"{level:.{decimals}f}"
 
-        ax.clabel(ds, fmt=fmt, fontsize=6, inline=True)
+        add_contour_labels(ds, loglevel=loglevel, fmt=fmt, fontsize="xx-small", inline=True)
 
     if title:
         logger.debug("Setting title to %s", title)
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         return fig, ax

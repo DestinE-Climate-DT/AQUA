@@ -3,7 +3,7 @@ name: AQUA PyPI tests
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1" # run every Monday night at 3AM UTC
+    - cron: "0 2 * * 2" # run every Tuesday night at 2AM UTC
   push:
     # if you want to edit this workflow, please create pypi-test branch and push to it
     branches:
@@ -11,25 +11,32 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   # Call the reusable workflow with PyPI installation
   aqua-pypi-tests:
+    strategy:
+      fail-fast: false
+      # Cap on the total number of jobs running at once (platform x Python), to leave runners free for other workflows
+      max-parallel: 3
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+        python-version: ['3.12', '3.13', '3.14']
+    name: AQUA PyPI (${{ matrix.platform }}, py${{ matrix.python-version }})
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
-      python-versions: '["3.11", "3.12", "3.13", "3.14"]'
-      pytest-markers: 'aqua or slow or polytope or graphics or catgen'
+      platform: ${{ matrix.platform }}
+      python-version: ${{ matrix.python-version }}
+      pytest-markers: 'aqua or console or graphics or catgen or polytope'
       enable-parallel: true
       enable-coverage: false
       enable-fdb: false
-      fail-fast: false
       install-mode: 'pypi'
       container-image: ''
       test-data-source: 'auto'
+      aqua-actions-ref: ${{ github.sha }}
     secrets:
-      AQUA_GITHUB_PAT: ${{ secrets.AQUA_GITHUB_PAT }}
+      AQUA_TOKEN: ${{ secrets.AQUA_CORE_TOKEN }}
       AQUA_DVC_PAT: ${{ secrets.AQUA_DVC_PAT }}
       BSC_GITLAB: ${{ secrets.BSC_GITLAB }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -37,3 +44,14 @@ jobs:
       POLYTOPE_KEY: ${{ secrets.POLYTOPE_KEY }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       AQUA_DVC_PEM: ${{ secrets.AQUA_DVC_PEM }}
+
+  report-failure:
+    needs: aqua-pypi-tests
+    if: ${{ always() && needs.aqua-pypi-tests.result == 'failure' }}
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: PyPI

@@ -198,6 +198,7 @@ class FldStat:
         mask_kwargs: dict = {},
         default_coords: dict | None = None,
         to_180: bool = True,
+        frac_threshold: float | None = None,
     ) -> xr.Dataset | xr.DataArray:
         """
         Select a specific area from the dataset based on longitude and latitude ranges.
@@ -219,6 +220,7 @@ class FldStat:
             mask_kwargs=mask_kwargs,
             default_coords=default_coords,
             to_180=to_180,
+            frac_threshold=frac_threshold,
         )
 
     def integrate_over_area(self, data: xr.Dataset | xr.DataArray, areacell: xr.DataArray, dims: list):

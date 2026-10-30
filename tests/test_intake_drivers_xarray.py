@@ -1,7 +1,8 @@
 """Tests for aqua.core.intake_drivers.xarray: the AQUA-provided netcdf/zarr intake drivers."""
 
-import importlib.util
-import sys
+import json
+from copy import deepcopy
+from functools import partial
 
 import intake
 import numpy as np
@@ -9,7 +10,8 @@ import pytest
 import xarray as xr
 from intake.source import get_plugin_class
 
-from aqua.core.intake_drivers.xarray import IntakeNetCDFSource, IntakeZarrSource, install_intake_xarray_stub
+from aqua.core.intake_drivers import IntakeSTACSource
+from aqua.core.intake_drivers.xarray import IntakeNetCDFSource, IntakeZarrSource
 
 
 @pytest.fixture
@@ -42,11 +44,6 @@ class TestDriverRegistration:
 
     def test_zarr_driver_registered(self):
         assert get_plugin_class("zarr") is IntakeZarrSource
-
-    def test_intake_xarray_importable(self):
-        # Real package or AQUA stub: legacy catalogs carrying a
-        # "plugins: source: - module: intake_xarray" block need this import to succeed.
-        import intake_xarray  # noqa: F401
 
 
 @pytest.mark.aqua
@@ -107,7 +104,7 @@ class TestIntakeNetCDFSource:
     def test_engine_override_from_xarray_kwargs(self):
         source = IntakeNetCDFSource("dummy.nc", xarray_kwargs={"engine": "h5netcdf"})
         assert source.reader.kwargs["engine"] == "h5netcdf"
-        assert source.xarray_kwargs == {"engine": "h5netcdf"}
+        assert source.xarray_kwargs == {"engine": "h5netcdf", "chunks": {}}
 
     def test_call_returns_self(self):
         source = IntakeNetCDFSource("dummy.nc")
@@ -193,6 +190,82 @@ class TestXarrayKwargsPassthrough:
         assert data["tas"].chunks is not None
 
 
+@pytest.fixture(params=["netcdf", "netcdf-pattern", "zarr", "stac-netcdf", "stac-zarr"])
+def kwargs_source_factory(request, tmp_path):
+    """Construct each reader variant without creating or opening data files."""
+    driver = request.param
+    if driver.startswith("stac-"):
+        is_zarr = driver == "stac-zarr"
+        item = {
+            "type": "Feature",
+            "id": "kwargs-test",
+            "assets": {
+                "data": {
+                    "href": "dummy.zarr" if is_zarr else "dummy.nc",
+                    "type": "application/vnd+zarr" if is_zarr else "application/x-netcdf",
+                }
+            },
+        }
+        item_path = tmp_path / "item.json"
+        item_path.write_text(json.dumps(item))
+        return partial(IntakeSTACSource, urlpath=str(item_path))
+    if driver == "zarr":
+        return partial(IntakeZarrSource, "dummy.zarr")
+    urlpath = "dummy_{year}.nc" if driver == "netcdf-pattern" else "dummy.nc"
+    return partial(IntakeNetCDFSource, urlpath)
+
+
+@pytest.mark.aqua
+class TestXarrayKwargsPrecedence:
+    """Source kwargs override catalog options and remain effective on backend reads."""
+
+    @pytest.mark.parametrize(
+        ("catalog_options", "user_options", "expected"),
+        [
+            ({}, {}, {"chunks": {}}),
+            ({"chunks": {"time": 12}}, {}, {"chunks": {"time": 12}}),
+            ({}, {"chunks": {"time": 1}}, {"chunks": {"time": 1}}),
+            (
+                {"chunks": {"time": 12, "lat": 2}, "decode_times": False},
+                {"chunks": {"time": 1}},
+                {"chunks": {"time": 1}, "decode_times": False},
+            ),
+            ({"chunks": {"time": 12}}, {"chunks": None}, {"chunks": None}),
+            ({"decode_times": True}, {"decode_times": False}, {"chunks": {}, "decode_times": False}),
+            ({"engine": "invalid"}, {"engine": "netcdf4"}, {"chunks": {}, "engine": "netcdf4"}),
+        ],
+        ids=["default", "catalog", "user", "override-chunks", "explicit-none", "override-false", "override-engine"],
+    )
+    def test_effective_options(self, kwargs_source_factory, catalog_options, user_options, expected):
+        catalog_before, user_before = deepcopy(catalog_options), deepcopy(user_options)
+        source = kwargs_source_factory(xarray_kwargs=catalog_options, **user_options)
+
+        for key, value in expected.items():
+            assert source.reader.kwargs[key] == value
+            assert source.xarray_kwargs[key] == value
+        assert catalog_options == catalog_before
+        assert user_options == user_before
+
+    @pytest.mark.parametrize("driver", ["netcdf", "stac"])
+    @pytest.mark.parametrize("chunks", [{"time": 1}, None])
+    def test_backend_read_preserves_override(self, stac_catalogue_dir, driver, chunks):
+        item_path = stac_catalogue_dir / "items" / "ifs" / "ifs-long-regridded-r18x9.json"
+        stac_source = IntakeSTACSource(urlpath=str(item_path))
+        source_factory = (
+            partial(IntakeNetCDFSource, stac_source.data.url)
+            if driver == "netcdf"
+            else partial(IntakeSTACSource, str(item_path))
+        )
+        source = source_factory(xarray_kwargs={"chunks": {"time": 2}}, chunks=chunks)
+
+        # BackendIntakeXarray reads with these exposed options on top of the reader defaults.
+        with source.reader.read(**source.xarray_kwargs) as data:
+            if chunks is None:
+                assert data.chunks == {}
+            else:
+                assert set(data.chunks["time"]) == {1}
+
+
 @pytest.mark.aqua
 class TestYAMLCatalog:
     """A v1 YAML catalog resolves to the AQUA sources, even with intake-xarray installed."""
@@ -219,29 +292,3 @@ class TestYAMLCatalog:
         assert source.xarray_kwargs["decode_times"] is True
         data = source.to_dask()
         xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
-
-
-@pytest.mark.aqua
-def test_stub_installation(monkeypatch):
-    """When intake_xarray is absent, the stub provides the legacy module."""
-    real_find_spec = importlib.util.find_spec
-    saved = {k: sys.modules.pop(k) for k in list(sys.modules) if k == "intake_xarray" or k.startswith("intake_xarray.")}
-    monkeypatch.setattr(
-        importlib.util,
-        "find_spec",
-        lambda name, *args, **kwargs: None if name == "intake_xarray" else real_find_spec(name, *args, **kwargs),
-    )
-    try:
-        assert install_intake_xarray_stub() is True
-        import intake_xarray
-
-        # the stub exposes the legacy intake-xarray class names
-        assert intake_xarray.netcdf.NetCDFSource is IntakeNetCDFSource
-        assert intake_xarray.xzarr.ZarrSource is IntakeZarrSource
-        # a second call must be a no-op now that the stub is in place
-        assert install_intake_xarray_stub() is False
-    finally:
-        for key in list(sys.modules):
-            if key == "intake_xarray" or key.startswith("intake_xarray."):
-                sys.modules.pop(key)
-        sys.modules.update(saved)
