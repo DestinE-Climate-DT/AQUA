@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 
 from aqua import Reader
-from aqua.core.data_model import CoordIdentifier, CoordTransformer, aqua_coords, scan_coord
+from aqua.core.data_model import AquaCoordNames, CoordIdentifier, CoordTransformer, scan_coord
 
 
 @pytest.mark.aqua
@@ -184,12 +184,12 @@ class TestDataModel:
             scan_coord("latitude", data_model="nonexistent_model")
 
     def test_aqua_coords(self):
-        """Test for the cached, frozen CoordNames helper."""
-        coords = aqua_coords()
+        """Test for the cached, frozen AquaCoordNames class."""
+        coords = AquaCoordNames()
         assert (coords.time, coords.lat, coords.lon) == ("time", "lat", "lon")
         assert (coords.isobaric, coords.depth, coords.height) == ("plev", "depth", "height")
-        assert aqua_coords() is coords  # cached
+        assert AquaCoordNames() is coords  # cached
         with pytest.raises(FrozenInstanceError):
             coords.time = "valid_time"
         with pytest.raises(FileNotFoundError):
-            aqua_coords("nonexistent_model")
+            AquaCoordNames("nonexistent_model")
