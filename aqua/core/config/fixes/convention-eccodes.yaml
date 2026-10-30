@@ -518,6 +518,7 @@ convention_name:
           - tp
           - TP # AQUA ERA5
           - rr # E-OBS
+          - precipitation # GPM IMERG V07, MSWEP
           - pr # cmor
         grib: 260048
       tsrwe: # Total snowfall rate water equivalent

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.4):
 - Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock`
+- eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
