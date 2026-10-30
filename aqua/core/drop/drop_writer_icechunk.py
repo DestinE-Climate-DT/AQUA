@@ -14,10 +14,8 @@ Differences from NetCDF/Zarr writers:
 Example::
 
     from aqua.core.drop.drop_writer_icechunk import IcechunkWriter
-    from aqua.core.util import estimate_time_chunk_size
 
     writer = IcechunkWriter(tmpdir="/tmp/drop", outdir="/data/output", loglevel="INFO")
-    writer.time_chunk_size = estimate_time_chunk_size("daily")
     writer.write_variable(data, var="tas", definitive=True)
 """
 
@@ -32,6 +30,7 @@ import pandas as pd
 import xarray as xr
 import zarr
 
+from .drop_util import zarr_encoding
 from .drop_writer_base import BaseWriter
 
 # Per-variable attribute with the exact last committed timestamp. Variables share one time axis,
@@ -80,9 +79,6 @@ class IcechunkWriter(BaseWriter):
         self.repo = None
         self.main_session = None
 
-        # Time chunk configuration (set by Drop.retrieve() based on frequency)
-        self.time_chunk_size = None
-
         # Garbage collection strategy
         self.garbage_collect_yearly = garbage_collect_yearly
 
@@ -119,7 +115,7 @@ class IcechunkWriter(BaseWriter):
 
     def _get_encoding(self, data, var=None):
         """
-        Get zarr v3 encoding configuration with precomputed time chunks.
+        Get zarr v3 encoding configuration, with the on-disk chunks shared by all writers.
 
         ``var`` is present for ABC interface compliance with :class:`BaseWriter`;
         icechunk encodes every variable in ``data.data_vars`` in one pass so
@@ -132,10 +128,7 @@ class IcechunkWriter(BaseWriter):
         Returns:
             dict: Encoding configuration or None
         """
-        if not self.time_chunk_size:
-            self.logger.warning("time_chunk_size not set; icechunk will use default chunk layout")
-            return None
-        return self._build_zarr_encoding(data, time_chunk=self.time_chunk_size)
+        return zarr_encoding({var: self._disk_chunks(data[var]) for var in data.data_vars})
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """Not used: IcechunkWriter writes via _write_to_icechunk_session(), not tmpfiles."""

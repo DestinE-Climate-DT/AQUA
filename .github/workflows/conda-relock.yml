@@ -6,10 +6,6 @@ on:
   schedule:
     - cron: "0 4 * * 1" # run every Monday night at 4AM UTC
 
-concurrency:
-  group: conda-relock-${{ github.event.pull_request.head.ref || 'main' }}
-  cancel-in-progress: true
-
 permissions:
   contents: write
   pull-requests: write
@@ -17,12 +13,17 @@ permissions:
 jobs:
   relock:
     # Non-PR events always run. On PRs (only 'labeled' events trigger this workflow) run only if the
-    # label just added is 'conda-lock': adding other labels later does not relock again
+    # label just added starts with 'conda-lock': adding other labels later does not relock again
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
       (github.event_name == 'pull_request' &&
-        contains(github.event.label.name, 'conda-lock'))
+        startsWith(github.event.label.name, 'conda-lock'))
+    # Job-level concurrency: a run skipped by the condition above never enters the group, so adding another
+    # label together with 'conda-lock' does not cancel the real relock (workflow-level concurrency would)
+    concurrency:
+      group: conda-relock-${{ github.event.pull_request.head.ref || 'main' }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - name: Determine target branch
@@ -55,8 +56,10 @@ jobs:
 
       - name: Relock with FDB
         shell: bash -l {0}
+        # --filter-extras: solve only the requested extras. Otherwise the self-referencing 'all' extra
+        # (aqua-core[fdb], ...) is resolved against aqua-core from PyPI, whose pins can conflict with ours
         run: |
-          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests -e fdb
+          conda-lock lock --file environment.yml --file pyproject.toml -p linux-64 -k explicit -e tests -e fdb --filter-extras
 
       - name: Open PR
         uses: peter-evans/create-pull-request@v8

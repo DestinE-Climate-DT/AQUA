@@ -376,6 +376,10 @@ class CoordTransformer:
                 self.logger.info("Wrapping bounds %s into range [%s, %s]", bounds_name, lo, hi)
                 data[bounds_name] = ((data[bounds_name] - lo) % span) + lo
 
+            # keep dimension coordinates monotonic (e.g. -180..180 wrapped into 0..360)
+            if coord_name in data.dims:
+                data = data.sortby(coord_name)
+
             # data = data.assign_attrs({"longitude": {"range_convention": tgt_range}})
 
             log_history(

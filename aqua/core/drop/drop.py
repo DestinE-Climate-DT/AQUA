@@ -20,9 +20,11 @@ from time import time
 
 import dask
 import pandas as pd
+import xarray as xr
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
+from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET
 from aqua.core.lock import SafeFileLock
 from aqua.core.logger import log_configure, log_history
 from aqua.core.reader import Reader
@@ -32,10 +34,12 @@ from aqua.core.util.io_util import create_folder
 from aqua.core.util.string import generate_random_string
 
 from .catalog_entry_builder import CatalogEntryBuilder
-from .drop_util import estimate_time_chunk_size, move_tmp_files
+from .drop_util import move_tmp_files
 from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
+
+xr.set_options(keep_attrs=True)
 
 # available statistics are synchronized with the TimStat class
 available_stats = TimStat().available_stats
@@ -83,7 +87,7 @@ class Drop:
         compact="xarray",
         engine="gsv",
         output_format="netcdf",
-        zarr_chunks=None,
+        chunk_target=DEFAULT_DROP_CHUNK_TARGET,
         **kwargs,
     ):
         """
@@ -142,6 +146,10 @@ class Drop:
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.
+            chunk_target (str, opt): Target size of the read chunks defined in a new catalog
+                                     entry, e.g. '128MiB' or '0.2GiB', or 'auto' for Dask auto chunking.
+                                     Existing entries are not modified.
+                                     Default is DEFAULT_DROP_CHUNK_TARGET ('128MiB').
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
 
@@ -194,7 +202,7 @@ class Drop:
         # configure output format and compacting
         self.output_format = output_format
         self.compact = compact
-        self.zarr_chunks = zarr_chunks
+        self.chunk_target = chunk_target
 
         # whether to regrid before time statistics
         self.regrid_first = regrid_first
@@ -412,12 +420,6 @@ class Drop:
         self.logger.info("Retrieving data...")
         self.data = self.reader.retrieve(var=self.var, level=self.level)
 
-        # Set time chunk size for icechunk writer if needed
-        if self.output_format == "icechunk":
-            freq = self.reader.timemodule.orig_freq
-            self.writer.time_chunk_size = estimate_time_chunk_size(freq)
-            self.logger.info("Precomputed time_chunk_size: %d for frequency %s", self.writer.time_chunk_size, freq)
-
         self.logger.debug(self.data)
 
     def drop_generator(self):
@@ -489,7 +491,11 @@ class Drop:
                 catblock = None
 
             block = self.catbuilder.create_entry_details(
-                basedir=self.basedir, catblock=catblock, output_format=self.output_format, source_grid_name=sgn
+                basedir=self.basedir,
+                catblock=catblock,
+                output_format=self.output_format,
+                source_grid_name=sgn,
+                chunk_target=self.chunk_target,
             )
 
             cat_file["sources"][entry_name] = block
@@ -559,11 +565,11 @@ class Drop:
             self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
 
     def _remove_regridded(self, data):
-        """Remove regridded attribute to avoid issues with Reader"""
-
-        if "AQUA_regridded" in data.attrs:
-            self.logger.debug("Removing regridding attribute...")
-            del data.attrs["AQUA_regridded"]
+        """Remove regridded attribute to avoid issues with Reader on output files."""
+        if hasattr(data, "attrs"):
+            data.attrs.pop("AQUA_regridded", None)
+            for var in getattr(data, "data_vars", {}).values():
+                var.attrs.pop("AQUA_regridded", None)
         return data
 
     def _apply_regrid(self, data):
@@ -574,7 +580,6 @@ class Drop:
             return None
         if self.resolution and self.resolution != "native":
             data = self.reader.regrid(data)
-            data = self._remove_regridded(data)
         return data
 
     def _apply_time_stat(self, data):
@@ -632,6 +637,9 @@ class Drop:
 
         # Apply history once to the dataset (xarray preserves it during slicing)
         temp_data = self.append_history(temp_data)
+
+        # Remove regridded attribute before persisting to avoid issues with Reader on output files
+        temp_data = self._remove_regridded(temp_data)
 
         self.writer.write_variable(
             data=temp_data,
