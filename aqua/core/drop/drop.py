@@ -43,7 +43,7 @@ from .drop_writer_zarr import ZarrWriter
 xr.set_options(keep_attrs=True)
 
 # available statistics are synchronized with the TimStat class
-available_stats = TimStat().available_stats
+available_stats = TimStat.available_stats
 
 
 class Drop:

@@ -1,6 +1,9 @@
 """Tests for the aqua.datamodel module."""
 
 import copy
+import os
+import subprocess
+import sys
 from dataclasses import FrozenInstanceError
 
 import numpy as np
@@ -237,3 +240,11 @@ class TestCoordNamesPlumbing:
         assert FldStat(data_model=custom_data_model).coords.time == "valid_time"
         assert FldStat(data_model=custom_data_model).area_selection.coords.isobaric == "pressure"
         assert Trender(data_model=custom_data_model).coords.time == "valid_time"
+
+
+@pytest.mark.aqua
+def test_import_without_config(tmp_path):
+    """Importing aqua must not read the configuration: it does not exist before `aqua install`."""
+    env = {**os.environ, "AQUA_CONFIG": str(tmp_path / "missing"), "HOME": str(tmp_path)}
+    result = subprocess.run([sys.executable, "-c", "import aqua.core"], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr[-1500:]

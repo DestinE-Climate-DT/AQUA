@@ -24,16 +24,14 @@ class TimStat:
     Time statistic AQUA module
     """
 
+    # Class attribute: usable without an instance, so without reading any configuration
+    available_stats = ["mean", "std", "max", "min", "sum", "first", "last", "histogram"]
+
     def __init__(self, loglevel="WARNING", data_model=DEFAULT_DATAMODEL):
         self.loglevel = loglevel
         self.orig_freq = None
         self.logger = log_configure(loglevel, "TimStat")
         self.coords = AquaCoordNames(data_model)
-
-    @property
-    def available_stats(self):
-        """Return the list of available statistics."""
-        return ["mean", "std", "max", "min", "sum", "first", "last", "histogram"]
 
     def timstat(
         self,
