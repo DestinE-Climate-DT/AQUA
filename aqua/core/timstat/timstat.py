@@ -7,6 +7,7 @@ import pandas as pd
 import xarray as xr
 
 from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.histogram import histogram
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import (
@@ -23,11 +24,11 @@ class TimStat:
     Time statistic AQUA module
     """
 
-    def __init__(self, loglevel="WARNING"):
+    def __init__(self, loglevel="WARNING", data_model=DEFAULT_DATAMODEL):
         self.loglevel = loglevel
         self.orig_freq = None
         self.logger = log_configure(loglevel, "TimStat")
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(data_model)
 
     @property
     def available_stats(self):

@@ -20,6 +20,7 @@ from dask.distributed.diagnostics import MemorySampler
 from smmregrid import GridType
 
 from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.drop.drop_util import move_tmp_files
 from aqua.core.logger import log_configure
 
@@ -52,6 +53,7 @@ class BaseWriter(ABC):
         outdir: str,
         filename_builder: OutputPathBuilder = None,
         loglevel: str = "WARNING",
+        data_model: str = DEFAULT_DATAMODEL,
     ):
         """
         Initialize base writer.
@@ -61,6 +63,7 @@ class BaseWriter(ABC):
             outdir: Output directory for final files
             filename_builder: OutputPathBuilder instance for filename generation
             loglevel: Logging level
+            data_model: Data model providing the coordinate names
         """
         self.tmpdir = tmpdir
         self.outdir = outdir
@@ -71,7 +74,7 @@ class BaseWriter(ABC):
         self._last_chunk_size_bytes = None
 
         # data model coordiante names
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(data_model)
 
     @abstractmethod
     def get_extension(self):

@@ -11,7 +11,7 @@ from aqua.core.configurer import ConfigContext
 from aqua.core.data_model import AquaCoordNames, DataModel, counter_reverse_coordinate
 
 # set default data model
-from aqua.core.default import DEFAULT_ENGINE, DEFAULT_NPROC
+from aqua.core.default import DEFAULT_DATAMODEL, DEFAULT_ENGINE, DEFAULT_NPROC
 from aqua.core.exceptions import NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
@@ -194,6 +194,9 @@ class Reader:
             convention=convention, fixer_name=None, src_grid_name=None, datamodel_name=datamodel
         )
 
+        # coordinate names of the data model (the default one if the data model is disabled)
+        self.coords = AquaCoordNames(self.datamodel_name or DEFAULT_DATAMODEL)
+
         # case to disable automatic fix
         if self.fixer_name is False:
             self.logger.warning("A False flag is specified in fixer_name metadata, disabling fix!")
@@ -206,6 +209,7 @@ class Reader:
                 convention=self.convention,
                 metadata=self.metadata,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
         else:
             self.fixer = None
@@ -216,9 +220,6 @@ class Reader:
             self.datamodel = None
         else:
             self.datamodel = DataModel(name=self.datamodel_name, loglevel=self.loglevel)
-
-        # once data model is defined, get the default coordinates
-        self.coords = AquaCoordNames()
 
         # create the backend: this is the interface that access the data
         self.backend = backend_factory.create_backend(
@@ -240,7 +241,11 @@ class Reader:
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
         self.src_fldstat = FldStat(
-            cell_area, grid_name=self.src_grid_name, horizontal_dims=self.src_space_coord, loglevel=self.loglevel
+            cell_area,
+            grid_name=self.src_grid_name,
+            horizontal_dims=self.src_space_coord,
+            loglevel=self.loglevel,
+            data_model=self.coords.data_model,
         )
         self.tgt_fldstat = None
         if regrid:
@@ -255,9 +260,10 @@ class Reader:
                 grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
 
-        self.trender = Trender(loglevel=self.loglevel)
+        self.trender = Trender(loglevel=self.loglevel, data_model=self.coords.data_model)
         self.vertinterpolator = VertInterpolator(loglevel=self.loglevel)
 
     @property
@@ -370,7 +376,7 @@ class Reader:
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
-        self.timemodule = TimStat(loglevel=self.loglevel)
+        self.timemodule = TimStat(loglevel=self.loglevel, data_model=self.coords.data_model)
 
         return areas, regrid
 
@@ -463,6 +469,10 @@ class Reader:
 
         out = self.regridder.regrid(data)
 
+        # the regridded coordinates come from the target grid: bring them to the data model names
+        if self.datamodel:
+            out = self.datamodel.apply(out, flip_coords=False)
+
         # set regridded attribute to 1 for all vars
         out = set_attrs(
             out, {"AQUA_regridded": 1, "AQUA_source_grid": self.src_grid_name, "AQUA_target_grid": self.tgt_grid_name}
@@ -492,7 +502,7 @@ class Reader:
 
         Args:
             data (DataArray or Dataset): The input data.
-            dim (str): Dimension to apply detrend along. Defaults to AQUA_TIME ("time").
+            dim (str): Dimension to apply detrend along. Defaults to the data model time coordinate.
             degree (int): Degree of the polynomial. Defaults to 1.
             skipna (bool): Whether to skip NaNs. Defaults to False.
 
@@ -516,7 +526,7 @@ class Reader:
             data (DataArray, Dataset): your dataset
             levels (float, or list): The level you want to interpolate the vertical coordinate
             units (str, optional, ): The units of your vertical axis. Default 'Pa'
-            level_coord (str, optional): The name of the vertical coordinate. Default to AQUA_ISOBARIC ("plev")
+            level_coord (str, optional): The name of the vertical coordinate. Default to the data model isobaric coordinate
             method (str, optional): The type of interpolation method supported by interp()
 
         Return

@@ -413,6 +413,10 @@ class Drop:
             **self.kwargs,
         )
 
+        # coordinate names follow the data model actually used by the reader
+        self.coords = self.reader.coords
+        self.writer.coords = self.coords
+
         self.logger.info("Accessing catalog for %s-%s-%s...", self.model, self.exp, self.source)
 
         if self.catalog is None:

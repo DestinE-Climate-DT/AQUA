@@ -1,13 +1,17 @@
 """Tests for the aqua.datamodel module."""
 
+import copy
 from dataclasses import FrozenInstanceError
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
 from aqua import Reader
 from aqua.core.data_model import AquaCoordNames, CoordIdentifier, CoordTransformer, scan_coord
+from aqua.core.fldstat import AreaSelection, FldStat
+from aqua.core.timstat import TimStat
 
 
 @pytest.mark.aqua
@@ -193,3 +197,52 @@ class TestDataModel:
             coords.time = "valid_time"
         with pytest.raises(FileNotFoundError):
             AquaCoordNames("nonexistent_model")
+
+
+@pytest.fixture
+def custom_data_model(monkeypatch):
+    """Register a 'custom' data model, with renamed time, latitude and longitude."""
+    from aqua.core.data_model import coord_utils
+
+    model = copy.deepcopy(coord_utils.get_data_model("aqua"))
+    model["data_model"]["time"]["name"] = "valid_time"
+    model["data_model"]["latitude"]["name"] = "latitude"
+    model["data_model"]["longitude"]["name"] = "longitude"
+    original = coord_utils.get_data_model
+    monkeypatch.setattr(coord_utils, "get_data_model", lambda name="aqua": model if name == "custom" else original(name))
+    AquaCoordNames._instances.pop("custom", None)
+    yield "custom"
+    AquaCoordNames._instances.pop("custom", None)
+
+
+@pytest.mark.aqua
+class TestCoordNamesPlumbing:
+    """The data model chosen by the user reaches the classes that use coordinate names."""
+
+    def test_custom_names(self, custom_data_model):
+        coords = AquaCoordNames(custom_data_model)
+        assert (coords.time, coords.lat, coords.lon) == ("valid_time", "latitude", "longitude")
+        assert AquaCoordNames().time == "time"
+
+    def test_timstat(self, custom_data_model):
+        time = pd.date_range("2000-01-01", periods=24, freq="MS")
+        data = xr.DataArray(np.arange(24.0), dims="valid_time", coords={"valid_time": time}, name="x")
+        out = TimStat(data_model=custom_data_model).timstat(data, stat="mean", freq="YS", time_bounds=True)
+        assert out["x"].sizes["valid_time"] == 2
+        assert "valid_time_bnds" in out
+        with pytest.raises(ValueError):
+            TimStat().timstat(data, stat="mean", freq="YS")  # default model expects 'time'
+
+    def test_area_selection(self, custom_data_model):
+        lat, lon = np.arange(-90.0, 91, 30), np.arange(0.0, 360, 60)
+        data = xr.DataArray(
+            np.ones((lat.size, lon.size)),
+            dims=("latitude", "longitude"),
+            coords={"latitude": lat, "longitude": lon},
+            name="x",
+        )
+        data["latitude"].attrs["units"] = "degrees_north"
+        data["longitude"].attrs["units"] = "degrees_east"
+        out = AreaSelection(data_model=custom_data_model).select_area(data, lon=[0, 120], lat=[-30, 30], drop=True)
+        assert out.sizes["latitude"] == 3 and out.sizes["longitude"] == 3
+        assert FldStat(data_model=custom_data_model).coords.lat == "latitude"

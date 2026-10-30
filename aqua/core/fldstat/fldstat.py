@@ -6,6 +6,7 @@ import xarray as xr
 from smmregrid import GridInspector
 
 from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import multiply_units
 
@@ -26,6 +27,7 @@ class FldStat:
         horizontal_dims: list[str] | None = None,
         grid_name: str | None = None,
         loglevel: str = "WARNING",
+        data_model: str = DEFAULT_DATAMODEL,
     ):
         """
         Initialize the FldStat.
@@ -44,10 +46,10 @@ class FldStat:
         self.horizontal_dims = horizontal_dims
 
         # Initialize area selection
-        self.area_selection = AreaSelection(loglevel=loglevel)
+        self.area_selection = AreaSelection(loglevel=loglevel, data_model=data_model)
 
         # define AQUA data model coordinates for lon, lat and time
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(data_model)
 
         if self.area is None:
             self.logger.warning("No area provided, no weighted area can be provided.")

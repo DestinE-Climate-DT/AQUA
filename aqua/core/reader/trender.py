@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util.time import pandas_freq_to_offset, xarray_to_pandas_freq
 
@@ -13,16 +14,17 @@ class Trender:
     A class to handle trend and detrending of xarray objects using polynomial fitting.
     """
 
-    def __init__(self, loglevel: str = "WARNING"):
+    def __init__(self, loglevel: str = "WARNING", data_model: str = DEFAULT_DATAMODEL):
         """
         Initialize the Trender class with optional default settings.
 
         Args:
             loglevel (str): Logging level. Default is 'WARNING'.
+            data_model (str): Data model providing the coordinate names. Default is 'aqua'.
         """
         self.loglevel = loglevel
         self.logger = log_configure(self.loglevel, "Trender")
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(data_model)
 
     def trend(
         self, data: xr.DataArray | xr.Dataset, dim: str = None, degree: int = 1, skipna: bool = False

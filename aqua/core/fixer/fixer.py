@@ -4,7 +4,7 @@ import re
 
 import numpy as np
 
-from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DELTAT
+from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DATAMODEL, DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -34,6 +34,7 @@ class Fixer:
         convention=DEFAULT_CONVENTION,
         metadata=None,
         loglevel="WARNING",
+        data_model=DEFAULT_DATAMODEL,
     ):
         self.fixer_name = fixer_name
         self.convention = convention
@@ -51,7 +52,7 @@ class Fixer:
         self.time_correction = False
 
         # this is the fixes operator, called internally by the fixer
-        self.operator = FixerOperator(self.fixes, loglevel=loglevel)
+        self.operator = FixerOperator(self.fixes, loglevel=loglevel, data_model=data_model)
 
         # this is the datamodel fixer, which applies supplementary fixes, called by the Reader
         self.fixerdatamodel = FixerDataModel(self.fixes, loglevel=loglevel)

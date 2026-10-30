@@ -5,6 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import normalize_units, to_list
 
@@ -19,14 +20,15 @@ class FixerOperator:
     Args:
         fixes (dict): Dictionary containing the fixes to be applied.
         loglevel (int, optional): Log level for logging. Defaults to None.
+        data_model (str, optional): Data model providing the coordinate names. Defaults to "aqua".
     """
 
-    def __init__(self, fixes, loglevel=None):
+    def __init__(self, fixes, loglevel=None, data_model=DEFAULT_DATAMODEL):
 
         self.fixes = fixes
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="FixerOperator")
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(data_model)
 
     def apply_unit_fix(self, data, time_correction=False):
         """

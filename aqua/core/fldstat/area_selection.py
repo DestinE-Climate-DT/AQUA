@@ -3,7 +3,7 @@ import regionmask
 import xarray as xr
 
 from aqua.core.data_model import AquaCoordNames
-from aqua.core.default import DEFAULT_COORDS
+from aqua.core.default import DEFAULT_COORDS, DEFAULT_DATAMODEL
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 
@@ -14,15 +14,16 @@ xr.set_options(keep_attrs=True)
 class AreaSelection:
     """Class to select an area from an xarray Dataset."""
 
-    def __init__(self, loglevel: str = "WARNING"):
+    def __init__(self, loglevel: str = "WARNING", data_model: str = DEFAULT_DATAMODEL):
         """
         Initialize the AreaSelection.
 
         Args:
             loglevel (str, optional): The logging level. Default is "WARNING".
+            data_model (str, optional): Data model providing the coordinate names. Default is "aqua".
         """
         self.logger = log_configure(log_level=loglevel, log_name="AreaSelection")
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(data_model)
 
     def select_area(
         self,

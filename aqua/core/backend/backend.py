@@ -7,6 +7,7 @@ from smmregrid import GridInspector
 
 from aqua.core.data_model import AquaCoordNames, DataModel
 from aqua.core.data_model.coordidentifier import CoordIdentifier
+from aqua.core.default import DEFAULT_DATAMODEL
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_configure
 from aqua.core.util import fix_calendar, set_attrs, to_list
@@ -33,7 +34,7 @@ class Backend(ABC):
         self.datamodel = datamodel
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
-        self.coords = AquaCoordNames()
+        self.coords = AquaCoordNames(datamodel.name if datamodel else DEFAULT_DATAMODEL)
 
     @abstractmethod
     def retrieve(
