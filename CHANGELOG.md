@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
+- Preserve z3fdb source metadata so repeated reads retain the configured HPC/bridge FDB paths and grid (#3316).
 - Fix z3fdb level subsets without physical-level metadata and normalize scalar levels, preserving requested level order across HPC/bridge periods (#3316).
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)

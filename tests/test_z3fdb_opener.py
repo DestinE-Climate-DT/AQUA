@@ -10,6 +10,7 @@ import pytest
 import xarray as xr
 import zarr
 
+from aqua.core.intake_drivers.fdb import IntakeFDBSource
 from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
@@ -147,6 +148,60 @@ def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, lev
     assert result.level.attrs["units"] == "hPa"
     assert builder.add_part.call_count == 3
     assert all(call.args[0]["levelist"] == expected_ids for call in builder.add_part.call_args_list)
+
+
+@pytest.mark.parametrize(
+    "metadata, config_fdb, expected_configs",
+    [
+        (
+            {"fdb_home": "/hpc", "fdb_home_bridge": "/bridge"},
+            None,
+            ["/hpc/etc/fdb/config.yaml", "/bridge/etc/fdb/config.yaml", "/hpc/etc/fdb/config.yaml"],
+        ),
+        (
+            {"fdb_path": "/hpc.yaml", "fdb_path_bridge": "/bridge.yaml"},
+            None,
+            ["/hpc.yaml", "/bridge.yaml", "/hpc.yaml"],
+        ),
+        ({"fdb_path": "/hpc.yaml"}, None, ["/hpc.yaml"] * 3),
+        (
+            {"fdb_home": "/hpc", "fdb_path_bridge": "/bridge.yaml"},
+            "/override.yaml",
+            ["/override.yaml"] * 3,
+        ),
+    ],
+    ids=["homes", "paths", "bridge-fallback", "config-override"],
+)
+def test_z3fdb_repeated_reads_preserve_metadata(monkeypatch, metadata, config_fdb, expected_configs):
+    """Repeated source reads retain FDB routing and grid metadata for every period."""
+    metadata = {**metadata, "source_grid_name": "hpz0-nested", "levels": [1000]}
+    original_metadata = deepcopy(metadata)
+    opener = Mock(
+        side_effect=lambda request, **kwargs: xr.Dataset(
+            {"var130": ("time", da.ones(1))}, coords={"time": [kwargs["startdate"]]}
+        )
+    )
+    monkeypatch.setattr("aqua.core.intake_drivers.fdb.readers.open_z3fdb", opener)
+    source = IntakeFDBSource(
+        request={"param": [130], "levtype": "pl", "levelist": [1000]},
+        metadata=metadata,
+        engine="z3fdb",
+        config_fdb=config_fdb,
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date="20200101T0100",
+        bridge_end_date="20200101T0100",
+    )
+
+    first = source.to_dask()
+    second = source.to_dask()
+
+    assert [call.kwargs["config"] for call in opener.call_args_list] == expected_configs * 2
+    assert all(call.kwargs["grid"] == "hpz0-nested" for call in opener.call_args_list)
+    assert opener.call_args_list[:3] == opener.call_args_list[3:]
+    assert metadata == source.metadata == original_metadata
+    assert isinstance(second.var130.data, da.Array)
+    xr.testing.assert_identical(first, second)
 
 
 def test_build_mars_requests_years_and_dates_parsing():
