@@ -80,16 +80,11 @@ class Z3FDBDatasetReader(BaseReader):
 
     def _read(self, data, **kwargs):
 
-        # Pop keys from metadata to keep behavior consistent and extract configuration values
-        hpc_home = data.metadata.pop("fdb_home", None)
-        hpc_path = data.metadata.pop("fdb_path", None)
-        bridge_home = data.metadata.pop("fdb_home_bridge", None)
-        bridge_path = data.metadata.pop("fdb_path_bridge", None)
-
-        if "source_grid_name" in data.metadata:
-            grid = data.metadata.pop("source_grid_name")
-        else:
-            grid = None
+        hpc_home = data.metadata.get("fdb_home")
+        hpc_path = data.metadata.get("fdb_path")
+        bridge_home = data.metadata.get("fdb_home_bridge")
+        bridge_path = data.metadata.get("fdb_path_bridge")
+        grid = data.metadata.get("source_grid_name")
 
         config_hpc = None
         config_bridge = None
