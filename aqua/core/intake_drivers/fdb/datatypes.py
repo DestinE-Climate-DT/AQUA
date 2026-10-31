@@ -94,10 +94,12 @@ class Z3FDB(FDB):
     def __init__(
         self,
         request,
+        grid=None,
         **kwargs,
     ):
 
         super().__init__(request, **kwargs)
+        self.grid = grid
 
         if "levels" in self.metadata:
             self.level_values = self.metadata["levels"]

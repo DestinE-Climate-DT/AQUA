@@ -345,6 +345,14 @@ Some of the parameters are here described:
     To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"``
     when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
 
+.. note::
+    With ``engine="z3fdb"``, ``source_grid_name`` must identify an explicit
+    HEALPix ordering (for example ``hpz7-ring`` or ``hpz7-nested``), or a
+    configured grid coordinate file. Structured grid definitions also require
+    ``fdb_dims`` in the original FDB storage order, slowest dimension first.
+    Generic ``lon-lat`` declarations and identification by cell count are
+    insufficient. See the grid-coordinate guidance in :ref:`polytope`.
+
 .. option:: config_fdb
 
     This optional parameter is used to specify a custom configuration file path for the ``z3fdb`` engine.

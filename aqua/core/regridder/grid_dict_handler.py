@@ -1,11 +1,13 @@
 """Basic grid dictionary handling."""
 
+import re
+
 from smmregrid import CdoGrid
 
 from aqua.core.default import DEFAULT_GRID_DATA
 from aqua.core.logger import log_configure
 
-from .regridder_util import check_existing_file
+from .regridder_util import check_existing_file, get_grid_path
 
 
 class GridDictHandler:
@@ -62,6 +64,33 @@ class GridDictHandler:
         grid_dict["path"] = self._normalize_grid_path(grid_dict)
         return grid_dict
 
+    def normalize_fdb_grid(self, grid_name):
+        """Resolve an explicit HEALPix grid or a coordinate file for FDB fields.
+
+        Args:
+            grid_name (str or dict): AQUA grid name or inline grid definition.
+
+        Returns:
+            dict: HEALPix resolution/ordering or a normalized file-backed grid.
+
+        Raises:
+            ValueError: When the declaration cannot supply field coordinates.
+        """
+        if isinstance(grid_name, str):
+            match = re.fullmatch(r"hpz([0-9]+)-(nested|ring)", grid_name)
+            if match:
+                return {"nside": 2 ** int(match[1]), "ordering": match[2]}
+        if isinstance(grid_name, dict) and "nside" in grid_name:
+            return grid_name.copy()
+        grid = self.normalize_grid_dict(grid_name)
+        path = get_grid_path(grid["path"])
+        if not path or path == DEFAULT_GRID_DATA or CdoGrid(path).grid_kind:
+            raise ValueError(
+                "z3fdb requires an explicit HEALPix grid (e.g. hpz7-nested or hpz7-ring) "
+                "or a grid coordinate file; a generic grid name or cell count is insufficient."
+            )
+        return grid
+
     def _normalize_grid_dict(self, grid_name):
         """
         Validate the grid name and return the grid dictionary.
@@ -85,6 +114,9 @@ class GridDictHandler:
         # error if it is not a string or a dictionary
         if not isinstance(grid_name, (str, dict)):
             raise TypeError(f"Grid name '{grid_name}' is not a valid type. str or dict expected.")
+
+        if isinstance(grid_name, dict):
+            return grid_name.copy()
 
         # if a grid name is a valid CDO grid name, return it in the format of a dictionary
         if isinstance(grid_name, str) and CdoGrid(grid_name).grid_kind:

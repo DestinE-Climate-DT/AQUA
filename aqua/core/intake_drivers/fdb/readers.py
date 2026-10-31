@@ -86,10 +86,7 @@ class Z3FDBDatasetReader(BaseReader):
         bridge_home = data.metadata.pop("fdb_home_bridge", None)
         bridge_path = data.metadata.pop("fdb_path_bridge", None)
 
-        if "source_grid_name" in data.metadata:
-            grid = data.metadata.pop("source_grid_name")
-        else:
-            grid = None
+        grid = data.grid if data.grid is not None else data.metadata.get("source_grid_name")
 
         config_hpc = None
         config_bridge = None
@@ -150,6 +147,7 @@ class Z3FDBDatasetReader(BaseReader):
             periods.append((start_ts, end_ts, config_hpc))
 
         datasets = []
+        coordinate_cache = {}  # Reuse expensive coordinates across HPC/bridge parts of this read.
         for p_start, p_end, p_config in periods:
             p_start_str = p_start.strftime("%Y%m%dT%H%M")
             p_end_str = p_end.strftime("%Y%m%dT%H%M")
@@ -167,6 +165,7 @@ class Z3FDBDatasetReader(BaseReader):
                 chunks=data.chunks,
                 level_values=data.level_values,
                 grid=grid,
+                _coordinate_cache=coordinate_cache,
             )
             datasets.append(ds)
 
@@ -178,4 +177,5 @@ class Z3FDBDatasetReader(BaseReader):
 
         combined = xr.concat(datasets, dim="time")
         combined.attrs.update(datasets[0].attrs)
+        combined.set_close(datasets[0].close)
         return combined

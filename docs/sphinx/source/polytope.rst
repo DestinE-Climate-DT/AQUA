@@ -70,6 +70,66 @@ To this end, you will need to specify ``engine="z3fdb"`` when instantiating the 
 
 If you want to use a different configuration file, you can pass its path using the ``config_fdb`` argument when instantiating the ``Reader`` class (e.g. ``Reader(..., config_fdb="/path/to/config.yaml")``).
 
+Grid coordinates for z3fdb
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``z3fdb`` engine requires an explicit source grid. The cell count alone
+cannot identify its geometry or the ordering of the stored values.
+
+For full HEALPix fields, use ``source_grid_name: hpz7-nested`` or
+``source_grid_name: hpz7-ring`` (with the appropriate zoom). Coordinates and
+bounds follow the declared ordering, and the number of cells must match the
+resolution. No grid file is needed for these generic HEALPix declarations.
+
+For other grids, ``source_grid_name`` must resolve to a coordinate file in
+AQUA's grid configuration. Longitude, latitude and their bounds are identified
+using AQUA's coordinate conventions; their original names and units are
+preserved for the subsequent DataModel step. Unstructured coordinates must
+follow the same cell order as the FDB fields.
+
+Structured grids also require ``fdb_dims``: the grid-file dimension names in
+storage order, slowest first. The last listed dimension varies fastest in the
+flat GRIB values. For example:
+
+.. code-block:: yaml
+
+    # In an AQUA grid configuration file
+    grids:
+      my-regional-grid:
+        path: '{{ grids }}/regional_grid.nc'
+        fdb_dims: [lat, lon]
+        space_coord: [lat, lon]
+
+    # In the Intake source metadata
+    metadata:
+      source_grid_name: my-regional-grid
+
+Here longitude varies fastest. Latitude and longitude values in the grid file
+must describe the original GRIB scanning direction. AQUA reshapes the lazy
+field arrays without rearranging the stored values; coordinate standardization
+is applied afterward by DataModel. The grid size is checked before coordinates
+are attached, and coordinate generation is reused across HPC/bridge parts of
+one retrieval.
+
+A generic ``source_grid_name: lon-lat`` supplies insufficient information and
+now raises an error. Existing catalogs using it must specify a grid file and
+``fdb_dims``. For a one-off override, the existing ``Reader`` keyword forwarding
+also accepts an inline grid definition:
+
+.. code-block:: python
+
+    reader = Reader(
+        model="IFS", exp="test-fdb", source="fdb", engine="z3fdb",
+        grid={"path": "/path/to/grid.nc", "fdb_dims": ["lat", "lon"]},
+    )
+
+An override may fill an ambiguous declaration, but conflicting overrides of a
+fully specified source grid are rejected so coordinate and regridding definitions
+stay consistent. Matching cell counts do not prove that a declaration is correct: the grid file
+must correspond to the source data, including its ordering. Fields with
+ambiguous or unsupported grids are rejected instead of receiving guessed
+coordinates. No automatic GRIB-header discovery is performed.
+
 Chunking Logic for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

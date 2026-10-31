@@ -6,7 +6,8 @@ from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
-from aqua.core.util import to_list
+from aqua.core.regridder.grid_dict_handler import GridDictHandler
+from aqua.core.util import load_multi_yaml, to_list
 from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
@@ -49,6 +50,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         engine: str = "gsv",
         databridge: str = None,
         loglevel: str = "WARNING",
+        grid: str | dict = None,
         **kwargs,
     ):
         """
@@ -67,6 +69,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             engine (str, optional): Engine used for GSV retrieval, 'gsv', 'polytope' or 'z3fdb'. Defaults to 'gsv'.
             databridge (str, optional): Only for the polytope engine: 'lumi' or 'mn5'. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
+            grid (str or dict, optional): z3fdb grid override. Defaults to the catalog source_grid_name.
             kwargs: Additional intake parameters forwarded to the catalog source entry.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
@@ -106,6 +109,24 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         if (engine == "z3fdb" or engine == "gsv") and "config_fdb" not in self.kwargs and "config_fdb" in kwargs:
             self.kwargs["config_fdb"] = kwargs["config_fdb"]
             self.logger.debug("Adding config_fdb=%s to filtered kwargs", kwargs["config_fdb"])
+            needs_rebuild = True
+
+        if self.kwargs["engine"] == "z3fdb":
+            _, grids_folder = configurer_catalog.paths.get_reader_folders()
+            machine_paths, _ = configurer_catalog.get_machine_info()
+            grid_config = load_multi_yaml(
+                folder_path=grids_folder, definitions=machine_paths.get("paths", {}), loglevel=loglevel
+            )
+            grid_handler = GridDictHandler(grid_config, loglevel=loglevel)
+            source_grid = self.metadata.get("source_grid_name")
+            self.kwargs["grid"] = grid_handler.normalize_fdb_grid(grid if grid is not None else source_grid)
+            if grid is not None and source_grid:
+                try:
+                    declared_grid = grid_handler.normalize_fdb_grid(source_grid)
+                except ValueError:
+                    declared_grid = None
+                if declared_grid is not None and declared_grid != self.kwargs["grid"]:
+                    raise ValueError("The z3fdb grid override conflicts with the configured source_grid_name.")
             needs_rebuild = True
 
         if needs_rebuild:

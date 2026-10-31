@@ -5,16 +5,24 @@ import copy
 import copyreg
 import os
 from collections import defaultdict
+from math import prod
 
 import astropy_healpix
 import dask.array as da
+import intake
 import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
 
-from aqua.core.logger import log_configure
+from aqua.core.data_model import CoordIdentifier
+from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE
+from aqua.core.logger import log_configure, log_history
+from aqua.core.regridder.grid_dict_handler import GridDictHandler
+from aqua.core.regridder.regridder_util import get_grid_path
 from aqua.core.util import to_list
+
+xr.set_options(keep_attrs=True)
 
 MARS_KEYS = [
     "date",
@@ -376,13 +384,27 @@ def to_dataset(
     return ds
 
 
-def add_healpix_coordinates(ds):
-    """Add lon, lat and bounds coordinates for HEALPix grid."""
+def add_healpix_coordinates(ds, nside=None, ordering=None):
+    """Add coordinates for an explicitly declared full HEALPix grid.
 
+    Args:
+        ds (xr.Dataset): Dataset with a flat cell dimension.
+        nside (int, optional): Declared HEALPix resolution. Required.
+        ordering (str, optional): Declared 'nested' or 'ring' ordering. Required.
+
+    Returns:
+        xr.Dataset: Dataset with coordinates and bounds in the stored cell order.
+
+    Raises:
+        ValueError: When the grid declaration is incomplete or has the wrong size.
+    """
+    if not isinstance(nside, int) or nside <= 0 or nside & (nside - 1) or ordering not in ("nested", "ring"):
+        raise ValueError("HEALPix coordinates require a positive power-of-two nside and explicit nested/ring ordering.")
     ncell = ds.sizes["cell"]
-    nside = int(np.sqrt(ncell / 12))
+    if ncell != 12 * nside**2:
+        raise ValueError("Data cell count does not match the declared HEALPix resolution.")
 
-    hp = astropy_healpix.HEALPix(nside=nside, order="nested")
+    hp = astropy_healpix.HEALPix(nside=nside, order=ordering)
     lon, lat = hp.healpix_to_lonlat(np.arange(ncell))
     lon_vals = lon.to_value("deg")
     lat_vals = lat.to_value("deg")
@@ -393,64 +415,118 @@ def add_healpix_coordinates(ds):
 
     ds = ds.assign_coords(
         {
-            "lon": (("cell",), lon_vals, {"units": "degrees_east", "long_name": "longitude"}),
-            "lat": (("cell",), lat_vals, {"units": "degrees_north", "long_name": "latitude"}),
-            "lon_bounds": (("cell", "vertices"), lon_b_vals),
-            "lat_bounds": (("cell", "vertices"), lat_b_vals),
+            "lon": (
+                ("cell",),
+                lon_vals,
+                {"units": "degrees_east", "standard_name": "longitude", "long_name": "longitude", "bounds": "lon_bounds"},
+            ),
+            "lat": (
+                ("cell",),
+                lat_vals,
+                {"units": "degrees_north", "standard_name": "latitude", "long_name": "latitude", "bounds": "lat_bounds"},
+            ),
+            "lon_bounds": (("cell", "vertices"), lon_b_vals, {"units": "degrees_east"}),
+            "lat_bounds": (("cell", "vertices"), lat_b_vals, {"units": "degrees_north"}),
         }
     )
     return ds
 
 
-def add_lonlat_coordinates(ds):
-    """Add coordinates for lonlat grids."""
+def _add_grid_file_coordinates(ds, grid, cache):
+    """Attach file coordinates in the declared order of the flat FDB values."""
+    if "grid_data" not in cache:
+        cache["grid_data"] = intake.open_netcdf(get_grid_path(grid["path"])).to_dask()
+    grid_data = cache["grid_data"]
+    try:
+        if "identified" not in cache:
+            bounds = {var.attrs["bounds"] for var in grid_data.variables.values() if var.attrs.get("bounds")}
+            candidates = grid_data.drop_vars(bounds | {"lon_bounds", "lat_bounds", "lon_bnds", "lat_bnds"}, errors="ignore")
+            cache["identified"] = CoordIdentifier(
+                candidates.set_coords(list(candidates.data_vars)).coords, loglevel=logger.getEffectiveLevel()
+            ).identify_coords()
+        identified = cache["identified"]
+        longitude, latitude = identified[AQUA_LONGITUDE], identified[AQUA_LATITUDE]
+        if longitude is None or latitude is None:
+            raise ValueError("The z3fdb grid file must identify longitude and latitude coordinates.")
+        names = [longitude["name"], latitude["name"]]
+        horizontal_dims = set(longitude["dims"]) | set(latitude["dims"])
+        dims = to_list(grid.get("fdb_dims"))
+        if not dims and len(horizontal_dims) == 1:
+            dims = list(horizontal_dims)
+        if not dims or set(dims) != horizontal_dims or len(dims) != len(horizontal_dims):
+            raise ValueError("Structured z3fdb grids require fdb_dims listing their storage dimensions, slowest first.")
+        if horizontal_dims & {"time", "level"}:
+            raise ValueError("Grid longitude/latitude must depend only on horizontal dimensions.")
+        if prod(grid_data.sizes[dim] for dim in dims) != ds.sizes["cell"]:
+            raise ValueError("Data cell count does not match the grid coordinate file.")
 
-    if "cell" not in ds.dims:
-        return ds
+        for name in list(names):
+            bounds = grid_data[name].attrs.get("bounds")
+            if bounds:
+                if bounds not in grid_data:
+                    raise ValueError(f"Grid coordinate {name} refers to missing bounds {bounds}.")
+                names.append(bounds)
+        names.extend(name for name in ("lon_bounds", "lat_bounds", "lon_bnds", "lat_bnds") if name in grid_data)
 
-    # Guess dimensions from the idea that
-    # 1) the number of lons is even,
-    # 2) the number of lats is approximately half of the number of lons
-
-    ncell = ds.sizes["cell"]
-    nlon = int(np.sqrt(ncell / 2)) * 2
-    nlat = int(ncell / nlon)
-    if nlon * nlat != ncell:
-        return ds  # abort and do not add coordinates
-
-    lon_vals = np.linspace(0, 360, nlon, endpoint=False)
-    lat_vals = np.linspace(90, -90, nlat)
-
-    index = pd.MultiIndex.from_product([lat_vals, lon_vals], names=["lat", "lon"])
-    mindex_coords = xr.Coordinates.from_pandas_multiindex(index, "cell")
-    ds = ds.assign_coords(mindex_coords)
-    ds = ds.unstack("cell")
-
-    # Add attributes to coordinates
-    ds.lon.attrs.update({"units": "degrees_east", "long_name": "longitude"})
-    ds.lat.attrs.update({"units": "degrees_north", "long_name": "latitude"})
-
+        if len(dims) == 1:
+            rename = {dims[0]: "cell"}
+        else:
+            if "cell" in horizontal_dims:
+                raise ValueError("Structured grid dimensions must use names other than cell.")
+            shape = tuple(grid_data.sizes[dim] for dim in dims)
+            variables = {
+                name: xr.Variable(var.dims[:-1] + tuple(dims), var.data.reshape(var.shape[:-1] + shape), attrs=var.attrs)
+                for name, var in ds.data_vars.items()
+            }
+            ds = ds.drop_dims("cell").assign(variables)
+            rename = {}
+        if any(set(grid_data[name].dims) & {"time", "level"} for name in names):
+            raise ValueError("Grid coordinates and bounds must not depend on time or level.")
+        coordinates = {
+            name: xr.Variable(
+                tuple(rename.get(dim, dim) for dim in grid_data[name].dims), grid_data[name].data, attrs=grid_data[name].attrs
+            )
+            for name in names
+        }
+        ds = ds.assign_coords(coordinates)
+    except Exception:
+        grid_data.close()
+        raise
+    ds.set_close(grid_data.close)
     return ds
 
 
-def add_coordinates(ds, levunits=None, grid_type=None):
-    """Add coordinates based on grid type."""
+def add_coordinates(ds, levunits=None, grid_type=None, grid=None, _cache=None):
+    """Attach coordinates from an explicit HEALPix declaration or grid file.
+
+    Args:
+        ds (xr.Dataset): Dataset with a flat cell dimension.
+        levunits (str, optional): Units of the level coordinate. Defaults to None.
+        grid_type (str, optional): Legacy grid argument; ambiguous types are rejected.
+        grid (str or dict, optional): Explicit grid name or resolved definition. Defaults to None.
+        _cache (dict, optional): Coordinate cache shared within one Intake read. Defaults to None.
+
+    Returns:
+        xr.Dataset: Dataset with validated spatial coordinates and unchanged field ordering.
+
+    Raises:
+        ValueError: When the grid is ambiguous or its shape does not match the data.
+    """
     if levunits:
         ds.level.attrs["units"] = levunits
-
-    if grid_type == "healpix_unstructured":
-        grid_type = "unknown"
-        if "cell" in ds.dims:
-            ncell = ds.sizes["cell"]
-            nside = int(np.round(np.sqrt(ncell / 12)))
-            if 12 * nside**2 == ncell and (nside & (nside - 1)) == 0:
-                grid_type = "healpix"
-
-    if grid_type == "healpix":
-        return add_healpix_coordinates(ds)
-    elif grid_type == "lonlat":
-        return add_lonlat_coordinates(ds)
-
+    grid = GridDictHandler({"grids": {}}).normalize_fdb_grid(grid if grid is not None else grid_type)
+    cache = {} if _cache is None else _cache
+    if "nside" in grid:
+        if "coordinates" not in cache:
+            ds = add_healpix_coordinates(ds, nside=grid["nside"], ordering=grid.get("ordering"))
+            cache["coordinates"] = {name: ds.coords[name] for name in ("lon", "lat", "lon_bounds", "lat_bounds")}
+        elif ds.sizes["cell"] != cache["coordinates"]["lon"].size:
+            raise ValueError("Data cell count does not match the declared HEALPix resolution.")
+        else:
+            ds = ds.assign_coords(cache["coordinates"])
+    else:
+        ds = _add_grid_file_coordinates(ds, grid, cache)
+    log_history(ds, f"Spatial coordinates assigned from declared z3fdb grid {grid}")
     return ds
 
 
@@ -468,6 +544,7 @@ def open_z3fdb(
     chunks=None,
     level_values=None,
     grid=None,
+    _coordinate_cache=None,
 ):
     """Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
 
@@ -492,7 +569,9 @@ def open_z3fdb(
             The time axis is always chunked as single values. Defaults to None.
         level_values (float or list, optional): Physical values matching the full request levelist.
             Defaults to the level IDs.
-        grid (str, optional): Name of the grid. Defaults to None.
+        grid (str or dict, optional): Explicit HEALPix name or resolved grid-file definition.
+            Required for geographic coordinates; defaults to None.
+        _coordinate_cache (dict, optional): Coordinate cache for one Intake read. Defaults to None.
 
     Returns:
         xarray.Dataset: Lazy (dask-backed) xr.Dataset.
@@ -501,11 +580,6 @@ def open_z3fdb(
     _check_availability()
 
     request = {key: value for key, value in request.items() if key in MARS_KEYS}
-
-    if grid and "lon-lat" in grid:
-        grid_type = "lonlat"
-    else:
-        grid_type = "healpix_unstructured"
 
     if variables:
         request["param"] = variables
@@ -584,7 +658,7 @@ def open_z3fdb(
         levels=level_values,
     )
 
-    ds = add_coordinates(ds, levunits=levunits, grid_type=grid_type)
+    ds = add_coordinates(ds, levunits=levunits, grid=grid, _cache=_coordinate_cache)
 
     # Convert list of dictionaries to list of strings
     def _mars_to_str(req):

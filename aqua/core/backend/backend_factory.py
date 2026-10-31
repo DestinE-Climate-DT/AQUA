@@ -45,6 +45,7 @@ class BackendFactory:
             "engine",
             "databridge",
             "loglevel",
+            "grid",
         },
         "intake_netcdf": {
             "model",
