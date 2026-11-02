@@ -129,27 +129,31 @@ class Z3FDBDatasetReader(BaseReader):
             if start_ts < b_start_ts:
                 before_end = min(end_ts, b_start_ts - offset)
                 if start_ts <= before_end:
-                    periods.append((start_ts, before_end, config_hpc))
+                    periods.append((start_ts, before_end, config_hpc, data.hpc_expver))
 
             # 2. Central bridge: [bridge_intersect_start, bridge_intersect_end]
             if bridge_intersect_start <= bridge_intersect_end:
-                periods.append((bridge_intersect_start, bridge_intersect_end, config_bridge))
+                periods.append((bridge_intersect_start, bridge_intersect_end, config_bridge, None))
 
             # 3. After bridge: [bridge_intersect_end + offset, end_ts]
             if end_ts > b_end_ts:
                 after_start = max(start_ts, b_end_ts + offset)
                 if after_start <= end_ts:
-                    periods.append((after_start, end_ts, config_hpc))
+                    periods.append((after_start, end_ts, config_hpc, data.hpc_expver))
         else:
-            periods.append((start_ts, end_ts, config_hpc))
+            periods.append((start_ts, end_ts, config_hpc, data.hpc_expver))
 
         datasets = []
-        for p_start, p_end, p_config in periods:
+        for p_start, p_end, p_config, p_expver in periods:
             p_start_str = p_start.strftime("%Y%m%dT%H%M")
             p_end_str = p_end.strftime("%Y%m%dT%H%M")
 
+            request = data.request.copy()
+            if p_expver:
+                request["expver"] = p_expver
+
             ds = open_z3fdb(
-                data.request,
+                request,
                 startdate=p_start_str,
                 enddate=p_end_str,
                 config=p_config,

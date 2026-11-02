@@ -217,6 +217,48 @@ def test_z3fdb_repeated_reads_preserve_metadata(monkeypatch, metadata, config_fd
     xr.testing.assert_identical(first, second)
 
 
+@pytest.mark.parametrize("hpc_expver", [None, "a0h3"], ids=["catalog-expver", "hpc-override"])
+@pytest.mark.parametrize(
+    "bridge_start, bridge_end, expected_hpc",
+    [
+        ("20200101T0100", "20200101T0100", [True, False, True]),
+        (None, None, [True]),
+        ("complete", "complete", [False]),
+    ],
+    ids=["hpc-bridge-hpc", "hpc-only", "bridge-only"],
+)
+def test_z3fdb_hpc_expver_routing(monkeypatch, hpc_expver, bridge_start, bridge_end, expected_hpc):
+    """Apply HPC expver independently of config paths and preserve reusable requests."""
+    request = {"param": [130], "levtype": "sfc", "expver": "0001"}
+    original_request = deepcopy(request)
+    opener = Mock(
+        side_effect=lambda request, **kwargs: xr.Dataset(
+            {"var130": ("time", da.ones(1))}, coords={"time": [kwargs["startdate"]]}
+        )
+    )
+    monkeypatch.setattr("aqua.core.intake_drivers.fdb.readers.open_z3fdb", opener)
+    source = IntakeFDBSource(
+        request=request,
+        engine="z3fdb",
+        hpc_expver=hpc_expver,
+        config_fdb="/shared.yaml",
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date=bridge_start,
+        bridge_end_date=bridge_end,
+    )
+
+    first = source.to_dask()
+    second = source.to_dask()
+
+    expected = [hpc_expver if is_hpc and hpc_expver else "0001" for is_hpc in expected_hpc]
+    assert [call.args[0]["expver"] for call in opener.call_args_list] == expected * 2
+    assert all(call.kwargs["config"] == "/shared.yaml" for call in opener.call_args_list)
+    assert request == original_request
+    assert isinstance(second.var130.data, da.Array)
+    xr.testing.assert_identical(first, second)
+
+
 def test_build_mars_requests_years_and_dates_parsing():
     """Test the years and dates logic in _build_mars_requests.
 

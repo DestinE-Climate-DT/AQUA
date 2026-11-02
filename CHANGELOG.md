@@ -18,6 +18,7 @@ Unreleased in the current development version (target v1.2.4):
 - Decode z3fdb HEALPix ordering and global regular lon/lat dimensions from GRIB metadata using pyfdb and ecCodes, without GSV, catalog grid hints or external grid files; reject other grid types (#3316).
 - Preserve z3fdb source metadata so repeated reads retain the configured HPC/bridge FDB paths and grid (#3316).
 - Fix z3fdb level subsets without physical-level metadata and normalize scalar levels, preserving requested level order across HPC/bridge periods (#3316).
+- Honor `hpc_expver` for z3fdb HPC periods while retaining the bridge experiment version and leaving catalog requests unchanged (#3316).
 
 ## [v1.2.3]
 

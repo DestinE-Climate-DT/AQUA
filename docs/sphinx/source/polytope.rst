@@ -70,6 +70,12 @@ To this end, you will need to specify ``engine="z3fdb"`` when instantiating the 
 
 If you want to use a different configuration file, you can pass its path using the ``config_fdb`` argument when instantiating the ``Reader`` class (e.g. ``Reader(..., config_fdb="/path/to/config.yaml")``).
 
+For split HPC/bridge reads, ``hpc_expver`` overrides the request's ``expver``
+only for HPC periods. For example, ``expver: "0001"`` with
+``hpc_expver: a0h3`` uses ``a0h3`` outside the bridge interval and ``0001``
+inside it, even when both periods share an FDB configuration. The catalog
+request is preserved across reads.
+
 Grid coordinates for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
