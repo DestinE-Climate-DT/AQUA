@@ -17,6 +17,7 @@ Unreleased in the current development version (target v1.2.4):
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
+- New pure `pystac` backend: `Reader(url=..., stac_kwargs=...)` opens an asset of a STAC catalog, collection or item with xarray; `pystac` added as dependency and `conda-linux-64.lock` relocked. Providing `path` together with `model`/`exp`/`source` (or any other incompatible setup) now raises a `ValueError` instead of only logging an error (#3164)
 
 ## [v1.2.3]
 

@@ -1,4 +1,4 @@
-"""Backend for opening xarray datasets from STAC catalogs with Intake.
+"""Backend for opening xarray datasets from STAC catalogs with pystac.
 
 Example:
     Open a STAC asset through the public :class:`aqua.Reader` interface::
@@ -25,7 +25,7 @@ xr.set_options(keep_attrs=True)
 
 
 class BackendSTAC(Backend):
-    """Retrieve an xarray dataset from an asset in an Intake STAC catalog."""
+    """Retrieve an xarray dataset from an asset of a STAC catalog, collection or item."""
 
     def __init__(
         self,
@@ -37,20 +37,21 @@ class BackendSTAC(Backend):
         loglevel: str = "WARNING",
         **kwargs,
     ):
-        """Initialize the Intake STAC backend.
+        """Initialize the STAC backend.
 
         Args:
-            url (str): URL of the STAC catalog JSON document.
-            stac_kwargs (dict | str): Single-branch nested mapping describing successive catalog
-                lookups, for example ``{"collection": {"item": "asset"}}``.
-            chunks (str | dict, optional): Chunking passed to the selected asset reader.
+            url (str): URL or path of the STAC JSON document (catalog, collection or item).
+            stac_kwargs (dict | str): Single-branch nested mapping of child/item ids ending with the
+                asset key, for example ``{"collection": {"item": "asset"}}``. A plain string selects
+                the asset of an item (or a collection-level asset).
+            chunks (str | dict, optional): Chunking passed to ``xarray.open_dataset``.
                 ``None`` falls back to ``"auto"`` so STAC assets remain lazy. Defaults
                 to ``"auto"``.
             fixer (Fixer, optional): Fixer applied after reading. Defaults to None.
             datamodel (DataModel, optional): Data model applied after the fixer.
                 Defaults to None.
             loglevel (str, optional): Logging level. Defaults to "WARNING".
-            stac_kwargs (dict, optional): Additional keyword arguments passed to the selected asset reader.
+            **kwargs: Additional keyword arguments passed to ``xarray.open_dataset``.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.url = url

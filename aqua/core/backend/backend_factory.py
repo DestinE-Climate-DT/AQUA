@@ -245,7 +245,7 @@ class BackendFactory:
         self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
     def _select_backend_stac(self):
-        """Activate direct STAC catalog access through Intake."""
+        """Activate direct STAC access through pystac."""
         self.backend_type = "stac"
         self.logger.warning(" STAC backend is experimental and may not work for all catalogs.")
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
