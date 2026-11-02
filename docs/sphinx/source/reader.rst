@@ -169,10 +169,17 @@ This is useful when the data is not available in the intake catalog, but is avai
 Reader stac access
 ^^^^^^^^^^^^^^^^^^
 
-The ``Reader`` class can also be used to access data from a STAC catalog.
-The reader can be initialized with a ``url`` to a STAC catalog, and the ``stac_kwargs`` argument can be used to point a specific asset from the catalog.
-``stac_kwargs`` can be a dictionary or a string, depending on the structure of the catalog, or if the json file is a single item or a nested catalog/collection.
-This below is a working example building on the DKRZ EERIE cloud STAC catalog.
+The ``Reader`` class can also be used to access data from a STAC object (catalog, collection or item) with ``pystac``.
+The reader is initialized with a ``url`` pointing to the STAC JSON file, and the ``stac_kwargs`` argument selects the asset to open:
+
+- for a single item, ``stac_kwargs`` is just the asset key (a string);
+- for a collection or a nested catalog, ``stac_kwargs`` is a nested dictionary with one entry per level,
+  made of the child collection and item ids and ending with the asset key.
+
+The asset is opened lazily with xarray, using the ``xarray:open_kwargs`` and ``xarray:storage_options`` defined in the asset, if any,
+and the ``chunks`` given to the ``Reader``.
+Asset ``href`` paths relative to the STAC file are resolved, so that local catalogs work as well.
+This below is a working example of an item, building on the DKRZ EERIE cloud STAC catalog.
 
 .. code-block:: python
 
@@ -180,6 +187,32 @@ This below is a working example building on the DKRZ EERIE cloud STAC catalog.
     reader = Reader(
         url="https://eerie.cloud.dkrz.de/datasets/HadGEM3-GC5E-HH.historical.v20250409.gr1.Amon/stac",
         stac_kwargs="eerie-cloud", areas=False,
+    )
+    data = reader.retrieve()
+
+A nested catalog is accessed by following the structure of the catalog down to the asset,
+here a collection, one of its items and the asset of the item (this example requires ``gribscan``):
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(
+        url="https://km-scale-cloud.dkrz.de/stac-catalog-all.json",
+        stac_kwargs={"km-scale-cloud-dkrz-era5-collection": {"era5-dkrz.surface_analysis_monthly": "eerie-cloud"}},
+        areas=False,
+    )
+    data = reader.retrieve()
+
+The AQUA test suite generates a local STAC catalog from the test data (see ``tests/stac_catalogue/README.md``),
+which can be used to try the feature offline:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(
+        url="tests/stac_catalogue/catalog.json",
+        stac_kwargs={"ifs": {"ifs-short-ifs2d-tco79": "data"}},
+        areas=False,
     )
     data = reader.retrieve()
 
