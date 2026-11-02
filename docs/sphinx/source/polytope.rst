@@ -80,13 +80,11 @@ It reads metadata with ecCodes and does not require GSV. Supported grid families
 * HEALPix: resolution and ring/nested ordering come from GRIB metadata.
 * Global regular latitude/longitude: dimensions come from GRIB metadata;
   south-to-north fields are flipped to a north-to-south layout.
-* Reduced Gaussian and supported unstructured grids: coordinates and bounds
-  come from predefined NetCDF files under ``GRID_DEFINITION_PATH`` (the same
-  filenames used by GSV).
 
-Each decoded selection must contain a single grid. Unsupported
-GRIB grids and grid-size mismatches raise an error. Unstructured fields remain
-flat; arbitrary structured or regional layouts are not reconstructed.
+Only these two grid families are supported. Unstructured, reduced Gaussian,
+rotated and other GRIB grid types raise an error, as do grid-size mismatches.
+Each decoded selection must contain a single grid. No external grid files or
+``GRID_DEFINITION_PATH`` setting are required for z3fdb coordinate reconstruction.
 The field data remains Dask-backed. Identifying the grid retrieves one GRIB
 message eagerly, without decoding its field values in Python.
 

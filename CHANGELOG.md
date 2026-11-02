@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
-- Decode z3fdb grid coordinates from GRIB using ecCodes and pyfdb for HEALPix, global lat/lon and supported unstructured grids, without requiring GSV; remove cell-count guessing and dependence on catalog grid names.
+- Decode z3fdb grid coordinates from GRIB using ecCodes and pyfdb for HEALPix and global regular lat/lon, without requiring GSV or external grid files; reject other grid types and remove cell-count guessing and dependence on catalog grid names.
 - Preserve z3fdb source metadata so repeated reads retain the configured HPC/bridge FDB paths and grid (#3316).
 - Fix z3fdb level subsets without physical-level metadata and normalize scalar levels, preserving requested level order across HPC/bridge periods (#3316).
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)

@@ -562,35 +562,6 @@ def test_z3fdb_lonlat_scan_order(monkeypatch, grib_message, south_first):
     assert "original" in result.attrs["history"]
 
 
-@pytest.mark.parametrize("grid_type", ["reduced_gg", "unstructured_grid"])
-def test_z3fdb_unstructured_coordinates(monkeypatch, grib_message, grid_type):
-    """Read a supported mesh file and leave a HEALPix-sized unstructured field flat."""
-    stream = BytesIO(grib_message(grid_type))
-    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
-    grid = z3fdb_opener._read_grib_grid({"param": 130})
-    grid_data = xr.Dataset(
-        {
-            "lon": ("points", np.linspace(20, 40, 48), {"units": "degrees_east"}),
-            "lat": ("points", np.linspace(-10, 10, 48), {"units": "degrees_north"}),
-            "lon_bnds": (("points", "vertices"), np.zeros((48, 4))),
-            "lat_bnds": (("points", "vertices"), np.zeros((48, 4))),
-        }
-    )
-    monkeypatch.setenv("GRID_DEFINITION_PATH", "/grids")
-    monkeypatch.setitem(z3fdb_opener.GRID_FILES, grid["gridName"], "mesh.nc")
-    open_grid = Mock(return_value=Mock(to_dask=Mock(return_value=grid_data)))
-    monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", open_grid)
-    values = da.arange(48, chunks=48)[None, :]
-    result = z3fdb_opener.add_coordinates(xr.Dataset({"test": (("time", "cell"), values)}), grid)
-    assert result.test.data is values
-    assert result.lon.dims == result.lat.dims == ("cell",)
-    np.testing.assert_array_equal(result.lon, grid_data.lon)
-    np.testing.assert_array_equal(result.lat, grid_data.lat)
-    assert result.lon.attrs["bounds"] == "lon_bounds"
-    open_grid.assert_called_once_with("/grids/mesh.nc")
-    result.close()
-
-
 @pytest.mark.parametrize("config", [None, "/fdb.yaml"])
 def test_z3fdb_grid_sample_config(monkeypatch, grib_message, config):
     """The metadata probe uses the selected FDB and a single field from a ranged request."""
@@ -613,12 +584,16 @@ def test_z3fdb_grid_sample_config(monkeypatch, grib_message, config):
     assert stream.closed
 
 
-@pytest.mark.parametrize("unsupported", [False, True], ids=["no-data", "unsupported-grid"])
-def test_z3fdb_grid_probe_errors(monkeypatch, grib_message, unsupported):
+@pytest.mark.parametrize(
+    "grid_type",
+    [None, "rotated_ll", "reduced_gg", "unstructured_grid"],
+    ids=["no-data", "rotated", "reduced-gaussian", "unstructured"],
+)
+def test_z3fdb_grid_probe_errors(monkeypatch, grib_message, grid_type):
     """Reject missing/unsupported grids and release native handles on failure."""
-    stream = BytesIO(grib_message("rotated_ll") if unsupported else b"")
+    stream = BytesIO(grib_message(grid_type) if grid_type else b"")
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
-    with pytest.raises(ValueError if unsupported else NoDataError):
+    with pytest.raises(ValueError if grid_type else NoDataError, match="only HEALPix" if grid_type else "No GRIB"):
         z3fdb_opener._read_grib_grid({"param": 130})
     assert stream.closed
 
@@ -631,29 +606,13 @@ def test_z3fdb_grid_size_mismatch():
         )
 
 
-@pytest.mark.parametrize("problem", ["unknown", "missing-root", "bad-shape"])
-def test_z3fdb_invalid_unstructured_grid(monkeypatch, problem):
-    """Reject unknown meshes, missing paths and incompatible grid files."""
-    data = xr.Dataset(coords={"cell": np.arange(48)})
-    grid = {"grid_type": "unstructured_grid", "gridName": "unknown" if problem == "unknown" else "O80"}
-    monkeypatch.delenv("GRID_DEFINITION_PATH", raising=False)
-    if problem == "bad-shape":
-        monkeypatch.setenv("GRID_DEFINITION_PATH", "/grids")
-        mesh = xr.Dataset({"lon": ("points", [0]), "lon_bnds": (("points", "vertices"), [[0, 0, 0, 0]])})
-        close = Mock()
-        mesh.set_close(close)
-        monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", Mock(return_value=Mock(to_dask=Mock(return_value=mesh))))
-    with pytest.raises(ValueError):
-        z3fdb_opener.add_coordinates(data, grid)
-    if problem == "bad-shape":
-        close.assert_called_once()
-
-
 def test_z3fdb_without_gsv():
     """Import and use the z3fdb coordinate path when GSV cannot be imported."""
     code = """
+import os
 import sys
 sys.modules['gsv'] = None
+os.environ.pop('GRID_DEFINITION_PATH', None)
 import xarray as xr
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 assert z3fdb_opener.z3fdb_available

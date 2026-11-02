@@ -9,7 +9,6 @@ from contextlib import closing
 
 import astropy_healpix
 import dask.array as da
-import intake
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -47,22 +46,6 @@ MARS_KEYS = [
     "year",
     "month",
 ]
-
-GRID_FILES = {
-    "O80": "std_tco79_grid.nc",
-    "O400": "std_tco399_grid.nc",
-    "O1280": "std_tco1279_grid.nc",
-    "O2560": "std_tco2559_grid.nc",
-    "eORCA1_T": "eORCA1_mesh_sfc_grid_T.nc",
-    "eORCA1_U": "eORCA1_mesh_sfc_grid_U.nc",
-    "eORCA1_V": "eORCA1_mesh_sfc_grid_V.nc",
-    "eORCA12_T": "eORCA12_mesh_sfc_grid_T.nc",
-    "eORCA12_U": "eORCA12_mesh_sfc_grid_U.nc",
-    "eORCA12_V": "eORCA12_mesh_sfc_grid_V.nc",
-    "eORCA025_T": "eORCA025_mesh_sfc_grid_T.nc",
-    "eORCA025_U": "eORCA025_mesh_sfc_grid_U.nc",
-    "eORCA025_V": "eORCA025_mesh_sfc_grid_V.nc",
-}
 
 logger = log_configure(log_level="WARNING", log_name="z3fdb_opener")
 
@@ -411,51 +394,14 @@ def _read_grib_grid(mars, config=None):
     keys = {
         "healpix": ("Nside", "ordering"),
         "regular_ll": ("Ni", "Nj", "latitudeOfFirstGridPoint"),
-        "reduced_gg": ("gridName",),
-        "unstructured_grid": ("gridName",),
     }
     if grid_type not in keys:
-        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}")
+        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and global regular lon/lat are supported.")
     return {"grid_type": grid_type, **{key: message[key] for key in keys[grid_type]}}
 
 
-def _add_unstructured_coordinates(ds, grid_name):
-    """Attach supported mesh coordinates and bounds in their stored cell order."""
-    if grid_name not in GRID_FILES:
-        raise ValueError(f"Unsupported z3fdb unstructured grid: {grid_name}")
-    root = os.environ.get("GRID_DEFINITION_PATH")
-    if not root:
-        raise ValueError("GRID_DEFINITION_PATH must point to the unstructured grid files.")
-    grid_data = intake.open_netcdf(os.path.join(root, GRID_FILES[grid_name])).to_dask()
-    try:
-        coordinates = {}
-        for name, standard_name, units in [("lon", "longitude", "degrees_east"), ("lat", "latitude", "degrees_north")]:
-            coord, bounds = grid_data[name], grid_data[f"{name}_bnds"]
-            if coord.shape != (ds.sizes["cell"],) or bounds.shape != (ds.sizes["cell"], 4):
-                raise ValueError("Grid coordinate file does not match the z3fdb cell dimension and four-corner bounds.")
-            coordinates[name] = xr.Variable(
-                ("cell",),
-                coord.data,
-                attrs={
-                    **coord.attrs,
-                    "standard_name": standard_name,
-                    "units": coord.attrs.get("units", units),
-                    "bounds": f"{name}_bounds",
-                },
-            )
-            coordinates[f"{name}_bounds"] = xr.Variable(
-                ("cell", "cell_corners"), bounds.data, attrs={"units": coord.attrs.get("units", units)}
-            )
-        ds = ds.assign_coords(coordinates)
-    except Exception:
-        grid_data.close()
-        raise
-    ds.set_close(grid_data.close)
-    return ds
-
-
 def add_coordinates(ds, grid, levunits=None):
-    """Attach coordinates from a decoded HEALPix, global lat/lon or unstructured grid.
+    """Attach coordinates from a decoded HEALPix or global regular lon/lat grid.
 
     Args:
         ds (xr.Dataset): Dataset with a flat cell dimension in GRIB value order.
@@ -511,10 +457,8 @@ def add_coordinates(ds, grid, levunits=None):
                 lat=("lat", np.linspace(90, -90, nj), {"standard_name": "latitude", "units": "degrees_north"}),
             )
         )
-    elif grid_type in ("reduced_gg", "unstructured_grid"):
-        ds = _add_unstructured_coordinates(ds, grid["gridName"])
     else:
-        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}")
+        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and global regular lon/lat are supported.")
     log_history(ds, f"Spatial coordinates decoded from GRIB grid {grid}")
     return ds
 
