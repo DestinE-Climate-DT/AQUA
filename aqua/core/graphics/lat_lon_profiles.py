@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
 from aqua.core.util import coord_names, to_list
 
@@ -16,7 +17,7 @@ def plot_lat_lon_profiles(
     style: str | None = None,
     fig: plt.Figure | None = None,
     ax: plt.Axes | None = None,
-    figsize: tuple = (10, 5),
+    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
     title: str | None = None,
     loglevel: str = "WARNING",
 ):
@@ -103,7 +104,7 @@ def plot_lat_lon_profiles(
 
     # Finalize plot
     if data_labels:
-        ax.legend(fontsize="small")
+        ax.legend()
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     # Set x-label based on the first valid coordinate found
@@ -118,6 +119,6 @@ def plot_lat_lon_profiles(
 
     # Set title if provided
     if title:
-        ax.set_title(title, fontsize=13)
+        ax.set_title(title)
 
     return fig, ax

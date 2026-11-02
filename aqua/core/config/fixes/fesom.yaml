@@ -1,0 +1,41 @@
+# FESOM fixes.
+
+fixer_name:
+  # Native FESOM output (ci catalog), parent of the FESOM test fixes
+  FESOM-default:
+    convention: eccodes
+    data_model: false
+    delete:
+      - w
+      - u
+      - v
+    vars:
+      vdf:
+        source: Kv
+        grib: true
+      mlotst125:
+        source: MLD2
+        src_units: m
+        grib: true
+      wo:
+        derived: w
+        grib: 262507
+      uoe:
+        derived: u
+      von:
+        derived: v
+
+  # ClimateDT phase1/phase2, nextGEMS cycle3/4
+  fesom-destine-v1:
+    convention: eccodes
+    data_model: false
+    vars:
+      # avg_tos and avg_thetao are written in degC with K as unit name
+      tos:
+        src_units: degC
+      thetao:
+        src_units: degC
+    coords:
+      level:
+        source: level
+        tgt_units: "m"

@@ -1,11 +1,15 @@
 """Tests for z3fdb_opener module in AQUA, specifically focusing on _build_mars_requests."""
 
 import pickle
+from unittest.mock import Mock
 
+import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
+import zarr
 
+from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
 
 CMIP6_MARS_REQ = {
@@ -28,6 +32,60 @@ CMIP6_MARS_REQ = {
 FDB_HOME = "/app"
 
 pytestmark = pytest.mark.aqua
+
+
+@pytest.mark.parametrize("extra_keys", [{}, {"expid": "o031", "unknown": "ignored"}], ids=["valid-keys", "extra-keys"])
+@pytest.mark.parametrize(
+    "startdate, enddate, expected_request",
+    [
+        (
+            "2020-01-01T00:00:00",
+            "2020-01-01T01:00:00",
+            "param=167/168,levtype=sfc,date=20200101,time=0000/to/0100/by/1",
+        ),
+        (
+            "2020-01-01T23:00:00",
+            "2020-01-02T00:00:00",
+            "param=167/168,levtype=sfc,date=20200101,time=2300/to/2300/by/1; "
+            "param=167/168,levtype=sfc,date=20200102,time=0000/to/0000/by/1",
+        ),
+    ],
+    ids=["single-request", "multiple-requests"],
+)
+def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, expected_request, extra_keys):
+    """Only valid MARS keys reach FDB, serialization and NetCDF metadata."""
+    # Replace FDB access with an in-memory Zarr array so this runs without an FDB installation.
+    zarr_array = zarr.zeros(shape=(2, 2, 12), chunks=(1, 1, 12), dtype="float32")
+    monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
+    builder = Mock()
+    monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
+    monkeypatch.setattr(z3fdb_opener, "ExtractorType", Mock(), raising=False)
+    monkeypatch.setattr(z3fdb_opener.zarr, "open_array", Mock(return_value=zarr_array))
+
+    request = {"param": [167, 168], "levtype": "sfc", "expver": "0001", **extra_keys}
+    original_request = request.copy()
+    data = z3fdb_opener.open_z3fdb(
+        request=request,
+        startdate=startdate,
+        enddate=enddate,
+        freq="h",
+    )
+    assert request == original_request
+    requests = [call.args[0] for call in builder.add_part.call_args_list]
+    assert all("expid" not in req and "unknown" not in req and req["expver"] == "0001" for req in requests)
+    assert builder.build.return_value._mars == requests
+    expected_request = expected_request.replace("levtype=sfc,", "levtype=sfc,expver=0001,")
+    assert isinstance(data["var167"].data, da.Array)
+    data.attrs["history"] = "z3fdb NetCDF regression test"
+    sliced = data.isel(time=0)
+    output = tmp_path / "z3fdb.nc"
+    sliced.to_netcdf(output)
+
+    with xr.open_dataset(output) as restored:
+        assert restored.attrs["mars_request"] == expected_request
+        assert restored.attrs["history"] == data.attrs["history"]
+        xr.testing.assert_equal(restored, sliced)
 
 
 def test_build_mars_requests_years_and_dates_parsing():

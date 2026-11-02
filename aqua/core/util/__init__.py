@@ -1,5 +1,6 @@
 """Utilities module"""
 
+from .cdo import get_cdo, run_cdo
 from .catalog_entry import replace_intake_vars, replace_urlpath_jinja, replace_urlpath_wildcard
 from .cli_util import template_parse_arguments
 from .eccodes import get_eccodes_attr
@@ -29,6 +30,7 @@ from aqua.core.default import DEFAULT_TIME_UNIT
 from .zarr import create_zarr_reference
 
 __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wildcard',
+           'get_cdo', 'run_cdo',
            'template_parse_arguments',
            'get_eccodes_attr',
            'RegridderMetadata',

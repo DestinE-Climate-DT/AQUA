@@ -12,6 +12,9 @@ AQUA supports in the available graphical functions the matplotlib styles.
 A default for the plot appearance is present in the ``aqua.mplstyle`` file (in ``aqua/core/config/styles``),
 and this includes all the default settings for the plot functions.
 This file can be modified to change the default appearance of the plots.
+Font sizes (titles, axis labels, ticks, legends and figure titles) are set only there:
+they are relative to ``font.size``, so changing it rescales all the text of the figures.
+The default size of the horizontal figures is ``DEFAULT_FIGSIZE_HORIZONTAL`` in ``aqua.core.default``.
 
 
 Other styles can be created following the `matplotlib guidelines <https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style>`_.

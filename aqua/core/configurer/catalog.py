@@ -50,7 +50,7 @@ class ConfigCatalog:
 
         # set the catalog as the first available and get all configurations
         if not self.catalog_available:
-            self.logger.warning("No available catalogs found")
+            self.logger.warning('No available catalogs found. Please run "aqua add CATALOG_NAME" to install one')
             self.catalog = None
             self.catalog_file = None
             self.machine_file = None

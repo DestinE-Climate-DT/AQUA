@@ -88,7 +88,7 @@ class TimStat:
         if resample_freq is None:
             exclude_incomplete = False
             center_time = False
-            time_bnds = False
+            time_bounds = False
 
         if "time" not in data.dims:
             raise ValueError(f"Time dimension not found in the input data. Cannot compute tim{stat} statistic")
@@ -167,6 +167,8 @@ class TimStat:
         if time_bounds:
             resampled = data.time.resample(time=resample_freq)
             time_bnds = xr.concat([resampled.min(), resampled.max()], dim="bnds", coords="different").transpose()
+            if exclude_incomplete:
+                time_bnds = time_bnds.where(boolean_mask, drop=True)
             time_bnds["time"] = out.time
             time_bnds.name = "time_bnds"
             out = xr.merge([out, time_bnds])

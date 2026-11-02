@@ -9,6 +9,7 @@ channels:
   - nodefaults
 dependencies:
   - python>=3.12,<3.15
-  - cdo>=2.5.0,<2.6.1
-  - eccodes>=2.41.0,<2.50
+  # smmregrid brings CDO on Linux; on macOS install CDO with Homebrew (brew install cdo)
+  - smmregrid==0.2.0
+  - eccodes>=2.50.0,<2.51 # keep aligned with eccodes/eccodeslib in pyproject.toml
   - pip

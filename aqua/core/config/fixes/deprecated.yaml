@@ -1,0 +1,37 @@
+# Deprecated fixes.
+# Not used by any catalog of Climate-DT-catalog, by catgen or by the test suite
+# as of October 2026. Still loaded for backward compatibility:
+# candidates for removal in a future release.
+
+fixer_name:
+  # IFS-NEMO historical-1990-dev-lowres (lumi-phase1)
+  ifs-nemo-destine-v1-nan-lowres:
+    parent: ifs-destine-v1
+    convention: eccodes
+    nanfirst_startdate: 1990-01-01
+    nanfirst_enddate: 2050-01-01
+
+  # IFS-NEMO phase2 freeze: avg_tprate and tp both in the output, only tp is correct
+  climatedt-phase2-IFS-NEMO-freeze:
+    convention: eccodes
+    deltat: 3600
+    vars:
+      tprate:
+        source: tp
+
+  # ERA5 hourly
+  ERA5-hourly-destine-v1:
+    convention: eccodes
+    delete:
+      - TSR
+      - TTR
+      - TP
+    vars:
+      tprate:
+        derived: TP*24
+        src_units: m/day
+
+  # PSC, identical to OSI-SAF-default
+  PSC-default:
+    convention: eccodes
+    data_model: false

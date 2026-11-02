@@ -38,3 +38,13 @@ axes.unicode_minus: False
 axes.prop_cycle: cycler('color', ["#1898e0", "#8bcd45", "#f89e13", "#d24493", "#00b2ed", "#dbe622", "#fb4c27", "#8f57bf", "#00bb62", "#f9c410", "#fb4865", "#645ccc"])
 figure.facecolor: fefeff
 savefig.facecolor: fefeff
+
+# Font sizes shared by all the AQUA figures.
+# Relative sizes scale with font.size, so changing it rescales all the text.
+font.size: 10
+axes.titlesize: large        # 12 pt
+axes.labelsize: medium       # 10 pt
+xtick.labelsize: medium      # 10 pt
+ytick.labelsize: medium      # 10 pt
+legend.fontsize: small       # 8.3 pt
+figure.titlesize: x-large    # 14.4 pt

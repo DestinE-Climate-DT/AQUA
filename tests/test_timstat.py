@@ -157,6 +157,27 @@ class TestTimmean:
         assert avg["time_bnds"].shape == (avg["2t"].shape[0], 2)
         assert np.all(avg["time_bnds"].isel(bnds=0) <= avg["time_bnds"].isel(bnds=1))
 
+    @pytest.mark.parametrize("center_time", [False, True])
+    @pytest.mark.parametrize("freq, expected_periods", [("monthly", 6), ("yearly", 0)])
+    def test_timmean_time_bounds_exclude_incomplete(self, reader, data_2t, center_time, freq, expected_periods):
+        """Bounds follow retained periods, including centered and empty outputs."""
+        series = data_2t.isel(lon=0, lat=0)
+        avg = reader.timmean(series, freq=freq, time_bounds=True, exclude_incomplete=True, center_time=center_time)
+
+        assert avg.sizes["time"] == expected_periods
+        assert avg["time_bnds"].shape == (expected_periods, 2)
+        assert "history" in avg.attrs
+        if expected_periods:
+            complete = series.sel(time=series.time.dt.month.isin(range(2, 8)))
+            assert avg["time_bnds"].isel(time=0, bnds=0) == complete.time[0]
+            assert avg["time_bnds"].isel(time=-1, bnds=1) == complete.time[-1]
+
+    def test_timmean_time_bounds_no_freq(self, reader, data_2t):
+        """Total means disable time bounds and other resampling-only options."""
+        avg = reader.timmean(data_2t, freq=None, time_bounds=True, center_time=True, exclude_incomplete=True)
+        assert "time" not in avg.dims
+        assert "time_bnds" not in avg
+
     def test_timmean_invalid_frequency(self, reader, data_2t):
         """Test for timmean method with an invalid frequency"""
         with pytest.raises(

@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from conftest import APPROX_REL, LOGLEVEL
+from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
 

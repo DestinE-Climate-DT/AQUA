@@ -17,10 +17,10 @@ def plot_vertical_lines(
     lev_max: Optional[float] = None,
     labels: Optional[list[str]] = None,
     ref_label: Optional[str] = None,
-    label_size: Optional[int] = 14,
-    axis_label_size: Optional[int] = 14,
+    label_size: Optional[int] = None,
+    axis_label_size: Optional[int] = None,
     title: Optional[str] = None,
-    title_size: Optional[int] = 18,
+    title_size: Optional[int] = None,
     style: Optional[str] = None,
     logscale: bool = False,
     invert_yaxis: bool = True,
@@ -42,10 +42,10 @@ def plot_vertical_lines(
         lev_max (float, optional): Maximum vertical level to plot.
         labels (list of str, optional): Labels for each DataArray.
         ref_label (str, optional): reference data label.
-        label_size (int, optional): Legend font size. Default is 14.
-        axis_label_size (int, optional): Axis label font size. Default is 14.
+        label_size (int, optional): Legend font size. Default is None (style legend size).
+        axis_label_size (int, optional): Axis label font size. Default is None (style label size).
         title (str, optional): Plot title.
-        title_size (int, optional): Title font size. Default is 16.
+        title_size (int, optional): Title font size. Default is None (style title size).
         style (str, optional): Plot style (default aqua style).
         logscale (bool, optional): Use log scale for y-axis if True.
         invert_yaxis (bool, optional): Invert y-axis if True (default True).
@@ -95,8 +95,8 @@ def plot_vertical_lines(
 
     ylabel = f"{lev_name} ({units_latex})" if units_latex else lev_name  # Replace 'units' with actual units if available
 
-    ax.set_ylabel(ylabel, fontsize=axis_label_size)
-    ax.set_xlabel(xlabel, fontsize=axis_label_size)
+    ax.set_ylabel(ylabel, fontsize=axis_label_size or plt.rcParams["axes.labelsize"])
+    ax.set_xlabel(xlabel, fontsize=axis_label_size or plt.rcParams["axes.labelsize"])
 
     for i, d in enumerate(data):
         mask = (d[lev_name] >= lev_min) & (d[lev_name] <= lev_max)
@@ -116,7 +116,7 @@ def plot_vertical_lines(
         ax.invert_yaxis()
 
     if title:
-        ax.set_title(title, fontsize=title_size)
+        ax.set_title(title, fontsize=title_size or plt.rcParams["axes.titlesize"])
 
     if return_fig:
         logger.debug("Returning figure and axes")

@@ -56,17 +56,23 @@ class Reader:
         engine=DEFAULT_ENGINE,
         url: str = None,
         stac_kwargs: dict | str = None,
+        collection=None,
+        item=None,
+        asset=None,
         **kwargs,
     ):
         """Initialize the Reader class to identify, retrieve, fix, and regrid climate data.
 
         Data access can be configured either via intake catalogs (specifying `model`, `exp`,
-        and `source`) or directly from local/remote files using `path`.
+        and `source`, or their synonyms `collection`, `item`, and `asset`) or directly from local/remote files using `path`.
 
         Args:
             model (str, optional): Model ID. Mandatory if `path` is not provided. Defaults to None.
+                `collection` can be used as a synonym.
             exp (str, optional): Experiment ID. Mandatory if `path` is not provided. Defaults to None.
+                `item` can be used as a synonym.
             source (str, optional): Source ID. Mandatory if `path` is not provided. Defaults to None.
+                `asset` can be used as a synonym.
             catalog (str, optional): Catalog name or path to search for the triplet. Defaults to None
                 (automatically searches installed catalogs).
             path (str, optional): Path or glob pattern for direct data access via xarray backend,
@@ -93,14 +99,17 @@ class Reader:
                 Defaults to None (uses catalog default).
             preproc (callable, optional): Preprocessing function to apply to the dataset upon retrieval.
                 Defaults to None.
-            engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope' or 'gsv'.
+            engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope', 'z3fdb' or 'gsv'.
                 Defaults to DEFAULT_ENGINE ('gsv').
-            url (str, optional): URL of the STAC catalog.
-                When provided, data access uses the Intake STAC backend.
-                Defaults to None.
-            stac_kwargs (dict or str, optional): Mapping selecting an asset from the STAC
-                catalog at `path`, for example ``{"collection": {"item": "asset"}}``.
-               Defaults to None.
+            url (str, optional): URL or path of a STAC JSON document (catalog, collection or item).
+                When provided, data access uses the pystac backend. Defaults to None.
+            stac_kwargs (dict or str, optional): Selection of an asset from the STAC object at `url`:
+                a single-branch nested mapping of child/item ids ending with the asset key,
+                e.g. ``{"collection": {"item": "asset"}}``, or just the asset key for an item.
+                Mandatory if `url` is provided. Defaults to None.
+            collection (str, optional): Synonym for `model` (e.g. in STAC catalogs). Defaults to None.
+            item (str, optional): Synonym for `exp` (e.g. in STAC catalogs). Defaults to None.
+            asset (str, optional): Synonym for `source` (e.g. in STAC catalogs). Defaults to None.
             **kwargs: Additional keyword arguments forwarded to the catalog entry or backend.
 
         Keyword Args:
@@ -115,10 +124,17 @@ class Reader:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=self.loglevel, log_name="Reader")
 
+        if model is not None and collection is not None and model != collection:
+            raise ValueError(f"Conflicting values provided for model ({model!r}) and collection ({collection!r})")
+        if exp is not None and item is not None and exp != item:
+            raise ValueError(f"Conflicting values provided for exp ({exp!r}) and item ({item!r})")
+        if source is not None and asset is not None and source != asset:
+            raise ValueError(f"Conflicting values provided for source ({source!r}) and asset ({asset!r})")
+
         # intake arguments
-        self.exp = exp
-        self.model = model
-        self.source = source
+        self.model = model if model is not None else collection
+        self.exp = exp if exp is not None else item
+        self.source = source if source is not None else asset
 
         # xarray native argument
         self.path = path
@@ -128,7 +144,9 @@ class Reader:
         self.stac_kwargs = stac_kwargs
 
         # Create regridder metadata for filename templating (supports both catalog and path-based backends)
-        self.regridder_metadata = RegridderMetadata.from_reader(model=model, exp=exp, source=source, path=path, **kwargs)
+        self.regridder_metadata = RegridderMetadata.from_reader(
+            model=self.model, exp=self.exp, source=self.source, path=path, **kwargs
+        )
         self.kwargs = kwargs
 
         # regridding
@@ -252,6 +270,33 @@ class Reader:
 
         self.trender = Trender(loglevel=self.loglevel)
         self.vertinterpolator = VertInterpolator(loglevel=self.loglevel)
+
+    @property
+    def collection(self):
+        """Synonym for model."""
+        return self.model
+
+    @collection.setter
+    def collection(self, value):
+        self.model = value
+
+    @property
+    def item(self):
+        """Synonym for exp."""
+        return self.exp
+
+    @item.setter
+    def item(self, value):
+        self.exp = value
+
+    @property
+    def asset(self):
+        """Synonym for source."""
+        return self.source
+
+    @asset.setter
+    def asset(self, value):
+        self.source = value
 
     def _configure_regridder(self, machine_paths, regrid=False, areas=False, rebuild=False):
         """

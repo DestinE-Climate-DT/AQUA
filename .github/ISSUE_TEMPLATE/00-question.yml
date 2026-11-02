@@ -2,7 +2,7 @@
 
 name: Question
 description: "Ask a question"
-labels: ["question"]
+labels: ["question :pinched_fingers:"]
 body:
   - type: markdown
     attributes:

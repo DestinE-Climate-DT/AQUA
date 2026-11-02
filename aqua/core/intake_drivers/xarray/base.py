@@ -1,6 +1,13 @@
 from intake.source import base
 
 
+def _merge_xarray_kwargs(xarray_kwargs, kwargs):
+    """Merge catalog options with source overrides, defaulting to lazy reads."""
+    options = {**(xarray_kwargs or {}), **kwargs}
+    options.setdefault("chunks", {})
+    return options
+
+
 class IntakeXarraySourceAdapter(base.DataSource):
     container = "xarray"
     name = "xarray"
@@ -25,6 +32,8 @@ class IntakeXarraySourceAdapter(base.DataSource):
         return self.reader.read()
 
     def __call__(self, *args, **kwargs):
+        if kwargs and getattr(self, "_entry", None) is not None:
+            return self._entry.get(**kwargs)
         return self
 
     get = __call__

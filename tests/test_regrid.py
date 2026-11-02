@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 import xarray as xr
-from conftest import APPROX_REL, LOGLEVEL
+from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader, Regridder
 from aqua.core.regridder.grid_dict_handler import GridDictHandler
@@ -116,7 +116,7 @@ class TestRegridder:
         assert len(src_area.lon) == 18
         assert len(src_area.lat) == 9
 
-        tgt_area = regridder.areas(tgt_grid_name="n32")
+        tgt_area = regridder.areas(tgt_grid_name="F32")
         assert len(tgt_area.lon) == 128
         assert len(tgt_area.lat) == 64
 
@@ -240,6 +240,75 @@ class TestRegridder:
         assert 0.32 <= ratio1 <= 0.36
         assert 0.50 <= ratio2 <= 0.54
         # assert 0.44 <= ratio2 <= 0.47
+
+    def test_skipna_nemo3d(self):
+        """
+        Test the 'skipna' grid path key on NEMO 3D: a single 2D weights matrix
+        reproduces the 3D-masked regridding
+        """
+        kwargs = dict(
+            model="NEMO", exp="test-eORCA1", regrid="r200", rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL
+        )
+        reader = Reader(source="short-3d", **kwargs)
+        ref = reader.regrid(reader.retrieve(var="avg_so"))
+
+        reader = Reader(source="short-3d-skipna", **kwargs)
+        assert reader.regridder.skipna
+        assert list(reader.regridder.smmregridder) == ["skipna"]
+        filename = reader.regridder.filenames.weights_filename(
+            "r200", reader.regridder.src_grid_path, "ycon", "skipna", reader.regridder_metadata
+        )
+        assert filename.endswith("_lskipna.nc")
+
+        rgd = reader.regrid(reader.retrieve(var="avg_so"))
+        assert len(rgd.lon) == 180
+        assert len(rgd.lat) == 90
+        for level in [0, 6]:
+            skipna, masked = rgd.avg_so.isel(level=level), ref.avg_so.isel(level=level)
+            # na_thres 0.5 as without skipna: same land fraction, up to a few cells
+            assert abs(skipna.isnull().mean() - masked.isnull().mean()) < 1e-3
+            both = skipna.notnull() & masked.notnull()
+            xr.testing.assert_allclose(skipna.where(both), masked.where(both))
+        # the mask still varies with the level
+        assert rgd.avg_so.isel(level=6).isnull().sum() > rgd.avg_so.isel(level=0).isnull().sum()
+
+    def test_skipna_combined_keys(self):
+        """The 'skipna' path key cannot be combined with other keys"""
+        cfg = {"grids": {"mixed": {"path": {"2d": "r100x50", "skipna": "r100x50"}}}}
+        with pytest.raises(ValueError, match="cannot be combined"):
+            Regridder(cfg, src_grid_name="mixed", loglevel=LOGLEVEL)
+
+    def test_skipna_from_data(self):
+        """The 'data' path value takes the grid from the dataset: masks varying in time are handled"""
+        cfg = {"grids": {"lonlat-skipna": {"path": {"skipna": "data"}, "space_coord": ["lon", "lat"]}}}
+        gdh = GridDictHandler(cfg)
+        assert gdh.normalize_grid_dict("lonlat-skipna")["path"] == {"skipna": "data"}
+        assert GridDictHandler({"grids": {"d": {"path": "data"}}}).normalize_grid_dict("d")["path"] == {"2d": "data"}
+
+        data = np.full((3, 18, 36), 280.0)
+        data[1, 2:6, 4:10] = np.nan  # the mask changes with time
+        da = xr.DataArray(
+            data,
+            coords={"time": np.arange(3), "lat": np.arange(-85, 90, 10.0), "lon": np.arange(5, 360, 10.0)},
+            dims=("time", "lat", "lon"),
+            name="temp",
+        )
+        da.lat.attrs.update({"standard_name": "latitude", "units": "degrees_north"})
+        da.lon.attrs.update({"standard_name": "longitude", "units": "degrees_east"})
+
+        # without the dataset the grid is not available
+        assert Regridder(cfg, src_grid_name="lonlat-skipna", loglevel=LOGLEVEL).error
+
+        regridder = Regridder(cfg, src_grid_name="lonlat-skipna", data=da.isel(time=0), loglevel=LOGLEVEL)
+        assert regridder.skipna and not regridder.error
+        assert cfg["grids"]["lonlat-skipna"]["path"] == {"skipna": "data"}  # configuration untouched
+        regridder.weights(tgt_grid_name="r18x9", regrid_method="ycon", rebuild=True)
+        assert list(regridder.smmregridder) == ["skipna"]
+        out = regridder.regrid(da)
+        assert out.sizes["lon"] == 18 and out.sizes["lat"] == 9
+        # constant field: any mask gives the same value, no garbage
+        assert float(out.min()) == pytest.approx(280.0) and float(out.max()) == pytest.approx(280.0)
+        assert out.isel(time=1).notnull().sum() > 0.8 * out.isel(time=1).size
 
     def test_levels_and_regrid(self):
         """

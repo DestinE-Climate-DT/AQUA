@@ -1,14 +1,15 @@
 """This module base class for grid type builders and its extensions."""
 
 import os
+from tempfile import TemporaryDirectory
 from typing import Dict, Optional
 
 import numpy as np
 import xarray as xr
-from cdo import Cdo
 from smmregrid import CdoGenerate, GridType, Regridder
 
 from aqua.core.logger import log_configure
+from aqua.core.util.cdo import run_cdo
 
 
 class BaseGridBuilder:
@@ -20,7 +21,7 @@ class BaseGridBuilder:
     requires_bounds = False
     bounds_error_message = "Data has no bounds, cannot create grid"
     logger_name = "BaseGridBuilder"
-    CDOZIP = "-f nc4 -z zip"
+    CDOZIP = ["-O", "-f", "nc4", "-z", "zip"]
 
     def __init__(
         self,
@@ -47,7 +48,6 @@ class BaseGridBuilder:
         self.model_name = model_name
         self.grid_name = grid_name
         self.logger = log_configure(log_level=loglevel, log_name=self.logger_name)
-        self.cdo = Cdo()
 
     def clean_attributes(self, data: xr.Dataset) -> xr.Dataset:
         """
@@ -247,8 +247,11 @@ class BaseGridBuilder:
             if os.path.exists(filename):
                 data = xr.open_dataset(filename)
             else:
-                # HACK: temporary remove cdo_options since it conflicts with pyCDO calls
-                data = self.cdo.const(f"1,{filename}", returnXDataset=True)
+                # CDO grid string (e.g. r180x90): build a constant field on it
+                with TemporaryDirectory() as tmpdir:
+                    const_file = os.path.join(tmpdir, "const.nc")
+                    run_cdo(["-O", "-f", "nc4", f"const,1,{filename}", const_file])
+                    data = xr.load_dataset(const_file)
             regridder.regrid(data)
             self.logger.info(
                 "Grid %s regridded successfully for %s!!! This grid file is approved for AQUA, fly me to the moon!",
@@ -271,7 +274,7 @@ class BaseGridBuilder:
         """
         if metadata.get("cdogrid"):
             self.logger.info("Writing grid file to %s with CDO grid %s", output_file, metadata["cdogrid"])
-            self.cdo.setgrid(metadata["cdogrid"], input=input_file, output=output_file, options=self.CDOZIP)
+            run_cdo([*self.CDOZIP, f"setgrid,{metadata['cdogrid']}", input_file, output_file])
         else:
             self.logger.info("Writing grid file to %s", output_file)
-            self.cdo.copy(input=input_file, output=output_file, options=self.CDOZIP)
+            run_cdo([*self.CDOZIP, "copy", input_file, output_file])

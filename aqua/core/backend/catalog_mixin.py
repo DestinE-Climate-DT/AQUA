@@ -69,7 +69,37 @@ class CatalogMixin:
 
         # HACK for intake2 following https://github.com/intake/intake-xarray/issues/150
         # Rebuild esmcat with the filtered (and possibly realization-formatted) kwargs.
-        self.esmcat = self.expcat._entries[self.source](**self.kwargs)
+        if hasattr(self.expcat, "_entries") and self.source in self.expcat._entries:
+            self.esmcat = self.expcat._entries[self.source](**self.kwargs)
+        else:
+            self.esmcat = self.expcat[self.source](**self.kwargs)
+
+    @property
+    def collection(self):
+        """Synonym for model."""
+        return self.model
+
+    @collection.setter
+    def collection(self, value):
+        self.model = value
+
+    @property
+    def item(self):
+        """Synonym for exp."""
+        return self.exp
+
+    @item.setter
+    def item(self, value):
+        self.exp = value
+
+    @property
+    def asset(self):
+        """Synonym for source."""
+        return self.source
+
+    @asset.setter
+    def asset(self, value):
+        self.source = value
 
     @property
     def intake_user_parameters(self):

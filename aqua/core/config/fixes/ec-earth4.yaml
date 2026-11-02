@@ -1,5 +1,7 @@
+# EC-Earth4 fixes (CMOR-like output from XIOS).
+
 fixer_name:
-  # IFS fixes
+  # IFS atmosphere
   ec-earth4-ifs:
     convention: eccodes
     coords:
@@ -19,52 +21,74 @@ fixer_name:
       - hfss
       - evspsbl
     vars:
-      # these are standard CMOR variables but they require a sign change
+      # CMOR variables requiring a sign change
       tnswrf:
         derived: rsdt-rsut
         grib: 260671
       tnlwrf:
         derived: -rlut
         grib: 260672
-      slhtf: # Surface latent heat net flux
-        derived: -hfls # cmor
+      slhtf:  # surface latent heat net flux
+        derived: -hfls
         grib: 260002
-      ishf: # Surface sensible heat net flux
-        derived: -hfss # cmor
+      ishf:  # surface sensible heat net flux
+        derived: -hfss
         grib: 231
-      ie: # Evaporation or moisture flux
+      ie:  # evaporation or moisture flux
         derived: -evspsbl
         grib: 232
-      # these are not standard CMOR variables
-      snlwrf: # Surface net long-wave radiation flux
+      # Non-CMOR variables
+      snlwrf:  # surface net long-wave radiation flux
         source: rlns
         grib: 260099
-      snswrf: # Surface net short-wave radiation flux
+      snswrf:  # surface net short-wave radiation flux
         source: rsns
         grib: 260089
-      tnlwrfcs: # Top net long-wave radiation flux clear sky
+      tnlwrfcs:  # top net long-wave radiation flux, clear sky
         source: rlntcs
         grib: 260675
-      # tnswrf: # Top net short-wave radiation flux
-      #  source: rsnt
-      #  grib: 260671
-      tnswrfcs: # Top net short-wave radiation flux clear sky
+      tnswrfcs:  # top net short-wave radiation flux, clear sky
         source: rsntcs
         grib: 260674
-      tciw: # Total column vertically-integrated cloud ice water
+      tciw:  # total column cloud ice water
         source: iwp
         grib: 79
-      hcc: # High cloud cover
+      hcc:  # high cloud cover
         source: clh
         grib: 3075
-      lcc: # Low cloud cover
+      lcc:  # low cloud cover
         source: cll
         grib: 3073
-      mcc: # Medium cloud cover
+      mcc:  # medium cloud cover
         source: clm
         grib: 3074
 
-  # NEMO fixes
+  # NEMO ocean
+  ec-earth4-nemo:
+    convention: eccodes
+    dims:
+      time:
+        source: time_counter
+      level:
+        source: deptht
+      x:
+        source: x_grid_T
+      y:
+        source: y_grid_T
+    coords:
+      time:
+        source: time_counter
+      level:
+        source: deptht
+      lat:
+        source: nav_lat_grid_T
+      lon:
+        source: nav_lon_grid_T
+    vars:  # placeholder, see issue #1127
+      dummy:
+        source: not-existing
+
+  # NEMO sea ice (SI3)
   ec-earth4-nemo-ice:
     convention: eccodes
     coords:
@@ -81,27 +105,3 @@ fixer_name:
         source: sivolu
       sithick:
         source: sithic
-
-  ec-earth4-nemo:
-    convention: eccodes
-    dims:
-      time:
-        source: time_counter
-      level:
-        source: deptht
-      x:
-        source: x_grid_T
-      y:
-        source: y_grid_T
-    vars: # placeholder (see issue #1127)
-      dummy:
-        source: not-existing
-    coords:
-      time:
-        source: time_counter
-      level:
-        source: deptht
-      lat:
-        source: nav_lat_grid_T
-      lon:
-        source: nav_lon_grid_T

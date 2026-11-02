@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from conftest import LOGLEVEL
+from utils_tests import LOGLEVEL
 
 from aqua.core.catgen import AquaFDBGenerator, get_nested
 from aqua.core.console.catgen import catgen_execute
@@ -148,6 +148,32 @@ def _load_generated_sources(config):
     return load_yaml(str(entry_file))
 
 
+@pytest.mark.catgen
+@pytest.mark.parametrize("stream", ["clte", "clmn"])
+@pytest.mark.parametrize("num_of_realizations", [1, 3])
+def test_catgen_expid_metadata(tmp_path, stream, num_of_realizations):
+    """Keep the Autosubmit ID in source metadata rather than the FDB request."""
+    config = _prepare_config(
+        Path("tests/catgen/config-test-catgen.j2"), "IFS-NEMO-5km", "full", "production", num_of_realizations, tmp_path
+    )
+    definitions = {
+        **config,
+        "source": "test-source",
+        "model_base": "IFS-NEMO",
+        "stream": stream,
+        "param": 167,
+        "variables": [167],
+        "levtype": "sfc",
+        "grid": "hpz10-nested",
+        **AquaFDBGenerator.get_time("monthly" if stream == "clmn" else "hourly", "sfc"),
+    }
+    source = load_yaml("aqua/core/config/catgen/catalog_entry.j2", definitions=definitions, catgen=True)["test-source"]
+
+    assert source["metadata"]["expid"] == config["expid"]
+    assert "expid" not in source["args"]["request"]
+    assert source["args"]["request"]["expver"] == config["expver"]
+
+
 @pytest.mark.parametrize(
     ("model,kind,reso,nsources,nocelevels,ensemble"),
     [
@@ -165,6 +191,10 @@ def test_catgen_portfolios(tmp_path, model, kind, reso, nsources, nocelevels, en
 
     # Check number of sources
     assert len(sources["sources"]) == nsources
+
+    for source in sources["sources"].values():
+        assert source["metadata"]["expid"] == "test"
+        assert "expid" not in source["args"]["request"]
 
     # Check vertical levels based on portfolio and model
     if kind == "minimal":

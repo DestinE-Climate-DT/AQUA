@@ -1,0 +1,179 @@
+# IFS fixes (IFS-NEMO and IFS-FESOM atmosphere).
+
+fixer_name:
+  # ClimateDT phase1/phase2: hourly output, first step of cumulated variables set to NaN
+  ifs-destine-v1:
+    convention: eccodes
+    deltat: 3600
+    vars:
+      tprate:
+        nanfirst: true
+      ie:
+        src_units: m
+        nanfirst: true
+      tsrwe:
+        src_units: m
+        nanfirst: true
+      slhtf:
+        nanfirst: true
+      ishf:
+        nanfirst: true
+      snswrf:
+        nanfirst: true
+      snlwrf:
+        nanfirst: true
+      sdlwrf:
+        nanfirst: true
+      sdswrf:
+        nanfirst: true
+      tnswrf:
+        nanfirst: true
+      tnlwrf:
+        nanfirst: true
+      tdswrf:
+        nanfirst: true
+      iews:
+        nanfirst: true
+      inss:
+        nanfirst: true
+      surfror:
+        nanfirst: true
+      ssurfror:
+        nanfirst: true
+
+  # Variants of ifs-destine-v1 setting to NaN the first step of each month
+  # for cumulated variables, between nanfirst_startdate and nanfirst_enddate (exclusive)
+  ifs-nemo-destine-v1-nan:  # IFS-NEMO historical-1990
+    parent: ifs-destine-v1
+    convention: eccodes
+    nanfirst_startdate: 1990-01-01
+    nanfirst_enddate: 1999-10-01
+
+  ifs-fesom-destine-v1-nan:  # IFS-FESOM historical-1990
+    parent: ifs-destine-v1
+    convention: eccodes
+    nanfirst_startdate: 1990-01-01
+    nanfirst_enddate: 2020-01-01
+
+  # ClimateDT phase2 monthly and reduced output
+  ifs-nemo-destine-v1-monthly:
+    convention: eccodes
+    vars:
+      ie:
+        src_units: m
+      tsrwe:
+        src_units: m
+
+  ifs-nemo-destine-v2-monthly:
+    parent: ifs-nemo-destine-v1-monthly
+    convention: eccodes
+    deltat: monthly
+
+  ifs-nemo-reduced-output-monthly-v1:
+    parent: ifs-destine-v1
+    convention: eccodes
+    data_model: false
+    vars:
+      tos:
+        src_units: degC
+      thetao:
+        src_units: degC
+
+  ifs-nemo-reduced-output-monthly-v2:
+    parent: ifs-destine-v1
+    convention: eccodes
+    deltat: monthly
+    vars:
+      tprate:
+        src_units: m
+
+  ifs-fesom-reduced-v2:
+    parent: ifs-destine-v1
+    convention: eccodes
+    deltat: monthly
+
+  ifs-ecmwf_reduced-v1:
+    convention: eccodes
+    deltat: 3600
+    delete: [tp]
+
+  # nextGEMS cycle3: cumulated output to be decumulated
+  ifs-nextgems:
+    convention: eccodes
+    deltat: 3600
+    jump: month
+    vars:
+      tprate:
+        decumulate: true
+        src_units: m
+      cpr:
+        decumulate: true
+        src_units: m
+      lsprate:
+        decumulate: true
+        src_units: m
+      ie:
+        decumulate: true
+        src_units: m
+      tsrwe:
+        decumulate: true
+        src_units: m
+      slhtf:
+        decumulate: true
+      ishf:
+        decumulate: true
+      snswrf:
+        decumulate: true
+      sdswrf:
+        decumulate: true
+      snlwrf:
+        decumulate: true
+      sdlwrf:
+        decumulate: true
+      tnswrf:
+        decumulate: true
+      tnlwrf:
+        decumulate: true
+      var172045:  # variable without short name, identified by paramId
+        source: smlt
+        grib: true
+        decumulate: true
+      iews:
+        decumulate: true
+      inss:
+        decumulate: true
+      surfror:  # requires a recent eccodes version
+        decumulate: true
+      lcc:
+        src_units: frac
+
+  # nextGEMS cycle3: MultIO output, already decumulated and monthly averaged
+  ifs-multio-cycle3:
+    convention: eccodes
+    vars:
+      tprate:
+        src_units: m s**-1
+      cprea:
+        src_units: m s**-1
+      lsprate:
+        src_units: m s**-1
+      ie:
+        src_units: m s**-1
+      tsrwe:
+        src_units: m s**-1
+      slhtf:
+        src_units: W/m2
+      ishf:
+        src_units: W/m2
+      snswrf:
+        src_units: W/m2
+      sdswrf:
+        src_units: W/m2
+      snlwrf:
+        src_units: W/m2
+      sdlwrf:
+        src_units: W/m2
+      tnswrf:
+        src_units: W/m2
+      tnlwrf:
+        src_units: W/m2

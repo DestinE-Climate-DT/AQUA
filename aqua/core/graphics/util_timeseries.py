@@ -5,6 +5,8 @@ import xarray as xr
 
 from aqua.core.util import to_list, unit_to_latex
 
+ENSEMBLE_COLOR = "#1898e0"  # Blue
+
 
 def _plot_lx(da: xr.DataArray, ax: plt.Axes, **plot_kwargs):
     """
@@ -172,7 +174,7 @@ def plot_timeseries_ensemble(
         "label": data_label if data_label else None,
         "lw": lw,
         "linestyle": linestyle,
-        "color": "#f89e13" if kind == "annual" else "#1898e0",
+        "color": ENSEMBLE_COLOR,
     }
 
     if std_data is not None:
@@ -182,9 +184,9 @@ def plot_timeseries_ensemble(
                 data - 2.0 * std_data,  # .sel(month=data["time.month"]),
                 data + 2.0 * std_data,  # .sel(month=data["time.month"]),
                 alpha=0.25,
-                facecolor="#1898e0",
+                facecolor=ENSEMBLE_COLOR,
             )
         elif kind == "annual":
-            ax.fill_between(data.time, data - 2.0 * std_data, data + 2.0 * std_data, alpha=0.2, facecolor="#f89e13")
+            ax.fill_between(data.time, data - 2.0 * std_data, data + 2.0 * std_data, alpha=0.2, facecolor=ENSEMBLE_COLOR)
 
     _plot_lx(data, **plot_kwargs)

@@ -12,6 +12,7 @@ import sys
 
 from aqua import Drop
 from aqua import __version__ as version
+from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET
 from aqua.core.util import get_arg, load_yaml, to_list
 
 
@@ -79,7 +80,7 @@ def drop_parser(parser=None):
     parser.add_argument('--level', type=str,
                         help="Level(s) to be included in the filename. Can be a single level (int or float) or a list of levels separated by commas (e.g. '1000,850,500').") # noqa: E501
     parser.add_argument('--engine', type=str,
-                        help="Engine to be used for GSV retrieval: 'polytope' or 'gsv'. Defaults to 'gsv'.")
+                        help="Engine to be used for GSV retrieval: 'polytope', 'z3fdb' or 'gsv'. Defaults to 'gsv'.")
     parser.add_argument('--driver', type=str, choices=['netcdf', 'zarr', 'icechunk'],
                         help='Output format for DROP files [default: netcdf, or options.driver from config]: '
                              'netcdf, zarr or icechunk '
@@ -174,6 +175,7 @@ def drop_execute(args):
     engine = get_arg(args, "engine", _cfg(config, "options", "engine", "gsv"))
     loglevel = get_arg(args, "loglevel", _cfg(config, "options", "loglevel", "WARNING"))
     compact = _cfg(config, "options", "compact", "cdo")
+    chunk_target = _cfg(config, "options", "chunk_target", DEFAULT_DROP_CHUNK_TARGET)
     driver = get_arg(args, "driver", _cfg(config, "options", "driver", "netcdf"))
 
     # Other options, only from command line
@@ -222,6 +224,7 @@ def drop_execute(args):
         stat=stat,
         stat_kwargs=stat_kwargs,
         compact=compact,
+        chunk_target=chunk_target,
         definitive=definitive,
         overwrite=overwrite,
         rebuild=rebuild,
@@ -263,6 +266,7 @@ def drop_cli(
     default_nthreads=1,
     driver="netcdf",
     compact="cdo",
+    chunk_target=DEFAULT_DROP_CHUNK_TARGET,
     catalog_entry="yes",
     exclude_incomplete=True,
 ):
@@ -297,6 +301,7 @@ def drop_cli(
         monitoring: bool flag to enable the dask monitoring
         driver: output format driver
         compact: compaction method
+        chunk_target: target size of the read chunks in a new catalog entry (e.g. '128MiB')
         catalog_entry: catalog entry behaviour ('yes', 'no', 'only')
         exclude_incomplete: bool flag to exclude incomplete temporal chunks when averaging
     """
@@ -363,6 +368,7 @@ def drop_cli(
                             overwrite=overwrite,
                             rebuild=rebuild,
                             compact=compact,
+                            chunk_target=chunk_target,
                             performance_reporting=monitoring,
                             exclude_incomplete=exclude_incomplete,
                             output_format=driver,
