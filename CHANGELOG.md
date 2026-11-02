@@ -6,9 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
-- Decode z3fdb HEALPix ordering and global regular lon/lat dimensions from GRIB metadata using pyfdb and ecCodes, without GSV, catalog grid hints or external grid files; reject other grid types (#3316).
-- Preserve z3fdb source metadata so repeated reads retain the configured HPC/bridge FDB paths and grid (#3316).
-- Fix z3fdb level subsets without physical-level metadata and normalize scalar levels, preserving requested level order across HPC/bridge periods (#3316).
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
@@ -18,6 +15,9 @@ Unreleased in the current development version (target v1.2.4):
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
+- Decode z3fdb HEALPix ordering and global regular lon/lat dimensions from GRIB metadata using pyfdb and ecCodes, without GSV, catalog grid hints or external grid files; reject other grid types (#3316).
+- Preserve z3fdb source metadata so repeated reads retain the configured HPC/bridge FDB paths and grid (#3316).
+- Fix z3fdb level subsets without physical-level metadata and normalize scalar levels, preserving requested level order across HPC/bridge periods (#3316).
 
 ## [v1.2.3]
 
