@@ -207,7 +207,7 @@ class TestFlipCoordinate:
 
         # Unstructured grids must never be flipped, regardless of direction mismatch
         np.testing.assert_array_equal(result.lat.values, ds.lat.values)
-        assert result.lat.attrs.get("flipped") is None
+        assert result.lat.attrs.get("AQUA_flipped") is None
 
     def test_missing_tgt_direction_is_noop(self):
         ds = _regular_dataset(lat_decreasing=True)
@@ -240,7 +240,7 @@ class TestFlipCoordinate:
         result = transformer.flip_coordinate(ds, src, tgt)
 
         assert result is ds
-        assert result.lat.attrs.get("flipped") is None
+        assert result.lat.attrs.get("AQUA_flipped") is None
 
 
 # ---------------------------------------------------------------------------
@@ -529,19 +529,43 @@ class TestCounterReverseCoordinate:
         ds = _regular_dataset(lat_decreasing=True)
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         result = transformer.transform_coords(name="aqua")
-        assert result.lat.attrs.get("flipped") == 1
+        assert result.lat.attrs.get("AQUA_flipped") == 1
+
+        reverted = counter_reverse_coordinate(result)
+
+        assert "AQUA_flipped" not in reverted.lat.attrs
+        # back to original (decreasing) order
+        assert reverted.lat.values[0] > reverted.lat.values[-1]
+
+    def test_reverses_legacy_flipped_attribute(self):
+        """Data carrying the pre-AQUA_flipped attribute name must still be flipped back."""
+        ds = _regular_dataset(lat_decreasing=True)
+        result = CoordTransformer(ds, loglevel=LOGLEVEL).transform_coords(name="aqua")
+        result.lat.attrs["flipped"] = result.lat.attrs.pop("AQUA_flipped")
 
         reverted = counter_reverse_coordinate(result)
 
         assert "flipped" not in reverted.lat.attrs
-        # back to original (decreasing) order
         assert reverted.lat.values[0] > reverted.lat.values[-1]
 
     def test_noop_when_nothing_flipped(self):
         ds = _regular_dataset(lat_decreasing=False)
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         result = transformer.transform_coords(name="aqua")
-        assert result.lat.attrs.get("flipped") is None
+        assert result.lat.attrs.get("AQUA_flipped") is None
 
         reverted = counter_reverse_coordinate(result)
         np.testing.assert_array_equal(reverted.lat.values, result.lat.values)
+
+    def test_rolls_back_wrapped_longitude_and_clears_marker(self):
+        """Data wrapped from -180..180 into 0..360 must be restored to the stored order before regridding."""
+        ds = _regular_dataset(lon_values=np.array([-135.0, -45.0, 45.0, 135.0]))
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
+        result = transformer.transform_coords(name="aqua")
+        np.testing.assert_array_equal(result.lon.values, [45.0, 135.0, 225.0, 315.0])
+        assert result.lon.attrs.get("AQUA_rolled") == 2
+
+        reverted = counter_reverse_coordinate(result)
+
+        assert "AQUA_rolled" not in reverted.lon.attrs
+        np.testing.assert_array_equal(reverted["var"].values, ds["var"].values)
