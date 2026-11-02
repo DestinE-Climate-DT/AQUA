@@ -58,12 +58,13 @@ FDB Request definitions (to be filled by the user/workflow):
 - ``experiment``:  Default is ``cont``
 - ``generation``: the generation to use. Default is ``1``
 - ``expver``:  Default is ``0001``
-- ``expid``: the autosubmit identifier of the experiment.
 - ``num_of_realizations``: number of realizations in case of ensembles. Default is ``1``.
 - ``default_realization``: in case of ensembles, the first realization to be loaded by default. Default is ``1``.
 
 Info on the experiment:
 
+- ``expid``: the Autosubmit identifier of the experiment. Stored in the generated source and experiment metadata,
+  not in the FDB request.
 - ``data_start_date``: data start date (format: 'YYYYMMDD')
 - ``data_end_date``: data end date (format: 'YYYYMMDD')
 - ``bridge_end_date``: if a transfer between the HPC and the data bridge is ongoing, this field should specify the last date when data was saved on the bridge. The default value is ``Null``, but it can be ``complete`` or a date.

@@ -2,7 +2,7 @@
 
 from intake import readers
 
-from .base import IntakeXarraySourceAdapter
+from .base import IntakeXarraySourceAdapter, _merge_xarray_kwargs
 from .readers import TolerantXArrayDatasetReader
 
 
@@ -42,26 +42,23 @@ class IntakeNetCDFSource(IntakeXarraySourceAdapter):
             :class:`~.readers.TolerantXArrayDatasetReader`.
         concat_dim (str, optional): Dimension to concatenate the files along. Can be new or
             pre-existing if ``combine="nested"``; must be None or new if ``combine="by_coords"``.
-        kwargs: Further parameters forwarded to the reader.
+        kwargs: Further parameters forwarded to the reader. These override matching
+            ``xarray_kwargs`` entries, including explicit ``None`` values.
     """
 
     name = "netcdf"
 
     def __init__(self, urlpath, xarray_kwargs=None, metadata=None, path_as_pattern=True, storage_options=None, **kwargs):
-        xarray_kwargs = dict(xarray_kwargs or {})
+        xarray_kwargs = _merge_xarray_kwargs(xarray_kwargs, kwargs)
         # intake infers engine="scipy" from the NetCDF3 datatype, and scipy fails on any
         # other flavour: netcdf4 reads them all (the backend used to force it downstream)
         xarray_kwargs.setdefault("engine", "netcdf4")
-        # AQUA always wants lazy data, but intake routes a single file to ``xr.open_dataset``,
-        # which is eager unless ``chunks`` is given
-        if "chunks" not in xarray_kwargs:
-            kwargs.setdefault("chunks", {})
 
         data = readers.datatypes.NetCDF3(urlpath, storage_options=storage_options, metadata=metadata)
         if (path_as_pattern is True and "{" in urlpath) or isinstance(path_as_pattern, str):
             # ``{field}`` patterns become output coordinates: intake has its own reader for that
-            reader = readers.XArrayPatternReader(data, **xarray_kwargs, metadata=metadata, pattern=path_as_pattern, **kwargs)
+            reader = readers.XArrayPatternReader(data, **xarray_kwargs, metadata=metadata, pattern=path_as_pattern)
         else:
-            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=metadata, **kwargs)
+            reader = TolerantXArrayDatasetReader(data, **xarray_kwargs, metadata=metadata)
         self.reader = reader
         super().__init__(data, xarray_kwargs, metadata)

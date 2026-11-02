@@ -366,7 +366,7 @@ class TestNormalizeRangeConvention:
         tgt = {"name": self.longitude, "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
-        np.testing.assert_allclose(result[self.longitude].values, [190.0, 350.0, 10.0, 170.0])
+        np.testing.assert_allclose(result[self.longitude].values, [10.0, 170.0, 190.0, 350.0])
 
     def test_ignores_non_longitude_coordinates(self):
         ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]))

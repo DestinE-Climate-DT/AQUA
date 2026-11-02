@@ -570,6 +570,9 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   including masks varying in time or along any dimension (a target cell is NaN if more than half of its weights are missing,
   as without skipna). It cannot be combined with other keys
   (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
+  A path value can be the reserved word ``data``: the grid is then taken from the dataset itself,
+  as for grids without ``path``. ``path: {skipna: data}`` is the default ``lon-lat-skipna`` grid
+  (regular lon-lat data with missing values varying in time).
 - ``space_coord``: The space coordinate how coordinates are defined and used for interpolation.
   There is an automatic guessing routine, but this is a bit costly so it is better to specify this if possible.
 - ``masked``: (if applicable): Keys to define variables which are masked.

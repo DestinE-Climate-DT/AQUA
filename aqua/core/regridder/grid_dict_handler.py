@@ -2,6 +2,7 @@
 
 from smmregrid import CdoGrid
 
+from aqua.core.default import DEFAULT_GRID_DATA
 from aqua.core.logger import log_configure
 
 from .regridder_util import check_existing_file
@@ -111,7 +112,7 @@ class GridDictHandler:
     def _normalize_grid_path(self, grid_dict):
         """
         Normalize the grid path to a dictionary with the self.default_dimension key.
-        3 cases handled:
+        3 cases handled (a value can be 'data': the grid is taken from the dataset by the Regridder):
             - an empty dictionary, return an empty dictionary
             - a dictionary with a path string, a CDO grid name or a file path
             - a dictionary with a dictionary of path, one for each vertical coordinate
@@ -131,6 +132,8 @@ class GridDictHandler:
 
         # case path is a string: check if it is a valid CDO grid name or a file path
         if isinstance(path, str):
+            if path == DEFAULT_GRID_DATA:
+                return {self.default_dimension: path}
             if CdoGrid(path).grid_kind:
                 self.logger.debug("Grid path %s is a valid CDO grid name.", path)
                 return {self.default_dimension: path}
@@ -143,7 +146,7 @@ class GridDictHandler:
         # (could extend to CDO names?)
         if isinstance(path, dict):
             for _, value in path.items():
-                if not (CdoGrid(value).grid_kind or check_existing_file(value)):
+                if value != DEFAULT_GRID_DATA and not (CdoGrid(value).grid_kind or check_existing_file(value)):
                     raise ValueError(f"Grid path '{value}' is not a valid CDO grid name nor a file path.")
             self.logger.debug("Grid path %s is a valid dictionary of file paths.", path)
             return path
