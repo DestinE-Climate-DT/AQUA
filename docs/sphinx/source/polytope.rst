@@ -76,6 +76,30 @@ only for HPC periods. For example, ``expver: "0001"`` with
 inside it, even when both periods share an FDB configuration. The catalog
 request is preserved across reads.
 
+Availability discovery for z3fdb
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Before routing requests, z3fdb resolves availability using the same helpers as GSV:
+
+* ``metadata.fdb_info_file`` reads the workflow YAML. Its data dates and HPC
+  experiment version override the catalog values; its bridge block, when present,
+  supplies bridge dates and the bridge experiment version.
+* ``data_start_date: auto`` or ``data_end_date: auto`` scans the configured local
+  FDB directories using the DestinE schema. As in GSV, automatic end-date discovery
+  excludes the newest directory, whose day may be incomplete. Automatic discovery
+  is unsupported for ``timestyle: yearmonth``.
+* ``bridge_start_date: stac`` or ``bridge_end_date: stac`` queries the LUMI bridge
+  STAC service for both bridge boundaries.
+* Bridge boundaries can also be text-file paths or ``complete``, with the same
+  defaults for omitted boundaries as GSV.
+
+``config_fdb`` overrides the catalog FDB location for both discovery and retrieval.
+The resolved bounds and requested window are normalized to ``savefreq``; requests
+outside the declared availability raise an error before retrieval. Discovery is
+repeated on each read so workflow updates are picked up without changing the
+catalog request or metadata. Field retrieval still uses the lazy z3fdb Zarr path
+and does not require GSV.
+
 Time settings for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^
 

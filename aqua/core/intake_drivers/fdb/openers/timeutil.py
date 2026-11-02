@@ -60,20 +60,20 @@ class FDBTimeMixin:
     def _check_dates(self):
         """Check if starting and ending dates are within given range"""
         startdate = pd.Timestamp(str(self.startdate))
-        start_date = pd.Timestamp(str(self.data_start_date))
+        start_date = pd.Timestamp(str(self.data_start_date)) if self.data_start_date is not None else None
         enddate = pd.Timestamp(str(self.enddate))
-        end_date = pd.Timestamp(str(self.data_end_date))
+        end_date = pd.Timestamp(str(self.data_end_date)) if self.data_end_date is not None else None
 
-        if startdate < start_date:
+        if start_date is not None and startdate < start_date:
             raise ValueError(f"Starting date {self.startdate} is earlier than the data start at {self.data_start_date}.")
 
-        if enddate > end_date:
+        if end_date is not None and enddate > end_date:
             raise ValueError(f"End date {self.enddate} is later than the data end at {self.data_end_date}.")
 
         if startdate > enddate:
             raise ValueError(f"Start date {self.startdate} is later than the end date at {self.enddate}.")
 
-        if start_date > end_date:
+        if start_date is not None and end_date is not None and start_date > end_date:
             raise ValueError(f"Data start date {self.data_start_date} is later than the data end at {self.data_end_date}.")
 
     @staticmethod

@@ -61,25 +61,12 @@ class Z3FDBDatasetReader(BaseReader):
         return pd.Timestamp(str(val))
 
     def _get_frequency_offset(self, freq):
-        """Normalize frequency offset and return pandas offset or Timedelta."""
-        if freq == "h":
-            offset_freq = "1h"
-        elif freq == "D":
-            offset_freq = "1D"
-        else:
-            offset_freq = freq
-
-        try:
-            offset = pd.to_timedelta(offset_freq)
-        except ValueError:
-            if offset_freq in ("MS", "M"):
-                offset = pd.DateOffset(months=1)
-            else:
-                offset = pd.Timedelta(days=1)
-        return offset
+        """Return the saved-frequency offset separating storage periods."""
+        return pd.tseries.frequencies.to_offset({"M": "MS", "Y": "YS"}.get(freq, freq))
 
     def _read(self, data, **kwargs):
 
+        data = data._resolve_dates()
         hpc_home = data.metadata.get("fdb_home")
         hpc_path = data.metadata.get("fdb_path")
         bridge_home = data.metadata.get("fdb_home_bridge")
@@ -119,7 +106,7 @@ class Z3FDBDatasetReader(BaseReader):
             b_start_ts = self._get_bridge_date(data.bridge_start_date, data.data_start_date)
             b_end_ts = self._get_bridge_date(data.bridge_end_date, data.data_end_date)
 
-            offset = self._get_frequency_offset(data.savefreq)
+            offset = self._get_frequency_offset(data.savefreq or data.timestep)
 
             # Define intersection of bridge with requested range
             bridge_intersect_start = max(start_ts, b_start_ts)
@@ -163,7 +150,7 @@ class Z3FDBDatasetReader(BaseReader):
                 timestyle=data.timestyle,
                 timestep=data.timestep,
                 timeshift=data.timeshift,
-                data_start_date=data.data_start_date,
+                data_start_date=data._raw_data_start_date,
                 data_end_date=data.data_end_date,
                 chunks=data.chunks,
                 level_values=data.level_values,
