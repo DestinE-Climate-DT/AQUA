@@ -16,6 +16,32 @@ import zarr
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list
 
+MARS_KEYS = [
+    "date",
+    "time",
+    "levtype",
+    "levelist",
+    "step",
+    "param",
+    "class",
+    "stream",
+    "domain",
+    "type",
+    "expver",
+    "anoffset",
+    "dataset",
+    "activity",
+    "experiment",
+    "generation",
+    "model",
+    "realization",
+    "resolution",
+    "frequency",
+    "direction",
+    "year",
+    "month",
+]
+
 logger = log_configure(log_level="WARNING", log_name="z3fdb_opener")
 
 # Test if z3fdb module is available
@@ -449,7 +475,7 @@ def open_z3fdb(
     Returns a lazy (dask-backed) xr.Dataset.
 
     Args:
-        request (dict): Dictionary containing the FDB request.
+        request (dict): Dictionary containing the FDB request. Keys outside MARS_KEYS are ignored.
         variables (list, optional): List of variables to request. Defaults to None.
         levels (list, optional): List of levels to request. Defaults to None.
         config (str, optional): Path to the configuration file. Defaults to "./config.yaml".
@@ -472,6 +498,8 @@ def open_z3fdb(
     """
 
     _check_availability()
+
+    request = {key: value for key, value in request.items() if key in MARS_KEYS}
 
     if grid and "lon-lat" in grid:
         grid_type = "lonlat"
