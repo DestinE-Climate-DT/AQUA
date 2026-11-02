@@ -2,9 +2,9 @@
 
 import json
 import logging
+import os
 import subprocess
 import sys
-from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -27,6 +27,8 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     source = output / experiment
     source.mkdir(parents=True)
     (source / "figure.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"><desc>name: test</desc></svg>')
+    (source / "nested").mkdir()
+    (source / "nested" / "nested.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>')
     (source / "experiment.yaml").write_text("menu: Example\n")
     config = tmp_path / "grouping.yaml"
     config.write_text("diagnostics: {}\n")
@@ -39,12 +41,14 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
 
     def fake_upload_file(client, bucket, path, key, **kwargs):
         transfers.append((bucket, key, "file"))
-        published["experiments"] = yaml.safe_load(Path(path).read_text())
+        with open(path) as file:
+            published["experiments"] = yaml.safe_load(file)
 
     def fake_upload_directory(client, bucket, path, prefix, **kwargs):
         transfers.append((bucket, prefix, "directory"))
-        published["content"] = yaml.safe_load((Path(path) / "content.yaml").read_text())
-        published["source"] = Path(path)
+        with open(os.path.join(path, "content.yaml")) as file:
+            published["content"] = yaml.safe_load(file)
+        published["source"] = path
 
     monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
     monkeypatch.setattr(push_analysis, "get_file_from_s3", fake_download)
@@ -53,7 +57,7 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     log = Mock()
     configure = Mock(return_value=log)
     monkeypatch.setattr(push_analysis, "log_configure", configure)
-    cwd = Path.cwd()
+    cwd = os.getcwd()
     if entrypoint == "aqua":
         argv = ["aqua", "push", str(output), experiment, "-c", str(config), "-f", "svg"]
         if not ensemble:
@@ -63,11 +67,12 @@ def test_publish_without_git_repository(tmp_path, monkeypatch, capfd, experiment
     else:
         push_analysis.push_analysis(output, experiment, config, formats=("svg",), ensemble=ensemble)
 
-    assert Path.cwd() == cwd
+    assert os.getcwd() == cwd
     expected = {"catalog": {"model": {"experiment": ["r1"]} if ensemble else ["experiment"]}}
     assert published["experiments"] == expected
     assert published["content"]["experiment"]["label"] == "Example"
-    assert not published["source"].exists()
+    assert f"{experiment}/nested.svg" in published["content"]["files"]
+    assert not os.path.exists(published["source"])
     assert ("aqua-web", f"content/svg/{experiment}", "directory") in transfers
     assert transfers[-2:] == [
         ("aqua-web", f"content/svg/{experiment}", "directory"),
@@ -102,15 +107,18 @@ def test_publish_list_merges_existing_experiments(tmp_path, monkeypatch):
     published = {}
 
     def download(client, bucket, key, destination, **kwargs):
-        Path(destination).write_text(yaml.safe_dump(remote))
+        with open(destination, "w") as file:
+            yaml.safe_dump(remote, file)
         return True
 
     def upload_index(client, bucket, path, key, **kwargs):
         nonlocal remote
-        remote = yaml.safe_load(Path(path).read_text())
+        with open(path) as file:
+            remote = yaml.safe_load(file)
 
     def upload_figures(client, bucket, path, prefix, **kwargs):
-        published[prefix] = yaml.safe_load((Path(path) / "content.yaml").read_text())
+        with open(os.path.join(path, "content.yaml")) as file:
+            published[prefix] = yaml.safe_load(file)
 
     monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=object()))
     monkeypatch.setattr(push_analysis, "get_file_from_s3", download)
@@ -487,7 +495,7 @@ def test_content_generation_has_one_startup_message(tmp_path, monkeypatch):
         "Generating %s content for %s in %s",
         "svg",
         "catalog/model/experiment/r1",
-        tmp_path / "content" / "svg",
+        os.path.join(tmp_path, "content", "svg"),
     )
 
 

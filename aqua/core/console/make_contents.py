@@ -8,7 +8,6 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 from fnmatch import fnmatch
-from pathlib import Path
 
 import yaml
 from PIL import Image
@@ -62,7 +61,7 @@ def has_valid_key(d, key):
 
 
 def make_content(
-    catalog, model, exp, realization, diagnostics, config_experiments, force, content_dir=Path("."), loglevel="WARNING"
+    catalog, model, exp, realization, diagnostics, config_experiments, force, content_dir=".", loglevel="WARNING"
 ):
     """
     Create content.yaml and content.json files for a specific experiment.
@@ -75,21 +74,21 @@ def make_content(
         diagnostics (dict): A dictionary of diagnostics and their groupings
         config_experiments (dict): A dictionary of experiment descriptions
         force (bool): Create content.yaml and content.json even if they exist already
-        content_dir (Path): Directory containing experiment folders, defaulting to the current directory.
+        content_dir (str or path-like): Directory containing experiment folders, defaulting to the current directory.
         loglevel (str): AQUA logging level. Defaults to WARNING.
     """
     logger = log_configure(log_level=loglevel, log_name="make_contents")
 
     # All figure formats share the index one level above their content directories.
-    content_dir = Path(content_dir)
-    experiments_file = content_dir / ".." / "experiments.yaml"
-    if not experiments_file.exists():
+    content_dir = os.fspath(content_dir)
+    experiments_file = os.path.join(content_dir, "..", "experiments.yaml")
+    if not os.path.exists(experiments_file):
         if realization:
             experiments = {catalog: {model: {exp: [realization]}}}
         else:
             experiments = {catalog: {model: [exp]}}
     else:
-        with experiments_file.open("r") as file:
+        with open(experiments_file) as file:
             experiments = yaml.safe_load(file)
 
         if realization:
@@ -101,22 +100,27 @@ def make_content(
         deep_merge_dicts(experiments, add)
 
     # Place the file at the "./contents" level
-    with experiments_file.open("w") as file:
+    with open(experiments_file, "w") as file:
         yaml.dump(experiments, file, default_flow_style=False)
 
     # Make content.yaml/json
 
-    path = f"{catalog}/{model}/{exp}"
+    path = os.path.join(catalog, model, exp)
     if realization:
-        path += f"/{realization}"
+        path = os.path.join(path, realization)
 
-    experiment_dir = content_dir / path
-    if not (experiment_dir / "content.yaml").exists() or not (experiment_dir / "content.json").exists() or force:
+    experiment_dir = os.path.join(content_dir, path)
+    if (
+        not os.path.exists(os.path.join(experiment_dir, "content.yaml"))
+        or not os.path.exists(os.path.join(experiment_dir, "content.json"))
+        or force
+    ):
         logger.debug("Generating content files for %s (force=%s)", path, force)
 
-        if (experiment_dir / "experiment.yaml").exists():
+        experiment_file = os.path.join(experiment_dir, "experiment.yaml")
+        if os.path.exists(experiment_file):
             logger.debug("Found experiment.yaml for %s", path)
-            with (experiment_dir / "experiment.yaml").open("r") as file:
+            with open(experiment_file) as file:
                 experiment = yaml.safe_load(file)
 
                 # Older experiment files nest display fields under dashboard.
@@ -165,9 +169,9 @@ def make_content(
             experiment["label"] = experiment["title"]
 
         # Retrieve the date of the latest commit
-        infile = experiment_dir / "last_update.txt"
-        if infile.exists():
-            with infile.open("r") as file:
+        infile = os.path.join(experiment_dir, "last_update.txt")
+        if os.path.exists(infile):
+            with open(infile) as file:
                 experiment["last_update"] = file.read().strip()
         else:
             logger.debug("File %s not found.", infile)
@@ -185,17 +189,17 @@ def make_content(
                 fn_line = f"{catalog}/{model}/{exp}/{fn}"
 
             if fn.endswith(".png"):
-                with Image.open(experiment_dir / fn) as img:
+                with Image.open(os.path.join(experiment_dir, fn)) as img:
                     metadata = img.info
                 properties[fn_line] = metadata
                 filename_list.append(fn_line)
             elif fn.endswith(".pdf"):
-                with PdfReader(experiment_dir / fn) as pdf_reader:
+                with PdfReader(os.path.join(experiment_dir, fn)) as pdf_reader:
                     metadata = pdf_reader.metadata
                 properties[fn_line] = metadata
                 filename_list.append(fn_line)
             elif fn.endswith(".svg"):
-                root = ET.parse(experiment_dir / fn).getroot()
+                root = ET.parse(os.path.join(experiment_dir, fn)).getroot()
                 # SVG elements use the XML namespace, including desc.
                 desc = root.find("{http://www.w3.org/2000/svg}desc")
                 metadata = {}
@@ -240,7 +244,7 @@ def make_content(
                         keystr = str(kk).lstrip("/").lower()
                         content["files"][v][keystr] = str(vv)
 
-        with (experiment_dir / "content.yaml").open("w") as file:
+        with open(os.path.join(experiment_dir, "content.yaml"), "w") as file:
             yaml.dump(content, file, default_style='"')
         logger.debug("Successfully wrote %s/content.yaml", path)
 
@@ -248,7 +252,7 @@ def make_content(
         content_json = json.dumps(content, indent=4)
 
         # Write content JSON to file
-        with (experiment_dir / "content.json").open("w") as file:
+        with open(os.path.join(experiment_dir, "content.json"), "w") as file:
             file.write(content_json)
         logger.debug("Successfully wrote %s/content.json", path)
 
@@ -267,7 +271,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
         configfile (str): Alternate confg file path (default "config.yaml" - used by aqua-web)
         loglevel (str): The logging level to use (e.g., 'WARNING', 'DEBUG'). Defaults to WARNING.
         format (str): Image format subdirectory to process.
-        root (str or Path): Root of the aqua-web checkout. Defaults to the current directory.
+        root (str or path-like): Root of the content directory. Defaults to the current directory.
     """
 
     logger = log_configure(log_level=loglevel, log_name="make_contents")
@@ -278,7 +282,7 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
     except FileNotFoundError as exc:
         raise FileNotFoundError(f"Configuration file not found: {configfile}") from exc
 
-    content_dir = Path(root) / "content" / format
+    content_dir = os.path.join(root, "content", format)
     logger.info(
         "Generating %s content for %s in %s",
         format,
@@ -304,30 +308,30 @@ def main(force=False, experiment=None, configfile="config.yaml", ensemble=True, 
 
         make_content(catalog, model, exp, realization, diagnostics, config_experiments, force, content_dir, loglevel=loglevel)
     else:  # run through all subdirs
-        experiments_file = content_dir.parent / "experiments.yaml"
-        if experiments_file.exists():  # Let's start fresh
+        experiments_file = os.path.join(os.path.dirname(content_dir), "experiments.yaml")
+        if os.path.exists(experiments_file):  # Let's start fresh
             logger.info("Removing existing experiments.yaml to start fresh.")
-            experiments_file.unlink()
+            os.unlink(experiments_file)
 
         for catalog in os.listdir(content_dir):
-            catalog_path = content_dir / catalog
+            catalog_path = os.path.join(content_dir, catalog)
             if not os.path.isdir(catalog_path):
                 continue
             logger.debug("Scanning catalog: %s", catalog)
             for model in os.listdir(catalog_path):
-                model_path = catalog_path / model
+                model_path = os.path.join(catalog_path, model)
                 if not os.path.isdir(model_path):
                     continue
                 logger.debug("Scanning model: %s", model)
                 for exp in os.listdir(model_path):
-                    exp_path = model_path / exp
+                    exp_path = os.path.join(model_path, exp)
                     if not os.path.isdir(exp_path):
                         continue
                     logger.debug("Scanning experiment: %s", exp)
 
                     if ensemble:  # If new structure, iterate through 4 levels
                         for realization in os.listdir(exp_path):
-                            realization_path = exp_path / realization
+                            realization_path = os.path.join(exp_path, realization)
                             if not os.path.isdir(realization_path):
                                 continue
                             logger.debug("Processing ensemble member: %s/%s/%s/%s", catalog, model, exp, realization)

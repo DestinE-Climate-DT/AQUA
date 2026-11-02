@@ -12,7 +12,6 @@ import shutil
 import socket
 import subprocess
 import tempfile
-from pathlib import Path
 
 import pandas as pd
 from dateutil.tz import tzlocal
@@ -30,10 +29,10 @@ def push_parser(parser=None):
     """Add publishing options to a parser, creating one if needed."""
     if parser is None:
         parser = argparse.ArgumentParser(description="Publish AQUA analysis figures to a remote site.")
-    parser.add_argument("indir", type=Path, help="Analysis output directory")
+    parser.add_argument("indir", help="Analysis output directory")
     parser.add_argument("exps", help="Experiment path or a text file listing experiments")
     parser.add_argument("-b", "--bucket", default="aqua-web", help="Name of the S3 bucket to publish to")
-    parser.add_argument("-c", "--config", type=Path, help="Configuration file path")
+    parser.add_argument("-c", "--config", help="Configuration file path")
     parser.add_argument("--no-ensemble", action="store_true", help="Do not assume ensemble structure")
     parser.add_argument("-f", "--format", default=",".join(FORMATS), help="Formats to publish")
     parser.add_argument(
@@ -62,9 +61,12 @@ def _rsync(*args, logger, cwd=None, check=True, options="-avz"):
 
 def _experiments(exps, ensemble):
     """Resolve an experiment path or read a list of experiments."""
-    if exps.is_file():
+    exps = os.path.expanduser(os.fspath(exps))
+    if os.path.isfile(exps):
         experiments = []
-        for line in exps.read_text().splitlines():
+        with open(exps) as file:
+            lines = file.read().splitlines()
+        for line in lines:
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
             parts = line.split()
@@ -77,7 +79,7 @@ def _experiments(exps, ensemble):
                 selected.append("r1")
             experiments.append("/".join(selected))
         return experiments
-    parts = exps.as_posix().split("/")
+    parts = exps.split("/")
     if len(parts) not in ((3, 4) if ensemble else (3,)) or any(part in ("", ".", "..") for part in parts):
         raise ValueError("EXPS must be catalog/model/experiment[/realization] or a list file")
     # A direct three-part ensemble path also defaults to realization r1.
@@ -88,29 +90,32 @@ def _experiments(exps, ensemble):
 
 def _collect_figures(indir, workspace, experiment, formats):
     """Copy analysis output and experiment metadata into publishable content."""
-    source = indir / experiment
-    if not source.is_dir():
+    source = os.path.join(indir, experiment)
+    if not os.path.isdir(source):
         raise FileNotFoundError(f"Experiment directory does not exist: {source}")
     for fmt in formats:
-        dest = workspace / "content" / fmt / experiment
-        dest.mkdir(parents=True, exist_ok=True)
-        for figure in source.rglob(f"*.{fmt}"):
-            shutil.copy2(figure, dest / figure.name)
+        dest = os.path.join(workspace, "content", fmt, experiment)
+        os.makedirs(dest, exist_ok=True)
+        for root, _, files in os.walk(source):
+            for figure in files:
+                if figure.endswith(f".{fmt}"):
+                    shutil.copy2(os.path.join(root, figure), os.path.join(dest, figure))
         stamp = f"{pd.Timestamp.now(tz=tzlocal()).isoformat()} {getpass.getuser()} @ {socket.gethostname()}\n"
-        (dest / "last_update.txt").write_text(stamp)
-        metadata = source / "experiment.yaml"
-        if metadata.is_file():
-            shutil.copy2(metadata, dest / metadata.name)
+        with open(os.path.join(dest, "last_update.txt"), "w") as file:
+            file.write(stamp)
+        metadata = os.path.join(source, "experiment.yaml")
+        if os.path.isfile(metadata):
+            shutil.copy2(metadata, os.path.join(dest, "experiment.yaml"))
 
 
 def _get_experiments_file(workspace, bucket, rsync_target, client, logger, loglevel):
     """Retrieve the current experiments.yaml, used by the dashboard to keep track of the experiments to display."""
-    destination = workspace / "content" / "experiments.yaml"
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination = os.path.join(workspace, "content", "experiments.yaml")
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
     if rsync_target:
         result = _rsync(
             f"{rsync_target}/content/experiments.yaml",
-            str(destination),
+            destination,
             logger=logger,
             check=False,
         )
@@ -120,13 +125,13 @@ def _get_experiments_file(workspace, bucket, rsync_target, client, logger, logle
             else:
                 logger.error("Rsync failed: %s", result.stderr.strip())
                 raise subprocess.CalledProcessError(result.returncode, result.args, output=result.stdout, stderr=result.stderr)
-    elif not get_file_from_s3(client, bucket, "content/experiments.yaml", str(destination), loglevel=loglevel):
+    elif not get_file_from_s3(client, bucket, "content/experiments.yaml", destination, loglevel=loglevel):
         logger.info("No remote experiments.yaml found; creating it")
 
 
 def _publish(workspace, experiment, formats, bucket, rsync_target, client, logger, loglevel):
     """Publish the merged index and the selected experiment's figures."""
-    index = workspace / "content" / "experiments.yaml"
+    index = os.path.join(workspace, "content", "experiments.yaml")
     if rsync_target:
         for fmt in formats:
             relative = f"content/{fmt}/{experiment}/"
@@ -140,16 +145,16 @@ def _publish(workspace, experiment, formats, bucket, rsync_target, client, logge
                 logger=logger,
                 cwd=workspace,
             )
-        if index.is_file():
-            _rsync(str(index), f"{rsync_target}/content/experiments.yaml", logger=logger)
+        if os.path.isfile(index):
+            _rsync(index, f"{rsync_target}/content/experiments.yaml", logger=logger)
     else:
         for fmt in formats:
-            source = workspace / "content" / fmt / experiment
+            source = os.path.join(workspace, "content", fmt, experiment)
             destination = f"content/{fmt}/{experiment}"
             logger.info("Transferring %s figures to s3://%s/%s", fmt, bucket, destination)
-            upload_directory_to_s3(client, bucket, str(source), destination, loglevel=loglevel)
-        if index.is_file():
-            upload_file_to_s3(client, bucket, str(index), "content/experiments.yaml", loglevel=loglevel)
+            upload_directory_to_s3(client, bucket, source, destination, loglevel=loglevel)
+        if os.path.isfile(index):
+            upload_file_to_s3(client, bucket, index, "content/experiments.yaml", loglevel=loglevel)
 
 
 def push_analysis(
@@ -165,9 +170,9 @@ def push_analysis(
     """Collect, describe, and publish each experiment's analysis output.
 
     Args:
-        indir (str or Path): Root directory containing analysis output.
-        exps (str or Path): Experiment path or file listing experiments.
-        config (str or Path): Diagnostic grouping YAML file.
+        indir (str or path-like): Root directory containing analysis output.
+        exps (str or path-like): Experiment path or file listing experiments.
+        config (str or path-like): Diagnostic grouping YAML file.
         bucket (str): Destination S3 bucket.
         formats (tuple[str]): Image formats to publish.
         ensemble (bool): Use the four-level experiment structure.
@@ -176,14 +181,14 @@ def push_analysis(
     """
     logger = log_configure(log_level=loglevel, log_name="push_analysis")
     logger.info("Running push-analysis with AQUA version %s", aqua_version)
-    indir = Path(indir).expanduser().resolve()
-    config = Path(config).expanduser().resolve()
-    exps = Path(exps).expanduser()
-    if exps.is_file():
-        exps = exps.resolve()
-    if not config.is_file():
+    indir = os.path.realpath(os.path.expanduser(os.fspath(indir)))
+    config = os.path.realpath(os.path.expanduser(os.fspath(config)))
+    exps = os.path.expanduser(os.fspath(exps))
+    if os.path.isfile(exps):
+        exps = os.path.realpath(exps)
+    if not os.path.isfile(config):
         raise FileNotFoundError(f"Configuration file not found: {config}")
-    if not indir.is_dir():
+    if not os.path.isdir(indir):
         raise FileNotFoundError(f"Input directory does not exist: {indir}")
     experiments = _experiments(exps, ensemble)
     if not experiments:
@@ -198,7 +203,7 @@ def push_analysis(
             members[0] if members else "n/a",
         )
     with tempfile.TemporaryDirectory(prefix="aqua-web-") as tmp:
-        workspace = Path(tmp)
+        workspace = tmp
         client = None if rsync_target else create_client()
         for experiment in experiments:
             _collect_figures(indir, workspace, experiment, formats)
@@ -207,7 +212,7 @@ def push_analysis(
                 make_contents(
                     force=True,
                     experiment=experiment,
-                    configfile=str(config),
+                    configfile=config,
                     ensemble=ensemble,
                     loglevel=loglevel,
                     format=fmt,
@@ -224,8 +229,8 @@ def push_options(args):
         raise ValueError(f"--format must be a comma-separated selection of {', '.join(FORMATS)}")
     config = args.config
     if config is None:
-        root = os.environ.get("AQUA_CONFIG") or str(Path.home() / ".aqua")
-        config = Path(root) / "analysis" / "config.grouping.yaml"
+        root = os.environ.get("AQUA_CONFIG") or os.path.join(os.path.expanduser("~"), ".aqua")
+        config = os.path.join(root, "analysis", "config.grouping.yaml")
     return {
         "indir": args.indir,
         "exps": args.exps,
