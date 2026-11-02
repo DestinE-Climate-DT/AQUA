@@ -4,7 +4,7 @@ import pytest
 
 from aqua import Reader
 
-pytestmark = [pytest.mark.aqua, pytest.mark.stac]
+pytestmark = pytest.mark.stac
 
 LOGLEVEL = "DEBUG"
 IFS_ITEM = "ifs-short-ifs2d-tco79"

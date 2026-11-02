@@ -31,7 +31,7 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-version: '3.14'
-      pytest-markers: 'aqua or console or polytope or fdb or graphics or catgen'
+      pytest-markers: 'aqua or console or polytope or fdb or graphics or catgen or stac'
       enable-parallel: true
       enable-coverage: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
       install-mode: 'local'
