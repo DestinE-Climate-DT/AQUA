@@ -73,62 +73,25 @@ If you want to use a different configuration file, you can pass its path using t
 Grid coordinates for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``z3fdb`` engine requires an explicit source grid. The cell count alone
-cannot identify its geometry or the ordering of the stored values.
+The ``z3fdb`` engine identifies its grid from one representative GRIB message
+per HPC/bridge period, using the same FDB configuration as the data read.
+It reuses GSV's grid decoder and supports the same grid families:
 
-For full HEALPix fields, use ``source_grid_name: hpz7-nested`` or
-``source_grid_name: hpz7-ring`` (with the appropriate zoom). Coordinates and
-bounds follow the declared ordering, and the number of cells must match the
-resolution. No grid file is needed for these generic HEALPix declarations.
+* HEALPix: resolution and ring/nested ordering come from GRIB metadata.
+* Global regular latitude/longitude: dimensions come from GRIB metadata;
+  south-to-north fields are flipped to the same north-to-south layout as GSV.
+* Reduced Gaussian and supported unstructured grids: coordinates and bounds
+  come from GSV's predefined NetCDF files under ``GRID_DEFINITION_PATH``.
 
-For other grids, ``source_grid_name`` must resolve to a coordinate file in
-AQUA's grid configuration. Longitude, latitude and their bounds are identified
-using AQUA's coordinate conventions; their original names and units are
-preserved for the subsequent DataModel step. Unstructured coordinates must
-follow the same cell order as the FDB fields.
+As in GSV, each decoded selection must contain a single grid. Unsupported
+GRIB grids and grid-size mismatches raise an error. Unstructured fields remain
+flat; arbitrary structured or regional layouts are not reconstructed.
+The field data remains Dask-backed. Identifying the grid retrieves one GRIB
+message eagerly, without decoding its field values in Python.
 
-Structured grids also require ``fdb_dims``: the grid-file dimension names in
-storage order, slowest first. The last listed dimension varies fastest in the
-flat GRIB values. For example:
-
-.. code-block:: yaml
-
-    # In an AQUA grid configuration file
-    grids:
-      my-regional-grid:
-        path: '{{ grids }}/regional_grid.nc'
-        fdb_dims: [lat, lon]
-        space_coord: [lat, lon]
-
-    # In the Intake source metadata
-    metadata:
-      source_grid_name: my-regional-grid
-
-Here longitude varies fastest. Latitude and longitude values in the grid file
-must describe the original GRIB scanning direction. AQUA reshapes the lazy
-field arrays without rearranging the stored values; coordinate standardization
-is applied afterward by DataModel. The grid size is checked before coordinates
-are attached, and coordinate generation is reused across HPC/bridge parts of
-one retrieval.
-
-A generic ``source_grid_name: lon-lat`` supplies insufficient information and
-now raises an error. Existing catalogs using it must specify a grid file and
-``fdb_dims``. For a one-off override, the existing ``Reader`` keyword forwarding
-also accepts an inline grid definition:
-
-.. code-block:: python
-
-    reader = Reader(
-        model="IFS", exp="test-fdb", source="fdb", engine="z3fdb",
-        grid={"path": "/path/to/grid.nc", "fdb_dims": ["lat", "lon"]},
-    )
-
-An override may fill an ambiguous declaration, but conflicting overrides of a
-fully specified source grid are rejected so coordinate and regridding definitions
-stay consistent. Matching cell counts do not prove that a declaration is correct: the grid file
-must correspond to the source data, including its ordering. Fields with
-ambiguous or unsupported grids are rejected instead of receiving guessed
-coordinates. No automatic GRIB-header discovery is performed.
+The catalog's ``source_grid_name`` remains available for AQUA regridding and
+cell areas, but is not used to reconstruct z3fdb coordinates. No grid override
+or additional catalog configuration is required.
 
 Chunking Logic for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^

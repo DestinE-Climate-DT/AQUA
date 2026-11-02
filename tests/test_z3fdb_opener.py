@@ -2,22 +2,26 @@
 
 import pickle
 from copy import deepcopy
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import Mock
 
 import astropy_healpix
 import dask.array as da
+import eccodes as ecc
 import numpy as np
 import pytest
 import xarray as xr
 import zarr
+from gsv.exceptions import InvalidSourceGridError
+from gsv.grids import HealpixGrid
 
-from aqua.core.backend.backend_intake_fdb import BackendIntakeFDB
+from aqua.core.exceptions import NoDataError
+from aqua.core.intake_drivers.fdb import IntakeFDBSource
 from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
 from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
-from aqua.core.regridder.grid_dict_handler import GridDictHandler
 
 CMIP6_MARS_REQ = {
     "class": "d1",
@@ -64,6 +68,7 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
     # Replace FDB access with an in-memory Zarr array so this runs without an FDB installation.
     zarr_array = zarr.zeros(shape=(2, 2, 12), chunks=(1, 1, 12), dtype="float32")
     monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(z3fdb_opener, "_read_grib_grid", Mock(return_value=(HealpixGrid(1, 1), False)))
     monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
     builder = Mock()
     monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
@@ -74,7 +79,6 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
     original_request = request.copy()
     data = z3fdb_opener.open_z3fdb(
         request=request,
-        grid="hpz0-nested",
         startdate=startdate,
         enddate=enddate,
         freq="h",
@@ -125,6 +129,7 @@ def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, lev
     """Keep selected level IDs and coordinates consistent across HPC/bridge/HPC parts."""
     zarr_array = zarr.zeros(shape=(1, 1, len(expected_ids), 12), chunks=(1, 1, len(expected_ids), 12), dtype="float32")
     monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(z3fdb_opener, "_read_grib_grid", Mock(return_value=(HealpixGrid(1, 1), False)))
     monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
     builder = Mock()
     monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
@@ -135,7 +140,6 @@ def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, lev
     original_request = deepcopy(request)
     data = Z3FDB(
         request=request,
-        grid="hpz0-nested",
         metadata={"levels": level_values} if level_values is not None else {},
         level=levels,
         data_start_date="20200101T0000",
@@ -143,10 +147,7 @@ def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, lev
         bridge_start_date="20200101T0100",
         bridge_end_date="20200101T0100",
     )
-    add_healpix = Mock(wraps=z3fdb_opener.add_healpix_coordinates)
-    monkeypatch.setattr(z3fdb_opener, "add_healpix_coordinates", add_healpix)
     result = Z3FDBDatasetReader(data).read()
-    add_healpix.assert_called_once()
 
     assert request == original_request
     assert data.level_values == level_values
@@ -156,6 +157,60 @@ def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, lev
     assert result.level.attrs["units"] == "hPa"
     assert builder.add_part.call_count == 3
     assert all(call.args[0]["levelist"] == expected_ids for call in builder.add_part.call_args_list)
+
+
+@pytest.mark.parametrize(
+    "metadata, config_fdb, expected_configs",
+    [
+        (
+            {"fdb_home": "/hpc", "fdb_home_bridge": "/bridge"},
+            None,
+            ["/hpc/etc/fdb/config.yaml", "/bridge/etc/fdb/config.yaml", "/hpc/etc/fdb/config.yaml"],
+        ),
+        (
+            {"fdb_path": "/hpc.yaml", "fdb_path_bridge": "/bridge.yaml"},
+            None,
+            ["/hpc.yaml", "/bridge.yaml", "/hpc.yaml"],
+        ),
+        ({"fdb_path": "/hpc.yaml"}, None, ["/hpc.yaml"] * 3),
+        (
+            {"fdb_home": "/hpc", "fdb_path_bridge": "/bridge.yaml"},
+            "/override.yaml",
+            ["/override.yaml"] * 3,
+        ),
+    ],
+    ids=["homes", "paths", "bridge-fallback", "config-override"],
+)
+def test_z3fdb_repeated_reads_preserve_metadata(monkeypatch, metadata, config_fdb, expected_configs):
+    """Repeated source reads retain FDB routing and grid metadata for every period."""
+    metadata = {**metadata, "source_grid_name": "hpz0-nested", "levels": [1000]}
+    original_metadata = deepcopy(metadata)
+    opener = Mock(
+        side_effect=lambda request, **kwargs: xr.Dataset(
+            {"var130": ("time", da.ones(1))}, coords={"time": [kwargs["startdate"]]}
+        )
+    )
+    monkeypatch.setattr("aqua.core.intake_drivers.fdb.readers.open_z3fdb", opener)
+    source = IntakeFDBSource(
+        request={"param": [130], "levtype": "pl", "levelist": [1000]},
+        metadata=metadata,
+        engine="z3fdb",
+        config_fdb=config_fdb,
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date="20200101T0100",
+        bridge_end_date="20200101T0100",
+    )
+
+    first = source.to_dask()
+    second = source.to_dask()
+
+    assert [call.kwargs["config"] for call in opener.call_args_list] == expected_configs * 2
+    assert all("grid" not in call.kwargs for call in opener.call_args_list)
+    assert opener.call_args_list[:3] == opener.call_args_list[3:]
+    assert metadata == source.metadata == original_metadata
+    assert isinstance(second.var130.data, da.Array)
+    xr.testing.assert_identical(first, second)
 
 
 def test_build_mars_requests_years_and_dates_parsing():
@@ -384,107 +439,6 @@ def test_z3fdb_missing_attrs_raise() -> None:
         reduce_fdb_zarr_store(store)
 
 
-@pytest.mark.parametrize("ordering", ["ring", "nested"])
-def test_z3fdb_healpix_coordinates(ordering):
-    """Use declared ordering without rearranging field values or losing history."""
-    values = da.arange(48, chunks=48)[None, :]
-    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original", "AQUA_source": "test"})
-    result = z3fdb_opener.add_coordinates(data, grid=f"hpz1-{ordering}")
-    hp = astropy_healpix.HEALPix(nside=2, order=ordering)
-    lon, lat = hp.healpix_to_lonlat(np.arange(48))
-    lon_bounds, lat_bounds = hp.boundaries_lonlat(np.arange(48), step=1)
-    np.testing.assert_allclose(result.lon, lon.to_value("deg"))
-    np.testing.assert_allclose(result.lat, lat.to_value("deg"))
-    np.testing.assert_allclose(result.lon_bounds, lon_bounds.to_value("deg"))
-    np.testing.assert_allclose(result.lat_bounds, lat_bounds.to_value("deg"))
-    assert result.test.data is values
-    assert result.attrs["AQUA_source"] == "test"
-    assert "original" in result.attrs["history"]
-    assert "declared z3fdb grid" in result.attrs["history"]
-
-
-@pytest.mark.parametrize("grid", [None, "healpix_unstructured", "lon-lat", "hpz1", "unknown", {"nside": 2}])
-def test_z3fdb_ambiguous_grid_rejected(grid):
-    """A HEALPix-compatible point count must not identify the grid or ordering."""
-    data = xr.Dataset(coords={"cell": np.arange(48)})
-    with pytest.raises(ValueError):
-        z3fdb_opener.add_coordinates(data, grid=grid)
-
-
-@pytest.mark.parametrize("nside,ordering,ncell", [(2, "ring", 12), (3, "nested", 108), (0, "ring", 0)])
-def test_z3fdb_invalid_healpix_grid(nside, ordering, ncell):
-    """Validate resolution before allocating coordinate arrays."""
-    data = xr.Dataset(coords={"cell": np.arange(ncell)})
-    with pytest.raises(ValueError):
-        z3fdb_opener.add_coordinates(data, grid={"nside": nside, "ordering": ordering})
-
-
-@pytest.mark.parametrize("latitudes", [[-5.0, 0.0], [0.0, -5.0]])
-@pytest.mark.parametrize("dims", [["lat", "lon"], ["lon", "lat"]])
-def test_z3fdb_structured_grid_order(monkeypatch, dims, latitudes):
-    """Restore a non-global grid in its declared scanning order and keep lazy fields."""
-    grid_data = xr.Dataset(coords={"lon": [30.0, 32.0, 34.0], "lat": latitudes})
-    grid_data.lon.attrs.update(units="degrees_east", standard_name="longitude")
-    grid_data.lat.attrs.update(units="degrees_north", standard_name="latitude")
-    monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", Mock(return_value=Mock(to_dask=Mock(return_value=grid_data))))
-    monkeypatch.setattr("aqua.core.regridder.grid_dict_handler.check_existing_file", lambda path: True)
-    values = da.arange(6, chunks=6)[None, :]
-    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original"})
-    result = z3fdb_opener.add_coordinates(data, grid={"path": "grid.nc", "fdb_dims": dims})
-    assert result.test.dims == ("time", *dims)
-    assert isinstance(result.test.data, da.Array)
-    np.testing.assert_array_equal(result.test.to_numpy().ravel(), np.arange(6))
-    xr.testing.assert_identical(result.lon, grid_data.lon)
-    xr.testing.assert_identical(result.lat, grid_data.lat)
-    assert "original" in result.attrs["history"]
-
-
-@pytest.mark.parametrize("dims,ncell", [(None, 6), (["lon"], 6), (["lat", "lon"], 5)])
-def test_z3fdb_grid_file_layout_rejected(monkeypatch, dims, ncell):
-    """Reject missing storage order and size mismatches instead of guessing dimensions."""
-    grid_data = xr.Dataset(coords={"lon": [30.0, 32.0, 34.0], "lat": [-5.0, 0.0]})
-    monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", Mock(return_value=Mock(to_dask=Mock(return_value=grid_data))))
-    monkeypatch.setattr("aqua.core.regridder.grid_dict_handler.check_existing_file", lambda path: True)
-    with pytest.raises(ValueError):
-        z3fdb_opener.add_coordinates(xr.Dataset(coords={"cell": np.arange(ncell)}), grid={"path": "grid.nc", "fdb_dims": dims})
-
-
-@pytest.mark.parametrize(
-    "filename,ncell,longitude,latitude,dims",
-    [
-        ("IFS/ifs-multiIO-r025s.nc", 1440 * 721, "lon", "lat", ["lat", "lon"]),
-        ("NEMO/eORCA1_mesh_sfc_grid_T.nc", 120184, "lon", "lat", None),
-        ("FESOM/pi_fesom_mask_nz1.nc", 3140, "lon", "lat", None),
-    ],
-)
-def test_z3fdb_existing_grid_file(filename, ncell, longitude, latitude, dims):
-    """Read coordinate metadata through Intake using existing regular and native grids."""
-    path = Path(__file__).resolve().parents[1] / "AQUA_tests" / "grids" / filename
-    if not path.is_file():
-        pytest.skip("AQUA_tests grid files are not available")
-    values = da.zeros((1, ncell), chunks=(1, ncell))
-    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original"})
-    result = z3fdb_opener.add_coordinates(data, grid={"path": str(path), "fdb_dims": dims})
-    try:
-        assert isinstance(result.test.data, da.Array)
-        assert result[longitude].size == (1440 if dims else ncell)
-        assert result[latitude].size == (721 if dims else ncell)
-        assert "original" in result.attrs["history"]
-        if not dims:
-            assert "lon_bnds" in result.coords and "lat_bnds" in result.coords
-    finally:
-        result.close()
-
-
-@pytest.mark.parametrize("ordering", ["ring", "nested"])
-def test_z3fdb_grid_resolution(ordering):
-    """Resolve generic HEALPix names and inline definitions through the shared handler."""
-    handler = GridDictHandler({"grids": {}})
-    expected = {"nside": 8, "ordering": ordering}
-    assert handler.normalize_fdb_grid(f"hpz3-{ordering}") == expected
-    assert handler.normalize_fdb_grid(expected) == expected
-
-
 def test_build_zarr_axes_chunking() -> None:
     """Test time and vertical chunking options in _build_zarr_axes."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_zarr_axes, z3fdb_available
@@ -539,79 +493,135 @@ def test_build_zarr_axes_chunking() -> None:
     assert axes_fallback[2].chunking == Chunking.SINGLE_VALUE
 
 
-@pytest.mark.parametrize("override", [None, "hpz1-nested", "conflict"])
-@pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
-def test_z3fdb_backend_grid_forwarding(monkeypatch, engine, override):
-    """Resolve the source grid in the catalog's configuration context only for z3fdb."""
-    source_grid = "lon-lat" if override == "hpz1-nested" else "hpz1-ring"
-    source = Mock(metadata={"source_grid_name": source_grid, "variables": [130]})
-    entry = Mock(return_value=source)
+@pytest.fixture
+def grib_message():
+    """Build GRIB messages in memory without adding test-data files."""
 
-    def setup(backend, *args, **kwargs):
-        backend.kwargs = {"engine": engine}
-        backend.machine = "test"
-        backend.source = "source"
-        backend.esmcat = source
-        backend.expcat = Mock(metadata={}, _entries={"source": entry})
+    def make_message(grid_type="healpix", **keys):
+        handle = ecc.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+        try:
+            ecc.codes_set(handle, "gridType", grid_type)
+            for key, value in keys.items():
+                ecc.codes_set(handle, key, value)
+            return ecc.codes_get_message(handle)
+        finally:
+            ecc.codes_release(handle)
 
-    monkeypatch.setattr(BackendIntakeFDB, "setup_catalog", setup)
-    load_config = Mock(return_value={"grids": {}})
-    monkeypatch.setattr("aqua.core.backend.backend_intake_fdb.load_multi_yaml", load_config)
-    config = Mock()
-    config.paths.get_reader_folders.return_value = ("fixes", "grid-config")
-    config.get_machine_info.return_value = ({"paths": {"grids": "grid-files"}}, {})
-    if override == "conflict":
-        override = "hpz1-nested"
-        if engine == "z3fdb":
-            with pytest.raises(ValueError, match="conflicts"):
-                BackendIntakeFDB("model", "exp", "source", configurer_catalog=config, engine=engine, grid=override)
-            return
-    backend = BackendIntakeFDB("model", "exp", "source", configurer_catalog=config, engine=engine, grid=override)
-    if engine == "z3fdb":
-        assert backend.kwargs["grid"] == {"nside": 2, "ordering": "ring" if override is None else "nested"}
-        assert entry.call_args.kwargs["grid"] == backend.kwargs["grid"]
-        assert load_config.call_args.kwargs["definitions"] == {"grids": "grid-files"}
-    else:
-        assert "grid" not in backend.kwargs
-        load_config.assert_not_called()
+    return make_message
 
 
-def test_z3fdb_configured_grid_file(monkeypatch):
-    """Reuse configured aliases and accept inline storage declarations without mutating them."""
-    monkeypatch.setattr("aqua.core.regridder.grid_dict_handler.check_existing_file", lambda path: True)
-    definition = {"path": "grid.nc", "fdb_dims": ["lat", "lon"]}
-    original = deepcopy(definition)
-    handler = GridDictHandler({"grids": {"regional": deepcopy(definition)}})
-    expected = {"path": {"2d": "grid.nc"}, "fdb_dims": ["lat", "lon"]}
-    assert handler.normalize_fdb_grid("regional") == expected
-    assert handler.normalize_fdb_grid(definition) == expected
-    assert definition == original
+@pytest.mark.parametrize("ordering", [0, 1], ids=["ring", "nested"])
+def test_z3fdb_healpix_from_grib(monkeypatch, grib_message, ordering):
+    """Use the GRIB ordering even when both grids have the same number of points."""
+    stream = BytesIO(grib_message(Nside=2, ordering=ordering))
+    fdb = Mock(retrieve=Mock(return_value=stream))
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=fdb))
+    grid, reverse = z3fdb_opener._read_grib_grid({"param": [130], "date": "20200101/to/20200102"})
+    values = da.arange(48, chunks=48)[None, :]
+    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original", "AQUA_source": "test"})
+    result = z3fdb_opener.add_coordinates(data, grid, reverse_latitude=reverse)
+    hp = astropy_healpix.HEALPix(nside=2, order="nested" if ordering else "ring")
+    lon, lat = hp.healpix_to_lonlat(np.arange(48))
+    np.testing.assert_allclose(result.lon, lon.to_value("deg"))
+    np.testing.assert_allclose(result.lat, lat.to_value("deg"))
+    assert result.test.data is values
+    assert result.lon_bounds.shape == result.lat_bounds.shape == (48, 4)
+    assert result.attrs["AQUA_source"] == "test"
+    assert "original" in result.attrs["history"]
+    assert stream.closed
+    fdb.retrieve.assert_called_once_with({"param": "130", "date": "20200101"})
 
 
-def test_z3fdb_unstructured_grid_order_and_cache(monkeypatch):
-    """A declared 48-point mesh stays unstructured and its coordinates are read once."""
+@pytest.mark.parametrize("south_first", [False, True])
+def test_z3fdb_lonlat_matches_gsv(monkeypatch, grib_message, south_first):
+    """Match GSV's shape and scan-direction handling without computing z3fdb fields."""
+    message = grib_message("regular_ll", Ni=4, Nj=3, latitudeOfFirstGridPointInDegrees=-90 if south_first else 90)
+    handle = ecc.codes_new_from_message(message)
+    try:
+        ecc.codes_set_values(handle, np.arange(12))
+        message = ecc.codes_get_message(handle)
+        grid = z3fdb_opener.read_grid(handle)
+        expected = grid.reshape_for_xarray(grid.read_values(handle))[0, 0]
+        values = da.from_array(ecc.codes_get_values(handle), chunks=12)[None, :]
+    finally:
+        ecc.codes_release(handle)
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=BytesIO(message)))))
+    grid, reverse = z3fdb_opener._read_grib_grid({"param": 130})
+    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original"})
+    result = z3fdb_opener.add_coordinates(data, grid, reverse_latitude=reverse)
+    assert result.test.dims == ("time", "lat", "lon")
+    assert isinstance(result.test.data, da.Array)
+    np.testing.assert_array_equal(result.test[0], expected)
+    np.testing.assert_array_equal(result.lon, [0, 90, 180, 270])
+    np.testing.assert_array_equal(result.lat, [90, 0, -90])
+    assert "original" in result.attrs["history"]
+
+
+@pytest.mark.parametrize("grid_type", ["reduced_gg", "unstructured_grid"])
+def test_z3fdb_unstructured_matches_gsv(monkeypatch, grib_message, grid_type):
+    """Reuse GSV's file lookup and leave a HEALPix-sized unstructured mesh flat."""
+    stream = BytesIO(grib_message(grid_type))
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
+    grid, reverse = z3fdb_opener._read_grib_grid({"param": 130})
     grid_data = xr.Dataset(
-        coords={
-            "points": np.arange(100, 148),
-            "longitude": ("points", np.linspace(20, 40, 48), {"units": "degrees_east"}),
-            "latitude": ("points", np.linspace(-10, 10, 48), {"units": "degrees_north"}),
+        {
+            "lon": ("points", np.linspace(20, 40, 48), {"units": "degrees_east"}),
+            "lat": ("points", np.linspace(-10, 10, 48), {"units": "degrees_north"}),
+            "lon_bnds": (("points", "vertices"), np.zeros((48, 4))),
+            "lat_bnds": (("points", "vertices"), np.zeros((48, 4))),
         }
     )
-    source = Mock(to_dask=Mock(return_value=grid_data))
-    open_grid = Mock(return_value=source)
-    monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", open_grid)
-    monkeypatch.setattr("aqua.core.regridder.grid_dict_handler.check_existing_file", lambda path: True)
+    monkeypatch.setattr(type(grid), "GRID_DEFINITION_ROOT", Path("/grids"))
+    monkeypatch.setattr(type(grid), "GRID_DEFINITIONS", {grid.grid_name: "mesh.nc"})
+    open_grid = Mock(return_value=grid_data)
+    monkeypatch.setattr("gsv.grids.unstructured_grid.xr.open_dataset", open_grid)
     values = da.arange(48, chunks=48)[None, :]
-    cache = {}
-    for _ in range(2):
-        result = z3fdb_opener.add_coordinates(
-            xr.Dataset({"test": (("time", "cell"), values)}), grid={"path": "mesh.nc"}, _cache=cache
-        )
-        assert result.test.data is values
-        assert result.longitude.dims == result.latitude.dims == ("cell",)
-        np.testing.assert_array_equal(result.longitude, grid_data.longitude)
-        np.testing.assert_array_equal(result.latitude, grid_data.latitude)
-        assert "lon" not in result.coords
-    open_grid.assert_called_once_with("mesh.nc")
-    source.to_dask.assert_called_once()
-    result.close()
+    result = z3fdb_opener.add_coordinates(xr.Dataset({"test": (("time", "cell"), values)}), grid)
+    assert result.test.data is values
+    assert result.lon.dims == result.lat.dims == ("cell",)
+    np.testing.assert_array_equal(result.lon, grid_data.lon)
+    np.testing.assert_array_equal(result.lat, grid_data.lat)
+    assert result.lon.attrs["bounds"] == "lon_bounds"
+    open_grid.assert_called_once_with(Path("/grids/mesh.nc"))
+    assert not reverse
+
+
+@pytest.mark.parametrize("config", [None, "/fdb.yaml"])
+def test_z3fdb_grid_sample_config(monkeypatch, grib_message, config):
+    """The metadata probe uses the selected FDB and a single field from a ranged request."""
+    stream = BytesIO(grib_message(Nside=1, ordering=0))
+    fdb = Mock(retrieve=Mock(return_value=stream))
+    factory = Mock(return_value=fdb)
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", factory)
+    load_config = Mock(return_value={"type": "local"})
+    monkeypatch.setattr(z3fdb_opener, "load_yaml", load_config)
+    request = {"param": [130, 131], "levelist": [900, 800], "date": "20200101/to/20200102", "time": "0000/to/2300/by/1"}
+    original = deepcopy(request)
+    z3fdb_opener._read_grib_grid(request, config)
+    factory.assert_called_once_with(config={"type": "local"} if config else None)
+    if config:
+        load_config.assert_called_once_with(config)
+    else:
+        load_config.assert_not_called()
+    fdb.retrieve.assert_called_once_with({"param": "130", "levelist": "900", "date": "20200101", "time": "0000"})
+    assert request == original
+    assert stream.closed
+
+
+@pytest.mark.parametrize("unsupported", [False, True], ids=["no-data", "unsupported-grid"])
+def test_z3fdb_grid_probe_errors(monkeypatch, grib_message, unsupported):
+    """Reject missing/unsupported grids and release native handles on failure."""
+    stream = BytesIO(grib_message("rotated_ll") if unsupported else b"")
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
+    release = Mock(wraps=ecc.codes_release)
+    monkeypatch.setattr(z3fdb_opener.ecc, "codes_release", release)
+    with pytest.raises(InvalidSourceGridError if unsupported else NoDataError):
+        z3fdb_opener._read_grib_grid({"param": 130})
+    assert release.call_count == int(unsupported)
+    assert stream.closed
+
+
+def test_z3fdb_grid_size_mismatch():
+    """Reject mismatches rather than assigning plausible coordinates by cell count."""
+    with pytest.raises(ValueError, match="point count"):
+        z3fdb_opener.add_coordinates(xr.Dataset(coords={"cell": np.arange(48)}), HealpixGrid(1, 0))

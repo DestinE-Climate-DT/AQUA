@@ -5,22 +5,18 @@ import copy
 import copyreg
 import os
 from collections import defaultdict
-from math import prod
+from contextlib import closing
 
-import astropy_healpix
 import dask.array as da
-import intake
+import eccodes as ecc
 import numpy as np
 import pandas as pd
 import xarray as xr
 import zarr
 
-from aqua.core.data_model import CoordIdentifier
-from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE
+from aqua.core.exceptions import NoDataError
 from aqua.core.logger import log_configure, log_history
-from aqua.core.regridder.grid_dict_handler import GridDictHandler
-from aqua.core.regridder.regridder_util import get_grid_path
-from aqua.core.util import to_list
+from aqua.core.util import load_yaml, to_list
 
 xr.set_options(keep_attrs=True)
 
@@ -54,13 +50,16 @@ logger = log_configure(log_level="WARNING", log_name="z3fdb_opener")
 
 # Test if z3fdb module is available
 try:
+    import pyfdb
+    from gsv.decoder.grid_decoder import read_grid
+    from gsv.iterator import StreamMessageIterator
     from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
     from z3fdb._internal.zarr import FdbZarrStore
 
     z3fdb_available = True
-except ImportError:
+except (ImportError, RuntimeError):
     z3fdb_available = False
-    z3fdb_error_cause = "z3fdb cannot be imported."
+    z3fdb_error_cause = "z3fdb, pyfdb and gsv-interface are required for z3fdb access."
 
 # FdbZarrStore (which accesses FDB data) embeds a C++ wrapped ChunkedDataView that cannot be pickled.
 # When running on a Dask distributed cluster, this prevented Dask from serializing
@@ -384,149 +383,54 @@ def to_dataset(
     return ds
 
 
-def add_healpix_coordinates(ds, nside=None, ordering=None):
-    """Add coordinates for an explicitly declared full HEALPix grid.
-
-    Args:
-        ds (xr.Dataset): Dataset with a flat cell dimension.
-        nside (int, optional): Declared HEALPix resolution. Required.
-        ordering (str, optional): Declared 'nested' or 'ring' ordering. Required.
-
-    Returns:
-        xr.Dataset: Dataset with coordinates and bounds in the stored cell order.
-
-    Raises:
-        ValueError: When the grid declaration is incomplete or has the wrong size.
-    """
-    if not isinstance(nside, int) or nside <= 0 or nside & (nside - 1) or ordering not in ("nested", "ring"):
-        raise ValueError("HEALPix coordinates require a positive power-of-two nside and explicit nested/ring ordering.")
-    ncell = ds.sizes["cell"]
-    if ncell != 12 * nside**2:
-        raise ValueError("Data cell count does not match the declared HEALPix resolution.")
-
-    hp = astropy_healpix.HEALPix(nside=nside, order=ordering)
-    lon, lat = hp.healpix_to_lonlat(np.arange(ncell))
-    lon_vals = lon.to_value("deg")
-    lat_vals = lat.to_value("deg")
-
-    lon_b, lat_b = hp.boundaries_lonlat(np.arange(ncell), step=1)
-    lon_b_vals = lon_b.to_value("deg")
-    lat_b_vals = lat_b.to_value("deg")
-
-    ds = ds.assign_coords(
-        {
-            "lon": (
-                ("cell",),
-                lon_vals,
-                {"units": "degrees_east", "standard_name": "longitude", "long_name": "longitude", "bounds": "lon_bounds"},
-            ),
-            "lat": (
-                ("cell",),
-                lat_vals,
-                {"units": "degrees_north", "standard_name": "latitude", "long_name": "latitude", "bounds": "lat_bounds"},
-            ),
-            "lon_bounds": (("cell", "vertices"), lon_b_vals, {"units": "degrees_east"}),
-            "lat_bounds": (("cell", "vertices"), lat_b_vals, {"units": "degrees_north"}),
-        }
-    )
-    return ds
-
-
-def _add_grid_file_coordinates(ds, grid, cache):
-    """Attach file coordinates in the declared order of the flat FDB values."""
-    if "grid_data" not in cache:
-        cache["grid_data"] = intake.open_netcdf(get_grid_path(grid["path"])).to_dask()
-    grid_data = cache["grid_data"]
+def _read_grib_grid(mars, config=None):
+    """Decode the grid of one field using the same FDB configuration as z3fdb."""
+    sample = {key: str(to_list(value)[0]).split("/")[0] for key, value in mars.items()}
+    fdb = pyfdb.FDB(config=load_yaml(config) if config else None)
+    with closing(fdb.retrieve(sample)) as stream:
+        message = next(StreamMessageIterator(stream), None)
+    if message is None:
+        raise NoDataError("No GRIB message found to identify the z3fdb grid.")
+    handle = ecc.codes_new_from_message(message)
     try:
-        if "identified" not in cache:
-            bounds = {var.attrs["bounds"] for var in grid_data.variables.values() if var.attrs.get("bounds")}
-            candidates = grid_data.drop_vars(bounds | {"lon_bounds", "lat_bounds", "lon_bnds", "lat_bnds"}, errors="ignore")
-            cache["identified"] = CoordIdentifier(
-                candidates.set_coords(list(candidates.data_vars)).coords, loglevel=logger.getEffectiveLevel()
-            ).identify_coords()
-        identified = cache["identified"]
-        longitude, latitude = identified[AQUA_LONGITUDE], identified[AQUA_LATITUDE]
-        if longitude is None or latitude is None:
-            raise ValueError("The z3fdb grid file must identify longitude and latitude coordinates.")
-        names = [longitude["name"], latitude["name"]]
-        horizontal_dims = set(longitude["dims"]) | set(latitude["dims"])
-        dims = to_list(grid.get("fdb_dims"))
-        if not dims and len(horizontal_dims) == 1:
-            dims = list(horizontal_dims)
-        if not dims or set(dims) != horizontal_dims or len(dims) != len(horizontal_dims):
-            raise ValueError("Structured z3fdb grids require fdb_dims listing their storage dimensions, slowest first.")
-        if horizontal_dims & {"time", "level"}:
-            raise ValueError("Grid longitude/latitude must depend only on horizontal dimensions.")
-        if prod(grid_data.sizes[dim] for dim in dims) != ds.sizes["cell"]:
-            raise ValueError("Data cell count does not match the grid coordinate file.")
-
-        for name in list(names):
-            bounds = grid_data[name].attrs.get("bounds")
-            if bounds:
-                if bounds not in grid_data:
-                    raise ValueError(f"Grid coordinate {name} refers to missing bounds {bounds}.")
-                names.append(bounds)
-        names.extend(name for name in ("lon_bounds", "lat_bounds", "lon_bnds", "lat_bnds") if name in grid_data)
-
-        if len(dims) == 1:
-            rename = {dims[0]: "cell"}
-        else:
-            if "cell" in horizontal_dims:
-                raise ValueError("Structured grid dimensions must use names other than cell.")
-            shape = tuple(grid_data.sizes[dim] for dim in dims)
-            variables = {
-                name: xr.Variable(var.dims[:-1] + tuple(dims), var.data.reshape(var.shape[:-1] + shape), attrs=var.attrs)
-                for name, var in ds.data_vars.items()
-            }
-            ds = ds.drop_dims("cell").assign(variables)
-            rename = {}
-        if any(set(grid_data[name].dims) & {"time", "level"} for name in names):
-            raise ValueError("Grid coordinates and bounds must not depend on time or level.")
-        coordinates = {
-            name: xr.Variable(
-                tuple(rename.get(dim, dim) for dim in grid_data[name].dims), grid_data[name].data, attrs=grid_data[name].attrs
-            )
-            for name in names
-        }
-        ds = ds.assign_coords(coordinates)
-    except Exception:
-        grid_data.close()
-        raise
-    ds.set_close(grid_data.close)
-    return ds
+        grid = read_grid(handle)
+        reverse_latitude = grid.grid_type == "regular_ll" and ecc.codes_get(handle, "latitudeOfFirstGridPoint") < 0
+    finally:
+        ecc.codes_release(handle)
+    return grid, reverse_latitude
 
 
-def add_coordinates(ds, levunits=None, grid_type=None, grid=None, _cache=None):
-    """Attach coordinates from an explicit HEALPix declaration or grid file.
+def add_coordinates(ds, grid, levunits=None, reverse_latitude=False):
+    """Attach coordinates using GSV's HEALPix, global lat/lon or unstructured grid.
 
     Args:
-        ds (xr.Dataset): Dataset with a flat cell dimension.
-        levunits (str, optional): Units of the level coordinate. Defaults to None.
-        grid_type (str, optional): Legacy grid argument; ambiguous types are rejected.
-        grid (str or dict, optional): Explicit grid name or resolved definition. Defaults to None.
-        _cache (dict, optional): Coordinate cache shared within one Intake read. Defaults to None.
+        ds (xr.Dataset): Dataset with a flat cell dimension in GRIB value order.
+        grid (gsv.grids.Grid): Grid decoded from a representative GRIB message.
+        levunits (str, optional): Vertical coordinate units. Defaults to None.
+        reverse_latitude (bool, optional): Flip south-to-north regular fields. Defaults to False.
 
     Returns:
-        xr.Dataset: Dataset with validated spatial coordinates and unchanged field ordering.
+        xr.Dataset: Dataset with coordinates and lazy field data.
 
     Raises:
-        ValueError: When the grid is ambiguous or its shape does not match the data.
+        ValueError: When the decoded grid size does not match the field data.
     """
+    if ds.sizes["cell"] != grid.npix:
+        raise ValueError("GRIB grid point count does not match the z3fdb cell dimension.")
     if levunits:
         ds.level.attrs["units"] = levunits
-    grid = GridDictHandler({"grids": {}}).normalize_fdb_grid(grid if grid is not None else grid_type)
-    cache = {} if _cache is None else _cache
-    if "nside" in grid:
-        if "coordinates" not in cache:
-            ds = add_healpix_coordinates(ds, nside=grid["nside"], ordering=grid.get("ordering"))
-            cache["coordinates"] = {name: ds.coords[name] for name in ("lon", "lat", "lon_bounds", "lat_bounds")}
-        elif ds.sizes["cell"] != cache["coordinates"]["lon"].size:
-            raise ValueError("Data cell count does not match the declared HEALPix resolution.")
-        else:
-            ds = ds.assign_coords(cache["coordinates"])
+
+    if grid.grid_type == "regular_ll":
+        variables = {}
+        for name, var in ds.data_vars.items():
+            values = var.data.reshape(var.shape[:-1] + (grid.nj, grid.ni))
+            if reverse_latitude:
+                values = values[..., ::-1, :]
+            variables[name] = xr.Variable(var.dims[:-1] + ("lat", "lon"), values, attrs=var.attrs)
+        ds = ds.drop_dims("cell").assign(variables).assign_coords(grid.full_coords)
     else:
-        ds = _add_grid_file_coordinates(ds, grid, cache)
-    log_history(ds, f"Spatial coordinates assigned from declared z3fdb grid {grid}")
+        ds = ds.assign_coords({name: coord.rename({"ncells": "cell"}) for name, coord in grid.full_coords.items()})
+    log_history(ds, f"Spatial coordinates decoded from GRIB grid {grid.grid_id}")
     return ds
 
 
@@ -544,7 +448,6 @@ def open_z3fdb(
     chunks=None,
     level_values=None,
     grid=None,
-    _coordinate_cache=None,
 ):
     """Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
 
@@ -569,9 +472,7 @@ def open_z3fdb(
             The time axis is always chunked as single values. Defaults to None.
         level_values (float or list, optional): Physical values matching the full request levelist.
             Defaults to the level IDs.
-        grid (str or dict, optional): Explicit HEALPix name or resolved grid-file definition.
-            Required for geographic coordinates; defaults to None.
-        _coordinate_cache (dict, optional): Coordinate cache for one Intake read. Defaults to None.
+        grid (str, optional): Legacy hint, ignored. The GRIB message defines the grid.
 
     Returns:
         xarray.Dataset: Lazy (dask-backed) xr.Dataset.
@@ -658,7 +559,8 @@ def open_z3fdb(
         levels=level_values,
     )
 
-    ds = add_coordinates(ds, levunits=levunits, grid=grid, _cache=_coordinate_cache)
+    source_grid, reverse_latitude = _read_grib_grid(mars_list[0], fdb_config_file)
+    ds = add_coordinates(ds, source_grid, levunits=levunits, reverse_latitude=reverse_latitude)
 
     # Convert list of dictionaries to list of strings
     def _mars_to_str(req):
