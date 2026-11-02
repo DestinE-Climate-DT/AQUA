@@ -286,8 +286,8 @@ The ``aqua`` accessor exposes Reader operations on xarray Datasets and DataArray
     data = reader.retrieve(var="2t")
     mean = data.aqua.timmean(freq="YS").aqua.fldmean()
 
-Objects returned by Reader operations retain that Reader for subsequent ``.aqua`` calls,
-without changing the global default. ``convert_data_units()``, ``select_season()``, and
+Objects returned by Reader operations retain that Reader for subsequent ``.aqua`` calls.
+Transformations do not change the global default. ``convert_data_units()``, ``select_season()``, and
 Trender operations also preserve an existing input binding.
 
 .. warning::
@@ -318,7 +318,8 @@ Or explicitly bind the selected object before chaining:
 
 ``field.aqua.set_default(reader)`` binds that object **and changes the global default**.
 ``reader.set_default()`` only changes the default for new accessors; it does not rebind
-existing ones. Reader construction also sets the global default; retrieval does not.
+existing ones. Reader construction and ``retrieve()`` also set the global default.
+For example, ``reader1.retrieve()`` makes ``reader1`` the default for subsequently accessed objects.
 Further ordinary xarray operations may require binding again.
 
 Parallel Processing

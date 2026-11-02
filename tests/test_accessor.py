@@ -137,7 +137,7 @@ def test_retrieve_binds_preprocessed_result(reader_instance, reader_instance2, d
 
     def preprocess(dataset):
         assert dataset.aqua.instance is reader_instance
-        assert Reader.instance is reader_instance2
+        assert Reader.instance is reader_instance
         if preprocessing == "identity":
             return dataset
         result = dataset.isel(time=slice(0, 1))
@@ -148,12 +148,34 @@ def test_retrieve_binds_preprocessed_result(reader_instance, reader_instance2, d
     monkeypatch.setattr(reader_instance, "preproc", None if preprocessing == "none" else preprocess)
     reader_instance2.set_default()
     result = reader_instance.retrieve(var="2t")
-    assert Reader.instance is reader_instance2
+    expected_default = reader_instance2 if preprocessing == "other_reader" else reader_instance
+    assert Reader.instance is expected_default
     assert result.aqua.instance is reader_instance
     assert result.sizes["time"] == (2 if preprocessing in ("none", "identity") else 1)
     expected = reader_instance.fldmean(result)
     reader_instance2.set_default()
     xr.testing.assert_allclose(result.aqua.fldmean().compute(), expected.compute())
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("operation", ["regrid_variable", "mean_regridded_variable"])
+def test_retrieve_restores_default_for_variable_access(reader_instance, reader_instance2, operation):
+    """Retrieval must keep legacy variable-extraction chains on the retrieving Reader."""
+    reader_instance2.set_default()
+    dataset = reader_instance.retrieve(var="2t")
+    assert Reader.instance is reader_instance
+
+    if operation == "regrid_variable":
+        result = dataset["2t"].aqua.regrid()
+        assert result.lon.size == 360
+        assert result.aqua.instance is reader_instance
+    else:
+        regridded = reader_instance.regrid(dataset)
+        actual = regridded["2t"].aqua.fldmean()
+        expected = reader_instance.fldmean(regridded["2t"])
+        xr.testing.assert_allclose(actual.compute(), expected.compute())
+        assert actual.aqua.instance is reader_instance
+    assert Reader.instance is reader_instance
 
 
 @pytest.mark.aqua

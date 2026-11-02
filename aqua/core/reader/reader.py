@@ -419,7 +419,7 @@ class Reader:
 
         data = self.backend.retrieve(var=var, level=level, level_coord=level_coord, startdate=startdate, enddate=enddate)
 
-        data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
+        data.aqua.set_default(self)  # Retrieval selects the global Reader for newly accessed objects.
 
         # Preprocessing function
         if self.preproc:
