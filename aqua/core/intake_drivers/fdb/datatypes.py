@@ -1,11 +1,4 @@
-from copy import copy
-
 from intake.readers import BaseData
-
-from aqua.core.logger import log_configure
-
-from .openers.dates import FDBDatesMixin
-from .openers.timeutil import FDBTimeMixin
 
 
 class FDB(BaseData):
@@ -93,7 +86,7 @@ class Polytope(FDB):
         super().__init__(request, **kwargs)
 
 
-class Z3FDB(FDB, FDBDatesMixin, FDBTimeMixin):
+class Z3FDB(FDB):
     """Derived Datatype from FDB that uses a z3fdb request"""
 
     structure = {"z3fdb_request"}
@@ -110,25 +103,3 @@ class Z3FDB(FDB, FDBDatesMixin, FDBTimeMixin):
             self.level_values = self.metadata["levels"]
         else:
             self.level_values = None
-
-    def _resolve_dates(self):
-        """Resolve and validate availability on a fresh copy for each read."""
-        data = copy(self)
-        data.request = self.request.copy()
-        data._request = data.request
-        data.engine = "z3fdb"
-        data.logger = log_configure(log_level=self.loglevel, log_name="Z3FDB")
-        config_is_path = self.config_fdb and self.config_fdb.endswith((".yaml", ".yml"))
-        data.fdbhome = self.metadata.get("fdb_home")
-        data.fdbpath = self.metadata.get("fdb_path")
-        if self.config_fdb:
-            data.fdbhome = None if config_is_path else self.config_fdb
-            data.fdbpath = self.config_fdb if config_is_path else None
-        data.fdb_info_file = self.metadata.get("fdb_info_file")
-        data._define_start_end_dates(self.data_start_date, self.data_end_date, self.bridge_start_date, self.bridge_end_date)
-        data._define_retrieve_dates(self.startdate, self.enddate)
-        data._raw_data_start_date = data.data_start_date
-        for attr in ("data_start_date", "data_end_date", "bridge_start_date", "bridge_end_date", "startdate", "enddate"):
-            setattr(data, attr, data._floor_datetime(getattr(data, attr), self.savefreq or self.timestep))
-        data._check_dates()
-        return data

@@ -1,11 +1,16 @@
 import os
+from copy import copy
 
 import pandas as pd
 import xarray as xr
 from intake import BaseReader
 
+from aqua.core.logger import log_configure
+
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
+from .openers.dates import FDBDatesMixin
+from .openers.timeutil import FDBTimeMixin
 
 xr.set_options(keep_attrs=True)
 
@@ -44,7 +49,7 @@ class PolytopeDatasetReader(BaseReader):
         return open_polytope(data.request, **params)
 
 
-class Z3FDBDatasetReader(BaseReader):
+class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
     output_instance = "xarray:Dataset"
     imports = {}
     optional_imports = {}
@@ -53,6 +58,35 @@ class Z3FDBDatasetReader(BaseReader):
         Z3FDB,
     }
     partition_access = True
+
+    def _resolve_dates(self, data):
+        """Resolve availability into a data copy without retaining per-read state."""
+        resolver = copy(self)
+        resolved = copy(data)
+        resolver._request = resolved.request = data.request.copy()
+        resolver.engine = "z3fdb"
+        resolver.timestyle = data.timestyle
+        resolver.hpc_expver = data.hpc_expver
+        resolver.logger = log_configure(log_level=data.loglevel, log_name="Z3FDBDatasetReader")
+        resolver.fdbhome = data.metadata.get("fdb_home")
+        resolver.fdbpath = data.metadata.get("fdb_path")
+        if data.config_fdb:
+            config_is_path = data.config_fdb.endswith((".yaml", ".yml"))
+            resolver.fdbhome = None if config_is_path else data.config_fdb
+            resolver.fdbpath = data.config_fdb if config_is_path else None
+        resolver.fdb_info_file = data.metadata.get("fdb_info_file")
+        resolver._define_start_end_dates(
+            data.data_start_date, data.data_end_date, data.bridge_start_date, data.bridge_end_date
+        )
+        resolver._define_retrieve_dates(data.startdate, data.enddate)
+        resolved._raw_data_start_date = resolver.data_start_date
+        for attr in ("data_start_date", "data_end_date", "bridge_start_date", "bridge_end_date", "startdate", "enddate"):
+            value = resolver._floor_datetime(getattr(resolver, attr), data.savefreq or data.timestep)
+            setattr(resolver, attr, value)
+            setattr(resolved, attr, value)
+        resolver._check_dates()
+        resolved.hpc_expver = resolver.hpc_expver
+        return resolved
 
     def _get_bridge_date(self, val, default_val):
         """Get bridge date as a pandas Timestamp."""
@@ -66,7 +100,7 @@ class Z3FDBDatasetReader(BaseReader):
 
     def _read(self, data, **kwargs):
 
-        data = data._resolve_dates()
+        data = self._resolve_dates(data)
         hpc_home = data.metadata.get("fdb_home")
         hpc_path = data.metadata.get("fdb_path")
         bridge_home = data.metadata.get("fdb_home_bridge")

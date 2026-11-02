@@ -15,6 +15,7 @@ from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
 from aqua.core.intake_drivers.fdb.openers import dates, timeutil
 from aqua.core.intake_drivers.fdb.openers.dates import FDBDatesMixin
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource
+from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
 from aqua.core.util import load_yaml
 
 pytestmark = pytest.mark.aqua
@@ -265,7 +266,8 @@ def test_gsv_and_z3fdb_resolve_same_availability(monkeypatch, filename):
         metadata={"fdb_info_file": str(INFO_FILE.with_name(filename))},
     )
     gsv = GSVSource({"param": [130], "expver": "0001"}, engine="gsv", **kwargs)
-    z3 = Z3FDB({"param": [130], "expver": "0001"}, engine="z3fdb", **kwargs)._resolve_dates()
+    data = Z3FDB({"param": [130], "expver": "0001"}, engine="z3fdb", **kwargs)
+    z3 = Z3FDBDatasetReader(data)._resolve_dates(data)
     for attr in (
         "data_start_date",
         "data_end_date",
