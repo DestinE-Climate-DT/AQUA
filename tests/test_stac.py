@@ -1,110 +1,100 @@
-"""Tests for the Intake STAC backend."""
+"""Reader integration tests for the pystac backend, using the generated local STAC catalogue."""
 
-from unittest.mock import MagicMock, patch
-
-import dask.array as da
 import pytest
-import xarray as xr
 
-from aqua.core.backend.backend_factory import BackendFactory
-from aqua.core.backend.backend_stac import BackendSTAC
+from aqua import Reader
 
+pytestmark = pytest.mark.stac
 
-def _dataset():
-    """Return a small lazy dataset suitable for backend tests."""
-    values = da.from_array([[1.0, 2.0], [3.0, 4.0]], chunks=(1, 2))
-    return xr.Dataset(
-        {"tas": (("time", "x"), values)},
-        coords={"time": ["2000-01-01", "2000-01-02"], "x": [0, 1]},
-    )
+LOGLEVEL = "DEBUG"
+IFS_ITEM = "ifs-short-ifs2d-tco79"
+ERA5_ITEM = "era5-era5-2d-flip-2mon2021"
 
 
-@pytest.mark.stac
-def test_stac_backend_retrieves_and_postprocesses_dataset():
-    """The selected asset is read and passed through fixer and data model."""
-    data = _dataset()
-    asset_reader = MagicMock()
-    asset_reader.read.return_value = data
-    catalog = {"collection": {"item": {"asset": asset_reader}}}
-
-    fixer = MagicMock()
-    fixer.fixer.side_effect = lambda dataset, variables: dataset
-    fixer.fixerdatamodel.apply.side_effect = lambda dataset: dataset
-    datamodel = MagicMock()
-    datamodel.apply.side_effect = lambda dataset: dataset
-
-    with (
-        patch("aqua.core.backend.backend_stac.intake.datatypes.STACJSON") as stac_json,
-        patch("aqua.core.backend.backend_stac.intake.catalogs.StacCatalogReader") as catalog_reader,
-    ):
-        catalog_reader.return_value.read.return_value = catalog
-        backend = BackendSTAC(
-            path="https://example.org/catalog.json",
-            stac={"collection": {"item": "asset"}},
-            chunks={"time": 1},
-            fixer=fixer,
-            datamodel=datamodel,
-            decode_times=False,
-        )
-        result = backend.retrieve(var="tas")
-
-    stac_json.assert_called_once_with("https://example.org/catalog.json")
-    asset_reader.read.assert_called_once_with(chunks={"time": 1}, decode_times=False)
-    fixer.fixer.assert_called_once_with(data, ["tas"])
-    fixer.fixerdatamodel.apply.assert_called_once_with(data)
-    datamodel.apply.assert_called_once_with(data)
-    assert result["tas"].attrs["AQUA_path"] == "https://example.org/catalog.json"
-    assert result["tas"].attrs["AQUA_stac"] == "collection/item/asset"
-    assert "Intake STAC" in result.attrs["history"]
+@pytest.fixture(scope="module")
+def catalog_url(stac_catalogue_dir):
+    """Root catalog of the generated STAC catalogue."""
+    return str(stac_catalogue_dir / "catalog.json")
 
 
-@pytest.mark.parametrize(
-    "selection",
-    [
-        None,
-        {},
-        {"one": "asset", "two": "asset"},
-        {"collection": {}},
-        {"collection": 1},
-        {"": "asset"},
-    ],
-)
-@pytest.mark.stac
-def test_stac_backend_rejects_invalid_selection(selection):
-    """Only a non-empty, single-branch nested mapping is accepted."""
-    with pytest.raises(ValueError):
-        BackendSTAC(path="catalog.json", stac=selection)
+@pytest.fixture(scope="module")
+def era5_item_url(stac_catalogue_dir):
+    """Single STAC item (regular lat-lon grid)."""
+    return str(stac_catalogue_dir / "items" / "era5" / f"{ERA5_ITEM}.json")
 
 
-@pytest.mark.stac
-def test_backend_factory_selects_stac_backend():
-    """A STAC selection takes precedence over native xarray path access."""
-    selection = {"collection": "asset"}
-    factory = BackendFactory(configurer=MagicMock(), path="catalog.json", stac=selection)
-
-    factory.select_backend()
-
-    assert factory.driver == "stac"
-    backend = factory.create_backend(fixer=None, datamodel=None)
-    assert isinstance(backend, BackendSTAC)
-    assert backend.catalog_path == ("collection", "asset")
-    assert backend.read_kwargs["chunks"] == "auto"
+@pytest.fixture(scope="module")
+def collection_url(stac_catalogue_dir):
+    """Single STAC collection."""
+    return str(stac_catalogue_dir / "collections" / "ifs.json")
 
 
-@pytest.mark.stac
-def test_backend_factory_requires_path_for_stac():
-    """A selector without a catalog endpoint is rejected."""
-    with pytest.raises(ValueError, match="STAC catalog path"):
-        BackendFactory(configurer=MagicMock(), stac={"collection": "asset"})
+class TestSTACReader:
+    """Data retrieval through Reader(url=..., stac_kwargs=...)."""
+
+    def test_nested_catalog(self, catalog_url):
+        """Walk catalog -> collection -> item -> asset with a nested mapping."""
+        reader = Reader(url=catalog_url, stac_kwargs={"ifs": {IFS_ITEM: "data"}}, areas=False, loglevel=LOGLEVEL)
+        data = reader.retrieve()
+
+        assert "2t" in data
+        assert data["2t"].chunks is not None  # lazy
+        assert data["2t"].attrs["AQUA_url"] == catalog_url
+        assert "STAC Backend" in data.attrs["history"]
+
+    def test_item_with_asset_key(self, era5_item_url):
+        """An item URL only needs the asset key as a string."""
+        reader = Reader(url=era5_item_url, stac_kwargs="data", areas=False, loglevel=LOGLEVEL)
+        data = reader.retrieve(var="T2M")
+
+        assert list(data.data_vars) == ["T2M"]
+        assert data["T2M"].chunks is not None
+
+    def test_collection_url(self, collection_url):
+        """A collection URL is walked down to one of its items."""
+        reader = Reader(url=collection_url, stac_kwargs={IFS_ITEM: "data"}, areas=False, loglevel=LOGLEVEL)
+        assert "2t" in reader.retrieve()
+
+    def test_chunks(self, era5_item_url):
+        """Chunks given to the Reader are applied to the asset."""
+        reader = Reader(url=era5_item_url, stac_kwargs="data", areas=False, chunks={"time": 1}, loglevel=LOGLEVEL)
+        data = reader.retrieve()
+        assert data["2t"].chunksizes["time"] == (1, 1)
+
+    def test_retrieve_plain_for_areas(self, era5_item_url, tmp_path, monkeypatch):
+        """Default Reader (areas=True) builds the area from a minimal sample of the asset."""
+        monkeypatch.chdir(tmp_path)  # areas/weights/grids go to ./areas, ./weights, ./grids
+        reader = Reader(url=era5_item_url, stac_kwargs="data", loglevel=LOGLEVEL)
+        assert reader.retrieve()["2t"].dims[-2:] == ("lat", "lon")
 
 
-@pytest.mark.stac
-def test_stac_backend_drops_mapping_attrs_from_grid_sample():
-    """Backend-only mapping attributes cannot be serialized by area generation."""
-    data = _dataset()
-    data["x"].attrs["filter_by_keys"] = {}
-    backend = BackendSTAC(path="catalog.json", stac={"collection": "asset"})
+class TestSTACErrors:
+    """Wrong selections and inconsistent arguments."""
 
-    backend._drop_nonserializable_sample_attrs(data)
+    def test_missing_child(self, catalog_url):
+        reader = Reader(url=catalog_url, stac_kwargs={"nonexistent": "data"}, areas=False)
+        with pytest.raises(KeyError, match="not found"):
+            reader.retrieve()
 
-    assert "filter_by_keys" not in data["x"].attrs
+    def test_missing_asset(self, era5_item_url):
+        reader = Reader(url=era5_item_url, stac_kwargs="nonexistent", areas=False)
+        with pytest.raises(KeyError, match="Available"):
+            reader.retrieve()
+
+    def test_descend_into_item(self, era5_item_url):
+        reader = Reader(url=era5_item_url, stac_kwargs={"child": "data"}, areas=False)
+        with pytest.raises(KeyError, match="is an Item"):
+            reader.retrieve()
+
+    def test_invalid_leaf_on_catalog(self, catalog_url):
+        reader = Reader(url=catalog_url, stac_kwargs="data", areas=False)
+        with pytest.raises(ValueError, match="not a valid asset key"):
+            reader.retrieve()
+
+    def test_url_without_stac_kwargs(self, catalog_url):
+        with pytest.raises(ValueError, match="Incomplete 'stac'"):
+            Reader(url=catalog_url, areas=False)
+
+    def test_conflicting_setups(self, catalog_url):
+        with pytest.raises(ValueError, match="multiple setups"):
+            Reader(url=catalog_url, stac_kwargs="data", path="file.nc", areas=False)
