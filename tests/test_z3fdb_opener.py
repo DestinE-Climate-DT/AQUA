@@ -1,6 +1,8 @@
 """Tests for z3fdb_opener module in AQUA, specifically focusing on _build_mars_requests."""
 
 import pickle
+import subprocess
+import sys
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
@@ -13,8 +15,6 @@ import numpy as np
 import pytest
 import xarray as xr
 import zarr
-from gsv.exceptions import InvalidSourceGridError
-from gsv.grids import HealpixGrid
 
 from aqua.core.exceptions import NoDataError
 from aqua.core.intake_drivers.fdb import IntakeFDBSource
@@ -68,7 +68,9 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
     # Replace FDB access with an in-memory Zarr array so this runs without an FDB installation.
     zarr_array = zarr.zeros(shape=(2, 2, 12), chunks=(1, 1, 12), dtype="float32")
     monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
-    monkeypatch.setattr(z3fdb_opener, "_read_grib_grid", Mock(return_value=(HealpixGrid(1, 1), False)))
+    monkeypatch.setattr(
+        z3fdb_opener, "_read_grib_grid", Mock(return_value={"grid_type": "healpix", "Nside": 1, "ordering": 1})
+    )
     monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
     builder = Mock()
     monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
@@ -129,7 +131,9 @@ def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, lev
     """Keep selected level IDs and coordinates consistent across HPC/bridge/HPC parts."""
     zarr_array = zarr.zeros(shape=(1, 1, len(expected_ids), 12), chunks=(1, 1, len(expected_ids), 12), dtype="float32")
     monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
-    monkeypatch.setattr(z3fdb_opener, "_read_grib_grid", Mock(return_value=(HealpixGrid(1, 1), False)))
+    monkeypatch.setattr(
+        z3fdb_opener, "_read_grib_grid", Mock(return_value={"grid_type": "healpix", "Nside": 1, "ordering": 1})
+    )
     monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
     builder = Mock()
     monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
@@ -516,10 +520,10 @@ def test_z3fdb_healpix_from_grib(monkeypatch, grib_message, ordering):
     stream = BytesIO(grib_message(Nside=2, ordering=ordering))
     fdb = Mock(retrieve=Mock(return_value=stream))
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=fdb))
-    grid, reverse = z3fdb_opener._read_grib_grid({"param": [130], "date": "20200101/to/20200102"})
+    grid = z3fdb_opener._read_grib_grid({"param": [130], "date": "20200101/to/20200102"})
     values = da.arange(48, chunks=48)[None, :]
     data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original", "AQUA_source": "test"})
-    result = z3fdb_opener.add_coordinates(data, grid, reverse_latitude=reverse)
+    result = z3fdb_opener.add_coordinates(data, grid)
     hp = astropy_healpix.HEALPix(nside=2, order="nested" if ordering else "ring")
     lon, lat = hp.healpix_to_lonlat(np.arange(48))
     np.testing.assert_allclose(result.lon, lon.to_value("deg"))
@@ -533,22 +537,23 @@ def test_z3fdb_healpix_from_grib(monkeypatch, grib_message, ordering):
 
 
 @pytest.mark.parametrize("south_first", [False, True])
-def test_z3fdb_lonlat_matches_gsv(monkeypatch, grib_message, south_first):
-    """Match GSV's shape and scan-direction handling without computing z3fdb fields."""
+def test_z3fdb_lonlat_scan_order(monkeypatch, grib_message, south_first):
+    """Use the decoded dimensions and scan direction while keeping field data lazy."""
     message = grib_message("regular_ll", Ni=4, Nj=3, latitudeOfFirstGridPointInDegrees=-90 if south_first else 90)
     handle = ecc.codes_new_from_message(message)
     try:
         ecc.codes_set_values(handle, np.arange(12))
         message = ecc.codes_get_message(handle)
-        grid = z3fdb_opener.read_grid(handle)
-        expected = grid.reshape_for_xarray(grid.read_values(handle))[0, 0]
+        expected = np.arange(12).reshape(3, 4)
+        if south_first:
+            expected = expected[::-1]
         values = da.from_array(ecc.codes_get_values(handle), chunks=12)[None, :]
     finally:
         ecc.codes_release(handle)
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=BytesIO(message)))))
-    grid, reverse = z3fdb_opener._read_grib_grid({"param": 130})
+    grid = z3fdb_opener._read_grib_grid({"param": 130})
     data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original"})
-    result = z3fdb_opener.add_coordinates(data, grid, reverse_latitude=reverse)
+    result = z3fdb_opener.add_coordinates(data, grid)
     assert result.test.dims == ("time", "lat", "lon")
     assert isinstance(result.test.data, da.Array)
     np.testing.assert_array_equal(result.test[0], expected)
@@ -558,11 +563,11 @@ def test_z3fdb_lonlat_matches_gsv(monkeypatch, grib_message, south_first):
 
 
 @pytest.mark.parametrize("grid_type", ["reduced_gg", "unstructured_grid"])
-def test_z3fdb_unstructured_matches_gsv(monkeypatch, grib_message, grid_type):
-    """Reuse GSV's file lookup and leave a HEALPix-sized unstructured mesh flat."""
+def test_z3fdb_unstructured_coordinates(monkeypatch, grib_message, grid_type):
+    """Read a supported mesh file and leave a HEALPix-sized unstructured field flat."""
     stream = BytesIO(grib_message(grid_type))
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
-    grid, reverse = z3fdb_opener._read_grib_grid({"param": 130})
+    grid = z3fdb_opener._read_grib_grid({"param": 130})
     grid_data = xr.Dataset(
         {
             "lon": ("points", np.linspace(20, 40, 48), {"units": "degrees_east"}),
@@ -571,10 +576,10 @@ def test_z3fdb_unstructured_matches_gsv(monkeypatch, grib_message, grid_type):
             "lat_bnds": (("points", "vertices"), np.zeros((48, 4))),
         }
     )
-    monkeypatch.setattr(type(grid), "GRID_DEFINITION_ROOT", Path("/grids"))
-    monkeypatch.setattr(type(grid), "GRID_DEFINITIONS", {grid.grid_name: "mesh.nc"})
-    open_grid = Mock(return_value=grid_data)
-    monkeypatch.setattr("gsv.grids.unstructured_grid.xr.open_dataset", open_grid)
+    monkeypatch.setenv("GRID_DEFINITION_PATH", "/grids")
+    monkeypatch.setitem(z3fdb_opener.GRID_FILES, grid["gridName"], "mesh.nc")
+    open_grid = Mock(return_value=Mock(to_dask=Mock(return_value=grid_data)))
+    monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", open_grid)
     values = da.arange(48, chunks=48)[None, :]
     result = z3fdb_opener.add_coordinates(xr.Dataset({"test": (("time", "cell"), values)}), grid)
     assert result.test.data is values
@@ -582,8 +587,8 @@ def test_z3fdb_unstructured_matches_gsv(monkeypatch, grib_message, grid_type):
     np.testing.assert_array_equal(result.lon, grid_data.lon)
     np.testing.assert_array_equal(result.lat, grid_data.lat)
     assert result.lon.attrs["bounds"] == "lon_bounds"
-    open_grid.assert_called_once_with(Path("/grids/mesh.nc"))
-    assert not reverse
+    open_grid.assert_called_once_with("/grids/mesh.nc")
+    result.close()
 
 
 @pytest.mark.parametrize("config", [None, "/fdb.yaml"])
@@ -613,15 +618,51 @@ def test_z3fdb_grid_probe_errors(monkeypatch, grib_message, unsupported):
     """Reject missing/unsupported grids and release native handles on failure."""
     stream = BytesIO(grib_message("rotated_ll") if unsupported else b"")
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
-    release = Mock(wraps=ecc.codes_release)
-    monkeypatch.setattr(z3fdb_opener.ecc, "codes_release", release)
-    with pytest.raises(InvalidSourceGridError if unsupported else NoDataError):
+    with pytest.raises(ValueError if unsupported else NoDataError):
         z3fdb_opener._read_grib_grid({"param": 130})
-    assert release.call_count == int(unsupported)
     assert stream.closed
 
 
 def test_z3fdb_grid_size_mismatch():
     """Reject mismatches rather than assigning plausible coordinates by cell count."""
     with pytest.raises(ValueError, match="point count"):
-        z3fdb_opener.add_coordinates(xr.Dataset(coords={"cell": np.arange(48)}), HealpixGrid(1, 0))
+        z3fdb_opener.add_coordinates(
+            xr.Dataset(coords={"cell": np.arange(48)}), {"grid_type": "healpix", "Nside": 1, "ordering": 0}
+        )
+
+
+@pytest.mark.parametrize("problem", ["unknown", "missing-root", "bad-shape"])
+def test_z3fdb_invalid_unstructured_grid(monkeypatch, problem):
+    """Reject unknown meshes, missing paths and incompatible grid files."""
+    data = xr.Dataset(coords={"cell": np.arange(48)})
+    grid = {"grid_type": "unstructured_grid", "gridName": "unknown" if problem == "unknown" else "O80"}
+    monkeypatch.delenv("GRID_DEFINITION_PATH", raising=False)
+    if problem == "bad-shape":
+        monkeypatch.setenv("GRID_DEFINITION_PATH", "/grids")
+        mesh = xr.Dataset({"lon": ("points", [0]), "lon_bnds": (("points", "vertices"), [[0, 0, 0, 0]])})
+        close = Mock()
+        mesh.set_close(close)
+        monkeypatch.setattr(z3fdb_opener.intake, "open_netcdf", Mock(return_value=Mock(to_dask=Mock(return_value=mesh))))
+    with pytest.raises(ValueError):
+        z3fdb_opener.add_coordinates(data, grid)
+    if problem == "bad-shape":
+        close.assert_called_once()
+
+
+def test_z3fdb_without_gsv():
+    """Import and use the z3fdb coordinate path when GSV cannot be imported."""
+    code = """
+import sys
+sys.modules['gsv'] = None
+import xarray as xr
+from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
+assert z3fdb_opener.z3fdb_available
+result = z3fdb_opener.add_coordinates(
+    xr.Dataset(coords={'cell': range(12)}), {'grid_type': 'healpix', 'Nside': 1, 'ordering': 0}
+)
+assert result.lon.size == 12
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr

@@ -75,15 +75,16 @@ Grid coordinates for z3fdb
 
 The ``z3fdb`` engine identifies its grid from one representative GRIB message
 per HPC/bridge period, using the same FDB configuration as the data read.
-It reuses GSV's grid decoder and supports the same grid families:
+It reads metadata with ecCodes and does not require GSV. Supported grid families:
 
 * HEALPix: resolution and ring/nested ordering come from GRIB metadata.
 * Global regular latitude/longitude: dimensions come from GRIB metadata;
-  south-to-north fields are flipped to the same north-to-south layout as GSV.
+  south-to-north fields are flipped to a north-to-south layout.
 * Reduced Gaussian and supported unstructured grids: coordinates and bounds
-  come from GSV's predefined NetCDF files under ``GRID_DEFINITION_PATH``.
+  come from predefined NetCDF files under ``GRID_DEFINITION_PATH`` (the same
+  filenames used by GSV).
 
-As in GSV, each decoded selection must contain a single grid. Unsupported
+Each decoded selection must contain a single grid. Unsupported
 GRIB grids and grid-size mismatches raise an error. Unstructured fields remain
 flat; arbitrary structured or regional layouts are not reconstructed.
 The field data remains Dask-backed. Identifying the grid retrieves one GRIB
