@@ -76,6 +76,35 @@ only for HPC periods. For example, ``expver: "0001"`` with
 inside it, even when both periods share an FDB configuration. The catalog
 request is preserved across reads.
 
+Time settings for z3fdb
+^^^^^^^^^^^^^^^^^^^^^^
+
+The ``z3fdb`` engine honors the same catalog time settings as GSV:
+
+* ``timestyle: date`` varies ``date`` and ``time``, keeping ``step`` fixed.
+* ``timestyle: step`` keeps the forecast reference ``date``/``time`` fixed
+  at ``data_start_date`` and varies ``step`` in units of ``timestep``.
+* ``timestyle: yearmonth`` varies ``year`` and ``month`` for monthly/yearly data.
+* ``timestep`` defines the native time increment (default ``h``).
+  ``savefreq`` selects the saved samples, taking the first native timestamp
+  in each frequency interval, as GSV does.
+
+For example, ``timestyle: step``, ``timestep: h`` and ``savefreq: 6h``
+request steps 0, 6, 12, ... from the forecast reference. A subwindow or an
+HPC/bridge boundary keeps that original reference. The optional initial
+``step`` in the request sets the earliest available native step.
+
+For daily or monthly ``date`` data, a single request ``time`` is preserved
+in both the request and output coordinates: ``time: "1200"`` produces noon
+labels. Output coordinates come from the planned selection; a different
+number of returned time entries raises an error.
+
+Native timesteps must be positive whole minutes. Saved frequencies can be
+fixed minute/hour/day intervals that are integer multiples of ``timestep``,
+or ``MS``/``YS`` (also accepting ``M``/``Y``). Unsupported layouts, calendar
+native timesteps and multiple initial steps raise an error. Legacy
+``timeshift`` is unsupported; leave it unset or false.
+
 Grid coordinates for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 

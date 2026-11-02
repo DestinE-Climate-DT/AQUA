@@ -1,7 +1,6 @@
 # Derived from the fdb-xarray library
 # https://github.com/koldunovn/fdb-xarray
 
-import copy
 import copyreg
 import os
 from collections import defaultdict
@@ -18,6 +17,8 @@ from eccodes.highlevel import StreamReader
 from aqua.core.exceptions import NoDataError
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import load_yaml, to_list
+
+from .timeutil import FDBTimeMixin
 
 xr.set_options(keep_attrs=True)
 
@@ -129,147 +130,151 @@ def _check_availability():
         raise ImportError(z3fdb_error_cause)
 
 
-def _build_mars_requests(request, freq, levels, years, start_date=None, end_date=None):
-    """Build the list of MARS request strings based on start/end dates and frequency."""
-    if years is None and (start_date is None or end_date is None):
-        years = request["year"]
-        if not isinstance(years, (list, tuple, range)):
-            years = [years]
-        years = [str(y) for y in years]
+def _validate_time_settings(freq, timestyle, timestep):
+    """Normalize GSV-style time settings and reject unsupported calendar units."""
+    freq = freq or timestep
+    freq = {"M": "MS", "Y": "YS"}.get(freq, freq)
+    try:
+        cadence = pd.tseries.frequencies.to_offset(freq)
+        base = pd.tseries.frequencies.to_offset(timestep or freq)
+    except ValueError as exc:
+        raise ValueError("Invalid z3fdb savefreq or timestep.") from exc
+    calendar = cadence.n == 1 and (
+        isinstance(cadence, pd.offsets.MonthBegin) or isinstance(cadence, pd.offsets.YearBegin) and cadence.month == 1
+    )
+    if not calendar and not isinstance(cadence, (pd.offsets.Tick, pd.offsets.Day)):
+        raise ValueError("z3fdb savefreq requires fixed minute/hour/day units, MS or YS.")
+    if cadence.n <= 0 or not isinstance(base, (pd.offsets.Tick, pd.offsets.Day)) or base.nanos < pd.Timedelta(minutes=1).value:
+        raise ValueError("z3fdb timestep requires positive fixed units of at least one minute.")
+    if base.nanos % pd.Timedelta(minutes=1).value:
+        raise ValueError("z3fdb timestep requires whole minutes.")
+    if isinstance(cadence, (pd.offsets.Tick, pd.offsets.Day)) and (cadence.nanos < base.nanos or cadence.nanos % base.nanos):
+        raise ValueError("z3fdb savefreq must be an integer multiple of timestep.")
+    freq = "YS" if isinstance(cadence, pd.offsets.YearBegin) else cadence.freqstr
+    if timestyle is None:
+        timestyle = "yearmonth" if freq == "MS" else "date"
+    if timestyle not in ("date", "step", "yearmonth"):
+        raise ValueError(f"Unsupported z3fdb timestyle {timestyle!r}; use date, step or yearmonth.")
+    if timestyle == "yearmonth" and not calendar:
+        raise ValueError("z3fdb timestyle='yearmonth' requires monthly/yearly savefreq.")
+    return freq, timestyle, base
 
+
+def _build_mars_requests(
+    request, freq, levels, years, start_date=None, end_date=None, timestyle=None, timestep="h", data_start_date=None
+):
+    """Build requests and exact output times using the shared FDB sampling rules."""
+    freq, timestyle, base = _validate_time_settings(freq, timestyle, timestep)
     if start_date is not None or end_date is not None:
         if start_date is None or end_date is None:
             raise ValueError("provide both start_date and end_date")
-        ts_start = pd.Timestamp(str(start_date))
-        ts_end = pd.Timestamp(str(end_date))
     else:
-        ys = sorted(list(int(y) for y in years))
-        ts_start = pd.Timestamp(f"{ys[0]}-01-01T00:00:00")
-        ts_end = pd.Timestamp(f"{ys[-1]}-12-31T23:00:00")
+        years = to_list(years if years is not None else request["year"])
+        start_date = f"{min(map(int, years))}-01-01"
+        end_date = f"{max(map(int, years))}-12-31T23:00"
+    start = pd.Timestamp(FDBTimeMixin._floor_datetime(start_date, freq))
+    end = pd.Timestamp(FDBTimeMixin._floor_datetime(end_date, freq))
+    if start > end:
+        raise ValueError("z3fdb start_date must not be later than end_date.")
+    if timestyle == "step" and data_start_date is None:
+        raise ValueError("z3fdb timestyle='step' requires data_start_date as the forecast reference time.")
+    reference = pd.Timestamp(FDBTimeMixin._floor_datetime(data_start_date or start_date, freq))
+    clock = pd.Timedelta(0)
+    fixed_clock = timestyle == "date" and (
+        not isinstance(pd.tseries.frequencies.to_offset(freq), (pd.offsets.Tick, pd.offsets.Day))
+        or pd.tseries.frequencies.to_offset(freq).nanos >= pd.Timedelta(days=1).value
+    )
+    if fixed_clock:
+        values = to_list(request.get("time", "0000"))
+        if len(values) != 1 or not str(values[0]).isdigit() or len(str(values[0])) > 4:
+            raise ValueError("Daily/monthly z3fdb date requests require one numeric time (HH or HHMM).")
+        text = str(values[0])
+        hour, minute = (int(text), 0) if len(text) <= 2 else divmod(int(text), 100)
+        if hour > 23 or minute > 59:
+            raise ValueError("Invalid z3fdb request time; use HH or HHMM.")
+        clock = pd.Timedelta(hours=hour, minutes=minute)
+    start += clock
+    end += clock
+    if timestyle != "yearmonth":
+        step = to_list(request.get("step", 0))
+        if len(step) != 1 or not str(step[0]).isdigit():
+            raise ValueError("z3fdb requires one non-negative initial forecast step.")
+        if int(step[0]):
+            start = max(start, pd.Timestamp(str(data_start_date or start_date)) + int(step[0]) * base)
+    if start > end:
+        raise NoDataError("No timestamps remain after applying the initial forecast step.")
+    dates = pd.date_range(start, end, freq=base)
+    offset = clock if isinstance(pd.tseries.frequencies.to_offset(freq), (pd.offsets.Tick, pd.offsets.Day)) else None
+    indices = FDBTimeMixin._saved_time_indices(dates, freq, offset=offset)
+    time = dates[indices]
+    if fixed_clock:
+        clock_time = time.normalize() + clock
+        time = time.where(time >= clock_time, clock_time)
+    if not len(time):
+        raise NoDataError("No timestamps selected by the z3fdb time settings.")
 
-    parts = []
-
-    if freq == "h":
-        if ts_start == ts_end:
-            parts.append({"date": ts_start.strftime("%Y%m%d"), "time": f"{ts_start.hour:02d}00"})
-        else:
-            day_start = ts_start.floor("D")
-            day_end = ts_end.floor("D")
-
-            if day_start == day_end:
-                parts.append(
-                    {
-                        "date": ts_start.strftime("%Y%m%d"),
-                        "time": (
-                            f"{ts_start.hour:02d}00/to/{ts_end.hour:02d}00/by/1"
-                            if ts_start.hour != ts_end.hour
-                            else f"{ts_start.hour:02d}00"
-                        ),
-                    }
-                )
-            else:
-                # First day partial part
-                if ts_start.hour > 0:
-                    parts.append({"date": ts_start.strftime("%Y%m%d"), "time": f"{ts_start.hour:02d}00/to/2300/by/1"})
-                    day_start_full = day_start + pd.Timedelta(days=1)
-                else:
-                    day_start_full = day_start
-
-                # Last day partial part
-                if ts_end.hour < 23:
-                    day_end_full = day_end - pd.Timedelta(days=1)
-                    end_part = {"date": ts_end.strftime("%Y%m%d"), "time": f"0000/to/{ts_end.hour:02d}00/by/1"}
-                else:
-                    day_end_full = day_end
-                    end_part = None
-
-                # Mid-range full days
-                if day_start_full <= day_end_full:
-                    if day_start_full == day_end_full:
-                        date_val = day_start_full.strftime("%Y%m%d")
-                    else:
-                        date_val = f"{day_start_full.strftime('%Y%m%d')}/to/{day_end_full.strftime('%Y%m%d')}/by/1"
-                    parts.append({"date": date_val, "time": "0000/to/2300/by/1"})
-
-                if end_part is not None:
-                    parts.append(end_part)
-
-        pd_freq = "1h"
-        start = ts_start.isoformat()
-
-    elif freq == "D":
-        if ts_start.date() == ts_end.date():
-            date_val = ts_start.strftime("%Y%m%d")
-        else:
-            date_val = f"{ts_start.strftime('%Y%m%d')}/to/{ts_end.strftime('%Y%m%d')}/by/1"
-
-        parts.append({"date": date_val, "time": request.get("time", "0000")})
-        pd_freq = "1D"
-        start = ts_start.strftime("%Y-%m-%d")
-
-    elif freq == "MS":
-        months_range = pd.date_range(start=ts_start, end=ts_end, freq="MS")
-
-        year_months = defaultdict(list)
-        for dt in months_range:
-            year_months[dt.year].append(dt.month)
-
+    if timestyle == "step":
+        delta = time - reference
+        if (delta % pd.Timedelta(base) != pd.Timedelta(0)).any():
+            raise ValueError("Requested forecast timestamps are not aligned with timestep and data_start_date.")
+        steps = np.asarray(delta / pd.Timedelta(base), dtype=int)
+        part = FDBTimeMixin._build_time_request(
+            timestyle, time[0], time[-1], reference=FDBTimeMixin._date2str(reference), steps=(steps[0], steps[-1])
+        )
+        if len(steps) > 1 and not (np.diff(steps) == 1).all():
+            part["step"] = "/".join(map(str, steps))
+        parts = [part]
+    elif timestyle == "date":
         groups = []
-        current_months = None
-        current_years = []
-
-        for year in sorted(year_months.keys()):
-            months = tuple(sorted(year_months[year]))
-            if current_months is None:
-                current_months = months
-                current_years = [year]
-            elif months == current_months:
-                current_years.append(year)
+        for day, values in pd.Series(time).groupby(time.normalize(), sort=False):
+            pattern = tuple(values.dt.strftime("%H%M"))
+            if groups and groups[-1][0] == pattern:
+                groups[-1][1].append(day)
+                groups[-1][3] = values.iloc[-1]
             else:
-                groups.append((current_years, current_months))
-                current_months = months
-                current_years = [year]
-        if current_years:
-            groups.append((current_years, current_months))
-
-        for years_list, months_tuple in groups:
-            parts.append(
-                {
-                    "year": "/".join(str(y) for y in years_list) if len(years_list) > 1 else str(years_list[0]),
-                    "month": "/".join(str(m) for m in months_tuple),
-                }
-            )
-
-        pd_freq = "MS"
-        start = ts_start.strftime("%Y-%m-%d")
+                groups.append([pattern, [day], values.iloc[0], values.iloc[-1]])
+        parts = []
+        for pattern, days, first, last in groups:
+            part = FDBTimeMixin._build_time_request(timestyle, first, last)
+            if (days[-1] - days[0]).days + 1 != len(days):
+                part["date"] = "/".join(day.strftime("%Y%m%d") for day in days)
+            if len(pattern) > 1 and not (np.diff(pd.to_datetime(list(pattern), format="%H%M")) == pd.Timedelta(hours=1)).all():
+                part["time"] = "/".join(pattern)
+            parts.append(part)
     else:
-        raise ValueError(f"Unknown freq {freq!r}")
+        year_months = defaultdict(list)
+        for date in time:
+            year_months[date.year].append(date.month)
+        groups = []
+        for year, months in year_months.items():
+            months = tuple(months)
+            if groups and groups[-1][1] == months:
+                groups[-1][0].append(year)
+            else:
+                groups.append(([year], months))
+        parts = []
+        for years_list, months in groups:
+            part = FDBTimeMixin._build_time_request(
+                timestyle, pd.Timestamp(years_list[0], months[0], 1), pd.Timestamp(years_list[-1], months[-1], 1)
+            )
+            part["year"] = "/".join(map(str, years_list))
+            part["month"] = "/".join(map(str, months))
+            parts.append(part)
 
-    # Create list of mars requests
     mars_list = []
     for part in parts:
-        req_copy = copy.deepcopy(request)
-        req_copy.update(part)
-        if freq in ("h", "D"):
-            req_copy.pop("year", None)
-            req_copy.pop("month", None)
-        elif freq == "MS":
-            req_copy.pop("date", None)
-            req_copy.pop("time", None)
-
-        mars_list.append(req_copy)
-
-    return mars_list, pd_freq, start
+        req = request.copy()
+        for key in ("date", "time") if timestyle == "yearmonth" else ("year", "month"):
+            req.pop(key, None)
+        req.update(part)
+        mars_list.append(req)
+    return mars_list, time
 
 
-def _build_zarr_axes(freq, levels, chunks=None):
+def _build_zarr_axes(freq, levels, chunks=None, timestyle=None):
     """Build the AxisDefinition objects representing the layout of the virtual Zarr store."""
-    if freq in ("h", "D"):
-        time_keys = ["date", "time"]
-    elif freq == "MS":
-        time_keys = ["year", "month"]
-    else:
-        raise ValueError(f"Unknown freq {freq!r}")
+    _, timestyle, _ = _validate_time_settings(freq, timestyle, "1min")
+    time_keys = {"date": ["date", "time"], "yearmonth": ["year", "month"], "step": ["step"]}[timestyle]
 
     chunking = Chunking.SINGLE_VALUE  # by default we chunk step-by-step in time
     val = chunks.get("time") if isinstance(chunks, dict) else chunks
@@ -317,6 +322,7 @@ def to_dataset(
     freq="1h",
     variables=None,
     levels=None,
+    time=None,
 ):
     """Wrap a z3fdb zarr array as an xarray.Dataset with one variable per param.
 
@@ -331,6 +337,7 @@ def to_dataset(
         freq (str, optional): Frequency of the data. Defaults to "1h".
         variables (list, optional): List of variable names. Defaults to None.
         levels (list, optional): List of levels. Defaults to None.
+        time (pd.DatetimeIndex, optional): Exact requested timestamps. Defaults to start_date/freq for compatibility.
 
     Returns:
         xarray.Dataset: Lazy (dask-backed) xr.Dataset.
@@ -348,7 +355,10 @@ def to_dataset(
         raise ValueError(f"keys has {len(keys)} entries, param axis has {nparam}")
 
     darr = da.from_zarr(zarr_array)
-    time = pd.date_range(start=str(start_date), periods=nt, freq=freq)
+    if time is None:
+        time = pd.date_range(start=str(start_date), periods=nt, freq=freq)
+    if len(time) != nt:
+        raise ValueError(f"Requested time axis has {len(time)} timestamps, but the z3fdb array has {nt} time entries.")
     cell = np.arange(ncell, dtype=np.int64)
 
     data_vars = {}
@@ -477,6 +487,9 @@ def open_z3fdb(
     chunks=None,
     level_values=None,
     grid=None,
+    timestyle=None,
+    timestep="h",
+    timeshift=None,
 ):
     """Open a Climate DT FDB selection as an xarray.Dataset using z3fdb.
 
@@ -502,11 +515,17 @@ def open_z3fdb(
         level_values (float or list, optional): Physical values matching the full request levelist.
             Defaults to the level IDs.
         grid (str, optional): Legacy hint, ignored. The GRIB message defines the grid.
+        timestyle (str, optional): Explicit date, step or yearmonth storage layout. Defaults to inference from freq.
+        timestep (str, optional): Native step units, e.g. "h" or "15min". Defaults to "h".
+        timeshift (bool, optional): Legacy monthly shifting is unsupported. Defaults to None.
 
     Returns:
         xarray.Dataset: Lazy (dask-backed) xr.Dataset.
     """
 
+    if timeshift:
+        raise ValueError("Legacy timeshift is not supported by z3fdb.")
+    freq, timestyle, _ = _validate_time_settings(freq, timestyle, timestep)
     _check_availability()
 
     request = {key: value for key, value in request.items() if key in MARS_KEYS}
@@ -548,8 +567,18 @@ def open_z3fdb(
         if enddate is None:
             enddate = data_end_date
 
-    mars_list, pd_freq, start = _build_mars_requests(request, freq, levels, years, startdate, enddate)
-    axes = _build_zarr_axes(freq, levels, chunks)
+    mars_list, time = _build_mars_requests(
+        request,
+        freq,
+        levels,
+        years,
+        startdate,
+        enddate,
+        timestyle=timestyle,
+        timestep=timestep,
+        data_start_date=data_start_date,
+    )
+    axes = _build_zarr_axes(freq, levels, chunks, timestyle=timestyle)
 
     # Create zarr store
     fdb_config_file = None
@@ -583,9 +612,9 @@ def open_z3fdb(
     ds = to_dataset(
         zarr_arr,
         keys=variables,
-        start_date=start,
-        freq=pd_freq,
+        start_date=time[0],
         levels=level_values,
+        time=time,
     )
 
     source_grid = _read_grib_grid(mars_list[0], fdb_config_file)

@@ -12,6 +12,7 @@ import astropy_healpix
 import dask.array as da
 import eccodes as ecc
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 import zarr
@@ -52,13 +53,12 @@ pytestmark = pytest.mark.aqua
         (
             "2020-01-01T00:00:00",
             "2020-01-01T01:00:00",
-            "param=167/168,levtype=sfc,date=20200101,time=0000/to/0100/by/1",
+            "param=167/168,levtype=sfc,date=20200101,time=0000/to/0100",
         ),
         (
             "2020-01-01T23:00:00",
             "2020-01-02T00:00:00",
-            "param=167/168,levtype=sfc,date=20200101,time=2300/to/2300/by/1; "
-            "param=167/168,levtype=sfc,date=20200102,time=0000/to/0000/by/1",
+            "param=167/168,levtype=sfc,date=20200101,time=2300; param=167/168,levtype=sfc,date=20200102,time=0000",
         ),
     ],
     ids=["single-request", "multiple-requests"],
@@ -270,21 +270,21 @@ def test_build_mars_requests_years_and_dates_parsing():
     request = {"year": 2020, "param": 129}
 
     # 1. years=None, start_date=None, end_date=None, request['year'] is a single int
-    mars_list, pd_freq, start = _build_mars_requests(request, freq="D", levels=None, years=None)
-    assert pd_freq == "1D"
-    assert start == "2020-01-01"
+    mars_list, time = _build_mars_requests(request, freq="D", levels=None, years=None)
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
     # Since it's daily, request elements like date are mapped, and year/month are removed from the query
-    expected = {"param": 129, "date": "20200101/to/20201231/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200101/to/20201231", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
     # 2. years=None, start_date=None, end_date=None, request['year'] is a list
     request_list = {"year": [2020, 2021], "param": 129}
-    mars_list, pd_freq, start = _build_mars_requests(request_list, freq="D", levels=None, years=None)
-    assert pd_freq == "1D"
-    assert start == "2020-01-01"
+    mars_list, time = _build_mars_requests(request_list, freq="D", levels=None, years=None)
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
-    expected = {"param": 129, "date": "20200101/to/20211231/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200101/to/20211231", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
     # 3. Raising ValueError when only start_date is provided
@@ -296,13 +296,13 @@ def test_build_mars_requests_years_and_dates_parsing():
         _build_mars_requests(request, freq="D", levels=None, years=None, end_date="2020-01-01")
 
     # 5. start_date and end_date are both provided (not None)
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="D", levels=None, years=None, start_date="2020-05-01", end_date="2020-05-10"
     )
-    assert pd_freq == "1D"
-    assert start == "2020-05-01"
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-05-01")
     assert len(mars_list) == 1
-    expected = {"param": 129, "date": "20200501/to/20200510/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200501/to/20200510", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
 
@@ -321,20 +321,20 @@ def test_build_mars_requests_hourly_partial_days():
     # day_end_full = 2020-01-02
     # day_start_full == day_end_full -> date_val = "20200102"
     # parts:
-    # 1. 20200101, 1200/to/2300/by/1
-    # 2. 20200102, 0000/to/2300/by/1 (line 152)
-    # 3. 20200103, 0000/to/1200/by/1 (line 155)
-    mars_list, pd_freq, start = _build_mars_requests(
+    # 1. 20200101, 1200/to/2300
+    # 2. 20200102, 0000/to/2300 (line 152)
+    # 3. 20200103, 0000/to/1200 (line 155)
+    mars_list, time = _build_mars_requests(
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-03T12:00:00"
     )
-    assert pd_freq == "1h"
-    assert start == "2020-01-01T12:00:00"
+    assert (time[1:] - time[:-1] == pd.Timedelta(hours=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01T12:00:00")
     assert len(mars_list) == 3
-    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300"}
     assert expected.items() <= mars_list[0].items()
-    expected = {"param": 129, "date": "20200102", "time": "0000/to/2300/by/1"}
+    expected = {"param": 129, "date": "20200102", "time": "0000/to/2300"}
     assert expected.items() <= mars_list[1].items()
-    expected = {"param": 129, "date": "20200103", "time": "0000/to/1200/by/1"}
+    expected = {"param": 129, "date": "20200103", "time": "0000/to/1200"}
     assert expected.items() <= mars_list[2].items()
 
     # Case B: ts_start.hour > 0, ts_end.hour < 23, and day_start_full < day_end_full
@@ -342,16 +342,16 @@ def test_build_mars_requests_hourly_partial_days():
     # ts_end = 2020-01-04T12:00:00
     # day_start_full = 2020-01-02
     # day_end_full = 2020-01-03
-    # date_val = "20200102/to/20200103/by/1"
-    mars_list, pd_freq, start = _build_mars_requests(
+    # date_val = "20200102/to/20200103"
+    mars_list, time = _build_mars_requests(
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-04T12:00:00"
     )
     assert len(mars_list) == 3
-    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300"}
     assert expected.items() <= mars_list[0].items()
-    expected = {"param": 129, "date": "20200102/to/20200103/by/1", "time": "0000/to/2300/by/1"}
+    expected = {"param": 129, "date": "20200102/to/20200103", "time": "0000/to/2300"}
     assert expected.items() <= mars_list[1].items()
-    expected = {"param": 129, "date": "20200104", "time": "0000/to/1200/by/1"}
+    expected = {"param": 129, "date": "20200104", "time": "0000/to/1200"}
     assert expected.items() <= mars_list[2].items()
 
 
@@ -367,23 +367,23 @@ def test_build_mars_requests_daily_and_monthly_start():
     request = {"param": 129}
 
     # 1. Daily frequency with different start and end dates (line 164)
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="D", levels=None, years=None, start_date="2020-01-01", end_date="2020-01-05"
     )
-    assert pd_freq == "1D"
-    assert start == "2020-01-01"
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
-    expected = {"param": 129, "date": "20200101/to/20200105/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200101/to/20200105", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
     # 2. Monthly start frequency with matching month patterns across years (lines 186-187, 198)
     # ts_start = 2020-01-01, ts_end = 2021-12-01 (all 12 months in 2020 and 2021)
     # Should group into year="2020/2021", month="1/2/3/4/5/6/7/8/9/10/11/12"
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="MS", levels=None, years=None, start_date="2020-01-01", end_date="2021-12-01"
     )
-    assert pd_freq == "MS"
-    assert start == "2020-01-01"
+    assert (time == pd.date_range(time[0], periods=len(time), freq="MS")).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
     expected = {"param": 129, "year": "2020/2021", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
     assert expected.items() <= mars_list[0].items()
@@ -394,11 +394,11 @@ def test_build_mars_requests_daily_and_monthly_start():
     # Should produce 2 requests:
     # - year=2020, month=1/2/3/4/5/6/7/8/9/10/11/12
     # - year=2021, month=1/2
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="MS", levels=None, years=None, start_date="2020-01-01", end_date="2021-02-01"
     )
-    assert pd_freq == "MS"
-    assert start == "2020-01-01"
+    assert (time == pd.date_range(time[0], periods=len(time), freq="MS")).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 2
     expected = {"param": 129, "year": "2020", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
     assert expected.items() <= mars_list[0].items()
@@ -613,7 +613,7 @@ def test_z3fdb_grid_sample_config(monkeypatch, grib_message, config):
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", factory)
     load_config = Mock(return_value={"type": "local"})
     monkeypatch.setattr(z3fdb_opener, "load_yaml", load_config)
-    request = {"param": [130, 131], "levelist": [900, 800], "date": "20200101/to/20200102", "time": "0000/to/2300/by/1"}
+    request = {"param": [130, 131], "levelist": [900, 800], "date": "20200101/to/20200102", "time": "0000/to/2300"}
     original = deepcopy(request)
     z3fdb_opener._read_grib_grid(request, config)
     factory.assert_called_once_with(config={"type": "local"} if config else None)

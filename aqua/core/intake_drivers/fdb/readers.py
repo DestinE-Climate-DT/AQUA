@@ -160,8 +160,11 @@ class Z3FDBDatasetReader(BaseReader):
                 variables=data.var,
                 levels=data.level,
                 freq=data.savefreq,
-                data_start_date=p_start_str,
-                data_end_date=p_end_str,
+                timestyle=data.timestyle,
+                timestep=data.timestep,
+                timeshift=data.timeshift,
+                data_start_date=data.data_start_date,
+                data_end_date=data.data_end_date,
                 chunks=data.chunks,
                 level_values=data.level_values,
             )

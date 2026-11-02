@@ -410,10 +410,12 @@ Some of the parameters are here described:
 
 .. option:: timestyle
 
-    The timestyle parameter can be set to either ``date`` or ``yearmonth`` according to the FDB schema.
+    The timestyle parameter can be ``date``, ``step`` or ``yearmonth`` according to the FDB schema.
     Indeed, it determines how the time axis data is written in the FDB.
 
     The above examples have used ``date``, directly specifying both ``date`` and ``time`` in the request.
+    With ``step``, the reference date/time stays fixed at ``data_start_date`` and forecast steps
+    vary in units of ``timestep``. These styles are honored by both GSV and z3fdb.
     When using instead the ``yearmonth`` timestyle you do not have to set neither time or date in the request.
     On the contrary, the ``year`` and ``month`` keys need to be specified.
     The FDB module will then build the corresponding request.
@@ -422,7 +424,8 @@ Some of the parameters are here described:
 
 .. option:: timeshift
 
-    Timeshift is a boolean parameter used exclusively for shifting the date of monthly data back by one month.
+    Timeshift is a legacy boolean parameter used exclusively for shifting the date of monthly data back by one month.
+    It is supported by GSV; z3fdb rejects a true value.
 
     Implementing this correctly in a general case can be quite complex, so it was decided to implement only the monthly shift.
 

@@ -19,6 +19,30 @@ class FDBTimeMixin:
         """Converts a date object to year, month string representation"""
         return dateobj.strftime("%Y"), dateobj.strftime("%m")
 
+    @classmethod
+    def _build_time_request(cls, timestyle, start, end, reference=None, steps=None):
+        """Format date/time, step or year/month request bounds using the FDB storage style."""
+        if timestyle == "step":
+            if reference is None or steps is None:
+                raise ValueError("Step requests require a reference date/time and step bounds.")
+            a, b = steps
+            return {"date": reference[0], "time": reference[1], "step": str(a) if a == b else f"{a}/to/{b}"}
+        if timestyle == "date":
+            keys, convert = ("date", "time"), cls._date2str
+        elif timestyle == "yearmonth":
+            keys, convert = ("year", "month"), cls._date2yyyymm
+        else:
+            raise ValueError(f"Timestyle {timestyle} not supported")
+        return {key: a if a == b else f"{a}/to/{b}" for key, a, b in zip(keys, convert(start), convert(end))}
+
+    @staticmethod
+    def _saved_time_indices(dates, savefreq, offset=None):
+        """Select the first native timestep in each saved-frequency bucket."""
+        indices = pd.Series(np.arange(len(dates)), index=dates).resample(savefreq, offset=offset).min()
+        if indices.isna().any():
+            raise ValueError("Saved frequency is finer than the available native timesteps.")
+        return indices.to_numpy(dtype=int)
+
     def _add_offset(self, data_start_date, offset, timestep):
         """Sets initial date based on an offset in steps"""
         if int(offset) != 0:
@@ -108,7 +132,7 @@ class FDBTimeMixin:
                 ts = pd.Series(idx[1:], index=dates[idx[0:-1]])
                 idx = idx[0:-1]
             else:
-                idx = ts.resample(savefreq).min().values
+                idx = self._saved_time_indices(dates, savefreq)
                 ts = pd.Series(idx, index=dates[idx])
 
         tsr = ts.resample(chunkfreq)
