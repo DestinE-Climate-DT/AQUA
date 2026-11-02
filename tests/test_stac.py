@@ -61,6 +61,20 @@ class TestSTACReader:
         data = reader.retrieve()
         assert data["2t"].chunksizes["time"] == (1, 1)
 
+    @pytest.mark.parametrize(
+        "startdate, enddate, expected",
+        [
+            ("2021-02-01", None, ["2021-02-01"]),
+            (None, "2021-01-31", ["2021-01-01"]),
+            ("2021-01-01", "2021-02-28", ["2021-01-01", "2021-02-01"]),
+        ],
+    )
+    def test_date_selection(self, era5_item_url, startdate, enddate, expected):
+        """startdate/enddate select the time steps of the asset."""
+        reader = Reader(url=era5_item_url, stac_kwargs="data", areas=False, loglevel=LOGLEVEL)
+        data = reader.retrieve(startdate=startdate, enddate=enddate)
+        assert [str(t)[:10] for t in data.time.values.astype("datetime64[D]")] == expected
+
     def test_retrieve_plain_for_areas(self, era5_item_url, tmp_path, monkeypatch):
         """Default Reader (areas=True) builds the area from a minimal sample of the asset."""
         monkeypatch.chdir(tmp_path)  # areas/weights/grids go to ./areas, ./weights, ./grids
