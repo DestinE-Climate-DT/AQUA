@@ -34,7 +34,7 @@ def push_parser(parser=None):
     parser.add_argument("-b", "--bucket", default="aqua-web", help="Name of the S3 bucket to publish to")
     parser.add_argument("-c", "--config", help="Configuration file path")
     parser.add_argument("--no-ensemble", action="store_true", help="Do not assume ensemble structure")
-    parser.add_argument("-f", "--format", default=",".join(FORMATS), help="Formats to publish")
+    parser.add_argument("-f", "--format", default=",".join(FORMATS), help=f"Formats to publish (default: {','.join(FORMATS)})")
     parser.add_argument(
         "-l",
         "--loglevel",

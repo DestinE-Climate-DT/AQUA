@@ -253,6 +253,7 @@ def test_aqua_push_help_describes_remote_site(monkeypatch, capsys):
     assert exc.value.code == 0
     help_text = capsys.readouterr().out
     assert "Publish AQUA analysis figures to a remote site." in help_text
+    assert "default: pdf,png,svg" in " ".join(help_text.split())
     assert "default: INFO" in " ".join(help_text.split())
     assert "aqua-web" not in help_text
     assert "--no-update" not in help_text
