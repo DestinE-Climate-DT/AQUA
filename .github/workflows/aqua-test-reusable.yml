@@ -273,8 +273,7 @@ jobs:
 
       - name: Install aqua-core from PyPI (PyPI mode)
         if: ${{ inputs.install-mode == 'pypi' }}
-        # pytest<9.2: remove with the pin in pyproject.toml once pytest-xdist >3.8.0 is released
-        run: python -m pip install "aqua-core[all]" "pytest<9.2"
+        run: python -m pip install "aqua-core[all]"
 
       - name: Install local AQUA on top of environment-pypi.yml (release mode)
         if: ${{ inputs.install-mode == 'release' }}
