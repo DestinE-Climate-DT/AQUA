@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
-- Honor GSV-style `timestyle` and `timestep` in z3fdb, including forecast-step requests, saved cadence and the original forecast reference across HPC/bridge periods; label output with the requested timestamps, preserve daily request times and reject unsupported settings including legacy `timeshift`.
+- Honor GSV-style `timestyle` and `timestep` in z3fdb, including forecast-step requests, saved cadence and the original forecast reference across HPC/bridge periods; label output with the requested timestamps, preserve daily request times and reject unsupported settings including legacy `timeshift` (#3316).
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
