@@ -816,6 +816,15 @@ class TestWriteExistingValidation:
         writer.write_variable(data, "2t", definitive=True)
         assert writer.validate(feb)
 
+    def test_overwrite(self, writer, data):
+        """With overwrite the existing files are rewritten without being validated or reported as invalid."""
+        writer.write_variable(data, "2t", definitive=True)
+        feb = writer.get_filename("2t", year=2000, month=2)
+        self.corrupt(feb)
+        writer.write_variable(data, "2t", definitive=True, overwrite=True)
+        assert writer.validate(feb)
+        assert writer.report.invalid == [] and writer.report.failed == []
+
     def test_validate_existing_false(self, writer, data):
         """Without validation an existing file is always kept."""
         writer.write_variable(data, "2t", definitive=True)
