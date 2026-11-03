@@ -50,3 +50,18 @@ def test_vertinterp_exceptions(reader, data):
     # no levels
     with pytest.raises(KeyError):
         reader.vertinterp(select["ocpt"], units="m", level_coord="nz1")
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+def test_vertinterp_preserves_reader_without_changing_default(reader, data, ifs_tco79_short_r200_reader, as_dataarray):
+    """Vertical interpolation binds its output without resetting an unrelated default."""
+    field = data[["thetao"]].isel(time=0)
+    if as_dataarray:
+        field = field["thetao"]
+    ifs_tco79_short_r200_reader.set_default()
+    result = reader.vertinterp(field, levels=10, units="m", level_coord="nz1")
+    assert result.aqua.instance is reader
+    assert Reader.instance is ifs_tco79_short_r200_reader
+    values = result if as_dataarray else result["thetao"]
+    assert values[40].compute().item() == pytest.approx(272.64060)

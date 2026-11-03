@@ -6,7 +6,10 @@ from metpy.units import units
 from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure, log_history
 
+from .util import _preserve_reader_binding
 from .yaml import load_yaml
+
+xr.set_options(keep_attrs=True)
 
 
 def normalize_units(src, loglevel="WARNING"):
@@ -133,7 +136,7 @@ def convert_data_units(data, var: str, units: str, loglevel: str = "WARNING"):
     else:
         data_fixed = data_to_fix
 
-    return data_fixed
+    return _preserve_reader_binding(data, data_fixed)  # Keep the input Reader without changing the global default.
 
 
 def multiply_units(unit1: str, unit2: str, normalise_units=True, to_base_units=True, loglevel: str = "WARNING") -> str:
