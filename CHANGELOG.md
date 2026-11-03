@@ -5,7 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+ClimateDT workflow modifications:
+- `aqua push` substitutes `push_analysis.sh`.
+   API changes: removal of `--repository` and `--no-update` (unnecessary).
+   Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
+
+Unreleased in the current development version (target v1.2.3):
+Complete list:
+- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
+- Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)
+- Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock`
+- eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
+- Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
+- eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
+- Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
+- Apply the temporary `pytest<9.2` pin also in the CI workflow (conda install mode), which does not read the `pyproject.toml` pin (#3317)
+- Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
+
+- Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
+- Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
+- Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 - `aqua analysis --kind`: experiment kinds are deep-merged on top of the `default` kind, so they only list overrides; unknown kinds raise an error listing the available kinds; the kind name is exposed to the templates as `kind`; new `aqua.core.analysis.resolve_experiment_kind` helper (#3266)
 
@@ -38,6 +59,7 @@ Complete list:
 - Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes` bindings aligned to `>=2.50.0,<2.51`. `eccodeslib` is no longer a dependency: from 2.49 its `eckitlib` bundles PROJ/sqlite that crash with the conda ones used by cartopy (#3163); `z3fdb==5.23.2.27` stays pinned on Linux for the same reason (#3253)
 - Update the `fdb` extra to `gsv-interface>=2.18.0` (was hard-pinned to `==2.13.1`) (#3277)
 - Regridder: a `skipna` key in the grid `path` enables the smmregrid `skipna` option, with a single 2D weights matrix (`_lskipna` in the weights filename) for all variables and levels; masks varying in time or along any dimension are handled at regridding time, with `na_thres=0.5` as without `skipna`. Off by default (#3274)
+- Let user kwargs override catalog xarray options consistently in the NetCDF, Zarr, and STAC Intake drivers, preserving explicit None values and effective backend read options (#3282)
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
 - Add pull request review instructions to AGENTS.md (#3285)

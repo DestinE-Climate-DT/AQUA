@@ -121,7 +121,7 @@ def test_coord_flipping_lat_decreasing_to_increasing(dataset_decreasing_lat, lat
     assert ds_transformed.pres.isel(lat=0, lon=0, time=0).values == 600.0
 
     # Verify flip tracking attribute is set
-    assert ds_transformed.lat.attrs.get("flipped", None) == 1
+    assert ds_transformed.lat.attrs.get("AQUA_flipped", None) == 1
 
 
 def test_coord_no_flip_when_already_increasing(dataset_increasing_lat, lat_increasing):
@@ -135,7 +135,7 @@ def test_coord_no_flip_when_already_increasing(dataset_increasing_lat, lat_incre
     # Verify no flip occurred - data should be unchanged
     np.testing.assert_array_equal(ds_transformed.lat.values, lat_increasing)
     np.testing.assert_array_equal(ds_transformed.sst.values, sst_data)
-    assert ds_transformed.lat.attrs.get("flipped", None) is None
+    assert ds_transformed.lat.attrs.get("AQUA_flipped", None) is None
 
 
 def test_coord_flipping_disabled(lat_decreasing, lon_values):
@@ -149,7 +149,7 @@ def test_coord_flipping_disabled(lat_decreasing, lon_values):
     # Verify no flip occurred despite decreasing lat
     np.testing.assert_array_equal(ds_transformed.lat.values, lat_decreasing)
     np.testing.assert_array_equal(ds_transformed.sst.values, sst_data)
-    assert ds_transformed.lat.attrs.get("flipped", None) is None
+    assert ds_transformed.lat.attrs.get("AQUA_flipped", None) is None
 
 
 def test_coord_flipping_dataarray(lat_decreasing, lon_values):
@@ -164,7 +164,7 @@ def test_coord_flipping_dataarray(lat_decreasing, lon_values):
     assert "lat" in da_transformed.coords
     assert "lon" in da_transformed.coords
     assert da_transformed.lat.values[0] < da_transformed.lat.values[-1]
-    assert da_transformed.lat.attrs.get("flipped", None) == 1
+    assert da_transformed.lat.attrs.get("AQUA_flipped", None) == 1
 
 
 def test_counter_reverse_coordinate(dataset_decreasing_lat, lat_decreasing):
@@ -176,7 +176,7 @@ def test_counter_reverse_coordinate(dataset_decreasing_lat, lat_decreasing):
     ds_transformed = transformer.transform_coords()
 
     # Verify flip occurred
-    assert ds_transformed.lat.attrs.get("flipped", None) == 1
+    assert ds_transformed.lat.attrs.get("AQUA_flipped", None) == 1
     assert ds_transformed.lat.values[0] < ds_transformed.lat.values[-1]
 
 
@@ -188,11 +188,11 @@ def test_reader_regrid_flipped():
     da = data["2t"]
 
     # Latitude should be marked as flipped by the data model
-    assert da.lat.attrs.get("flipped", None) == 1
+    assert da.lat.attrs.get("AQUA_flipped", None) == 1
 
-    # After regridding, the 'flipped' attribute must be consistently removed from the latitude
+    # After regridding, the 'AQUA_flipped' attribute must be consistently removed from the latitude
     da_regrid = reader.regrid(da)
-    assert da_regrid.lat.attrs.get("flipped", None) is None
+    assert da_regrid.lat.attrs.get("AQUA_flipped", None) is None
 
     # Latitude should remain strictly increasing after regridding
     assert np.all(np.diff(da_regrid.lat.values) > 0)

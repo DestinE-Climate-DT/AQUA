@@ -15,6 +15,7 @@ dependencies:
   # keep the version aligned with the smmregrid pin in pyproject.toml
   - smmregrid==0.2.0
   - eccodes>=2.50.0,<2.51 # keep aligned with eccodes/eccodeslib in pyproject.toml
+  - findlibs>=0.1.4 # keep aligned with pyproject.toml: older versions crash eccodes/cartopy on Linux
   - cartopy>=0.24.1,<=0.26.0
   - cartopy_offlinedata # this is needed for MN5 HPC
   - python-dateutil<3 # botocore requires python-dateutil<3: with 3.0.0 conda-lock backtracks through all boto3 releases (#3290)

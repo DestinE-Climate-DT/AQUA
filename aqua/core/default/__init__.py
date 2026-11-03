@@ -49,6 +49,7 @@ DEFAULT_FIGSIZE_HORIZONTAL = (10, 5)
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
 DEFAULT_DIMENSION = "2d"
 DEFAULT_DIMENSION_MASK = "2dm"
+DEFAULT_GRID_DATA = "data"  # reserved grid path value: the grid is taken from the dataset
 DEFAULT_DIMENSION_SKIPNA = "skipna"  # single grid path regridded with smmregrid skipna
 # grid path keys regridded with 2D weights (no mask_dim in smmregrid)
 DEFAULT_2D_DIMENSIONS = [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, DEFAULT_DIMENSION_SKIPNA]
