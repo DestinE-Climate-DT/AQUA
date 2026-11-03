@@ -6,9 +6,6 @@ from aqua.core.default import DEFAULT_COORDS
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import check_coordinates, to_list
 
-# set default options for xarray
-xr.set_options(keep_attrs=True)
-
 
 class AreaSelection:
     """Class to select an area from an xarray Dataset."""

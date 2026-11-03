@@ -10,9 +10,6 @@ from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
 
-# set default options for xarray
-xr.set_options(keep_attrs=True)
-
 AREA_TOLERANCE = 1.5e-5  # tolerance for coordinate alignment
 
 
