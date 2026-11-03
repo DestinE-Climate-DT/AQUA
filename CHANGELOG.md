@@ -12,7 +12,7 @@ ClimateDT workflow modifications:
 
 Unreleased in the current development version (target v1.2.3):
 Complete list:
-- Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#)
+- Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
 - Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
