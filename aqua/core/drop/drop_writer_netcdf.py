@@ -56,17 +56,18 @@ class NetCDFWriter(BaseWriter):
         """Return file extension for this format."""
         return ".nc"
 
-    def validate(self, filepath):
+    def validate(self, filepath, min_months=None):
         """
         Validate NetCDF file integrity.
 
         Args:
             filepath: Path to NetCDF file to validate
+            min_months: Minimum number of distinct calendar months the file must span (optional)
 
         Returns:
             bool: True if file is valid, False otherwise
         """
-        return file_is_complete(filepath, loglevel=self.logger.level)
+        return file_is_complete(filepath, loglevel=self.logger.level, min_months=min_months)
 
     def _get_encoding(self, data, var=None):
         """
@@ -128,13 +129,13 @@ class NetCDFWriter(BaseWriter):
             level: Level (optional, for filename generation)
 
         Returns:
-            bool: True if successful
+            bool: True if concatenated, False on error or if there are not enough monthly files
         """
         # Prepare monthly files for concatenation (gather, move to tmp, clean year files)
         tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=12)
 
         if tmp_monthly_files is None:
-            return False
+            return None
 
         # Concatenate using CDO or xarray
         try:
