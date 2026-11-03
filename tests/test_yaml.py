@@ -5,7 +5,7 @@ import os
 import pytest
 from jinja2 import UndefinedError
 
-import aqua.core
+from aqua.core.configurer import ConfigContext
 from aqua.core.util import load_multi_yaml, load_yaml
 
 pytestmark = pytest.mark.aqua
@@ -59,5 +59,5 @@ def test_load_multi_yaml_check_duplicates_ok(tmp_path):
 
 def test_packaged_grids_have_no_duplicates():
     """Grid names must be unique across the files shipped in aqua/core/config/grids."""
-    folder = os.path.join(os.path.dirname(aqua.core.__file__), "config", "grids")
+    folder = os.path.join(ConfigContext().packages.aqua_core_path, "config", "grids")
     assert load_multi_yaml(folder_path=folder, check_duplicates=True)["grids"]
