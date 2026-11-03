@@ -3,8 +3,7 @@
 Example:
     Use an existing Intake FDB catalog through the public Reader API::
 
-        reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d",
-                        engine="polytope-earthkit", chunks="D")
+        reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d", engine="polytope-earthkit", chunks="D")
         data = reader.retrieve(var="2t")
 
     Catalog metadata may override the service with ``polytope.address`` and
@@ -80,7 +79,11 @@ class EarthkitPolytopeSource(FDBSource, FDBDatesMixin):
     def _retrieve_partition(self, request, chunk_type=None, first=False):
         """Retrieve and decode one partition using Earthkit's GRIB backend."""
         fields = earthkit_data.from_source(
-            "polytope", self.collection, request, stream=False, address=self.address,
+            "polytope",
+            self.collection,
+            request,
+            stream=False,
+            address=self.address,
             log_level=_check_loglevel(self.logger.getEffectiveLevel()),
         ).to_fieldlist()
         if not len(fields):

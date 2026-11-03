@@ -64,7 +64,9 @@ def test_intake_routing_and_lazy_retrieval(source_args, earthkit_mock, bridge):
     assert args[2]["date"] == "20080101"
     assert args[2]["time"] == "1200"
     assert kwargs == {
-        "stream": False, "address": f"polytope.{bridge or 'lumi'}.apps.dte.destination-earth.eu", "log_level": "WARNING",
+        "stream": False,
+        "address": f"polytope.{bridge or 'lumi'}.apps.dte.destination-earth.eu",
+        "log_level": "WARNING",
     }
     assert fields.to_xarray.call_args.kwargs["ensure_dims"] == ["valid_time", "level"]
     np.testing.assert_array_equal(data.level, [1000, 900, 800])
@@ -104,8 +106,12 @@ def test_monthly_polytope_request(earthkit_mock, start, end, first, month):
     from_source, _ = earthkit_mock
     source = EarthkitPolytopeSource(
         {"param": [235087], "levtype": "sfc", "stream": "clmn"},
-        data_start_date=start, data_end_date=end,
-        timestep="h", savefreq="MS", chunks="YS", timestyle="yearmonth",
+        data_start_date=start,
+        data_end_date=end,
+        timestep="h",
+        savefreq="MS",
+        chunks="YS",
+        timestyle="yearmonth",
     )
     source._get_partition(0, first=first)
     request = from_source.call_args.args[2]
@@ -123,9 +129,7 @@ def test_level_selection_physical_values_and_chunking(source_args, earthkit_mock
         return SimpleNamespace(to_fieldlist=lambda: fields)
 
     from_source.side_effect = select_request
-    data = open_polytope(
-        **source_args, metadata={"levels": [999.99, 899.99, 799.99]}, level=[900, 800], chunks={chunk_key: 1}
-    )
+    data = open_polytope(**source_args, metadata={"levels": [999.99, 899.99, 799.99]}, level=[900, 800], chunks={chunk_key: 1})
     assert data.t.chunks == ((1,), (1, 1), (2,))
     np.testing.assert_array_equal(data.level, [899.99, 799.99])
     np.testing.assert_array_equal(data.compute(scheduler="synchronous").t.data, [[[2, 3], [0, 1]]])
@@ -182,6 +186,7 @@ def grib_fields():
 @pytest.mark.parametrize("levelist", [[1000], [1000, 900, 800], ["1000"]])
 def test_real_earthkit_decoder(source_args, grib_fields, monkeypatch, levelist):
     """Decode existing GRIB data through the real Earthkit backend, mocking the service only."""
+
     def retrieve(*args, **kwargs):
         selection = np.atleast_1d(args[2]["levelist"]).astype(int).tolist()
         return SimpleNamespace(to_fieldlist=lambda: grib_fields.sel({"metadata.level": selection}))
@@ -202,14 +207,21 @@ def test_real_earthkit_decoder(source_args, grib_fields, monkeypatch, levelist):
 
 def test_reader_earthkit(grib_fields, monkeypatch):
     """Exercise the public Reader/catalog path, including DataModel and endpoint forwarding."""
+
     def retrieve(*args, **kwargs):
         assert kwargs["address"] == "polytope.mn5.apps.dte.destination-earth.eu"
         return SimpleNamespace(to_fieldlist=lambda: grib_fields.sel({"metadata.level": args[2]["levelist"]}))
 
     monkeypatch.setattr(earthkit_source, "earthkit_data", SimpleNamespace(from_source=retrieve))
     reader = Reader(
-        catalog="ci", model="IFS", exp="test-fdb", source="fdb", engine="polytope-earthkit",
-        databridge="mn5", fix=False, areas=False,
+        catalog="ci",
+        model="IFS",
+        exp="test-fdb",
+        source="fdb",
+        engine="polytope-earthkit",
+        databridge="mn5",
+        fix=False,
+        areas=False,
     )
     data = reader.retrieve(var=130)
     assert isinstance(data.t.data, da.Array)
@@ -241,8 +253,11 @@ def test_real_healpix_and_time_chunks(monkeypatch, chunks):
     from_source = Mock(side_effect=retrieve)
     monkeypatch.setattr(earthkit_source, "earthkit_data", SimpleNamespace(from_source=from_source))
     data = open_polytope(
-        {"param": [164], "levtype": "sfc"}, engine="polytope-earthkit", chunks=chunks,
-        data_start_date="19900101", data_end_date="19900102",
+        {"param": [164], "levtype": "sfc"},
+        engine="polytope-earthkit",
+        chunks=chunks,
+        data_start_date="19900101",
+        data_end_date="19900102",
     )
     assert from_source.call_count == 1
     assert data.sizes == {"time": 25, "values": 196608}

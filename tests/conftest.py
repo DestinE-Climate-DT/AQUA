@@ -15,6 +15,7 @@ import pytest
 from utils_tests import LOGLEVEL, TestCleanupRegistry
 
 from aqua import Reader
+from aqua.core.backend.backend import Backend
 from aqua.core.configurer import ConfigContext
 from aqua.core.lock import SafeFileLock
 
@@ -33,6 +34,25 @@ def stac_catalogue_dir():
     if not (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
         pytest.skip("AQUA_tests/models is not available")
     return STAC_CATALOGUE_DIR
+
+
+class DummyBackend(Backend):
+    """Dummy backend implementing abstract methods for testing."""
+
+    def retrieve(self, *args, **kwargs):
+        pass
+
+    def retrieve_plain(self, *args, **kwargs):
+        pass
+
+    def log_history(self, data, *args, **kwargs):
+        return data
+
+
+@pytest.fixture(scope="session")
+def dummy_backend():
+    """Return a minimal Backend instance to test the shared Backend methods."""
+    return DummyBackend()
 
 
 # ======================================================================
