@@ -151,6 +151,8 @@ The catalog's ``source_grid_name`` remains available for AQUA regridding and
 cell areas, but is not used to reconstruct z3fdb coordinates. No grid override
 or additional catalog configuration is required.
 
+.. _z3fdb-chunking:
+
 Chunking Logic for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -163,13 +165,19 @@ or with the ``time`` key in a dictionary:
   have fewer. A day spanning HPC and bridge periods is combined into one output
   chunk. Data stays lazy; no averaging or eager field computation is performed.
 * ``chunks={"time": 24}`` groups a fixed number of 24 samples, independent of
-  calendar-day boundaries. Fixed counts must divide the time axes passed to z3fdb
-  exactly; partial requests and storage splits can violate this restriction.
+  calendar-day boundaries. Fixed counts must be compatible with each native
+  request part's time axis, rather than just the total selected window. Partial
+  requests and storage splits can violate this restriction.
 
-Calendar-day chunks use regular native chunks sized to divide every full or
-partial day in each store. Xarray groups those chunks into calendar days, so
-``"D"`` does not require complete days or an exactly divisible total window.
-Other time-frequency strings are unsupported and raise a clear error.
+For example, hourly data requested from 1 January at 12:00 through 3 January at
+06:00 (inclusive) has daily time-chunk lengths ``(12, 24, 7)`` with ``chunks="D"``.
+No timestamps are added or dropped to fill the partial days. Daily saved data
+keeps one timestamp per day; ``chunks="D"`` never changes the sampling frequency.
+
+Daily chunks do not require complete days or an exactly divisible total window.
+The backend may use smaller read groups for partial days, while the output chunks
+remain aligned to calendar days. Other time-frequency strings, including ``M``
+and ``Y``, are unsupported and raise a clear error.
 
 By default all selected levels share a chunk. Set ``vertical`` (or its alias
 ``level``) to a positive integer to group levels, for example:

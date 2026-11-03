@@ -386,11 +386,13 @@ Some of the parameters are here described:
     With ``z3fdb``, ``chunks: D`` or ``chunks: {time: D}`` produces calendar-day
     chunks, including partial days and days spanning HPC/bridge periods.
     ``S`` gives single saved frames. An integer ``time`` value groups that many
-    samples and must divide each native time axis exactly; other frequency strings
-    are unsupported. Positive integer ``vertical``/``level`` sizes are supported:
+    samples and must be compatible with every native request part's time axis;
+    other frequency strings are unsupported. Positive integer ``vertical``/``level``
+    sizes are supported:
     one gives single levels, the selected level count gives the whole axis, and
     other divisors give fixed-size groups. A non-divisor warns and falls back to
     single levels. By default all selected levels share a chunk.
+    See :ref:`z3fdb-chunking` for examples and restrictions.
 
 .. option:: timestep
 
