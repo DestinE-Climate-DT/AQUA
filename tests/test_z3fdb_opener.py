@@ -53,7 +53,7 @@ pytestmark = pytest.mark.aqua
         (
             "2020-01-01T00:00:00",
             "2020-01-01T01:00:00",
-            "param=167/168,levtype=sfc,date=20200101,time=0000/to/0100",
+            "param=167/168,levtype=sfc,date=20200101,time=0000/to/0100/by/1",
         ),
         (
             "2020-01-01T23:00:00",
@@ -321,20 +321,20 @@ def test_build_mars_requests_hourly_partial_days():
     # day_end_full = 2020-01-02
     # day_start_full == day_end_full -> date_val = "20200102"
     # parts:
-    # 1. 20200101, 1200/to/2300
-    # 2. 20200102, 0000/to/2300 (line 152)
-    # 3. 20200103, 0000/to/1200 (line 155)
+    # 1. 20200101, 1200/to/2300/by/1
+    # 2. 20200102, 0000/to/2300/by/1 (line 152)
+    # 3. 20200103, 0000/to/1200/by/1 (line 155)
     mars_list, time = _build_mars_requests(
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-03T12:00:00"
     )
     assert (time[1:] - time[:-1] == pd.Timedelta(hours=1)).all()
     assert time[0] == pd.Timestamp("2020-01-01T12:00:00")
     assert len(mars_list) == 3
-    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300"}
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
     assert expected.items() <= mars_list[0].items()
-    expected = {"param": 129, "date": "20200102", "time": "0000/to/2300"}
+    expected = {"param": 129, "date": "20200102", "time": "0000/to/2300/by/1"}
     assert expected.items() <= mars_list[1].items()
-    expected = {"param": 129, "date": "20200103", "time": "0000/to/1200"}
+    expected = {"param": 129, "date": "20200103", "time": "0000/to/1200/by/1"}
     assert expected.items() <= mars_list[2].items()
 
     # Case B: ts_start.hour > 0, ts_end.hour < 23, and day_start_full < day_end_full
@@ -347,11 +347,11 @@ def test_build_mars_requests_hourly_partial_days():
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-04T12:00:00"
     )
     assert len(mars_list) == 3
-    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300"}
+    expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
     assert expected.items() <= mars_list[0].items()
-    expected = {"param": 129, "date": "20200102/to/20200103", "time": "0000/to/2300"}
+    expected = {"param": 129, "date": "20200102/to/20200103", "time": "0000/to/2300/by/1"}
     assert expected.items() <= mars_list[1].items()
-    expected = {"param": 129, "date": "20200104", "time": "0000/to/1200"}
+    expected = {"param": 129, "date": "20200104", "time": "0000/to/1200/by/1"}
     assert expected.items() <= mars_list[2].items()
 
 
@@ -533,6 +533,16 @@ def test_build_zarr_axes_chunking() -> None:
     assert axes_vert_1[2].chunking == Chunking.SINGLE_VALUE
     axes_vert_all = _build_zarr_axes("h", levels=[1000, 850], chunks={"vertical": 2})
     assert axes_vert_all[2].chunking == Chunking.WHOLE_AXIS
+
+    # Calendar time chunks retain the requested vertical grouping.
+    axes_daily = _build_zarr_axes(
+        "h",
+        levels=[1000, 850, 700, 500],
+        chunks={"time": "D", "vertical": 2},
+        time=pd.date_range("20200101", periods=48, freq="h"),
+    )
+    assert axes_daily[0].chunking.chunkShape == 24
+    assert axes_daily[2].chunking.chunkShape == 2
 
     # Non-divisor vertical chunk size fallback to SINGLE_VALUE
     axes_fallback = _build_zarr_axes("h", levels=[1000, 850, 700], chunks={"vertical": 2})

@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
+- Honor z3fdb `chunks="D"` and `chunks={"time": "D"}` as lazy calendar-day chunks, including partial days, different saved cadences and HPC/bridge splits; retain regular native chunks and reject unsupported time-chunk settings. Make hourly and consecutive forecast-step MARS increments explicit so z3fdb retrieves every selected frame, and correct the time/vertical chunking documentation.
 - Share GSV availability discovery with z3fdb: resolve workflow `fdb_info_file` dates and experiment versions, local `auto` dates, bridge STAC and date files on each read; validate availability and align HPC/bridge boundaries to saved cadence without changing catalog requests or metadata.
 - Honor GSV-style `timestyle` and `timestep` in z3fdb, including forecast-step requests, saved cadence and the original forecast reference across HPC/bridge periods; label output with the requested timestamps, preserve daily request times and reject unsupported settings including legacy `timeshift` (#3316).
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)

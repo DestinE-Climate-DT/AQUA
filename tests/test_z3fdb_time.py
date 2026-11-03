@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 import zarr
+from dask.callbacks import Callback
 
 from aqua.core.intake_drivers.fdb import IntakeFDBSource
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
@@ -29,8 +30,10 @@ def mock_store(monkeypatch):
         monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
         monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
         monkeypatch.setattr(z3fdb_opener, "ExtractorType", Mock(), raising=False)
-        array = zarr.zeros(shape=(nt, 1, 12), chunks=(1, 1, 12), dtype="float32")
-        monkeypatch.setattr(z3fdb_opener.zarr, "open_array", Mock(return_value=array))
+        sizes = nt if isinstance(nt, list) else [nt]
+        arrays = [zarr.zeros(shape=(size, 1, 12), chunks=(1, 1, 12), dtype="float32") for size in sizes]
+        open_array = Mock(side_effect=arrays) if isinstance(nt, list) else Mock(return_value=arrays[0])
+        monkeypatch.setattr(z3fdb_opener.zarr, "open_array", open_array)
         probe = Mock(return_value={"grid_type": "healpix", "Nside": 1, "ordering": 0})
         monkeypatch.setattr(z3fdb_opener, "_read_grib_grid", probe)
         return builder, probe
@@ -217,7 +220,7 @@ def test_native_and_saved_cadence(mock_store, style, timestep, savefreq):
         expected = np.asarray(
             (gsv.timeaxis - pd.Timestamp(start)) / pd.Timedelta(pd.tseries.frequencies.to_offset(timestep)), int
         )
-        expected_step = f"{expected[0]}/to/{expected[-1]}" if timestep == savefreq else "/".join(map(str, expected))
+        expected_step = f"{expected[0]}/to/{expected[-1]}/by/1" if timestep == savefreq else "/".join(map(str, expected))
         assert mars["step"] == expected_step
     elif savefreq == "6h":
         assert builder.add_part.call_args_list[0].args[0]["time"] == "0000/0600/1200/1800"
@@ -300,3 +303,82 @@ def test_yearly_cadence(mock_store, style):
     np.testing.assert_array_equal(result.time, pd.to_datetime(["2020-01-01", "2021-01-01"]))
     if style == "step":
         assert builder.add_part.call_args.args[0]["step"] == "0/8784"
+
+
+@pytest.mark.parametrize("as_dict", [False, True])
+@pytest.mark.parametrize(
+    "freq, style, start, end, expected_chunks, native_size",
+    [
+        ("h", "date", "20200101", "20200102T2300", (24, 24), 24),
+        ("h", "date", "20200101T1200", "20200103T0600", (12, 24, 7), 1),
+        ("h", "step", "20200101T1200", "20200102T0600", (12, 7), 1),
+        ("6h", "date", "20200101", "20200102T1800", (4, 4), 4),
+        ("6h", "date", "20200101T0600", "20200102T1800", (3, 4), 1),
+        ("15min", "date", "20200101T0130", "20200102T0015", (90, 2), 2),
+        ("D", "date", "20200101", "20200103", (1, 1, 1), 1),
+        ("MS", "yearmonth", "20200101", "20200301", (1, 1, 1), 1),
+    ],
+)
+def test_calendar_day_chunks(mock_store, as_dict, freq, style, start, end, expected_chunks, native_size):
+    """Calendar-day chunks follow timestamps, including partial days and sparse data."""
+    builder, _ = mock_store(sum(expected_chunks))
+    tasks = []
+    with Callback(posttask=lambda *args: tasks.append(args)):
+        result = z3fdb_opener.open_z3fdb(
+            {"param": [130], "step": 0},
+            freq=freq,
+            timestyle=style,
+            timestep="15min" if freq == "15min" else "h",
+            startdate=start,
+            enddate=end,
+            data_start_date="20200101",
+            chunks={"time": "D"} if as_dict else "D",
+        )
+    assert not tasks
+    assert result.var130.chunks[0] == expected_chunks
+    assert result.attrs["history"]
+    if style == "step":
+        assert builder.add_part.call_args.args[0]["step"] == "12/to/30/by/1"
+    for call in builder.add_part.call_args_list:
+        chunk = call.args[1][0].chunking
+        if native_size == 1:
+            assert chunk == z3fdb_opener.Chunking.SINGLE_VALUE
+        else:
+            assert chunk.chunkShape == native_size
+    boundaries = np.cumsum(expected_chunks)[:-1]
+    assert all(pd.Timestamp(result.time[index].item()).hour == 0 for index in boundaries)
+
+
+@pytest.mark.parametrize("chunks", ["D", {"time": "D"}])
+def test_calendar_day_chunks_across_storage_split(mock_store, chunks):
+    """Join two storage fragments of a day into one lazy calendar-day chunk."""
+    mock_store([6, 18, 12])
+    result = IntakeFDBSource(
+        {"param": [130]},
+        engine="z3fdb",
+        data_start_date="20200101T0600",
+        data_end_date="20200102T1700",
+        bridge_start_date="20200101T1200",
+        bridge_end_date="20200102T0500",
+        savefreq="h",
+        chunks=chunks,
+    ).to_dask()
+    assert result.var130.chunks[0] == (18, 18)
+    np.testing.assert_array_equal(result.time, pd.date_range("2020-01-01T06:00", "2020-01-02T17:00", freq="h"))
+    assert result.attrs["history"]
+
+
+@pytest.mark.parametrize("chunks", ["M", "h", {"time": "invalid"}, 0, -1, {"time": 1.5}])
+def test_unsupported_chunk_frequency_is_explicit(mock_store, chunks):
+    """Frequency strings must not silently become one-frame chunks."""
+    builder, probe = mock_store(1)
+    with pytest.raises(ValueError, match="time chunks must be"):
+        z3fdb_opener.open_z3fdb(
+            {"param": [130]},
+            freq="h",
+            startdate="20200101",
+            enddate="20200101",
+            chunks=chunks,
+        )
+    builder.build.assert_not_called()
+    probe.assert_not_called()

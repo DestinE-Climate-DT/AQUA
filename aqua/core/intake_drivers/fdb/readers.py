@@ -11,6 +11,7 @@ from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
 from .openers.dates import FDBDatesMixin
 from .openers.timeutil import FDBTimeMixin
+from .openers.z3fdb_opener import _chunk_by_day
 
 xr.set_options(keep_attrs=True)
 
@@ -199,4 +200,4 @@ class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
 
         combined = xr.concat(datasets, dim="time")
         combined.attrs.update(datasets[0].attrs)
-        return combined
+        return _chunk_by_day(combined, data.chunks)

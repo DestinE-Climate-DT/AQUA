@@ -154,14 +154,33 @@ or additional catalog configuration is required.
 Chunking Logic for z3fdb
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-When using ``engine="z3fdb"``, chunking is configured as follows:
+With ``engine="z3fdb"``, time chunks can be specified as a string/integer,
+or with the ``time`` key in a dictionary:
 
-* **Time direction**: Chunking is always by single time steps.
-* **Level direction**: By default, level chunking is not performed.
-* **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
+* ``chunks="S"`` (the default) uses one saved timestamp per time chunk.
+* ``chunks="D"`` or ``chunks={"time": "D"}`` groups samples by calendar day.
+  Full hourly days have 24 samples, six-hourly days have four, and partial days
+  have fewer. A day spanning HPC and bridge periods is combined into one output
+  chunk. Data stays lazy; no averaging or eager field computation is performed.
+* ``chunks={"time": 24}`` groups a fixed number of 24 samples, independent of
+  calendar-day boundaries. Fixed counts must divide the time axes passed to z3fdb
+  exactly; partial requests and storage splits can violate this restriction.
 
-For example, specifying ``chunks={"level": 1}`` provides single-level chunking (along with time chunking).
-If you pass something like ``chunks={"level": 3}``, the integer value (e.g. 3) is ignored, and the level chunking is still performed as single-value.
+Calendar-day chunks use regular native chunks sized to divide every full or
+partial day in each store. Xarray groups those chunks into calendar days, so
+``"D"`` does not require complete days or an exactly divisible total window.
+Other time-frequency strings are unsupported and raise a clear error.
+
+By default all selected levels share a chunk. Set ``vertical`` (or its alias
+``level``) to a positive integer to group levels, for example:
+
+.. code-block:: python
+
+    Reader(..., engine="z3fdb", chunks={"time": "D", "vertical": 2})
+
+A vertical size of one gives individual levels; a size equal to the selected
+level count keeps them together. Other sizes must divide the selected level
+count exactly; otherwise a warning is emitted and single-level chunks are used.
 
 .. seealso::
 

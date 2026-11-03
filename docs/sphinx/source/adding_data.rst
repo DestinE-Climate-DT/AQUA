@@ -383,12 +383,14 @@ Some of the parameters are here described:
       vertical: 3  # Three vertical levels in each chunk
 
 .. note::
-    When using the ``z3fdb`` engine, chunking is supported differently:
-
-    * **Time direction**: Chunking is always by single time steps.
-    * **Level direction**: By default, level chunking is not performed.
-    * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
-    * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
+    With ``z3fdb``, ``chunks: D`` or ``chunks: {time: D}`` produces calendar-day
+    chunks, including partial days and days spanning HPC/bridge periods.
+    ``S`` gives single saved frames. An integer ``time`` value groups that many
+    samples and must divide each native time axis exactly; other frequency strings
+    are unsupported. Positive integer ``vertical``/``level`` sizes are supported:
+    one gives single levels, the selected level count gives the whole axis, and
+    other divisors give fixed-size groups. A non-divisor warns and falls back to
+    single levels. By default all selected levels share a chunk.
 
 .. option:: timestep
 

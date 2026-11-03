@@ -13,6 +13,7 @@ import pandas as pd
 import xarray as xr
 import zarr
 from eccodes.highlevel import StreamReader
+from xarray.groupers import TimeResampler
 
 from aqua.core.exceptions import NoDataError
 from aqua.core.logger import log_configure, log_history
@@ -221,8 +222,11 @@ def _build_mars_requests(
         part = FDBTimeMixin._build_time_request(
             timestyle, time[0], time[-1], reference=FDBTimeMixin._date2str(reference), steps=(steps[0], steps[-1])
         )
-        if len(steps) > 1 and not (np.diff(steps) == 1).all():
-            part["step"] = "/".join(map(str, steps))
+        if len(steps) > 1:
+            if (np.diff(steps) == 1).all():
+                part["step"] += "/by/1"
+            else:
+                part["step"] = "/".join(map(str, steps))
         parts = [part]
     elif timestyle == "date":
         groups = []
@@ -238,8 +242,11 @@ def _build_mars_requests(
             part = FDBTimeMixin._build_time_request(timestyle, first, last)
             if (days[-1] - days[0]).days + 1 != len(days):
                 part["date"] = "/".join(day.strftime("%Y%m%d") for day in days)
-            if len(pattern) > 1 and not (np.diff(pd.to_datetime(list(pattern), format="%H%M")) == pd.Timedelta(hours=1)).all():
-                part["time"] = "/".join(pattern)
+            if len(pattern) > 1:
+                if (np.diff(pd.to_datetime(list(pattern), format="%H%M")) == pd.Timedelta(hours=1)).all():
+                    part["time"] += "/by/1"
+                else:
+                    part["time"] = "/".join(pattern)
             parts.append(part)
     else:
         year_months = defaultdict(list)
@@ -271,16 +278,29 @@ def _build_mars_requests(
     return mars_list, time
 
 
-def _build_zarr_axes(freq, levels, chunks=None, timestyle=None):
+def _build_zarr_axes(freq, levels, chunks=None, timestyle=None, time=None):
     """Build the AxisDefinition objects representing the layout of the virtual Zarr store."""
     _, timestyle, _ = _validate_time_settings(freq, timestyle, "1min")
     time_keys = {"date": ["date", "time"], "yearmonth": ["year", "month"], "step": ["step"]}[timestyle]
 
     chunking = Chunking.SINGLE_VALUE  # by default we chunk step-by-step in time
     val = chunks.get("time") if isinstance(chunks, dict) else chunks
-    if isinstance(val, str) and val.isdigit():
-        val = int(val)
-    if isinstance(val, int) and val > 1:
+    if isinstance(val, str):
+        if val.upper() == "D":
+            if time is None:
+                raise ValueError("Calendar-day chunks require the planned timestamps.")
+            # Native chunks must divide every full or partial day in this store.
+            day_sizes = pd.Series(0, index=time).resample("D").size().to_numpy()
+            val = int(np.gcd.reduce(day_sizes))
+        elif val.isdigit():
+            val = int(val)
+        elif val.upper() in ("S", "SINGLE"):
+            val = 1
+    if val is None:
+        val = 1
+    if not isinstance(val, int) or val < 1:
+        raise ValueError("z3fdb time chunks must be 'S', 'D' or a positive integer sample count.")
+    if val > 1:
         chunking = Chunking.FixedSizeChunk(chunkShape=val)
     time_axes = [AxisDefinition(time_keys, chunking)]
 
@@ -313,6 +333,14 @@ def _build_zarr_axes(freq, levels, chunks=None, timestyle=None):
 
     axes = time_axes + [AxisDefinition(["param"], Chunking.SINGLE_VALUE)] + level_axes
     return axes
+
+
+def _chunk_by_day(data, chunks):
+    """Combine native chunks lazily into the requested calendar days."""
+    val = chunks.get("time") if isinstance(chunks, dict) else chunks
+    if isinstance(val, str) and val.upper() == "D":
+        return data.chunk(time=TimeResampler("D"))
+    return data
 
 
 def to_dataset(
@@ -507,11 +535,11 @@ def open_z3fdb(
         data_start_date (str, optional): Start date of the dataset. Defaults to None.
         data_end_date (str, optional): End date of the dataset. Defaults to None.
         freq (str, optional): Frequency of the data. Defaults to "MS".
-        chunks (dict, optional): Chunking configuration for the zarr array.
-            Supports 'level' or 'vertical' keys. If the value is an integer > 1,
-            Chunking.FixedSizeChunk is used with that chunk size.
-            If the value is 1 (or 'single', True), Chunking.SINGLE_VALUE is used.
-            The time axis is always chunked as single values. Defaults to None.
+        chunks (str, int or dict, optional): Chunking configuration for the zarr array.
+            Time accepts 'S' for single frames, 'D' for calendar days or an integer
+            frame count. A string/integer sets time chunking; dictionaries use 'time'
+            and 'level'/'vertical'. Fixed sizes must divide their axes exactly.
+            Calendar days support partial days and any saved cadence. Defaults to None.
         level_values (float or list, optional): Physical values matching the full request levelist.
             Defaults to the level IDs.
         grid (str, optional): Legacy hint, ignored. The GRIB message defines the grid.
@@ -578,7 +606,7 @@ def open_z3fdb(
         timestep=timestep,
         data_start_date=data_start_date,
     )
-    axes = _build_zarr_axes(freq, levels, chunks, timestyle=timestyle)
+    axes = _build_zarr_axes(freq, levels, chunks, timestyle=timestyle, time=time)
 
     # Create zarr store
     fdb_config_file = None
@@ -632,4 +660,4 @@ def open_z3fdb(
         }
     )
 
-    return ds
+    return _chunk_by_day(ds, chunks)
