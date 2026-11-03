@@ -1,7 +1,7 @@
 import os
 import re
 import shutil
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import icechunk
 import numpy as np
@@ -955,6 +955,40 @@ class TestIcechunkWriter:
         assert list(ds.time.values) == list(times.values)
         np.testing.assert_array_equal(ds["a"].values, full.values)
         np.testing.assert_array_equal(ds["b"].values, full.values * 10)
+
+    @pytest.mark.parametrize("failure", ["write", "write_exception", "commit", "validation"])
+    def test_failed_month_stops_variable(self, tmp_path, failure):
+        """A failed write, commit or post-commit check stops the variable, reports it and returns False."""
+        writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+        times = pd.date_range("2020-01-31", periods=4, freq="12h")  # Jan 31 00/12, Feb 1 00/12: two months
+        data = xr.DataArray(np.arange(4.0), dims=["time"], coords={"time": times}, name="a")
+        real_write, real_check = writer._write_month, writer.check_integrity
+
+        def write_month(month_data, var, clobber=False):
+            if failure == "write":
+                return False
+            if failure == "write_exception":
+                raise RuntimeError("boom")
+            ok = real_write(month_data, var, clobber=clobber)
+            if failure == "commit":
+                writer.main_session = MagicMock(commit=MagicMock(side_effect=RuntimeError("boom")))
+            return ok
+
+        checks = []
+
+        def check_integrity(var, **kwargs):
+            checks.append(var)
+            if failure == "validation" and len(checks) > 1:  # the first call is the one before writing
+                return {"complete": False, "last_record": None, "message": "boom"}
+            return real_check(var, **kwargs)
+
+        with (
+            patch.object(writer, "_write_month", side_effect=write_month) as write,
+            patch.object(writer, "check_integrity", side_effect=check_integrity),
+        ):
+            assert writer.write_variable(data, var="a") is False
+        assert write.call_count == 1
+        assert writer.report.failed == [f"2020-01 ({'write' if failure.startswith('write') else failure})"]
 
     def test_resume(self, drop_arguments, tmp_path):
         """IcechunkWriter appends only the missing months on a second run."""
