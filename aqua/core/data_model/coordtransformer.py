@@ -1,5 +1,6 @@
 """Module to transform coordinates of an Xarray object."""
 
+import numpy as np
 import xarray as xr
 
 from aqua.core.default import AQUA_LATITUDE, AQUA_LONGITUDE
@@ -192,7 +193,7 @@ class CoordTransformer:
                 )
                 data = data.reindex({coord_name: data[coord_name][::-1]})
                 # add an attribute for regridder evalution
-                data[tgt_coord["name"]].attrs["flipped"] = 1
+                data[tgt_coord["name"]].attrs["AQUA_flipped"] = 1
                 log_history(
                     data,
                     f"Flipped coordinate {tgt_coord['name']} from "
@@ -379,6 +380,13 @@ class CoordTransformer:
             # keep dimension coordinates monotonic (e.g. -180..180 wrapped into 0..360)
             if coord_name in data.dims:
                 data = data.sortby(coord_name)
+                # if sorting is a roll of the stored order, record it for regridder evaluation:
+                # weights are built on the stored order, see counter_reverse_coordinate
+                shift = int(np.searchsorted(data[coord_name].values, wrapped.values[0]))
+                if np.array_equal(np.roll(data[coord_name].values, -shift), wrapped.values):
+                    data[coord_name].attrs["AQUA_rolled"] = shift
+                else:
+                    self.logger.warning("Sorting of %s is not a roll of the stored order, regridding may fail.", coord_name)
 
             # data = data.assign_attrs({"longitude": {"range_convention": tgt_range}})
 
@@ -403,11 +411,18 @@ class CoordTransformer:
 
 def counter_reverse_coordinate(data):
     """
-    Flip back latitude if necessary
+    Flip back latitude and roll back longitude if necessary
     """
 
     for coord in data.coords:
-        if "flipped" in data.coords[coord].attrs:
+        attrs = data.coords[coord].attrs
+        # "flipped" is the attribute name used before AQUA_flipped: kept for backward compatibility
+        flipped = [name for name in ("AQUA_flipped", "flipped") if name in attrs]
+        if flipped:
             data = data.reindex({coord: data[coord][::-1]})
-            del data.coords[coord].attrs["flipped"]
+            for name in flipped:
+                del data.coords[coord].attrs[name]
+        if "AQUA_rolled" in data.coords[coord].attrs:
+            data = data.roll({coord: -data.coords[coord].attrs["AQUA_rolled"]}, roll_coords=True)
+            del data.coords[coord].attrs["AQUA_rolled"]
     return data
