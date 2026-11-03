@@ -73,9 +73,17 @@ jobs:
           LABEL="ci-failure:$(echo "$TEST_NAME" | tr '[:upper:]' '[:lower:]') :clown_face:"
           # Create the label on first use; ignore the error if it already exists
           gh label create "$LABEL" --color B60205 --description "Automatic report of a failed $TEST_NAME test run" 2>/dev/null || true
-          EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          EXISTING=$(gh issue list --label "$LABEL" --state open --json number,title --jq '.[0] // empty')
+          TODAY=$(date -u +%Y-%m-%d)
           if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body-file report.md
+            NUMBER=$(echo "$EXISTING" | jq -r .number)
+            # Failure count is stored in the title, e.g. "(3 failures, last: 2026-11-03)"; default to 1 if missing
+            COUNT=$(echo "$EXISTING" | jq -r '.title | capture("\\((?<n>[0-9]+) failures?,").n // 1')
+            COUNT=$((COUNT + 1))
+            # Editing the title and commenting both bump "updated", so the issue tops the "Recently updated" sort
+            gh issue edit "$NUMBER" --title "[CI/CD] $TEST_NAME tests failed ($COUNT failures, last: $TODAY)"
+            { echo "### Failure $TODAY - $RUN_URL"; echo; cat report.md; } > comment.md
+            gh issue comment "$NUMBER" --body-file comment.md
           else
-            gh issue create --label "$LABEL" --type Bug --title "[CI/CD] $TEST_NAME tests failed ($(date -u +%Y-%m-%d))" --body-file report.md
+            gh issue create --label "$LABEL" --type Bug --title "[CI/CD] $TEST_NAME tests failed (1 failure, last: $TODAY)" --body-file report.md
           fi
