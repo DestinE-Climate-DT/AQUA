@@ -91,6 +91,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
 - **No hard-coded coordinate names**: never write `"time"`, `"plev"` or `.time` in `aqua/core`; use `self.coords = AquaCoordNames(data_model)` (`coords.time`, `coords.lat`, ...) and give classes a `data_model` argument defaulting to `DEFAULT_DATAMODEL`; `tests/test_hardcoded_coords.py` enforces it
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
+- **Pandas is preferred over datetime**: we prefer to use pandas instead of datetime functions. datetime allowed only if the pandas solution would much more complicated.
 
 ---
 
@@ -227,6 +228,7 @@ def method(self, arg1, arg2=None):
 ## Testing
 
 - Tests live in `tests/`; fixtures and reference assets come from `AQUA_tests/` plus the repository-level `cell_area_*.nc` / `weights_*.nc`
+- Mark every new test with an appropriate marker registered in `pyproject.toml` (for example, `pytestmark = pytest.mark.aqua` at module level or `@pytest.mark.console` on a test). CI runs pytest with `-m` filters and skips unmarked tests; verify collection with the marker expression used by the relevant workflow.
 - Never create new test data files — parametrize over existing grids (`test-r2b0`, `test-pi-2d`, `test-healpix`, `test-hpz3-nested`)
 - Use `Reader(model=..., exp=..., source=...)` to load test data; avoid raw `xr.open_dataset` unless testing I/O directly
 - Prefer shared fixtures in `tests/conftest.py` with `session` or `module` scope to avoid repeated heavy retrievals

@@ -5,12 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
+ClimateDT workflow modifications:
+- `aqua push` substitutes `push_analysis.sh`.
+   API changes: removal of `--repository` and `--no-update` (unnecessary).
+   Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
+
+Unreleased in the current development version (target v1.2.3):
+Complete list:
+- Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
 - Abstract coordinate names: new cached `AquaCoordNames` class (`time`, `lat`, `lon`, `isobaric`, `depth`, `height`) read from the data model and used instead of hard-coded names in `Reader`, `Fixer`, `Backend`, `TimStat`, `FldStat`, `Drop` and its writers, time utilities and graphics; classes accept a `data_model` argument passed down by the `Reader`; `scan_coord` now raises if the data model or coordinate is missing (#3124)
+- Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
+- Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)
+- Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock`
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
+- Apply the temporary `pytest<9.2` pin also in the CI workflow (conda install mode), which does not read the `pyproject.toml` pin (#3317)
 - Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
 
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
