@@ -1,15 +1,13 @@
 """Testing for the catalog generator"""
 
-import argparse
-import logging
-import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from utils_tests import LOGLEVEL
 
 from aqua.core.catgen import AquaFDBGenerator, get_nested
-from aqua.core.console.catgen import catgen_execute
+from aqua.core.console.main import AquaConsole
 from aqua.core.util import dump_yaml, load_yaml
 
 loglevel = LOGLEVEL
@@ -26,13 +24,11 @@ def _assert_source_levels(sources, source_key, expected_levels):
     assert len(sources["sources"][source_key]["metadata"]["levels"]) == expected_levels
 
 
-def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
+def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1, portfolio_path=None, **overrides):
     """
-    Load configuration, execute catgen, and return generated catalog sources.
+    Generate a catalog with `aqua catgen` run in-process and return the generated catalog sources.
 
-    This function ensures test isolation by using tmp_path for the catalog directory,
-    preventing race conditions when tests run in parallel. All generated files are
-    automatically cleaned up by pytest's tmp_path fixture.
+    The catalog is written under tmp_path, so tests run in parallel do not share files.
 
     Args:
         tmp_path: Temporary directory provided by pytest (Path or str)
@@ -40,31 +36,29 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
         kind: Data portfolio type (minimal, reduced, full)
         reso: Resolution of the data (lowres, intermediate, production, etc.)
         num_of_realizations: Number of realizations for the ensemble
+        portfolio_path: Data portfolio folder, the one of the test configuration if None
+        **overrides: Other configuration keys to set (a value of None removes the key)
 
     Returns:
         dict: Catalog sources dictionary loaded from the generated YAML file
-
-    Raises:
-        subprocess.CalledProcessError: If catgen command fails
-        AssertionError: If generated catalog files are not found
     """
     tmp_path = Path(tmp_path)
-    config_template = Path("tests/catgen/config-test-catgen.j2")
-
-    # Prepare configuration
-    config = _prepare_config(config_template, model, kind, reso, num_of_realizations, tmp_path)
-
-    # Setup isolated catalog directory structure
-    _setup_catalog_directory(config, tmp_path)
-
-    # Execute catgen command
+    config = _prepare_config(
+        Path("tests/catgen/config-test-catgen.j2"),
+        model,
+        kind,
+        reso,
+        num_of_realizations,
+        tmp_path,
+        portfolio_path,
+        **overrides,
+    )
+    _setup_catalog_directory(config)
     _run_catgen(config, kind, tmp_path)
-
-    # Load and return generated sources
     return _load_generated_sources(config)
 
 
-def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_path):
+def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_path, portfolio_path=None, **overrides):
     """Prepare configuration from template with test-specific values."""
     definitions = {
         "model": model,
@@ -76,62 +70,126 @@ def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_p
     config = load_yaml(str(template_path), definitions)
 
     # Use tmp_path for catalog directory to ensure test isolation
-    catalog_base = tmp_path / "Climate-DT-catalog"
-    config["repos"]["Climate-DT-catalog_path"] = str(catalog_base)
+    config["repos"]["Climate-DT-catalog_path"] = str(tmp_path / "Climate-DT-catalog")
+    if portfolio_path is not None:
+        config["repos"]["data-portfolio_path"] = str(portfolio_path)
+    for key, value in overrides.items():
+        if value is None:
+            config.pop(key, None)
+        else:
+            config[key] = value
 
     return config
 
 
-def _setup_catalog_directory(config, tmp_path):
-    """Create isolated catalog directory structure and required files."""
-    catalog_base = Path(config["repos"]["Climate-DT-catalog_path"])
-    catalog_dir = config["catalog_dir"]
-    catalog_yaml_path = catalog_base / "catalogs" / catalog_dir / "catalog.yaml"
+def _catalog_dir(config):
+    """Folder of the catalog of the configuration in the temporary Climate-DT-catalog."""
+    return Path(config["repos"]["Climate-DT-catalog_path"]) / "catalogs" / config["catalog_dir"]
 
-    # Create directory structure
+
+def _setup_catalog_directory(config):
+    """Create the catalog.yaml that catgen requires, if the test did not write one."""
+    catalog_yaml_path = _catalog_dir(config) / "catalog.yaml"
     catalog_yaml_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Create initial catalog.yaml if it doesn't exist (required by catgen)
     if not catalog_yaml_path.exists():
         dump_yaml(str(catalog_yaml_path), {"sources": {}})
 
 
 def _run_catgen(config, kind, tmp_path):
-    """Execute the catgen command via subprocess."""
+    """Run `aqua catgen` through the console, in the same process."""
     config_path = tmp_path / "test.yaml"
     dump_yaml(str(config_path), config)
 
-    command = ["aqua", "catgen", "-p", kind, "-c", str(config_path), "-l", loglevel]
-
-    try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
-        logging.info("Command succeeded with output: %s", result.stdout)
-    except subprocess.CalledProcessError as e:
-        logging.error("Command failed with error: %s", e)
-        logging.error("Return code: %s", e.returncode)
-        logging.error("stderr: %s", e.stderr)
-        raise
-    except Exception as e:
-        logging.error("Unexpected error: %s", e)
-        raise
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sys, "argv", ["aqua", "catgen", "-p", kind, "-c", str(config_path), "-l", LOGLEVEL])
+        AquaConsole().execute()
 
 
 def _load_generated_sources(config):
-    """Load and validate the generated catalog sources."""
-    catalog_path = Path(config["repos"]["Climate-DT-catalog_path"])
-    catalog_dir = config["catalog_dir"]
-    model = config["model"]
-    exp = config["exp"]
+    """Load the generated catalog entry, checking that main.yaml was written too."""
+    entry_dir = _catalog_dir(config) / "catalog" / config["model"]
+    assert (entry_dir / "main.yaml").exists(), f"main.yaml not found in {entry_dir}"
+    return load_yaml(str(entry_dir / f"{config['exp']}.yaml"))
 
-    catalog_entry_dir = catalog_path / "catalogs" / catalog_dir / "catalog" / model
-    entry_file = catalog_entry_dir / f"{exp}.yaml"
-    main_yaml_file = catalog_entry_dir / "main.yaml"
 
-    # Validate that required files were generated
-    assert main_yaml_file.exists(), f"main.yaml not found at {main_yaml_file}"
-    assert entry_file.exists(), f"Catalog entry not found at {entry_file}"
+def _main_entry(**metadata):
+    """Expected main.yaml entry of the experiment `linobanfi` of the test configuration (`metadata` overrides)."""
+    return {
+        "description": "FDB IFS/NEMO test run",
+        "metadata": {
+            "author": "test",
+            "maintainer": "not specified",
+            "machine": "test",
+            "expid": "test",
+            "resolution_atm": "tco2559",
+            "resolution_oce": "eORCA1",
+            "forcing": "highresmip-abrupt4xco2",
+            "start": "1990",
+            "dashboard": {"menu": "linobanfi", "resolution_id": "LR", "note": None},
+            **metadata,
+        },
+        "driver": "yaml_file_cat",
+        "args": {"path": "{{CATALOG_DIR}}/linobanfi.yaml"},
+    }
 
-    return load_yaml(str(entry_file))
+
+def _assert_catalog_index(tmp_path, model, resolution_id):
+    """Check main.yaml and catalog.yaml of the temporary catalog of the test configuration."""
+    catalog = tmp_path / "Climate-DT-catalog" / "catalogs" / "ci"
+    entry = _main_entry()
+    entry["metadata"]["dashboard"]["resolution_id"] = resolution_id
+    assert load_yaml(str(catalog / "catalog" / model / "main.yaml")) == {"sources": {"linobanfi": entry}}
+    assert load_yaml(str(catalog / "catalog.yaml")) == {
+        "sources": {
+            model: {
+                "description": f"{model} model",
+                "driver": "yaml_file_cat",
+                "args": {"path": f"{{{{CATALOG_DIR}}}}/catalog/{model}/main.yaml"},
+            }
+        }
+    }
+
+
+@pytest.fixture(scope="module")
+def mini_portfolio(tmp_path_factory):
+    """A tiny data portfolio (not the real one, which is a private repository) to run the generator offline."""
+    root = tmp_path_factory.mktemp("data-portfolio")
+    (root / "definitions").mkdir()
+    (root / "portfolios" / "mini").mkdir(parents=True)
+    dump_yaml(
+        str(root / "definitions" / "levels.yaml"),
+        {"plev2": {"levelist": [1, 2], "levels": [100, 200]}, "nemo3": {"levelist": [1, 2, 3], "levels": [0.5, 1.5, 2.5]}},
+    )
+    dump_yaml(
+        str(root / "portfolios" / "mini" / "grids.yaml"),
+        {
+            "common": {"vertical-pl": "plev2", "vertical-NEMO-full": "nemo3"},
+            "lowres": {
+                "horizontal-IFS-NEMO-standard": "H32",
+                "horizontal-IFS-NEMO-fine": "H128",
+                "horizontal-ICON-standard": "H32",
+            },
+        },
+    )
+    dump_yaml(
+        str(root / "portfolios" / "mini" / "portfolio.yaml"),
+        {
+            "ifs-nemo": [
+                {"levtype": "sfc", "frequency": "monthly", "variables": [167, 168]},
+                {"levtype": "sfc", "frequency": "monthly", "variables": [169], "omit-resolutions": ["fine"]},
+                {"levtype": "pl", "frequency": "daily", "variables": [130], "vertical": "pl"},
+                {
+                    "levtype": "o3d",
+                    "frequency": "monthly",
+                    "variables": [263500],
+                    "vertical": "NEMO-full",
+                    "omit-resolutions": ["standard"],
+                },
+            ],
+            "icon": [{"levtype": "sfc", "frequency": "monthly", "variables": [167]}],
+        },
+    )
+    return root
 
 
 @pytest.mark.catgen
@@ -174,6 +232,7 @@ def test_catgen_expid_metadata(tmp_path, stream, num_of_realizations):
 def test_catgen_portfolios(tmp_path, model, kind, reso, nsources, nocelevels, ensemble):
     """Test catalog generation for different portfolios and models."""
     sources = load_and_prepare(tmp_path=tmp_path, model=model, kind=kind, reso=reso, num_of_realizations=ensemble)
+    _assert_catalog_index(tmp_path, model, {"lowres": "LR", "intermediate": "MR", "production": "HR"}[reso])
 
     # Check number of sources
     assert len(sources["sources"]) == nsources
@@ -296,28 +355,76 @@ def test_get_value_from_map():
 
 # generate_catalog — edge cases
 @pytest.mark.catgen
-def test_generate_catalog_no_resolutions(tmp_path):
-    """If local_grids is empty, generate_catalog returns early without errors."""
-    config_path = tmp_path / "test.yaml"
-    config_template = Path("tests/catgen/config-test-catgen.j2")
-    definitions = {"model": "IFS-NEMO", "kind": "minimal", "resolution": "lowres", "expid": "test"}
-    config = load_yaml(str(config_template), definitions)
-    config["repos"]["Climate-DT-catalog_path"] = str(tmp_path / "Climate-DT-catalog")
-    dump_yaml(str(config_path), config)
+def test_generate_catalog_no_resolutions(tmp_path, mini_portfolio):
+    """If local_grids is empty, generate_catalog returns early and writes no catalog (it would fail if it wrote one)."""
+    config = _prepare_config(
+        Path("tests/catgen/config-test-catgen.j2"), "IFS-NEMO", "mini", "lowres", 1, tmp_path, mini_portfolio
+    )
+    dump_yaml(str(tmp_path / "test.yaml"), config)
 
-    gen = AquaFDBGenerator(data_portfolio="minimal", config_path=str(config_path))
+    gen = AquaFDBGenerator(data_portfolio="mini", config_path=str(tmp_path / "test.yaml"))
     gen.local_grids = {}
-    gen.generate_catalog()  # must return early without raising
+    gen.generate_catalog()
 
-    # verify no catalog file was written
-    entry_file = tmp_path / "Climate-DT-catalog" / "catalogs" / "ci" / "catalog" / "IFS-NEMO" / "linobanfi.yaml"
-    assert not entry_file.exists()
+    assert not (tmp_path / "Climate-DT-catalog").exists()
 
 
-# catgen_execute
 @pytest.mark.catgen
-def test_catgen_execute(tmp_path):
-    load_and_prepare(tmp_path, "IFS-NEMO", "minimal", "lowres")
-    config_path = tmp_path / "test.yaml"
-    args = argparse.Namespace(portfolio="minimal", config=str(config_path), loglevel="WARNING")
-    catgen_execute(args)
+def test_catgen_mini_portfolio(tmp_path, mini_portfolio):
+    """Check every part of a generated catalog on a portfolio small enough to read: sources, grids, levels, index files.
+
+    It would fail if `omit-resolutions` were ignored, if the variables of two profiles feeding one source were not merged,
+    or if the levels, the grid strings or the main.yaml entry were wrong.
+    """
+    sources = load_and_prepare(tmp_path, "IFS-NEMO", "mini", "lowres", 2, mini_portfolio)["sources"]
+
+    assert sorted(sources) == [
+        "daily-hpz5-pl",
+        "daily-hpz7-pl",
+        "monthly-hpz5-sfc",
+        "monthly-hpz7-o3d",
+        "monthly-hpz7-sfc",
+    ]
+    # the second sfc profile is omitted at the fine (hpz7) resolution, and adds its variable at the standard one (hpz5)
+    assert sources["monthly-hpz5-sfc"]["metadata"]["variables"] == [167, 168, 169]
+    assert sources["monthly-hpz7-sfc"]["metadata"]["variables"] == [167, 168]
+    assert sources["monthly-hpz7-sfc"]["metadata"]["source_grid_name"] == "hpz7-nested"
+    assert sources["daily-hpz5-pl"]["metadata"]["levels"] == [100, 200]
+    assert sources["daily-hpz5-pl"]["args"]["request"]["levelist"] == [1, 2]
+    assert sources["monthly-hpz7-o3d"]["metadata"]["levels"] == [0.5, 1.5, 2.5]
+    assert sources["monthly-hpz7-o3d"]["metadata"]["source_grid_name"] == "nemo-eORCA1-hpz7-nested-3d-v3"
+    assert sources["monthly-hpz5-sfc"]["args"]["request"]["stream"] == "clmn"
+    assert sources["daily-hpz5-pl"]["args"]["request"]["stream"] == "clte"
+    assert sources["daily-hpz5-pl"]["parameters"]["realization"]["allowed"] == [1, 2]
+
+    _assert_catalog_index(tmp_path, "IFS-NEMO", "LR")
+
+
+@pytest.mark.catgen
+def test_catgen_keeps_existing_catalog_entries(tmp_path, mini_portfolio):
+    """A second experiment is added to main.yaml and a second model to catalog.yaml, the existing entries are kept.
+
+    It would fail if main.yaml or catalog.yaml were rewritten from scratch, losing what other runs had put in them.
+    """
+    first = _main_entry()
+    other_model = {"description": "OTHER model", "driver": "yaml_file_cat", "args": {"path": "other/main.yaml"}}
+    catalog = tmp_path / "Climate-DT-catalog" / "catalogs" / "ci"
+    (catalog / "catalog" / "IFS-NEMO").mkdir(parents=True)
+    dump_yaml(str(catalog / "catalog.yaml"), {"sources": {"OTHER": other_model}})
+    dump_yaml(str(catalog / "catalog" / "IFS-NEMO" / "main.yaml"), {"sources": {"old-exp": first}})
+
+    load_and_prepare(tmp_path, "IFS-NEMO", "mini", "lowres", 1, mini_portfolio)
+
+    assert set(load_yaml(str(catalog / "catalog.yaml"))["sources"]) == {"OTHER", "IFS-NEMO"}
+    assert load_yaml(str(catalog / "catalog.yaml"))["sources"]["OTHER"] == other_model
+    assert load_yaml(str(catalog / "catalog" / "IFS-NEMO" / "main.yaml"))["sources"] == {
+        "old-exp": first,
+        "linobanfi": _main_entry(),
+    }
+
+
+@pytest.mark.catgen
+def test_catgen_no_ocean_grid_for_model(tmp_path, mini_portfolio):
+    """ICON has no ocean grid at low resolution: the generator raises instead of writing a catalog without it."""
+    with pytest.raises(ValueError, match="No ocean grid available for: icon lowres"):
+        load_and_prepare(tmp_path, "ICON", "mini", "lowres", 1, mini_portfolio, ocean_grid=None, atm_grid=None)
