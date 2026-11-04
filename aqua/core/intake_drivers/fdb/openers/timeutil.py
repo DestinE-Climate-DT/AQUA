@@ -16,8 +16,8 @@ class FDBTimeMixin:
 
     @staticmethod
     def _date2yyyymm(dateobj):
-        """Converts a date object to year, month string representation"""
-        return dateobj.strftime("%Y"), dateobj.strftime("%m")
+        """Return year and unpadded MARS month strings."""
+        return dateobj.strftime("%Y"), str(dateobj.month)
 
     def _add_offset(self, data_start_date, offset, timestep):
         """Sets initial date based on an offset in steps"""

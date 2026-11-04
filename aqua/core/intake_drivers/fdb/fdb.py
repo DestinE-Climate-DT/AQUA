@@ -40,7 +40,7 @@ class IntakeFDBSource(IntakeFDBSourceAdapter):
         # IntakeFDBSource.instancecount += 1
         # print("Number of FDB source calls = " + str(IntakeFDBSource.instancecount))
 
-        if engine == "polytope":
+        if engine in ("polytope", "polytope-earthkit"):
             data = Polytope(
                 request,
                 data_start_date=data_start_date,

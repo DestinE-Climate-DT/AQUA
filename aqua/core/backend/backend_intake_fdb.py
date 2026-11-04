@@ -64,7 +64,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                                            Defaults to None (use the catalog default).
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to standardize coordinates. Defaults to None.
-            engine (str, optional): Engine used for GSV retrieval, 'gsv', 'polytope' or 'z3fdb'. Defaults to 'gsv'.
+            engine (str, optional): 'gsv', 'polytope', 'polytope-earthkit' or 'z3fdb'. Defaults to 'gsv'.
             databridge (str, optional): Only for the polytope engine: 'lumi' or 'mn5'. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional intake parameters forwarded to the catalog source entry.
@@ -78,7 +78,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
 
         # Check machine compatibility
         self.machine_from_catalog = self.expcat.metadata.get("machine")
-        if engine != "polytope" and engine != "polytope-gsv":
+        if engine not in ("polytope", "polytope-gsv", "polytope-earthkit"):
             if self.machine_from_catalog and self.machine_from_catalog.lower() != self.machine.lower():
                 self.logger.warning(
                     "The machine configured (%s) is different from the machine in the catalog (%s). "
@@ -99,7 +99,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
             self.logger.debug("Adding engine=%s to filtered kwargs", engine)
             needs_rebuild = True
         effective_databridge = databridge if databridge is not None else self.expcat.metadata.get("machine", "").split("-")[0]
-        if engine == "polytope" and effective_databridge and "databridge" not in self.kwargs:
+        if engine in ("polytope", "polytope-earthkit") and effective_databridge and "databridge" not in self.kwargs:
             self.kwargs["databridge"] = effective_databridge
             self.logger.debug("Adding databridge=%s to filtered kwargs", effective_databridge)
             needs_rebuild = True

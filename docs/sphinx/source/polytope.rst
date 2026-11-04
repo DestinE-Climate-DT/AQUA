@@ -55,6 +55,44 @@ Lumi Databridge is the default endpoint, but you can specify the MN5 Databridge 
       start: '1990'
       machine: mn5
 
+Use Polytope through Earthkit
+----------------------------
+
+The ``polytope-earthkit`` engine retrieves full GRIB fields through ``earthkit-data``
+and decodes them with Earthkit's xarray backend, without the GSV interface.
+Install the optional dependencies with ``pip install 'aqua-core[polytope]'``.
+The existing Polytope credentials described above are used by Earthkit.
+
+.. code-block:: python
+
+    reader = Reader(model="IFS-NEMO", exp="ssp370", source="hourly-hpz7-atm2d",
+                    engine="polytope-earthkit", chunks="D")
+    data = reader.retrieve(var="2t")
+
+For direct Intake access, existing ``driver: gsv`` catalog entries can select
+this engine with ``engine: polytope-earthkit`` under ``args:``. With ``Reader``,
+pass the engine explicitly as above. The collection defaults to
+``destination-earth``; the Databridge is inferred from the catalog's machine,
+with LUMI as the fallback. Explicit ``databridge="mn5"`` also works.
+Other services and collections can be configured in source metadata:
+
+.. code-block:: yaml
+
+    metadata:
+      polytope:
+        address: polytope.ecmwf.int
+        collection: ecmwf-mars
+
+Date/variable/level selection and time/vertical chunking use the shared FDB
+planner. As with the GSV source, one saved frame is retrieved to establish
+the schema; subsequent partitions are retrieved when Dask executes them.
+Earthkit manages downloaded GRIB files through its own cache. Physical level
+values in catalog ``metadata.levels`` are preserved.
+Use explicit availability dates or the existing STAC date discovery; local FDB
+``auto`` discovery is not available remotely. Feature requests such as polygons
+and trajectories are not supported by this full-field driver.
+The ``polytope`` and ``polytope-gsv`` engines retain their existing GSV access.
+
 Use z3fdb engine in AQUA
 ------------------------
 
