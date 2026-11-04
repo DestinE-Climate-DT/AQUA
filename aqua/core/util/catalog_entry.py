@@ -1,5 +1,3 @@
-from aqua.core.configurer import ConfigCatalog, ConfigContext
-
 from .util import to_list
 
 
@@ -15,7 +13,10 @@ def replace_intake_vars(path: str, catalog: str | None = None) -> str:
         The updated path with the intake variables replaced.
     """
 
-    # We exploit of configurerto get info on intake_vars so that we can replace them in the urlpath
+    # Imported here: configurer imports aqua.core.util, so a top-level import would be circular
+    from aqua.core.configurer import ConfigCatalog, ConfigContext
+
+    # We exploit the configurer to get info on intake_vars so that we can replace them in the urlpath
     configurer = ConfigCatalog(configcontext=ConfigContext(), catalog=catalog)
     _, intake_vars = configurer.get_machine_info()
 

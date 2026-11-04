@@ -15,6 +15,7 @@ from aqua.core.default import DEFAULT_CALENDAR, DEFAULT_TIME_UNIT
 from aqua.core.logger import log_configure
 from aqua.core.util.sci_util import TRIPLET_MONTHS, generate_quarter_months
 from aqua.core.util.string import get_quarter_anchor_month
+from aqua.core.util.timedim import resolve_time_dim
 
 
 def frequency_string_to_pandas(freq):
@@ -77,7 +78,7 @@ def frequency_string_to_pandas(freq):
 
 def xarray_to_pandas_freq(
     xdataset: xr.Dataset | xr.DataArray | pd.Index,
-    dim: str = "time",
+    dim: str | None = None,
 ) -> str | None:
     """
     Given an xarray object or pandas Index, dynamically estimate the time frequency
@@ -85,11 +86,12 @@ def xarray_to_pandas_freq(
 
     Args:
         xdataset (xr.Dataset | xr.DataArray | pd.Index): The input xarray object, coordinate, or index.
-        dim (str, optional): Name of the time dimension. Defaults to 'time'.
+        dim (str, optional): Name of the time dimension. Defaults to the data model time coordinate.
 
     Returns:
         str or None: The inferred time frequency as a string, pandas compliant, or None.
     """
+    dim = resolve_time_dim(dim)
     if isinstance(xdataset, xr.Dataset):
         if dim not in xdataset.coords:
             return None
@@ -272,7 +274,7 @@ def _normalize_period_freq(freq: str) -> str:
     return freq
 
 
-def chunk_dataset_times(xdataset, resample_frequency, loglevel):
+def chunk_dataset_times(xdataset, resample_frequency, loglevel, dim=None):
     """
     Common setup for chunk completeness checking.
 
@@ -280,14 +282,15 @@ def chunk_dataset_times(xdataset, resample_frequency, loglevel):
         tuple: (data_frequency, chunks)
     """
     logger = log_configure(loglevel, "timmean_chunking")
+    dim = resolve_time_dim(dim)
 
     # get frequency of the dataset. Expected to be regular!
-    data_frequency = xarray_to_pandas_freq(xdataset)
+    data_frequency = xarray_to_pandas_freq(xdataset, dim=dim)
     logger.debug("Data frequency detected as: %s", data_frequency)
 
     # Normalize to Period-compatible frequency (e.g. MS -> M)
     period_freq = _normalize_period_freq(resample_frequency)
-    normalized_dates = xdataset.time.to_index().to_period(period_freq).to_timestamp()
+    normalized_dates = xdataset[dim].to_index().to_period(period_freq).to_timestamp()
     chunks = pd.date_range(start=normalized_dates[0], end=normalized_dates[-1], freq=resample_frequency)
 
     logger.info(
@@ -301,7 +304,7 @@ def chunk_dataset_times(xdataset, resample_frequency, loglevel):
     return data_frequency, chunks
 
 
-def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNING"):
+def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNING", dim=None):
     """
     Support function for timmean().
     Verify that all the chunks available in a dataset are complete given a
@@ -309,13 +312,15 @@ def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNIN
     Args:
         xdataset: The original dataset before averaging
         resample_frequency: the frequency on which we are planning to resample, based on pandas frequency
+        dim: name of the time dimension, default is the data model time coordinate
     Raise:
         ValueError if the there no available chunks
     Returns:
         A Xarray DataArray binary, 1 for complete chunks and 0 for incomplete ones, to be used by timmean()
     """
 
-    data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel)
+    dim = resolve_time_dim(dim)
+    data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel, dim)
 
     logger = log_configure(loglevel, "timmean_chunk_completeness")
 
@@ -327,7 +332,7 @@ def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNIN
         expected_timeseries = _generate_expected_time_series(chunk, data_frequency, resample_frequency)
         expected_len = len(expected_timeseries)
 
-        effective_len = len(xdataset.time[(xdataset["time"] >= chunk) & (xdataset["time"] < end_date)])
+        effective_len = len(xdataset[dim][(xdataset[dim] >= chunk) & (xdataset[dim] < end_date)])
         logger.debug("Expected chunk length: %s, Effective chunk length: %s", expected_len, effective_len)
         if expected_len == effective_len:
             check_completeness.append(True)
@@ -342,7 +347,7 @@ def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNIN
             check_completeness.append(False)
 
     # build the binary mask
-    taxis = xdataset.time.resample(time=resample_frequency).mean()
+    taxis = xdataset[dim].resample({dim: resample_frequency}).mean()
     if sum(check_completeness) == 0:
         logger.warning("Not enough data to compute any average on %s period, returning empty array", resample_frequency)
 
@@ -350,14 +355,14 @@ def check_chunk_completeness(xdataset, resample_frequency="1D", loglevel="WARNIN
     completeness_dict = {pd.Timestamp(chunk): is_complete for chunk, is_complete in zip(chunks, check_completeness)}
 
     # Align with the actual resampled time axis
-    aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis.time.values]
+    aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis[dim].values]
 
-    boolean_mask = xr.DataArray(aligned_completeness, dims=("time",), coords={"time": taxis.time})
+    boolean_mask = xr.DataArray(aligned_completeness, dims=(dim,), coords={dim: taxis[dim]})
 
     return boolean_mask
 
 
-def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", loglevel="WARNING"):
+def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", loglevel="WARNING", dim=None):
     """
     Support function for timmean() to check seasonal chunk completeness.
     Verify that all seasonal (quarterly) chunks have complete months.
@@ -377,7 +382,8 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", log
     Returns:
         A Xarray DataArray binary, 1 for complete quarters and 0 for incomplete ones
     """
-    data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel)
+    dim = resolve_time_dim(dim)
+    data_frequency, chunks = chunk_dataset_times(xdataset, resample_frequency, loglevel, dim)
 
     anchor_month = get_quarter_anchor_month(resample_frequency)
 
@@ -397,16 +403,16 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", log
 
     if "D" in data_frequency or "h" in data_frequency:
         logger.info("Data is sub-monthly (%s), first checking monthly completeness...", data_frequency)
-        monthly_mask = check_chunk_completeness(xdataset, resample_frequency="MS", loglevel=loglevel)
+        monthly_mask = check_chunk_completeness(xdataset, resample_frequency="MS", loglevel=loglevel, dim=dim)
         # Get only complete months, use .resample().mean() to get time axis
-        complete_month_times = xdataset.time.resample(time="MS").mean().time
+        complete_month_times = xdataset[dim].resample({dim: "MS"}).mean()[dim]
         complete_month_times = complete_month_times.where(monthly_mask, drop=True)
 
         # Store complete month-year combinations as timestamps
         complete_month_timestamps = set(complete_month_times.to_index())
         logger.debug("Complete months available: %s", sorted(complete_month_timestamps))
     else:
-        complete_month_timestamps = set(xdataset.time.to_index())
+        complete_month_timestamps = set(xdataset[dim].to_index())
         logger.debug("Retrieved data frequency is monthly or coarser, using all months")
 
     check_completeness = []
@@ -419,7 +425,7 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", log
         expected_months = season_months.get(start_month, set())
 
         # Get actual months present in this quarter period
-        quarter_data = xdataset.time[(xdataset["time"] >= chunk) & (xdataset["time"] < end_date)]
+        quarter_data = xdataset[dim][(xdataset[dim] >= chunk) & (xdataset[dim] < end_date)]
 
         if len(quarter_data) == 0:
             actual_months = set()
@@ -460,15 +466,15 @@ def check_seasonal_chunk_completeness(xdataset, resample_frequency="QS-DEC", log
             f"Not enough data to compute any complete seasonal average on {resample_frequency} period, returning empty array"
         )
 
-    taxis = xdataset.time.resample(time=resample_frequency).mean()
+    taxis = xdataset[dim].resample({dim: resample_frequency}).mean()
 
     # Create a dict mapping chunk dates to completeness flag
     completeness_dict = {pd.Timestamp(chunk): is_complete for chunk, is_complete in zip(chunks, check_completeness)}
 
     # Align with the actual resampled time axis
-    aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis.time.values]
+    aligned_completeness = [completeness_dict.get(pd.Timestamp(t), False) for t in taxis[dim].values]
 
-    boolean_mask = xr.DataArray(aligned_completeness, dims=("time",), coords={"time": taxis.time})
+    boolean_mask = xr.DataArray(aligned_completeness, dims=(dim,), coords={dim: taxis[dim]})
 
     return boolean_mask
 
@@ -544,43 +550,47 @@ def mon_to_quarter_season_name(month):
             return season_name
 
 
-def fix_calendar(data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING") -> xr.Dataset | xr.DataArray:
+def fix_calendar(
+    data: xr.Dataset | xr.DataArray, loglevel: str = "WARNING", dim: str | None = None
+) -> xr.Dataset | xr.DataArray:
     """
     Fix calendar attribute in xarray Dataset or DataArray to ensure compatibility.
 
     Args:
         data (xr.Dataset | xr.DataArray): The input xarray object.
         loglevel (str): Logging level for messages. Defaults to 'WARNING'.
+        dim (str, optional): Name of the time dimension. Defaults to the data model time coordinate.
 
     Returns:
         xr.Dataset | xr.DataArray: The xarray object with fixed calendar attribute.
     """
 
+    dim = resolve_time_dim(dim)
     unit = DEFAULT_TIME_UNIT
 
     logger = log_configure(loglevel, "fix_calendar")
-    cal = data.time.encoding.get("calendar", "standard") if "time" in data.coords else "standard"
+    cal = data[dim].encoding.get("calendar", "standard") if dim in data.coords else "standard"
     logger.debug(f"Current calendar: {cal}")
 
     if cal.lower() not in ("gregorian", "standard", "proleptic_gregorian"):
-        if "datetime64" in str(data.time.values.dtype):
-            unit = np.datetime_data(data.time.values.dtype)[0]
+        if "datetime64" in str(data[dim].values.dtype):
+            unit = np.datetime_data(data[dim].values.dtype)[0]
             logger.debug(f"Time units detected as {unit} from datetime64 dtype")
 
         logger.info(f"Converting calendar from {cal} to {DEFAULT_CALENDAR} for data retrieval...")
-        data = data.convert_calendar(DEFAULT_CALENDAR, align_on="year")
+        data = data.convert_calendar(DEFAULT_CALENDAR, dim=dim, align_on="year")
 
         # If we detect a cftime.datetime after conversion, roll back to datetime64 with default unit precision
-        if data.time.dtype == object and isinstance(data.time.values[0], cftime.datetime):
+        if data[dim].dtype == object and isinstance(data[dim].values[0], cftime.datetime):
             logger.info(f"Rolling back cftime to datetime64[{DEFAULT_TIME_UNIT}] after calendar conversion")
 
-            np_time = cftime_to_nptime(data.time.values, time_unit=DEFAULT_TIME_UNIT)
+            np_time = cftime_to_nptime(data[dim].values, time_unit=DEFAULT_TIME_UNIT)
             logger.debug(f"Time axis is now of type {np_time.dtype}, first step {np_time[0]}")
-            data = data.assign_coords(time=np_time)
+            data = data.assign_coords({dim: np_time})
         else:  # Still datetime64, ensure we keep original precision
-            new_unit = np.datetime_data(data.time.values.dtype)[0]
+            new_unit = np.datetime_data(data[dim].values.dtype)[0]
             if unit != new_unit:
                 logger.info(f"Casting time precision from {new_unit} back to original {unit}...")
-                data = data.assign_coords(time=data.time.astype(f"datetime64[{unit}]"))
+                data = data.assign_coords({dim: data[dim].astype(f"datetime64[{unit}]")})
 
     return data

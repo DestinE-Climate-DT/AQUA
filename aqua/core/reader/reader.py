@@ -8,10 +8,10 @@ from smmregrid import GridInspector
 # This is needed to initialize the gsv driver
 from aqua.core.backend import BackendFactory
 from aqua.core.configurer import ConfigContext
-from aqua.core.data_model import DataModel, counter_reverse_coordinate
+from aqua.core.data_model import AquaCoordNames, DataModel, counter_reverse_coordinate
 
 # set default data model
-from aqua.core.default import DEFAULT_ENGINE, DEFAULT_NPROC
+from aqua.core.default import DEFAULT_DATAMODEL, DEFAULT_ENGINE, DEFAULT_NPROC
 from aqua.core.exceptions import NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
@@ -194,6 +194,9 @@ class Reader:
             convention=convention, fixer_name=None, src_grid_name=None, datamodel_name=datamodel
         )
 
+        # coordinate names of the data model (the default one if the data model is disabled)
+        self.coords = AquaCoordNames(self.datamodel_name or DEFAULT_DATAMODEL)
+
         # case to disable automatic fix
         if self.fixer_name is False:
             self.logger.warning("A False flag is specified in fixer_name metadata, disabling fix!")
@@ -206,6 +209,7 @@ class Reader:
                 convention=self.convention,
                 metadata=self.metadata,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
         else:
             self.fixer = None
@@ -237,7 +241,11 @@ class Reader:
         # init the fldstat modules. if areas are not available, will issue a warning
         cell_area = self.src_grid_area.cell_area if areas else None
         self.src_fldstat = FldStat(
-            cell_area, grid_name=self.src_grid_name, horizontal_dims=self.src_space_coord, loglevel=self.loglevel
+            cell_area,
+            grid_name=self.src_grid_name,
+            horizontal_dims=self.src_space_coord,
+            loglevel=self.loglevel,
+            data_model=self.coords.data_model,
         )
         self.tgt_fldstat = None
         if regrid:
@@ -252,10 +260,11 @@ class Reader:
                 grid_name=self.tgt_grid_name,
                 horizontal_dims=self.tgt_space_coord,
                 loglevel=self.loglevel,
+                data_model=self.coords.data_model,
             )
 
-        self.trender = Trender(loglevel=self.loglevel)
-        self.vertinterpolator = VertInterpolator(loglevel=self.loglevel)
+        self.trender = Trender(loglevel=self.loglevel, data_model=self.coords.data_model)
+        self.vertinterpolator = VertInterpolator(loglevel=self.loglevel, data_model=self.coords.data_model)
 
     @property
     def collection(self):
@@ -367,7 +376,7 @@ class Reader:
             self.tgt_space_coord = self.regridder.tgt_horizontal_dims
 
         # activate time statistics
-        self.timemodule = TimStat(loglevel=self.loglevel)
+        self.timemodule = TimStat(loglevel=self.loglevel, data_model=self.coords.data_model)
 
         return areas, regrid
 
@@ -483,24 +492,25 @@ class Reader:
     #     final.aqua.set_default(self)
     #     return final
 
-    def detrend(self, data, dim="time", degree=1, skipna=False):
+    def detrend(self, data, dim=None, degree=1, skipna=False):
         """
         Remove the trend from an xarray object using polynomial fitting.
 
         Args:
             data (DataArray or Dataset): The input data.
-            dim (str): Dimension to apply detrend along. Defaults to 'time'.
+            dim (str): Dimension to apply detrend along. Defaults to the data model time coordinate.
             degree (int): Degree of the polynomial. Defaults to 1.
             skipna (bool): Whether to skip NaNs. Defaults to False.
 
         Returns:
             DataArray or Dataset: The detrended data.
         """
+        dim = dim if dim is not None else self.coords.time
         final = self.trender.detrend(data, dim=dim, degree=degree, skipna=skipna)
         final.aqua.set_default(self)
         return final
 
-    def vertinterp(self, data, levels=None, level_coord="plev", units=None, method="linear"):
+    def vertinterp(self, data, levels=None, level_coord=None, units=None, method="linear"):
         """
         A basic vertical interpolation based on interp function
         of xarray within AQUA. Given an xarray object, will interpolate the
@@ -512,13 +522,14 @@ class Reader:
             data (DataArray, Dataset): your dataset
             levels (float, or list): The level you want to interpolate the vertical coordinate
             units (str, optional, ): The units of your vertical axis. Default 'Pa'
-            level_coord (str, optional): The name of the vertical coordinate. Default 'plev'
+            level_coord (str, optional): The name of the vertical coordinate. Default to the data model isobaric coordinate
             method (str, optional): The type of interpolation method supported by interp()
 
         Return
             A DataArray or a Dataset with the new interpolated vertical dimension
         """
 
+        level_coord = level_coord if level_coord is not None else self.coords.isobaric
         data = self.vertinterpolator.vertinterp(data=data, levels=levels, level_coord=level_coord, units=units, method=method)
         data.aqua.set_default(self)  # This links the dataset accessor to this instance of the Reader class
 

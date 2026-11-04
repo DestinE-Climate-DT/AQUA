@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.util import to_list, unit_to_latex
 
 ENSEMBLE_COLOR = "#1898e0"  # Blue
@@ -112,6 +113,7 @@ def plot_timeseries_ref_data(
         lw (float, optional): Line width. Default is 0.8.
         kind (str, optional): 'monthly' or 'annual'. Determines label suffix and line style.
     """
+    coords = AquaCoordNames()
     ref_data = to_list(ref_data)
     std_data = to_list(std_data) if std_data is not None else None
     ref_label = to_list(ref_label) if ref_label is not None else None
@@ -133,14 +135,16 @@ def plot_timeseries_ref_data(
             std_da = std_data[i]
             if kind == "monthly":
                 ax.fill_between(
-                    ref_da.time,
-                    ref_da - 2.0 * std_da.sel(month=ref_da["time.month"]),
-                    ref_da + 2.0 * std_da.sel(month=ref_da["time.month"]),
+                    ref_da[coords.time],
+                    ref_da - 2.0 * std_da.sel(month=ref_da[f"{coords.time}.month"]),
+                    ref_da + 2.0 * std_da.sel(month=ref_da[f"{coords.time}.month"]),
                     facecolor="grey",
                     alpha=0.25,
                 )
             elif kind == "annual":
-                ax.fill_between(ref_da.time, ref_da - 2.0 * std_da, ref_da + 2.0 * std_da, facecolor="black", alpha=0.2)
+                ax.fill_between(
+                    ref_da[coords.time], ref_da - 2.0 * std_da, ref_da + 2.0 * std_da, facecolor="black", alpha=0.2
+                )
 
         _plot_lx(ref_da, **plot_kwargs)
 
@@ -167,6 +171,7 @@ def plot_timeseries_ensemble(
         lw (float, optional): Line width. Default is 1.5.
         kind (str, optional): 'monthly' or 'annual'. Determines label suffix and line style.
     """
+    coords = AquaCoordNames()
     linestyle = "-" if kind == "monthly" else "--"
 
     plot_kwargs = {
@@ -180,13 +185,15 @@ def plot_timeseries_ensemble(
     if std_data is not None:
         if kind == "monthly":
             ax.fill_between(
-                data.time,
+                data[coords.time],
                 data - 2.0 * std_data,  # .sel(month=data["time.month"]),
                 data + 2.0 * std_data,  # .sel(month=data["time.month"]),
                 alpha=0.25,
                 facecolor=ENSEMBLE_COLOR,
             )
         elif kind == "annual":
-            ax.fill_between(data.time, data - 2.0 * std_data, data + 2.0 * std_data, alpha=0.2, facecolor=ENSEMBLE_COLOR)
+            ax.fill_between(
+                data[coords.time], data - 2.0 * std_data, data + 2.0 * std_data, alpha=0.2, facecolor=ENSEMBLE_COLOR
+            )
 
     _plot_lx(data, **plot_kwargs)

@@ -61,7 +61,7 @@ class ZarrWriter(BaseWriter):
         Returns:
             bool: True if valid, False otherwise
         """
-        return file_is_complete(store_path, loglevel=self.logger.level)
+        return file_is_complete(store_path, loglevel=self.logger.level, dim=self.coords.time)
 
     def _get_encoding(self, data, var=None):
         """

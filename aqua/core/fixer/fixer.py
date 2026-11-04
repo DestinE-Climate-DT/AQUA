@@ -4,7 +4,8 @@ import re
 
 import numpy as np
 
-from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DELTAT
+from aqua.core.data_model import AquaCoordNames
+from aqua.core.default import DEFAULT_CONVENTION, DEFAULT_DATAMODEL, DEFAULT_DELTAT
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import convert_units, get_eccodes_attr, to_list
 
@@ -34,12 +35,14 @@ class Fixer:
         convention=DEFAULT_CONVENTION,
         metadata=None,
         loglevel="WARNING",
+        data_model=DEFAULT_DATAMODEL,
     ):
         self.fixer_name = fixer_name
         self.convention = convention
         self.metadata = metadata
         self.logger = log_configure(log_level=loglevel, log_name="Fixer")
         self.loglevel = loglevel
+        self.coords = AquaCoordNames(data_model)
 
         # loading all the configuration aspects of the fixer to be sent to the operator
         self.fixerconfigure = FixerConfigure(
@@ -51,7 +54,7 @@ class Fixer:
         self.time_correction = False
 
         # this is the fixes operator, called internally by the fixer
-        self.operator = FixerOperator(self.fixes, loglevel=loglevel)
+        self.operator = FixerOperator(self.fixes, loglevel=loglevel, data_model=data_model)
 
         # this is the datamodel fixer, which applies supplementary fixes, called by the Reader
         self.fixerdatamodel = FixerDataModel(self.fixes, loglevel=loglevel)
@@ -89,7 +92,7 @@ class Fixer:
         if self.deltat == "monthly":
             self.logger.info("%s deltat found, we will estimate a correction based on number of days per month", self.deltat)
             deltat = 3600 * 24
-            time_correction = data.time.dt.days_in_month
+            time_correction = data[self.coords.time].dt.days_in_month
         else:
             deltat = self.deltat
             time_correction = self.time_correction
@@ -260,7 +263,7 @@ class Fixer:
                 # Set to NaN before a certain date
                 mindate = varfix.get("mindate", None)
                 if mindate:
-                    data[source] = data[source].where(data.time >= np.datetime64(str(mindate)), np.nan)
+                    data[source] = data[source].where(data[self.coords.time] >= np.datetime64(str(mindate)), np.nan)
                     data[source].attrs.update({"mindate": mindate})
                     self.logger.debug("Steps before %s set to NaN for variable %s", str(mindate), var)
 

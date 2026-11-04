@@ -2,6 +2,8 @@
 
 import xarray as xr
 
+from .timedim import resolve_time_dim
+
 # set default options for xarray
 xr.set_options(keep_attrs=True)
 
@@ -89,24 +91,28 @@ def check_coordinates(lon: list | None, lat: list | None, default_coords: dict) 
     return lon, lat
 
 
-def select_season(xr_data, season: str):
+def select_season(xr_data, season: str, dim: str | None = None):
     """
     Select a season from a xarray.DataArray or xarray.Dataset.
 
     Args:
         xr_data (xarray.DataArray or xarray.Dataset): input data
         season (str): season to be selected. Available options are defined in TRIPLET_MONTHS.
+        dim (str, optional): Name of the time dimension. Defaults to the data model time coordinate.
     Returns:
         (xarray.DataArray or xarray.Dataset): selected season
     """
+    dim = resolve_time_dim(dim)
     if season in TRIPLET_MONTHS:
         selected_months = TRIPLET_MONTHS[season]
         selected = xr_data.sel(
-            time=(
-                (xr_data["time.month"] == selected_months[0])
-                | (xr_data["time.month"] == selected_months[1])
-                | (xr_data["time.month"] == selected_months[2])
-            )
+            {
+                dim: (
+                    (xr_data[f"{dim}.month"] == selected_months[0])
+                    | (xr_data[f"{dim}.month"] == selected_months[1])
+                    | (xr_data[f"{dim}.month"] == selected_months[2])
+                )
+            }
         )
         # Add AQUA_season attribute
         selected.attrs["AQUA_season"] = season

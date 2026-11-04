@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.data_model import AquaCoordNames
 from aqua.core.logger import log_configure
 from aqua.core.util import to_list, unit_to_latex
 
@@ -12,7 +13,7 @@ from .styles import ConfigStyle
 def plot_vertical_lines(
     data: xr.DataArray | list[xr.DataArray],
     ref_data: xr.DataArray = None,
-    lev_name: str = "plev",
+    lev_name: Optional[str] = None,
     lev_min: Optional[float] = None,
     lev_max: Optional[float] = None,
     labels: Optional[list[str]] = None,
@@ -37,7 +38,7 @@ def plot_vertical_lines(
     Args:
         data (xr.DataArray or list of xr.DataArray): DataArray(s) to plot.
         ref_data (xr.DataArray, optional): Reference DataArray to plot as dashed line.
-        lev_name (str): Name of the vertical levels (default 'plev').
+        lev_name (str): Name of the vertical levels (default is the data model isobaric coordinate).
         lev_min (float, optional): Minimum vertical level to plot.
         lev_max (float, optional): Maximum vertical level to plot.
         labels (list of str, optional): Labels for each DataArray.
@@ -56,6 +57,8 @@ def plot_vertical_lines(
         ax_pos (Tuple[int, int, int], optional): Position of subplot.
         loglevel (str, optional): Logging level.
     """
+    coords = AquaCoordNames()
+    lev_name = lev_name if lev_name is not None else coords.isobaric
     logger = log_configure(loglevel, "plot_vertical_line")
     ConfigStyle(style=style, loglevel=loglevel)
 

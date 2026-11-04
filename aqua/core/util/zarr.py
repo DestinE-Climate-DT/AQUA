@@ -9,8 +9,10 @@ from kerchunk.hdf import SingleHdf5ToZarr
 
 from aqua.core.logger import log_configure
 
+from .timedim import resolve_time_dim
 
-def create_zarr_reference(filelist, outfile, loglevel="WARNING"):
+
+def create_zarr_reference(filelist, outfile, loglevel="WARNING", dim=None):
     """
     Create a Zarr file from a list of HDF5/NetCDF files.
 
@@ -18,14 +20,16 @@ def create_zarr_reference(filelist, outfile, loglevel="WARNING"):
         filelist (list): A list of file paths to HDF5 files.
         outfile (str): The path to the output Zarr file.
         loglevel (str, optional): The log level for logging. Defaults to 'WARNING'.
+        dim (str, optional): Name of the time dimension. Defaults to the data model time coordinate.
 
     Returns:
         None
     """
 
     logger = log_configure(log_level=loglevel, log_name="Zarr reference creator")
+    dim = resolve_time_dim(dim)
     data = xr.open_mfdataset(filelist, combine="by_coords")
-    identical_coords = [coord for coord in data.coords if coord != "time"]
+    identical_coords = [coord for coord in data.coords if coord != dim]
     logger.debug("Common coordinates: %s", identical_coords)
 
     logger.debug("Creating Zarr file from %s", filelist)
@@ -34,7 +38,7 @@ def create_zarr_reference(filelist, outfile, loglevel="WARNING"):
     logger.debug("Combining Zarr files")
     mzz = MultiZarrToZarr(
         singles,
-        concat_dims=["time"],
+        concat_dims=[dim],
         identical_dims=identical_coords,
     )
 
