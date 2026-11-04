@@ -28,6 +28,7 @@ Unreleased in the current development version (target v1.2.4):
 - Restructure the grid definitions in `aqua/core/config/grids`: unused grids moved to `deprecated.yaml`, duplicated `tl63`/`tl159` removed from the EC-Earth4 file, sections ordered by model cycle, `HealPix.yaml`/`EC-EARTH4.yaml`/`EC-EARTH3.yaml` renamed to lowercase; the duplicated OSI-SAF grids are not defined anymore (`osi-saf-nh-aqua`/`osi-saf-sh-aqua` are to be used); `load_multi_yaml` has a new `check_duplicates` option to detect entries defined in more than one file, used in a test on the grids folder (#3269)
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
+- Test suite batch B1 of #3309 (AQUA-TEST-001, 002, 003): the session runs on a private `AQUA_CONFIG` (catalogs copied, data models, fixes and grids from the package under test) instead of the installed one, DROP, Regridder, `Reader(path=...)` and analysis tests write under `tmp_path`, and the run fails if tests leave new files in the repository root; the six test design principles are added to `AGENTS.md`
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 ## [v1.2.3]

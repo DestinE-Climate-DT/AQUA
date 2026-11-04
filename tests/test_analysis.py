@@ -272,8 +272,9 @@ class TestConfigurationSetters:
         analysis.set_output_directory(args, config)
         assert f"{tmp_path}/output_dir/my_catalog/IFS/test-tco79/r1" in analysis.output_dir
 
-    def test_set_output_directory_default_path(self, analysis):
+    def test_set_output_directory_default_path(self, analysis, tmp_path, monkeypatch):
         """Output directory defaults to ./output when not provided."""
+        monkeypatch.chdir(tmp_path)  # the default output directory is created in the current directory
         args = argparse.Namespace(
             model="IFS", exp="test-tco79", source="short", catalog="my_catalog", source_oce=None, outputdir=None
         )

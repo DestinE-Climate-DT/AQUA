@@ -231,6 +231,36 @@ def method(self, arg1, arg2=None):
 - Favour `pytest.mark.parametrize` over duplicated test bodies
 - When testing write paths, verify that Dataset-level attributes (especially `history`) are present in the output file — attribute loss through slicing or DataArray→Dataset conversion is a common silent failure
 
+### Test design principles
+
+New and refactored tests follow six principles (rationale and batch plan: issue #3309). A test must fail when the code is wrong; raising coverage is not enough.
+
+1. **Easy to review, minimal mocks**
+   - Mock only the network, FDB and clock. Never mock the unit under test or its internal methods; use `monkeypatch`, not global `patch`.
+   - Every assertion checks a value (hard-coded reference or independent oracle). Errors use `pytest.raises(..., match=)`.
+   - The test name states the behaviour; a one-line docstring says what wrong code would make it fail.
+   - Tests write only under `tmp_path` and never touch the installed `~/.aqua`, the current directory or the network. The session runs on a private `AQUA_CONFIG` (`tests/utils_tests/config.py`) and fails if new files appear in the repository root.
+   - One batch of changes is one PR, tests only, of about 5 modules and 400 lines at most.
+2. **Time maintained or reduced**
+   - Retrieve once, in a session fixture. No new heavy retrieval or `rebuild=True` for a single assertion.
+   - No `sleep`, no unseeded random data: each test passes alone, in random order and under `-n --dist loadgroup`.
+3. **Coverage maintained or increased**
+   - Per-module branch coverage must not go down. Delete or merge a test only if the coverage diff shows nothing is lost, and say which test covers it now.
+   - A branch that no public path reaches gets a small unit test, or is reported as dead code.
+   - A missing optional dependency (FDB, network) gives an explicit skip with a reason, never a silent pass.
+4. **No change to scientific results**
+   - Reference values come from `main` before the refactoring and are never regenerated from the new code. Tolerances are tight (`APPROX_REL`) and never widened to make a test pass.
+   - Source fixes go in separate PRs; a bug exposed by a test is marked `xfail(strict=True)` with a link to an issue, never hidden by a weaker assertion.
+   - Check a new assertion by breaking the source line it covers by hand and seeing the test fail.
+5. **Integration over unit**
+   - Default to the public entry points (`Reader`, the accessor, `Drop`, the console in-process) with real collaborators on the existing test data; assert the result and its provenance (`history`, `units`, `AQUA_*` attributes).
+   - Unit tests are for pure functions with many cheap cases, error branches the pipeline cannot reach, and exact synthetic oracles. Do not test `_private` methods.
+   - Graphics is the exception: call the plot function and assert on the `Axes`.
+6. **Reduce the number of tests and avoid redundancy**
+   - One behaviour, one owning test: before adding a test, search for an existing one and extend or parametrize it.
+   - If an integration test already covers a branch, do not add a unit test for it. A test never re-implements the source logic to compute its expected value.
+   - Shared setup lives once in a session fixture in `tests/conftest.py`: no alias fixtures, no second copy of the same dataset or `Reader`.
+
 ---
 
 ## Integration Checklist

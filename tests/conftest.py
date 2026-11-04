@@ -5,6 +5,7 @@ Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,11 +13,10 @@ from pathlib import Path
 
 import matplotlib
 import pytest
-from utils_tests import LOGLEVEL, TestCleanupRegistry
+from utils_tests import LOGLEVEL, make_private_config
 
 from aqua import Reader
 from aqua.core.backend.backend import Backend
-from aqua.core.configurer import ConfigContext
 from aqua.core.lock import SafeFileLock
 
 matplotlib.use("Agg")  # Non-interactive backend
@@ -26,6 +26,10 @@ import matplotlib.pyplot as plt
 plt.ioff()  # Turn off interactive mode explicitly
 
 STAC_CATALOGUE_DIR = Path(__file__).resolve().parent / "stac_catalogue"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# entries a test run may legitimately create in the repository root (reports, caches)
+ALLOWED_NEW_ROOT_ENTRIES = {".coverage", "junit.xml", "coverage.xml", "aqua_pytest.log", ".pytest_cache", "__pycache__"}
 
 
 @pytest.fixture(scope="session")
@@ -56,22 +60,30 @@ def dummy_backend():
 
 
 # ======================================================================
-# Run global (not per-worker) cleanup hooks for test-generated files
+# Session set-up: private AQUA configuration, controller-only checks
 # ======================================================================
 def pytest_configure(config):
     """
     Runs once at session start on controller and workers with xdist.
-    Cache configdir before any test can modify HOME.
+    The controller builds a private AQUA configuration (see utils_tests.config) and every process
+    exports it as AQUA_CONFIG before collection, so that no test touches the installed one.
     Generate STAC JSON on the controller before catalog discovery during collection.
     Set per-worker TMPDIR to avoid CDO/temp contention in parallel runs.
     """
-    try:
-        config_path = ConfigContext()
-        config._stored_configdir = config_path.configdir
-    except (FileNotFoundError, KeyError):
-        config._stored_configdir = None
-
     workerinput = getattr(config, "workerinput", None)
+
+    if workerinput is None:
+        try:
+            config._aqua_private_config = make_private_config()
+        except (FileNotFoundError, KeyError):
+            config._aqua_private_config = None  # no installed AQUA: tests will fail on their own
+        config._root_entries = set(os.listdir(REPO_ROOT))
+    else:
+        config._aqua_private_config = workerinput.get("aqua_private_config")
+
+    if config._aqua_private_config:
+        os.environ["AQUA_CONFIG"] = config._aqua_private_config
+
     if workerinput is None and (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
         # The controller configures before xdist starts workers, so no reader sees partial JSON.
         with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
@@ -84,31 +96,34 @@ def pytest_configure(config):
         os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_", dir=base)
 
 
+@pytest.hookimpl(optionalhook=True)
+def pytest_configure_node(node):
+    """xdist controller hook: give the workers the private configuration built by the controller."""
+    node.workerinput["aqua_private_config"] = node.config._aqua_private_config
+
+
 def pytest_sessionfinish(session, exitstatus):
     """
-    Runs once at the end of the entire test session.
-    Cleanup only runs on the controller, after all workers
-    have finished, preventing deletion of files that other workers
-    still need.
+    Runs once at the end of the entire test session, on the controller only (after all workers
+    have finished, so no file that other workers still need is deleted).
+    Remove the private AQUA configuration and fail the session if tests left new files in the
+    repository root (e.g. weights, areas or output directories written in the current directory).
     """
-    if getattr(session.config, "workerinput", None) is not None:
-        return  # skip cleanup on xdist workers; only controller cleans up
+    config = session.config
+    if getattr(config, "workerinput", None) is not None:
+        return
 
-    # Get stored configdir from session.config (same object as config in pytest_configure)
-    stored_configdir = getattr(session.config, "_stored_configdir", None)
+    if config._aqua_private_config:
+        shutil.rmtree(config._aqua_private_config, ignore_errors=True)
 
-    # Prefer current configdir, but fall back to stored one if ConfigContext() fails (e.g. HOME was deleted)
-    cleanup_configdir = stored_configdir
-    try:
-        config_path = ConfigContext()
-        cleanup_configdir = config_path.configdir
-    except (FileNotFoundError, KeyError):
-        # If HOME was deleted, rely on the stored configdir from pytest_configure
-        pass
-
-    if cleanup_configdir:
-        registry = TestCleanupRegistry(cleanup_configdir)
-        registry.cleanup()
+    leftovers = sorted(
+        entry
+        for entry in set(os.listdir(REPO_ROOT)) - config._root_entries
+        if entry not in ALLOWED_NEW_ROOT_ENTRIES and not entry.startswith(".coverage.")
+    )
+    if leftovers:
+        config.get_terminal_writer().line(f"\nTests left new files in the repository root: {leftovers}", red=True)
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 # ======================================================================
