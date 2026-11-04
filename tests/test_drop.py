@@ -259,8 +259,9 @@ class TestDROPLevelParameter:
 class TestDROP:
     """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
 
-    # Serialized with the other dask tests; test_catalog_exclude_incomplete edits the (session-private) test catalog.
-    pytestmark = pytest.mark.xdist_group(name="dask_operations")
+    # Own group (not the one of timstat and gsv): the DROP runs share the session-private test catalog, which
+    # test_catalog_exclude_incomplete edits, and use dask clusters, so they run one after the other on one worker
+    pytestmark = pytest.mark.xdist_group(name="drop_operations")
 
     def test_definitive_false(self, drop_arguments, tmp_path):
         """Test DROP with definitive=False."""
@@ -759,8 +760,8 @@ class TestDiskChunks:
 class TestIcechunkWriter:
     """Unit and integration tests for IcechunkWriter (integrity check, resume, skip)."""
 
-    # Serialized with the other dask tests.
-    pytestmark = pytest.mark.xdist_group(name="dask_operations")
+    # Same group as TestDROP: both build icechunk and netcdf outputs with dask
+    pytestmark = pytest.mark.xdist_group(name="drop_operations")
 
     def _first_run(self, common, tmp_path):
         """Write Jan-Feb as the initial committed state for resume/skip tests."""
