@@ -1,5 +1,6 @@
 """Module for tests for AQUA cli"""
 
+import logging
 import os
 import shutil
 import subprocess
@@ -105,7 +106,7 @@ class TestAquaConsole:
         run_aqua_console_with_input(["uninstall"], "yes")
         assert not os.path.exists(os.path.join(mydir, ".aqua"))
 
-    def test_console_advanced(self, tmp_path, run_aqua, set_home, run_aqua_console_with_input, catalog_copy_path):
+    def test_console_advanced(self, tmp_path, run_aqua, set_home, run_aqua_console_with_input, catalog_copy_path, aqua_caplog):
         """Advanced tests for editable installation, editable catalog, catalog update,
         add a wrong catalog, uninstall
 
@@ -131,9 +132,12 @@ class TestAquaConsole:
 
         # add catalog again and error
         run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "add", "ci", "-e", "config/catalogs/ci"])
+            run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
         assert excinfo.value.code == 1
+        # the catalog exists: it is not a path that is missing
+        assert any("Catalog ci already installed" in message for message in caplog.messages)
         assert os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
         # error for updating a missing catalog
@@ -166,6 +170,10 @@ class TestAquaConsole:
         # install from path
         run_aqua_console_with_input(["-v", "install", MACHINE, "-p", os.path.join(mydir, "vicesindaco")], "yes")
         assert os.path.exists(os.path.join(mydir, "vicesindaco"))
+        # ~/.aqua is a link to the installation path, which holds the files
+        assert os.path.islink(os.path.join(mydir, ".aqua"))
+        assert os.path.realpath(os.path.join(mydir, ".aqua")) == os.path.realpath(os.path.join(mydir, "vicesindaco"))
+        assert os.path.isfile(os.path.join(mydir, "vicesindaco", "config-aqua.yaml"))
 
         # uninstall everything again
         run_aqua_console_with_input(["uninstall"], "yes")

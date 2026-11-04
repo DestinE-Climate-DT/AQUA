@@ -20,6 +20,9 @@ class TestAquaConsoleGridBuilder:
         """Test the aqua grids build CLI, including a valid --reader_kwargs JSON payload"""
         run_aqua(command_args + ["--verify", "--outdir", str(tmp_path), "--reader_kwargs", '{"chunks": {"time": 12}}'])
 
+        # a HEALPix grid is defined by its resolution: there is no grid file to write
+        assert list(tmp_path.rglob("*")) == []
+
     def test_aqua_console_gridbuilder_invalid_reader_kwargs(self, run_aqua, tmp_path):
         """Malformed --reader_kwargs JSON must fail fast, before any data is retrieved"""
         with pytest.raises(json.JSONDecodeError):

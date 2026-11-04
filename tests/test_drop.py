@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from pathlib import Path
@@ -418,6 +419,29 @@ class TestDROP:
         engine = "zarr" if output_format == "zarr" else None
         january = xr.open_dataset(january, engine=engine, **({"consolidated": False} if engine else {}))
         assert january["2t"][0, 1, 1].item() == pytest.approx(248.0704)  # the zeros were replaced by the data
+
+    def test_nothing_left_after_time_statistics(self, drop_arguments, tmp_path, aqua_caplog):
+        """A period that exclude_incomplete empties (the test data start on 20 January) writes nothing, and says so."""
+        caplog = aqua_caplog(logging.getLogger("DROP"))
+        test = Drop(
+            catalog="ci",
+            **drop_arguments,
+            tmpdir=str(tmp_path),
+            resolution="r100",
+            frequency="monthly",
+            definitive=True,
+            loglevel="INFO",
+            exclude_incomplete=True,
+        )
+
+        test.retrieve()
+        test.data = test.data.sel(time="2020-01")
+        test.drop_generator()
+
+        assert any("No data available after time statistics" in message for message in caplog.messages)
+        assert any("No data to write for variable 2t" in message for message in caplog.messages)
+        written = [path for path in Path(drop_arguments["outdir"]).rglob("*") if path.is_file()]
+        assert not [path for path in written if path.suffix == ".nc"]
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
     def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):
