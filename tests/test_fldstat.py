@@ -78,23 +78,31 @@ def data_ifs(ifs_tco79_short_data_2t):
 class TestFldModule:
     """Class for fldmean standalone"""
 
-    def test_fldmean_from_data(self):
-        """test Fldmean class native from data"""
-        reader = Reader(catalog="ci", model="IFS", exp="test-tco79", source="short", regrid="r100", rebuild=True)
-        data = reader.retrieve(var="2t")
-        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
-        assert fldmodule.fldstat(data, stat="mean")["2t"].size == 2
-        fldmodule = FldStat(loglevel=LOGLEVEL)
-        assert fldmodule.fldstat(data, stat="mean")["2t"].size == 2
+    def test_fldmean_from_data(self, ifs_tco79_short_reader, ifs_tco79_short_data_2t):
+        """FldStat on an unstructured grid: with the cell area it is the area-weighted mean, without it the plain mean"""
+        area = ifs_tco79_short_reader.src_grid_area.cell_area
+        temperature = ifs_tco79_short_data_2t["2t"].values  # (time, cell)
 
-    def test_fldmean_from_data_selection(self):
-        """test Fldmean class native from data with reversed lat"""
-        reader = Reader(catalog="ci", model="IFS", exp="test-tco79", source="long", regrid="r100", rebuild=True)
-        data = reader.retrieve(var="2t")
+        weighted = FldStat(area=area, loglevel=LOGLEVEL).fldstat(ifs_tco79_short_data_2t, stat="mean")["2t"].values
+        unweighted = FldStat(loglevel=LOGLEVEL).fldstat(ifs_tco79_short_data_2t, stat="mean")["2t"].values
+
+        assert weighted == pytest.approx(np.average(temperature, axis=1, weights=area.values))  # independent oracle
+        assert weighted[1] == pytest.approx(285.75920)
+        assert unweighted == pytest.approx(temperature.mean(axis=1))
+        assert unweighted[1] == pytest.approx(286.38151)
+        assert (unweighted - weighted).min() > 0.5  # the polar cells are small: the weights matter, by about 0.6 K
+
+    def test_fldmean_from_data_selection(self, ifs_tco79_long_reader):
+        """FldStat on a regular grid with reversed latitude gives the same area-weighted mean"""
+        data = ifs_tco79_long_reader.retrieve(var="2t").isel(time=slice(0, 3))
+        area = ifs_tco79_long_reader.src_grid_area.cell_area
         reverted = data.reindex({"lat": list(reversed(data.coords["lat"]))})
-        reverted = reverted.isel(time=slice(0, 3))
-        fldmodule = FldStat(area=reader.src_grid_area.cell_area, loglevel=LOGLEVEL)
-        assert fldmodule.fldstat(reverted, stat="mean")["2t"].size == 3
+        fldmodule = FldStat(area=area, loglevel=LOGLEVEL)
+
+        expected = data["2t"].weighted(area).mean(("lon", "lat")).values  # independent oracle
+        assert fldmodule.fldstat(data, stat="mean")["2t"].values == pytest.approx(expected)
+        assert fldmodule.fldstat(reverted, stat="mean")["2t"].values == pytest.approx(expected)
+        assert expected[0] == pytest.approx(286.07560)
 
     def test_fldmean_raise(self):
         """test Fldmean class raise error if no area provided"""
@@ -168,12 +176,13 @@ class TestFldmean:
         assert avg[1, 1] == pytest.approx(214.4841)
 
     def test_fldmean_regridded(self):
-        """Fldmean test for regridded data"""
+        """Fldmean test for regridded data: the mean of the regridded field, close to but not the native one"""
         reader = Reader(model="FESOM", exp="test-pi", source="original_2d", regrid="r250", loglevel=LOGLEVEL)
         data = reader.retrieve(var="tos")
-        avg = reader.fldmean(data["tos"]).values
+        avg = reader.fldmean(reader.regrid(data)["tos"]).values
         assert avg.shape == (2,)
-        assert avg[1] == pytest.approx(291.1306)
+        assert avg[1] == pytest.approx(291.06373)
+        assert abs(avg[1] - reader.fldmean(data["tos"]).values[1]) > 0.01  # the regridding changes the mean
 
     def test_fldmean_nemo(self, reader_nemo_2d, data_nemo_2d):
         """Fldmean test for NEMO"""
@@ -207,25 +216,32 @@ class TestFldmean:
 class TestFldStatDims:
     """Test class for dims parameter functionality"""
 
-    def test_fldmean_custom_dims_icon(self, reader_icon_r2b0, data_icon_r2b0):
-        """Test fldmean with custom dims parameter on ICON grid"""
+    def test_fldmean_dims_icon(self, reader_icon_r2b0, data_icon_r2b0):
+        """On ICON the only horizontal dimension is cell: explicit dims equal the default, height is kept"""
         fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
 
-        # Test with explicit horizontal dims (should be ['cell'] for ICON)
+        result_default = fldmodule.fldstat(data_icon_r2b0["t"], stat="mean")
         result = fldmodule.fldstat(data_icon_r2b0["t"], stat="mean", dims=["cell"])
-        assert result.shape == (2, 90)  # time, height levels
+
+        assert result.dims == ("time", "height")
+        assert result.shape == (2, 90)
+        assert result.equals(result_default)
         assert result.values[1, 1] == pytest.approx(214.4841)  # Same value as existing test
 
-    def test_fldmean_partial_dims_icon_3d(self, reader_icon_r2b0, data_icon_r2b0):
-        """Test fldmean with subset of horizontal dims on 3D data"""
-        fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
+    def test_fldmean_partial_dims_latlon(self, ifs_tco79_long_reader):
+        """With two horizontal dimensions, dims selects the one that is averaged: the other one is kept"""
+        data = ifs_tco79_long_reader.retrieve(var="2t").isel(time=slice(0, 3))
+        area = ifs_tco79_long_reader.src_grid_area.cell_area
+        fldmodule = FldStat(area=area, loglevel=LOGLEVEL)
 
-        # Test averaging over only spatial dimension, keeping height
-        result = fldmodule.fldstat(data_icon_r2b0["t"], stat="mean", dims=["cell"])
-        # Should preserve height dimension but average over space
-        assert "height" in result.dims
-        assert "cell" not in result.dims
-        assert result.shape == (2, 90)
+        lon_only = fldmodule.fldstat(data, stat="mean", dims=["lon"])["2t"]
+        both = fldmodule.fldstat(data, stat="mean", dims=["lat", "lon"])["2t"]
+
+        assert lon_only.dims == ("time", "lat")
+        assert lon_only.shape == (3, 9)
+        assert lon_only.values == pytest.approx(data["2t"].weighted(area).mean("lon").values)  # independent oracle
+        assert both.dims == ("time",)
+        assert both.equals(fldmodule.fldstat(data, stat="mean")["2t"])
 
     def test_fldmean_dims_validation_icon(self, reader_icon_r2b0, data_icon_r2b0):
         """Test dims validation with ICON data"""
@@ -234,18 +250,6 @@ class TestFldStatDims:
         # Test invalid dimension
         with pytest.raises(ValueError, match="Dimension invalid_dim not found in horizontal dimensions"):
             fldmodule.fldstat(data_icon_r2b0["t"], stat="mean", dims=["invalid_dim"])
-
-    def test_fldmean_dims_default_vs_explicit_icon(self, reader_icon_r2b0, data_icon_r2b0):
-        """Test that default and explicit dims give same results on ICON"""
-        fldmodule = FldStat(area=reader_icon_r2b0.src_grid_area.cell_area, loglevel=LOGLEVEL)
-
-        # Compare default behavior with explicit dims
-        result_default = fldmodule.fldstat(data_icon_r2b0["t"], stat="mean")
-        result_explicit = fldmodule.fldstat(data_icon_r2b0["t"], stat="mean", dims=["cell"])
-
-        # Results should be identical
-        assert result_default.equals(result_explicit)
-        assert result_default.values[1, 1] == pytest.approx(214.4841)
 
     def test_fldmean_dims_not_list(self, reader_icon_r2b0, data_icon_r2b0):
         """Test that dims must be a list"""
@@ -301,6 +305,24 @@ class TestFldStatWrappers:
         """Test fldsum wrapper method"""
         asumval = reader_ifs.fldarea(data_ifs["2t"])
         assert asumval[0].values == pytest.approx(5.0997329e14)
+
+    def test_fldstat_attrs(self, reader_ifs, data_ifs):
+        """The statistics keep the AQUA attributes and set units and history consistently"""
+        data = data_ifs["2t"]
+
+        mean = reader_ifs.fldmean(data)
+        assert mean.attrs["units"] == "K"
+        assert mean.attrs["AQUA_model"] == "IFS"
+        assert "Computed field stat 'mean'" in mean.attrs["history"]
+
+        integral = reader_ifs.fldintg(data)
+        assert integral.attrs["units"] == "kelvin * meter ** 2"
+        assert integral.attrs["long_name"] == "Integrated 2 metre temperature"
+        assert "Computed field stat 'integral'" in integral.attrs["history"]
+
+        area = reader_ifs.fldarea(data)
+        assert area.attrs["units"] == "m2"
+        assert "Computed field stat 'areasum'" in area.attrs["history"]
 
     def test_fldstat_compare(self, reader_ifs, data_ifs):
         """Test that wrapper methods give consistent results"""

@@ -48,15 +48,16 @@ class TestAccessor:
         assert len(data1r.lon) == 360
         assert len(data2r.lon) == 180
 
-        # Check if the accessor still works with the result
+        # Check if the accessor still works with the result: the mean of each regridded field is its own,
+        # not the native one (285.75920) and not the one of the other target grid
         reader_instance.set_default()  # Make sure that the correct reader is used
         avg = data1r.aqua.fldmean()["2t"].values
-        assert avg[1] == pytest.approx(285.7543, rel=1e-4)
+        assert avg[1] == pytest.approx(285.753457)
 
         # Alternative way to do it
         avg = data2r.aqua.set_default(reader_instance2).aqua.fldmean()["2t"].values
-        assert avg[1] == pytest.approx(285.7543, rel=1e-4)
+        assert avg[1] == pytest.approx(285.754384)
 
-        # Test accessor on dataarray (should be using the previous default)
+        # Test accessor on dataarray (should be using the previous default, i.e. the r200 reader)
         avgda = data2["2t"].aqua.fldmean().values
-        assert avgda[1] == pytest.approx(285.7543, rel=1e-4)
+        assert avgda[1] == pytest.approx(285.75920)  # native data, weighted with the native cell area
