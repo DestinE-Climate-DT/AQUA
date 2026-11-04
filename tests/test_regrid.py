@@ -270,10 +270,22 @@ class TestRegridder:
         assert len(rgd.lon) == 180
         assert len(rgd.lat) == 90
         # the land fraction grows with depth
-        assert land_fraction(rgd.avg_so.isel(level=0)) == pytest.approx(0.33777778, rel=APPROX_REL)
-        assert land_fraction(rgd.avg_so.isel(level=6)) == pytest.approx(0.52462963, rel=APPROX_REL)
-        assert cosine_weighted_mean(rgd.avg_so.isel(level=0)) == pytest.approx(33.982137, rel=APPROX_REL)
-        assert cosine_weighted_mean(rgd.avg_so.isel(level=6)) == pytest.approx(35.184904, rel=APPROX_REL)
+        # (one dictionary, so that a failure reports every value: the weights are rebuilt by the CDO of the machine)
+        deep, surface = rgd.avg_so.isel(level=6), rgd.avg_so.isel(level=0)
+        assert {
+            "land fraction, surface": land_fraction(surface),
+            "land fraction, level 6": land_fraction(deep),
+            "mean, surface": cosine_weighted_mean(surface),
+            "mean, level 6": cosine_weighted_mean(deep),
+        } == pytest.approx(
+            {
+                "land fraction, surface": 0.33777778,
+                "land fraction, level 6": 0.52462963,
+                "mean, surface": 33.982137,
+                "mean, level 6": 35.184904,
+            },
+            rel=APPROX_REL,
+        )
 
     @pytest.mark.xdist_group(name="regrid_nemo3d")  # same worker as the other user of the rebuilt weights
     def test_skipna_nemo3d(self, nemo3d_r200_rebuilt):
