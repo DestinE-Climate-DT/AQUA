@@ -374,13 +374,13 @@ class TestNormalizeRangeConvention:
 
         np.testing.assert_allclose(result[self.longitude].values, [10.0, 170.0, 190.0, 350.0])
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="normalize_range_convention acts on any coordinate named in the target: with longitudes that are not "
-        "in the target range it wraps a latitude too (the test used to pass only through the early return for "
-        "longitudes already in 0_to_360)",
-    )
     def test_ignores_non_longitude_coordinates(self):
+        """Only the longitude is wrapped.
+
+        Fails until #3346 is decided: normalize_range_convention acts on any coordinate named in the target, so with
+        longitudes that are not in the target range a latitude is wrapped too ([-170, 10] becomes [10, 190]). The test
+        used to pass only through the early return for longitudes already in 0_to_360.
+        """
         ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]), lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
@@ -460,22 +460,13 @@ class TestAssignAttributes:
         assert "name" not in result.lon.attrs
         assert "bounds" not in result.lon.attrs
 
-    @pytest.mark.parametrize(
-        "key",
-        [
-            "range",
-            pytest.param(
-                "range_convention",
-                marks=pytest.mark.xfail(
-                    strict=True,
-                    reason="the data model key is range_convention, but IGNORED_ATTRIBUTES lists the obsolete 'range': "
-                    "the wrap-convention control key is copied to the attributes of the coordinate",
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("key", ["range", "range_convention"])
     def test_range_key_never_leaks_into_attrs(self, key):
-        """The wrap-convention control key is not a CF attribute."""
+        """The wrap-convention control key is not a CF attribute.
+
+        Fails for `range_convention` (the key of the data model) until #3346 is decided: IGNORED_ATTRIBUTES lists
+        only the obsolete `range`, so the key is copied to the attributes of the coordinate.
+        """
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
