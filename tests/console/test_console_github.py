@@ -8,7 +8,7 @@ pytestmark = [pytest.mark.console, pytest.mark.network]
 
 
 def test_console_github_catalog(tmp_path, set_home, run_aqua, capfd):
-    """Add, list as available, update and remove the `ci` catalog from the real Climate-DT-catalog repository."""
+    """Add, list as available, update and remove `ci` from the real Climate-DT-catalog repository; add a missing catalog."""
     mydir = str(tmp_path)
     set_home(mydir)
     run_aqua(["install", "github"])
@@ -28,3 +28,9 @@ def test_console_github_catalog(tmp_path, set_home, run_aqua, capfd):
 
     run_aqua(["remove", "ci"])
     assert not os.path.exists(catalog)
+
+    # a catalog that is not in the repository: the fetcher reports the available ones and the console exits
+    with pytest.raises(SystemExit) as excinfo:
+        run_aqua(["add", "nonexistent-catalog-test-xyz"])
+    assert excinfo.value.code == 1
+    assert not os.path.exists(os.path.join(mydir, ".aqua", "catalogs", "nonexistent-catalog-test-xyz"))
