@@ -1,6 +1,7 @@
 import os
 import re
 
+import dask.array as da
 import icechunk
 import numpy as np
 import pandas as pd
@@ -156,16 +157,21 @@ class TestOptimalChunks:
 
     @staticmethod
     def _write(path, var, dims, sizes, output_format="netcdf"):
-        """Write a lazy-zero variable with the given dims and sizes."""
+        """Write the metadata of a variable with the given dims and sizes, without its (zero) data.
+
+        `define_optimal_chunks` only reads dimension sizes and dtype, so no data is needed: a lazy zero array
+        written with `compute=False` defines the variable in the file without allocating or writing it
+        (the full-size arrays were 466 MB each).
+        """
         coords = {"time": pd.date_range("2000-01-01", periods=sizes[0], freq="MS")}
         if "lat" in dims:
             coords.update(lat=np.linspace(-89.5, 89.5, sizes[dims.index("lat")]))
             coords.update(lon=np.linspace(0.5, 359.5, sizes[dims.index("lon")]))
-        ds = xr.DataArray(np.zeros(sizes), dims=dims, coords=coords, name=var).to_dataset()
+        ds = xr.DataArray(da.zeros(sizes, chunks=-1), dims=dims, coords=coords, name=var).to_dataset()
         if output_format == "zarr":
-            ds.to_zarr(path, mode="w", consolidated=False)
+            ds.to_zarr(path, mode="w", consolidated=False, compute=False)
         else:
-            ds.to_netcdf(path)
+            ds.to_netcdf(path, compute=False)
 
     @pytest.fixture
     def builder(self, drop_arguments):
