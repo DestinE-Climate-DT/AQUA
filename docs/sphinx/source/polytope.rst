@@ -120,8 +120,10 @@ HPC/bridge boundary keeps that original reference. The optional initial
 
 For daily or monthly ``date`` data, a single request ``time`` is preserved
 in both the request and output coordinates: ``time: "1200"`` produces noon
-labels. Output coordinates come from the planned selection; a different
-number of returned time entries raises an error.
+labels. An omitted ``time``, YAML ``null`` or the legacy string ``"None"``
+defaults to midnight. Other nonnumeric times are rejected. Output coordinates
+come from the planned selection; a different number of returned time entries
+raises an error.
 
 Native timesteps must be positive whole minutes. Saved frequencies can be
 fixed minute/hour/day intervals that are integer multiples of ``timestep``,
@@ -164,6 +166,11 @@ or with the ``time`` key in a dictionary:
   Full hourly days have 24 samples, six-hourly days have four, and partial days
   have fewer. A day spanning HPC and bridge periods is combined into one output
   chunk. Data stays lazy; no averaging or eager field computation is performed.
+* ``chunks="MS"`` groups samples by calendar month, respecting different month
+  lengths and leap years. Monthly saved data has one sample per month.
+* ``chunks="6h"`` groups samples into six-hour bins starting at midnight,
+  06:00, 12:00 and 18:00. An hourly window starting at 03:00 has three samples
+  in its first chunk. Both forms also work with ``chunks={"time": ...}``.
 * ``chunks={"time": 24}`` groups a fixed number of 24 samples, independent of
   calendar-day boundaries. Fixed counts must be compatible with each native
   request part's time axis, rather than just the total selected window. Partial
@@ -174,10 +181,12 @@ For example, hourly data requested from 1 January at 12:00 through 3 January at
 No timestamps are added or dropped to fill the partial days. Daily saved data
 keeps one timestamp per day; ``chunks="D"`` never changes the sampling frequency.
 
-Daily chunks do not require complete days or an exactly divisible total window.
-The backend may use smaller read groups for partial days, while the output chunks
-remain aligned to calendar days. Other time-frequency strings, including ``M``
-and ``Y``, are unsupported and raise a clear error.
+Frequency-based chunks do not require complete bins or an exactly divisible
+total window. The backend uses regular read groups sized to divide every full
+or partial time bin in each store. Xarray lazily groups them into the requested
+bins, including bins split across HPC and bridge storage. Other positive pandas
+resampling frequencies are accepted; invalid or nonpositive frequencies raise
+a clear error. Use ``MS``/``YS`` for month/year-start bins.
 
 By default all selected levels share a chunk. Set ``vertical`` (or its alias
 ``level``) to a positive integer to group levels, for example:

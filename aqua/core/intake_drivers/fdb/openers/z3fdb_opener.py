@@ -186,7 +186,10 @@ def _build_mars_requests(
         or pd.tseries.frequencies.to_offset(freq).nanos >= pd.Timedelta(days=1).value
     )
     if fixed_clock:
-        values = to_list(request.get("time", "0000"))
+        value = request.get("time")
+        if value is None or value == "None":
+            value = "0000"
+        values = to_list(value)
         if len(values) != 1 or not str(values[0]).isdigit() or len(str(values[0])) > 4:
             raise ValueError("Daily/monthly z3fdb date requests require one numeric time (HH or HHMM).")
         text = str(values[0])
@@ -285,21 +288,31 @@ def _build_zarr_axes(freq, levels, chunks=None, timestyle=None, time=None):
 
     chunking = Chunking.SINGLE_VALUE  # by default we chunk step-by-step in time
     val = chunks.get("time") if isinstance(chunks, dict) else chunks
+    chunk_error = (
+        "z3fdb time chunks must be 'S', a positive frequency (e.g. 'D', 'MS', '6h') "
+        "or a positive integer sample count."
+    )
     if isinstance(val, str):
-        if val.upper() == "D":
-            if time is None:
-                raise ValueError("Calendar-day chunks require the planned timestamps.")
-            # Native chunks must divide every full or partial day in this store.
-            day_sizes = pd.Series(0, index=time).resample("D").size().to_numpy()
-            val = int(np.gcd.reduce(day_sizes))
-        elif val.isdigit():
+        if val.isdigit():
             val = int(val)
         elif val.upper() in ("S", "SINGLE"):
             val = 1
+        else:
+            if time is None:
+                raise ValueError("Frequency-based time chunks require the planned timestamps.")
+            try:
+                offset = pd.tseries.frequencies.to_offset(val)
+                if offset.n <= 0:
+                    raise ValueError("Chunk frequency must be positive.")
+                # Native chunks must divide every full or partial time bin in this store.
+                sizes = pd.Series(0, index=time).resample(offset).size().to_numpy()
+            except ValueError as exc:
+                raise ValueError(chunk_error) from exc
+            val = int(np.gcd.reduce(sizes))
     if val is None:
         val = 1
     if not isinstance(val, int) or val < 1:
-        raise ValueError("z3fdb time chunks must be 'S', 'D' or a positive integer sample count.")
+        raise ValueError(chunk_error)
     if val > 1:
         chunking = Chunking.FixedSizeChunk(chunkShape=val)
     time_axes = [AxisDefinition(time_keys, chunking)]
@@ -335,11 +348,11 @@ def _build_zarr_axes(freq, levels, chunks=None, timestyle=None, time=None):
     return axes
 
 
-def _chunk_by_day(data, chunks):
-    """Combine native chunks lazily into the requested calendar days."""
+def _chunk_by_time(data, chunks):
+    """Combine native chunks lazily into the requested time-frequency bins."""
     val = chunks.get("time") if isinstance(chunks, dict) else chunks
-    if isinstance(val, str) and val.upper() == "D":
-        return data.chunk(time=TimeResampler("D"))
+    if isinstance(val, str) and not val.isdigit() and val.upper() not in ("S", "SINGLE"):
+        return data.chunk(time=TimeResampler(val))
     return data
 
 
@@ -536,10 +549,10 @@ def open_z3fdb(
         data_end_date (str, optional): End date of the dataset. Defaults to None.
         freq (str, optional): Frequency of the data. Defaults to "MS".
         chunks (str, int or dict, optional): Chunking configuration for the zarr array.
-            Time accepts 'S' for single frames, 'D' for calendar days or an integer
-            frame count. A string/integer sets time chunking; dictionaries use 'time'
-            and 'level'/'vertical'. Fixed sizes must divide their axes exactly.
-            Calendar days support partial days and any saved cadence. Defaults to None.
+            Time accepts 'S' for single frames, frequencies such as 'D', 'MS', '6h',
+            or an integer frame count. A string/integer sets time chunking; dictionaries
+            use 'time' and 'level'/'vertical'. Fixed sizes must divide their axes exactly.
+            Frequencies support partial time bins and any saved cadence. Defaults to None.
         level_values (float or list, optional): Physical values matching the full request levelist.
             Defaults to the level IDs.
         grid (str, optional): Legacy hint, ignored. The GRIB message defines the grid.
@@ -660,4 +673,4 @@ def open_z3fdb(
         }
     )
 
-    return _chunk_by_day(ds, chunks)
+    return _chunk_by_time(ds, chunks)

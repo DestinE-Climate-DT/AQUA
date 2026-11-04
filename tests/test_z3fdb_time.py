@@ -101,6 +101,19 @@ def test_time_requests_and_labels(mock_store, freq, style, clock, start, end, ex
     assert result.sel(time=slice(expected[0], expected[-1])).attrs["history"] == "time coordinate check"
 
 
+@pytest.mark.parametrize("clock", [{}, {"time": None}, {"time": "None"}])
+@pytest.mark.parametrize("freq, end", [("D", "20200103"), ("MS", "20200301")])
+def test_unspecified_date_clock_defaults_to_midnight(mock_store, clock, freq, end):
+    """Legacy clock placeholders request midnight without changing the catalog request."""
+    builder, _ = mock_store(3)
+    request = {"param": [130], **clock}
+    original = request.copy()
+    result = z3fdb_opener.open_z3fdb(request, freq=freq, timestyle="date", startdate="20200101", enddate=end)
+    np.testing.assert_array_equal(result.time, pd.date_range("2020-01-01", periods=3, freq=freq))
+    assert request == original
+    assert all(call.args[0]["time"] == "0000" for call in builder.add_part.call_args_list)
+
+
 @pytest.mark.parametrize(
     "kwargs, match",
     [
@@ -116,6 +129,7 @@ def test_time_requests_and_labels(mock_store, freq, style, clock, start, end, ex
         ({"timeshift": True}, "timeshift"),
         ({"request": {"param": [130], "time": "0000/1200"}, "freq": "D"}, "one numeric time"),
         ({"request": {"param": [130], "time": "2400"}, "freq": "D"}, "Invalid.*time"),
+        ({"request": {"param": [130], "time": "noon"}, "freq": "MS", "timestyle": "date"}, "one numeric time"),
         ({"request": {"param": [130], "step": [0, 6]}}, "initial forecast step"),
     ],
 )
@@ -349,26 +363,38 @@ def test_calendar_day_chunks(mock_store, as_dict, freq, style, start, end, expec
     assert all(pd.Timestamp(result.time[index].item()).hour == 0 for index in boundaries)
 
 
-@pytest.mark.parametrize("chunks", ["D", {"time": "D"}])
-def test_calendar_day_chunks_across_storage_split(mock_store, chunks):
-    """Join two storage fragments of a day into one lazy calendar-day chunk."""
-    mock_store([6, 18, 12])
+@pytest.mark.parametrize("as_dict", [False, True])
+@pytest.mark.parametrize(
+    "chunkfreq, savefreq, start, end, bridge_start, bridge_end, sizes, expected",
+    [
+        ("D", "h", "20200101T0600", "20200102T1700", "20200101T1200", "20200102T0500", [6, 18, 12], (18, 18)),
+        ("6h", "h", "20200101T0300", "20200101T1100", "20200101T0500", "20200101T0800", [2, 4, 3], (3, 6)),
+        ("MS", "D", "20200115", "20200305", "20200125", "20200205", [10, 12, 29], (17, 29, 5)),
+        ("MS", "MS", "20200101", "20200501", "20200201", "20200301", [1, 2, 2], (1, 1, 1, 1, 1)),
+    ],
+)
+def test_time_chunks_across_storage_split(
+    mock_store, as_dict, chunkfreq, savefreq, start, end, bridge_start, bridge_end, sizes, expected
+):
+    """Join storage fragments into lazy chunks at the requested time boundaries."""
+    mock_store(sizes)
     result = IntakeFDBSource(
-        {"param": [130]},
+        {"param": [130], "time": "None"},
         engine="z3fdb",
-        data_start_date="20200101T0600",
-        data_end_date="20200102T1700",
-        bridge_start_date="20200101T1200",
-        bridge_end_date="20200102T0500",
-        savefreq="h",
-        chunks=chunks,
+        data_start_date=start,
+        data_end_date=end,
+        bridge_start_date=bridge_start,
+        bridge_end_date=bridge_end,
+        savefreq=savefreq,
+        timestyle="date",
+        chunks={"time": chunkfreq} if as_dict else chunkfreq,
     ).to_dask()
-    assert result.var130.chunks[0] == (18, 18)
-    np.testing.assert_array_equal(result.time, pd.date_range("2020-01-01T06:00", "2020-01-02T17:00", freq="h"))
+    assert result.var130.chunks[0] == expected
+    np.testing.assert_array_equal(result.time, pd.date_range(pd.Timestamp(start), pd.Timestamp(end), freq=savefreq))
     assert result.attrs["history"]
 
 
-@pytest.mark.parametrize("chunks", ["M", "h", {"time": "invalid"}, 0, -1, {"time": 1.5}])
+@pytest.mark.parametrize("chunks", ["invalid", "0h", "-6h", {"time": "invalid"}, 0, -1, {"time": 1.5}])
 def test_unsupported_chunk_frequency_is_explicit(mock_store, chunks):
     """Frequency strings must not silently become one-frame chunks."""
     builder, probe = mock_store(1)
@@ -382,3 +408,43 @@ def test_unsupported_chunk_frequency_is_explicit(mock_store, chunks):
         )
     builder.build.assert_not_called()
     probe.assert_not_called()
+
+
+@pytest.mark.parametrize("as_dict", [False, True])
+@pytest.mark.parametrize(
+    "chunkfreq, freq, style, start, end, expected, native_size",
+    [
+        ("6h", "h", "date", "20200101T0300", "20200102T0800", (3, 6, 6, 6, 6, 3), 3),
+        ("6h", "h", "step", "20200101T0500", "20200101T1200", (1, 6, 1), 1),
+        ("6h", "15min", "date", "20200101T0130", "20200101T0630", (18, 3), 3),
+        ("MS", "D", "date", "20200115", "20200305", (17, 29, 5), 1),
+        ("MS", "D", "step", "20200115", "20200305", (17, 29, 5), 1),
+        ("MS", "h", "date", "20200131T1200", "20200301T0200", (12, 696, 3), 3),
+        ("MS", "MS", "date", "20200101", "20200301", (1, 1, 1), 1),
+        ("MS", "MS", "yearmonth", "20200101", "20200301", (1, 1, 1), 1),
+    ],
+)
+def test_frequency_time_chunks(mock_store, as_dict, chunkfreq, freq, style, start, end, expected, native_size):
+    """Monthly and six-hour bins honor partial windows, leap years and storage styles."""
+    builder, _ = mock_store(sum(expected))
+    tasks = []
+    with Callback(posttask=lambda *args: tasks.append(args)):
+        result = z3fdb_opener.open_z3fdb(
+            {"param": [130], "time": "None"},
+            freq=freq,
+            timestyle=style,
+            timestep="15min" if freq == "15min" else "h",
+            startdate=start,
+            enddate=end,
+            data_start_date="20200101",
+            chunks={"time": chunkfreq} if as_dict else chunkfreq,
+        )
+    assert not tasks
+    assert result.var130.chunks[0] == expected
+    assert result.attrs["history"]
+    for call in builder.add_part.call_args_list:
+        chunk = call.args[1][0].chunking
+        if native_size == 1:
+            assert chunk == z3fdb_opener.Chunking.SINGLE_VALUE
+        else:
+            assert chunk.chunkShape == native_size
