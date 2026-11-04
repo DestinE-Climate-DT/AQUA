@@ -8,6 +8,7 @@ import xarray as xr
 from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader, Regridder
+from aqua.core.regridder.filename_handler import FilenameHandler
 from aqua.core.regridder.grid_dict_handler import GridDictHandler
 
 
@@ -405,6 +406,12 @@ class TestRegridder:
 
         # Verify logger.error was called
         regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
+
+    @pytest.mark.parametrize("paths", [None, {"areas": "unused"}])
+    def test_filename_without_weights_path(self, paths):
+        """Without a `paths` block, or without its `weights` entry, the weights name has no directory."""
+        handler = FilenameHandler({"paths": paths} if paths else {}, loglevel=LOGLEVEL)
+        assert handler.weights_filename("r18x9", {"2d": "r36x18"}, "ycon", "2d", None) == "weights_r18x9_ycon_l2d.nc"
 
     def test_regridder_weights(self, regrid_paths):
         """Test regridding using explicitly the Regridder class and the weights method."""
