@@ -569,7 +569,7 @@ class Analysis:
                 raise KeyError(
                     f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
                 )
-        self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
+        self.exp_kind_dict = complete_dictionary.get(exp_kind, complete_dictionary.get("default"))
 
     def configure_template_configs(self, cfgs):
         """

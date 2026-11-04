@@ -627,14 +627,9 @@ class TestTemplating:
             analysis.configure_experiment_kind("unknown_kind", str(kinds_file))
 
     def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml):
-        """When unknown kind is passed with 'default' key present, uses default dict."""
-        # Note: The implementation has a subtle bug where it returns string "default" as fallback
-        # instead of complete_dictionary["default"]. But if default key exists and exp_kind matches,
-        # it works correctly. This test ensures the valid path works.
-        analysis.configure_experiment_kind("historical", kinds_yaml)
-        assert isinstance(analysis.exp_kind_dict, dict)
-        assert analysis.exp_kind_dict["period"] == "past"
-        assert analysis.exp_kind_dict["forcing"] == "CMIP6"
+        """Unknown kind with a 'default' key present falls back on the default dictionary."""
+        analysis.configure_experiment_kind("nonexistent", kinds_yaml)
+        assert analysis.exp_kind_dict == {"period": "unknown", "forcing": "unknown"}
 
     def test_configure_experiment_kind_multiple_kinds(self, analysis, kinds_yaml):
         """Different kinds return independent sub-dictionaries."""
