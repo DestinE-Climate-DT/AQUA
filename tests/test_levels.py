@@ -30,9 +30,10 @@ class TestLevels:
         assert "plev" in data.coords, "Failed to find vertical coordinate"
         assert sorted(data["plev"].values) == sorted(expected)
 
-    def test_level_not_found_single(self, reader_era5, caplog):
+    def test_level_not_found_single(self, reader_era5, aqua_caplog):
         """Test what happens if a requested level is not found in the data."""
         # When a level is not found, an error is logged and the unfiltered data is returned.
+        caplog = aqua_caplog(reader_era5.backend.logger)
         data = reader_era5.retrieve(var="t", level=80000)
 
         assert "plev" in data.coords, "Failed to find vertical coordinate"
@@ -42,9 +43,10 @@ class TestLevels:
 
         assert "Levels [80000] not found in vertical coordinate plev! Returning unfiltered data!" in caplog.messages
 
-    def test_level_not_found_list(self, reader_era5, caplog):
+    def test_level_not_found_list(self, reader_era5, aqua_caplog):
         """Test what happens if a level in the list is not found."""
         # When a level is not found, an error is logged and the unfiltered data is returned.
+        caplog = aqua_caplog(reader_era5.backend.logger)
         data = reader_era5.retrieve(var="t", level=[50000, 80000], level_coord="plev")
 
         assert "plev" in data.coords, "Failed to find vertical coordinate"
@@ -55,8 +57,9 @@ class TestLevels:
 
         assert "Levels [80000] not found in vertical coordinate plev! Returning unfiltered data!" in caplog.messages
 
-    def test_no_levels(self, reader_era5, caplog):
+    def test_no_levels(self, reader_era5, aqua_caplog):
         """Test what happens if the variable has no levels (2D variable)."""
+        caplog = aqua_caplog(reader_era5.backend.logger)
         data = reader_era5.retrieve(var="2t", level=50000)
 
         assert "plev" not in data.coords, "2D variable should not have a vertical coordinate"

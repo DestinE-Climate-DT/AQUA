@@ -38,6 +38,7 @@ Unreleased in the current development version (target v1.2.4):
 - Test suite batch B4c of #3309 (AQUA-TEST-028, 030): six unused fixtures removed, seven inline `Reader` constructions replaced by the identical session fixtures, and the level-selection and kwargs tests parametrized; same tests, same coverage (#3338)
 - Test suite batch B4d of #3309 (AQUA-TEST-031): the DROP tests run in their own xdist group (`drop_operations`) instead of the serial `dask_operations` group of timstat and gsv, which sets the wall time of the CI run; the DROP outputs no longer share a directory since B1 (#3339)
 - Test suite batch B5a of #3309 (AQUA-TEST-004, 008, 024): `FldStat` and accessor tests check values against independent oracles (numpy and xarray weighted means) instead of sizes, the regridded `fldmean` test regrids, partial `dims` and the attributes of the statistics are tested, the accessor references no longer share a 1e-4 tolerance, and two needless `rebuild=True` are gone (#3340)
+- Test suite batch B5b of #3309 (AQUA-TEST-005, 023): the regridding tests check a field mean and the land fraction against hard-coded references instead of shapes and three-point-wide windows, the cell areas against the surface of the sphere, and a regridding without weights is checked through its return value and its logged error instead of a mocked logger; new `aqua_caplog` fixture for the AQUA loggers, which do not propagate to the root logger (#B5BPR)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 ## [v1.2.3]

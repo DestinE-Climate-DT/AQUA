@@ -61,6 +61,27 @@ def stac_catalogue_dir():
     return STAC_CATALOGUE_DIR
 
 
+@pytest.fixture
+def aqua_caplog(caplog):
+    """`caplog` for the AQUA loggers.
+
+    They do not propagate to the root logger, where pytest collects the records, so the capture handler is
+    attached to the loggers passed to the returned function, for the duration of the test.
+    """
+    attached = []
+
+    def capture(*loggers):
+        for logger in loggers:
+            if caplog.handler not in logger.handlers:
+                logger.addHandler(caplog.handler)
+                attached.append(logger)
+        return caplog
+
+    yield capture
+    for logger in attached:
+        logger.removeHandler(caplog.handler)
+
+
 @pytest.fixture(autouse=True)
 def _close_figures():
     """Close the matplotlib figures left open by a test."""
