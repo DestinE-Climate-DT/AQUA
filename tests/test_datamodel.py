@@ -58,11 +58,10 @@ class TestDataModel:
         new = CoordTransformer(data, loglevel="debug").transform_coords()
         assert "height" in new.coords
 
-    def test_basic_transform(self):
+    def test_basic_transform(self, ifs_tco79_long_fixfalse_reader):
         """Basic test for the CoordTransformer class."""
 
-        reader = Reader(model="IFS", exp="test-tco79", source="long", fix=False)
-        data = reader.retrieve(var="2t")
+        data = ifs_tco79_long_fixfalse_reader.retrieve(var="2t")
 
         new = CoordTransformer(data, loglevel="debug").transform_coords()
 

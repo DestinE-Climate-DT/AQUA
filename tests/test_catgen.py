@@ -26,20 +26,6 @@ def _assert_source_levels(sources, source_key, expected_levels):
     assert len(sources["sources"][source_key]["metadata"]["levels"]) == expected_levels
 
 
-@pytest.fixture
-def catgen_sources(tmp_path):
-    """Fixture factory for catalog generation."""
-
-    def _generate(model, kind, reso, num_of_realizations=1):
-        config_template = Path("tests/catgen/config-test-catgen.j2")
-        config = _prepare_config(config_template, model, kind, reso, num_of_realizations, tmp_path)
-        _setup_catalog_directory(config, tmp_path)
-        _run_catgen(config, kind, tmp_path)
-        return _load_generated_sources(config)
-
-    return _generate
-
-
 def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1):
     """
     Load configuration, execute catgen, and return generated catalog sources.

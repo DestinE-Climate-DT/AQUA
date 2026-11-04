@@ -6,7 +6,6 @@ import xarray as xr
 from astropy_healpix import healpy as hp
 from utils_tests import LOGLEVEL
 
-from aqua import Reader
 from aqua.core.util import (
     cbar_get_label,
     coord_names,
@@ -92,10 +91,9 @@ def test_minmax_maps(da):
 
 
 @pytest.fixture(scope="module")
-def ifs_data():
+def ifs_data(ifs_tco79_short_reader):
     """Retrieve IFS data for graphics tools tests"""
-    reader = Reader(model="IFS", exp="test-tco79", source="short", loglevel=loglevel)
-    return reader.retrieve()
+    return ifs_tco79_short_reader.retrieve()
 
 
 @pytest.mark.graphics

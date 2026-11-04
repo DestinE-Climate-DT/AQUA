@@ -13,18 +13,8 @@ LOGLEVEL = "DEBUG"
 
 
 @pytest.fixture(scope="module")
-def reader_ifs_tco79_long(ifs_tco79_long_reader):
-    return ifs_tco79_long_reader
-
-
-@pytest.fixture(scope="module")
 def data_ifs_tco79_long(ifs_tco79_long_data):
     return ifs_tco79_long_data
-
-
-@pytest.fixture(scope="module")
-def reader_ifs_tco79_long_fixfalse(ifs_tco79_long_fixfalse_reader):
-    return ifs_tco79_long_fixfalse_reader
 
 
 @pytest.fixture(scope="module")
@@ -159,12 +149,12 @@ def test_fixer_fesom_names():
 
 
 @pytest.mark.aqua
-def test_fixer_deltat():
+def test_fixer_deltat(ifs_tco79_long_reader):
     """Check that output for deltat read from metadata and from fixes are the same"""
 
     reader1 = Reader(model="IFS", exp="test-tco79", source="long-deltat", loglevel=LOGLEVEL)
     data_metadata = reader1.retrieve(var="tnlwrf").isel(time=5)
-    reader2 = Reader(model="IFS", exp="test-tco79", source="long", loglevel=LOGLEVEL)
+    reader2 = ifs_tco79_long_reader
     data_fixer = reader2.retrieve(var="tnlwrf").isel(time=5)
     assert data_metadata.equals(data_fixer)
     assert reader1.fixer.deltat == 3600

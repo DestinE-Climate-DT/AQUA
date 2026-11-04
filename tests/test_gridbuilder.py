@@ -58,10 +58,9 @@ class TestBasicGridBuilder:
     grid_dir = ConfigContext().get_folder("grids")
 
     @pytest.mark.parametrize("rebuild", [False, True])
-    def test_grid_regular(self, tmp_path, rebuild):
+    def test_grid_regular(self, tmp_path, rebuild, ifs_tco79_long_areasfalse_fixfalse_reader):
         """Test the GridBuilder class with a regular grid."""
-        reader = Reader(model="IFS", exp="test-tco79", source="long", loglevel="debug", areas=False, fix=False)
-        data = reader.retrieve()
+        data = ifs_tco79_long_areasfalse_fixfalse_reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution="tco79")
         grid_builder.build(data, verify=True, rebuild=rebuild, create_yaml=True)
         assert os.path.exists(f"{self.grid_dir}/regular.yaml")
