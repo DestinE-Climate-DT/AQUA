@@ -31,6 +31,7 @@ Unreleased in the current development version (target v1.2.4):
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Test suite batch B1 of #3309 (AQUA-TEST-001, 002, 003): the session runs on a private `AQUA_CONFIG` (catalogs copied, data models, fixes and grids from the package under test) instead of the installed one, DROP, Regridder, `Reader(path=...)` and analysis tests write under `tmp_path`, and the run fails if tests leave new files in the repository root; the six test design principles are added to `AGENTS.md` (#3332)
+- Test suite batch B2 of #3309 (AQUA-TEST-021, 022 and parts of 020, 028, 032): the STAC test catalogue is regenerated only when the generator or a NetCDF fixture changes, written atomically, and a missing `ncdump` gives a warning instead of aborting the session; matplotlib figures, rcParams and the `AQUA_*` variables set by console commands no longer leak between tests; `test_levels.py` checks the logged errors with `caplog` instead of a mocked logger; marker fixes (`fdb` for the FDB-dependent z3fdb tests, `aqua` for the pure time-flooring test), one unused fixture removed (#B2PR)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 ## [v1.2.3]

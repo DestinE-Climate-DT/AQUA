@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 from pathlib import Path
 
 import matplotlib
@@ -32,12 +33,39 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_NEW_ROOT_ENTRIES = {".coverage", "junit.xml", "coverage.xml", "aqua_pytest.log", ".pytest_cache", "__pycache__"}
 
 
+def _ensure_stac_catalogue():
+    """Generate the example STAC catalogue if it is missing or older than the generator or the NetCDF fixtures.
+
+    It runs on the controller before collection, because the catalog tests browse the `stac` sources at import.
+    The lock and the atomic writes of the generator keep concurrent pytest invocations safe.
+    """
+    models = REPO_ROOT / "AQUA_tests" / "models"
+    if not models.is_dir():
+        return
+    catalog = STAC_CATALOGUE_DIR / "catalog.json"
+    with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
+        inputs = [STAC_CATALOGUE_DIR / "generate_catalog.py", *models.rglob("*.nc")]
+        if catalog.exists() and catalog.stat().st_mtime >= max(path.stat().st_mtime for path in inputs):
+            return
+        if shutil.which("ncdump") is None:
+            warnings.warn("ncdump not found: the STAC test catalogue is not generated", stacklevel=2)
+            return
+        subprocess.run([sys.executable, str(STAC_CATALOGUE_DIR / "generate_catalog.py")], check=True)
+
+
 @pytest.fixture(scope="session")
 def stac_catalogue_dir():
     """Return the example STAC catalogue prepared before test collection."""
-    if not (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
-        pytest.skip("AQUA_tests/models is not available")
+    if not (STAC_CATALOGUE_DIR / "catalog.json").exists():
+        pytest.skip("STAC catalogue not generated: AQUA_tests/models or ncdump is not available")
     return STAC_CATALOGUE_DIR
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close the matplotlib figures left open by a test."""
+    yield
+    plt.close("all")
 
 
 class DummyBackend(Backend):
@@ -84,10 +112,8 @@ def pytest_configure(config):
     if config._aqua_private_config:
         os.environ["AQUA_CONFIG"] = config._aqua_private_config
 
-    if workerinput is None and (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
-        # The controller configures before xdist starts workers, so no reader sees partial JSON.
-        with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
-            subprocess.run([sys.executable, str(STAC_CATALOGUE_DIR / "generate_catalog.py")], check=True)
+    if workerinput is None:
+        _ensure_stac_catalogue()  # on the controller, before xdist starts the workers
 
     if workerinput is not None:
         worker_id = workerinput.get("workerid", "master")
@@ -188,10 +214,10 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_makereport(item, call):
-    """Log test finish event with outcome."""
-    if call.when == "call":
+    """Log test finish event with outcome, including errors in fixture setup and teardown."""
+    if call.when == "call" or call.excinfo:
         outcome = "failed" if call.excinfo else "passed"
-        _log_xdist_event(item.config, "finished", item.nodeid, outcome)
+        _log_xdist_event(item.config, "finished" if call.when == "call" else call.when, item.nodeid, outcome)
 
 
 # ===================== Reader and Retrieve fixtures ===================
@@ -201,11 +227,6 @@ def pytest_runtest_makereport(item, call):
 @pytest.fixture(scope="session")
 def ifs_tco79_short_reader():
     return Reader(model="IFS", exp="test-tco79", source="short", loglevel=LOGLEVEL)
-
-
-@pytest.fixture(scope="session")
-def ifs_tco79_short_data(ifs_tco79_short_reader):
-    return ifs_tco79_short_reader.retrieve()
 
 
 @pytest.fixture(scope="session")
@@ -245,6 +266,7 @@ def ifs_tco79_long_areasfalse_fixfalse_reader():
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_reader():
+    # used through request.getfixturevalue in test_timstat.py
     return Reader(model="IFS", exp="test-tco79", source="long400", fix=False, loglevel=LOGLEVEL)
 
 
@@ -255,6 +277,7 @@ def ifs_tco79_long_fixfalse_data(ifs_tco79_long_fixfalse_reader):
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_data(ifs_tco79_long400_fixfalse_reader):
+    # used through request.getfixturevalue in test_timstat.py
     return ifs_tco79_long400_fixfalse_reader.retrieve(var=["2t", "ttr"])
 
 

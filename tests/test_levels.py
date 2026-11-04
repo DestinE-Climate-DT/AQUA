@@ -1,7 +1,5 @@
 """Test levels selection in Reader.retrieve for a netcdf source"""
 
-from unittest.mock import MagicMock
-
 import pytest
 
 
@@ -64,12 +62,8 @@ class TestLevels:
         assert 70000.0 in data["plev"].values or 70000 in data["plev"].values
         assert 85000 in data["plev"].values or 85000.0 in data["plev"].values
 
-    def test_level_not_found_single(self, reader_era5):
+    def test_level_not_found_single(self, reader_era5, caplog):
         """Test what happens if a requested level is not found in the data."""
-        # Mock the logger
-        original_logger = reader_era5.backend.logger
-        reader_era5.backend.logger = MagicMock()
-
         # When a level is not found, an error is logged and the unfiltered data is returned.
         data = reader_era5.retrieve(var="t", level=80000)
 
@@ -78,20 +72,10 @@ class TestLevels:
         # The full data is returned, not filtered
         assert data["plev"].size > 1
 
-        # Verify logger.error was called
-        reader_era5.backend.logger.error.assert_any_call(
-            "Levels %s not found in vertical coordinate %s! Returning unfiltered data!", [80000], "plev"
-        )
+        assert "Levels [80000] not found in vertical coordinate plev! Returning unfiltered data!" in caplog.messages
 
-        # Restore logger
-        reader_era5.backend.logger = original_logger
-
-    def test_level_not_found_list(self, reader_era5):
+    def test_level_not_found_list(self, reader_era5, caplog):
         """Test what happens if a level in the list is not found."""
-        # Mock the logger
-        original_logger = reader_era5.backend.logger
-        reader_era5.backend.logger = MagicMock()
-
         # When a level is not found, an error is logged and the unfiltered data is returned.
         data = reader_era5.retrieve(var="t", level=[50000, 80000], level_coord="plev")
 
@@ -101,29 +85,15 @@ class TestLevels:
         # ERA5 't' has 37 levels by default in the monthly-nn source.
         assert data["plev"].size > 2
 
-        # Verify logger.error was called
-        reader_era5.backend.logger.error.assert_any_call(
-            "Levels %s not found in vertical coordinate %s! Returning unfiltered data!", [80000], "plev"
-        )
+        assert "Levels [80000] not found in vertical coordinate plev! Returning unfiltered data!" in caplog.messages
 
-        # Restore logger
-        reader_era5.backend.logger = original_logger
-
-    def test_no_levels(self, reader_era5):
+    def test_no_levels(self, reader_era5, caplog):
         """Test what happens if the variable has no levels (2D variable)."""
-        # Mock the logger
-        original_logger = reader_era5.backend.logger
-        reader_era5.backend.logger = MagicMock()
-
         data = reader_era5.retrieve(var="2t", level=50000)
 
         assert "plev" not in data.coords, "2D variable should not have a vertical coordinate"
 
-        # Verify logger.error was called
-        reader_era5.backend.logger.error.assert_any_call(
+        assert (
             "Levels selected but no level coordinate found in data! "
             "Try specifying the coordinate with the 'level_coord' argument."
-        )
-
-        # Restore logger
-        reader_era5.backend.logger = original_logger
+        ) in caplog.messages

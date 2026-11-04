@@ -4,6 +4,7 @@ import io
 import os
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -17,6 +18,13 @@ def catalog_copy_path():
     if not path.is_dir():
         pytest.fail(f"Required console test catalog not found: {path}", pytrace=False)
     return str(path)
+
+
+@pytest.fixture(autouse=True)
+def _restore_environ():
+    """Restore the environment after each console test: commands such as `aqua analysis` export AQUA_* variables."""
+    with patch.dict(os.environ):
+        yield
 
 
 def _hide_aqua_config():
