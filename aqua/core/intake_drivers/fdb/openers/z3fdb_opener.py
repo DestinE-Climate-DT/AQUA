@@ -489,7 +489,7 @@ def add_coordinates(ds, grid, levunits=None):
             coordinates[f"{name}_bounds"] = xr.Variable(
                 ("cell", "cell_corners"), bounds.to_value("deg"), attrs={"units": units}
             )
-        ds = ds.assign_coords(coordinates)
+        ds = ds.assign_coords(coordinates).rename_dims(cell="ncells").drop_vars("cell", errors="ignore")
     elif grid_type == "regular_ll":
         ni, nj = grid["Ni"], grid["Nj"]
         if ni <= 0 or nj <= 0 or ncell != ni * nj:

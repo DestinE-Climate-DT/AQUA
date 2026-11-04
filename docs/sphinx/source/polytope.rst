@@ -156,6 +156,7 @@ per HPC/bridge period, using the same FDB configuration as the data read.
 It reads metadata with ecCodes and does not require GSV. Supported grid families:
 
 * HEALPix: resolution and ring/nested ordering come from GRIB metadata.
+  The spatial dimension is ``ncells``, matching GSV, without a synthetic cell index coordinate.
 * Global regular latitude/longitude: dimensions come from GRIB metadata;
   south-to-north fields are flipped to a north-to-south layout.
 

@@ -574,13 +574,20 @@ def test_z3fdb_healpix_from_grib(monkeypatch, grib_message, ordering):
     monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=fdb))
     grid = z3fdb_opener._read_grib_grid({"param": [130], "date": "20200101/to/20200102"})
     values = da.arange(48, chunks=48)[None, :]
-    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original", "AQUA_source": "test"})
+    data = xr.Dataset(
+        {"test": (("time", "cell"), values)},
+        coords={"cell": np.arange(48)},
+        attrs={"history": "original", "AQUA_source": "test"},
+    )
     result = z3fdb_opener.add_coordinates(data, grid)
     hp = astropy_healpix.HEALPix(nside=2, order="nested" if ordering else "ring")
     lon, lat = hp.healpix_to_lonlat(np.arange(48))
     np.testing.assert_allclose(result.lon, lon.to_value("deg"))
     np.testing.assert_allclose(result.lat, lat.to_value("deg"))
     assert result.test.data is values
+    assert result.test.dims == ("time", "ncells")
+    assert "cell" not in result.dims
+    assert "cell" not in result.coords and "ncells" not in result.coords
     assert result.lon_bounds.shape == result.lat_bounds.shape == (48, 4)
     assert result.attrs["AQUA_source"] == "test"
     assert "original" in result.attrs["history"]
