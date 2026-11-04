@@ -377,9 +377,8 @@ class TestNormalizeRangeConvention:
     def test_ignores_non_longitude_coordinates(self):
         """Only the longitude is wrapped.
 
-        Fails until #3346 is decided: normalize_range_convention acts on any coordinate named in the target, so with
-        longitudes that are not in the target range a latitude is wrapped too ([-170, 10] becomes [10, 190]). The test
-        used to pass only through the early return for longitudes already in 0_to_360.
+        Longitudes are outside the target range on purpose: a latitude wrapped as well ([-170, 10] becomes [10, 190])
+        would be visible. The test used to pass only through the early return for longitudes already in 0_to_360.
         """
         ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]), lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
@@ -462,11 +461,7 @@ class TestAssignAttributes:
 
     @pytest.mark.parametrize("key", ["range", "range_convention"])
     def test_range_key_never_leaks_into_attrs(self, key):
-        """The wrap-convention control key is not a CF attribute.
-
-        Fails for `range_convention` (the key of the data model) until #3346 is decided: IGNORED_ATTRIBUTES lists
-        only the obsolete `range`, so the key is copied to the attributes of the coordinate.
-        """
+        """The wrap-convention control key is not a CF attribute (`range` is the obsolete name of the key)."""
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
