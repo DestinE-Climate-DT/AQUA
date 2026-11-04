@@ -28,19 +28,10 @@ class TestDataModel:
         )
 
     def test_coords_error(self, data):
-        """Error case"""
+        """CoordIdentifier needs the coordinates (the CoordTransformer errors are tested in test_coordtransformer.py)"""
 
         with pytest.raises(TypeError, match="coords must be an Xarray Coordinates object."):
             CoordIdentifier(data, loglevel="debug")
-
-        with pytest.raises(TypeError, match="data must be an Xarray Dataset or DataArray object."):
-            CoordTransformer(data.coords)
-
-        coord = CoordTransformer(data, loglevel="debug")
-        with pytest.raises(TypeError, match="name must be a string."):
-            coord.transform_coords(name=123)
-        with pytest.raises(FileNotFoundError):
-            coord.transform_coords(name="antani")
 
     def test_basic_transform_vertical(self):
         """Basic test for the CoordTransformer class."""

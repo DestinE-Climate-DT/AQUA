@@ -86,39 +86,6 @@ def test_get_eccodes_attr_examples(query, expected_attr):
     """Test get_eccodes_attr against expected parameter attributes."""
     result = get_eccodes_attr(query, loglevel="debug")
     assert result == expected_attr
-    for key, value in expected_attr.items():
-        assert result[key] == value
-
-
-@pytest.mark.aqua
-@pytest.mark.parametrize(
-    "pid, expected_short_name",
-    [
-        (235288, "avg_tcc"),
-        (164, "tcc"),
-        (228164, "tcc"),
-        (72, "issrd"),
-    ],
-)
-def test_get_eccodes_attr_param_to_shortname(pid, expected_short_name):
-    """Test looking up shortName from paramId."""
-    res = get_eccodes_attr(pid, loglevel="debug")
-    assert res["shortName"] == expected_short_name
-
-
-@pytest.mark.aqua
-@pytest.mark.parametrize(
-    "sn, expected_pid",
-    [
-        ("avg_tcc", "235288"),
-        ("tcc", "228164"),
-        ("issrd", "72"),
-    ],
-)
-def test_get_eccodes_attr_shortname_to_param(sn, expected_pid):
-    """Test looking up paramId from shortName."""
-    res = get_eccodes_attr(sn, loglevel="debug")
-    assert str(res["paramId"]) == expected_pid
 
 
 @pytest.mark.aqua

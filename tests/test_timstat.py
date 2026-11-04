@@ -98,21 +98,6 @@ class TestTimmean:
         assert lastval.shape == (197, 9, 18)
         assert firstval.time[0] < lastval.time[0]
 
-    @pytest.mark.parametrize("stat", ["first", "last"])
-    def test_timstat_first_last_no_freq(self, reader, data_2t, stat):
-        """first and last statistics require a frequency to be specified"""
-        with pytest.raises(ValueError, match=r"Frequency must be specified when using first or last statistic"):
-            reader.timstat(data_2t["2t"], stat=stat)
-
-    def test_timstat_compare(self, reader, data_2t):
-        """Time operations provide robust values"""
-        minval = reader.timmin(data_2t["2t"], freq="daily")
-        maxval = reader.timmax(data_2t["2t"], freq="daily")
-        avg = reader.timmean(data_2t["2t"], freq="daily")
-
-        assert (minval <= avg).all()
-        assert (avg <= maxval).all()
-
     def test_timmin_yearly_exclude_incomplete(self, reader, data_ttr):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
         avg = reader.timmin(data_ttr, freq="yearly", exclude_incomplete=True)
@@ -171,25 +156,6 @@ class TestTimmean:
             complete = series.sel(time=series.time.dt.month.isin(range(2, 8)))
             assert avg["time_bnds"].isel(time=0, bnds=0) == complete.time[0]
             assert avg["time_bnds"].isel(time=-1, bnds=1) == complete.time[-1]
-
-    def test_timmean_time_bounds_no_freq(self, reader, data_2t):
-        """Total means disable time bounds and other resampling-only options."""
-        avg = reader.timmean(data_2t, freq=None, time_bounds=True, center_time=True, exclude_incomplete=True)
-        assert "time" not in avg.dims
-        assert "time_bnds" not in avg
-
-    def test_timmean_invalid_frequency(self, reader, data_2t):
-        """Test for timmean method with an invalid frequency"""
-        with pytest.raises(
-            ValueError, match=r"Cannot find a frequency to resample, using resample_freq=invalid not work, aborting!"
-        ):
-            reader.timmean(data_2t, freq="invalid")
-
-    def test_timstd_error(self, reader, data_2t):
-        """Test for timstd method with a single time step"""
-        single = data_2t.sel(time=data_2t.time[0])
-        with pytest.raises(ValueError, match=r"Time dimension not found in the input data. Cannot compute timstd statistic"):
-            reader.timstat(single, stat="std", freq="monthly")
 
     def test_timstat_histogram(self, reader, data_2t):
         """Test histogram through timstat"""
@@ -255,3 +221,51 @@ class TestTimmean:
             assert len(aligned) == len(avg_with_mask)
         except KeyError as e:
             pytest.fail(f"Coordinate alignment failed: {e}")
+
+
+@pytest.mark.aqua
+@pytest.mark.xdist_group(name="dask_operations")
+class TestTimstatAnyCalendar:
+    """Checks that do not depend on the calendar of the data: they run on the standard source only."""
+
+    @pytest.fixture(scope="class")
+    def reader(self, ifs_tco79_long_fixfalse_reader):
+        return ifs_tco79_long_fixfalse_reader
+
+    @pytest.fixture(scope="class")
+    def data_2t(self, reader):
+        return reader.retrieve(var="2t")
+
+    @pytest.mark.parametrize("stat", ["first", "last"])
+    def test_timstat_first_last_no_freq(self, reader, data_2t, stat):
+        """first and last statistics require a frequency to be specified"""
+        with pytest.raises(ValueError, match=r"Frequency must be specified when using first or last statistic"):
+            reader.timstat(data_2t["2t"], stat=stat)
+
+    def test_timstat_compare(self, reader, data_2t):
+        """Time operations provide robust values"""
+        minval = reader.timmin(data_2t["2t"], freq="daily")
+        maxval = reader.timmax(data_2t["2t"], freq="daily")
+        avg = reader.timmean(data_2t["2t"], freq="daily")
+
+        assert (minval <= avg).all()
+        assert (avg <= maxval).all()
+
+    def test_timmean_time_bounds_no_freq(self, reader, data_2t):
+        """Total means disable time bounds and other resampling-only options."""
+        avg = reader.timmean(data_2t, freq=None, time_bounds=True, center_time=True, exclude_incomplete=True)
+        assert "time" not in avg.dims
+        assert "time_bnds" not in avg
+
+    def test_timmean_invalid_frequency(self, reader, data_2t):
+        """Test for timmean method with an invalid frequency"""
+        with pytest.raises(
+            ValueError, match=r"Cannot find a frequency to resample, using resample_freq=invalid not work, aborting!"
+        ):
+            reader.timmean(data_2t, freq="invalid")
+
+    def test_timstd_error(self, reader, data_2t):
+        """Test for timstd method with a single time step"""
+        single = data_2t.sel(time=data_2t.time[0])
+        with pytest.raises(ValueError, match=r"Time dimension not found in the input data. Cannot compute timstd statistic"):
+            reader.timstat(single, stat="std", freq="monthly")
