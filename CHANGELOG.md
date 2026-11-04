@@ -15,6 +15,7 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Remove module-level `xr.set_options(keep_attrs=True)` calls, which silently changed xarray's global state on import; xarray already keeps attrs by default and AQUA passes `keep_attrs=True` explicitly where needed. `AGENTS.md` updated accordingly (#3324).
 - Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
 - Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)
 - Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock`
@@ -24,7 +25,7 @@ Unreleased in the current development version (target v1.2.4):
 - Temporary pin `pytest<9.2` in the `tests` extra: pytest 9.2.0 breaks `--dist loadgroup` of pytest-xdist 3.8.0, so `xdist_group` tests run in parallel and DROP tests fail; remove once pytest-xdist >3.8.0 is released (pytest-dev/pytest-xdist#1386) (#3305)
 - Apply the temporary `pytest<9.2` pin also in the CI workflow (conda install mode), which does not read the `pyproject.toml` pin (#3317)
 - Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
-
+- Restructure the grid definitions in `aqua/core/config/grids`: unused grids moved to `deprecated.yaml`, duplicated `tl63`/`tl159` removed from the EC-Earth4 file, sections ordered by model cycle, `HealPix.yaml`/`EC-EARTH4.yaml`/`EC-EARTH3.yaml` renamed to lowercase; the duplicated OSI-SAF grids are not defined anymore (`osi-saf-nh-aqua`/`osi-saf-sh-aqua` are to be used); `load_multi_yaml` has a new `check_duplicates` option to detect entries defined in more than one file, used in a test on the grids folder (#3269)
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)

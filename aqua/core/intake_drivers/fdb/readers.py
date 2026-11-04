@@ -7,8 +7,6 @@ from intake import BaseReader
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
 
-xr.set_options(keep_attrs=True)
-
 
 class GSVDatasetReader(BaseReader):
     output_instance = "xarray:Dataset"

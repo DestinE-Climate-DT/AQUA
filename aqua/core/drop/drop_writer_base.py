@@ -24,8 +24,6 @@ from aqua.core.logger import log_configure
 
 from .output_path_builder import OutputPathBuilder
 
-xr.set_options(keep_attrs=True)
-
 
 class BaseWriter(ABC):
     """
