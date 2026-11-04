@@ -7,18 +7,17 @@ from aqua.core.util import replace_intake_vars, replace_urlpath_jinja, replace_u
 
 
 @pytest.fixture
-def tmp_directory(tmpdir):
-    return str(tmpdir)
+def tmp_directory(tmp_path):
+    directory = tmp_path / "tmp"
+    directory.mkdir()
+    return str(directory)
 
 
 @pytest.fixture
-def output_directory(tmpdir):
-    return str(tmpdir)
-
-
-@pytest.fixture(params=[("IFS", "test-tco79", "long")])
-def lra_arguments(request):
-    return request.param
+def output_directory(tmp_path):
+    directory = tmp_path / "output"
+    directory.mkdir()
+    return str(directory)
 
 
 # @pytest.mark.aqua
@@ -58,10 +57,13 @@ def test_move_tmp_files(tmp_directory, output_directory):
 
     drop_util.move_tmp_files(tmp_directory, output_directory)
 
-    # assert not os.path.exists(tmp_file1)
-    # assert not os.path.exists(tmp_file2)
-    assert os.path.exists(output_file1)
-    assert os.path.exists(output_file2)
+    # the files are moved (the "_tmp" suffix is dropped), not copied
+    assert not os.path.exists(tmp_file1)
+    assert not os.path.exists(tmp_file2)
+    with open(output_file1) as f:
+        assert f.read() == "Temporary file 1"
+    with open(output_file2) as f:
+        assert f.read() == "Temporary file 2"
 
 
 @pytest.mark.aqua

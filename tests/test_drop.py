@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 
 import dask.array as da
 import icechunk
@@ -271,7 +272,9 @@ class TestDROP:
 
         test.retrieve()
         test.drop_generator()
-        assert os.path.isdir(os.path.join(drop_arguments["outdir"], DROP_PATH))
+        # a dry run writes nothing: the output directory is created by Drop.__init__, whatever the run does
+        written = [path for path in Path(drop_arguments["outdir"]).rglob("*") if path.is_file()]
+        assert written == []
 
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, drop_arguments, tmp_path, nworkers):
@@ -295,19 +298,21 @@ class TestDROP:
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
         )
-        test.check_integrity(varname=drop_arguments["var"])
         assert os.path.isfile(file_path)
+        # the file just written is complete and its last record is January
+        test.check_integrity(varname=drop_arguments["var"])
+        assert test.check is True
+        assert test.last_record == "20200101"
 
         file = xr.open_dataset(file_path)
         assert len(file.time) == 1
         assert pytest.approx(file["2t"][0, 1, 1].item()) == 248.0704
 
-        # verify history
-        if "history" in file.attrs:
-            history = file.attrs["history"]
-            assert "DROP" in history, "DROP not found in history"
-            assert "regridded" in history, "Regridding information not found in history"
-            assert "resampled" in history, "Frequency resampling information not found in history"
+        # verify history: it must be written, a file without it is a failure
+        history = file.attrs["history"]
+        assert "DROP" in history, "DROP not found in history"
+        assert "regridded" in history, "Regridding information not found in history"
+        assert "resampled" in history, "Frequency resampling information not found in history"
 
     def test_regional_subset(self, drop_arguments, tmp_path):
         """Test DROP with regional subset."""
@@ -360,9 +365,27 @@ class TestDROP:
 
         assert drop._remove_regridded(None) is None
 
+    @staticmethod
+    def _write_zero_month(path, output_format):
+        """Write a complete but wrong output (zeros) of one month at path: only overwrite=True replaces it."""
+        zeros = xr.Dataset(
+            {"2t": (("time", "lat", "lon"), np.zeros((1, 180, 360), dtype="float32"))},
+            coords={
+                "time": [np.datetime64("2020-01-01")],
+                "lat": np.linspace(-89.5, 89.5, 180),
+                "lon": np.linspace(0.5, 359.5, 360),
+            },
+        )
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if output_format == "zarr":
+            zeros.to_zarr(path, mode="w", consolidated=False)
+        else:
+            zeros.to_netcdf(path)
+
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr", "icechunk"])
     def test_dask_overwrite(self, drop_arguments, tmp_path, output_format):
-        """Test DROP with overwrite=True and Dask initialization across all output formats."""
+        """Test DROP with overwrite=True and Dask initialization across all output formats:
+        the three months are written, and a complete output that already exists is replaced."""
         test = Drop(
             catalog="ci",
             **drop_arguments,
@@ -379,8 +402,22 @@ class TestDROP:
 
         test.retrieve()
         test.data = test.data.sel(time=slice("2020-01", "2020-03"))  # 3 months: limits dask+icechunk overhead
+        if output_format != "icechunk":
+            january = test.writer.get_filename(drop_arguments["var"], year=2020, month=1)
+            self._write_zero_month(january, output_format)
         test.drop_generator()
-        assert os.path.isdir(os.path.join(drop_arguments["outdir"], DROP_PATH))
+
+        if output_format == "icechunk":
+            storage = icechunk.local_filesystem_storage(test.writer.repo_path)
+            ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
+            assert len(ds.time) == 3, "The store should have Jan+Feb+Mar"
+            return
+
+        for month in (1, 2, 3):
+            assert os.path.exists(test.writer.get_filename(drop_arguments["var"], year=2020, month=month))
+        engine = "zarr" if output_format == "zarr" else None
+        january = xr.open_dataset(january, engine=engine, **({"consolidated": False} if engine else {}))
+        assert january["2t"][0, 1, 1].item() == pytest.approx(248.0704)  # the zeros were replaced by the data
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
     def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):
@@ -669,6 +706,21 @@ class TestDROP:
         assert "chunks=1" in summary_lines[0]
 
 
+class _SpyRepo:
+    """An icechunk repository that counts the garbage collections and delegates everything else."""
+
+    def __init__(self, repo):
+        self._repo = repo
+        self.garbage_collected = 0
+
+    def garbage_collect(self, *args, **kwargs):
+        self.garbage_collected += 1
+        return self._repo.garbage_collect(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._repo, name)
+
+
 class TestZarrWriter:
     """Unit tests for ZarrWriter (validation, encoding, error paths)."""
 
@@ -835,15 +887,18 @@ class TestIcechunkWriter:
 
         assert writer.validate(path) is expected
 
-    def test_garbage_collect_yearly(self, tmp_path):
-        """concat_year_files() triggers GC when garbage_collect_yearly=True without corrupting the store."""
+    @pytest.mark.parametrize("garbage_collect_yearly, collections", [(True, 1), (False, 0)])
+    def test_garbage_collect_yearly(self, tmp_path, garbage_collect_yearly, collections):
+        """concat_year_files() runs the garbage collection of the repo once if garbage_collect_yearly is set,
+        never otherwise, and the store stays readable."""
         writer = IcechunkWriter(
             tmpdir=str(tmp_path),
             outdir=str(tmp_path),
-            garbage_collect_yearly=True,
+            garbage_collect_yearly=garbage_collect_yearly,
             loglevel=LOGLEVEL,
         )
         writer._init_repo()
+        writer.repo = _SpyRepo(writer.repo)
 
         ds = xr.Dataset(
             {
@@ -858,9 +913,8 @@ class TestIcechunkWriter:
         writer.main_session.commit("pre-gc")
         writer.main_session = writer.repo.writable_session("main")
 
-        # concat_year_files calls _yearly_garbage_collect when the flag is set
-        result = writer.concat_year_files("foo", 2020)
-        assert result is True
+        writer.concat_year_files("foo", 2020)
+        assert writer.repo.garbage_collected == collections
 
         # Store must remain readable after GC
         ds_after = writer._open_files(writer.repo_path)
