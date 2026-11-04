@@ -76,8 +76,24 @@ only for HPC periods. For example, ``expver: "0001"`` with
 inside it, even when both periods share an FDB configuration. The catalog
 request is preserved across reads.
 
+.. _z3fdb-metadata:
+
+Output metadata for z3fdb
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    With ``engine="z3fdb"``, using ``fix=False`` produces a loss of variable
+    metadata compared with GSV. Numeric parameters are named ``var167``, for
+    example, and do not carry GRIB-derived attributes such as ``units``,
+    ``long_name``, ``GRIB_paramId`` or ``GRIB_stepType``.
+
+    Keep the default ``fix=True`` to recover the names, units and attributes
+    supplied by AQUA's configured fixes. This does not restore every original
+    GRIB message attribute. Dataset-level AQUA metadata and history are retained.
+
 Availability discovery for z3fdb
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Before routing requests, z3fdb resolves availability using the same helpers as GSV:
 
@@ -101,7 +117,7 @@ catalog request or metadata. Field retrieval still uses the lazy z3fdb Zarr path
 and does not require GSV.
 
 Time settings for z3fdb
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``z3fdb`` engine honors the same catalog time settings as GSV:
 
@@ -129,10 +145,11 @@ Native timesteps must be positive whole minutes. Saved frequencies can be
 fixed minute/hour/day intervals that are integer multiples of ``timestep``,
 or ``MS``/``YS`` (also accepting ``M``/``Y``). Unsupported layouts, calendar
 native timesteps and multiple initial steps raise an error. Legacy
-``timeshift`` is unsupported; leave it unset or false.
+``timeshift`` works only with GSV, not z3fdb. With ``engine="z3fdb"``, leave
+it unset or false; a true value raises an error.
 
 Grid coordinates for z3fdb
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``z3fdb`` engine identifies its grid from one representative GRIB message
 per HPC/bridge period, using the same FDB configuration as the data read.
@@ -185,8 +202,9 @@ Frequency-based chunks do not require complete bins or an exactly divisible
 total window. The backend uses regular read groups sized to divide every full
 or partial time bin in each store. Xarray lazily groups them into the requested
 bins, including bins split across HPC and bridge storage. Other positive pandas
-resampling frequencies are accepted; invalid or nonpositive frequencies raise
-a clear error. Use ``MS``/``YS`` for month/year-start bins.
+resampling frequencies are parsed, but their native read groups may still be
+incompatible with the request axes (see the warning below). Invalid or
+nonpositive frequencies raise an error. Use ``MS``/``YS`` for month/year-start bins.
 
 By default all selected levels share a chunk. Set ``vertical`` (or its alias
 ``level``) to a positive integer to group levels, for example:
@@ -196,8 +214,27 @@ By default all selected levels share a chunk. Set ``vertical`` (or its alias
     Reader(..., engine="z3fdb", chunks={"time": "D", "vertical": 2})
 
 A vertical size of one gives individual levels; a size equal to the selected
-level count keeps them together. Other sizes must divide the selected level
-count exactly; otherwise a warning is emitted and single-level chunks are used.
+level count keeps them together.
+
+.. warning::
+
+    Fixed time counts must fit native request axes. Vertical sizes must divide
+    the selected level count; otherwise the driver warns and uses single-level
+    chunks. These native constraints come from `z3fdb's API
+    <https://sites.ecmwf.int/docs/fdb/develop/z3fdb/api.html>`_.
+
+    For time chunking, compatibility is required for each native MARS request
+    part and each HPC/bridge period, not just the total selected window. Partial
+    windows and storage splits can therefore make a fixed count invalid.
+    Frequency-based chunks can encounter the same restriction: for example,
+    50 hourly samples with ``chunks="10h"`` would produce five output chunks,
+    but native request parts of 48 and two samples cannot use read groups of 10.
+
+    Incompatible time chunking raises a backend error. The driver does not
+    automatically retry with single-timestep output chunks. Choose compatible
+    chunking explicitly; requesting a valid pandas frequency alone does not
+    guarantee a valid native layout. Single-level fallback applies only to
+    incompatible vertical sizes, as described above.
 
 .. seealso::
 

@@ -383,16 +383,20 @@ Some of the parameters are here described:
       vertical: 3  # Three vertical levels in each chunk
 
 .. note::
-    With ``z3fdb``, ``chunks: D`` or ``chunks: {time: D}`` produces calendar-day
-    chunks, including partial days and days spanning HPC/bridge periods.
-    ``S`` gives single saved frames. An integer ``time`` value groups that many
-    samples and must be compatible with every native request part's time axis;
-    other frequency strings are unsupported. Positive integer ``vertical``/``level``
-    sizes are supported:
-    one gives single levels, the selected level count gives the whole axis, and
-    other divisors give fixed-size groups. A non-divisor warns and falls back to
-    single levels. By default all selected levels share a chunk.
-    See :ref:`z3fdb-chunking` for examples and restrictions.
+    With ``z3fdb``, frequency chunks such as ``D``, ``MS`` and ``6h`` group
+    samples by calendar day, calendar month or six-hour interval, including
+    partial bins and bins spanning HPC/bridge periods. ``S`` gives single saved
+    frames. An integer ``time`` value groups that many samples. By default all
+    selected levels share a chunk; ``vertical`` (or ``level``) sets a level count.
+
+.. warning::
+    Fixed time counts must fit each native request part's time axis. Vertical
+    sizes must divide the selected level count; otherwise the driver warns and
+    uses single-level chunks. These native constraints come from `z3fdb's API
+    <https://sites.ecmwf.int/docs/fdb/develop/z3fdb/api.html>`_.
+    Frequency-based time chunks can also produce incompatible native read groups
+    and raise an error; the driver does not retry with single-timestep output
+    chunks. See :ref:`z3fdb-chunking` for examples and restrictions.
 
 .. option:: timestep
 
@@ -429,7 +433,8 @@ Some of the parameters are here described:
 .. option:: timeshift
 
     Timeshift is a legacy boolean parameter used exclusively for shifting the date of monthly data back by one month.
-    It is supported by GSV; z3fdb rejects a true value.
+    It works only with GSV, not z3fdb. With ``engine="z3fdb"``, leave it unset
+    or false; a true value raises an error.
 
     Implementing this correctly in a general case can be quite complex, so it was decided to implement only the monthly shift.
 
