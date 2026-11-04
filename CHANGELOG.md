@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
-- Validate z3fdb regular lon/lat endpoints, spacing and scanning flags before assigning coordinates; reject unsupported grid profiles while preserving north/south-first rows and GRIB angular rounding (#3316).
 - Accept z3fdb frequency-based time chunks such as `MS` and `6h`, including partial bins, leap years and HPC/bridge splits; normalize missing, null and legacy `"None"` request times to midnight for daily/monthly date data (#3316).
 - Honor z3fdb `chunks="D"` and `chunks={"time": "D"}` as lazy calendar-day chunks, including partial days, different saved cadences and HPC/bridge splits; retain regular native chunks and reject unsupported time-chunk settings. Make hourly and consecutive forecast-step MARS increments explicit so z3fdb retrieves every selected frame, and correct the time/vertical chunking documentation (#3316).
 - Share GSV availability discovery with z3fdb: resolve workflow `fdb_info_file` dates and experiment versions, local `auto` dates, bridge STAC and date files on each read; validate availability and align HPC/bridge boundaries to saved cadence without changing catalog requests or metadata (#3316).

@@ -139,12 +139,8 @@ per HPC/bridge period, using the same FDB configuration as the data read.
 It reads metadata with ecCodes and does not require GSV. Supported grid families:
 
 * HEALPix: resolution and ring/nested ordering come from GRIB metadata.
-* Global regular latitude/longitude: dimensions come from GRIB metadata.
-  The grid must include both poles, with longitude rows increasing eastwards
-  from 0 degrees without a duplicate endpoint. Endpoints, spacing and scanning
-  flags are validated with a tolerance for GRIB angular rounding. South-to-north
-  fields are flipped to a north-to-south layout. Shifted, cell-centred, regional,
-  column-major and alternating-row layouts raise a clear error.
+* Global regular latitude/longitude: dimensions come from GRIB metadata;
+  south-to-north fields are flipped to a north-to-south layout.
 
 Only these two grid families are supported. Unstructured, reduced Gaussian,
 rotated and other GRIB grid types raise an error, as do grid-size mismatches.

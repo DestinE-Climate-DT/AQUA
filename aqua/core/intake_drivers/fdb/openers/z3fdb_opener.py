@@ -444,12 +444,7 @@ def _read_grib_grid(mars, config=None):
     grid_type = message["gridType"]
     keys = {
         "healpix": ("Nside", "ordering"),
-        "regular_ll": (
-            "Ni", "Nj", "latitudeOfFirstGridPointInDegrees", "latitudeOfLastGridPointInDegrees",
-            "longitudeOfFirstGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
-            "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees", "angleSubdivisions",
-            "iScansNegatively", "jScansPositively", "jPointsAreConsecutive", "alternativeRowScanning",
-        ),
+        "regular_ll": ("Ni", "Nj", "latitudeOfFirstGridPoint"),
     }
     if grid_type not in keys:
         raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and global regular lon/lat are supported.")
@@ -468,7 +463,7 @@ def add_coordinates(ds, grid, levunits=None):
         xr.Dataset: Dataset with coordinates and lazy field data.
 
     Raises:
-        ValueError: When the grid type/profile is unsupported or its size does not match the data.
+        ValueError: When the grid is unsupported or its size does not match the data.
     """
     if levunits:
         ds.level.attrs["units"] = levunits
@@ -499,32 +494,10 @@ def add_coordinates(ds, grid, levunits=None):
         ni, nj = grid["Ni"], grid["Nj"]
         if ni <= 0 or nj <= 0 or ncell != ni * nj:
             raise ValueError("GRIB grid point count does not match the z3fdb cell dimension.")
-        profile_error = (
-            "Unsupported z3fdb regular lon/lat grid profile: expected global longitude rows increasing "
-            "from 0 degrees, including both poles, without alternating rows."
-        )
-        if ni < 2 or nj < 2 or any(
-            grid[key] for key in ("iScansNegatively", "jPointsAreConsecutive", "alternativeRowScanning")
-        ):
-            raise ValueError(profile_error)
-        first_lat = -90 if grid["jScansPositively"] else 90
-        expected = {
-            "longitudeOfFirstGridPointInDegrees": 0,
-            "longitudeOfLastGridPointInDegrees": 360 - 360 / ni,
-            "latitudeOfFirstGridPointInDegrees": first_lat,
-            "latitudeOfLastGridPointInDegrees": -first_lat,
-            "iDirectionIncrementInDegrees": 360 / ni,
-            "jDirectionIncrementInDegrees": 180 / (nj - 1),
-        }
-        # Allow the angular rounding encoded by GRIB (e.g. millidegrees in GRIB1).
-        if not all(
-            np.isclose(grid[key], value, rtol=0, atol=1 / grid["angleSubdivisions"]) for key, value in expected.items()
-        ):
-            raise ValueError(profile_error)
         variables = {}
         for name, var in ds.data_vars.items():
             values = var.data.reshape(var.shape[:-1] + (nj, ni))
-            if first_lat < 0:
+            if grid["latitudeOfFirstGridPoint"] < 0:
                 values = values[..., ::-1, :]
             variables[name] = xr.Variable(var.dims[:-1] + ("lat", "lon"), values, attrs=var.attrs)
         ds = (
