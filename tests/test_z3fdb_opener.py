@@ -553,8 +553,8 @@ def test_build_zarr_axes_chunking() -> None:
 def grib_message():
     """Build GRIB messages in memory without adding test-data files."""
 
-    def make_message(grid_type="healpix", **keys):
-        handle = ecc.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+    def make_message(grid_type="healpix", edition=2, **keys):
+        handle = ecc.codes_grib_new_from_samples(f"regular_ll_sfc_grib{edition}")
         try:
             ecc.codes_set(handle, "gridType", grid_type)
             for key, value in keys.items():
@@ -588,10 +588,26 @@ def test_z3fdb_healpix_from_grib(monkeypatch, grib_message, ordering):
     fdb.retrieve.assert_called_once_with({"param": "130", "date": "20200101"})
 
 
+@pytest.fixture
+def lonlat_grid_keys():
+    """The global regular lon/lat profile supported by z3fdb."""
+    return {
+        "Ni": 4, "Nj": 3,
+        "latitudeOfFirstGridPointInDegrees": 90, "latitudeOfLastGridPointInDegrees": -90,
+        "longitudeOfFirstGridPointInDegrees": 0, "longitudeOfLastGridPointInDegrees": 270,
+        "iDirectionIncrementInDegrees": 90, "jDirectionIncrementInDegrees": 90,
+        "iScansNegatively": 0, "jScansPositively": 0, "jPointsAreConsecutive": 0, "alternativeRowScanning": 0,
+    }
+
+
 @pytest.mark.parametrize("south_first", [False, True])
-def test_z3fdb_lonlat_scan_order(monkeypatch, grib_message, south_first):
+def test_z3fdb_lonlat_scan_order(monkeypatch, grib_message, lonlat_grid_keys, south_first):
     """Use the decoded dimensions and scan direction while keeping field data lazy."""
-    message = grib_message("regular_ll", Ni=4, Nj=3, latitudeOfFirstGridPointInDegrees=-90 if south_first else 90)
+    if south_first:
+        lonlat_grid_keys.update(
+            latitudeOfFirstGridPointInDegrees=-90, latitudeOfLastGridPointInDegrees=90, jScansPositively=1
+        )
+    message = grib_message("regular_ll", **lonlat_grid_keys)
     handle = ecc.codes_new_from_message(message)
     try:
         ecc.codes_set_values(handle, np.arange(12))
@@ -612,6 +628,58 @@ def test_z3fdb_lonlat_scan_order(monkeypatch, grib_message, south_first):
     np.testing.assert_array_equal(result.lon, [0, 90, 180, 270])
     np.testing.assert_array_equal(result.lat, [90, 0, -90])
     assert "original" in result.attrs["history"]
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"longitudeOfFirstGridPointInDegrees": 45, "longitudeOfLastGridPointInDegrees": 315},
+        {"latitudeOfFirstGridPointInDegrees": 60, "latitudeOfLastGridPointInDegrees": -60,
+         "jDirectionIncrementInDegrees": 60},
+        {"longitudeOfLastGridPointInDegrees": 180, "iDirectionIncrementInDegrees": 60},
+        {"longitudeOfLastGridPointInDegrees": 180},
+        {"latitudeOfLastGridPointInDegrees": 0},
+        {"iDirectionIncrementInDegrees": 60},
+        {"jDirectionIncrementInDegrees": 45},
+        {"iScansNegatively": 1},
+        {"jScansPositively": 1},
+        {"jPointsAreConsecutive": 1},
+        {"alternativeRowScanning": 1},
+        {"Ni": 1},
+        {"Nj": 1},
+    ],
+    ids=["shifted", "cell-centred", "regional", "last-longitude", "last-latitude", "longitude-spacing",
+         "latitude-spacing", "westward", "inconsistent-latitude-scan", "column-major", "alternating-rows",
+         "single-longitude", "single-latitude"],
+)
+def test_z3fdb_lonlat_rejects_unsupported_profiles(monkeypatch, grib_message, lonlat_grid_keys, overrides):
+    """Reject unsupported layouts before assigning misleading coordinates or reading values."""
+    keys = lonlat_grid_keys | overrides
+    message = grib_message("regular_ll", **keys)
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=BytesIO(message)))))
+    grid = z3fdb_opener._read_grib_grid({"param": 130})
+    data = xr.Dataset({"test": (("time", "cell"), da.zeros((1, keys["Ni"] * keys["Nj"])))})
+    with pytest.raises(ValueError, match="Unsupported z3fdb regular lon/lat grid profile"):
+        z3fdb_opener.add_coordinates(data, grid)
+    assert "lon" not in data.coords
+
+
+@pytest.mark.parametrize("edition", [1, 2])
+def test_z3fdb_lonlat_allows_grib_rounding(monkeypatch, grib_message, lonlat_grid_keys, edition):
+    """Recognize global grids whose increments need rounding at the GRIB encoding precision."""
+    keys = lonlat_grid_keys | {
+        "Ni": 512, "Nj": 257, "longitudeOfLastGridPointInDegrees": 360 - 360 / 512,
+        "iDirectionIncrementInDegrees": 360 / 512, "jDirectionIncrementInDegrees": 180 / 256,
+    }
+    keys.pop("alternativeRowScanning")  # GRIB1 exposes this flag as read-only zero.
+    message = grib_message("regular_ll", edition=edition, **keys)
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=BytesIO(message)))))
+    grid = z3fdb_opener._read_grib_grid({"param": 130})
+    data = xr.Dataset({"test": (("time", "cell"), da.zeros((1, 512 * 257)))})
+    result = z3fdb_opener.add_coordinates(data, grid)
+    assert isinstance(result.test.data, da.Array)
+    np.testing.assert_allclose(result.lon, np.linspace(0, 360, 512, endpoint=False))
+    np.testing.assert_allclose(result.lat, np.linspace(90, -90, 257))
 
 
 @pytest.mark.parametrize("config", [None, "/fdb.yaml"])
