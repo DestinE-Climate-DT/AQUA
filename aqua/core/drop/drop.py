@@ -20,7 +20,6 @@ from time import time
 
 import dask
 import pandas as pd
-import xarray as xr
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.daskcluster import DaskCluster
@@ -38,8 +37,6 @@ from .drop_util import move_tmp_files
 from .drop_writer_icechunk import IcechunkWriter
 from .drop_writer_netcdf import NetCDFWriter
 from .drop_writer_zarr import ZarrWriter
-
-xr.set_options(keep_attrs=True)
 
 # available statistics are synchronized with the TimStat class
 available_stats = TimStat().available_stats

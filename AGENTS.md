@@ -114,7 +114,7 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
 
 ## Data Handling
 
-- Set `xr.set_options(keep_attrs=True)` at the top of each module performing xarray operations *(currently set per-module; no global consolidation exists yet)*
+- Do not call `xr.set_options(keep_attrs=True)` at module level: it mutates xarray's process-global state, and xarray already keeps attrs in unambiguous cases. Where attrs must survive (e.g. `apply_ufunc`, `map`, `load`), pass `keep_attrs=True` to the call or wrap the block in `with xr.set_options(keep_attrs=True):`
 - All xarray operations are lazy by default — do not force `.compute()` early (see Dask & HPC)
 - Preserve provenance: after any transform that changes variables, coordinates, grids, or statistics, call `log_history(data, msg)` and keep `AQUA_*` attrs updated via `set_attrs()` / `update_metadata()`
 - **DataArray → Dataset conversion silently drops Dataset-level attrs** — always copy them explicitly:
@@ -164,8 +164,6 @@ Custom exceptions live in `aqua.core.exceptions`. Raise them in core modules; ca
 import xarray as xr
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import to_list
-
-xr.set_options(keep_attrs=True)
 
 
 class MyProcessor:
