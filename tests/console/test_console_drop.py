@@ -1,4 +1,4 @@
-"""Network- and data-backed console workflow tests."""
+"""Data-backed console workflow tests."""
 
 import os
 
@@ -11,8 +11,8 @@ MACHINE = "github"
 pytestmark = pytest.mark.console
 
 
-def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input):
-    """Exercise DROP through the console with a remotely activated catalog."""
+def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input, fake_github):
+    """Exercise DROP through the console with a catalog added from the (local stand-in of the) GitHub repository."""
     mydir = str(tmp_path)
     set_home(mydir)
 

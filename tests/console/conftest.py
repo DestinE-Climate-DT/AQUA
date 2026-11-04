@@ -2,11 +2,14 @@
 
 import io
 import os
+import shutil
 import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import fsspec
 import pytest
+from fsspec.implementations.dirfs import DirFileSystem
 
 from aqua.core.console.main import AquaConsole
 
@@ -25,6 +28,47 @@ def _restore_environ():
     """Restore the environment after each console test: commands such as `aqua analysis` export AQUA_* variables."""
     with patch.dict(os.environ):
         yield
+
+
+class _LocalGitHubFileSystem(DirFileSystem):
+    """Directory exposed as the fsspec GitHub filesystem, whose `ls` returns plain paths by default."""
+
+    def ls(self, path, detail=False, **kwargs):
+        return super().ls(path, detail=detail, **kwargs)
+
+
+@pytest.fixture(scope="session")
+def fake_github_repo(tmp_path_factory, request):
+    """A local stand-in of the Climate-DT-catalog repository: the installed `ci` catalog and two empty catalogs.
+
+    The `ci` catalog is the one of the session-private configuration (see tests/utils_tests/config.py).
+    """
+    root = tmp_path_factory.mktemp("fake_github")
+    shutil.copytree(Path(request.config._aqua_private_config) / "catalogs" / "ci", root / "catalogs" / "ci")
+    for name in ("obs", "climatedt-gen2"):
+        catalog = root / "catalogs" / name
+        catalog.mkdir(parents=True)
+        (catalog / "catalog.yaml").write_text("sources: {}\n")
+        (catalog / "machine.yaml").write_text("{}\n")
+    return root
+
+
+@pytest.fixture
+def fake_github(monkeypatch, fake_github_repo):
+    """Serve the GitHub catalog repository from a local directory.
+
+    The fsspec GitHub client is the only thing replaced; the token is removed so that the console takes the
+    unauthenticated fsspec path. The real GitHub access is covered by the `network` test in test_console_github.py.
+    """
+    real_filesystem = fsspec.filesystem
+
+    def filesystem(protocol, *args, **kwargs):
+        if protocol == "github":
+            return _LocalGitHubFileSystem(path=str(fake_github_repo), fs=real_filesystem("file"))
+        return real_filesystem(protocol, *args, **kwargs)
+
+    monkeypatch.setattr(fsspec, "filesystem", filesystem)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
 
 
 def _hide_aqua_config():

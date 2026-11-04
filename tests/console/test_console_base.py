@@ -29,7 +29,7 @@ class TestAquaConsole:
         assert pypath[0] == result.stdout.strip()
 
     # base set of tests
-    def test_console_base(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input):
+    def test_console_base(self, tmp_path, set_home, run_aqua, run_aqua_console_with_input, fake_github):
         """Basic tests
 
         Args:

@@ -54,6 +54,7 @@ def test_valid_selection_no_brd(sample_data):
 
 
 @pytest.mark.aqua
+@pytest.mark.network  # downloads the Natural Earth shapefile on first use
 def test_selection_regionmask(sample_data):
     """Test selection using regionmask"""
     # Define a simple regionmask region
