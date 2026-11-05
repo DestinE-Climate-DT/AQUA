@@ -11,6 +11,7 @@ ClimateDT workflow modifications:
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
 Unreleased in the current development version (target v1.2.3):
+- The analysis report adds a memory and wall time table built from the `[profile]` line logged by the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the peak memory of each tool process (#TBD)
 Complete list:
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)

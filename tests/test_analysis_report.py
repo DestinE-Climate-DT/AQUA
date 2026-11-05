@@ -208,3 +208,74 @@ def test_analysis_setup_checker_failure_report(analysis, tmp_path):
     assert "`setup_checker.log`" in text and "No data found" in text
     assert "atmosphere2d-biases.log" not in text
     assert "## Output files" not in text
+
+
+PROFILE_SHARED = (
+    "2026-10-15 13:59:30 :: timeseries profiler :: INFO     -> [profile] timeseries: wall=312.4s "
+    "driver_peak_rss=4.2GiB cluster_peak_mem=18.3GiB (shared cluster, 32 workers)\n"
+)
+PROFILE_PRIVATE = (
+    "2026-10-15 13:59:30 :: biases profiler :: INFO     -> [profile] biases: wall=61.0s "
+    "driver_peak_rss=900.0MiB cluster_peak_mem=2.5GiB (private cluster, 4 workers)\n"
+)
+PROFILE_NOCLUSTER = (
+    f"{RED}2026-10-15 13:59:30 :: ecmean profiler :: INFO     -> [profile] ecmean: wall=5.5s driver_peak_rss=12.0GiB{RESET}\n"
+)
+
+
+def test_report_profile_parsing(tmp_path):
+    """The [profile] line of each tool is parsed into bytes, with or without the cluster part."""
+    start = pd.Timestamp.now()
+    results = [
+        _result(_write(tmp_path / "a-timeseries.log", CLEAN_LOG + PROFILE_SHARED), 0, start),
+        _result(_write(tmp_path / "a-ecmean.log", PROFILE_NOCLUSTER), 0, start),
+        _result(_write(tmp_path / "a-biases.log", CLEAN_LOG), 0, start),
+    ]
+    report = AnalysisReport(str(tmp_path), run_start=start, tool_results=results, scan_outputs=False)
+    report.collect()
+    profiles = {log["name"]: log["profile"] for log in report.logs}
+
+    shared = profiles["a-timeseries.log"]
+    assert shared["name"] == "timeseries"
+    assert shared["wall_seconds"] == 312.4
+    assert shared["driver_peak_bytes"] == int(4.2 * 1024**3)
+    assert shared["cluster_peak_bytes"] == int(18.3 * 1024**3)
+    assert shared["cluster_kind"] == "shared"
+    assert shared["nworkers"] == 32
+
+    nocluster = profiles["a-ecmean.log"]
+    assert nocluster["driver_peak_bytes"] == 12 * 1024**3
+    assert nocluster["cluster_peak_bytes"] is None
+    assert nocluster["cluster_kind"] is None
+    assert nocluster["nworkers"] is None
+
+    assert profiles["a-biases.log"] is None
+    # a profile line is INFO and does not count as a message
+    assert not report.logs[0]["messages"]
+
+
+def test_report_profile_table_sorted_by_driver_memory(tmp_path):
+    """The memory table lists the tools from the largest driver peak, with the shared-cluster note."""
+    start = pd.Timestamp.now()
+    results = [
+        _result(_write(tmp_path / "a-biases.log", PROFILE_PRIVATE), 0, start),
+        _result(_write(tmp_path / "a-timeseries.log", PROFILE_SHARED), 0, start),
+        _result(_write(tmp_path / "a-ecmean.log", PROFILE_NOCLUSTER), 0, start),
+    ]
+    text = AnalysisReport(str(tmp_path), run_start=start, tool_results=results, scan_outputs=False).to_markdown()
+
+    assert "## Memory and wall time" in text
+    assert "--nmaxprocesses 1" in text
+    rows = [line for line in text.splitlines() if line.startswith("| `a-")]
+    assert [row.split("|")[1].strip() for row in rows] == ["`a-ecmean.log`", "`a-timeseries.log`", "`a-biases.log`"]
+    assert "| `a-timeseries.log` | timeseries | 0:05:12 | 4.2GiB | 18.3GiB | shared, 32 workers |" in text
+    assert "| `a-biases.log` | biases | 0:01:01 | 900.0MiB | 2.5GiB | private, 4 workers |" in text
+    assert "| `a-ecmean.log` | ecmean | 0:00:05 | 12.0GiB | - | none |" in text
+
+
+def test_report_without_profile_lines_has_no_memory_section(tmp_path):
+    """Logs from tools that do not profile leave the report unchanged."""
+    start = pd.Timestamp.now()
+    results = [_result(_write(tmp_path / "a-biases.log", CLEAN_LOG), 0, start)]
+    text = AnalysisReport(str(tmp_path), run_start=start, tool_results=results, scan_outputs=False).to_markdown()
+    assert "## Memory and wall time" not in text
