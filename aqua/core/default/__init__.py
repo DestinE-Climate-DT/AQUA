@@ -43,7 +43,7 @@ DEFAULT_DROP_GRID = "lon-lat-r100"
 DEFAULT_DROP_CHUNK_TARGET = "128MiB"  # target size of the read chunks written in DROP catalog entries
 
 # Graphics defaults (font sizes are set in the aqua.mplstyle style file)
-DEFAULT_FIGSIZE_HORIZONTAL = (10, 5)
+DEFAULT_FIGURE_WIDTH = 10
 
 # Regridder defaults
 DEFAULT_WEIGHTS_AREAS_PARAMETERS = ["zoom"]
