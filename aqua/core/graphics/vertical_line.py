@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list, unit_to_latex
+from aqua.core.util import figure_size, to_list, unit_to_latex
 
 from .styles import ConfigStyle
 
@@ -25,7 +25,7 @@ def plot_vertical_lines(
     logscale: bool = False,
     invert_yaxis: bool = True,
     return_fig: bool = True,
-    figsize: Tuple[int, int] = (6, 10),
+    figsize: Tuple[int, int] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
     ax_pos: Tuple[int, int, int] = (1, 1, 1),
@@ -50,7 +50,7 @@ def plot_vertical_lines(
         logscale (bool, optional): Use log scale for y-axis if True.
         invert_yaxis (bool, optional): Invert y-axis if True (default True).
         return_fig (bool, optional): If True, return (fig, ax).
-        figsize (Tuple[int, int], optional): Figure size.
+        figsize (Tuple[int, int], optional): Figure size. Default is figure_size(1.2), with the common width.
         fig (plt.Figure, optional): Optional figure to plot on.
         ax (plt.Axes, optional): Optional axes to plot on.
         ax_pos (Tuple[int, int, int], optional): Position of subplot.
@@ -63,7 +63,7 @@ def plot_vertical_lines(
     labels = to_list(labels)
 
     # Prepare figure and axis
-    fig = fig or plt.figure(figsize=figsize)
+    fig = fig or plt.figure(figsize=figsize or figure_size(1.2), layout="constrained")  # margins fitted to the labels
     ax = ax or fig.add_subplot(*ax_pos)
 
     # Select vertical levels

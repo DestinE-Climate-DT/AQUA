@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
 import xarray as xr
 
-from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
-from aqua.core.util import coord_names, to_list
+from aqua.core.util import coord_names, figure_size, to_list
 
 from .styles import ConfigStyle
 
@@ -17,7 +16,7 @@ def plot_lat_lon_profiles(
     style: str | None = None,
     fig: plt.Figure | None = None,
     ax: plt.Axes | None = None,
-    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
+    figsize: tuple = None,
     title: str | None = None,
     loglevel: str = "WARNING",
 ):
@@ -35,7 +34,7 @@ def plot_lat_lon_profiles(
         style (str | None, optional): Style for the plot.
         fig (plt.Figure | None, optional): Matplotlib figure object.
         ax (plt.Axes | None, optional): Matplotlib axes object.
-        figsize (tuple, optional): Figure size if a new figure is created.
+        figsize (tuple, optional): Figure size if a new figure is created. Defaults to figure_size(0.5), with the common width.
         title (str | None, optional): Title for the plot.
         loglevel (str, optional): Logging level.
 
@@ -50,7 +49,7 @@ def plot_lat_lon_profiles(
 
     # Create figure if needed
     if fig is None:
-        fig = plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=figsize or figure_size(0.5), layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
 

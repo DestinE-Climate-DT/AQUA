@@ -8,9 +8,8 @@ import xarray as xr
 from matplotlib import colors as mcolors
 from metpy.units import units
 
-from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list, unit_to_latex
+from aqua.core.util import figure_size, to_list, unit_to_latex
 
 from .styles import ConfigStyle
 
@@ -23,7 +22,7 @@ def boxplot(
     add_mean_line: bool = True,
     title: str = None,
     style: str = None,
-    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
+    figsize: tuple = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -38,7 +37,7 @@ def boxplot(
         add_mean_line (bool, optional): Whether to add dashed lines for means.
         title (str, optional): Title for the plot.
         style (str, optional): Style to apply to the plot.
-        figsize (tuple, optional): Figure size.
+        figsize (tuple, optional): Figure size. Defaults to figure_size(0.5), with the common width.
         loglevel (str): Logging level, unused but kept for compatibility.
 
     Returns:
@@ -89,7 +88,7 @@ def boxplot(
     df = pd.DataFrame.from_records(records)
 
     # Create figure
-    fig, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(figsize=figsize or figure_size(0.5))
 
     # Explicit order for variables and models
     order = [labels[v] for v in variables]

@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+from aqua.core.util import evaluate_colorbar_limits, figure_size, unit_to_latex
 from aqua.core.util.graphics import add_contour_labels
 
 from .styles import ConfigStyle
@@ -31,7 +31,7 @@ def plot_vertical_profile(
     cmap: str = "RdBu_r",
     cbar_label: Optional[str] = None,
     return_fig: bool = False,
-    figsize: Tuple[int, int] = (10, 8),
+    figsize: Tuple[int, int] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
     ax_pos: Tuple[int, int, int] = (1, 1, 1),
@@ -60,7 +60,7 @@ def plot_vertical_profile(
         cmap (str, optional): Colormap to use (default 'RdBu_r').
         cbar_label (str, optional): Label for the colorbar. Generated from data if None.
         return_fig (bool, optional): If True, return (fig, ax).
-        figsize (Tuple[int, int], optional): Figure size.
+        figsize (Tuple[int, int], optional): Figure size. Default is figure_size(0.8), with the common width.
         fig (plt.Figure, optional): Optional figure to plot on.
         ax (plt.Axes, optional): Optional axes to plot on.
         ax_pos (Tuple[int, int, int], optional): Position of subplot.
@@ -88,7 +88,7 @@ def plot_vertical_profile(
     levels = np.linspace(vmin, vmax, nlevels)
 
     # Prepare figure and axis
-    fig = fig or plt.figure(figsize=figsize)
+    fig = fig or plt.figure(figsize=figsize or figure_size(0.8), layout="constrained")  # margins fitted to the labels
     ax = ax or fig.add_subplot(*ax_pos)
 
     # Plot

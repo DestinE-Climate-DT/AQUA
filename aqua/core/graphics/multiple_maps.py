@@ -9,7 +9,7 @@ import numpy as np
 import xarray as xr
 
 from aqua.core.logger import log_configure
-from aqua.core.util import cbar_get_label, evaluate_colorbar_limits, plot_box
+from aqua.core.util import cbar_get_label, evaluate_colorbar_limits, grid_figure_size, plot_box
 
 from .single_map import plot_single_map, plot_single_map_diff
 from .styles import ConfigStyle
@@ -51,7 +51,7 @@ def plot_maps(
         proj (cartopy.crs.Projection,opt): projection, default is ccrs.Robinson()
         extent (list,opt):    extent of the map, default is None
         style (str,opt):      style for the plot, default is the AQUA style
-        figsize (tuple,opt):  figure size, default is (6,6) for each map. Here the full figure size is set.
+        figsize (tuple,opt):  figure size, default is grid_figure_size(nrows, ncols), with the common width.
         vmin (float,opt):     minimum value for the colorbar, default is None
         vmax (float,opt):     maximum value for the colorbar, default is None
         nlevels (int,opt):    number of levels for the colorbar, default is 11
@@ -83,10 +83,11 @@ def plot_maps(
 
     # Generate the figure
     nrows, ncols = plot_box(len(maps))
-    figsize = figsize if figsize is not None else (ncols * 6, nrows * 5 + 1)
+    figsize = figsize if figsize is not None else grid_figure_size(nrows, ncols)
     logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
 
-    fig = plt.figure(figsize=figsize)
+    # compressed layout: margins fitted to the labels, without the empty space around maps of fixed aspect
+    fig = plt.figure(figsize=figsize, layout="compressed")
 
     # Evaluate min and max values for the common colorbar
     if vmin is None or vmax is None or sym:
@@ -118,11 +119,8 @@ def plot_maps(
             **kwargs,
         )
 
-    # Adjust the location of the subplots on the page to make room for the colorbar
-    fig.subplots_adjust(bottom=0.25, top=0.87, left=0.05, right=0.95, wspace=0.1, hspace=0.2)
-
-    # Add a colorbar axis at the bottom of the graph
-    cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
+    # Common colorbar below all the maps, placed by the layout engine
+    map_axes = list(fig.axes)
 
     cbar_label = cbar_get_label(data=maps[0], cbar_label=cbar_label, loglevel=loglevel)
     logger.debug("Setting colorbar label to %s", cbar_label)
@@ -130,7 +128,7 @@ def plot_maps(
     mappable = ax.collections[0]
 
     # Add the colorbar
-    cbar = fig.colorbar(mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label)
+    cbar = fig.colorbar(mappable, ax=map_axes, location="bottom", shrink=0.6, aspect=40, label=cbar_label)
 
     # Make the colorbar ticks symmetrical if sym=True
     if sym:
@@ -190,7 +188,7 @@ def plot_maps_diff(
         proj (cartopy.crs.Projection,opt): projection, default is ccrs.Robinson()
         extent (list,opt):    extent of the map, default is None
         style (str,opt):      style for the plot, default is the AQUA style
-        figsize (tuple,opt):  figure size, default is (6,6) for each map. Here the full figure size is set.
+        figsize (tuple,opt):  figure size, default is grid_figure_size(nrows, ncols), with the common width.
         vmin_fill (float,opt):     minimum value for the colorbar of the filled map, default is None
         vmax_fill (float,opt):     maximum value for the colorbar of the filled map, default is None
         vmin_contour (float,opt): minimum value for the colorbar of the contour map, default is None
@@ -233,10 +231,11 @@ def plot_maps_diff(
 
     # Generate the figure
     nrows, ncols = plot_box(len(diffs))
-    figsize = figsize if figsize is not None else (ncols * 6, nrows * 5 + 1)
+    figsize = figsize if figsize is not None else grid_figure_size(nrows, ncols)
     logger.debug("Creating a %d x %d grid with figsize %s", nrows, ncols, figsize)
 
-    fig = plt.figure(figsize=figsize)
+    # compressed layout: margins fitted to the labels, without the empty space around maps of fixed aspect
+    fig = plt.figure(figsize=figsize, layout="compressed")
 
     # Evaluate min and max values for the common colorbar
     if vmin_fill is None or vmax_fill is None or sym:
@@ -274,11 +273,8 @@ def plot_maps_diff(
             **kwargs,
         )
 
-    # Adjust the location of the subplots on the page to make room for the colorbar
-    fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.1, hspace=0.2)
-
-    # Add a colorbar axis at the bottom of the graph
-    cbar_ax = fig.add_axes([0.2, 0.15, 0.6, 0.03])
+    # Common colorbar below all the maps, placed by the layout engine
+    map_axes = list(fig.axes)
 
     cbar_label = cbar_get_label(data=diffs[0], cbar_label=cbar_label, loglevel=loglevel)
     logger.debug("Setting colorbar label to %s", cbar_label)
@@ -286,7 +282,7 @@ def plot_maps_diff(
     mappable = ax.collections[0]
 
     # Add the colorbar
-    cbar = fig.colorbar(mappable, cax=cbar_ax, orientation="horizontal", label=cbar_label)
+    cbar = fig.colorbar(mappable, ax=map_axes, location="bottom", shrink=0.6, aspect=40, label=cbar_label)
 
     # Make the colorbar ticks symmetrical if sym=True
     if sym:

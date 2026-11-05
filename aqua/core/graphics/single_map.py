@@ -29,7 +29,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels
+from aqua.core.util.graphics import add_contour_labels, figure_size, get_decimals, isnpixok, prettify_levels
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -44,7 +44,7 @@ def plot_single_map(
     extent: Optional[list] = None,
     coastlines: bool = True,
     style: Optional[str] = None,
-    figsize: tuple = (11, 8.5),
+    figsize: tuple = None,
     nlevels: int = 11,
     vmin: Optional[float] = None,
     vmax: Optional[float] = None,
@@ -76,7 +76,7 @@ def plot_single_map(
         extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
         coastlines (bool, optional): If True, add coastlines. Defaults to True.
         style (str, optional):       Style to use. Defaults to None (aqua style).
-        figsize (tuple, optional):   Figure size. Defaults to (11, 8.5).
+        figsize (tuple, optional):   Figure size. Defaults to figure_size(0.8), with the common width.
         nlevels (int, optional):     Number of levels for the contour map. Defaults to 11.
         vmin (float, optional):      Minimum value for the colorbar. Defaults to None.
         vmax (float, optional):      Maximum value for the colorbar.
@@ -132,7 +132,8 @@ def plot_single_map(
             logger.error("Cannot add cyclic longitude: %s", e)
 
     if fig is None:
-        fig = plt.figure(figsize=figsize)
+        # compressed layout: margins fitted to the labels, without the empty space around maps of fixed aspect
+        fig = plt.figure(figsize=figsize or figure_size(0.8), layout="compressed")
     if ax is None:
         ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2], projection=proj)
 
@@ -222,16 +223,11 @@ def plot_single_map(
             draw_manual_gridlines(ax=ax, lon_interval=30, lat_interval=10, zorder=50)
 
     if cbar:
-        # Adjust the location of the subplots on the page to make room for the colorbar
-        fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.1, hspace=0.5)
-
-        # Add a colorbar axis at the bottom of the graph
-        cbar_ax = fig.add_axes([0.1, 0.15, 0.8, 0.02])
-
         cbar_label = cbar_get_label(data, cbar_label=cbar_label, loglevel=loglevel)
         logger.debug(f"Setting colorbar label to {cbar_label}")
 
-        cbar = fig.colorbar(cs, cax=cbar_ax, orientation="horizontal", label=cbar_label)
+        # Colorbar below the map, attached to its axes so that the layout engine places it
+        cbar = fig.colorbar(cs, ax=ax, location="bottom", shrink=0.8, aspect=40, label=cbar_label)
 
         cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", None)
         cbar_ticks = generate_colorbar_ticks(
@@ -347,7 +343,7 @@ def plot_single_map_diff(
 
     if np.array_equal(np.nan_to_num(data.values), np.nan_to_num(data_ref.values)):
         logger.warning("The values are exactly the same (ignoring NaNs), no difference to plot")
-        fig = plt.figure(figsize=kwargs.get("figsize", (11, 8.5)))
+        fig = plt.figure(figsize=kwargs.get("figsize") or figure_size(0.8), layout="compressed")
         ax = fig.add_subplot(111, projection=proj)
     else:
         fig, ax = plot_single_map(

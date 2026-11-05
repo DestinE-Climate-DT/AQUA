@@ -6,7 +6,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, to_list
+from aqua.core.util import evaluate_colorbar_limits, figure_size, to_list
 
 from .styles import ConfigStyle
 
@@ -108,7 +108,7 @@ def plot_gregory_monthly(
 
     if fig is None and ax is None:
         logger.debug("Creating new figure and axis")
-        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        fig, ax = plt.subplots(1, 1, figsize=figure_size(1), layout="constrained")
 
     if xlabel is None:
         xlabel = "2 m Temperature [°C]"
@@ -236,7 +236,7 @@ def plot_gregory_annual(
 
     if fig is None and ax is None:
         logger.debug("Creating new figure and axis")
-        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        fig, ax = plt.subplots(1, 1, figsize=figure_size(1), layout="constrained")
 
     if xlabel is None:
         xlabel = "2 m Temperature [°C]"

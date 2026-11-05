@@ -5,7 +5,7 @@ from .catalog_entry import replace_intake_vars, replace_urlpath_jinja, replace_u
 from .cli_util import template_parse_arguments
 from .eccodes import get_eccodes_attr
 from .metadata import RegridderMetadata
-from .graphics import add_cyclic_lon, plot_box, minmax_maps
+from .graphics import add_cyclic_lon, plot_box, minmax_maps, figure_size, grid_figure_size
 from .graphics import evaluate_colorbar_limits, cbar_get_label, set_map_title
 from .graphics import coord_names, ticks_round, set_ticks, generate_colorbar_ticks
 from .graphics import apply_circular_window
@@ -34,7 +34,7 @@ __all__ = ['replace_intake_vars', 'replace_urlpath_jinja', 'replace_urlpath_wild
            'template_parse_arguments',
            'get_eccodes_attr',
            'RegridderMetadata',
-           'add_cyclic_lon', 'plot_box', 'minmax_maps',
+           'add_cyclic_lon', 'plot_box', 'minmax_maps', 'figure_size', 'grid_figure_size',
            'evaluate_colorbar_limits', 'cbar_get_label', 'set_map_title',
            'coord_names', 'ticks_round', 'set_ticks', 'generate_colorbar_ticks',
            'apply_circular_window',

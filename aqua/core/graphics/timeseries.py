@@ -9,9 +9,8 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import xarray as xr
 
-from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list
+from aqua.core.util import figure_size, to_list
 
 from .styles import ConfigStyle
 from .util_timeseries import _plot_lx, plot_timeseries_data, plot_timeseries_ensemble, plot_timeseries_ref_data
@@ -36,7 +35,7 @@ def plot_timeseries(
     style: Optional[str] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
-    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
+    figsize: tuple = None,
     title: Optional[str] = None,
     colors: Optional[list] = None,
     loglevel: str = "WARNING",
@@ -66,7 +65,7 @@ def plot_timeseries(
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
-        figsize (tuple): size of the figure
+        figsize (tuple): size of the figure. Defaults to figure_size(0.5), with the common width.
         title (str): title of the plot
         colors (list of str): colors to use for the plot lines
         loglevel (str): logging level
@@ -79,7 +78,7 @@ def plot_timeseries(
     realization = False
 
     if fig is None and ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        fig, ax = plt.subplots(1, 1, figsize=figsize or figure_size(0.5), layout="constrained")  # margins fitted to the labels
 
     if (monthly_data is not None and ens_monthly_data is not None) or (
         annual_data is not None and ens_annual_data is not None
@@ -197,7 +196,7 @@ def plot_seasonalcycle(
     data_labels: Optional[list] = None,
     ref_label: Optional[str] = None,
     style: Optional[str] = None,
-    figsize: tuple = (6, 4),
+    figsize: tuple = None,
     title: Optional[str] = None,
     fig: plt.Figure = None,
     ax: plt.Axes = None,
@@ -213,7 +212,7 @@ def plot_seasonalcycle(
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
-        figsize (tuple): size of the figure. Defaults to (6, 4).
+        figsize (tuple): size of the figure. Defaults to figure_size(0.67), with the common width.
         title (str): title of the plot. Defaults to None.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
@@ -227,7 +226,7 @@ def plot_seasonalcycle(
     ConfigStyle(style=style, loglevel=loglevel)
 
     if fig is None:
-        fig = plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=figsize or figure_size(0.67), layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
 

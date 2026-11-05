@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.util import figure_size
+
 from .lat_lon_profiles import plot_lat_lon_profiles
 from .styles import ConfigStyle
 
@@ -14,6 +16,7 @@ def plot_seasonal_lat_lon_profiles(
     data_labels: list = None,
     title: str = None,
     ref_label: str = None,
+    figsize: tuple = None,
 ):
     """
     Plot seasonal lat-lon profiles in a 2x2 subplot layout for the four meteorological seasons.
@@ -44,6 +47,7 @@ def plot_seasonal_lat_lon_profiles(
         data_labels (list, optional): List of data_labels for each subplot. If provided, must have 4 elements.
         title (str, optional): Overall title for the 2x2 subplot figure.
         ref_label (str, optional): Label for the reference data in the legend.
+        figsize (tuple, optional): Figure size in inches. Default is figure_size(0.67), with the common width.
 
     Returns:
         fig, axs: Matplotlib figure and axes objects (2x2 subplot layout).
@@ -77,7 +81,7 @@ def plot_seasonal_lat_lon_profiles(
     else:
         ref_std_data = [None]
 
-    fig, axs = plt.subplots(2, 2, figsize=(12, 8), constrained_layout=True)
+    fig, axs = plt.subplots(2, 2, figsize=figsize or figure_size(0.67), constrained_layout=True)
     axs = axs.flatten()
     season_names = ["DJF", "MAM", "JJA", "SON"]
 
