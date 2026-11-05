@@ -90,6 +90,37 @@ def test_get_eccodes_attr_examples(query, expected_attr):
 
 @pytest.mark.aqua
 @pytest.mark.parametrize(
+    "pid, expected_short_name",
+    [
+        (235288, "avg_tcc"),
+        (164, "tcc"),
+        (228164, "tcc"),
+        (72, "issrd"),
+    ],
+)
+def test_get_eccodes_attr_param_to_shortname(pid, expected_short_name):
+    """Test looking up shortName from paramId."""
+    res = get_eccodes_attr(pid, loglevel="debug")
+    assert res["shortName"] == expected_short_name
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
+    "sn, expected_pid",
+    [
+        ("avg_tcc", "235288"),
+        ("tcc", "228164"),
+        ("issrd", "72"),
+    ],
+)
+def test_get_eccodes_attr_shortname_to_param(sn, expected_pid):
+    """Test looking up paramId from shortName."""
+    res = get_eccodes_attr(sn, loglevel="debug")
+    assert str(res["paramId"]) == expected_pid
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
     "var_str, expected_short_name",
     [
         ("var235288", "avg_tcc"),
