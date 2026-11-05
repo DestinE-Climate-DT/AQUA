@@ -6,15 +6,16 @@ Tests must never read or modify the AQUA configuration installed on the machine
 files, config tests copy files into it. The session therefore works on a throw-away copy.
 """
 
+import os
 import shutil
 import sys
 import tempfile
-from pathlib import Path
 
 from aqua.core.configurer import ConfigContext
 from aqua.core.util import dump_yaml
 
-AQUA_TESTS = Path(__file__).resolve().parents[2] / "AQUA_tests"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+AQUA_TESTS = os.path.join(REPO_ROOT, "AQUA_tests")
 
 # configuration folders shipped with the package under test (and not with the installation)
 PACKAGE_CONFIG_FOLDERS = ("catgen", "data_model", "fixes", "grids", "styles")
@@ -39,33 +40,35 @@ def make_private_config(prefix="aqua_pytest_config_"):
         str: path of the private configuration directory, to be exported as ``AQUA_CONFIG``.
     """
     installed = ConfigContext()
-    source = Path(installed.configdir)
-    package_config = Path(installed.packages.aqua_core_path) / "config"
+    source = installed.configdir
+    package_config = os.path.join(installed.packages.aqua_core_path, "config")
 
     # short path on macOS, as the per-worker TMPDIR in conftest: it may end up in AF_UNIX socket paths
-    target = Path(tempfile.mkdtemp(prefix=prefix, dir="/tmp" if sys.platform == "darwin" else None))
+    target = tempfile.mkdtemp(prefix=prefix, dir="/tmp" if sys.platform == "darwin" else None)
 
     config = dict(installed.config_dict)
     config["paths"] = {
-        "grids": str(AQUA_TESTS / "grids"),
-        "weights": str(AQUA_TESTS / "weights"),
-        "areas": str(AQUA_TESTS / "weights"),
+        "grids": os.path.join(AQUA_TESTS, "grids"),
+        "weights": os.path.join(AQUA_TESTS, "weights"),
+        "areas": os.path.join(AQUA_TESTS, "weights"),
     }
-    dump_yaml(str(target / "config-aqua.yaml"), config)
+    dump_yaml(os.path.join(target, "config-aqua.yaml"), config)
 
     for folder in PACKAGE_CONFIG_FOLDERS:
-        shutil.copytree(package_config / folder, target / folder)
+        shutil.copytree(os.path.join(package_config, folder), os.path.join(target, folder))
 
-    for entry in source.iterdir():
-        if entry.name in ("config-aqua.yaml", "catalogs", *PACKAGE_CONFIG_FOLDERS):
+    for name in os.listdir(source):
+        if name in ("config-aqua.yaml", "catalogs", *PACKAGE_CONFIG_FOLDERS):
             continue
-        if entry.is_dir():
-            shutil.copytree(entry, target / entry.name)
+        entry = os.path.join(source, name)
+        if os.path.isdir(entry):
+            shutil.copytree(entry, os.path.join(target, name))
         else:
-            shutil.copy2(entry, target / entry.name)
+            shutil.copy2(entry, os.path.join(target, name))
 
     for catalog in config.get("catalog", []):
-        if (source / "catalogs" / catalog).is_dir():
-            shutil.copytree(source / "catalogs" / catalog, target / "catalogs" / catalog)
+        catalog_dir = os.path.join(source, "catalogs", catalog)
+        if os.path.isdir(catalog_dir):
+            shutil.copytree(catalog_dir, os.path.join(target, "catalogs", catalog))
 
-    return str(target)
+    return target

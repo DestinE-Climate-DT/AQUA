@@ -188,6 +188,8 @@ class MyProcessor:
 
 All code is linted with **Ruff**: no unused imports, no bare `except`, consistent quoting, line length ≤ 127. Run `ruff check --fix` before submitting.
 
+- Use `os.path` (`os.path.join`, `os.path.isdir`, ...) for path handling instead of `pathlib.Path`, in both package code and tests
+
 ---
 
 ## External Dependencies

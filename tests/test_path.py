@@ -1,5 +1,7 @@
 """Test path handling"""
 
+import os
+
 import pytest
 from utils_tests import APPROX_REL, AQUA_TESTS, LOGLEVEL
 
@@ -15,9 +17,8 @@ class TestRegridderPath:
 
         # a Reader on a path has no machine paths: weights and areas are written in the current directory
         monkeypatch.chdir(tmp_path)
-        reader = Reader(
-            path=str(AQUA_TESTS / "models/IFS/long/regridded_r18x9.nc"), regrid="r40x20", loglevel=LOGLEVEL, rebuild=True
-        )
+        path = os.path.join(AQUA_TESTS, "models", "IFS", "long", "regridded_r18x9.nc")
+        reader = Reader(path=path, regrid="r40x20", loglevel=LOGLEVEL, rebuild=True)
         data = reader.retrieve()
         sample = data["2t"].isel(time=0)
         rgd = reader.regrid(sample)
