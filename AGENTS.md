@@ -68,6 +68,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 | Env vars, attrs, username | `from aqua.core.util import expand_env_vars, extract_attrs, username` |
 | Paths & catalog config | `from aqua.core.configurer import ConfigContext, ConfigCatalog` |
 | YAML load/merge/dump | `from aqua.core.util import load_yaml, load_multi_yaml, dump_yaml` |
+| Recursive dict merge (override wins, lists replaced) | `from aqua.core.util import deep_merge` |
 | Lock shared config writes | `from aqua.core.lock import SafeFileLock` |
 | Coordinate standardization | `from aqua.core.data_model import DataModel` |
 | Variable/unit fixing | `from aqua.core.fixer import Fixer` |

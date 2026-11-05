@@ -16,7 +16,7 @@ import pandas as pd
 from aqua.core.configurer import ConfigCatalog, ConfigContext
 from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
-from aqua.core.util import create_folder, dump_yaml, format_realization, get_arg, load_yaml, to_list
+from aqua.core.util import create_folder, deep_merge, dump_yaml, format_realization, get_arg, load_yaml, to_list
 
 from .report import AnalysisReport
 
@@ -673,29 +673,9 @@ def resolve_experiment_kind(kinds, kind):
         raise KeyError(f"Experiment kind '{kind}' not found. Available kinds: {', '.join(kinds)}")
 
     # each kind only lists its overrides: resolve it on top of the default kind
-    resolved = _deep_merge(kinds["default"], kinds[kind])
+    resolved = deep_merge(kinds["default"], kinds[kind])
     if KIND_KEY in resolved:
         raise ValueError(f"'{KIND_KEY}' is a reserved key in the experiment kind file.")
     # expose the kind name to the templates
     resolved[KIND_KEY] = kind
     return resolved
-
-
-def _deep_merge(base, override):
-    """
-    Recursively merge two dictionaries, with priority to the override values.
-
-    Args:
-        base (dict): Base dictionary providing the default values.
-        override (dict): Dictionary whose values replace the base ones. Nested dictionaries are merged.
-
-    Returns:
-        dict: A new merged dictionary. Inputs are not modified.
-    """
-    merged = dict(base)
-    for key, value in (override or {}).items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
-            merged[key] = _deep_merge(merged[key], value)
-        else:
-            merged[key] = value
-    return merged
