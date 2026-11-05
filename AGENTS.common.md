@@ -88,7 +88,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
 - **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
-- **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
+- **Imports belong at the top of their modules**: place imports, including `from xxx import yyy`, at the top of the modules where they are used; do not put imports inside function or method definitions.
 - **Pandas is preferred over datetime**: we prefer to use pandas instead of datetime functions. datetime allowed only if the pandas solution would much more complicated.
 
 ---
