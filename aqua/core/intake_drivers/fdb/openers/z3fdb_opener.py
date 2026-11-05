@@ -289,8 +289,7 @@ def _build_zarr_axes(freq, levels, chunks=None, timestyle=None, time=None):
     chunking = Chunking.SINGLE_VALUE  # by default we chunk step-by-step in time
     val = chunks.get("time") if isinstance(chunks, dict) else chunks
     chunk_error = (
-        "z3fdb time chunks must be 'S', a positive frequency (e.g. 'D', 'MS', '6h') "
-        "or a positive integer sample count."
+        "z3fdb time chunks must be 'S', a positive frequency (e.g. 'D', 'MS', '6h') or a positive integer sample count."
     )
     if isinstance(val, str):
         if val.isdigit():
