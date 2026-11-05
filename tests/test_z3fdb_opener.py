@@ -10,7 +10,15 @@ import xarray as xr
 import zarr
 
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
-from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
+from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import (
+    _build_mars_requests,
+    _build_zarr_axes,
+    add_coordinates,
+    add_lonlat_coordinates,
+    rebuild_fdb_zarr_store,
+    reduce_fdb_zarr_store,
+    z3fdb_available,
+)
 
 CMIP6_MARS_REQ = {
     "class": "d1",
@@ -31,10 +39,9 @@ CMIP6_MARS_REQ = {
 }
 FDB_HOME = "/app"
 
-# no module-level marker: the tests that need the FDB libraries and data are marked `fdb`, the others `aqua`
+pytestmark = pytest.mark.fdb
 
 
-@pytest.mark.aqua
 @pytest.mark.parametrize("extra_keys", [{}, {"expid": "o031", "unknown": "ignored"}], ids=["valid-keys", "extra-keys"])
 @pytest.mark.parametrize(
     "startdate, enddate, expected_request",
@@ -89,7 +96,6 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
         xr.testing.assert_equal(restored, sliced)
 
 
-@pytest.mark.aqua
 def test_build_mars_requests_years_and_dates_parsing():
     """Test the years and dates logic in _build_mars_requests.
 
@@ -137,7 +143,6 @@ def test_build_mars_requests_years_and_dates_parsing():
     assert expected.items() <= mars_list[0].items()
 
 
-@pytest.mark.aqua
 def test_build_mars_requests_hourly_partial_days():
     """Test hourly frequency (_build_mars_requests with freq="h").
 
@@ -187,7 +192,6 @@ def test_build_mars_requests_hourly_partial_days():
     assert expected.items() <= mars_list[2].items()
 
 
-@pytest.mark.aqua
 def test_build_mars_requests_daily_and_monthly_start():
     """Test daily and monthly start frequency in _build_mars_requests.
 
@@ -239,11 +243,8 @@ def test_build_mars_requests_daily_and_monthly_start():
     assert expected.items() <= mars_list[1].items()
 
 
-@pytest.mark.fdb
 def test_z3fdb_store_pickling() -> None:
     """Test FdbZarrStore custom pickling and unpickling."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import z3fdb_available
-
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
@@ -270,11 +271,8 @@ def test_z3fdb_store_pickling() -> None:
     assert unpickled is not None
 
 
-@pytest.mark.fdb
 def test_z3fdb_rebuild_parameters() -> None:
     """Test rebuild_fdb_zarr_store parameters and path logic."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import rebuild_fdb_zarr_store, z3fdb_available
-
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
@@ -297,11 +295,8 @@ def test_z3fdb_rebuild_parameters() -> None:
     assert store2 is not None
 
 
-@pytest.mark.fdb
 def test_z3fdb_missing_attrs_raise() -> None:
     """Test reduce_fdb_zarr_store raises TypeError on missing attrs."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import reduce_fdb_zarr_store, z3fdb_available
-
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
@@ -321,11 +316,8 @@ def test_z3fdb_missing_attrs_raise() -> None:
         reduce_fdb_zarr_store(store)
 
 
-@pytest.mark.aqua
 def test_z3fdb_healpix_unstructured_coordinate_checking() -> None:
     """Test healpix unstructured detection logic."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_coordinates
-
     # ds with cell dimension of 48 (12 * 2^2) -> valid healpix count
     ds_valid = xr.Dataset(coords={"cell": np.arange(48)})
     try:
@@ -340,21 +332,15 @@ def test_z3fdb_healpix_unstructured_coordinate_checking() -> None:
     assert "lon" not in ds_out.coords
 
 
-@pytest.mark.aqua
 def test_z3fdb_lonlat_mismatch_aborts() -> None:
     """Test add_lonlat_coordinates aborts on mismatching shape."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_lonlat_coordinates
-
     ds = xr.Dataset(coords={"cell": np.arange(5)})
     ds_out = add_lonlat_coordinates(ds)
     assert ds_out.equals(ds)
 
 
-@pytest.mark.aqua
 def test_build_zarr_axes_chunking() -> None:
     """Test time and vertical chunking options in _build_zarr_axes."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_zarr_axes, z3fdb_available
-
     if not z3fdb_available:
         pytest.skip("z3fdb not available")
 
