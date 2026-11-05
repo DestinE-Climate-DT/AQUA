@@ -199,6 +199,7 @@ class FDBDatesMixin:
             return None
         if "bridge" in fdb_info:
             try:
+                fdb_info["bridge"].setdefault("bridge_start_date", fdb_info["data"]["data_start_date"])
                 fdb_info["bridge"]["bridge_start_date"] = self._validate_info_date(fdb_info, "bridge", "start")
                 fdb_info["bridge"]["bridge_end_date"] = self._validate_info_date(fdb_info, "bridge", "end")
             # if bridge dates are wrongly defined, set the bridge block to None

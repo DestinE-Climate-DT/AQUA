@@ -255,10 +255,14 @@ def test_forecast_initial_offset_keeps_raw_origin(opener):
 
 
 @pytest.mark.parametrize("filename", ["fdb_info_file.yaml", "fdb_info_hpc-only.yaml"])
-def test_gsv_and_z3fdb_resolve_same_availability(monkeypatch, filename):
+@pytest.mark.parametrize("bridge_start", [None, "19900101T0000", "19900102T0000"])
+def test_gsv_and_z3fdb_resolve_same_availability(monkeypatch, filename, bridge_start):
     """Both engines use the same existing workflow file and normalization rules."""
     monkeypatch.setattr(GSVSource, "_check_availability", lambda self: None)
     monkeypatch.setattr(GSVSource, "_post_init", lambda self: None)
+    replacement = f"  bridge_start_date: {bridge_start}\n" if bridge_start else ""
+    contents = INFO_FILE.with_name(filename).read_text().replace("  bridge_start_date: 19900101T0000\n", replacement)
+    monkeypatch.setattr(dates, "open", mock_open(read_data=contents), raising=False)
     kwargs = dict(
         data_start_date="20000101",
         data_end_date="20000102",
@@ -268,6 +272,9 @@ def test_gsv_and_z3fdb_resolve_same_availability(monkeypatch, filename):
     gsv = GSVSource({"param": [130], "expver": "0001"}, engine="gsv", **kwargs)
     data = Z3FDB({"param": [130], "expver": "0001"}, engine="z3fdb", **kwargs)
     z3 = Z3FDBDatasetReader(data)._resolve_dates(data)
+    if filename == "fdb_info_file.yaml":
+        assert z3.bridge_start_date == (bridge_start or "19900101T0000")
+        assert z3.bridge_end_date == "19900102T0000"
     for attr in (
         "data_start_date",
         "data_end_date",

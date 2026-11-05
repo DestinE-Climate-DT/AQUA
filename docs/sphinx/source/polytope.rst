@@ -99,7 +99,8 @@ Before routing requests, z3fdb resolves availability using the same helpers as G
 
 * ``metadata.fdb_info_file`` reads the workflow YAML. Its data dates and HPC
   experiment version override the catalog values; its bridge block, when present,
-  supplies bridge dates and the bridge experiment version.
+  supplies bridge dates and the bridge experiment version. If the workflow file
+  omits ``bridge_start_date``, both GSV and z3fdb use ``data_start_date``.
 * ``data_start_date: auto`` or ``data_end_date: auto`` scans the configured local
   FDB directories using the DestinE schema. As in GSV, automatic end-date discovery
   excludes the newest directory, whose day may be incomplete. Automatic discovery

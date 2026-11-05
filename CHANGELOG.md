@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
+- Default a missing workflow info-file `bridge_start_date` to `data_start_date` for both GSV and z3fdb, preserving bridge routing (#3316).
 - Match GSV HEALPix output with the `ncells` spatial dimension and no synthetic cell index coordinate, preserving lazy data and pixel order (#3316).
 - Document z3fdb native time/vertical chunking constraints and time-chunk errors without automatic fallback, metadata loss with `fix=False`, and GSV-only legacy `timeshift` (#3316).
 - Accept z3fdb frequency-based time chunks such as `MS` and `6h`, including partial bins, leap years and HPC/bridge splits; normalize missing, null and legacy `"None"` request times to midnight for daily/monthly date data (#3316).
