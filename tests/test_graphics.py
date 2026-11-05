@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import xarray as xr
 from matplotlib.font_manager import FontProperties
+from matplotlib.layout_engine import ConstrainedLayoutEngine
 from utils_tests import DPI, LOGLEVEL
 
 from aqua import Reader
@@ -29,6 +30,7 @@ from aqua.core.graphics import (
     plot_vertical_profile,
     plot_vertical_profile_diff,
 )
+from aqua.core.util import figure_size
 
 loglevel = LOGLEVEL
 
@@ -108,6 +110,8 @@ class TestMaps:
         )
         assert fig is not None
         assert ax is not None
+        # Default size: common width, height of a single map
+        assert tuple(fig.get_size_inches()) == pytest.approx(figure_size(0.8))
 
         fig.savefig(tmp_path / "test_plot_single_map.png")
         assert os.path.exists(tmp_path / "test_plot_single_map.png")
@@ -346,6 +350,8 @@ class TestTimeseries:
 
         assert fig is not None
         assert ax is not None
+        # The figure created by the function uses constrained layout (margins fitted to the labels)
+        assert isinstance(fig.get_layout_engine(), ConstrainedLayoutEngine)
 
         fig.savefig(tmp_path / "test_plot_timeseries.png", dpi=DPI)
 
@@ -698,6 +704,16 @@ class TestSeasonalMeans:
         fig.savefig(tmp_path / "test_seasonal_profiles.png", dpi=DPI)
         plt.close(fig)
         assert os.path.exists(tmp_path / "test_seasonal_profiles.png")
+
+    def test_plot_seasonal_lat_lon_profiles_figsize(self):
+        """Test the figsize argument of plot_seasonal_lat_lon_profiles"""
+
+        seasonal_data = [self.djf, self.mam, self.jja, self.son]
+
+        fig, _ = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data, figsize=(10, 6.7), loglevel=loglevel)
+
+        assert tuple(fig.get_size_inches()) == pytest.approx((10, 6.7))
+        plt.close(fig)
 
     def test_plot_seasonal_lat_lon_profiles_with_ref(self, tmp_path):
         """Test plot_seasonal_lat_lon_profiles with reference data"""
