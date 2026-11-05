@@ -13,8 +13,6 @@ from .openers.dates import FDBDatesMixin
 from .openers.timeutil import FDBTimeMixin
 from .openers.z3fdb_opener import _chunk_by_time
 
-xr.set_options(keep_attrs=True)
-
 
 class GSVDatasetReader(BaseReader):
     output_instance = "xarray:Dataset"

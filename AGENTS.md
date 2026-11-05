@@ -89,6 +89,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
+- **Pandas is preferred over datetime**: we prefer to use pandas instead of datetime functions. datetime allowed only if the pandas solution would much more complicated.
 
 ---
 
@@ -113,7 +114,7 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
 
 ## Data Handling
 
-- Set `xr.set_options(keep_attrs=True)` at the top of each module performing xarray operations *(currently set per-module; no global consolidation exists yet)*
+- Do not call `xr.set_options(keep_attrs=True)` at module level: it mutates xarray's process-global state, and xarray already keeps attrs in unambiguous cases. Where attrs must survive (e.g. `apply_ufunc`, `map`, `load`), pass `keep_attrs=True` to the call or wrap the block in `with xr.set_options(keep_attrs=True):`
 - All xarray operations are lazy by default — do not force `.compute()` early (see Dask & HPC)
 - Preserve provenance: after any transform that changes variables, coordinates, grids, or statistics, call `log_history(data, msg)` and keep `AQUA_*` attrs updated via `set_attrs()` / `update_metadata()`
 - **DataArray → Dataset conversion silently drops Dataset-level attrs** — always copy them explicitly:
@@ -163,8 +164,6 @@ Custom exceptions live in `aqua.core.exceptions`. Raise them in core modules; ca
 import xarray as xr
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import to_list
-
-xr.set_options(keep_attrs=True)
 
 
 class MyProcessor:
@@ -225,6 +224,7 @@ def method(self, arg1, arg2=None):
 ## Testing
 
 - Tests live in `tests/`; fixtures and reference assets come from `AQUA_tests/` plus the repository-level `cell_area_*.nc` / `weights_*.nc`
+- Mark every new test with an appropriate marker registered in `pyproject.toml` (for example, `pytestmark = pytest.mark.aqua` at module level or `@pytest.mark.console` on a test). CI runs pytest with `-m` filters and skips unmarked tests; verify collection with the marker expression used by the relevant workflow.
 - Never create new test data files — parametrize over existing grids (`test-r2b0`, `test-pi-2d`, `test-healpix`, `test-hpz3-nested`)
 - Use `Reader(model=..., exp=..., source=...)` to load test data; avoid raw `xr.open_dataset` unless testing I/O directly
 - Prefer shared fixtures in `tests/conftest.py` with `session` or `module` scope to avoid repeated heavy retrievals

@@ -14,9 +14,6 @@ from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
 
 from .styles import ConfigStyle
 
-# set default options for xarray
-xr.set_options(keep_attrs=True)
-
 
 def plot_hovmoller(
     data: xr.DataArray,

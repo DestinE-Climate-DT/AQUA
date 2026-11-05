@@ -16,8 +16,6 @@ from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
 from aqua.core.intake_drivers.stac.stac import _find_item_in_collection, _resolve_href
 
-xr.set_options(keep_attrs=True)
-
 pytestmark = pytest.mark.aqua
 
 
