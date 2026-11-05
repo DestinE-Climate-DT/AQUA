@@ -1,11 +1,17 @@
 import os
+from copy import copy
 
 import pandas as pd
 import xarray as xr
 from intake import BaseReader
 
+from aqua.core.logger import log_configure
+
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
+from .openers.dates import FDBDatesMixin
+from .openers.timeutil import FDBTimeMixin
+from .openers.z3fdb_opener import _chunk_by_time
 
 
 class GSVDatasetReader(BaseReader):
@@ -42,7 +48,7 @@ class PolytopeDatasetReader(BaseReader):
         return open_polytope(data.request, **params)
 
 
-class Z3FDBDatasetReader(BaseReader):
+class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
     output_instance = "xarray:Dataset"
     imports = {}
     optional_imports = {}
@@ -52,6 +58,35 @@ class Z3FDBDatasetReader(BaseReader):
     }
     partition_access = True
 
+    def _resolve_dates(self, data):
+        """Resolve availability into a data copy without retaining per-read state."""
+        resolver = copy(self)
+        resolved = copy(data)
+        resolver._request = resolved.request = data.request.copy()
+        resolver.engine = "z3fdb"
+        resolver.timestyle = data.timestyle
+        resolver.hpc_expver = data.hpc_expver
+        resolver.logger = log_configure(log_level=data.loglevel, log_name="Z3FDBDatasetReader")
+        resolver.fdbhome = data.metadata.get("fdb_home")
+        resolver.fdbpath = data.metadata.get("fdb_path")
+        if data.config_fdb:
+            config_is_path = data.config_fdb.endswith((".yaml", ".yml"))
+            resolver.fdbhome = None if config_is_path else data.config_fdb
+            resolver.fdbpath = data.config_fdb if config_is_path else None
+        resolver.fdb_info_file = data.metadata.get("fdb_info_file")
+        resolver._define_start_end_dates(
+            data.data_start_date, data.data_end_date, data.bridge_start_date, data.bridge_end_date
+        )
+        resolver._define_retrieve_dates(data.startdate, data.enddate)
+        resolved._raw_data_start_date = resolver.data_start_date
+        for attr in ("data_start_date", "data_end_date", "bridge_start_date", "bridge_end_date", "startdate", "enddate"):
+            value = resolver._floor_datetime(getattr(resolver, attr), data.savefreq or data.timestep)
+            setattr(resolver, attr, value)
+            setattr(resolved, attr, value)
+        resolver._check_dates()
+        resolved.hpc_expver = resolver.hpc_expver
+        return resolved
+
     def _get_bridge_date(self, val, default_val):
         """Get bridge date as a pandas Timestamp."""
         if val is None or val == "complete":
@@ -59,35 +94,16 @@ class Z3FDBDatasetReader(BaseReader):
         return pd.Timestamp(str(val))
 
     def _get_frequency_offset(self, freq):
-        """Normalize frequency offset and return pandas offset or Timedelta."""
-        if freq == "h":
-            offset_freq = "1h"
-        elif freq == "D":
-            offset_freq = "1D"
-        else:
-            offset_freq = freq
-
-        try:
-            offset = pd.to_timedelta(offset_freq)
-        except ValueError:
-            if offset_freq in ("MS", "M"):
-                offset = pd.DateOffset(months=1)
-            else:
-                offset = pd.Timedelta(days=1)
-        return offset
+        """Return the saved-frequency offset separating storage periods."""
+        return pd.tseries.frequencies.to_offset({"M": "MS", "Y": "YS"}.get(freq, freq))
 
     def _read(self, data, **kwargs):
 
-        # Pop keys from metadata to keep behavior consistent and extract configuration values
-        hpc_home = data.metadata.pop("fdb_home", None)
-        hpc_path = data.metadata.pop("fdb_path", None)
-        bridge_home = data.metadata.pop("fdb_home_bridge", None)
-        bridge_path = data.metadata.pop("fdb_path_bridge", None)
-
-        if "source_grid_name" in data.metadata:
-            grid = data.metadata.pop("source_grid_name")
-        else:
-            grid = None
+        data = self._resolve_dates(data)
+        hpc_home = data.metadata.get("fdb_home")
+        hpc_path = data.metadata.get("fdb_path")
+        bridge_home = data.metadata.get("fdb_home_bridge")
+        bridge_path = data.metadata.get("fdb_path_bridge")
 
         config_hpc = None
         config_bridge = None
@@ -123,7 +139,7 @@ class Z3FDBDatasetReader(BaseReader):
             b_start_ts = self._get_bridge_date(data.bridge_start_date, data.data_start_date)
             b_end_ts = self._get_bridge_date(data.bridge_end_date, data.data_end_date)
 
-            offset = self._get_frequency_offset(data.savefreq)
+            offset = self._get_frequency_offset(data.savefreq or data.timestep)
 
             # Define intersection of bridge with requested range
             bridge_intersect_start = max(start_ts, b_start_ts)
@@ -133,38 +149,44 @@ class Z3FDBDatasetReader(BaseReader):
             if start_ts < b_start_ts:
                 before_end = min(end_ts, b_start_ts - offset)
                 if start_ts <= before_end:
-                    periods.append((start_ts, before_end, config_hpc))
+                    periods.append((start_ts, before_end, config_hpc, data.hpc_expver))
 
             # 2. Central bridge: [bridge_intersect_start, bridge_intersect_end]
             if bridge_intersect_start <= bridge_intersect_end:
-                periods.append((bridge_intersect_start, bridge_intersect_end, config_bridge))
+                periods.append((bridge_intersect_start, bridge_intersect_end, config_bridge, None))
 
             # 3. After bridge: [bridge_intersect_end + offset, end_ts]
             if end_ts > b_end_ts:
                 after_start = max(start_ts, b_end_ts + offset)
                 if after_start <= end_ts:
-                    periods.append((after_start, end_ts, config_hpc))
+                    periods.append((after_start, end_ts, config_hpc, data.hpc_expver))
         else:
-            periods.append((start_ts, end_ts, config_hpc))
+            periods.append((start_ts, end_ts, config_hpc, data.hpc_expver))
 
         datasets = []
-        for p_start, p_end, p_config in periods:
+        for p_start, p_end, p_config, p_expver in periods:
             p_start_str = p_start.strftime("%Y%m%dT%H%M")
             p_end_str = p_end.strftime("%Y%m%dT%H%M")
 
+            request = data.request.copy()
+            if p_expver:
+                request["expver"] = p_expver
+
             ds = open_z3fdb(
-                data.request,
+                request,
                 startdate=p_start_str,
                 enddate=p_end_str,
                 config=p_config,
                 variables=data.var,
                 levels=data.level,
                 freq=data.savefreq,
-                data_start_date=p_start_str,
-                data_end_date=p_end_str,
+                timestyle=data.timestyle,
+                timestep=data.timestep,
+                timeshift=data.timeshift,
+                data_start_date=data._raw_data_start_date,
+                data_end_date=data.data_end_date,
                 chunks=data.chunks,
                 level_values=data.level_values,
-                grid=grid,
             )
             datasets.append(ds)
 
@@ -176,4 +198,4 @@ class Z3FDBDatasetReader(BaseReader):
 
         combined = xr.concat(datasets, dim="time")
         combined.attrs.update(datasets[0].attrs)
-        return combined
+        return _chunk_by_time(combined, data.chunks)

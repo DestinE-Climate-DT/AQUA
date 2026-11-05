@@ -15,6 +15,7 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Improve z3fdb level selection, grid coordinates, time handling, chunking and HPC/bridge availability/routing; default missing bridge start dates for GSV and z3fdb (#3316).
 - Remove module-level `xr.set_options(keep_attrs=True)` calls, which silently changed xarray's global state on import; xarray already keeps attrs by default and AQUA passes `keep_attrs=True` explicitly where needed. `AGENTS.md` updated accordingly (#3324).
 - Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
 - Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)

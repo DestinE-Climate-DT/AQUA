@@ -1,16 +1,28 @@
 """Tests for z3fdb_opener module in AQUA, specifically focusing on _build_mars_requests."""
 
 import pickle
+import subprocess
+import sys
+from copy import deepcopy
+from io import BytesIO
+from pathlib import Path
 from unittest.mock import Mock
 
+import astropy_healpix
 import dask.array as da
+import eccodes as ecc
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 import zarr
 
+from aqua.core.exceptions import NoDataError
+from aqua.core.intake_drivers.fdb import IntakeFDBSource
+from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
 from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
 from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_mars_requests
+from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
 
 CMIP6_MARS_REQ = {
     "class": "d1",
@@ -46,8 +58,7 @@ pytestmark = pytest.mark.aqua
         (
             "2020-01-01T23:00:00",
             "2020-01-02T00:00:00",
-            "param=167/168,levtype=sfc,date=20200101,time=2300/to/2300/by/1; "
-            "param=167/168,levtype=sfc,date=20200102,time=0000/to/0000/by/1",
+            "param=167/168,levtype=sfc,date=20200101,time=2300; param=167/168,levtype=sfc,date=20200102,time=0000",
         ),
     ],
     ids=["single-request", "multiple-requests"],
@@ -57,6 +68,9 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
     # Replace FDB access with an in-memory Zarr array so this runs without an FDB installation.
     zarr_array = zarr.zeros(shape=(2, 2, 12), chunks=(1, 1, 12), dtype="float32")
     monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(
+        z3fdb_opener, "_read_grib_grid", Mock(return_value={"grid_type": "healpix", "Nside": 1, "ordering": 1})
+    )
     monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
     builder = Mock()
     monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
@@ -88,6 +102,163 @@ def test_z3fdb_mars_request_netcdf(monkeypatch, tmp_path, startdate, enddate, ex
         xr.testing.assert_equal(restored, sliced)
 
 
+@pytest.mark.parametrize(
+    "levelist, levels, level_values, expected_ids, expected_values",
+    [
+        ([1000, 900, 800], None, None, [1000, 900, 800], [1000, 900, 800]),
+        ([1000, 900, 800], [900, 800], None, [900, 800], [900, 800]),
+        ([1000, 900, 800], [800, 1000], None, [800, 1000], [800, 1000]),
+        ([1000, 900, 800], [900, 800], [999.99, 899.99, 799.99], [900, 800], [899.99, 799.99]),
+        ([1000, 900, 800], [800, 1000], [999.99, 899.99, 799.99], [800, 1000], [799.99, 999.99]),
+        ([1000, 900, 800], 900, None, [900], [900]),
+        (1000, None, None, [1000], [1000]),
+        (1000, 1000, 999.99, [1000], [999.99]),
+        (0, 0, 0, [0], [0]),
+    ],
+    ids=[
+        "all",
+        "subset",
+        "reordered",
+        "physical-subset",
+        "physical-reordered",
+        "scalar-selection",
+        "scalar-default",
+        "scalar-physical",
+        "zero-level",
+    ],
+)
+def test_z3fdb_level_selection_across_periods(monkeypatch, levelist, levels, level_values, expected_ids, expected_values):
+    """Keep selected level IDs and coordinates consistent across HPC/bridge/HPC parts."""
+    zarr_array = zarr.zeros(shape=(1, 1, len(expected_ids), 12), chunks=(1, 1, len(expected_ids), 12), dtype="float32")
+    monkeypatch.setattr(z3fdb_opener, "_check_availability", Mock())
+    monkeypatch.setattr(
+        z3fdb_opener, "_read_grib_grid", Mock(return_value={"grid_type": "healpix", "Nside": 1, "ordering": 1})
+    )
+    monkeypatch.setattr(z3fdb_opener, "_build_zarr_axes", Mock(return_value=[]))
+    builder = Mock()
+    monkeypatch.setattr(z3fdb_opener, "SimpleStoreBuilder", Mock(return_value=builder), raising=False)
+    monkeypatch.setattr(z3fdb_opener, "ExtractorType", Mock(), raising=False)
+    monkeypatch.setattr(z3fdb_opener.zarr, "open_array", Mock(return_value=zarr_array))
+
+    request = {"param": [130], "levtype": "pl", "levelist": levelist}
+    original_request = deepcopy(request)
+    data = Z3FDB(
+        request=request,
+        metadata={"levels": level_values} if level_values is not None else {},
+        level=levels,
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date="20200101T0100",
+        bridge_end_date="20200101T0100",
+    )
+    result = Z3FDBDatasetReader(data).read()
+
+    assert request == original_request
+    assert data.level_values == level_values
+    assert isinstance(result.var130.data, da.Array)
+    assert result.sizes["time"] == 3
+    assert result.level.to_numpy().tolist() == expected_values
+    assert result.level.attrs["units"] == "hPa"
+    assert builder.add_part.call_count == 3
+    assert all(call.args[0]["levelist"] == expected_ids for call in builder.add_part.call_args_list)
+
+
+@pytest.mark.parametrize(
+    "metadata, config_fdb, expected_configs",
+    [
+        (
+            {"fdb_home": "/hpc", "fdb_home_bridge": "/bridge"},
+            None,
+            ["/hpc/etc/fdb/config.yaml", "/bridge/etc/fdb/config.yaml", "/hpc/etc/fdb/config.yaml"],
+        ),
+        (
+            {"fdb_path": "/hpc.yaml", "fdb_path_bridge": "/bridge.yaml"},
+            None,
+            ["/hpc.yaml", "/bridge.yaml", "/hpc.yaml"],
+        ),
+        ({"fdb_path": "/hpc.yaml"}, None, ["/hpc.yaml"] * 3),
+        (
+            {"fdb_home": "/hpc", "fdb_path_bridge": "/bridge.yaml"},
+            "/override.yaml",
+            ["/override.yaml"] * 3,
+        ),
+    ],
+    ids=["homes", "paths", "bridge-fallback", "config-override"],
+)
+def test_z3fdb_repeated_reads_preserve_metadata(monkeypatch, metadata, config_fdb, expected_configs):
+    """Repeated source reads retain FDB routing and grid metadata for every period."""
+    metadata = {**metadata, "source_grid_name": "hpz0-nested", "levels": [1000]}
+    original_metadata = deepcopy(metadata)
+    opener = Mock(
+        side_effect=lambda request, **kwargs: xr.Dataset(
+            {"var130": ("time", da.ones(1))}, coords={"time": [kwargs["startdate"]]}
+        )
+    )
+    monkeypatch.setattr("aqua.core.intake_drivers.fdb.readers.open_z3fdb", opener)
+    source = IntakeFDBSource(
+        request={"param": [130], "levtype": "pl", "levelist": [1000]},
+        metadata=metadata,
+        engine="z3fdb",
+        config_fdb=config_fdb,
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date="20200101T0100",
+        bridge_end_date="20200101T0100",
+    )
+
+    first = source.to_dask()
+    second = source.to_dask()
+
+    assert [call.kwargs["config"] for call in opener.call_args_list] == expected_configs * 2
+    assert all("grid" not in call.kwargs for call in opener.call_args_list)
+    assert opener.call_args_list[:3] == opener.call_args_list[3:]
+    assert metadata == source.metadata == original_metadata
+    assert isinstance(second.var130.data, da.Array)
+    xr.testing.assert_identical(first, second)
+
+
+@pytest.mark.parametrize("hpc_expver", [None, "a0h3"], ids=["catalog-expver", "hpc-override"])
+@pytest.mark.parametrize(
+    "bridge_start, bridge_end, expected_hpc",
+    [
+        ("20200101T0100", "20200101T0100", [True, False, True]),
+        (None, None, [True]),
+        ("complete", "complete", [False]),
+    ],
+    ids=["hpc-bridge-hpc", "hpc-only", "bridge-only"],
+)
+def test_z3fdb_hpc_expver_routing(monkeypatch, hpc_expver, bridge_start, bridge_end, expected_hpc):
+    """Apply HPC expver independently of config paths and preserve reusable requests."""
+    request = {"param": [130], "levtype": "sfc", "expver": "0001"}
+    original_request = deepcopy(request)
+    opener = Mock(
+        side_effect=lambda request, **kwargs: xr.Dataset(
+            {"var130": ("time", da.ones(1))}, coords={"time": [kwargs["startdate"]]}
+        )
+    )
+    monkeypatch.setattr("aqua.core.intake_drivers.fdb.readers.open_z3fdb", opener)
+    source = IntakeFDBSource(
+        request=request,
+        engine="z3fdb",
+        hpc_expver=hpc_expver,
+        config_fdb="/shared.yaml",
+        data_start_date="20200101T0000",
+        data_end_date="20200101T0200",
+        bridge_start_date=bridge_start,
+        bridge_end_date=bridge_end,
+    )
+
+    first = source.to_dask()
+    second = source.to_dask()
+
+    expected = [hpc_expver if is_hpc and hpc_expver else "0001" for is_hpc in expected_hpc]
+    assert [call.args[0]["expver"] for call in opener.call_args_list] == expected * 2
+    assert all(call.kwargs["config"] == "/shared.yaml" for call in opener.call_args_list)
+    assert request == original_request
+    assert isinstance(second.var130.data, da.Array)
+    xr.testing.assert_identical(first, second)
+
+
 def test_build_mars_requests_years_and_dates_parsing():
     """Test the years and dates logic in _build_mars_requests.
 
@@ -99,21 +270,21 @@ def test_build_mars_requests_years_and_dates_parsing():
     request = {"year": 2020, "param": 129}
 
     # 1. years=None, start_date=None, end_date=None, request['year'] is a single int
-    mars_list, pd_freq, start = _build_mars_requests(request, freq="D", levels=None, years=None)
-    assert pd_freq == "1D"
-    assert start == "2020-01-01"
+    mars_list, time = _build_mars_requests(request, freq="D", levels=None, years=None)
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
     # Since it's daily, request elements like date are mapped, and year/month are removed from the query
-    expected = {"param": 129, "date": "20200101/to/20201231/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200101/to/20201231", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
     # 2. years=None, start_date=None, end_date=None, request['year'] is a list
     request_list = {"year": [2020, 2021], "param": 129}
-    mars_list, pd_freq, start = _build_mars_requests(request_list, freq="D", levels=None, years=None)
-    assert pd_freq == "1D"
-    assert start == "2020-01-01"
+    mars_list, time = _build_mars_requests(request_list, freq="D", levels=None, years=None)
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
-    expected = {"param": 129, "date": "20200101/to/20211231/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200101/to/20211231", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
     # 3. Raising ValueError when only start_date is provided
@@ -125,13 +296,13 @@ def test_build_mars_requests_years_and_dates_parsing():
         _build_mars_requests(request, freq="D", levels=None, years=None, end_date="2020-01-01")
 
     # 5. start_date and end_date are both provided (not None)
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="D", levels=None, years=None, start_date="2020-05-01", end_date="2020-05-10"
     )
-    assert pd_freq == "1D"
-    assert start == "2020-05-01"
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-05-01")
     assert len(mars_list) == 1
-    expected = {"param": 129, "date": "20200501/to/20200510/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200501/to/20200510", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
 
@@ -153,11 +324,11 @@ def test_build_mars_requests_hourly_partial_days():
     # 1. 20200101, 1200/to/2300/by/1
     # 2. 20200102, 0000/to/2300/by/1 (line 152)
     # 3. 20200103, 0000/to/1200/by/1 (line 155)
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-03T12:00:00"
     )
-    assert pd_freq == "1h"
-    assert start == "2020-01-01T12:00:00"
+    assert (time[1:] - time[:-1] == pd.Timedelta(hours=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01T12:00:00")
     assert len(mars_list) == 3
     expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
     assert expected.items() <= mars_list[0].items()
@@ -171,14 +342,14 @@ def test_build_mars_requests_hourly_partial_days():
     # ts_end = 2020-01-04T12:00:00
     # day_start_full = 2020-01-02
     # day_end_full = 2020-01-03
-    # date_val = "20200102/to/20200103/by/1"
-    mars_list, pd_freq, start = _build_mars_requests(
+    # date_val = "20200102/to/20200103"
+    mars_list, time = _build_mars_requests(
         request, freq="h", levels=None, years=None, start_date="2020-01-01T12:00:00", end_date="2020-01-04T12:00:00"
     )
     assert len(mars_list) == 3
     expected = {"param": 129, "date": "20200101", "time": "1200/to/2300/by/1"}
     assert expected.items() <= mars_list[0].items()
-    expected = {"param": 129, "date": "20200102/to/20200103/by/1", "time": "0000/to/2300/by/1"}
+    expected = {"param": 129, "date": "20200102/to/20200103", "time": "0000/to/2300/by/1"}
     assert expected.items() <= mars_list[1].items()
     expected = {"param": 129, "date": "20200104", "time": "0000/to/1200/by/1"}
     assert expected.items() <= mars_list[2].items()
@@ -196,23 +367,23 @@ def test_build_mars_requests_daily_and_monthly_start():
     request = {"param": 129}
 
     # 1. Daily frequency with different start and end dates (line 164)
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="D", levels=None, years=None, start_date="2020-01-01", end_date="2020-01-05"
     )
-    assert pd_freq == "1D"
-    assert start == "2020-01-01"
+    assert (time[1:] - time[:-1] == pd.Timedelta(days=1)).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
-    expected = {"param": 129, "date": "20200101/to/20200105/by/1", "time": "0000"}
+    expected = {"param": 129, "date": "20200101/to/20200105", "time": "0000"}
     assert expected.items() <= mars_list[0].items()
 
     # 2. Monthly start frequency with matching month patterns across years (lines 186-187, 198)
     # ts_start = 2020-01-01, ts_end = 2021-12-01 (all 12 months in 2020 and 2021)
     # Should group into year="2020/2021", month="1/2/3/4/5/6/7/8/9/10/11/12"
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="MS", levels=None, years=None, start_date="2020-01-01", end_date="2021-12-01"
     )
-    assert pd_freq == "MS"
-    assert start == "2020-01-01"
+    assert (time == pd.date_range(time[0], periods=len(time), freq="MS")).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 1
     expected = {"param": 129, "year": "2020/2021", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
     assert expected.items() <= mars_list[0].items()
@@ -223,11 +394,11 @@ def test_build_mars_requests_daily_and_monthly_start():
     # Should produce 2 requests:
     # - year=2020, month=1/2/3/4/5/6/7/8/9/10/11/12
     # - year=2021, month=1/2
-    mars_list, pd_freq, start = _build_mars_requests(
+    mars_list, time = _build_mars_requests(
         request, freq="MS", levels=None, years=None, start_date="2020-01-01", end_date="2021-02-01"
     )
-    assert pd_freq == "MS"
-    assert start == "2020-01-01"
+    assert (time == pd.date_range(time[0], periods=len(time), freq="MS")).all()
+    assert time[0] == pd.Timestamp("2020-01-01")
     assert len(mars_list) == 2
     expected = {"param": 129, "year": "2020", "month": "1/2/3/4/5/6/7/8/9/10/11/12"}
     assert expected.items() <= mars_list[0].items()
@@ -314,33 +485,6 @@ def test_z3fdb_missing_attrs_raise() -> None:
         reduce_fdb_zarr_store(store)
 
 
-def test_z3fdb_healpix_unstructured_coordinate_checking() -> None:
-    """Test healpix unstructured detection logic."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_coordinates
-
-    # ds with cell dimension of 48 (12 * 2^2) -> valid healpix count
-    ds_valid = xr.Dataset(coords={"cell": np.arange(48)})
-    try:
-        ds_out = add_coordinates(ds_valid, grid_type="healpix_unstructured")
-        assert "lon" in ds_out.coords
-    except (ImportError, ModuleNotFoundError):
-        pass
-
-    # ds with invalid cell count
-    ds_invalid = xr.Dataset(coords={"cell": np.arange(50)})
-    ds_out = add_coordinates(ds_invalid, grid_type="healpix_unstructured")
-    assert "lon" not in ds_out.coords
-
-
-def test_z3fdb_lonlat_mismatch_aborts() -> None:
-    """Test add_lonlat_coordinates aborts on mismatching shape."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import add_lonlat_coordinates
-
-    ds = xr.Dataset(coords={"cell": np.arange(5)})
-    ds_out = add_lonlat_coordinates(ds)
-    assert ds_out.equals(ds)
-
-
 def test_build_zarr_axes_chunking() -> None:
     """Test time and vertical chunking options in _build_zarr_axes."""
     from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import _build_zarr_axes, z3fdb_available
@@ -390,6 +534,153 @@ def test_build_zarr_axes_chunking() -> None:
     axes_vert_all = _build_zarr_axes("h", levels=[1000, 850], chunks={"vertical": 2})
     assert axes_vert_all[2].chunking == Chunking.WHOLE_AXIS
 
+    # Calendar time chunks retain the requested vertical grouping.
+    axes_daily = _build_zarr_axes(
+        "h",
+        levels=[1000, 850, 700, 500],
+        chunks={"time": "D", "vertical": 2},
+        time=pd.date_range("20200101", periods=48, freq="h"),
+    )
+    assert axes_daily[0].chunking.chunkShape == 24
+    assert axes_daily[2].chunking.chunkShape == 2
+
     # Non-divisor vertical chunk size fallback to SINGLE_VALUE
     axes_fallback = _build_zarr_axes("h", levels=[1000, 850, 700], chunks={"vertical": 2})
     assert axes_fallback[2].chunking == Chunking.SINGLE_VALUE
+
+
+@pytest.fixture
+def grib_message():
+    """Build GRIB messages in memory without adding test-data files."""
+
+    def make_message(grid_type="healpix", **keys):
+        handle = ecc.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+        try:
+            ecc.codes_set(handle, "gridType", grid_type)
+            for key, value in keys.items():
+                ecc.codes_set(handle, key, value)
+            return ecc.codes_get_message(handle)
+        finally:
+            ecc.codes_release(handle)
+
+    return make_message
+
+
+@pytest.mark.parametrize("ordering", [0, 1], ids=["ring", "nested"])
+def test_z3fdb_healpix_from_grib(monkeypatch, grib_message, ordering):
+    """Use the GRIB ordering even when both grids have the same number of points."""
+    stream = BytesIO(grib_message(Nside=2, ordering=ordering))
+    fdb = Mock(retrieve=Mock(return_value=stream))
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=fdb))
+    grid = z3fdb_opener._read_grib_grid({"param": [130], "date": "20200101/to/20200102"})
+    values = da.arange(48, chunks=48)[None, :]
+    data = xr.Dataset(
+        {"test": (("time", "cell"), values)},
+        coords={"cell": np.arange(48)},
+        attrs={"history": "original", "AQUA_source": "test"},
+    )
+    result = z3fdb_opener.add_coordinates(data, grid)
+    hp = astropy_healpix.HEALPix(nside=2, order="nested" if ordering else "ring")
+    lon, lat = hp.healpix_to_lonlat(np.arange(48))
+    np.testing.assert_allclose(result.lon, lon.to_value("deg"))
+    np.testing.assert_allclose(result.lat, lat.to_value("deg"))
+    assert result.test.data is values
+    assert result.test.dims == ("time", "ncells")
+    assert "cell" not in result.dims
+    assert "cell" not in result.coords and "ncells" not in result.coords
+    assert result.lon_bounds.shape == result.lat_bounds.shape == (48, 4)
+    assert result.attrs["AQUA_source"] == "test"
+    assert "original" in result.attrs["history"]
+    assert stream.closed
+    fdb.retrieve.assert_called_once_with({"param": "130", "date": "20200101"})
+
+
+@pytest.mark.parametrize("south_first", [False, True])
+def test_z3fdb_lonlat_scan_order(monkeypatch, grib_message, south_first):
+    """Use the decoded dimensions and scan direction while keeping field data lazy."""
+    message = grib_message("regular_ll", Ni=4, Nj=3, latitudeOfFirstGridPointInDegrees=-90 if south_first else 90)
+    handle = ecc.codes_new_from_message(message)
+    try:
+        ecc.codes_set_values(handle, np.arange(12))
+        message = ecc.codes_get_message(handle)
+        expected = np.arange(12).reshape(3, 4)
+        if south_first:
+            expected = expected[::-1]
+        values = da.from_array(ecc.codes_get_values(handle), chunks=12)[None, :]
+    finally:
+        ecc.codes_release(handle)
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=BytesIO(message)))))
+    grid = z3fdb_opener._read_grib_grid({"param": 130})
+    data = xr.Dataset({"test": (("time", "cell"), values)}, attrs={"history": "original"})
+    result = z3fdb_opener.add_coordinates(data, grid)
+    assert result.test.dims == ("time", "lat", "lon")
+    assert isinstance(result.test.data, da.Array)
+    np.testing.assert_array_equal(result.test[0], expected)
+    np.testing.assert_array_equal(result.lon, [0, 90, 180, 270])
+    np.testing.assert_array_equal(result.lat, [90, 0, -90])
+    assert "original" in result.attrs["history"]
+
+
+@pytest.mark.parametrize("config", [None, "/fdb.yaml"])
+def test_z3fdb_grid_sample_config(monkeypatch, grib_message, config):
+    """The metadata probe uses the selected FDB and a single field from a ranged request."""
+    stream = BytesIO(grib_message(Nside=1, ordering=0))
+    fdb = Mock(retrieve=Mock(return_value=stream))
+    factory = Mock(return_value=fdb)
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", factory)
+    load_config = Mock(return_value={"type": "local"})
+    monkeypatch.setattr(z3fdb_opener, "load_yaml", load_config)
+    request = {"param": [130, 131], "levelist": [900, 800], "date": "20200101/to/20200102", "time": "0000/to/2300"}
+    original = deepcopy(request)
+    z3fdb_opener._read_grib_grid(request, config)
+    factory.assert_called_once_with(config={"type": "local"} if config else None)
+    if config:
+        load_config.assert_called_once_with(config)
+    else:
+        load_config.assert_not_called()
+    fdb.retrieve.assert_called_once_with({"param": "130", "levelist": "900", "date": "20200101", "time": "0000"})
+    assert request == original
+    assert stream.closed
+
+
+@pytest.mark.parametrize(
+    "grid_type",
+    [None, "rotated_ll", "reduced_gg", "unstructured_grid"],
+    ids=["no-data", "rotated", "reduced-gaussian", "unstructured"],
+)
+def test_z3fdb_grid_probe_errors(monkeypatch, grib_message, grid_type):
+    """Reject missing/unsupported grids and release native handles on failure."""
+    stream = BytesIO(grib_message(grid_type) if grid_type else b"")
+    monkeypatch.setattr(z3fdb_opener.pyfdb, "FDB", Mock(return_value=Mock(retrieve=Mock(return_value=stream))))
+    with pytest.raises(ValueError if grid_type else NoDataError, match="only HEALPix" if grid_type else "No GRIB"):
+        z3fdb_opener._read_grib_grid({"param": 130})
+    assert stream.closed
+
+
+def test_z3fdb_grid_size_mismatch():
+    """Reject mismatches rather than assigning plausible coordinates by cell count."""
+    with pytest.raises(ValueError, match="point count"):
+        z3fdb_opener.add_coordinates(
+            xr.Dataset(coords={"cell": np.arange(48)}), {"grid_type": "healpix", "Nside": 1, "ordering": 0}
+        )
+
+
+def test_z3fdb_without_gsv():
+    """Import and use the z3fdb coordinate path when GSV cannot be imported."""
+    code = """
+import os
+import sys
+sys.modules['gsv'] = None
+os.environ.pop('GRID_DEFINITION_PATH', None)
+import xarray as xr
+from aqua.core.intake_drivers.fdb.openers import z3fdb_opener
+assert z3fdb_opener.z3fdb_available
+result = z3fdb_opener.add_coordinates(
+    xr.Dataset(coords={'cell': range(12)}), {'grid_type': 'healpix', 'Nside': 1, 'ordering': 0}
+)
+assert result.lon.size == 12
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
