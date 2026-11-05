@@ -11,7 +11,7 @@ ClimateDT workflow modifications:
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
 Unreleased in the current development version (target v1.2.3):
-- The analysis report adds a memory and wall time table built from the `[profile]` line logged by the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the peak memory of each tool process (#TBD)
+- The analysis report adds a memory and wall time table built from the `[profile]` line logged by the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the peak memory of each tool process (#3356)
 Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
