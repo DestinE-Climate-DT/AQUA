@@ -6,13 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 Unreleased in the current development version (target v1.2.4):
-- Default a missing workflow info-file `bridge_start_date` to `data_start_date` for both GSV and z3fdb, preserving bridge routing (#3316).
-- Match GSV HEALPix output with the `ncells` spatial dimension and no synthetic cell index coordinate, preserving lazy data and pixel order (#3316).
-- Document z3fdb native time/vertical chunking constraints and time-chunk errors without automatic fallback, metadata loss with `fix=False`, and GSV-only legacy `timeshift` (#3316).
-- Accept z3fdb frequency-based time chunks such as `MS` and `6h`, including partial bins, leap years and HPC/bridge splits; normalize missing, null and legacy `"None"` request times to midnight for daily/monthly date data (#3316).
-- Honor z3fdb `chunks="D"` and `chunks={"time": "D"}` as lazy calendar-day chunks, including partial days, different saved cadences and HPC/bridge splits; retain regular native chunks and reject unsupported time-chunk settings. Make hourly and consecutive forecast-step MARS increments explicit so z3fdb retrieves every selected frame, and correct the time/vertical chunking documentation (#3316).
-- Share GSV availability discovery with z3fdb: resolve workflow `fdb_info_file` dates and experiment versions, local `auto` dates, bridge STAC and date files on each read; validate availability and align HPC/bridge boundaries to saved cadence without changing catalog requests or metadata (#3316).
-- Honor GSV-style `timestyle` and `timestep` in z3fdb, including forecast-step requests, saved cadence and the original forecast reference across HPC/bridge periods; label output with the requested timestamps, preserve daily request times and reject unsupported settings including legacy `timeshift` (#3316).
+- Improve z3fdb level selection, grid coordinates, time handling, chunking and HPC/bridge availability/routing; default missing bridge start dates for GSV and z3fdb (#3316).
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
@@ -22,10 +16,6 @@ Unreleased in the current development version (target v1.2.4):
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
-- Decode z3fdb HEALPix ordering and global regular lon/lat dimensions from GRIB metadata using pyfdb and ecCodes, without GSV, catalog grid hints or external grid files; reject other grid types (#3316).
-- Preserve z3fdb source metadata so repeated reads retain the configured HPC/bridge FDB paths and grid (#3316).
-- Fix z3fdb level subsets without physical-level metadata and normalize scalar levels, preserving requested level order across HPC/bridge periods (#3316).
-- Honor `hpc_expver` for z3fdb HPC periods while retaining the bridge experiment version and leaving catalog requests unchanged (#3316).
 
 ## [v1.2.3]
 
