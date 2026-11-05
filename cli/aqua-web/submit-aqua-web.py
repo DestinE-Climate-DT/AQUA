@@ -220,6 +220,7 @@ class Submitter:
         definitions["nodes"] = definitions["push"]["nodes"]
         definitions["ntasks_per_node"] = definitions["push"]["ntasks_per_node"]
         definitions["time"] = definitions["push"]["time"]
+        definitions["memory"] = definitions["push"]["memory"]
 
         definitions["push"] = "true"
         definitions["explist"] = listfile
