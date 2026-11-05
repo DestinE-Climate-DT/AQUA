@@ -147,7 +147,7 @@ markers = [
     "catgen: mark test for catalog generator",
     "console: mark test for console",
     "polytope: mark test that uses polytope",
-    "network: mark test that needs internet access (GitHub API, S3, Natural Earth), always together with its usual marker"
+    "network: mark test that needs internet access (GitHub API, S3), always together with its usual marker"
 ]
 
 [tool.coverage.run]

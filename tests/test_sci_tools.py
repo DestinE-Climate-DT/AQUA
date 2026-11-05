@@ -54,20 +54,24 @@ def test_valid_selection_no_brd(sample_data):
 
 
 @pytest.mark.aqua
-@pytest.mark.network  # downloads the Natural Earth shapefile on first use
 def test_selection_regionmask(sample_data):
-    """Test selection using regionmask"""
-    # Define a simple regionmask region
-    region = regionmask.defined_regions.natural_earth_v5_0_0.countries_110
-    region_sel = ["United States of America", "Russia"]
+    """Test selection using regionmask, with regions defined locally (no shapefile download)"""
+    # two boxes covering (lat 10-20, lon 40-50) and (lat 50-60, lon 80-90) of the sample data
+    region = regionmask.Regions(
+        [[[35, 5], [55, 5], [55, 25], [35, 25]], [[75, 45], [95, 45], [95, 65], [75, 65]]],
+        names=["south_west", "north_east"],
+        abbrevs=["SW", "NE"],
+    )
+    inside = (sample_data.lat.isin([10, 20]) & sample_data.lon.isin([40, 50])) | (
+        sample_data.lat.isin([50, 60]) & sample_data.lon.isin([80, 90])
+    )
 
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data, region=region, region_sel=region_sel, box_brd=True)
+    for region_sel in (["south_west", "north_east"], [0, 1]):
+        result = AreaSelection(loglevel=loglevel).select_area(sample_data, region=region, region_sel=region_sel, box_brd=True)
 
-    assert result is not None
-    # Check that values outside the selected regions are NaN
-    assert np.isnan(result.sel(lat=0, lon=150, method="nearest").values)
-    # Check that values inside the selected regions are not NaN
-    assert result.sel(lat=40, lon=-100, method="nearest").values is not np.nan
+        # values inside the selected regions are kept, all the others are NaN
+        xr.testing.assert_equal(result.notnull(), inside.transpose(*result.dims))
+        xr.testing.assert_equal(result.where(inside, drop=True), sample_data.where(inside, drop=True))
 
 
 @pytest.mark.aqua
