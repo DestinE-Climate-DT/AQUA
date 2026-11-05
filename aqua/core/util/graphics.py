@@ -13,6 +13,7 @@ import xarray as xr
 from astropy_healpix import healpy as hp
 from scipy.interpolate import griddata
 
+from aqua.core.default import DEFAULT_FIGURE_WIDTH
 from aqua.core.logger import log_configure
 
 from .sci_util import check_coordinates
@@ -50,6 +51,38 @@ def add_cyclic_lon(da: xr.DataArray):
     new_da.attrs = da.attrs
 
     return new_da
+
+
+def figure_size(height_ratio: float) -> tuple:
+    """
+    Figure size (inches) with the common width DEFAULT_FIGURE_WIDTH and height = DEFAULT_FIGURE_WIDTH * height_ratio.
+
+    Args:
+        height_ratio (float): Height of the figure as a fraction of its width.
+
+    Returns:
+        tuple: (width, height) in inches.
+    """
+    return (DEFAULT_FIGURE_WIDTH, DEFAULT_FIGURE_WIDTH * height_ratio)
+
+
+def grid_figure_size(nrows: int, ncols: int, panel_ratio: float = 5 / 6, title_ratio: float = 1 / 6) -> tuple:
+    """
+    Figure size (inches) with the common width for a grid of nrows x ncols panels.
+
+    Each panel is panel_ratio as tall as wide, and title_ratio panel widths are added on top for the title.
+    The defaults give the shape of 6 x 5 in panels plus 1 in for the title, used by plot_maps.
+
+    Args:
+        nrows (int): Number of rows of panels.
+        ncols (int): Number of columns of panels.
+        panel_ratio (float): Height of a panel as a fraction of its width. Default is 5/6.
+        title_ratio (float): Height left for the title, as a fraction of a panel width. Default is 1/6.
+
+    Returns:
+        tuple: (width, height) in inches.
+    """
+    return figure_size((nrows * panel_ratio + title_ratio) / ncols)
 
 
 def plot_box(num_plots=0):
