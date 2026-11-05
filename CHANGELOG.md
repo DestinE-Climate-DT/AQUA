@@ -14,6 +14,7 @@ Unreleased in the current development version (target v1.2.3):
 Complete list:
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- `aqua analysis --kind`: experiment kinds are deep-merged on top of the `default` kind, so they only list overrides; unknown kinds raise an error listing the available kinds; the kind name is exposed to the templates as `kind`; new `aqua.core.analysis.resolve_experiment_kind` helper (#3266)
 - Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
 - Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)
 - Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock`
@@ -27,8 +28,6 @@ Unreleased in the current development version (target v1.2.4):
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
-
-- `aqua analysis --kind`: experiment kinds are deep-merged on top of the `default` kind, so they only list overrides; unknown kinds raise an error listing the available kinds; the kind name is exposed to the templates as `kind`; new `aqua.core.analysis.resolve_experiment_kind` helper (#3266)
 
 ## [v1.2.3]
 
