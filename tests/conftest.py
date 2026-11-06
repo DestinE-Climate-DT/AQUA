@@ -4,6 +4,7 @@ These fixtures use scope="session" to retrieve data once and share across all te
 Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
+import glob
 import os
 import shutil
 import subprocess
@@ -13,7 +14,7 @@ import warnings
 
 import matplotlib
 import pytest
-from utils_tests import LOGLEVEL, list_files, make_private_config
+from utils_tests import LOGLEVEL, make_private_config
 
 from aqua import Reader
 from aqua.core.backend.backend import Backend
@@ -44,7 +45,7 @@ def _ensure_stac_catalogue():
     catalog = os.path.join(STAC_CATALOGUE_DIR, "catalog.json")
     generator = os.path.join(STAC_CATALOGUE_DIR, "generate_catalog.py")
     with SafeFileLock(os.path.join(STAC_CATALOGUE_DIR, ".generation.lock"), loglevel=LOGLEVEL):
-        inputs = [generator, *(path for path in list_files(models) if path.endswith(".nc"))]
+        inputs = [generator, *glob.glob(os.path.join(models, "**", "*.nc"), recursive=True)]
         if os.path.exists(catalog) and os.path.getmtime(catalog) >= max(os.path.getmtime(path) for path in inputs):
             return
         if shutil.which("ncdump") is None:

@@ -1,7 +1,5 @@
 """Test utilities for AQUA test suite"""
 
-import os
-
 from .config import AQUA_TESTS, make_private_config
 
 DPI = 50
@@ -17,10 +15,4 @@ APPROX_ABS = 1e-3
 LOGLEVEL = "DEBUG"
 
 
-
-def list_files(directory):
-    """Sorted paths of all the files below a directory (recursive)."""
-    return sorted(os.path.join(root, name) for root, _, names in os.walk(directory) for name in names)
-
-
-__all__ = ["APPROX_ABS", "APPROX_REL", "AQUA_TESTS", "DPI", "LOGLEVEL", "list_files", "make_private_config"]
+__all__ = ["APPROX_ABS", "APPROX_REL", "AQUA_TESTS", "DPI", "LOGLEVEL", "make_private_config"]
