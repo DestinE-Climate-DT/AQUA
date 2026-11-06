@@ -66,7 +66,7 @@ class TestIntakeNetCDFSource:
         data = source.reader.read()
         assert data["tas"].chunks is not None
         assert data.sizes["time"] == 4
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(data["tas"], sample_dataset["tas"])
 
     @pytest.mark.parametrize(
         "kwargs,time_chunks",
@@ -93,7 +93,7 @@ class TestIntakeNetCDFSource:
         assert source.to_dask()["tas"].chunks is not None
         eager = source.read()
         assert eager["tas"].chunks is None
-        xr.testing.assert_allclose(eager["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(eager["tas"], sample_dataset["tas"])
 
     def test_engine_defaults_to_netcdf4(self):
         source = IntakeNetCDFSource("dummy.nc")
@@ -121,7 +121,7 @@ class TestIntakeNetCDFSource:
         # mfdataset-only kwargs (combine etc.) are common in AQUA catalogs and must
         # not break single-file reads, which xarray routes to xr.open_dataset
         source = IntakeNetCDFSource(str(netcdf_tree / "one.nc"), combine="by_coords")
-        xr.testing.assert_allclose(source.reader.read()["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(source.reader.read()["tas"], sample_dataset["tas"])
 
     def test_filtered_single_file_tolerates_mfdataset_kwargs(self, netcdf_tree):
         # the backend narrows source.data.url between reads (glob expansion, date
@@ -142,7 +142,7 @@ class TestIntakeZarrSource:
         sample_dataset.to_zarr(store)
         data = IntakeZarrSource(str(store)).reader.read()
         assert data["tas"].chunks is not None
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(data["tas"], sample_dataset["tas"])
 
     def test_chunks_honored(self, tmp_path, sample_dataset):
         store = tmp_path / "sample.zarr"
@@ -162,13 +162,13 @@ class TestIntakeZarrSource:
         sample_dataset.isel(time=slice(2, 4)).to_zarr(tmp_path / "sample_b.zarr")
         data = IntakeZarrSource(str(tmp_path / "sample_*.zarr")).reader.read()
         assert data.sizes["time"] == 4
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(data["tas"], sample_dataset["tas"])
 
     def test_single_store_tolerates_mfdataset_kwargs(self, tmp_path, sample_dataset):
         store = tmp_path / "sample.zarr"
         sample_dataset.to_zarr(store)
         source = IntakeZarrSource(str(store), combine="by_coords")
-        xr.testing.assert_allclose(source.reader.read()["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(source.reader.read()["tas"], sample_dataset["tas"])
 
 
 @pytest.mark.aqua
@@ -291,4 +291,4 @@ class TestYAMLCatalog:
         assert source.metadata["fixer_name"] == "amazing_fixer"
         assert source.xarray_kwargs["decode_times"] is True
         data = source.to_dask()
-        xr.testing.assert_allclose(data["tas"], sample_dataset["tas"])
+        xr.testing.assert_equal(data["tas"], sample_dataset["tas"])

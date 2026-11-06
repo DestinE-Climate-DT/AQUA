@@ -215,11 +215,17 @@ def test_fixer_monthly_repeated_retrievals(data_ifs_tco79_long_fixfalse):
         ds_jan.copy(deep=True), destvar=["tnlwrf"]
     )
 
-    assert np.allclose(out_jan["tnlwrf"].values, 1.0)
-    assert np.allclose(out_feb_leap["tnlwrf"].values, 1.0)
-    assert np.allclose(out_feb_nonleap["tnlwrf"].values, 1.0)
+    assert out_jan["tnlwrf"].values == pytest.approx(1.0)
+    assert out_feb_leap["tnlwrf"].values == pytest.approx(1.0)
+    assert out_feb_nonleap["tnlwrf"].values == pytest.approx(1.0)
     assert out_feb_leap["tnlwrf"].equals(fresh_feb_leap["tnlwrf"])
     assert out_jan["tnlwrf"].equals(fresh_jan["tnlwrf"])
+
+
+# Exception to the pytest default tolerance (see tests/utils_tests): EvaluateFormula works in float32 and evaluates
+# in its own order, so it rounds differently from the xarray oracle. Values near 273 K have a float32 spacing of 3e-5,
+# and ((2t - 273.15)^2)/2 differs by up to 4e-4 near 0 Celsius, where a relative tolerance is meaningless.
+FLOAT32_FORMULA_TOL = {"rel": 1e-6, "abs": 1e-4}
 
 
 @pytest.fixture
@@ -240,8 +246,7 @@ class TestEvaluateFormula:
         assert convert.attrs["units"] == "Celsius"
 
         # every value, not only the mean of one time step: the oracle is plain xarray arithmetic
-        # (float32 values near 273 K have a spacing of 3e-5: the oracle and the evaluation round differently)
-        np.testing.assert_allclose(convert.values, (data_2t_tp["2t"] - 273.15).values, rtol=1e-6, atol=1e-4)
+        assert convert.values == pytest.approx((data_2t_tp["2t"] - 273.15).values, **FLOAT32_FORMULA_TOL)
 
     def test_complex_formula(self, data_2t_tp):
         formula = "((2t - 273.15)^2)/2 +  (tprate / 1000)"
@@ -258,7 +263,7 @@ class TestEvaluateFormula:
         assert convert.attrs["units"] == "Celsius^2 * hPa"
 
         expected = ((data_2t_tp["2t"] - 273.15) ** 2) / 2 + (data_2t_tp["tprate"] / 1000)
-        np.testing.assert_allclose(convert.values, expected.values, rtol=1e-6, atol=1e-4)
+        assert convert.values == pytest.approx(expected.values, **FLOAT32_FORMULA_TOL)
 
     def test_magnitude(self, data_2t_tp):
         """Test magnitude calculation"""
@@ -271,7 +276,7 @@ class TestEvaluateFormula:
         assert convert.attrs["long_name"] == "Magnitude of 2t vector"
         assert convert.attrs["units"] == "K"
         expected = (data_2t_tp["2t"] ** 2 + data_2t_tp["2t"] ** 2) ** 0.5
-        np.testing.assert_allclose(convert.values, expected.values, rtol=1e-6, atol=1e-4)
+        assert convert.values == pytest.approx(expected.values, **FLOAT32_FORMULA_TOL)
 
     def test_wrong_formula(self, data_2t_tp):
         """Test wrong parentheses handling"""

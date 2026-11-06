@@ -56,13 +56,13 @@ def test_convert_data_units(era5_hpz3_monthly_reader):
     data_test = convert_data_units(data=data, var="tprate", units="mm/day", loglevel=loglevel)
     assert data_test["tprate"].attrs["units"] == "mm/day"
     # 1 kg m-2 s-1 of water is 1 mm s-1, that is 86400 mm/day
-    assert data_test["tprate"].values == pytest.approx(data["tprate"].values * 86400, rel=1e-5)
+    assert data_test["tprate"].values == pytest.approx(data["tprate"].values * 86400)
 
     # DataArray test
     data = data["tprate"]
     data_test = convert_data_units(data=data, var="tprate", units="mm/day", loglevel=loglevel)
     assert data_test.attrs["units"] == "mm/day"
-    assert data_test.values == pytest.approx(data.values * 86400, rel=1e-5)
+    assert data_test.values == pytest.approx(data.values * 86400)
     assert f"Converting units of tprate: from {initial_units} to mm/day" in data_test.attrs["history"]
 
     # Test with no conversion to be done

@@ -60,7 +60,7 @@ def test_histogram_density(sample_data):
     assert isinstance(hist, xr.DataArray)
     assert hist.name == "pdf"
     # The integral of the PDF should be close to 1
-    assert np.isclose(hist.sum() * (hist.center_of_bin[1] - hist.center_of_bin[0]), 1, atol=1e-5)
+    assert float(hist.sum() * (hist.center_of_bin[1] - hist.center_of_bin[0])) == pytest.approx(1)
 
 
 @pytest.mark.aqua

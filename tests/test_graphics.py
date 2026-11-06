@@ -983,8 +983,8 @@ def test_gregory_time_colormap_is_applied_to_lines(plot_func):
     fig, ax = plot_func(t2m, net_toa, cmap="viridis")
 
     assert len(ax.collections) == 2
-    assert np.allclose(ax.collections[0].get_array(), [0.25, 0.75])
-    assert np.allclose(ax.collections[1].get_array(), [0.0, 0.5, 1.0])
+    assert np.asarray(ax.collections[0].get_array()) == pytest.approx([0.25, 0.75])
+    assert np.asarray(ax.collections[1].get_array()) == pytest.approx([0.0, 0.5, 1.0])
     assert len(fig.axes) == 1
     plt.close(fig)
 
