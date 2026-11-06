@@ -87,6 +87,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
 - **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
+- **Minimize new attributes**: do not create new instance attributes or `AQUA_*` metadata attributes unless strictly necessary; search for and reuse existing ones first
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
 - **Pandas is preferred over datetime**: we prefer to use pandas instead of datetime functions. datetime allowed only if the pandas solution would much more complicated.
@@ -192,6 +193,8 @@ All code is linted with **Ruff**: no unused imports, no bare `except`, consisten
 
 Prefer in this order before adding anything new: `xarray`, `numpy`, `pandas`, `metpy`, `smmregrid`, `intake`.
 
+- When dependencies change, update the relevant declarations in `pyproject.toml` and `environment*.yaml` / `environment*.yml` files, then regenerate the corresponding conda lockfiles using the repository's relock workflow.
+
 ---
 
 ## Docstrings & Documentation
@@ -216,12 +219,15 @@ def method(self, arg1, arg2=None):
 
 - Private/internal methods (`_name`) need only a one-liner
 - Always add a usage example in the module-level docstring for public classes
+- Update the relevant usage documentation and notebooks when behaviour or configuration changes.
+- Prefer the current implementation over stale documentation when determining existing behaviour.
 
 ---
 
 ## Testing
 
 - Never create new test data files — reuse existing test assets
+- Write generated test outputs to pytest's `tmp_path`.
 - Use `Reader(model=..., exp=..., source=...)` to load test data; avoid raw `xr.open_dataset` unless testing I/O directly
 - Prefer shared fixtures in `tests/conftest.py` with `session` or `module` scope to avoid repeated heavy retrievals
 - Favour `pytest.mark.parametrize` over duplicated test bodies
