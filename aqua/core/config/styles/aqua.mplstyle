@@ -41,10 +41,10 @@ savefig.facecolor: fefeff
 
 # Font sizes shared by all the AQUA figures.
 # Relative sizes scale with font.size, so changing it rescales all the text.
-font.size: 10
-axes.titlesize: large        # 12 pt
-axes.labelsize: medium       # 10 pt
-xtick.labelsize: medium      # 10 pt
-ytick.labelsize: medium      # 10 pt
-legend.fontsize: small       # 8.3 pt
-figure.titlesize: x-large    # 14.4 pt
+font.size: 12
+axes.titlesize: large        # 14.4 pt
+axes.labelsize: medium       # 12 pt
+xtick.labelsize: medium      # 12 pt
+ytick.labelsize: medium      # 12 pt
+legend.fontsize: small       # 10 pt
+figure.titlesize: large      # 14.4 pt, as the axes titles
