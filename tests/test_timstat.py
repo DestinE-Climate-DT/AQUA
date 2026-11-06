@@ -6,6 +6,27 @@ import pytest
 from aqua.core.histogram import histogram
 
 
+def period_key(field, period):
+    """Integer label of every time step: YYYYMM ("month") or YYYYMMDD ("day"), the same in every calendar.
+
+    For example 2020-03-05T12:00 is 202003 for "month" and 20200305 for "day".
+    """
+    time = field.time.dt
+    if period == "month":
+        return time.year.values * 100 + time.month.values
+    return time.year.values * 10000 + time.month.values * 100 + time.day.values
+
+
+def reduce_by_period(series, period, func):
+    """Reduce a 1D series over every month or day with plain numpy (independent of the resampling in AQUA)."""
+    keys = period_key(series, period)
+    values = series.values  # load the (dask) series once
+    results = []
+    for key in np.unique(keys):  # periods in time order, as in the AQUA output
+        results.append(func(values[keys == key]))
+    return np.array(results)
+
+
 @pytest.fixture(scope="module", params=["long", "long400"])
 def source_name(request):
     """Parameterize the source name to run tests for both sources."""
@@ -26,6 +47,12 @@ def data(request, source_name):
     suffix = "long" if source_name == "long" else "long400"
     fixture_name = f"ifs_tco79_{suffix}_fixfalse_data"
     return request.getfixturevalue(fixture_name)
+
+
+@pytest.fixture(scope="module")
+def points(data):
+    """The series of the cell (lon=0, lat=0) of each variable, loaded once: the reference of the numpy oracles."""
+    return {var: data[var].isel(lon=0, lat=0).load() for var in ("2t", "ttr")}
 
 
 @pytest.fixture(scope="module")
@@ -54,7 +81,7 @@ class TestTimmean:
             reader.timstat(data["2t"], stat="hypertangent", freq="monthly", exclude_incomplete=True)
 
     @pytest.mark.parametrize("var", ["ttr"])
-    def test_timmean_monthly(self, reader, data, var):
+    def test_timmean_monthly(self, reader, data, points, var):
         """Timmean test for monthly aggregation"""
         avg = reader.timmean(data[var], freq="monthly")
         nmonths = len(np.unique(data.time.dt.month))
@@ -62,24 +89,34 @@ class TestTimmean:
         assert avg.shape == (nmonths, 9, 18)
         assert len(unique) == nmonths
         assert all(counts == counts[0])
+        # the mean of each month, from the steps of that month (the first and the last month are partial)
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(reduce_by_period(points[var], "month", np.mean))
 
     @pytest.mark.parametrize("var", ["2t"])
-    def test_timstd_allperiod(self, reader, data, var):
+    def test_timstd_allperiod(self, reader, data, points, var):
         """Timstd test for entire data period"""
         avg = reader.timstd(data[var])
         assert avg.shape == (9, 18)
+        # population standard deviation (ddof=0), not the sample one
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(np.std(points[var].values))
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(10.011854)
 
     @pytest.mark.parametrize("var", ["2t", "ttr"])
-    def test_timstat_monthly_exclude_incomplete(self, reader, data, var):
+    def test_timstat_monthly_exclude_incomplete(self, reader, data, points, var):
         """Timmean test for monthly aggregation with excluded incomplete chunks"""
         avg = reader.timstat(data[var], stat="mean", freq="monthly", exclude_incomplete=True)
         unique, counts = np.unique(avg.time.dt.month, return_counts=True)
         assert avg.shape == (6, 9, 18)
         assert len(unique) == 6
         assert all(counts == counts[0])
+        # February to July are the complete months: the first and the last one are dropped, the others kept as they are
+        point = points[var]
+        complete = point.sel(time=point.time.dt.month.isin(range(2, 8)))
+        assert list(unique) == [2, 3, 4, 5, 6, 7]
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(reduce_by_period(complete, "month", np.mean))
 
     @pytest.mark.parametrize("var", ["2t", "ttr"])
-    def test_timmax_daily(self, reader, data, var):
+    def test_timmax_daily(self, reader, data, points, var):
         """Timmean test for daily aggregation"""
         avg = reader.timmax(data[var], freq="daily")
         unique, counts = np.unique(avg.time.dt.day, return_counts=True)
@@ -88,8 +125,9 @@ class TestTimmean:
         assert all(
             counts == np.array([7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 4])
         )
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(reduce_by_period(points[var], "day", np.max))
 
-    def test_timstat_first_last(self, reader, data_2t):
+    def test_timstat_first_last(self, reader, data_2t, points):
         """Selecting first or last value in each group"""
         firstval = data_2t["2t"].aqua.timfirst(freq="daily")
         lastval = data_2t["2t"].aqua.timlast(freq="daily")
@@ -97,6 +135,9 @@ class TestTimmean:
         assert firstval.shape == (197, 9, 18)
         assert lastval.shape == (197, 9, 18)
         assert firstval.time[0] < lastval.time[0]
+        point = points["2t"]
+        assert firstval.isel(lon=0, lat=0).values == pytest.approx(reduce_by_period(point, "day", lambda day: day[0]))
+        assert lastval.isel(lon=0, lat=0).values == pytest.approx(reduce_by_period(point, "day", lambda day: day[-1]))
 
     def test_timmin_yearly_exclude_incomplete(self, reader, data_ttr):
         """Timmean test for yearly aggregation with excluded incomplete chunks"""
@@ -129,10 +170,19 @@ class TestTimmean:
         # The second day at 12:00
         assert avg["2t"].time[1].dt.hour == 12
 
-    def test_timmean_pandas_accessor(self, reader, data_2t):
+    def test_timmean_pandas_accessor(self, reader, data_2t, points):
         """Timmean test for weekly aggregation based on pandas labels"""
         avg = data_2t.aqua.timmean(freq="W-MON")
         assert avg["2t"].shape == (29, 9, 18)
+        # pandas weeks end on the Monday of the label, the whole day included: the first one is Monday 20 January only
+        point = points["2t"]
+        weekly = avg["2t"].isel(lon=0, lat=0)
+        days = point.time.values.astype("datetime64[D]")
+        for week in (0, 1):
+            last_day = weekly.time.values[week].astype("datetime64[D]")
+            in_week = (days > last_day - 7) & (days <= last_day)
+            assert float(weekly[week]) == pytest.approx(float(point.values[in_week].mean()))
+        assert float(weekly[0]) == pytest.approx(250.928362)
 
     def test_timmean_time_bounds(self, reader, data_2t):
         """Test for timmean method with time_bounds=True"""
@@ -156,28 +206,6 @@ class TestTimmean:
             complete = series.sel(time=series.time.dt.month.isin(range(2, 8)))
             assert avg["time_bnds"].isel(time=0, bnds=0) == complete.time[0]
             assert avg["time_bnds"].isel(time=-1, bnds=1) == complete.time[-1]
-
-    def test_timstat_histogram(self, reader, data_2t):
-        """Test histogram through timstat"""
-        bins, range = 20, (250, 330)
-
-        # test passing a string
-        hist1 = reader.timstat(
-            data_2t["2t"], freq="monthly", stat="histogram", bins=bins, range=range, exclude_incomplete=True
-        )
-        # timhist passes a function
-        hist2 = reader.timhist(data_2t["2t"], freq="monthly", bins=bins, range=range, exclude_incomplete=True)
-        hist3 = reader.timstat(data_2t["2t"], freq="monthly", stat=histogram, bins=bins, range=range, exclude_incomplete=True)
-
-        assert hist1["center_of_bin"].shape == hist2["center_of_bin"].shape
-        assert hist1["center_of_bin"].shape == hist3["center_of_bin"].shape
-        assert hist1.isel(time=2).sum().values == hist2.isel(time=2).sum().values
-        assert hist2.isel(time=2).sum().values == hist3.isel(time=2).sum().values
-
-        hist1 = reader.timhist(data_2t["2t"], bins=bins, range=range)
-        hist2 = reader.histogram(data_2t["2t"], bins=bins, range=range)
-
-        assert hist1.sum().values == hist2.sum().values
 
     def test_timmean_exclude_incomplete(self, reader, data_2t):
         """Timmean seasonal QS-FEB with exclude_incomplete=True"""
@@ -236,6 +264,17 @@ class TestTimstatAnyCalendar:
     def data_2t(self, reader):
         return reader.retrieve(var="2t")
 
+    def test_timstat_attrs(self, reader, data_2t):
+        """Time statistics keep the units and the AQUA attributes and log what was computed"""
+        monthly = reader.timmean(data_2t["2t"], freq="monthly")
+        assert monthly.attrs["units"] == "K"
+        assert monthly.attrs["AQUA_model"] == "IFS"
+        assert "resampled from frequency <Hour> to frequency monthly by AQUA timmean" in monthly.attrs["history"]
+
+        daily = reader.timmax(data_2t["2t"], freq="daily")
+        assert daily.attrs["units"] == "K"
+        assert "resampled from frequency <Hour> to frequency daily by AQUA timmax" in daily.attrs["history"]
+
     @pytest.mark.parametrize("stat", ["first", "last"])
     def test_timstat_first_last_no_freq(self, reader, data_2t, stat):
         """first and last statistics require a frequency to be specified"""
@@ -269,3 +308,25 @@ class TestTimstatAnyCalendar:
         single = data_2t.sel(time=data_2t.time[0])
         with pytest.raises(ValueError, match=r"Time dimension not found in the input data. Cannot compute timstd statistic"):
             reader.timstat(single, stat="std", freq="monthly")
+
+    def test_timstat_histogram(self, reader, data_2t):
+        """Test histogram through timstat"""
+        bins, range = 20, (250, 330)
+
+        # test passing a string
+        hist1 = reader.timstat(
+            data_2t["2t"], freq="monthly", stat="histogram", bins=bins, range=range, exclude_incomplete=True
+        )
+        # timhist passes a function
+        hist2 = reader.timhist(data_2t["2t"], freq="monthly", bins=bins, range=range, exclude_incomplete=True)
+        hist3 = reader.timstat(data_2t["2t"], freq="monthly", stat=histogram, bins=bins, range=range, exclude_incomplete=True)
+
+        assert hist1["center_of_bin"].shape == hist2["center_of_bin"].shape
+        assert hist1["center_of_bin"].shape == hist3["center_of_bin"].shape
+        assert hist1.isel(time=2).sum().values == hist2.isel(time=2).sum().values
+        assert hist2.isel(time=2).sum().values == hist3.isel(time=2).sum().values
+
+        hist1 = reader.timhist(data_2t["2t"], bins=bins, range=range)
+        hist2 = reader.histogram(data_2t["2t"], bins=bins, range=range)
+
+        assert hist1.sum().values == hist2.sum().values
