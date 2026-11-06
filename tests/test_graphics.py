@@ -708,7 +708,7 @@ class TestSeasonalMeans:
 
         seasonal_data = [self.djf, self.mam, self.jja, self.son]
 
-        fig, _ = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data, figsize=(10, 6.7), loglevel=loglevel)
+        fig, _ = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data, figsize=(10, 6.7), loglevel=LOGLEVEL)
 
         assert tuple(fig.get_size_inches()) == pytest.approx((10, 6.7))
         plt.close(fig)

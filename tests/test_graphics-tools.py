@@ -6,7 +6,6 @@ import xarray as xr
 from astropy_healpix import healpy as hp
 from utils_tests import LOGLEVEL
 
-from aqua import Reader
 from aqua.core.default import DEFAULT_FIGURE_WIDTH
 from aqua.core.util import (
     cbar_get_label,

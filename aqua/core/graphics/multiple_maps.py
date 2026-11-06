@@ -128,7 +128,7 @@ def plot_maps(
     mappable = ax.collections[0]
 
     # Add the colorbar
-    cbar = fig.colorbar(mappable, ax=map_axes, location="bottom", shrink=0.6, aspect=40, label=cbar_label)
+    cbar = fig.colorbar(mappable, ax=map_axes, location="bottom", shrink=0.8, aspect=40, label=cbar_label)
 
     # Make the colorbar ticks symmetrical if sym=True
     if sym:
@@ -282,7 +282,7 @@ def plot_maps_diff(
     mappable = ax.collections[0]
 
     # Add the colorbar
-    cbar = fig.colorbar(mappable, ax=map_axes, location="bottom", shrink=0.6, aspect=40, label=cbar_label)
+    cbar = fig.colorbar(mappable, ax=map_axes, location="bottom", shrink=0.8, aspect=40, label=cbar_label)
 
     # Make the colorbar ticks symmetrical if sym=True
     if sym:

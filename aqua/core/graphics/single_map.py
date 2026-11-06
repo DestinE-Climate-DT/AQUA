@@ -219,7 +219,7 @@ def plot_single_map(
                 # Customized behavior for polar/other projs (e.g. SeaIce)
                 gl = ax.gridlines(draw_labels="x", color="none")  # draw only lon (x) labels, no lat labels
                 gl.rotate_labels = False
-                gl.xlabel_style = {"size": 8}
+                gl.xlabel_style = {"size": "x-small"}
             draw_manual_gridlines(ax=ax, lon_interval=30, lat_interval=10, zorder=50)
 
     if cbar:
