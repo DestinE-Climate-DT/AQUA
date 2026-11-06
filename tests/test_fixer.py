@@ -221,20 +221,21 @@ def test_fixer_monthly_repeated_retrievals(data_ifs_tco79_long_fixfalse):
     assert out_jan["tnlwrf"].equals(fresh_jan["tnlwrf"])
 
 
-# Exception to the pytest default tolerance (see tests/utils_tests): EvaluateFormula works in float32 and evaluates
-# in its own order, so it rounds differently from the xarray oracle. Values near 273 K have a float32 spacing of 3e-5,
-# and ((2t - 273.15)^2)/2 differs by up to 4e-4 near 0 Celsius, where a relative tolerance is meaningless.
-FLOAT32_FORMULA_TOL = {"rel": 1e-6, "abs": 1e-4}
-
-
 @pytest.fixture
 def data_2t_tp(era5_hpz3_monthly_data):
     return era5_hpz3_monthly_data
 
 
+@pytest.fixture
+def data_2t_tp_float64(data_2t_tp):
+    """The same fields in float64, for the oracles: EvaluateFormula turns its numeric constants into float64 arrays,
+    so its results are float64 even if the data are float32 (plain xarray arithmetic keeps float32)."""
+    return data_2t_tp[["2t", "tprate"]].astype("float64")
+
+
 @pytest.mark.aqua
 class TestEvaluateFormula:
-    def test_evaluate_formula(self, data_2t_tp):
+    def test_evaluate_formula(self, data_2t_tp, data_2t_tp_float64):
         formula = "2t -273.15"
         convert = EvaluateFormula(
             data=data_2t_tp, formula=formula, units="Celsius", short_name="2t_celsius", long_name="2t converted to Celsius"
@@ -245,9 +246,9 @@ class TestEvaluateFormula:
         assert convert.attrs["units"] == "Celsius"
 
         # every value, not only the mean of one time step: the oracle is plain xarray arithmetic
-        assert convert.values == pytest.approx((data_2t_tp["2t"] - 273.15).values, **FLOAT32_FORMULA_TOL)
+        assert convert.values == pytest.approx((data_2t_tp_float64["2t"] - 273.15).values)
 
-    def test_complex_formula(self, data_2t_tp):
+    def test_complex_formula(self, data_2t_tp, data_2t_tp_float64):
         formula = "((2t - 273.15)^2)/2 +  (tprate / 1000)"
         convert = EvaluateFormula(
             data=data_2t_tp,
@@ -261,10 +262,11 @@ class TestEvaluateFormula:
         assert convert.attrs["long_name"] == "Complex calculation"
         assert convert.attrs["units"] == "Celsius^2 * hPa"
 
-        expected = ((data_2t_tp["2t"] - 273.15) ** 2) / 2 + (data_2t_tp["tprate"] / 1000)
-        assert convert.values == pytest.approx(expected.values, **FLOAT32_FORMULA_TOL)
+        data = data_2t_tp_float64
+        expected = ((data["2t"] - 273.15) ** 2) / 2 + (data["tprate"] / 1000)
+        assert convert.values == pytest.approx(expected.values)
 
-    def test_magnitude(self, data_2t_tp):
+    def test_magnitude(self, data_2t_tp, data_2t_tp_float64):
         """Test magnitude calculation"""
         formula = "(2t^2 + 2t^2)^0.5"
         convert = EvaluateFormula(
@@ -274,8 +276,9 @@ class TestEvaluateFormula:
         assert convert.attrs["short_name"] == "magnitude_2t"
         assert convert.attrs["long_name"] == "Magnitude of 2t vector"
         assert convert.attrs["units"] == "K"
-        expected = (data_2t_tp["2t"] ** 2 + data_2t_tp["2t"] ** 2) ** 0.5
-        assert convert.values == pytest.approx(expected.values, **FLOAT32_FORMULA_TOL)
+        data = data_2t_tp_float64
+        expected = (data["2t"] ** 2 + data["2t"] ** 2) ** 0.5
+        assert convert.values == pytest.approx(expected.values)
 
     def test_wrong_formula(self, data_2t_tp):
         """Test wrong parentheses handling"""
