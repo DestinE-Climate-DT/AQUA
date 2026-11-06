@@ -2,7 +2,7 @@ import glob
 import logging
 import os
 import re
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import dask.array as da
 import icechunk
@@ -968,6 +968,56 @@ class TestIcechunkWriter:
         result = writer.check_integrity("bar")
         assert result["complete"] is False
         assert "bar" in result["message"]
+
+    def test_multivar_subdaily_resume(self, tmp_path):
+        """A new variable keeps the others (AQUA-001); resume starts after the exact last timestamp (AQUA-007)."""
+        writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+        writer.time_chunk_size = 2
+        times = pd.date_range("2020-01-31", periods=4, freq="12h")  # Jan 31 00/12, Feb 1 00/12
+        full = xr.DataArray(np.arange(8.0).reshape(4, 2), dims=["time", "lat"], coords={"time": times, "lat": [0.0, 1.0]})
+
+        assert writer.write_variable(full[:3].rename("a"), var="a")  # a interrupted after Feb 1 00:00
+        assert writer.write_variable((full * 10).rename("b"), var="b")  # new var extending the shared time axis
+        assert writer.write_variable(full.rename("a"), var="a")  # resume a: only Feb 1 12:00 is missing
+
+        ds = writer._open_files(writer.repo_path)
+        assert list(ds.time.values) == list(times.values)
+        np.testing.assert_array_equal(ds["a"].values, full.values)
+        np.testing.assert_array_equal(ds["b"].values, full.values * 10)
+
+    @pytest.mark.parametrize("failure", ["write", "write_exception", "commit", "validation"])
+    def test_failed_month_stops_variable(self, tmp_path, failure):
+        """A failed write, commit or post-commit check stops the variable, reports it and returns False."""
+        writer = IcechunkWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), loglevel=LOGLEVEL)
+        times = pd.date_range("2020-01-31", periods=4, freq="12h")  # Jan 31 00/12, Feb 1 00/12: two months
+        data = xr.DataArray(np.arange(4.0), dims=["time"], coords={"time": times}, name="a")
+        real_write, real_check = writer._write_month, writer.check_integrity
+
+        def write_month(month_data, var, clobber=False):
+            if failure == "write":
+                return False
+            if failure == "write_exception":
+                raise RuntimeError("boom")
+            ok = real_write(month_data, var, clobber=clobber)
+            if failure == "commit":
+                writer.main_session = MagicMock(commit=MagicMock(side_effect=RuntimeError("boom")))
+            return ok
+
+        checks = []
+
+        def check_integrity(var, **kwargs):
+            checks.append(var)
+            if failure == "validation" and len(checks) > 1:  # the first call is the one before writing
+                return {"complete": False, "last_record": None, "message": "boom"}
+            return real_check(var, **kwargs)
+
+        with (
+            patch.object(writer, "_write_month", side_effect=write_month) as write,
+            patch.object(writer, "check_integrity", side_effect=check_integrity),
+        ):
+            assert writer.write_variable(data, var="a") is False
+        assert write.call_count == 1
+        assert writer.report.failed == [f"2020-01 ({'write' if failure.startswith('write') else failure})"]
 
     def test_resume_and_skip(self, drop_arguments, tmp_path):
         """IcechunkWriter skips a variable already fully committed and appends only the missing months later."""
