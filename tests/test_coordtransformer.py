@@ -39,8 +39,14 @@ def _regular_dataset(lat_values=None, lon_values=None, lat_decreasing=False):
         lat_values = lat_values[::-1]
     lon_values = lon_values if lon_values is not None else np.array([0.0, 90.0, 180.0, 270.0])
 
+    # the value of a cell is its index: a test can check that the data follows its coordinates
     ds = xr.Dataset(
-        {"var": (["latitude", "longitude"], np.random.rand(len(lat_values), len(lon_values)))},
+        {
+            "var": (
+                ["latitude", "longitude"],
+                np.arange(len(lat_values) * len(lon_values), dtype=float).reshape(len(lat_values), -1),
+            )
+        },
         coords={"latitude": lat_values, "longitude": lon_values},
     )
     ds["latitude"].attrs = {"units": "degrees_north", "standard_name": "latitude"}
@@ -369,7 +375,12 @@ class TestNormalizeRangeConvention:
         np.testing.assert_allclose(result[self.longitude].values, [10.0, 170.0, 190.0, 350.0])
 
     def test_ignores_non_longitude_coordinates(self):
-        ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]))
+        """Only the longitude is wrapped.
+
+        Longitudes are outside the target range on purpose: a latitude wrapped as well ([-170, 10] becomes [10, 190])
+        would be visible. The test used to pass only through the early return for longitudes already in 0_to_360.
+        """
+        ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]), lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
         tgt = {"name": self.latitude, "range_convention": "0_to_360"}
@@ -444,19 +455,20 @@ class TestAssignAttributes:
         assert result.lon.attrs["axis"] == "X"
         assert result.lon.attrs["standard_name"] == "longitude"
         # control keys must never be copied as attributes
-        assert "units" not in result.lon.attrs or True  # units handled by convert_units, not here
+        assert "units" not in result.lon.attrs  # units are handled by convert_units, not here
         assert "name" not in result.lon.attrs
         assert "bounds" not in result.lon.attrs
 
-    def test_range_key_never_leaks_into_attrs(self):
-        """Regression test: 'range' is a wrap-convention control key, not a CF attribute."""
+    @pytest.mark.parametrize("key", ["range", "range_convention"])
+    def test_range_key_never_leaks_into_attrs(self, key):
+        """The wrap-convention control key is not a CF attribute (`range` is the obsolete name of the key)."""
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
-        tgt = {"name": "lon", "range": "0_to_360", "axis": "X"}
+        tgt = {"name": "lon", key: "0_to_360", "axis": "X"}
         result = transformer.assign_attributes(ds, tgt)
 
-        assert "range" not in result.lon.attrs
+        assert key not in result.lon.attrs
         assert result.lon.attrs["axis"] == "X"
 
     def test_does_not_overwrite_existing_attribute(self):
@@ -492,8 +504,12 @@ class TestTransformCoordsIntegration:
         result = transformer.transform_coords(name="aqua")
 
         assert result.lat.values[0] < result.lat.values[-1]  # flip still happens
-        np.testing.assert_allclose(sorted(result.lon.values), [10.0, 170.0, 190.0, 350.0])
+        np.testing.assert_allclose(result.lon.values, [10.0, 170.0, 190.0, 350.0])  # wrapped and sorted by the pipeline
         assert result.lon.attrs["units"] == "degrees_east"
+        # every cell keeps its value: the data follows the flipped latitude and the wrapped and sorted longitude
+        for lat in ds.latitude.values:
+            for lon_before, lon_after in zip([-170.0, -10.0, 10.0, 170.0], [190.0, 350.0, 10.0, 170.0]):
+                assert result["var"].sel(lat=lat, lon=lon_after) == ds["var"].sel(latitude=lat, longitude=lon_before)
 
     def test_flip_coords_false_disables_flipping_but_not_lon_wrap(self):
         ds = _regular_dataset(lat_decreasing=True, lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
@@ -505,6 +521,8 @@ class TestTransformCoordsIntegration:
         assert result.lat.values[0] > result.lat.values[-1]
         # lon wrap is independent of flip_coords and must still apply
         assert result.lon.values.min() >= 0
+        np.testing.assert_allclose(result.lon.values, [10.0, 170.0, 190.0, 350.0])
+        assert result["var"].sel(lat=90.0, lon=190.0) == ds["var"].sel(latitude=90.0, longitude=-170.0)
 
     def test_invalid_name_type_raises(self):
         ds = _regular_dataset()

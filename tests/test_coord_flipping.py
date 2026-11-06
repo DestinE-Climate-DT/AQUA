@@ -167,19 +167,6 @@ def test_coord_flipping_dataarray(lat_decreasing, lon_values):
     assert da_transformed.lat.attrs.get("AQUA_flipped", None) == 1
 
 
-def test_counter_reverse_coordinate(dataset_decreasing_lat, lat_decreasing):
-    """Test that counter_reverse_coordinate can undo a flip."""
-    ds = dataset_decreasing_lat
-
-    # Flips lat
-    transformer = CoordTransformer(ds, loglevel=loglevel)
-    ds_transformed = transformer.transform_coords()
-
-    # Verify flip occurred
-    assert ds_transformed.lat.attrs.get("AQUA_flipped", None) == 1
-    assert ds_transformed.lat.values[0] < ds_transformed.lat.values[-1]
-
-
 def test_reader_regrid_flipped():
     """Test flipping lat coord by datamodel"""
     reader = Reader(catalog="ci", model="ERA5", exp="era5-2d-flip", source="monthly", regrid="r100")
