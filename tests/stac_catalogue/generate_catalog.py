@@ -29,8 +29,11 @@ def models_directory() -> Path:
 
 
 def dump(path: Path, value: dict) -> None:
+    """Write the JSON atomically, so that a reader never sees a partial file."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+    os.replace(tmp, path)
 
 
 def slug(value: str) -> str:
