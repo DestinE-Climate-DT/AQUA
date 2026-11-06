@@ -8,32 +8,19 @@ from aqua import Reader
 class TestKwargs:
     """Small class to test kwargs"""
 
-    def test_kwargs_default(self):
-        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", loglevel=LOGLEVEL)
+    @pytest.mark.parametrize(
+        "kwargs, variable, year",
+        [
+            pytest.param({}, "tos", 1985, id="default"),
+            pytest.param({"year": 1986}, "tos", 1986, id="one-option"),
+            pytest.param({"year": 1986, "variable": "a_ice", "fix": False}, "a_ice", 1986, id="two-options"),
+            # With a wrong kwarg, the reader will remove it and log a warning
+            pytest.param({"wrong_kwarg": "pippo"}, "tos", 1985, id="wrong-kwarg"),
+        ],
+    )
+    def test_kwargs(self, kwargs, variable, year):
+        """The source kwargs select the variable and the year; unknown ones are dropped."""
+        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", loglevel=LOGLEVEL, **kwargs)
         data = reader.retrieve()
-        assert list(data.data_vars) == ["tos"]
-        assert data.time.dt.year == 1985
-
-    @pytest.mark.aqua
-    def test_kwargs_one_option(self):
-        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", year=1986, loglevel=LOGLEVEL)
-        data = reader.retrieve()
-        assert list(data.data_vars) == ["tos"]
-        assert data.time.dt.year == 1986
-
-    @pytest.mark.aqua
-    def test_kwargs_two_options(self):
-        reader = Reader(
-            model="FESOM", exp="test-pi", source="kwargs-2d", year=1986, variable="a_ice", fix=False, loglevel=LOGLEVEL
-        )  # noqa: E501
-        data = reader.retrieve()
-        assert list(data.data_vars) == ["a_ice"]
-        assert data.time.dt.year == 1986
-
-    @pytest.mark.aqua
-    def test_wrong_kwargs(self):
-        # With a wrong kwarg, the reader will remove it and log a warning
-        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", wrong_kwarg="pippo", loglevel=LOGLEVEL)
-        data = reader.retrieve()
-        assert list(data.data_vars) == ["tos"]
-        assert data.time.dt.year == 1985
+        assert list(data.data_vars) == [variable]
+        assert data.time.dt.year == year

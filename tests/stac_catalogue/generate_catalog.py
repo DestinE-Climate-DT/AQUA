@@ -5,9 +5,8 @@ import os
 import re
 import subprocess
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-OUTPUT = Path(__file__).resolve().parent
+OUTPUT = os.path.dirname(os.path.realpath(__file__))
 MEDIA_TYPE = "application/x-netcdf"
 MODEL_DESCRIPTIONS = {
     "ECE4-FAST": "EC-Earth 4 FAST atmosphere, ocean, and sea-ice test datasets.",
@@ -19,18 +18,27 @@ MODEL_DESCRIPTIONS = {
 }
 
 
-def models_directory() -> Path:
+def models_directory() -> str:
     """Find the downloaded fixtures from the generator's checkout."""
-    for directory in (OUTPUT, *OUTPUT.parents):
-        candidate = directory / "AQUA_tests" / "models"
-        if candidate.is_dir():
+    directory = OUTPUT
+    while True:
+        candidate = os.path.join(directory, "AQUA_tests", "models")
+        if os.path.isdir(candidate):
             return candidate
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            break
+        directory = parent
     raise FileNotFoundError("AQUA_tests/models is required at the AQUA repository root")
 
 
-def dump(path: Path, value: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+def dump(path: str, value: dict) -> None:
+    """Write the JSON atomically, so that a reader never sees a partial file."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = os.path.join(os.path.dirname(path), f".{os.path.basename(path)}.{os.getpid()}.tmp")
+    with open(tmp, "w") as file:
+        file.write(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+    os.replace(tmp, path)
 
 
 def slug(value: str) -> str:
@@ -38,9 +46,9 @@ def slug(value: str) -> str:
     return value or "item"
 
 
-def header(path: Path) -> str:
+def header(path: str) -> str:
     return subprocess.run(
-        ["ncdump", "-h", str(path)],
+        ["ncdump", "-h", path],
         check=True,
         capture_output=True,
         text=True,
@@ -81,13 +89,13 @@ def parse_base_datetime(raw: str) -> datetime:
     )
 
 
-def time_extent(path: Path, ncdump_header: str) -> tuple[str, str, str]:
+def time_extent(path: str, ncdump_header: str) -> tuple[str, str, str]:
     for name in ("time", "time_counter"):
         unit_match = re.search(rf"\b{name}:units\s*=\s*\"(seconds|hours|days) since ([^\"]+)\"", ncdump_header)
         if not unit_match:
             continue
         output = subprocess.run(
-            ["ncdump", "-v", name, str(path)],
+            ["ncdump", "-v", name, path],
             check=True,
             capture_output=True,
             text=True,
@@ -106,13 +114,13 @@ def time_extent(path: Path, ncdump_header: str) -> tuple[str, str, str]:
         end = base + timedelta(seconds=max(values) * seconds)
         return iso(start), iso(end), f"NetCDF coordinate {name}"
 
-    year_match = re.search(r"(?<!\d)(19\d{2}|20\d{2})(?:-(19\d{2}|20\d{2}))?(?!\d)", path.name)
+    year_match = re.search(r"(?<!\d)(19\d{2}|20\d{2})(?:-(19\d{2}|20\d{2}))?(?!\d)", os.path.basename(path))
     if year_match:
         first = int(year_match.group(1))
         last = int(year_match.group(2) or first)
         return f"{first:04d}-01-01T00:00:00Z", f"{last:04d}-12-31T23:59:59Z", "filename fallback"
 
-    modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+    modified = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
     stamp = iso(modified)
     return stamp, stamp, "file modification-time fallback"
 
@@ -123,16 +131,21 @@ def iso(value: datetime) -> str:
 
 def main() -> None:
     models = models_directory()
-    OUTPUT.mkdir(parents=True, exist_ok=True)
-    files = sorted(path for path in models.rglob("*.nc") if OUTPUT not in path.parents)
+    os.makedirs(OUTPUT, exist_ok=True)
+    files = sorted(
+        os.path.join(root, name)
+        for root, _, names in os.walk(models)
+        for name in names
+        if name.endswith(".nc") and not os.path.join(root, name).startswith(OUTPUT + os.sep)
+    )
     if not files:
         raise FileNotFoundError(f"No NetCDF files found in {models}")
-    grouped: dict[str, list[Path]] = {}
-    metadata: dict[Path, tuple[str, str, str, list[str]]] = {}
+    grouped: dict[str, list[str]] = {}
+    metadata: dict[str, tuple[str, str, str, list[str]]] = {}
 
     for path in files:
-        relative = path.relative_to(models)
-        model = relative.parts[0]
+        relative = os.path.relpath(path, models)
+        model = relative.split(os.sep)[0]
         grouped.setdefault(model, []).append(path)
         nc_header = header(path)
         start, end, source = time_extent(path, nc_header)
@@ -159,16 +172,18 @@ def main() -> None:
 
         seen_ids: set[str] = set()
         for path in model_files:
-            relative = path.relative_to(models)
-            item_id = slug("-".join(relative.with_suffix("").parts))
+            relative = os.path.relpath(path, models)
+            item_id = slug("-".join(os.path.splitext(relative)[0].split(os.sep)))
             if item_id in seen_ids:
                 raise RuntimeError(f"Duplicate item id: {item_id}")
             seen_ids.add(item_id)
             item_href = f"../items/{collection_id}/{item_id}.json"
-            collection_links.append({"rel": "item", "href": item_href, "type": "application/geo+json", "title": path.name})
+            collection_links.append(
+                {"rel": "item", "href": item_href, "type": "application/geo+json", "title": os.path.basename(path)}
+            )
             start, end, source, data_variables = metadata[path]
-            item_path = OUTPUT / "items" / collection_id / f"{item_id}.json"
-            asset_href = Path(os.path.relpath(path, item_path.parent)).as_posix()
+            item_path = os.path.join(OUTPUT, "items", collection_id, f"{item_id}.json")
+            asset_href = os.path.relpath(path, os.path.dirname(item_path)).replace(os.sep, "/")
             item = {
                 "type": "Feature",
                 "stac_version": "1.0.0",
@@ -178,9 +193,9 @@ def main() -> None:
                 "properties": {
                     "datetime": start if start == end else None,
                     **({"start_datetime": start, "end_datetime": end} if start != end else {}),
-                    "title": path.name,
+                    "title": os.path.basename(path),
                     "aqua:model": model,
-                    "aqua:relative_path": relative.as_posix(),
+                    "aqua:relative_path": relative.replace(os.sep, "/"),
                     "aqua:variables": data_variables,
                     "aqua:datetime_source": source,
                 },
@@ -193,7 +208,7 @@ def main() -> None:
                 "assets": {
                     "data": {
                         "href": asset_href,
-                        "title": path.name,
+                        "title": os.path.basename(path),
                         "description": "Local NetCDF test data; open with xarray.open_dataset(asset.href).",
                         "type": MEDIA_TYPE,
                         "roles": ["data"],
@@ -221,7 +236,7 @@ def main() -> None:
             },
             "links": collection_links,
         }
-        dump(OUTPUT / "collections" / f"{collection_id}.json", collection)
+        dump(os.path.join(OUTPUT, "collections", f"{collection_id}.json"), collection)
 
     catalog = {
         "type": "Catalog",
@@ -232,7 +247,7 @@ def main() -> None:
         "description": "Example static STAC catalog for local PySTAC and Intake development using AQUA NetCDF fixtures.",
         "links": catalog_links,
     }
-    dump(OUTPUT / "catalog.json", catalog)
+    dump(os.path.join(OUTPUT, "catalog.json"), catalog)
     print(f"Wrote {len(grouped)} collections and {len(files)} items to {OUTPUT}")
 
 

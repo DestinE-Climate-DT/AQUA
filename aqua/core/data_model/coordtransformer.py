@@ -9,7 +9,7 @@ from aqua.core.logger import log_configure, log_history
 from .coord_utils import get_data_model, units_conversion_factor
 from .coordidentifier import CoordIdentifier
 
-IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range"]
+IGNORED_ATTRIBUTES = ["name", "units", "positive", "stored_direction", "bounds", "range", "range_convention"]
 
 
 class CoordTransformer:
@@ -298,7 +298,7 @@ class CoordTransformer:
             data (xr.Dataset or xr.DataArray): The Xarray object.
             tgt_coord (dict): Target coordinate dictionary, as defined in the
                 data model YAML. Only acts on the longitude coordinate, and only
-                if a "range": [lo, hi] key is present; otherwise a no-op so this
+                if a "range_convention" key is present; otherwise a no-op so this
                 stays fully backward compatible with data models that don't set it.
 
         Returns:
@@ -310,6 +310,13 @@ class CoordTransformer:
 
         # ignore cases where we do not have longitudes
         if coord_name not in data.coords:
+            return data
+
+        # the data model may be handed a non-longitude coordinate: never wrap it (e.g. latitude above 90)
+        lon_names = {self.src_coords[AQUA_LONGITUDE]["name"]}
+        if self.tgt_coords:
+            lon_names.add(self.tgt_coords[AQUA_LONGITUDE]["name"])
+        if coord_name not in lon_names:
             return data
 
         # extract ranges and verify they are aligned

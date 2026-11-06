@@ -28,8 +28,6 @@ from aqua.core.util.graphics import (
     prettify_levels,
 )
 
-loglevel = LOGLEVEL
-
 
 @pytest.fixture()
 def da():
@@ -50,8 +48,8 @@ def test_add_cyclic_lon(da):
     assert isinstance(new_da, xr.DataArray), "Output should be an xarray.DataArray"
     assert "lon" in new_da.coords, "Output should have a 'lon' coordinate"
     assert "lat" in new_da.coords, "Output should have a 'lat' coordinate"
-    assert np.allclose(new_da.lat, old_da.lat), "Latitude values should be equal"
-    assert np.allclose(new_da.isel(lon=-1).values, old_da.isel(lon=0).values), (
+    assert new_da.lat.values == pytest.approx(old_da.lat.values), "Latitude values should be equal"
+    assert new_da.isel(lon=-1).values == pytest.approx(old_da.isel(lon=0).values), (
         "First and last longitude values should be equal"
     )
     assert new_da.shape == (18, 37), "Output shape is incorrect"
@@ -106,10 +104,9 @@ def test_minmax_maps(da):
 
 
 @pytest.fixture(scope="module")
-def ifs_data():
+def ifs_data(ifs_tco79_short_reader):
     """Retrieve IFS data for graphics tools tests"""
-    reader = Reader(model="IFS", exp="test-tco79", source="short", loglevel=loglevel)
-    return reader.retrieve()
+    return ifs_tco79_short_reader.retrieve()
 
 
 @pytest.mark.graphics
@@ -118,13 +115,13 @@ def test_label(ifs_data):
     da = ifs_data["2t"]
 
     # Test cbar_get_label function
-    label = cbar_get_label(da, loglevel=loglevel)
+    label = cbar_get_label(da, loglevel=LOGLEVEL)
     # assert label is a string
     assert isinstance(label, str), "Colorbar label should be a string"
     assert label == "2 metre temperature [K]", "Colorbar label is incorrect"
 
     # Test the function with a custom label
-    label = cbar_get_label(da, cbar_label="Temperature", loglevel=loglevel)
+    label = cbar_get_label(da, cbar_label="Temperature", loglevel=LOGLEVEL)
     assert label == "Temperature", "Colorbar label is incorrect"
 
     # Test the cbar limits function with sym=False
@@ -299,7 +296,7 @@ def test_add_contour_labels_fallback(monkeypatch):
         return split(*args, **kwargs)
 
     monkeypatch.setattr(cs, "_split_path_and_get_label_rotation", failing_split)
-    add_contour_labels(cs, loglevel=loglevel)
+    add_contour_labels(cs, loglevel=LOGLEVEL)
 
     assert not cs.labelTexts and not ax.texts
     assert cs.get_paths() == paths and cs.get_transform() is transform
