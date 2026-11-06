@@ -46,7 +46,7 @@ New and refactored tests follow six principles (rationale and batch plan: issue 
    - A branch that no public path reaches gets a small unit test, or is reported as dead code.
    - A missing optional dependency (FDB, network) gives an explicit skip with a reason, never a silent pass.
 4. **No change to scientific results**
-   - Reference values come from `main` before the refactoring and are never regenerated from the new code. Tolerances are tight (`APPROX_REL`) and never widened to make a test pass.
+   - Reference values come from `main` before the refactoring and are never regenerated from the new code. Tolerances are tight and never widened to make a test pass: use the pytest default (`pytest.approx(value)`, rel=1e-6) and fall back to `rel=APPROX_REL` (1e-4, `tests/utils_tests`) only when 1e-6 is not achievable (regridding weights, dask reductions, platform floating point), never where the tolerance would cover the difference between the values the test must distinguish.
    - Source fixes go in separate PRs; a bug exposed by a test is left failing (never edited to pass, never `xfail`), with its docstring pointing to an issue that documents the problem, never hidden by a weaker assertion.
    - Check a new assertion by breaking the source line it covers by hand and seeing the test fail.
 5. **Integration over unit**

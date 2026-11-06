@@ -37,6 +37,7 @@ Unreleased in the current development version (target v1.2.4):
 - Test suite batch B4b of #3309 (AQUA-TEST-029): 11 redundant tests removed or merged without losing coverage (a DROP performance test that is a subset of the stats-file test, the icechunk skip test merged into the resume test, CoordTransformer errors repeated in `test_datamodel.py`, three STAC alias duplicates, and calendar-independent `timstat` checks run on one source instead of two) (#3337)
 - Test suite batch B4c of #3309 (AQUA-TEST-028, 030): six unused fixtures removed, seven inline `Reader` constructions replaced by the identical session fixtures, and the level-selection and kwargs tests parametrized; same tests, same coverage (#3338)
 - Test suite batch B4d of #3309 (AQUA-TEST-031): the DROP tests run in their own xdist group (`drop_operations`) instead of the serial `dask_operations` group of timstat and gsv, which sets the wall time of the CI run; the DROP outputs no longer share a directory since B1 (#3339)
+- Test suite batch B5a of #3309 (AQUA-TEST-004, 008, 024): `FldStat` and accessor tests check values against independent oracles (numpy and xarray weighted means) instead of sizes, the regridded `fldmean` test regrids, partial `dims` and the attributes of the statistics are tested, the accessor references no longer share a 1e-4 tolerance, and two needless `rebuild=True` are gone (#3340)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 ## [v1.2.3]
