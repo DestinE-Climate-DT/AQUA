@@ -239,9 +239,9 @@ class TestEvaluateFormula:
         assert convert.attrs["long_name"] == "2t converted to Celsius"
         assert convert.attrs["units"] == "Celsius"
 
-        original_values = (data_2t_tp["2t"].isel(time=0) - 273.15).mean()
-        expected_values = convert.isel(time=0).mean()
-        assert np.allclose(original_values.values, expected_values.values)
+        # every value, not only the mean of one time step: the oracle is plain xarray arithmetic
+        # (float32 values near 273 K have a spacing of 3e-5: the oracle and the evaluation round differently)
+        np.testing.assert_allclose(convert.values, (data_2t_tp["2t"] - 273.15).values, rtol=1e-6, atol=1e-4)
 
     def test_complex_formula(self, data_2t_tp):
         formula = "((2t - 273.15)^2)/2 +  (tprate / 1000)"
@@ -257,11 +257,8 @@ class TestEvaluateFormula:
         assert convert.attrs["long_name"] == "Complex calculation"
         assert convert.attrs["units"] == "Celsius^2 * hPa"
 
-        original_values = (
-            ((data_2t_tp["2t"].isel(time=0) - 273.15) ** 2) / 2 + (data_2t_tp["tprate"].isel(time=0) / 1000)
-        ).mean()
-        expected_values = convert.isel(time=0).mean()
-        assert np.allclose(original_values.values, expected_values.values)
+        expected = ((data_2t_tp["2t"] - 273.15) ** 2) / 2 + (data_2t_tp["tprate"] / 1000)
+        np.testing.assert_allclose(convert.values, expected.values, rtol=1e-6, atol=1e-4)
 
     def test_magnitude(self, data_2t_tp):
         """Test magnitude calculation"""
@@ -273,17 +270,16 @@ class TestEvaluateFormula:
         assert convert.attrs["short_name"] == "magnitude_2t"
         assert convert.attrs["long_name"] == "Magnitude of 2t vector"
         assert convert.attrs["units"] == "K"
-        original_values = ((data_2t_tp["2t"].isel(time=0) ** 2 + data_2t_tp["2t"].isel(time=0) ** 2) ** 0.5).mean()
-        expected_values = convert.isel(time=0).mean()
-        assert np.allclose(original_values.values, expected_values.values)
+        expected = (data_2t_tp["2t"] ** 2 + data_2t_tp["2t"] ** 2) ** 0.5
+        np.testing.assert_allclose(convert.values, expected.values, rtol=1e-6, atol=1e-4)
 
     def test_wrong_formula(self, data_2t_tp):
         """Test wrong parentheses handling"""
         formula = "(2t - 273.15)) + (tprate / 1000"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Mismatched parentheses: closing parenthesis without opening"):
             EvaluateFormula(data=data_2t_tp, formula=formula).evaluate()
         formula = "((2t - 273.15) + (tprate / 1000)"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Mismatched parentheses: unclosed opening parenthesis"):
             EvaluateFormula(data=data_2t_tp, formula=formula).evaluate()
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match=r"Variable \+\+ not found in data"):
             EvaluateFormula(data=data_2t_tp, formula="2t ++ tprate").evaluate()
