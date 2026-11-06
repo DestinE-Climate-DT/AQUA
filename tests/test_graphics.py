@@ -30,8 +30,6 @@ from aqua.core.graphics import (
     plot_vertical_profile_diff,
 )
 
-loglevel = LOGLEVEL
-
 
 # Aliases with module scope for fixtures
 @pytest.fixture(scope="module")
@@ -104,7 +102,7 @@ class TestMaps:
             nyticks=5,
             ticks_rounding=1,
             cbar_ticks_rounding=1,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
         assert fig is not None
         assert ax is not None
@@ -117,7 +115,7 @@ class TestMaps:
         Test the plot_single_map function with HPX data
         """
         data = data_era5["2t"].isel(time=0)
-        fig, ax = plot_single_map(data=data, return_fig=True, loglevel=loglevel)
+        fig, ax = plot_single_map(data=data, return_fig=True, loglevel=LOGLEVEL)
         assert fig is not None
         assert ax is not None
 
@@ -152,7 +150,7 @@ class TestMaps:
             nxticks=5,
             nyticks=5,
             gridlines=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
         assert fig is not None
         assert ax is not None
@@ -166,7 +164,7 @@ class TestMaps:
         """
         data = data_era5["2t"].isel(time=0)
         data_ref = data_era5["2t"].isel(time=1)
-        fig, ax = plot_single_map_diff(data=data, data_ref=data_ref, return_fig=True, loglevel=loglevel)
+        fig, ax = plot_single_map_diff(data=data, data_ref=data_ref, return_fig=True, loglevel=LOGLEVEL)
         assert fig is not None
         assert ax is not None
 
@@ -181,7 +179,7 @@ class TestMaps:
         plot_data = data_regrid["sst"].isel(time=0)
         plot_data2 = plot_data.copy()
 
-        fig, ax = plot_single_map_diff(data=plot_data, return_fig=True, data_ref=plot_data2, loglevel=loglevel)
+        fig, ax = plot_single_map_diff(data=plot_data, return_fig=True, data_ref=plot_data2, loglevel=LOGLEVEL)
 
         assert fig is not None
         assert ax is not None
@@ -205,7 +203,7 @@ class TestMaps:
             nxticks=5,
             nyticks=6,
             return_fig=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
         assert fig is not None
 
@@ -229,7 +227,7 @@ class TestMaps:
             nxticks=5,
             nyticks=6,
             return_fig=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig2 is not None
@@ -266,7 +264,7 @@ class TestVerticalProfiles:
             nlevels=8,
             title="Test vertical profile",
             return_fig=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -294,7 +292,7 @@ class TestVerticalProfiles:
             title="Test vertical profile diff",
             title_size=16,
             return_fig=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -365,7 +363,7 @@ class TestTimeseries:
             title="Seasonal cycle of temperature at two locations",
             data_labels="t1",
             ref_label="t2",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -441,7 +439,7 @@ class TestHovmoller:
             nlevels=10,
             sym=True,
             title="Test hovmoller",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig2 is not None
@@ -451,7 +449,7 @@ class TestHovmoller:
         assert os.path.exists(tmp_path / "test_hovmoller2.png")
 
         fig, _ = plot_hovmoller(
-            data=self.data, return_fig=True, contour=False, cmap="RdBu_r", invert_time=True, loglevel=loglevel
+            data=self.data, return_fig=True, contour=False, cmap="RdBu_r", invert_time=True, loglevel=LOGLEVEL
         )
 
         assert fig is not None
@@ -474,7 +472,7 @@ class TestHovmoller:
             data=data_2d,
             return_fig=True,
             dim=None,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -490,7 +488,7 @@ class TestHovmoller:
             return_fig=True,
             cbar=False,
             cbar_label="explicit label",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -507,7 +505,7 @@ class TestHovmoller:
             vmin=-10.0,
             vmax=10.0,
             sym=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -530,7 +528,7 @@ def depth_section():
 @pytest.mark.graphics
 def test_plot_hovmoller_space_axis(depth_section):
     """The space axis is labelled with its units and leaves out the NaN-only band"""
-    _, ax = plot_hovmoller(data=depth_section, dim=None, invert_space_coord=True, return_fig=True, loglevel=loglevel)
+    _, ax = plot_hovmoller(data=depth_section, dim=None, invert_space_coord=True, return_fig=True, loglevel=LOGLEVEL)
     assert ax.get_ylabel() == "depth (m)"
     assert ax.get_ylim() == (3000.0, 5.0)
 
@@ -539,7 +537,7 @@ def test_plot_hovmoller_space_axis(depth_section):
 @pytest.mark.parametrize("vmin, vmax, extend", [(0, 1, "neither"), (0.2, 1, "min"), (0, 0.8, "max"), (0.2, 0.8, "both")])
 def test_plot_hovmoller_extend(depth_section, vmin, vmax, extend):
     """The colorbar is extended only on the sides where the data exceed vmin/vmax"""
-    _, ax = plot_hovmoller(data=depth_section, dim=None, vmin=vmin, vmax=vmax, return_fig=True, loglevel=loglevel)
+    _, ax = plot_hovmoller(data=depth_section, dim=None, vmin=vmin, vmax=vmax, return_fig=True, loglevel=LOGLEVEL)
     assert ax.collections[-1].extend == extend
 
 
@@ -547,7 +545,7 @@ def test_plot_hovmoller_extend(depth_section, vmin, vmax, extend):
 def test_plot_hovmoller_levels(depth_section):
     """Uneven levels replace vmin, vmax and nlevels"""
     levels = [0.1, 0.2, 0.5, 0.9]
-    _, ax = plot_hovmoller(data=depth_section, dim=None, levels=levels, return_fig=True, loglevel=loglevel)
+    _, ax = plot_hovmoller(data=depth_section, dim=None, levels=levels, return_fig=True, loglevel=LOGLEVEL)
     assert list(ax.collections[-1].levels) == levels
     assert ax.collections[-1].extend == "both"
 
@@ -572,7 +570,7 @@ class TestVerticalLines:
             title="Test vertical line",
             return_fig=True,
             invert_yaxis=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -605,7 +603,7 @@ class TestLatLonProfiles:
     def test_plot_lat_lon_profiles_single(self, tmp_path):
         """Test plot_lat_lon_profiles with single DataArray"""
         fig, ax = plot_lat_lon_profiles(
-            data=self.lat_profile.isel(time=0), title="Latitude profile test", data_labels=["Test data"], loglevel=loglevel
+            data=self.lat_profile.isel(time=0), title="Latitude profile test", data_labels=["Test data"], loglevel=LOGLEVEL
         )
 
         assert fig is not None
@@ -617,7 +615,7 @@ class TestLatLonProfiles:
         data_list = [self.lat_profile.isel(time=0), self.lat_profile.isel(time=1)]
 
         fig, ax = plot_lat_lon_profiles(
-            data=data_list, data_labels=["Time 0", "Time 1"], title="Multiple latitude profiles", loglevel=loglevel
+            data=data_list, data_labels=["Time 0", "Time 1"], title="Multiple latitude profiles", loglevel=LOGLEVEL
         )
 
         assert fig is not None
@@ -637,7 +635,7 @@ class TestLatLonProfiles:
             data_labels=["Data"],
             ref_label="Reference",
             title="Profile with reference",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -646,7 +644,7 @@ class TestLatLonProfiles:
 
     def test_plot_lon_profile(self, tmp_path):
         """Test plot_lat_lon_profiles with longitude profile"""
-        fig, ax = plot_lat_lon_profiles(data=self.lon_profile.isel(time=0), title="Longitude profile test", loglevel=loglevel)
+        fig, ax = plot_lat_lon_profiles(data=self.lon_profile.isel(time=0), title="Longitude profile test", loglevel=LOGLEVEL)
 
         assert fig is not None
         assert ax is not None
@@ -656,7 +654,7 @@ class TestLatLonProfiles:
         """Test plot_lat_lon_profiles with DataArray without spatial coordinates"""
         data_no_coords = xr.DataArray(np.random.rand(10), dims=["time"], coords={"time": range(10)})
 
-        fig, ax = plot_lat_lon_profiles(data=data_no_coords, title="No spatial coordinates test", loglevel=loglevel)
+        fig, ax = plot_lat_lon_profiles(data=data_no_coords, title="No spatial coordinates test", loglevel=LOGLEVEL)
 
         assert fig is not None
         assert ax is not None
@@ -688,7 +686,7 @@ class TestSeasonalMeans:
         seasonal_data = [self.djf, self.mam, self.jja, self.son]
 
         fig, axs = plot_seasonal_lat_lon_profiles(
-            seasonal_data=seasonal_data, title="Seasonal Profiles Test", data_labels=["Test data"], loglevel=loglevel
+            seasonal_data=seasonal_data, title="Seasonal Profiles Test", data_labels=["Test data"], loglevel=LOGLEVEL
         )
 
         assert fig is not None
@@ -714,7 +712,7 @@ class TestSeasonalMeans:
             title="Seasonal Profiles with Reference",
             data_labels=["Data"],
             ref_label="Reference",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -739,7 +737,7 @@ class TestSeasonalMeans:
             seasonal_data=seasonal_data,
             title="Multiple Models Seasonal Profiles",
             data_labels=["Model 1", "Model 2"],
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -776,7 +774,7 @@ class TestSeasonalMeans:
             title="Seasonal with None ref_std",
             data_labels=["Data"],
             ref_label="Reference",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -803,7 +801,7 @@ class TestHistogram:
 
     def test_plot_histogram_basic(self, tmp_path):
         """Test basic histogram plotting"""
-        fig, ax = plot_histogram(data=self.hist_data, title="Test Histogram", loglevel=loglevel)
+        fig, ax = plot_histogram(data=self.hist_data, title="Test Histogram", loglevel=LOGLEVEL)
 
         assert fig is not None
         assert ax is not None
@@ -825,7 +823,7 @@ class TestHistogram:
             smooth=True,
             smooth_window=3,
             xlogscale=True,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -840,7 +838,7 @@ class TestHistogram:
         """Test histogram with data missing center_of_bin dimension"""
         bad_data = xr.DataArray(np.random.rand(10), dims=["time"])
 
-        fig, ax = plot_histogram(data=bad_data, loglevel=loglevel)
+        fig, ax = plot_histogram(data=bad_data, loglevel=LOGLEVEL)
 
         assert fig is not None
         assert ax is not None
@@ -853,7 +851,7 @@ class TestHistogram:
     def test_plot_histogram_auto_labels(self):
         """Test automatic label generation for histogram and PDF"""
         # Test histogram (counts) - already has center_of_bin.units from setup
-        fig, ax = plot_histogram(data=self.hist_data, loglevel=loglevel)
+        fig, ax = plot_histogram(data=self.hist_data, loglevel=LOGLEVEL)
         assert "Counts" in ax.get_ylabel()
         assert "m" in ax.get_xlabel() or "s" in ax.get_xlabel()
         plt.close(fig)
@@ -863,14 +861,14 @@ class TestHistogram:
         pdf_data.attrs["units"] = "probability density"
         pdf_data.center_of_bin.attrs["long_name"] = "Wind Speed"
 
-        fig, ax = plot_histogram(data=pdf_data, loglevel=loglevel)
+        fig, ax = plot_histogram(data=pdf_data, loglevel=LOGLEVEL)
         assert "Probability Density" in ax.get_ylabel()
         assert "Wind Speed" in ax.get_xlabel()
         plt.close(fig)
 
     def test_plot_histogram_custom_labels(self):
         """Test that custom labels override automatic ones"""
-        fig, ax = plot_histogram(data=self.hist_data, xlabel="Custom X", ylabel="Custom Y", loglevel=loglevel)
+        fig, ax = plot_histogram(data=self.hist_data, xlabel="Custom X", ylabel="Custom Y", loglevel=LOGLEVEL)
 
         assert ax.get_xlabel() == "Custom X"
         assert ax.get_ylabel() == "Custom Y"
@@ -881,7 +879,7 @@ class TestHistogram:
         # var_name without units -> xlabel without units bracket
         data_no_units = self.hist_data.copy()
         data_no_units.center_of_bin.attrs = {"long_name": "Speed"}
-        fig, ax = plot_histogram(data=data_no_units, loglevel=loglevel)
+        fig, ax = plot_histogram(data=data_no_units, loglevel=LOGLEVEL)
         assert ax.get_xlabel() == "Speed"
         plt.close(fig)
 
@@ -889,7 +887,7 @@ class TestHistogram:
         pdf_no_units = self.hist_data.copy()
         pdf_no_units.attrs["units"] = "probability density"
         pdf_no_units.center_of_bin.attrs = {}
-        fig, ax = plot_histogram(data=pdf_no_units, loglevel=loglevel)
+        fig, ax = plot_histogram(data=pdf_no_units, loglevel=LOGLEVEL)
         assert ax.get_ylabel() == "Probability Density"
         plt.close(fig)
 
@@ -922,7 +920,7 @@ class TestBoxplot:
             variable_names=["Temperature"],
             add_mean_line=False,
             title="Boxplot test",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
         base_collections = len(ax_no_mean.collections)
         plt.close(fig_no_mean)
@@ -934,7 +932,7 @@ class TestBoxplot:
             variable_names=["Temperature"],
             add_mean_line=True,
             title="Boxplot test",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -965,7 +963,7 @@ class TestBoxplot:
             variables=["tas", "pr"],
             variable_names=["Temperature", "Precipitation"],
             add_mean_line=False,
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert ax.get_ylabel() == "Values (various units)"
@@ -983,8 +981,8 @@ def test_gregory_time_colormap_is_applied_to_lines(plot_func):
     fig, ax = plot_func(t2m, net_toa, cmap="viridis")
 
     assert len(ax.collections) == 2
-    assert np.allclose(ax.collections[0].get_array(), [0.25, 0.75])
-    assert np.allclose(ax.collections[1].get_array(), [0.0, 0.5, 1.0])
+    assert np.asarray(ax.collections[0].get_array()) == pytest.approx([0.25, 0.75])
+    assert np.asarray(ax.collections[1].get_array()) == pytest.approx([0.0, 0.5, 1.0])
     assert len(fig.axes) == 1
     plt.close(fig)
 
@@ -1043,7 +1041,7 @@ class TestGregory:
             t2m_monthly_data=self.t2m,
             net_toa_monthly_data=self.net_toa,
             title="Monthly Gregory Plot",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -1062,7 +1060,7 @@ class TestGregory:
             labels=["Model"],
             ref_label="Reference",
             title="Monthly Gregory Plot with Reference",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -1080,7 +1078,7 @@ class TestGregory:
             t2m_annual_data=t2m_annual,
             net_toa_annual_data=net_toa_annual,
             title="Annual Gregory Plot",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -1105,7 +1103,7 @@ class TestGregory:
             net_toa_std=net_toa_std,
             labels=["Model"],
             title="Annual Gregory Plot with Reference",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -1133,7 +1131,7 @@ class TestIndexPlot:
             title="Index Plot Test",
             ylabel="Temperature Index",
             label="SKT Index",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -1148,7 +1146,7 @@ class TestIndexPlot:
             index=self.index,
             ylim=(-2, 2),
             title="Index Plot with ylim",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None
@@ -1169,7 +1167,7 @@ class TestIndexPlot:
             labels=["SKT", "SKT scaled"],
             suptitle="Multiple Indexes",
             ylabel="Index Value",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert fig is not None

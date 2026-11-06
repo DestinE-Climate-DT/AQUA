@@ -564,12 +564,14 @@ class Analysis:
         complete_dictionary = load_yaml(exp_kind_file)
 
         if exp_kind not in complete_dictionary:
-            self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
             if "default" not in complete_dictionary:
                 raise KeyError(
                     f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
                 )
-        self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
+            self.logger.warning(
+                "Experiment kind '%s' not found in config file '%s': using the 'default' entry", exp_kind, exp_kind_file
+            )
+        self.exp_kind_dict = complete_dictionary.get(exp_kind, complete_dictionary.get("default"))
 
     def configure_template_configs(self, cfgs):
         """

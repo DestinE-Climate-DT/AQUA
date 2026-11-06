@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from jinja2 import UndefinedError
+from utils_tests import LOGLEVEL
 
 from aqua.core.analysis import Analysis
 from aqua.core.console.analysis import analysis_parser
@@ -27,33 +28,10 @@ pytestmark = pytest.mark.console
 # ======================================================================
 # Analysis fixtures
 # ======================================================================
-@pytest.fixture(scope="session")
-def analysis_module():
-    """Base Analysis instance (session scope, reused across tests)."""
-    return Analysis(loglevel="DEBUG")
-
-
 @pytest.fixture(scope="function")
 def analysis():
     """Fresh Analysis instance per test (function scope to avoid state leakage)."""
-    return Analysis(loglevel="DEBUG")
-
-
-@pytest.fixture(scope="session")
-def config_yaml(tmp_path_factory):
-    """Minimal valid AQUA analysis config (session scope, created once)."""
-    cfg_dir = tmp_path_factory.mktemp("config")
-    cfg_file = cfg_dir / "config.yaml"
-    data = {
-        "diagnostics": {
-            "atmosphere": {
-                "biases": {"config": "biases_config.yaml", "nworkers": 2, "nthreads": 1},
-                "ecmean": {"config": "ecmean_config.yaml"},
-            }
-        }
-    }
-    dump_yaml(str(cfg_file), data)
-    return {"path": str(cfg_file), "data": data, "dir": str(cfg_dir)}
+    return Analysis(loglevel=LOGLEVEL)
 
 
 @pytest.fixture(scope="session")
@@ -68,28 +46,6 @@ def kinds_yaml(tmp_path_factory):
     }
     dump_yaml(str(kinds_file), data)
     return str(kinds_file)
-
-
-@pytest.fixture(scope="session")
-def tool_config_yaml(tmp_path_factory):
-    """Sample tool configuration with standard keys."""
-    tool_dir = tmp_path_factory.mktemp("tool_config")
-    tool_file = tool_dir / "tool_config.yaml"
-    data = {
-        "biases": {
-            "config": str(tool_dir / "biases.yaml"),
-            "outname": "biases_output",
-            "nworkers": 4,
-            "nthreads": 2,
-            "source_oce": False,
-        },
-        "ecmean": {
-            "config": str(tool_dir / "ecmean.yaml"),
-            "nocluster": True,
-        },
-    }
-    dump_yaml(str(tool_file), data)
-    return str(tool_file)
 
 
 @pytest.fixture(scope="function")
@@ -153,6 +109,7 @@ class TestConfigurationSetters:
         assert analysis.exp == "test-tco79"
         assert analysis.source == "short"
         assert analysis.source_oce is None
+        assert analysis.catalog == "ci"  # the catalog that contains the triplet
 
     @pytest.mark.parametrize("missing_field", ["model", "exp", "source"])
     def test_set_catalog_model_exp_source_missing_required(self, analysis, missing_field):
@@ -166,14 +123,13 @@ class TestConfigurationSetters:
             analysis.set_catalog_model_exp_source(args, config)
 
     def test_set_catalog_model_exp_source_explicit_catalog(self, analysis):
-        """Explicit catalog bypasses auto-detection."""
+        """Explicit catalog bypasses auto-detection: the triplet is in `ci`, the requested catalog is kept."""
         args = argparse.Namespace(model="IFS", exp="test-tco79", source="short", catalog="my_catalog", source_oce=None)
         config = {}
 
-        with patch("aqua.core.configurer.ConfigPath.browse_catalogs") as mock_browse:
-            analysis.set_catalog_model_exp_source(args, config)
-            mock_browse.assert_not_called()
-            assert analysis.catalog == "my_catalog"
+        analysis.set_catalog_model_exp_source(args, config)
+
+        assert analysis.catalog == "my_catalog"
 
     def test_set_startdate_enddate_provided(self, analysis):
         """Dates are correctly set when provided."""
@@ -272,8 +228,9 @@ class TestConfigurationSetters:
         analysis.set_output_directory(args, config)
         assert f"{tmp_path}/output_dir/my_catalog/IFS/test-tco79/r1" in analysis.output_dir
 
-    def test_set_output_directory_default_path(self, analysis):
+    def test_set_output_directory_default_path(self, analysis, tmp_path, monkeypatch):
         """Output directory defaults to ./output when not provided."""
+        monkeypatch.chdir(tmp_path)  # the default output directory is created in the current directory
         args = argparse.Namespace(
             model="IFS", exp="test-tco79", source="short", catalog="my_catalog", source_oce=None, outputdir=None
         )
@@ -295,19 +252,6 @@ class TestConfigurationSetters:
 # ============================================================================
 class TestIntegrationFlow:
     """Integration tests: setters → diagnostic collection with mocked subprocess."""
-
-    def test_run_cli_checker_valid_entry(self, analysis):
-        """Integration test: run_setup_checker with valid config and mocked subprocess."""
-        # Configure analysis with valid settings
-        args = argparse.Namespace(model="IFS", exp="test-tco79", source="short", catalog="test_catalog", checker=True)
-        analysis.set_catalog_model_exp_source(args, {})
-        analysis.set_realization(args, {})
-
-        # Mock run_setup_checker to simulate successful check
-        with patch.object(analysis, "run_setup_checker", return_value=0) as mock_checker:
-            result = analysis.run_setup_checker()
-            mock_checker.assert_called_once()
-            assert result == 0
 
     def test_run_diagnostic_collection_happy_path(self, analysis, temp_env):
         """Happy path: set* methods → run_diagnostic_collection with mocked run_diagnostic_tool."""
@@ -626,15 +570,15 @@ class TestTemplating:
         with pytest.raises(KeyError):
             analysis.configure_experiment_kind("unknown_kind", str(kinds_file))
 
-    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml):
-        """When unknown kind is passed with 'default' key present, uses default dict."""
-        # Note: The implementation has a subtle bug where it returns string "default" as fallback
-        # instead of complete_dictionary["default"]. But if default key exists and exp_kind matches,
-        # it works correctly. This test ensures the valid path works.
-        analysis.configure_experiment_kind("historical", kinds_yaml)
-        assert isinstance(analysis.exp_kind_dict, dict)
-        assert analysis.exp_kind_dict["period"] == "past"
-        assert analysis.exp_kind_dict["forcing"] == "CMIP6"
+    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml, aqua_caplog):
+        """An unknown kind falls back on the 'default' entry of the file, with a warning."""
+        caplog = aqua_caplog(analysis.logger)
+        analysis.configure_experiment_kind("nonexistent", kinds_yaml)
+        assert analysis.exp_kind_dict == load_yaml(kinds_yaml)["default"]
+        assert analysis.exp_kind_dict["period"] == "unknown"
+        warnings = [record.getMessage() for record in caplog.records if record.levelname == "WARNING"]
+        expected = f"Experiment kind 'nonexistent' not found in config file '{kinds_yaml}': using the 'default' entry"
+        assert warnings == [expected]
 
     def test_configure_experiment_kind_multiple_kinds(self, analysis, kinds_yaml):
         """Different kinds return independent sub-dictionaries."""
@@ -720,7 +664,7 @@ class TestParser:
                 {"model": "IFS", "exp": "test-tco79", "source": "short"},
             ),
             (
-                ["--regrid", "r100", "--serial", "--loglevel", "DEBUG"],
+                ["--regrid", "r100", "--serial", "--loglevel", LOGLEVEL],
                 {"regrid": "r100", "serial": True, "loglevel": "DEBUG"},
             ),
             (
