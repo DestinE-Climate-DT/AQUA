@@ -430,7 +430,7 @@ class TestDROP:
             resolution="r100",
             frequency="monthly",
             definitive=True,
-            loglevel="INFO",
+            loglevel=LOGLEVEL,
             exclude_incomplete=True,
         )
 

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 from filelock import Timeout
+from utils_tests import LOGLEVEL
 
 from aqua.core.lock import SafeFileLock
 
@@ -347,7 +348,7 @@ def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
 @pytest.mark.aqua
 def test_logging_levels(lock_file):
     """Test that logging works at different levels."""
-    lock = SafeFileLock(lock_file, timeout=5, loglevel="DEBUG")
+    lock = SafeFileLock(lock_file, timeout=5, loglevel=LOGLEVEL)
 
     # Use patch to spy on the logger's debug method
     with patch.object(lock.logger, "debug") as mock_debug:

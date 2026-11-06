@@ -12,6 +12,7 @@ import yaml
 from botocore.exceptions import ClientError
 from PIL import Image, PngImagePlugin
 from pypdf import PdfWriter
+from utils_tests import LOGLEVEL
 
 from aqua.core.console import main as console_main
 from aqua.core.console import make_contents, push_analysis, push_s3
@@ -321,7 +322,7 @@ def test_publisher_passes_debug_level_to_s3(tmp_path, monkeypatch):
     client.download_file.side_effect = ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
     monkeypatch.setattr(push_analysis, "create_client", Mock(return_value=client))
 
-    push_analysis.push_analysis(tmp_path / "output", experiment, config, formats=("svg",), loglevel="DEBUG")
+    push_analysis.push_analysis(tmp_path / "output", experiment, config, formats=("svg",), loglevel=LOGLEVEL)
 
     assert client.upload_file.called
     assert logging.getLogger("push_s3").level == logging.DEBUG
@@ -330,7 +331,7 @@ def test_publisher_passes_debug_level_to_s3(tmp_path, monkeypatch):
 def test_content_generator_configures_logger_at_execution(tmp_path):
     """The content generator honors its requested level before reading config."""
     with pytest.raises(FileNotFoundError):
-        make_contents.main(configfile=tmp_path / "missing.yaml", loglevel="DEBUG")
+        make_contents.main(configfile=tmp_path / "missing.yaml", loglevel=LOGLEVEL)
     assert logging.getLogger("make_contents").level == logging.DEBUG
 
 

@@ -6,12 +6,10 @@ from utils_tests import LOGLEVEL
 
 from aqua import Reader
 
-loglevel = LOGLEVEL
-
 
 @pytest.fixture(scope="module")
 def reader():
-    return Reader(model="FESOM", exp="test-pi", source="original_3d", loglevel=loglevel)
+    return Reader(model="FESOM", exp="test-pi", source="original_3d", loglevel=LOGLEVEL)
 
 
 @pytest.fixture(scope="module")

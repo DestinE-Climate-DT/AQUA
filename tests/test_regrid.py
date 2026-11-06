@@ -146,7 +146,7 @@ class TestRegridder:
         """Testing the regridder all in independent way"""
 
         data = ifs_tco79_long_reader.retrieve()
-        regridder = Regridder(cfg_grid_dict={"grids": {}, "paths": regrid_paths}, data=data.isel(time=0), loglevel="debug")
+        regridder = Regridder(cfg_grid_dict={"grids": {}, "paths": regrid_paths}, data=data.isel(time=0), loglevel=LOGLEVEL)
 
         # Regrid the data
         weights = regridder.weights(tgt_grid_name="r144x72", regrid_method="bil")
@@ -402,7 +402,7 @@ class TestRegridder:
         field.lat.attrs.update({"standard_name": "latitude", "units": "degrees_north"})
         field.lon.attrs.update({"standard_name": "longitude", "units": "degrees_east"})
         data = field.to_dataset() if as_dataset else field
-        regridder = Regridder(data=data, loglevel="ERROR")  # the weights are never generated nor initialised
+        regridder = Regridder(data=data, loglevel=LOGLEVEL)  # the weights are never generated nor initialised
         caplog = aqua_caplog(regridder.logger)
 
         out = regridder.regrid(data)
@@ -417,7 +417,7 @@ class TestRegridder:
 
     def test_regridder_wrong_data_type(self):
         """Only a Dataset or a DataArray can be regridded"""
-        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        regridder = Regridder(src_grid_name="r36x18", loglevel=LOGLEVEL)
         with pytest.raises(ValueError, match="Data must be an xarray Dataset or DataArray."):
             regridder.regrid("not a dataset")
 
@@ -458,7 +458,7 @@ class TestRegridder:
 
     def test_regridder_invalid_data_type(self):
         """Test _apply_regrid when data is neither Dataset nor DataArray (Line 639)."""
-        regridder = Regridder(src_grid_name="r36x18", loglevel="ERROR")
+        regridder = Regridder(src_grid_name="r36x18", loglevel=LOGLEVEL)
 
         with pytest.raises(ValueError, match="Data must be an xarray Dataset or DataArray."):
             regridder._apply_regrid("not a dataset", {})

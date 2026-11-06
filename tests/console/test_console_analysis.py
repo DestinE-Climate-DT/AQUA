@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import pytest
+from utils_tests import LOGLEVEL
 
 from aqua.core.util import dump_yaml
 
@@ -92,7 +93,7 @@ class TestAquaConsoleAnalysis:
                     "-s",
                     "monthly",
                     "-l",
-                    "WARNING",
+                    LOGLEVEL,
                 ]
             )
 

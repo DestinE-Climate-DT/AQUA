@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.fixer import EvaluateFormula, Fixer
-
-LOGLEVEL = "DEBUG"
 
 
 @pytest.fixture(scope="module")

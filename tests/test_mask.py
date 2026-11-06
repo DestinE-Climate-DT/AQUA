@@ -6,8 +6,6 @@ from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
 
-loglevel = LOGLEVEL
-
 
 @pytest.fixture(params=[("IFS", "test-tco79", "short_masked", "2t", "r100")])
 def reader_arguments(request):
@@ -24,7 +22,7 @@ class TestMask:
         """
         model, exp, source, variable, regrid = reader_arguments
 
-        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=True, loglevel=loglevel)
+        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=True, loglevel=LOGLEVEL)
         data = reader.retrieve()
         rgd = reader.regrid(data[variable])
         masked = rgd.isel(time=0).values

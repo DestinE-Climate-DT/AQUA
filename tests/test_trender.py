@@ -4,9 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from utils_tests import LOGLEVEL
-
-loglevel = LOGLEVEL
 
 
 @pytest.mark.aqua

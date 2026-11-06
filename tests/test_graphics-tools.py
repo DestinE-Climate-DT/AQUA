@@ -24,8 +24,6 @@ from aqua.core.util.graphics import (
     prettify_levels,
 )
 
-loglevel = LOGLEVEL
-
 
 @pytest.fixture()
 def da():
@@ -102,13 +100,13 @@ def test_label(ifs_data):
     da = ifs_data["2t"]
 
     # Test cbar_get_label function
-    label = cbar_get_label(da, loglevel=loglevel)
+    label = cbar_get_label(da, loglevel=LOGLEVEL)
     # assert label is a string
     assert isinstance(label, str), "Colorbar label should be a string"
     assert label == "2 metre temperature [K]", "Colorbar label is incorrect"
 
     # Test the function with a custom label
-    label = cbar_get_label(da, cbar_label="Temperature", loglevel=loglevel)
+    label = cbar_get_label(da, cbar_label="Temperature", loglevel=LOGLEVEL)
     assert label == "Temperature", "Colorbar label is incorrect"
 
     # Test the cbar limits function with sym=False
@@ -283,7 +281,7 @@ def test_add_contour_labels_fallback(monkeypatch):
         return split(*args, **kwargs)
 
     monkeypatch.setattr(cs, "_split_path_and_get_label_rotation", failing_split)
-    add_contour_labels(cs, loglevel=loglevel)
+    add_contour_labels(cs, loglevel=LOGLEVEL)
 
     assert not cs.labelTexts and not ax.texts
     assert cs.get_paths() == paths and cs.get_transform() is transform

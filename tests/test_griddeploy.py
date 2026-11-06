@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from utils_tests import LOGLEVEL
 
 from aqua.core.gridbuilder import griddeploy as griddeploy_module
 from aqua.core.gridbuilder.griddeploy import GridDeployer
@@ -26,7 +27,7 @@ def deployer(monkeypatch, tmp_path):
             return str(tmp_path)
 
     monkeypatch.setattr(griddeploy_module, "ConfigContext", DummyConfigPath)
-    return GridDeployer(loglevel="DEBUG")
+    return GridDeployer(loglevel=LOGLEVEL)
 
 
 def test_grids_deploy_path_single_string(deployer):

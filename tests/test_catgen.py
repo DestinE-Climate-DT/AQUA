@@ -10,8 +10,6 @@ from aqua.core.catgen import AquaFDBGenerator, get_nested
 from aqua.core.console.main import AquaConsole
 from aqua.core.util import dump_yaml, load_yaml
 
-loglevel = LOGLEVEL
-
 # Constants for vertical levels
 ATMOS_PRESSURE_LEVELS = 19
 NEMO_OCEAN_LEVELS = 75
