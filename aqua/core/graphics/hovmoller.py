@@ -10,7 +10,7 @@ import xarray as xr
 from matplotlib.colors import BoundaryNorm
 
 from aqua.core.logger import log_configure
-from aqua.core.util import evaluate_colorbar_limits, unit_to_latex
+from aqua.core.util import evaluate_colorbar_limits, figure_size, unit_to_latex
 
 from .styles import ConfigStyle
 
@@ -25,7 +25,7 @@ def plot_hovmoller(
     style=None,
     contour=True,
     dim="lon",
-    figsize=(8, 13),
+    figsize: tuple = None,
     vmin=None,
     vmax=None,
     cmap="PuOr_r",  # defaul map for MJO
@@ -57,7 +57,7 @@ def plot_hovmoller(
         style (str): The style to be used for the plot. Default is None, which uses the default AQUA style.
         contour (bool): If True, contours will be plotted. If False, pcolormesh will be used.
         dim (str): The dimension to be averaged over. Default is 'lon'.
-        figsize (tuple): Size of the figure. Default is (8, 13).
+        figsize (tuple): Size of the figure. Default is figure_size(1.6), with the common width.
         vmin (float): Minimum value for the color limits. If None, it will be evaluated from the data.
         vmax (float): Maximum value for the color limits. If None, it will be evaluated from the data.
         cmap (str): Colormap to be used for the plot. Default is 'PuOr_r'.
@@ -104,7 +104,7 @@ def plot_hovmoller(
 
     # Create figure and axes
     if fig is None:
-        fig = plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=figsize or figure_size(1.6), layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2])
 
@@ -189,17 +189,6 @@ def plot_hovmoller(
             ax.set_ylim(limits)
 
     if cbar is True:
-        # Adjust the location of the subplots on the page to make room for the colorbar
-        fig.subplots_adjust(bottom=0.25, top=0.9, left=0.05, right=0.95, wspace=0.1, hspace=0.5)
-        box = ax.get_position()
-        cbar_ax = fig.add_axes(
-            [
-                box.x0 - 0.01 + box.width + 0.01,  # a small gap to the right
-                box.y0,  # same vertical start
-                0.015,  # narrow width
-                box.height,  # same height
-            ]
-        )
         # cbar label
         if cbar_label is None:
             try:
@@ -222,7 +211,7 @@ def plot_hovmoller(
                 cbar_label = None
                 logger.warning("Could not find a label for the colorbar")
 
-        fig.colorbar(im, cax=cbar_ax, orientation=cbar_orientation, label=cbar_label)
+        fig.colorbar(im, ax=ax, orientation=cbar_orientation, label=cbar_label)
 
     if box_text and dim is not None and dim_min is not None and dim_max is not None:
         # Add min and max values of the dim on the top right corner

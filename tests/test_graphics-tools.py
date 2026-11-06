@@ -6,6 +6,7 @@ import xarray as xr
 from astropy_healpix import healpy as hp
 from utils_tests import LOGLEVEL
 
+from aqua.core.default import DEFAULT_FIGURE_WIDTH
 from aqua.core.util import (
     cbar_get_label,
     coord_names,
@@ -18,7 +19,9 @@ from aqua.core.util import (
 from aqua.core.util.graphics import (
     add_contour_labels,
     add_cyclic_lon,
+    figure_size,
     get_decimals,
+    grid_figure_size,
     minmax_maps,
     plot_box,
     prettify_levels,
@@ -71,6 +74,17 @@ def test_plot_box():
 
     with pytest.raises(ValueError):
         plot_box(0)
+
+
+@pytest.mark.graphics
+def test_figure_size():
+    """Test the figure size helpers: common width, height from the shape"""
+    assert figure_size(0.8) == pytest.approx((DEFAULT_FIGURE_WIDTH, 0.8 * DEFAULT_FIGURE_WIDTH))
+    # Default grid: 6 x 5 in panels plus 1 in for the title, rescaled to the common width
+    width, height = grid_figure_size(2, 3)
+    assert width == DEFAULT_FIGURE_WIDTH
+    assert height / width == pytest.approx((2 * 5 + 1) / (3 * 6))
+    assert grid_figure_size(4, 2, panel_ratio=0.5, title_ratio=0) == pytest.approx(figure_size(1))
 
 
 @pytest.mark.graphics
