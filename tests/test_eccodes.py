@@ -86,8 +86,6 @@ def test_get_eccodes_attr_examples(query, expected_attr):
     """Test get_eccodes_attr against expected parameter attributes."""
     result = get_eccodes_attr(query, loglevel="debug")
     assert result == expected_attr
-    for key, value in expected_attr.items():
-        assert result[key] == value
 
 
 @pytest.mark.aqua

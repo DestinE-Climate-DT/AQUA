@@ -607,35 +607,6 @@ class TestDROP:
         assert tuple(ds[drop_arguments["var"]].encoding[chunk_key]) == (1, 180, 360)
         assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
 
-    def test_performance_reporting(self, drop_arguments, tmp_path):
-        """Test write_variable performance reporting."""
-        test = Drop(
-            catalog="ci",
-            **drop_arguments,
-            tmpdir=str(tmp_path),
-            resolution="r100",
-            frequency="monthly",
-            performance_reporting=True,
-            definitive=True,
-            loglevel=LOGLEVEL,
-        )
-
-        test.retrieve()
-        test.drop_generator()
-
-        file_path = os.path.join(
-            drop_arguments["outdir"],
-            DROP_PATH,
-            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
-        )
-        assert os.path.isfile(file_path)
-        file_missing = os.path.join(
-            drop_arguments["outdir"],
-            DROP_PATH,
-            "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
-        )
-        assert not os.path.exists(file_missing), f"Incomplete file should not be created: {file_missing}"
-
     def test_stats_file_performance_reporting(self, drop_arguments, tmp_path):
         """Stats file is written correctly when definitive=True and performance_reporting=True.
 
@@ -810,8 +781,8 @@ class TestIcechunkWriter:
         assert result["complete"] is False
         assert "bar" in result["message"]
 
-    def test_resume(self, drop_arguments, tmp_path):
-        """IcechunkWriter appends only the missing months on a second run."""
+    def test_resume_and_skip(self, drop_arguments, tmp_path):
+        """IcechunkWriter skips a variable already fully committed and appends only the missing months later."""
         common = dict(
             catalog="ci",
             **drop_arguments,
@@ -823,36 +794,18 @@ class TestIcechunkWriter:
         )
         self._first_run(common, tmp_path)
 
-        run2 = Drop(**common, tmpdir=str(tmp_path))
-        run2.retrieve()
-        run2.data = run2.data.sel(time=slice("2020-01", "2020-03"))
-        run2.drop_generator()
+        def committed_months(enddate):
+            """Run DROP again up to enddate and count the months in the store."""
+            run = Drop(**common, tmpdir=str(tmp_path))
+            run.retrieve()
+            run.data = run.data.sel(time=slice("2020-01", enddate))
+            run.drop_generator()
+            storage = icechunk.local_filesystem_storage(run.writer.repo_path)
+            ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
+            return len(ds.time)
 
-        storage = icechunk.local_filesystem_storage(run2.writer.repo_path)
-        ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
-        assert len(ds.time) == 3, "Resumed store should have Jan+Feb+Mar"
-
-    def test_skip(self, drop_arguments, tmp_path):
-        """IcechunkWriter skips a variable already fully committed."""
-        common = dict(
-            catalog="ci",
-            **drop_arguments,
-            resolution="r100",
-            frequency="monthly",
-            output_format="icechunk",
-            definitive=True,
-            loglevel=LOGLEVEL,
-        )
-        self._first_run(common, tmp_path)
-
-        run2 = Drop(**common, tmpdir=str(tmp_path))
-        run2.retrieve()
-        run2.data = run2.data.sel(time=slice("2020-01", "2020-02"))
-        run2.drop_generator()
-
-        storage = icechunk.local_filesystem_storage(run2.writer.repo_path)
-        ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
-        assert len(ds.time) == 2, "Skip run must not add timesteps"
+        assert committed_months("2020-02") == 2, "Skip run must not add timesteps"
+        assert committed_months("2020-03") == 3, "Resumed store should have Jan+Feb+Mar"
 
     @pytest.mark.parametrize(
         "scenario,expected",
