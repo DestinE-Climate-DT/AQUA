@@ -134,11 +134,10 @@ class TestRegridder:
         with pytest.raises(ValueError, match="Grid path 'banana' is not a valid CDO grid name nor a file path."):
             gdh.normalize_grid_dict("amazing")
 
-    def test_regridder(self, regrid_paths):
+    def test_regridder(self, regrid_paths, ifs_tco79_long_reader):
         """Testing the regridder all in independent way"""
 
-        reader = Reader(catalog="ci", model="IFS", exp="test-tco79", source="long", loglevel="ERROR")
-        data = reader.retrieve()
+        data = ifs_tco79_long_reader.retrieve()
         regridder = Regridder(cfg_grid_dict={"grids": {}, "paths": regrid_paths}, data=data.isel(time=0), loglevel="debug")
 
         # Regrid the data

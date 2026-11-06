@@ -6,8 +6,6 @@ import pytest
 import xarray as xr
 from utils_tests import LOGLEVEL
 
-from aqua import Reader
-
 loglevel = LOGLEVEL
 
 
@@ -16,8 +14,8 @@ class TestTrender:
     """Test class for Trender functionality."""
 
     @pytest.fixture(scope="class")
-    def reader(self):
-        return Reader(model="IFS", exp="test-tco79", source="long", loglevel=loglevel)
+    def reader(self, ifs_tco79_long_reader):
+        return ifs_tco79_long_reader
 
     @pytest.fixture(scope="class")
     def data(self, reader):

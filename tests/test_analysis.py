@@ -27,33 +27,10 @@ pytestmark = pytest.mark.console
 # ======================================================================
 # Analysis fixtures
 # ======================================================================
-@pytest.fixture(scope="session")
-def analysis_module():
-    """Base Analysis instance (session scope, reused across tests)."""
-    return Analysis(loglevel="DEBUG")
-
-
 @pytest.fixture(scope="function")
 def analysis():
     """Fresh Analysis instance per test (function scope to avoid state leakage)."""
     return Analysis(loglevel="DEBUG")
-
-
-@pytest.fixture(scope="session")
-def config_yaml(tmp_path_factory):
-    """Minimal valid AQUA analysis config (session scope, created once)."""
-    cfg_dir = tmp_path_factory.mktemp("config")
-    cfg_file = cfg_dir / "config.yaml"
-    data = {
-        "diagnostics": {
-            "atmosphere": {
-                "biases": {"config": "biases_config.yaml", "nworkers": 2, "nthreads": 1},
-                "ecmean": {"config": "ecmean_config.yaml"},
-            }
-        }
-    }
-    dump_yaml(str(cfg_file), data)
-    return {"path": str(cfg_file), "data": data, "dir": str(cfg_dir)}
 
 
 @pytest.fixture(scope="session")
@@ -68,28 +45,6 @@ def kinds_yaml(tmp_path_factory):
     }
     dump_yaml(str(kinds_file), data)
     return str(kinds_file)
-
-
-@pytest.fixture(scope="session")
-def tool_config_yaml(tmp_path_factory):
-    """Sample tool configuration with standard keys."""
-    tool_dir = tmp_path_factory.mktemp("tool_config")
-    tool_file = tool_dir / "tool_config.yaml"
-    data = {
-        "biases": {
-            "config": str(tool_dir / "biases.yaml"),
-            "outname": "biases_output",
-            "nworkers": 4,
-            "nthreads": 2,
-            "source_oce": False,
-        },
-        "ecmean": {
-            "config": str(tool_dir / "ecmean.yaml"),
-            "nocluster": True,
-        },
-    }
-    dump_yaml(str(tool_file), data)
-    return str(tool_file)
 
 
 @pytest.fixture(scope="function")

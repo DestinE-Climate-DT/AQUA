@@ -46,9 +46,9 @@ loglevel = LOGLEVEL
 
 
 @pytest.mark.aqua
-def test_convert_data_units():
+def test_convert_data_units(era5_hpz3_monthly_reader):
     """Test the check_data function"""
-    data = Reader(catalog="ci", model="ERA5", exp="era5-hpz3", source="monthly", loglevel=loglevel).retrieve()
+    data = era5_hpz3_monthly_reader.retrieve()
     initial_units = data["tprate"].attrs["units"]
 
     # Dataset test

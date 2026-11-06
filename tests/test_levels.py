@@ -13,54 +13,22 @@ def reader_era5(era5_hpz3_monthly_reader):
 class TestLevels:
     """Tests for the level selection in the retrieve method."""
 
-    def test_single_level_int(self, reader_era5):
-        """Test selecting a single level from a 3D variable using integer."""
-        data = reader_era5.retrieve(var="t", level=50000)
+    @pytest.mark.parametrize(
+        "level, expected",
+        [
+            pytest.param(50000, [50000], id="single-int"),
+            pytest.param(50000.0, [50000.0], id="single-float"),
+            pytest.param([50000, 70000], [50000, 70000], id="list-int"),
+            pytest.param([50000.0, 70000.0], [50000.0, 70000.0], id="list-float"),
+            pytest.param([50000, 70000.0, 85000], [50000, 70000, 85000], id="list-mixed"),
+        ],
+    )
+    def test_select_levels(self, reader_era5, level, expected):
+        """Selecting one level or a list of levels, as int, float or mixed, from a 3D variable keeps exactly those levels."""
+        data = reader_era5.retrieve(var="t", level=level)
 
         assert "plev" in data.coords, "Failed to find vertical coordinate"
-
-        assert data["plev"].size == 1
-        assert data["plev"].values[0] == 50000
-
-    def test_single_level_float(self, reader_era5):
-        """Test selecting a single level from a 3D variable using float."""
-        data = reader_era5.retrieve(var="t", level=50000.0)
-
-        assert "plev" in data.coords, "Failed to find vertical coordinate"
-
-        assert data["plev"].size == 1
-        assert data["plev"].values[0] == 50000.0
-
-    def test_list_of_levels_int(self, reader_era5):
-        """Test selecting a list of integer levels from a 3D variable."""
-        data = reader_era5.retrieve(var="t", level=[50000, 70000])
-
-        assert "plev" in data.coords, "Failed to find vertical coordinate"
-
-        assert data["plev"].size == 2
-        assert 50000 in data["plev"].values
-        assert 70000 in data["plev"].values
-
-    def test_list_of_levels_float(self, reader_era5):
-        """Test selecting a list of float levels from a 3D variable."""
-        data = reader_era5.retrieve(var="t", level=[50000.0, 70000.0])
-
-        assert "plev" in data.coords, "Failed to find vertical coordinate"
-
-        assert data["plev"].size == 2
-        assert 50000.0 in data["plev"].values
-        assert 70000.0 in data["plev"].values
-
-    def test_list_of_levels_mixed_types(self, reader_era5):
-        """Test selecting a list with mixed int and float levels from a 3D variable."""
-        data = reader_era5.retrieve(var="t", level=[50000, 70000.0, 85000])
-
-        assert "plev" in data.coords, "Failed to find vertical coordinate"
-
-        assert data["plev"].size == 3
-        assert 50000 in data["plev"].values or 50000.0 in data["plev"].values
-        assert 70000.0 in data["plev"].values or 70000 in data["plev"].values
-        assert 85000 in data["plev"].values or 85000.0 in data["plev"].values
+        assert sorted(data["plev"].values) == sorted(expected)
 
     def test_level_not_found_single(self, reader_era5, caplog):
         """Test what happens if a requested level is not found in the data."""
