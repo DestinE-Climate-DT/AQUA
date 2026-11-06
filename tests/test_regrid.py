@@ -33,6 +33,38 @@ def regrid_paths(tmp_path):
     return {"weights": str(tmp_path), "areas": str(tmp_path)}
 
 
+@pytest.fixture(scope="module")
+def fesom3d_r100_rebuilt():
+    """FESOM 3D regridded to r100 with the weights rebuilt once, shared by the tests of the same weights file."""
+    reader = Reader(
+        model="FESOM",
+        exp="test-pi",
+        source="original_3d",
+        regrid="r100",
+        rebuild=True,
+        datamodel=False,
+        fix=False,
+        loglevel=LOGLEVEL,
+    )
+    return reader.regrid(reader.retrieve(var="temp"))
+
+
+@pytest.fixture(scope="module")
+def nemo3d_r200_rebuilt():
+    """NEMO 3D regridded to r200 with the weights rebuilt once, shared by the tests of the same weights file."""
+    reader = Reader(
+        model="NEMO",
+        exp="test-eORCA1",
+        source="short-3d",
+        regrid="r200",
+        rebuild=True,
+        datamodel=False,
+        fix=False,
+        loglevel=LOGLEVEL,
+    )
+    return reader.regrid(reader.retrieve(var="avg_so"))
+
+
 # fake dictionary for doing tests
 cfg_dict = {
     "grids": {
@@ -190,24 +222,14 @@ class TestRegridder:
         assert len(rgd.height) == 90
         assert len(rgd.time) == 2
 
-    def test_recompute_weights_fesom3d(self):
+    @pytest.mark.xdist_group(name="regrid_fesom3d")  # same worker as the other user of the rebuilt weights
+    def test_recompute_weights_fesom3d(self, fesom3d_r100_rebuilt):
         """
         Test interpolation on FESOM, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
         (i.e. any missing points)
         """
-        reader = Reader(
-            model="FESOM",
-            exp="test-pi",
-            source="original_3d",
-            regrid="r100",
-            rebuild=True,
-            datamodel=False,
-            fix=False,
-            loglevel=LOGLEVEL,
-        )
-        data = reader.retrieve(var="temp")
-        rgd = reader.regrid(data)
+        rgd = fesom3d_r100_rebuilt
 
         subdata = rgd.temp.isel(nz1=0)
         ratio1 = subdata.isnull().sum() / subdata.size  # land fraction
@@ -219,24 +241,14 @@ class TestRegridder:
         assert 0.33 <= ratio1 <= 0.36
         assert 0.43 <= ratio2 <= 0.46
 
-    def test_recompute_weights_nemo3d(self):
+    @pytest.mark.xdist_group(name="regrid_nemo3d")  # same worker as the other user of the rebuilt weights
+    def test_recompute_weights_nemo3d(self, nemo3d_r200_rebuilt):
         """
         Test interpolation on NEMO, at different grid rebuilding weights,
         checking output grid dimension and fraction of land
         (i.e. any missing points)
         """
-        reader = Reader(
-            model="NEMO",
-            exp="test-eORCA1",
-            source="short-3d",
-            regrid="r200",
-            rebuild=True,
-            datamodel=False,
-            fix=False,
-            loglevel=LOGLEVEL,
-        )
-        data = reader.retrieve(var="avg_so")
-        rgd = reader.regrid(data)
+        rgd = nemo3d_r200_rebuilt
 
         subdata = rgd.avg_so.isel(level=0)
         ratio1 = subdata.isnull().sum().values / subdata.size  # land fraction
@@ -248,18 +260,24 @@ class TestRegridder:
         assert 0.50 <= ratio2 <= 0.54
         # assert 0.44 <= ratio2 <= 0.47
 
-    def test_skipna_nemo3d(self):
+    @pytest.mark.xdist_group(name="regrid_nemo3d")  # same worker as the other user of the rebuilt weights
+    def test_skipna_nemo3d(self, nemo3d_r200_rebuilt):
         """
         Test the 'skipna' grid path key on NEMO 3D: a single 2D weights matrix
         reproduces the 3D-masked regridding
         """
-        kwargs = dict(
-            model="NEMO", exp="test-eORCA1", regrid="r200", rebuild=True, datamodel=False, fix=False, loglevel=LOGLEVEL
-        )
-        reader = Reader(source="short-3d", **kwargs)
-        ref = reader.regrid(reader.retrieve(var="avg_so"))
+        ref = nemo3d_r200_rebuilt  # 3D-masked regridding of the same source, with rebuilt weights
 
-        reader = Reader(source="short-3d-skipna", **kwargs)
+        reader = Reader(
+            model="NEMO",
+            exp="test-eORCA1",
+            source="short-3d-skipna",
+            regrid="r200",
+            rebuild=True,
+            datamodel=False,
+            fix=False,
+            loglevel=LOGLEVEL,
+        )
         assert reader.regridder.skipna
         assert list(reader.regridder.smmregridder) == ["skipna"]
         filename = reader.regridder.filenames.weights_filename(
@@ -317,13 +335,12 @@ class TestRegridder:
         assert float(out.min()) == pytest.approx(280.0) and float(out.max()) == pytest.approx(280.0)
         assert out.isel(time=1).notnull().sum() > 0.8 * out.isel(time=1).size
 
-    def test_levels_and_regrid(self):
+    @pytest.mark.xdist_group(name="regrid_fesom3d")  # same worker as the rebuild of the weights it uses
+    def test_levels_and_regrid(self, fesom3d_r100_rebuilt):
         """
-        Test regridding selected levels.
+        Test regridding selected levels, with the weights rebuilt by the fixture.
         """
-        reader = Reader(
-            model="FESOM", exp="test-pi", source="original_3d", datamodel=False, regrid="r100", loglevel=LOGLEVEL, rebuild=True
-        )
+        reader = Reader(model="FESOM", exp="test-pi", source="original_3d", datamodel=False, regrid="r100", loglevel=LOGLEVEL)
         data = reader.retrieve()
 
         layers = [0, 2]
