@@ -19,6 +19,23 @@ def catalog_copy_path():
     return str(path)
 
 
+def _hide_aqua_config():
+    """Remove AQUA_CONFIG and return its value.
+
+    Tests that install AQUA in a temporary HOME must not see the session-private AQUA_CONFIG: it takes precedence
+    over HOME and the private configuration would be modified or removed.
+    """
+    return os.environ.pop("AQUA_CONFIG", None)
+
+
+def _restore_aqua_config(value):
+    """Restore AQUA_CONFIG as returned by `_hide_aqua_config`."""
+    if value is None:
+        os.environ.pop("AQUA_CONFIG", None)
+    else:
+        os.environ["AQUA_CONFIG"] = value
+
+
 def _set_aqua_args(args):
     """Set command-line arguments for an in-process AQUA console invocation."""
     sys.argv = ["aqua"] + args
@@ -28,11 +45,13 @@ def _set_aqua_args(args):
 def set_home():
     """Fixture to temporarily modify the HOME environment variable."""
     original_value = os.environ.get("HOME")
+    original_config = _hide_aqua_config()
 
     def _modify_home(new_value):
         os.environ["HOME"] = str(new_value)
 
     yield _modify_home
+    _restore_aqua_config(original_config)
     if original_value is not None:
         os.environ["HOME"] = original_value
     else:
@@ -43,11 +62,13 @@ def set_home():
 def delete_home():
     """Fixture to temporarily remove the HOME environment variable."""
     original_value = os.environ.get("HOME")
+    original_config = _hide_aqua_config()
 
     def _modify_home():
         os.environ.pop("HOME", None)
 
     yield _modify_home
+    _restore_aqua_config(original_config)
     if original_value is not None:
         os.environ["HOME"] = original_value
     else:
@@ -93,6 +114,7 @@ def aqua_install(request, tmp_path_factory, run_aqua, run_aqua_console_with_inpu
     """Create and clean up one isolated AQUA installation per test class."""
     mydir = str(tmp_path_factory.mktemp(f"aqua_{request.cls.__name__}"))
     original_home = os.environ.get("HOME")
+    original_config = _hide_aqua_config()
     os.environ["HOME"] = mydir
 
     try:
@@ -103,6 +125,7 @@ def aqua_install(request, tmp_path_factory, run_aqua, run_aqua_console_with_inpu
             if os.path.exists(os.path.join(mydir, ".aqua")):
                 run_aqua_console_with_input(["uninstall"], "yes")
         finally:
+            _restore_aqua_config(original_config)
             if original_home is not None:
                 os.environ["HOME"] = original_home
             else:

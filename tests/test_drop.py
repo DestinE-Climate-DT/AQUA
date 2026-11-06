@@ -1,6 +1,5 @@
 import os
 import re
-import shutil
 
 import icechunk
 import numpy as np
@@ -27,10 +26,10 @@ DROP_PATH_DAILY = "ci/IFS/test-tco79/r1/r100/daily/mean/europe"
 pytestmark = pytest.mark.aqua
 
 
-@pytest.fixture(params=[{"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": "drop_test"}])
-def drop_arguments(request):
-    """Provides DROP arguments as a dictionary."""
-    return request.param
+@pytest.fixture
+def drop_arguments(tmp_path):
+    """Provides DROP arguments as a dictionary, with the output directory under ``tmp_path``."""
+    return {"model": "IFS", "exp": "test-tco79", "source": "long", "var": "2t", "outdir": str(tmp_path / "drop_test")}
 
 
 class TestOutputPathBuilder:
@@ -62,20 +61,17 @@ class TestOutputPathBuilder:
             stat=stat,
             region=region,
         )
-        path = builder.build_path(
-            os.path.join(os.getcwd(), drop_arguments["outdir"]), var=drop_arguments["var"], year=2020, month=1
-        )
+        path = builder.build_path(drop_arguments["outdir"], var=drop_arguments["var"], year=2020, month=1)
 
         if not expected:
             drop_path = f"ci/IFS/test-tco79/{realization}/{resolution}/{frequency}/{stat}/{region}"
             expected = os.path.join(
-                os.getcwd(),
                 drop_arguments["outdir"],
                 drop_path,
                 f"2t_ci_IFS_test-tco79_{realization}_{resolution}_{frequency}_{stat}_{region}_202001.nc",
             )
         else:
-            expected = os.path.join(os.getcwd(), drop_arguments["outdir"], expected)
+            expected = os.path.join(drop_arguments["outdir"], expected)
 
         assert path == expected
 
@@ -257,7 +253,7 @@ class TestDROPLevelParameter:
 class TestDROP:
     """Integration tests for the Drop pipeline (netcdf, zarr, icechunk)."""
 
-    # Sequential execution required: all tests write to the shared "drop_test/" outdir.
+    # Serialized with the other dask tests; test_catalog_exclude_incomplete edits the (session-private) test catalog.
     pytestmark = pytest.mark.xdist_group(name="dask_operations")
 
     def test_definitive_false(self, drop_arguments, tmp_path):
@@ -268,8 +264,7 @@ class TestDROP:
 
         test.retrieve()
         test.drop_generator()
-        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+        assert os.path.isdir(os.path.join(drop_arguments["outdir"], DROP_PATH))
 
     @pytest.mark.parametrize("nworkers", [1, 2])
     def test_definitive_true(self, drop_arguments, tmp_path, nworkers):
@@ -289,7 +284,6 @@ class TestDROP:
         test.drop_generator()
 
         file_path = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
@@ -307,8 +301,6 @@ class TestDROP:
             assert "DROP" in history, "DROP not found in history"
             assert "regridded" in history, "Regridding information not found in history"
             assert "resampled" in history, "Frequency resampling information not found in history"
-
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_regional_subset(self, drop_arguments, tmp_path):
         """Test DROP with regional subset."""
@@ -330,7 +322,6 @@ class TestDROP:
         test.drop_generator()
 
         file_path = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH_DAILY,
             "2t_ci_IFS_test-tco79_r1_r100_daily_mean_europe_202001.nc",
@@ -342,7 +333,6 @@ class TestDROP:
         assert xfield.lat.max() < 70
         assert "AQUA_regridded" not in xfield.attrs
         assert "AQUA_regridded" not in xfield["2t"].attrs
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_remove_regridded(self):
         """Test that _remove_regridded removes AQUA_regridded from attributes."""
@@ -383,8 +373,7 @@ class TestDROP:
         test.retrieve()
         test.data = test.data.sel(time=slice("2020-01", "2020-03"))  # 3 months: limits dask+icechunk overhead
         test.drop_generator()
-        assert os.path.isdir(os.path.join(os.getcwd(), drop_arguments["outdir"], DROP_PATH))
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
+        assert os.path.isdir(os.path.join(drop_arguments["outdir"], DROP_PATH))
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
     def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):
@@ -407,13 +396,11 @@ class TestDROP:
         ext = test.writer.get_extension()
 
         missing_file = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             f"2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008{ext}",
         )
         existing_file = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             f"2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002{ext}",
@@ -460,7 +447,6 @@ class TestDROP:
         # file = xr.open_dataset(existing_file)
         # assert len(file.time) == 1
         # test.check_integrity(varname=drop_arguments["var"])
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     @pytest.mark.parametrize(
         "output_format,compact_method,num_months,should_concat",
@@ -537,8 +523,6 @@ class TestDROP:
                 mm = f"{month:02d}"
                 monthly_file = test.writer.get_filename(drop_arguments["var"], year=year, month=mm)
                 assert os.path.exists(monthly_file), f"Monthly file/store {monthly_file} should exist"
-
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_unknown_statistic(self, drop_arguments, tmp_path):
         """Test DROP with an unknown statistic."""
@@ -617,8 +601,6 @@ class TestDROP:
         assert tuple(ds[drop_arguments["var"]].encoding[chunk_key]) == (1, 180, 360)
         assert pytest.approx(float(ds[drop_arguments["var"]][0, 1, 1].values)) == 240.32689
 
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
-
     def test_performance_reporting(self, drop_arguments, tmp_path):
         """Test write_variable performance reporting."""
         test = Drop(
@@ -636,20 +618,17 @@ class TestDROP:
         test.drop_generator()
 
         file_path = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
         )
         assert os.path.isfile(file_path)
         file_missing = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202008.nc",
         )
         assert not os.path.exists(file_missing), f"Incomplete file should not be created: {file_missing}"
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
     def test_stats_file_performance_reporting(self, drop_arguments, tmp_path):
         """Stats file is written correctly when definitive=True and performance_reporting=True.
@@ -677,13 +656,11 @@ class TestDROP:
 
         # ---- monitoring behaviour: only the first month must be written ----
         jan_path = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202001.nc",
         )
         feb_path = os.path.join(
-            os.getcwd(),
             drop_arguments["outdir"],
             DROP_PATH,
             "2t_ci_IFS_test-tco79_r1_r100_monthly_mean_global_202002.nc",
@@ -712,8 +689,6 @@ class TestDROP:
         summary_lines = [line for line in content.splitlines() if "SUMMARY" in line]
         assert len(summary_lines) == 1, f"Expected 1 SUMMARY line, got {len(summary_lines)}"
         assert "chunks=1" in summary_lines[0]
-
-        shutil.rmtree(os.path.join(drop_arguments["outdir"]))
 
 
 class TestZarrWriter:
@@ -807,7 +782,7 @@ class TestDiskChunks:
 class TestIcechunkWriter:
     """Unit and integration tests for IcechunkWriter (integrity check, resume, skip)."""
 
-    # resume/skip write to the shared "drop_test/" outdir so they must be serialized.
+    # Serialized with the other dask tests.
     pytestmark = pytest.mark.xdist_group(name="dask_operations")
 
     def _first_run(self, common, tmp_path):
@@ -850,7 +825,6 @@ class TestIcechunkWriter:
         storage = icechunk.local_filesystem_storage(run2.writer.repo_path)
         ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
         assert len(ds.time) == 3, "Resumed store should have Jan+Feb+Mar"
-        shutil.rmtree(drop_arguments["outdir"])
 
     def test_skip(self, drop_arguments, tmp_path):
         """IcechunkWriter skips a variable already fully committed."""
@@ -873,7 +847,6 @@ class TestIcechunkWriter:
         storage = icechunk.local_filesystem_storage(run2.writer.repo_path)
         ds = xr.open_zarr(icechunk.Repository.open(storage).readonly_session("main").store, consolidated=False)
         assert len(ds.time) == 2, "Skip run must not add timesteps"
-        shutil.rmtree(drop_arguments["outdir"])
 
     @pytest.mark.parametrize(
         "scenario,expected",

@@ -8,6 +8,7 @@ import xarray as xr
 from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader, Regridder
+from aqua.core.regridder.filename_handler import FilenameHandler
 from aqua.core.regridder.grid_dict_handler import GridDictHandler
 
 
@@ -24,6 +25,12 @@ from aqua.core.regridder.grid_dict_handler import GridDictHandler
 )
 def reader_arguments(request):
     return request.param
+
+
+@pytest.fixture
+def regrid_paths(tmp_path):
+    """Regridder ``paths`` block sending weights and areas to ``tmp_path`` instead of the current directory."""
+    return {"weights": str(tmp_path), "areas": str(tmp_path)}
 
 
 # fake dictionary for doing tests
@@ -95,12 +102,12 @@ class TestRegridder:
         with pytest.raises(ValueError, match="Grid path 'banana' is not a valid CDO grid name nor a file path."):
             gdh.normalize_grid_dict("amazing")
 
-    def test_regridder(self):
+    def test_regridder(self, regrid_paths):
         """Testing the regridder all in independent way"""
 
         reader = Reader(catalog="ci", model="IFS", exp="test-tco79", source="long", loglevel="ERROR")
         data = reader.retrieve()
-        regridder = Regridder(data=data.isel(time=0), loglevel="debug")
+        regridder = Regridder(cfg_grid_dict={"grids": {}, "paths": regrid_paths}, data=data.isel(time=0), loglevel="debug")
 
         # Regrid the data
         weights = regridder.weights(tgt_grid_name="r144x72", regrid_method="bil")
@@ -278,9 +285,9 @@ class TestRegridder:
         with pytest.raises(ValueError, match="cannot be combined"):
             Regridder(cfg, src_grid_name="mixed", loglevel=LOGLEVEL)
 
-    def test_skipna_from_data(self):
+    def test_skipna_from_data(self, regrid_paths):
         """The 'data' path value takes the grid from the dataset: masks varying in time are handled"""
-        cfg = {"grids": {"lonlat-skipna": {"path": {"skipna": "data"}, "space_coord": ["lon", "lat"]}}}
+        cfg = {"grids": {"lonlat-skipna": {"path": {"skipna": "data"}, "space_coord": ["lon", "lat"]}}, "paths": regrid_paths}
         gdh = GridDictHandler(cfg)
         assert gdh.normalize_grid_dict("lonlat-skipna")["path"] == {"skipna": "data"}
         assert GridDictHandler({"grids": {"d": {"path": "data"}}}).normalize_grid_dict("d")["path"] == {"2d": "data"}
@@ -400,7 +407,13 @@ class TestRegridder:
         # Verify logger.error was called
         regridder.logger.error.assert_any_call("Regridder for vertical coordinate %s not found.", "missing_vertical")
 
-    def test_regridder_weights(self):
+    @pytest.mark.parametrize("paths", [None, {"areas": "unused"}])
+    def test_filename_without_weights_path(self, paths):
+        """Without a `paths` block, or without its `weights` entry, the weights name has no directory."""
+        handler = FilenameHandler({"paths": paths} if paths else {}, loglevel=LOGLEVEL)
+        assert handler.weights_filename("r18x9", {"2d": "r36x18"}, "ycon", "2d", None) == "weights_r18x9_ycon_l2d.nc"
+
+    def test_regridder_weights(self, regrid_paths):
         """Test regridding using explicitly the Regridder class and the weights method."""
 
         # Create a simple dataarray
@@ -413,13 +426,13 @@ class TestRegridder:
         da.lat.attrs.update({"standard_name": "latitude", "units": "degrees_north"})
         da.lon.attrs.update({"standard_name": "longitude", "units": "degrees_east"})
 
-        regridder = Regridder(data=da)
+        regridder = Regridder(cfg_grid_dict={"grids": {}, "paths": regrid_paths}, data=da)
         regridder.logger = MagicMock()  # Mock the logger
         regridder.weights(tgt_grid_name="r30x15", regrid_method="bil", initialize=False)
         _ = regridder.regrid(da)
         regridder.logger.error.assert_called()  # this should fail
 
-        regridder = Regridder(data=da)
+        regridder = Regridder(cfg_grid_dict={"grids": {}, "paths": regrid_paths}, data=da)
         regridder.logger = MagicMock()  # Mock the logger
         regridder.weights(tgt_grid_name="r30x15", regrid_method="bil", initialize=True)
         _ = regridder.regrid(da)
