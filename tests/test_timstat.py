@@ -7,7 +7,10 @@ from aqua.core.histogram import histogram
 
 
 def period_key(field, period):
-    """Integer label of every time step: YYYYMM ("month") or YYYYMMDD ("day"), the same in every calendar."""
+    """Integer label of every time step: YYYYMM ("month") or YYYYMMDD ("day"), the same in every calendar.
+
+    For example 2020-03-05T12:00 is 202003 for "month" and 20200305 for "day".
+    """
     time = field.time.dt
     if period == "month":
         return time.year.values * 100 + time.month.values
@@ -16,8 +19,12 @@ def period_key(field, period):
 
 def reduce_by_period(series, period, func):
     """Reduce a 1D series over every month or day with plain numpy (independent of the resampling in AQUA)."""
-    keys, values = period_key(series, period), series.values  # load the (dask) series once
-    return np.array([func(values[keys == key]) for key in np.unique(keys)])
+    keys = period_key(series, period)
+    values = series.values  # load the (dask) series once
+    results = []
+    for key in np.unique(keys):  # periods in time order, as in the AQUA output
+        results.append(func(values[keys == key]))
+    return np.array(results)
 
 
 @pytest.fixture(scope="module", params=["long", "long400"])
@@ -91,8 +98,8 @@ class TestTimmean:
         avg = reader.timstd(data[var])
         assert avg.shape == (9, 18)
         # population standard deviation (ddof=0), not the sample one
-        assert avg.isel(lon=0, lat=0).values == pytest.approx(np.std(points[var].values), rel=1e-6)
-        assert avg.isel(lon=0, lat=0).values == pytest.approx(10.011854, rel=1e-6)
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(np.std(points[var].values))
+        assert avg.isel(lon=0, lat=0).values == pytest.approx(10.011854)
 
     @pytest.mark.parametrize("var", ["2t", "ttr"])
     def test_timstat_monthly_exclude_incomplete(self, reader, data, points, var):
@@ -175,7 +182,7 @@ class TestTimmean:
             last_day = weekly.time.values[week].astype("datetime64[D]")
             in_week = (days > last_day - 7) & (days <= last_day)
             assert float(weekly[week]) == pytest.approx(float(point.values[in_week].mean()))
-        assert float(weekly[0]) == pytest.approx(250.928362, rel=1e-6)
+        assert float(weekly[0]) == pytest.approx(250.928362)
 
     def test_timmean_time_bounds(self, reader, data_2t):
         """Test for timmean method with time_bounds=True"""
