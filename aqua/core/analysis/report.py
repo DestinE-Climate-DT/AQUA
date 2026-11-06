@@ -15,8 +15,9 @@ The report contains:
     - the distinct error messages of each log, grouped and counted
     - the number of figures and NetCDF files written in each output folder, separating the
       files produced by this run from those left over by earlier runs in the same folder
-    - the wall time and peak memory of each tool, from the ``[profile]`` line that the
-      diagnostics CLIs log at the end of their run, sorted by the memory of the tool process
+    - the wall time, CPU time and maximum memory of each tool, from the line that the
+      ``Profiler`` logger of the diagnostics CLIs writes at the end of their run,
+      sorted by the maximum memory of the tool process
 
 Example:
     import pandas as pd
@@ -53,12 +54,11 @@ GENERIC_LINE = re.compile(r"^(?:\S+ \S+ - )?(?P<name>[\w.]+) - (?P<level>WARNING
 TRACEBACK_START = "Traceback (most recent call last):"
 # OutputSaver lines such as "Saved PNG: /path/to/file.png" (only visible at INFO level or lower)
 SAVED_LINE = re.compile(r"^Saved (?P<kind>\w+):")
-# DiagnosticCLI profiling line (INFO level), e.g.
-# "[profile] timeseries: wall=312.4s driver_peak_rss=4.2GiB cluster_peak_mem=18.3GiB (shared cluster, 32 workers)"
-PROFILE_LINE = re.compile(
-    r"^\[profile\] (?P<name>.+?): wall=(?P<wall>[\d.]+)s driver_peak_rss=(?P<driver>\S+)"
-    r"(?: cluster_peak_mem=(?P<cluster>\S+) \((?P<kind>shared|private) cluster, (?P<nworkers>\d+) workers\))?$"
-)
+# Logger of the DiagnosticCLI profiling line (INFO level), whose message is made of key=value pairs, e.g.
+# "walltime=312.4s cputime=95.1s max_memory=4.2GiB cluster_max_memory=18.3GiB/99.2GiB (shared cluster, 32 workers)"
+PROFILER_LOGGER = "Profiler"
+PROFILE_PAIR = re.compile(r"(?P<key>\w+)=(?P<value>\S+)")
+PROFILE_CLUSTER = re.compile(r"\((?P<kind>shared|private) cluster, (?P<nworkers>\d+) workers\)")
 BYTES_UNITS = {"B": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
 # used to group messages differing only by file paths or memory addresses
 PATH_PATTERN = re.compile(r"(?<![\w.])/[^\s'\",;:)]+")
@@ -257,9 +257,8 @@ class AnalysisReport:
                     saved = SAVED_LINE.match(msg)
                     if saved:
                         info["saved"][saved.group("kind").lower()] += 1
-                    profile = PROFILE_LINE.match(msg)
-                    if profile:
-                        info["profile"] = _parse_profile(profile.groupdict())
+                    if name == PROFILER_LOGGER:
+                        info["profile"] = _parse_profile(msg)
                     continue
                 if level == "DEBUG" or (level == "WARNING" and not self.include_warnings):
                     continue
@@ -392,39 +391,40 @@ class AnalysisReport:
         return lines + [""]
 
     def _md_profile(self):
-        """Markdown table with wall time and peak memory of the tools that logged a ``[profile]`` line."""
+        """Markdown table with wall time, CPU time and memory of the tools that logged a profiling line."""
         logs = [log for log in self.logs if log["profile"]]
         if not logs:
             return []
-        logs.sort(key=lambda log: -log["profile"]["driver_peak_bytes"])
+        logs.sort(key=lambda log: -(log["profile"]["max_memory_bytes"] or 0))
         shared = any(log["profile"]["cluster_kind"] == "shared" for log in logs)
         lines = [
             "## Memory and wall time",
             "",
-            "Peak memory of each tool as reported by its `[profile]` line, sorted by the memory of the tool process "
-            "(the *driver*). The driver peak is exact for the tool.",
+            "Reported by the `Profiler` logger of each tool, sorted by the maximum memory of the tool process, "
+            "which is exact for the tool. Without a dask cluster all the computation runs in that process.",
         ]
         if shared:
             lines.append(
-                "The cluster peak is the total memory of the dask workers while the tool ran: on a *shared* cluster "
-                "it includes the other tools running at the same time, so it is attributable to the tool only "
+                "The cluster maximum is the total memory of the dask workers while the tool ran: on a *shared* cluster "
+                "it includes the other tools running at the same time, so it belongs to the tool only "
                 "when the tools run one at a time (`aqua analysis --nmaxprocesses 1`)."
             )
         lines += [
             "",
-            "| Log | Tool | Wall | Driver peak | Cluster peak | Cluster |",
-            "|---|---|---|---|---|---|",
+            "| Log | Walltime | CPU time | Max memory | Cluster max memory | Cluster memory limit | Cluster |",
+            "|---|---|---|---|---|---|---|",
         ]
         for log in logs:
             prof = log["profile"]
-            if prof["cluster_peak_bytes"] is None:
-                cluster_peak, cluster = "-", "none"
+            if prof["cluster_kind"] is None:
+                cluster = "none"
             else:
-                cluster_peak = _format_bytes(prof["cluster_peak_bytes"])
                 cluster = f"{prof['cluster_kind']}, {prof['nworkers']} workers"
             lines.append(
-                f"| `{log['name']}` | {prof['name']} | {_format_duration(pd.Timedelta(seconds=prof['wall_seconds']))} "
-                f"| {_format_bytes(prof['driver_peak_bytes'])} | {cluster_peak} | {cluster} |"
+                f"| `{log['name']}` | {_format_seconds(prof['walltime_seconds'])} "
+                f"| {_format_seconds(prof['cputime_seconds'])} | {_format_bytes(prof['max_memory_bytes'])} "
+                f"| {_format_bytes(prof['cluster_max_memory_bytes'])} "
+                f"| {_format_bytes(prof['cluster_memory_limit_bytes'])} | {cluster} |"
             )
         return lines + [""]
 
@@ -462,35 +462,56 @@ class AnalysisReport:
         return lines
 
 
-def _parse_profile(fields):
-    """Structured profile from the groups of PROFILE_LINE."""
-    cluster = fields.get("cluster")
+def _parse_profile(msg):
+    """
+    Structured profile from the message of the Profiler logger.
+
+    Unknown keys are ignored and missing ones are None, so that the line can gain fields
+    without breaking older or newer reports.
+    """
+    pairs = {m.group("key"): m.group("value") for m in PROFILE_PAIR.finditer(msg)}
+    cluster_max, _, cluster_limit = pairs.get("cluster_max_memory", "").partition("/")
+    cluster = PROFILE_CLUSTER.search(msg)
     return {
-        "name": fields["name"],
-        "wall_seconds": float(fields["wall"]),
-        "driver_peak_bytes": _parse_bytes(fields["driver"]),
-        "cluster_peak_bytes": _parse_bytes(cluster) if cluster else None,
-        "cluster_kind": fields.get("kind"),
-        "nworkers": int(fields["nworkers"]) if fields.get("nworkers") else None,
+        "walltime_seconds": _parse_seconds(pairs.get("walltime")),
+        "cputime_seconds": _parse_seconds(pairs.get("cputime")),
+        "max_memory_bytes": _parse_bytes(pairs.get("max_memory")),
+        "cluster_max_memory_bytes": _parse_bytes(cluster_max),
+        "cluster_memory_limit_bytes": _parse_bytes(cluster_limit),
+        "cluster_kind": cluster.group("kind") if cluster else None,
+        "nworkers": int(cluster.group("nworkers")) if cluster else None,
     }
 
 
+def _parse_seconds(text):
+    """Parse a duration such as ``312.4s`` into seconds. Returns None if missing or not parsable."""
+    match = re.fullmatch(r"(?P<value>[\d.]+)s", text or "")
+    return float(match.group("value")) if match else None
+
+
 def _parse_bytes(text):
-    """Parse a size with binary prefix such as ``4.2GiB`` into bytes. Returns 0 if it cannot be parsed."""
-    match = re.fullmatch(r"(?P<value>[\d.]+)(?P<unit>B|KiB|MiB|GiB|TiB)", text.strip())
+    """Parse a size with binary prefix such as ``4.2GiB`` into bytes. Returns None if missing or not parsable."""
+    match = re.fullmatch(r"(?P<value>[\d.]+)(?P<unit>B|KiB|MiB|GiB|TiB)", (text or "").strip())
     if not match:
-        return 0
+        return None
     return int(float(match.group("value")) * BYTES_UNITS[match.group("unit")])
 
 
 def _format_bytes(nbytes):
-    """Human readable size with binary prefixes, e.g. ``4.2GiB``."""
+    """Human readable size with binary prefixes, e.g. ``4.2GiB``, or "-" when missing."""
+    if nbytes is None:
+        return "-"
     value = float(nbytes)
     for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
         if value < 1024 or unit == "TiB":
             return f"{value:.0f}{unit}" if unit == "B" else f"{value:.1f}{unit}"
         value /= 1024
     return f"{value:.1f}TiB"
+
+
+def _format_seconds(seconds):
+    """Format seconds as H:MM:SS, or "-" when missing."""
+    return "-" if seconds is None else _format_duration(pd.Timedelta(seconds=seconds))
 
 
 def _format_duration(delta):
