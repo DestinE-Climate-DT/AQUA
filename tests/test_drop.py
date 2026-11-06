@@ -303,12 +303,11 @@ class TestDROP:
         )
         assert os.path.isfile(file_path)
         # the file just written is complete and its last record is January
-        test.check_integrity(varname=drop_arguments["var"])
-        assert test.check is True
-        assert test.last_record == "20200101"
+        assert test.writer.validate(file_path)
 
         file = xr.open_dataset(file_path)
         assert len(file.time) == 1
+        assert pd.Timestamp(file.time.values[-1]).strftime("%Y%m%d") == "20200101"
         assert pytest.approx(file["2t"][0, 1, 1].item()) == 248.0704
 
         # verify history: it must be written, a file without it is a failure
