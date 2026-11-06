@@ -32,25 +32,27 @@ class Reader:
 
     def __init__(
         self,
-        model=None,
-        exp=None,
-        source=None,
-        catalog=None,
-        path=None,
-        fix=True,
-        datamodel=None,
-        convention=None,
-        regrid=None,
-        regrid_method=None,
-        areas=True,
-        startdate=None,
-        enddate=None,
-        rebuild=False,
-        loglevel="WARNING",
-        nproc=DEFAULT_NPROC,
-        chunks=None,
-        preproc=None,
+        model: str = None,
+        exp: str = None,
+        source: str = None,
+        catalog: str = None,
+        path: str = None,
+        fix: bool = True,
+        datamodel: str | bool = None,
+        convention: str = None,
+        regrid: str = None,
+        regrid_method: str = None,
+        areas: bool = True,
+        startdate: str = None,
+        enddate: str = None,
+        rebuild: bool = False,
+        loglevel: str = "WARNING",
+        nproc: int = DEFAULT_NPROC,
+        chunks: str | dict = None,
+        preproc: callable = None,
         engine=DEFAULT_ENGINE,
+        url: str = None,
+        stac_kwargs: dict | str = None,
         collection=None,
         item=None,
         asset=None,
@@ -96,6 +98,12 @@ class Reader:
                 Defaults to None.
             engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope', 'z3fdb' or 'gsv'.
                 Defaults to DEFAULT_ENGINE ('gsv').
+            url (str, optional): URL or path of a STAC JSON document (catalog, collection or item).
+                When provided, data access uses the pystac backend. Defaults to None.
+            stac_kwargs (dict or str, optional): Selection of an asset from the STAC object at `url`:
+                a single-branch nested mapping of child/item ids ending with the asset key,
+                e.g. ``{"collection": {"item": "asset"}}``, or just the asset key for an item.
+                Mandatory if `url` is provided. Defaults to None.
             collection (str, optional): Synonym for `model` (e.g. in STAC catalogs). Defaults to None.
             item (str, optional): Synonym for `exp` (e.g. in STAC catalogs). Defaults to None.
             asset (str, optional): Synonym for `source` (e.g. in STAC catalogs). Defaults to None.
@@ -127,6 +135,10 @@ class Reader:
 
         # xarray native argument
         self.path = path
+
+        # stac native arguments
+        self.url = url
+        self.stac_kwargs = stac_kwargs
 
         # Create regridder metadata for filename templating (supports both catalog and path-based backends)
         self.regridder_metadata = RegridderMetadata.from_reader(
@@ -176,6 +188,8 @@ class Reader:
             exp=self.exp,
             source=self.source,
             path=self.path,
+            url=self.url,
+            stac_kwargs=self.stac_kwargs,
             configurer=configurer,
             catalog=catalog,
             loglevel=self.loglevel,

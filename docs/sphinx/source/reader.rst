@@ -145,3 +145,77 @@ For example, to select a specific ensemble member, you can do:
     data = reader.retrieve()
 
 See `Intake documentation <https://intake.readthedocs.io/en/stable/catalog.html#source-parameters>`_ for more details about Intake source parameters.
+
+
+Reader xarray access
+^^^^^^^^^^^^^^^^^^^^
+
+The ``Reader`` class is designed to provide a main inteface via intake, but can also be used to access data directly via xarray.
+The ``Reader`` class can be initialized with a ``path`` to a dataset, and the ``retrieve()`` method will return an xarray object.
+This is useful when the data is not available in the intake catalog, but is available in a local path, and the user want to inspect them quickly.
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(path="/path/to/data.nc", areas=False)
+    data = reader.retrieve()
+
+
+
+.. note ::
+    The xarray access is experimental and may not support all the functionalities of the intake backed.
+    For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.
+
+Reader stac access
+^^^^^^^^^^^^^^^^^^
+
+The ``Reader`` class can also be used to access data from a STAC object (catalog, collection or item) with ``pystac``.
+The reader is initialized with a ``url`` pointing to the STAC JSON file, and the ``stac_kwargs`` argument selects the asset to open:
+
+- for a single item, ``stac_kwargs`` is just the asset key (a string);
+- for a collection or a nested catalog, ``stac_kwargs`` is a nested dictionary with one entry per level,
+  made of the child collection and item ids and ending with the asset key.
+
+The asset is opened lazily with xarray, using the ``xarray:open_kwargs`` and ``xarray:storage_options`` defined in the asset, if any,
+and the ``chunks`` given to the ``Reader``.
+Asset ``href`` paths relative to the STAC file are resolved, so that local catalogs work as well.
+This below is a working example of an item, building on the DKRZ EERIE cloud STAC catalog.
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(
+        url="https://eerie.cloud.dkrz.de/datasets/HadGEM3-GC5E-HH.historical.v20250409.gr1.Amon/stac",
+        stac_kwargs="eerie-cloud", areas=False,
+    )
+    data = reader.retrieve()
+
+A nested catalog is accessed by following the structure of the catalog down to the asset,
+here a collection, one of its items and the asset of the item (this example requires ``gribscan``):
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(
+        url="https://km-scale-cloud.dkrz.de/stac-catalog-all.json",
+        stac_kwargs={"km-scale-cloud-dkrz-era5-collection": {"era5-dkrz.surface_analysis_monthly": "eerie-cloud"}},
+        areas=False,
+    )
+    data = reader.retrieve()
+
+The AQUA test suite generates a local STAC catalog from the test data (see ``tests/stac_catalogue/README.md``),
+which can be used to try the feature offline:
+
+.. code-block:: python
+
+    from aqua import Reader
+    reader = Reader(
+        url="tests/stac_catalogue/catalog.json",
+        stac_kwargs={"ifs": {"ifs-short-ifs2d-tco79": "data"}},
+        areas=False,
+    )
+    data = reader.retrieve()
+
+.. note ::
+    The stac access is experimental and may not support all the functionalities of the intake backed. it might break if the catalog structure is not as expected.
+    For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.
