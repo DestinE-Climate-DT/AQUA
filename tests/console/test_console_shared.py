@@ -16,7 +16,7 @@ pytestmark = pytest.mark.console
 class TestCatalogOperations:
     """Catalog add, update, and remove operations."""
 
-    def test_catalog_operations(self, aqua_install, run_aqua):
+    def test_catalog_operations(self, aqua_install, run_aqua, fake_github):
         """Test catalog add, set, update, remove operations."""
         mydir = aqua_install
 
@@ -159,7 +159,7 @@ class TestGridAndFixOperations:
 class TestCatalogListingAndErrors:
     """Catalog listing and error handling operations."""
 
-    def test_console_list(self, aqua_install, run_aqua, capfd, catalog_copy_path):
+    def test_console_list(self, aqua_install, run_aqua, capfd, catalog_copy_path, fake_github):
         """Basic tests for list command"""
 
         # getting fixture
@@ -178,15 +178,14 @@ class TestCatalogListingAndErrors:
         run_aqua(["avail", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
         out, _ = capfd.readouterr()
 
-        assert "climatedt-gen2" in out
-        assert "nextgems4" in out
+        assert all(f"'{name}'" in out for name in ("ci", "climatedt-gen2", "obs"))
 
         run_aqua(["-v", "update", "-c", "all"])
 
         out, _ = capfd.readouterr()
         assert ".aqua/catalogs/ci .." in out
 
-    def test_console_nonexistent_catalog_from_existing_repo(self, aqua_install, run_aqua):
+    def test_console_nonexistent_catalog_from_existing_repo(self, aqua_install, run_aqua, fake_github):
         """Test adding a non-existing catalog from an existing GitHub repository"""
 
         # Try to add a catalog that doesn't exist in the repository
