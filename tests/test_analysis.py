@@ -569,15 +569,15 @@ class TestTemplating:
         with pytest.raises(KeyError):
             analysis.configure_experiment_kind("unknown_kind", str(kinds_file))
 
-    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml):
-        """An unknown kind falls back on the 'default' entry of the file.
-
-        Fails until #3348 is fixed: the code stores the string "default" instead of the dictionary of the entry.
-        (The test used to call it with a known kind, to avoid the problem.)
-        """
+    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml, aqua_caplog):
+        """An unknown kind falls back on the 'default' entry of the file, with a warning."""
+        caplog = aqua_caplog(analysis.logger)
         analysis.configure_experiment_kind("nonexistent", kinds_yaml)
         assert analysis.exp_kind_dict == load_yaml(kinds_yaml)["default"]
         assert analysis.exp_kind_dict["period"] == "unknown"
+        warnings = [record.getMessage() for record in caplog.records if record.levelname == "WARNING"]
+        expected = f"Experiment kind 'nonexistent' not found in config file '{kinds_yaml}': using the 'default' entry"
+        assert warnings == [expected]
 
     def test_configure_experiment_kind_multiple_kinds(self, analysis, kinds_yaml):
         """Different kinds return independent sub-dictionaries."""
