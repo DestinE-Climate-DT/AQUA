@@ -108,6 +108,7 @@ class TestConfigurationSetters:
         assert analysis.exp == "test-tco79"
         assert analysis.source == "short"
         assert analysis.source_oce is None
+        assert analysis.catalog == "ci"  # the catalog that contains the triplet
 
     @pytest.mark.parametrize("missing_field", ["model", "exp", "source"])
     def test_set_catalog_model_exp_source_missing_required(self, analysis, missing_field):
@@ -121,14 +122,13 @@ class TestConfigurationSetters:
             analysis.set_catalog_model_exp_source(args, config)
 
     def test_set_catalog_model_exp_source_explicit_catalog(self, analysis):
-        """Explicit catalog bypasses auto-detection."""
+        """Explicit catalog bypasses auto-detection: the triplet is in `ci`, the requested catalog is kept."""
         args = argparse.Namespace(model="IFS", exp="test-tco79", source="short", catalog="my_catalog", source_oce=None)
         config = {}
 
-        with patch("aqua.core.configurer.ConfigPath.browse_catalogs") as mock_browse:
-            analysis.set_catalog_model_exp_source(args, config)
-            mock_browse.assert_not_called()
-            assert analysis.catalog == "my_catalog"
+        analysis.set_catalog_model_exp_source(args, config)
+
+        assert analysis.catalog == "my_catalog"
 
     def test_set_startdate_enddate_provided(self, analysis):
         """Dates are correctly set when provided."""
@@ -251,19 +251,6 @@ class TestConfigurationSetters:
 # ============================================================================
 class TestIntegrationFlow:
     """Integration tests: setters → diagnostic collection with mocked subprocess."""
-
-    def test_run_cli_checker_valid_entry(self, analysis):
-        """Integration test: run_setup_checker with valid config and mocked subprocess."""
-        # Configure analysis with valid settings
-        args = argparse.Namespace(model="IFS", exp="test-tco79", source="short", catalog="test_catalog", checker=True)
-        analysis.set_catalog_model_exp_source(args, {})
-        analysis.set_realization(args, {})
-
-        # Mock run_setup_checker to simulate successful check
-        with patch.object(analysis, "run_setup_checker", return_value=0) as mock_checker:
-            result = analysis.run_setup_checker()
-            mock_checker.assert_called_once()
-            assert result == 0
 
     def test_run_diagnostic_collection_happy_path(self, analysis, temp_env):
         """Happy path: set* methods → run_diagnostic_collection with mocked run_diagnostic_tool."""
@@ -582,15 +569,15 @@ class TestTemplating:
         with pytest.raises(KeyError):
             analysis.configure_experiment_kind("unknown_kind", str(kinds_file))
 
-    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml):
-        """When unknown kind is passed with 'default' key present, uses default dict."""
-        # Note: The implementation has a subtle bug where it returns string "default" as fallback
-        # instead of complete_dictionary["default"]. But if default key exists and exp_kind matches,
-        # it works correctly. This test ensures the valid path works.
-        analysis.configure_experiment_kind("historical", kinds_yaml)
-        assert isinstance(analysis.exp_kind_dict, dict)
-        assert analysis.exp_kind_dict["period"] == "past"
-        assert analysis.exp_kind_dict["forcing"] == "CMIP6"
+    def test_configure_experiment_kind_unknown_with_default_key(self, analysis, kinds_yaml, aqua_caplog):
+        """An unknown kind falls back on the 'default' entry of the file, with a warning."""
+        caplog = aqua_caplog(analysis.logger)
+        analysis.configure_experiment_kind("nonexistent", kinds_yaml)
+        assert analysis.exp_kind_dict == load_yaml(kinds_yaml)["default"]
+        assert analysis.exp_kind_dict["period"] == "unknown"
+        warnings = [record.getMessage() for record in caplog.records if record.levelname == "WARNING"]
+        expected = f"Experiment kind 'nonexistent' not found in config file '{kinds_yaml}': using the 'default' entry"
+        assert warnings == [expected]
 
     def test_configure_experiment_kind_multiple_kinds(self, analysis, kinds_yaml):
         """Different kinds return independent sub-dictionaries."""
