@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from jinja2 import UndefinedError
+from utils_tests import LOGLEVEL
 
 from aqua.core.analysis import Analysis
 from aqua.core.console.analysis import analysis_parser
@@ -30,7 +31,7 @@ pytestmark = pytest.mark.console
 @pytest.fixture(scope="function")
 def analysis():
     """Fresh Analysis instance per test (function scope to avoid state leakage)."""
-    return Analysis(loglevel="DEBUG")
+    return Analysis(loglevel=LOGLEVEL)
 
 
 @pytest.fixture(scope="session")
@@ -663,7 +664,7 @@ class TestParser:
                 {"model": "IFS", "exp": "test-tco79", "source": "short"},
             ),
             (
-                ["--regrid", "r100", "--serial", "--loglevel", "DEBUG"],
+                ["--regrid", "r100", "--serial", "--loglevel", LOGLEVEL],
                 {"regrid": "r100", "serial": True, "loglevel": "DEBUG"},
             ),
             (

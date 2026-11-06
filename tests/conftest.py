@@ -4,13 +4,13 @@ These fixtures use scope="session" to retrieve data once and share across all te
 Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
+import glob
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import warnings
-from pathlib import Path
 
 import matplotlib
 import pytest
@@ -26,8 +26,8 @@ import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
 
-STAC_CATALOGUE_DIR = Path(__file__).resolve().parent / "stac_catalogue"
-REPO_ROOT = Path(__file__).resolve().parents[1]
+STAC_CATALOGUE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "stac_catalogue")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # entries a test run may legitimately create in the repository root (reports, caches)
 ALLOWED_NEW_ROOT_ENTRIES = {".coverage", "junit.xml", "coverage.xml", "aqua_pytest.log", ".pytest_cache", "__pycache__"}
@@ -39,24 +39,25 @@ def _ensure_stac_catalogue():
     It runs on the controller before collection, because the catalog tests browse the `stac` sources at import.
     The lock and the atomic writes of the generator keep concurrent pytest invocations safe.
     """
-    models = REPO_ROOT / "AQUA_tests" / "models"
-    if not models.is_dir():
+    models = os.path.join(REPO_ROOT, "AQUA_tests", "models")
+    if not os.path.isdir(models):
         return
-    catalog = STAC_CATALOGUE_DIR / "catalog.json"
-    with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
-        inputs = [STAC_CATALOGUE_DIR / "generate_catalog.py", *models.rglob("*.nc")]
-        if catalog.exists() and catalog.stat().st_mtime >= max(path.stat().st_mtime for path in inputs):
+    catalog = os.path.join(STAC_CATALOGUE_DIR, "catalog.json")
+    generator = os.path.join(STAC_CATALOGUE_DIR, "generate_catalog.py")
+    with SafeFileLock(os.path.join(STAC_CATALOGUE_DIR, ".generation.lock"), loglevel=LOGLEVEL):
+        inputs = [generator, *glob.glob(os.path.join(models, "**", "*.nc"), recursive=True)]
+        if os.path.exists(catalog) and os.path.getmtime(catalog) >= max(os.path.getmtime(path) for path in inputs):
             return
         if shutil.which("ncdump") is None:
             warnings.warn("ncdump not found: the STAC test catalogue is not generated", stacklevel=2)
             return
-        subprocess.run([sys.executable, str(STAC_CATALOGUE_DIR / "generate_catalog.py")], check=True)
+        subprocess.run([sys.executable, generator], check=True)
 
 
 @pytest.fixture(scope="session")
 def stac_catalogue_dir():
     """Return the example STAC catalogue prepared before test collection."""
-    if not (STAC_CATALOGUE_DIR / "catalog.json").exists():
+    if not os.path.exists(os.path.join(STAC_CATALOGUE_DIR, "catalog.json")):
         pytest.skip("STAC catalogue not generated: AQUA_tests/models or ncdump is not available")
     return STAC_CATALOGUE_DIR
 
@@ -186,7 +187,7 @@ def _get_xdist_log_path(config):
         return None
     # Handle pytest's distinct path objects if necessary
     root_path = root.path if hasattr(root, "path") else root
-    return Path(root_path) / ".pytest_cache" / "xdist_worker_tests.log"
+    return os.path.join(str(root_path), ".pytest_cache", "xdist_worker_tests.log")
 
 
 def _log_xdist_event(config, event, nodeid, outcome=None):
@@ -208,7 +209,7 @@ def _log_xdist_event(config, event, nodeid, outcome=None):
 
     try:
         # Ensure directory exists
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
         # Append line with flush to ensure it's written immediately
         with open(log_path, "a") as f:
             f.write(f"{line}\n")
@@ -222,9 +223,9 @@ def pytest_sessionstart(session):
     if getattr(session.config, "workerinput", None) is not None:
         return  # only the controller clears; workers append
     log_path = _get_xdist_log_path(session.config)
-    if log_path and log_path.exists():
+    if log_path and os.path.exists(log_path):
         try:
-            log_path.unlink()
+            os.remove(log_path)
         except OSError:
             pass
 

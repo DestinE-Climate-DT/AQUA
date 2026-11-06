@@ -4,9 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from utils_tests import LOGLEVEL
-
-loglevel = LOGLEVEL
 
 
 @pytest.mark.aqua
@@ -27,10 +24,10 @@ class TestTrender:
         block1 = data.isel(time=slice(0, 1000))
         coeffs = reader.trender.coeffs(block1, degree=1)
         avg = coeffs["2t"].sel(degree=1).mean().values
-        assert float(avg) == pytest.approx(-7.91903731e-17, rel=1e-5)
+        assert float(avg) == pytest.approx(-7.91903731e-17)
         coeffs = reader.trender.coeffs(block1, degree=1, normalize=True)
         avg = coeffs["2t"].sel(degree=1).mean().values
-        assert float(avg) == pytest.approx(-0.0002850853431, rel=1e-5)
+        assert float(avg) == pytest.approx(-0.0002850853431)
 
     def test_coeffs_monthly_irregular(self, reader):
         """Test for polynomial coefficients normalization on monthly data with slightly irregular intervals."""
@@ -59,9 +56,11 @@ class TestTrender:
         )
         coeffs = reader.trender.coeffs(da, degree=1, normalize=True)
         assert coeffs is not None
-        # Degree 1 coefficient should be close to 1.0 (1 unit increase per month)
+        # Degree 1 coefficient is about 1.0 (1 unit increase per month): the least-squares slope per day
+        # times the mean month length of the (leap) year 2020, 366 / 12 days
         slope = coeffs.sel(degree=1).values
-        assert float(slope) == pytest.approx(1.0, rel=0.05)
+        days = (times - times[0]).days.values.astype(float)
+        assert float(slope) == pytest.approx(np.polyfit(days, da.values, 1)[0] * 366 / 12)
 
     def test_trend_dataarray(self, reader, data):
         """Trivial test for trend on DataArray"""

@@ -1,7 +1,7 @@
 """Data-backed console workflow tests."""
 
+import glob
 import os
-from pathlib import Path
 
 import pytest
 
@@ -81,7 +81,8 @@ def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input,
         return [f for f in os.listdir(outdir) if f.startswith("drop_stats_") and f.endswith(".txt")]
 
     def data_files(*parts):
-        return sorted(str(p) for p in Path(outdir, *parts).rglob("*") if p.is_file())
+        pattern = os.path.join(outdir, *parts, "**")
+        return sorted(path for path in glob.glob(pattern, recursive=True) if os.path.isfile(path))
 
     stats_before = len(stats_files())  # the two runs above wrote their own stats files
     run_aqua(

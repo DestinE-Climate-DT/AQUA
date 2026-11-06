@@ -4,6 +4,7 @@ import os
 
 import pandas as pd
 import pytest
+from utils_tests import LOGLEVEL
 
 from aqua.core.analysis import Analysis, AnalysisReport
 
@@ -160,7 +161,7 @@ def test_report_missing_dir(tmp_path):
 @pytest.fixture
 def analysis(tmp_path):
     """Analysis instance with an output directory set."""
-    analysis = Analysis(loglevel="WARNING")
+    analysis = Analysis(loglevel=LOGLEVEL)
     analysis.output_dir = str(tmp_path / "out")
     analysis.model, analysis.exp, analysis.realization = "IFS", "hist", "r1"
     return analysis

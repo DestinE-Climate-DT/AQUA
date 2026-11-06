@@ -1,7 +1,7 @@
 """Testing for the catalog generator"""
 
+import os
 import sys
-from pathlib import Path
 
 import pytest
 from utils_tests import LOGLEVEL
@@ -10,7 +10,7 @@ from aqua.core.catgen import AquaFDBGenerator, get_nested
 from aqua.core.console.main import AquaConsole
 from aqua.core.util import dump_yaml, load_yaml
 
-loglevel = LOGLEVEL
+CATGEN_TEMPLATE = os.path.join("tests", "catgen", "config-test-catgen.j2")
 
 # Constants for vertical levels
 ATMOS_PRESSURE_LEVELS = 19
@@ -31,7 +31,7 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1, portfol
     The catalog is written under tmp_path, so tests run in parallel do not share files.
 
     Args:
-        tmp_path: Temporary directory provided by pytest (Path or str)
+        tmp_path (pathlib.Path): Temporary directory provided by pytest
         model: Model to be checked (IFS-NEMO, IFS-FESOM, ICON)
         kind: Data portfolio type (minimal, reduced, full)
         reso: Resolution of the data (lowres, intermediate, production, etc.)
@@ -42,9 +42,8 @@ def load_and_prepare(tmp_path, model, kind, reso, num_of_realizations=1, portfol
     Returns:
         dict: Catalog sources dictionary loaded from the generated YAML file
     """
-    tmp_path = Path(tmp_path)
     config = _prepare_config(
-        Path("tests/catgen/config-test-catgen.j2"),
+        CATGEN_TEMPLATE,
         model,
         kind,
         reso,
@@ -84,15 +83,15 @@ def _prepare_config(template_path, model, kind, reso, num_of_realizations, tmp_p
 
 def _catalog_dir(config):
     """Folder of the catalog of the configuration in the temporary Climate-DT-catalog."""
-    return Path(config["repos"]["Climate-DT-catalog_path"]) / "catalogs" / config["catalog_dir"]
+    return os.path.join(config["repos"]["Climate-DT-catalog_path"], "catalogs", config["catalog_dir"])
 
 
 def _setup_catalog_directory(config):
     """Create the catalog.yaml that catgen requires, if the test did not write one."""
-    catalog_yaml_path = _catalog_dir(config) / "catalog.yaml"
-    catalog_yaml_path.parent.mkdir(parents=True, exist_ok=True)
-    if not catalog_yaml_path.exists():
-        dump_yaml(str(catalog_yaml_path), {"sources": {}})
+    catalog_yaml_path = os.path.join(_catalog_dir(config), "catalog.yaml")
+    os.makedirs(os.path.dirname(catalog_yaml_path), exist_ok=True)
+    if not os.path.exists(catalog_yaml_path):
+        dump_yaml(catalog_yaml_path, {"sources": {}})
 
 
 def _run_catgen(config, kind, tmp_path):
@@ -107,9 +106,9 @@ def _run_catgen(config, kind, tmp_path):
 
 def _load_generated_sources(config):
     """Load the generated catalog entry, checking that main.yaml was written too."""
-    entry_dir = _catalog_dir(config) / "catalog" / config["model"]
-    assert (entry_dir / "main.yaml").exists(), f"main.yaml not found in {entry_dir}"
-    return load_yaml(str(entry_dir / f"{config['exp']}.yaml"))
+    entry_dir = os.path.join(_catalog_dir(config), "catalog", config["model"])
+    assert os.path.exists(os.path.join(entry_dir, "main.yaml")), f"main.yaml not found in {entry_dir}"
+    return load_yaml(os.path.join(entry_dir, f"{config['exp']}.yaml"))
 
 
 def _main_entry(**metadata):
@@ -197,9 +196,7 @@ def mini_portfolio(tmp_path_factory):
 @pytest.mark.parametrize("num_of_realizations", [1, 3])
 def test_catgen_expid_metadata(tmp_path, stream, num_of_realizations):
     """Keep the Autosubmit ID in source metadata rather than the FDB request."""
-    config = _prepare_config(
-        Path("tests/catgen/config-test-catgen.j2"), "IFS-NEMO-5km", "full", "production", num_of_realizations, tmp_path
-    )
+    config = _prepare_config(CATGEN_TEMPLATE, "IFS-NEMO-5km", "full", "production", num_of_realizations, tmp_path)
     definitions = {
         **config,
         "source": "test-source",
@@ -357,9 +354,7 @@ def test_get_value_from_map():
 @pytest.mark.catgen
 def test_generate_catalog_no_resolutions(tmp_path, mini_portfolio):
     """If local_grids is empty, generate_catalog returns early and writes no catalog (it would fail if it wrote one)."""
-    config = _prepare_config(
-        Path("tests/catgen/config-test-catgen.j2"), "IFS-NEMO", "mini", "lowres", 1, tmp_path, mini_portfolio
-    )
+    config = _prepare_config(CATGEN_TEMPLATE, "IFS-NEMO", "mini", "lowres", 1, tmp_path, mini_portfolio)
     dump_yaml(str(tmp_path / "test.yaml"), config)
 
     gen = AquaFDBGenerator(data_portfolio="mini", config_path=str(tmp_path / "test.yaml"))

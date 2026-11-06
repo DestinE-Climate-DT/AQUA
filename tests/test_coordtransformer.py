@@ -265,7 +265,7 @@ class TestConvertUnits:
 
         result = transformer.convert_units(ds, src, tgt)
 
-        np.testing.assert_allclose(result.lon.values, [0.0, 90.0, 180.0])
+        assert result.lon.values == pytest.approx([0.0, 90.0, 180.0])
         assert result.lon.attrs["units"] == "degrees_east"
 
     def test_noop_when_tgt_has_no_units(self):
@@ -349,7 +349,7 @@ class TestConvertUnits:
 
         result = transformer.convert_units(ds, src, tgt)
 
-        np.testing.assert_allclose(result.lon_bnds.values, [[0.0, 90.0], [90.0, 180.0]])
+        assert result.lon_bnds.values == pytest.approx(np.array([[0.0, 90.0], [90.0, 180.0]]))
         assert result.lon_bnds.attrs["units"] == "degrees_east"
 
 
@@ -372,7 +372,7 @@ class TestNormalizeRangeConvention:
         tgt = {"name": self.longitude, "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
-        np.testing.assert_allclose(result[self.longitude].values, [10.0, 170.0, 190.0, 350.0])
+        assert result[self.longitude].values == pytest.approx([10.0, 170.0, 190.0, 350.0])
 
     def test_ignores_non_longitude_coordinates(self):
         """Only the longitude is wrapped.
@@ -436,7 +436,7 @@ class TestNormalizeRangeConvention:
 
         # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
         # It should succeed.
-        np.testing.assert_allclose(result[self.longitude].values, [260.0, 270.0, 280.0])
+        assert result[self.longitude].values == pytest.approx([260.0, 270.0, 280.0])
 
 
 # ---------------------------------------------------------------------------
@@ -504,7 +504,7 @@ class TestTransformCoordsIntegration:
         result = transformer.transform_coords(name="aqua")
 
         assert result.lat.values[0] < result.lat.values[-1]  # flip still happens
-        np.testing.assert_allclose(result.lon.values, [10.0, 170.0, 190.0, 350.0])  # wrapped and sorted by the pipeline
+        assert result.lon.values == pytest.approx([10.0, 170.0, 190.0, 350.0])  # wrapped and sorted by the pipeline
         assert result.lon.attrs["units"] == "degrees_east"
         # every cell keeps its value: the data follows the flipped latitude and the wrapped and sorted longitude
         for lat in ds.latitude.values:
@@ -521,7 +521,7 @@ class TestTransformCoordsIntegration:
         assert result.lat.values[0] > result.lat.values[-1]
         # lon wrap is independent of flip_coords and must still apply
         assert result.lon.values.min() >= 0
-        np.testing.assert_allclose(result.lon.values, [10.0, 170.0, 190.0, 350.0])
+        assert result.lon.values == pytest.approx([10.0, 170.0, 190.0, 350.0])
         assert result["var"].sel(lat=90.0, lon=190.0) == ds["var"].sel(latitude=90.0, longitude=-170.0)
 
     def test_invalid_name_type_raises(self):

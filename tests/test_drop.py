@@ -1,7 +1,7 @@
+import glob
 import logging
 import os
 import re
-from pathlib import Path
 
 import dask.array as da
 import icechunk
@@ -274,7 +274,8 @@ class TestDROP:
         test.retrieve()
         test.drop_generator()
         # a dry run writes nothing: the output directory is created by Drop.__init__, whatever the run does
-        written = [path for path in Path(drop_arguments["outdir"]).rglob("*") if path.is_file()]
+        pattern = os.path.join(drop_arguments["outdir"], "**")
+        written = [path for path in glob.glob(pattern, recursive=True) if os.path.isfile(path)]
         assert written == []
 
     @pytest.mark.parametrize("nworkers", [1, 2])
@@ -430,7 +431,7 @@ class TestDROP:
             resolution="r100",
             frequency="monthly",
             definitive=True,
-            loglevel="INFO",
+            loglevel=LOGLEVEL,
             exclude_incomplete=True,
         )
 
@@ -440,8 +441,7 @@ class TestDROP:
 
         assert any("No data available after time statistics" in message for message in caplog.messages)
         assert any("No data to write for variable 2t" in message for message in caplog.messages)
-        written = [path for path in Path(drop_arguments["outdir"]).rglob("*") if path.is_file()]
-        assert not [path for path in written if path.suffix == ".nc"]
+        assert glob.glob(os.path.join(drop_arguments["outdir"], "**", "*.nc"), recursive=True) == []
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
     def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):

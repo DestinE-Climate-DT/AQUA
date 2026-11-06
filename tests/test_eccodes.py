@@ -1,6 +1,7 @@
 """Tests for ecCodes utilities."""
 
 import pytest
+from utils_tests import LOGLEVEL
 
 from aqua.core.exceptions import NoEcCodesShortNameError
 from aqua.core.util import get_eccodes_attr
@@ -84,7 +85,7 @@ from aqua.core.util import get_eccodes_attr
 )
 def test_get_eccodes_attr_examples(query, expected_attr):
     """Test get_eccodes_attr against expected parameter attributes."""
-    result = get_eccodes_attr(query, loglevel="debug")
+    result = get_eccodes_attr(query, loglevel=LOGLEVEL)
     assert result == expected_attr
 
 
@@ -100,7 +101,7 @@ def test_get_eccodes_attr_examples(query, expected_attr):
 )
 def test_get_eccodes_attr_param_to_shortname(pid, expected_short_name):
     """Test looking up shortName from paramId."""
-    res = get_eccodes_attr(pid, loglevel="debug")
+    res = get_eccodes_attr(pid, loglevel=LOGLEVEL)
     assert res["shortName"] == expected_short_name
 
 
@@ -115,7 +116,7 @@ def test_get_eccodes_attr_param_to_shortname(pid, expected_short_name):
 )
 def test_get_eccodes_attr_shortname_to_param(sn, expected_pid):
     """Test looking up paramId from shortName."""
-    res = get_eccodes_attr(sn, loglevel="debug")
+    res = get_eccodes_attr(sn, loglevel=LOGLEVEL)
     assert str(res["paramId"]) == expected_pid
 
 
@@ -130,7 +131,7 @@ def test_get_eccodes_attr_shortname_to_param(sn, expected_pid):
 )
 def test_get_eccodes_attr_var_prefix(var_str, expected_short_name):
     """Test string paramId with 'var' prefix."""
-    res = get_eccodes_attr(var_str, loglevel="debug")
+    res = get_eccodes_attr(var_str, loglevel=LOGLEVEL)
     assert res["shortName"] == expected_short_name
 
 
@@ -139,4 +140,4 @@ def test_get_eccodes_attr_var_prefix(var_str, expected_short_name):
 def test_get_eccodes_attr_not_found(invalid_query):
     """Test that NoEcCodesShortNameError is raised for invalid paramId or shortName."""
     with pytest.raises(NoEcCodesShortNameError):
-        get_eccodes_attr(invalid_query, loglevel="debug")
+        get_eccodes_attr(invalid_query, loglevel=LOGLEVEL)

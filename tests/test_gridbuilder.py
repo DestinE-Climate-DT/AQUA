@@ -3,6 +3,7 @@
 import os
 
 import pytest
+from utils_tests import LOGLEVEL
 
 from aqua import GridBuilder, Reader
 from aqua.core.configurer import ConfigContext
@@ -67,7 +68,7 @@ class TestBasicGridBuilder:
 
     def test_grid_curvilinear(self, tmp_path):
         """Test the GridBuilder class with a regular grid."""
-        reader = Reader(model="ECE4-FAST", exp="test", source="monthly-oce", loglevel="debug", areas=False)
+        reader = Reader(model="ECE4-FAST", exp="test", source="monthly-oce", loglevel=LOGLEVEL, areas=False)
         data = reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, model_name="nemo", grid_name="ORCA2")
         grid_builder.build(data, verify=False, create_yaml=True)  # set to False since it is very heavy
@@ -78,7 +79,7 @@ class TestBasicGridBuilder:
 
     def test_grid_unstructured(self, tmp_path):
         """Test the GridBuilder class with an unstructured grid."""
-        reader = Reader(model="ECE4-FAST", exp="test", source="monthly-atm", loglevel="debug", areas=False)
+        reader = Reader(model="ECE4-FAST", exp="test", source="monthly-atm", loglevel=LOGLEVEL, areas=False)
         data = reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, model_name="ifs", grid_name="tl63")
         grid_builder.build(data, verify=True, create_yaml=True)  # this is not working yet
@@ -86,7 +87,7 @@ class TestBasicGridBuilder:
 
     def test_grid_healpix(self, tmp_path):
         """Test the GridBuilder class with a HEALPix grid."""
-        reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly", loglevel="debug", areas=False)
+        reader = Reader(model="ERA5", exp="era5-hpz3", source="monthly", loglevel=LOGLEVEL, areas=False)
         data = reader.retrieve()
         grid_builder = GridBuilder(outdir=tmp_path, original_resolution="N320")
         grid_builder.build(data, verify=True, create_yaml=False)

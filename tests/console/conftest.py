@@ -4,12 +4,12 @@ import io
 import os
 import shutil
 import sys
-from pathlib import Path
 from unittest.mock import patch
 
 import fsspec
 import pytest
 from fsspec.implementations.dirfs import DirFileSystem
+from utils_tests import AQUA_TESTS
 
 from aqua.core.console.main import AquaConsole
 
@@ -17,10 +17,10 @@ from aqua.core.console.main import AquaConsole
 @pytest.fixture(scope="session")
 def catalog_copy_path():
     """Return the repository-local catalog used by console tests."""
-    path = Path(__file__).resolve().parents[2] / "AQUA_tests" / "catalog_copy"
-    if not path.is_dir():
+    path = os.path.join(AQUA_TESTS, "catalog_copy")
+    if not os.path.isdir(path):
         pytest.fail(f"Required console test catalog not found: {path}", pytrace=False)
-    return str(path)
+    return path
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +44,7 @@ def fake_github_repo(tmp_path_factory, request):
     The `ci` catalog is the one of the session-private configuration (see tests/utils_tests/config.py).
     """
     root = tmp_path_factory.mktemp("fake_github")
-    shutil.copytree(Path(request.config._aqua_private_config) / "catalogs" / "ci", root / "catalogs" / "ci")
+    shutil.copytree(os.path.join(request.config._aqua_private_config, "catalogs", "ci"), root / "catalogs" / "ci")
     for name in ("obs", "climatedt-gen2"):
         catalog = root / "catalogs" / name
         catalog.mkdir(parents=True)
