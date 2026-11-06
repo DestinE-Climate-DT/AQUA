@@ -7,8 +7,6 @@ from aqua.core.logger import log_configure, log_history
 from aqua.core.util.time import pandas_freq_to_offset, xarray_to_pandas_freq
 from aqua.core.util.util import _preserve_reader_binding
 
-xr.set_options(keep_attrs=True)
-
 
 class Trender:
     """

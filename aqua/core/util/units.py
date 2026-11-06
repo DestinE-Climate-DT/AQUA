@@ -9,8 +9,6 @@ from aqua.core.logger import log_configure, log_history
 from .util import _preserve_reader_binding
 from .yaml import load_yaml
 
-xr.set_options(keep_attrs=True)
-
 
 def normalize_units(src, loglevel="WARNING"):
     """
