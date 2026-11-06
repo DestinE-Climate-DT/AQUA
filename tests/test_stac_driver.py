@@ -1,6 +1,7 @@
 """Tests for the AQUA STAC intake driver."""
 
 import json
+import os
 from unittest.mock import Mock
 
 import intake
@@ -39,13 +40,13 @@ def _catalog(path, urlpath, *, metadata=None, parameters=None, **args):
 @pytest.fixture(scope="session")
 def sample_stac_netcdf_path(stac_catalogue_dir):
     """Path to the generated IFS STAC item."""
-    return str(stac_catalogue_dir / "items" / "ifs" / "ifs-long-regridded-r18x9.json")
+    return os.path.join(stac_catalogue_dir, "items", "ifs", "ifs-long-regridded-r18x9.json")
 
 
 @pytest.fixture(scope="session")
 def sample_stac_collection_path(stac_catalogue_dir):
     """Path to the generated IFS STAC collection."""
-    return str(stac_catalogue_dir / "collections" / "ifs.json")
+    return os.path.join(stac_catalogue_dir, "collections", "ifs.json")
 
 
 @pytest.fixture

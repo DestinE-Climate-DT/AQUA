@@ -1,6 +1,7 @@
 """Tests for aqua.core.intake_drivers.xarray: the AQUA-provided netcdf/zarr intake drivers."""
 
 import json
+import os
 from copy import deepcopy
 from functools import partial
 
@@ -249,7 +250,7 @@ class TestXarrayKwargsPrecedence:
     @pytest.mark.parametrize("driver", ["netcdf", "stac"])
     @pytest.mark.parametrize("chunks", [{"time": 1}, None])
     def test_backend_read_preserves_override(self, stac_catalogue_dir, driver, chunks):
-        item_path = stac_catalogue_dir / "items" / "ifs" / "ifs-long-regridded-r18x9.json"
+        item_path = os.path.join(stac_catalogue_dir, "items", "ifs", "ifs-long-regridded-r18x9.json")
         stac_source = IntakeSTACSource(urlpath=str(item_path))
         source_factory = (
             partial(IntakeNetCDFSource, stac_source.data.url)

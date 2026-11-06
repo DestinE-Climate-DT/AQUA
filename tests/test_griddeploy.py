@@ -1,7 +1,5 @@
 """Tests for the GridDeployer class."""
 
-from pathlib import Path
-
 import pytest
 from utils_tests import LOGLEVEL
 
@@ -191,7 +189,7 @@ def test_download_grid_skips_if_file_exists(deployer, monkeypatch, tmp_path):
 
     targetdir = tmp_path / "grids"
     existing_file = targetdir / "nested" / "folder" / "mygrid.nc"
-    Path(existing_file.parent).mkdir(parents=True, exist_ok=True)
+    existing_file.parent.mkdir(parents=True, exist_ok=True)
     existing_file.write_bytes(b"existing")
 
     deployer._download_grid(grid_dir="nested/folder", grid_name="mygrid.nc", targetdir=str(targetdir))

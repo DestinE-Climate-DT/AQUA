@@ -3,7 +3,6 @@
 import os
 import threading
 import time
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -11,6 +10,12 @@ from filelock import Timeout
 from utils_tests import LOGLEVEL
 
 from aqua.core.lock import SafeFileLock
+
+
+def _read_bytes(path):
+    """Content of a file as bytes."""
+    with open(path, "rb") as file:
+        return file.read()
 
 
 @pytest.fixture
@@ -114,12 +119,12 @@ class TestSafeFileLock:
         def acquire_and_capture(*args, **kwargs):
             """Capture the marker before SafeFileLock resumes acquisition."""
             proxy = acquire(*args, **kwargs)
-            markers.append(Path(lock_file).read_bytes())
+            markers.append(_read_bytes(lock_file))
             return proxy
 
         with patch.object(lock.lock, "acquire", side_effect=acquire_and_capture):
             with lock:
-                assert Path(lock_file).read_bytes() == markers[0]
+                assert _read_bytes(lock_file) == markers[0]
 
     @pytest.mark.aqua
     def test_held_lock_not_broken(self, lock_file):
@@ -156,7 +161,7 @@ class TestSafeFileLock:
     @pytest.mark.aqua
     def test_stale_check_lock_vanishing(self, lock_file):
         """Test that the lock file disappearing during the stale check does not raise (#3190)."""
-        Path(lock_file).touch()
+        open(lock_file, "a").close()
         lock = SafeFileLock(lock_file, timeout=5)
 
         # Lock exists when checked, but is released before its mtime is read

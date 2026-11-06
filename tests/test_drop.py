@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-from pathlib import Path
 
 import dask.array as da
 import icechunk
@@ -9,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from utils_tests import LOGLEVEL
+from utils_tests import LOGLEVEL, list_files
 
 from aqua import Drop
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
@@ -274,7 +273,7 @@ class TestDROP:
         test.retrieve()
         test.drop_generator()
         # a dry run writes nothing: the output directory is created by Drop.__init__, whatever the run does
-        written = [path for path in Path(drop_arguments["outdir"]).rglob("*") if path.is_file()]
+        written = list_files(drop_arguments["outdir"])
         assert written == []
 
     @pytest.mark.parametrize("nworkers", [1, 2])
@@ -440,8 +439,8 @@ class TestDROP:
 
         assert any("No data available after time statistics" in message for message in caplog.messages)
         assert any("No data to write for variable 2t" in message for message in caplog.messages)
-        written = [path for path in Path(drop_arguments["outdir"]).rglob("*") if path.is_file()]
-        assert not [path for path in written if path.suffix == ".nc"]
+        written = list_files(drop_arguments["outdir"])
+        assert not [path for path in written if path.endswith(".nc")]
 
     @pytest.mark.parametrize("output_format", ["netcdf", "zarr"])
     def test_catalog_exclude_incomplete(self, drop_arguments, tmp_path, output_format):

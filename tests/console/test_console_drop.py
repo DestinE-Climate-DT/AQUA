@@ -1,9 +1,9 @@
 """Data-backed console workflow tests."""
 
 import os
-from pathlib import Path
 
 import pytest
+from utils_tests import list_files
 
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -81,7 +81,7 @@ def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input,
         return [f for f in os.listdir(outdir) if f.startswith("drop_stats_") and f.endswith(".txt")]
 
     def data_files(*parts):
-        return sorted(str(p) for p in Path(outdir, *parts).rglob("*") if p.is_file())
+        return list_files(os.path.join(outdir, *parts))
 
     stats_before = len(stats_files())  # the two runs above wrote their own stats files
     run_aqua(
