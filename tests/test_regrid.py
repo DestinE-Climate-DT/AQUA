@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 import xarray as xr
-from utils_tests import APPROX_REL, LOGLEVEL
+from utils_tests import APPROX_ABS, APPROX_REL, LOGLEVEL
 
 from aqua import Reader, Regridder
 from aqua.core.regridder.filename_handler import FilenameHandler
@@ -219,13 +219,15 @@ class TestRegridder:
         """Test the case where no source grid path is specified in the regrid.yaml file
         and areas/weights are reconstructed from the file itself"""
         reader = Reader(model="IFS", exp="test-tco79", source="long", regrid="r100", rebuild=True, loglevel=LOGLEVEL)
-        data = reader.retrieve(var="ttr")
+        # tnlwrf is the fixed (decumulated, W m-2) name of ttr: asking for the source name ttr would bypass the fixer
+        data = reader.retrieve(var="tnlwrf")
         rgd = reader.regrid(data)
 
         assert len(rgd.lon) == 360
         assert len(rgd.lat) == 180
         assert len(rgd.time) == 4728
-        assert cosine_weighted_mean(rgd["ttr"].isel(time=1000)) == pytest.approx(-13586109.26, rel=APPROX_REL)
+        assert rgd["tnlwrf"].attrs["units"] == "W m**-2"
+        assert cosine_weighted_mean(rgd["tnlwrf"].isel(time=1000)) == pytest.approx(-235.53564, rel=APPROX_REL)
 
     def test_recompute_weights_healpix(self):
         """Test Healpix and areas/weights are reconstructed from the file itself"""
@@ -272,9 +274,9 @@ class TestRegridder:
         # the land fraction grows with depth
         deep, surface = rgd.avg_so.isel(level=6), rgd.avg_so.isel(level=0)
         # the weights are rebuilt by the CDO of the machine, which changes the missing cells at the coast by a few
-        # (CI: 0.33790 and 0.52512, macOS: 0.33778 and 0.52463, out of 16200 cells): 1e-3 is 16 cells
-        assert land_fraction(surface) == pytest.approx(0.33790123, abs=1e-3)
-        assert land_fraction(deep) == pytest.approx(0.52512346, abs=1e-3)
+        # (CI: 0.33790 and 0.52512, macOS: 0.33778 and 0.52463, out of 16200 cells): APPROX_ABS is 16 cells
+        assert land_fraction(surface) == pytest.approx(0.33790123, abs=APPROX_ABS)
+        assert land_fraction(deep) == pytest.approx(0.52512346, abs=APPROX_ABS)
         assert cosine_weighted_mean(surface) == pytest.approx(33.982137, rel=APPROX_REL)
         assert cosine_weighted_mean(deep) == pytest.approx(35.184904, rel=APPROX_REL)
 
