@@ -193,7 +193,7 @@ All code is linted with **Ruff**: no unused imports, no bare `except`, consisten
 
 Prefer in this order before adding anything new: `xarray`, `numpy`, `pandas`, `metpy`, `smmregrid`, `intake`.
 
-- When dependencies change, update the relevant declarations in `pyproject.toml` and `environment*.yaml` / `environment*.yml` files, then regenerate the corresponding conda lockfiles using the repository's relock workflow.
+- When dependencies change, update the relevant declarations in `pyproject.toml` and `environment*.yml` files, then regenerate the corresponding conda lockfiles using the repository's relock workflow.
 
 ---
 
