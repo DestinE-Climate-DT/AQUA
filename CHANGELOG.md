@@ -15,6 +15,8 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Split agent instructions into a small `AGENTS.md` entry point, shared ecosystem rules in `AGENTS.common.md`, and AQUA-core-specific rules in `AGENTS.repo.md` (#3357).
+- Share agent rules for attribute reuse, isolated test outputs, dependency and `environment*.yml` synchronization, usage documentation updates, and precedence of the current implementation over stale documentation (#3357).
 - Remove module-level `xr.set_options(keep_attrs=True)` calls, which silently changed xarray's global state on import; xarray already keeps attrs by default and AQUA passes `keep_attrs=True` explicitly where needed. `AGENTS.md` updated accordingly (#3324).
 - Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
 - Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)
@@ -29,6 +31,10 @@ Unreleased in the current development version (target v1.2.4):
 - DROP validates existing yearly and monthly files at write time (a yearly file must span 12 months) and regenerates the invalid ones (only reported in a dry run), instead of skipping them on existence only; a final report lists the periods that could not be produced (also for icechunk) and `--no-validate` skips the validation of existing files. The unused pre-run `check_integrity` is removed from `Drop` and `BaseWriter` (the icechunk one remains, used when writing) (#3325)
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
+- Test suite infrastructure (#3309; #3332, #3333, #3334, #3336, #3337, #3338, #3339, #3358): private `AQUA_CONFIG` and outputs under `tmp_path`, console and regionmask tests offline with a new `network` marker, faster runs (shared regridding weights, DROP in its own xdist group, session fixtures, 11 redundant tests removed), and shared conventions in `AGENTS.repo.md` and `tests/utils_tests` (design principles, tolerances, `LOGLEVEL`, `os.path`)
+- Test suite content (#3309; #3340, #3341, #3342, #3343, #3344, #3345, #3347, #3349, #3350, #3352): tests check values against independent oracles instead of shapes (fldstat, regridding, timstat, vertical interpolation, coordinates, formulas, units, trender) and no longer mock the code under test (analysis, console, DROP, catalog generator offline)
+- `CoordTransformer` no longer copies `range_convention` to the longitude attributes nor wraps non-longitude coordinates in `normalize_range_convention` (#3344)
+- `Analysis.configure_experiment_kind` falls back to the `default` entry of the file (it stored the string `"default"`), with a warning instead of an error (#3348)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
 
 ## [v1.2.3]

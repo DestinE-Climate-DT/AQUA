@@ -1,6 +1,14 @@
+import matplotlib
 import pytest
 
 from aqua.core.graphics import ConfigStyle
+
+
+@pytest.fixture(autouse=True)
+def _restore_rcparams():
+    """ConfigStyle activates a matplotlib style: do not leak it to the following tests."""
+    with matplotlib.rc_context():
+        yield
 
 
 @pytest.mark.graphics
