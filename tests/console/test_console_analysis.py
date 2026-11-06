@@ -13,8 +13,14 @@ pytestmark = pytest.mark.console
 class TestAquaConsoleAnalysis:
     """Analysis operations against an isolated AQUA installation."""
 
-    def test_console_analysis_checker_failure(self, aqua_install, run_aqua, tmp_path):
-        """Test that a setup-checker failure is propagated through the console."""
+    @pytest.mark.parametrize("exit_code", [0, 1])
+    def test_console_analysis_setup_checker(self, aqua_install, run_aqua, tmp_path, exit_code):
+        """A setup checker that exits with 1 stops the analysis with exit code 1, one that succeeds does not.
+
+        The checker is a real script run by the console, with no mock (the test used to patch `run_setup_checker` to
+        raise SystemExit(1) and assert the SystemExit it had raised itself). Its log is written in both cases."""
+        checker = tmp_path / "cli_setup_checker.py"
+        checker.write_text(f"import sys\nsys.exit({exit_code})\n")
         analysis_cfg = tmp_path / "config.aqua-analysis-test.yaml"
         dump_yaml(
             str(analysis_cfg),
@@ -27,21 +33,19 @@ class TestAquaConsoleAnalysis:
                     "exp": "test-tco79",
                     "source": "lra-r100-monthly",
                 },
+                "cli": {"setup_checker": str(checker)},
+                "run": [[]],  # nothing to run after the checker
             },
         )
-        with patch("aqua.core.analysis.Analysis.run_setup_checker", side_effect=SystemExit(1)) as mock_checker:
-            with pytest.raises(SystemExit) as exc_info:
-                run_aqua(
-                    [
-                        "analysis",
-                        "--config",
-                        str(analysis_cfg),
-                        "--setup_checker",
-                    ]
-                )
+        command = ["analysis", "--config", str(analysis_cfg), "--setup_checker", "--serial"]
 
-        assert exc_info.value.code == 1
-        mock_checker.assert_called_once_with(script_path=None)
+        if exit_code == 0:
+            run_aqua(command)
+        else:
+            with pytest.raises(SystemExit) as exc_info:
+                run_aqua(command)
+            assert exc_info.value.code == 1
+        assert (tmp_path / "output" / "ci" / "IFS" / "test-tco79" / "r1" / "setup_checker.log").is_file()
 
     def test_console_analysis_minimal(self, aqua_install, run_aqua, tmp_path, catalog_copy_path):
         """Minimal smoke test: verifies aqua analysis routes through the config without

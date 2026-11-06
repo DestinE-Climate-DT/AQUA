@@ -1,10 +1,11 @@
 """Data-backed console workflow tests."""
 
 import os
+from pathlib import Path
 
 import pytest
 
-from aqua.core.util import dump_yaml
+from aqua.core.util import dump_yaml, load_yaml
 
 MACHINE = "github"
 
@@ -74,7 +75,15 @@ def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input,
     )
     assert os.path.exists(monthly_path), f"Monthly Zarr store not found: {monthly_path}"
 
-    outdir_monitoring = os.path.join(mydir, "drop_test")
+    outdir = os.path.join(mydir, "drop_test")
+
+    def stats_files():
+        return [f for f in os.listdir(outdir) if f.startswith("drop_stats_") and f.endswith(".txt")]
+
+    def data_files(*parts):
+        return sorted(str(p) for p in Path(outdir, *parts).rglob("*") if p.is_file())
+
+    stats_before = len(stats_files())  # the two runs above wrote their own stats files
     run_aqua(
         [
             "drop",
@@ -92,49 +101,43 @@ def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input,
             "--regrid_first",
         ]
     )
+    assert len(stats_files()) == stats_before + 1, "The monitoring run must write one more stats file"
 
-    stats_files = [f for f in os.listdir(outdir_monitoring) if f.startswith("drop_stats_") and f.endswith(".txt")]
-    assert len(stats_files) >= 1, f"Expected at least one stats file in {outdir_monitoring}, found: {stats_files}"
+    # --catalog-entry controls the catalog entry only: `no` generates the data but not the entry, `only` the opposite
+    catalog_file = os.path.join(mydir, ".aqua", "catalogs", "ci", "catalog", "IFS", "test-tco79.yaml")
+    daily = [
+        "drop",
+        "--config",
+        drop_test,
+        "-w",
+        "1",
+        "-d",
+        "--frequency",
+        "daily",
+        "--startdate",
+        "2020-02-01",
+        "--enddate",
+        "2020-02-03",
+    ]
+    assert "r200-daily" not in load_yaml(catalog_file)["sources"]
 
-    run_aqua(
-        [
-            "drop",
-            "--config",
-            drop_test,
-            "-w",
-            "1",
-            "-d",
-            "--startdate",
-            "2020-01-01",
-            "--enddate",
-            "2020-01-31",
-            "--catalog-entry",
-            "no",
-        ]
-    )
+    run_aqua(daily + ["--catalog-entry", "no"])
+    generated = data_files("ci", "IFS", "test-tco79", "r1", "r200", "daily")
+    assert generated, "--catalog-entry no must generate the data"
+    assert "r200-daily" not in load_yaml(catalog_file)["sources"]
 
-    run_aqua(
-        [
-            "drop",
-            "--config",
-            drop_test,
-            "-w",
-            "1",
-            "-d",
-            "--startdate",
-            "2020-01-01",
-            "--enddate",
-            "2020-01-31",
-            "--catalog-entry",
-            "only",
-        ]
-    )
+    for path in generated:
+        os.remove(path)  # so that a run which wrote the data again could not pass unnoticed
+    run_aqua(daily + ["--catalog-entry", "only"])
+    assert "r200-daily" in load_yaml(catalog_file)["sources"]
+    assert data_files("ci", "IFS", "test-tco79", "r1", "r200", "daily") == []  # `only` generates no data
 
+    # CLI-only mode, without a configuration file: the statistic that no run has produced yet is generated
     run_aqua(
         [
             "drop",
             "--outdir",
-            os.path.join(mydir, "drop_test"),
+            outdir,
             "-w",
             "1",
             "-d",
@@ -152,13 +155,21 @@ def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input,
             "r200",
             "--frequency",
             "monthly",
+            "--stat",
+            "max",
             "--startdate",
-            "2020-01-01",
+            "2020-02-01",
             "--enddate",
-            "2020-01-31",
+            "2020-02-29",
             "--catalog-entry",
             "no",
         ]
+    )
+    assert os.path.isfile(
+        os.path.join(
+            outdir,
+            "ci/IFS/test-tco79/r1/r200/monthly/max/global/2t_ci_IFS_test-tco79_r1_r200_monthly_max_global_202002.nc",
+        )
     )
 
     run_aqua_console_with_input(["uninstall"], "yes")

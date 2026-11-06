@@ -33,13 +33,23 @@ class TestCatalogOperations:
         config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
         assert config_file["catalog"][0] == "ci"
 
-        # update the installation files
+        # update the installation files: a modified file of the installation is restored
+        fixes = os.path.join(mydir, ".aqua/fixes/ifs.yaml")
+        with open(fixes, encoding="utf-8") as f:
+            original = f.read()
+        with open(fixes, "w", encoding="utf-8") as f:
+            f.write("modified\n")
         run_aqua(["-v", "update"])
-        assert os.path.isdir(os.path.join(mydir, ".aqua/fixes"))
+        with open(fixes, encoding="utf-8") as f:
+            assert f.read() == original
 
-        # update a catalog
+        # update a catalog: it is downloaded again, a file added to the installed copy is gone
+        leftover = os.path.join(mydir, ".aqua/catalogs/ci/leftover.txt")
+        with open(leftover, "w", encoding="utf-8") as f:
+            f.write("not in the repository\n")
         run_aqua(["-v", "update", "-c", "ci"])
-        assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs/ci"))
+        assert os.path.isfile(os.path.join(mydir, ".aqua/catalogs/ci/catalog.yaml"))
+        assert not os.path.exists(leftover)
 
         # remove catalog
         run_aqua(["remove", "ci"])

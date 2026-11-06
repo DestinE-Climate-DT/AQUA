@@ -99,6 +99,21 @@ class TestPluginInstall:
 
         run_aqua_console_with_input(["uninstall"], "yes")
 
+    def test_core_install_excludes_plugin(
+        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
+    ):
+        """`aqua install --core` installs the core files only, where a bare install adds the discovered plugin"""
+        mydir = str(tmp_path)
+        set_home(mydir)
+
+        run_aqua(["install", MACHINE, "--core"])
+
+        assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
+        assert not os.path.exists(os.path.join(mydir, ".aqua", "mock_config"))
+        assert not os.path.exists(os.path.join(mydir, ".aqua", "templates", "mock_templates"))
+
+        run_aqua_console_with_input(["uninstall"], "yes")
+
     def test_editable_plugin_install_creates_symlinks(
         self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
     ):
@@ -166,9 +181,11 @@ class TestPluginInstall:
         set_home(mydir)
 
         run_aqua(["install", MACHINE])
+        plugin_file = os.path.join(mydir, ".aqua", "mock_config", "dummy.yaml")
+        os.remove(plugin_file)  # installed by `install`: only `update` can bring it back
         run_aqua(["-v", "update"])
 
-        assert os.path.isfile(os.path.join(mydir, ".aqua", "mock_config", "dummy.yaml"))
+        assert os.path.isfile(plugin_file)
 
         run_aqua_console_with_input(["uninstall"], "yes")
 
