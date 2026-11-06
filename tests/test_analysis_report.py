@@ -207,3 +207,79 @@ def test_analysis_setup_checker_failure_report(analysis, tmp_path):
     assert "`setup_checker.log`" in text and "No data found" in text
     assert "atmosphere2d-biases.log" not in text
     assert "## Output files" not in text
+
+
+PROFILE_SHARED = (
+    "2026-10-15 13:59:30 :: Profiler :: INFO     -> walltime=312.4s cputime=95.1s max_memory=4.2GiB "
+    "cluster_max_memory=18.3GiB/99.2GiB (shared cluster, 32 workers)\n"
+)
+PROFILE_PRIVATE = (
+    "2026-10-15 13:59:30 :: Profiler :: INFO     -> walltime=61.0s cputime=10.0s max_memory=900.0MiB "
+    "cluster_max_memory=2.5GiB/16.0GiB (private cluster, 4 workers)\n"
+)
+PROFILE_NOCLUSTER = (
+    f"{RED}2026-10-15 13:59:30 :: Profiler :: INFO     -> walltime=5.5s cputime=20.0s max_memory=12.0GiB "
+    f"(no dask cluster: all computation in this process){RESET}\n"
+)
+# same message from another logger: not a profiling line
+NOT_PROFILER = "2026-10-15 13:59:30 :: Biases CLI :: INFO     -> walltime=1.0s max_memory=99.0GiB\n"
+
+
+def test_report_profile_parsing(tmp_path):
+    """The Profiler line of each tool is parsed into seconds and bytes, with or without the cluster part."""
+    start = pd.Timestamp.now()
+    results = [
+        _result(_write(tmp_path / "a-timeseries.log", CLEAN_LOG + PROFILE_SHARED), 0, start),
+        _result(_write(tmp_path / "a-ecmean.log", PROFILE_NOCLUSTER), 0, start),
+        _result(_write(tmp_path / "a-biases.log", CLEAN_LOG + NOT_PROFILER), 0, start),
+    ]
+    report = AnalysisReport(str(tmp_path), run_start=start, tool_results=results, scan_outputs=False)
+    report.collect()
+    profiles = {log["name"]: log["profile"] for log in report.logs}
+
+    assert profiles["a-timeseries.log"] == {
+        "walltime_seconds": 312.4,
+        "cputime_seconds": 95.1,
+        "max_memory_bytes": int(4.2 * 1024**3),
+        "cluster_max_memory_bytes": int(18.3 * 1024**3),
+        "cluster_memory_limit_bytes": int(99.2 * 1024**3),
+        "cluster_kind": "shared",
+        "nworkers": 32,
+    }
+    nocluster = profiles["a-ecmean.log"]
+    assert nocluster["max_memory_bytes"] == 12 * 1024**3
+    assert nocluster["cluster_max_memory_bytes"] is None
+    assert nocluster["cluster_memory_limit_bytes"] is None
+    assert nocluster["cluster_kind"] is None
+    assert nocluster["nworkers"] is None
+
+    assert profiles["a-biases.log"] is None
+    # a profiling line is INFO and does not count as a message
+    assert not report.logs[0]["messages"]
+
+
+def test_report_profile_table_sorted_by_max_memory(tmp_path):
+    """The memory table lists the tools from the largest process memory, with the shared-cluster note."""
+    start = pd.Timestamp.now()
+    results = [
+        _result(_write(tmp_path / "a-biases.log", PROFILE_PRIVATE), 0, start),
+        _result(_write(tmp_path / "a-timeseries.log", PROFILE_SHARED), 0, start),
+        _result(_write(tmp_path / "a-ecmean.log", PROFILE_NOCLUSTER), 0, start),
+    ]
+    text = AnalysisReport(str(tmp_path), run_start=start, tool_results=results, scan_outputs=False).to_markdown()
+
+    assert "## Memory and wall time" in text
+    assert "--nmaxprocesses 1" in text
+    rows = [line for line in text.splitlines() if line.startswith("| `a-")]
+    assert [row.split("|")[1].strip() for row in rows] == ["`a-ecmean.log`", "`a-timeseries.log`", "`a-biases.log`"]
+    assert "| `a-timeseries.log` | 0:05:12 | 0:01:35 | 4.2GiB | 18.3GiB | 99.2GiB | shared, 32 workers |" in text
+    assert "| `a-biases.log` | 0:01:01 | 0:00:10 | 900.0MiB | 2.5GiB | 16.0GiB | private, 4 workers |" in text
+    assert "| `a-ecmean.log` | 0:00:05 | 0:00:20 | 12.0GiB | - | - | none |" in text
+
+
+def test_report_without_profile_lines_has_no_memory_section(tmp_path):
+    """Logs from tools that do not profile leave the report unchanged."""
+    start = pd.Timestamp.now()
+    results = [_result(_write(tmp_path / "a-biases.log", CLEAN_LOG), 0, start)]
+    text = AnalysisReport(str(tmp_path), run_start=start, tool_results=results, scan_outputs=False).to_markdown()
+    assert "## Memory and wall time" not in text
