@@ -83,6 +83,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 
 - **No `print()`**: use `self.logger = log_configure(log_level=loglevel, log_name="ClassName")` and pass `loglevel` through every constructor
 - **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigContext` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua`
+- **Prefer `os.path` over `pathlib.Path`** for filesystem paths and directory handling.
 - **Configuration is declarative**: define grids, fixes, data models, catalogs, and analyses in YAML first; add Python `if/else` only when config cannot express the behaviour
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
