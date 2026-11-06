@@ -50,6 +50,7 @@ class TestAccessor:
 
         # Check if the accessor still works with the result: the mean of each regridded field is its own,
         # not the native one (285.75920) and not the one of the other target grid
+        # pytest default tolerance (rel=1e-6) on purpose: APPROX_REL (1e-4) would cover the differences between the three means
         reader_instance.set_default()  # Make sure that the correct reader is used
         avg = data1r.aqua.fldmean()["2t"].values
         assert avg[1] == pytest.approx(285.753457)
