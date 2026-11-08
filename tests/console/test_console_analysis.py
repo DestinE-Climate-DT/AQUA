@@ -81,8 +81,18 @@ class TestAquaConsoleAnalysis:
             },
         )
         command = [
-            "analysis", "--config", str(analysis_cfg), "--catalog", "ci",
-            "-m", "ERA5", "-e", "era5-hpz3", "--serial", "-l", LOGLEVEL,
+            "analysis",
+            "--config",
+            str(analysis_cfg),
+            "--catalog",
+            "ci",
+            "-m",
+            "ERA5",
+            "-e",
+            "era5-hpz3",
+            "--serial",
+            "-l",
+            LOGLEVEL,
         ]
         if cli_source:
             command += ["--source", cli_source]
