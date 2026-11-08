@@ -50,7 +50,7 @@ so that the script can be used in a batch job or in a workflow. These override c
 
 .. option:: -s <source>, --source <source>
 
-    The source to use.
+    The default source to use. Individual tools can override it in the configuration file (see below).
 
 .. option:: --source_oce <source_oce>
 
@@ -129,6 +129,33 @@ so that the script can be used in a batch job or in a workflow. These override c
 .. note::
     By default the script will run all the state-of-the-art diagnostics available in AQUA.
     It is possible to run only a subset of the diagnostics by modifying the ``run`` key in the configuration file.
+
+Source selection per tool
+-------------------------
+
+When variables are split across sources (for example, original 2D and 3D data), add
+``source`` alongside a tool's ``config`` in ``config.aqua-analysis.yaml``:
+
+.. code-block:: yaml
+
+    job:
+      source: lra-r100-monthly
+
+    diagnostics:
+      atmosphere2d:
+        biases:
+          source: original_2d
+          config: config-atmosphere2d.yaml
+      ocean3d:
+        drift:
+          source: original_3d
+          config: config-ocean3d.yaml
+
+The tool's ``source`` overrides the global default, including a source supplied with
+``--source``. It applies to every configuration file listed for that tool. Tools that
+omit ``source`` or set it to ``null`` use the global default. Model, experiment and
+catalog remain global, so each selected source must belong to that catalog and experiment.
+The setup checker continues to use the global source.
 
 .. _aqua-analysis-report:
 
