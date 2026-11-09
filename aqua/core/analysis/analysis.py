@@ -401,6 +401,7 @@ class Analysis:
                 continue
 
             outname = f"{self.output_dir}/{tool_config.get('outname', collection)}"
+            source = tool_config.get("source") or self.source
             extra_args = tool_config.get("extra", "")
 
             # Build conditional arguments
@@ -442,7 +443,7 @@ class Analysis:
 
             for i, cfg in enumerate(cfgs, start=1):
                 args = (
-                    f"--model {self.model} --exp {self.exp} --source {self.source} --outputdir {outname}"
+                    f"--model {self.model} --exp {self.exp} --source {source} --outputdir {outname}"
                     f" {extra_args} --config {cfg}"
                 )
                 if len(cfgs) == 1:
