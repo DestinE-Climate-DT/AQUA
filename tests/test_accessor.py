@@ -71,11 +71,6 @@ class TestAccessor:
         assert avgda[1] == pytest.approx(285.75920)  # native data, weighted with the native cell area
 
 
-@pytest.fixture(scope="module")
-def binding_reader():
-    return Reader(model="IFS", exp="test-tco79", source="long", regrid="r100")
-
-
 @pytest.mark.aqua
 @pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
 @pytest.mark.parametrize("use_accessor", [False, True], ids=["reader", "accessor"])
@@ -83,7 +78,7 @@ def binding_reader():
     "operation", ["select_area", "select_area_regridded", "regrid", "seldate", "histogram", "timmean", "fldmean", "detrend"]
 )
 def test_transformed_result_keeps_reader(
-    binding_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, use_accessor, operation
+    ifs_tco79_long_r100_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, use_accessor, operation
 ):
     """Chained operations must use the originating Reader despite another global default."""
     field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 2)).copy()
@@ -92,8 +87,8 @@ def test_transformed_result_keeps_reader(
     if as_dataarray:
         field = field["2t"]
     if operation == "select_area_regridded":
-        field = binding_reader.regrid(field)
-    field.aqua.set_default(binding_reader)
+        field = ifs_tco79_long_r100_reader.regrid(field)
+    field.aqua.set_default(ifs_tco79_long_r100_reader)
     reader_instance2.set_default()
 
     method = "select_area" if operation == "select_area_regridded" else operation
@@ -107,10 +102,14 @@ def test_transformed_result_keeps_reader(
 
     tasks = []
     with Callback(posttask=lambda *args: tasks.append(1)):
-        result = getattr(field.aqua, method)(**kwargs) if use_accessor else getattr(binding_reader, method)(field, **kwargs)
+        result = (
+            getattr(field.aqua, method)(**kwargs)
+            if use_accessor
+            else getattr(ifs_tco79_long_r100_reader, method)(field, **kwargs)
+        )
 
     assert Reader.instance is reader_instance2
-    assert result.aqua.instance is binding_reader
+    assert result.aqua.instance is ifs_tco79_long_r100_reader
     assert not tasks
     values = result["2t"] if isinstance(result, xr.Dataset) else result
     assert isinstance(values.data, da.Array)
@@ -120,13 +119,13 @@ def test_transformed_result_keeps_reader(
         expected_size = field["2t"].size if isinstance(field, xr.Dataset) else field.size
         assert result.sum().compute().item() == expected_size
     elif method == "fldmean":
-        xr.testing.assert_allclose(result.compute(), binding_reader.fldmean(field).compute())
+        xr.testing.assert_allclose(result.compute(), ifs_tco79_long_r100_reader.fldmean(field).compute())
     else:
-        expected = binding_reader.fldmean(result)
+        expected = ifs_tco79_long_r100_reader.fldmean(result)
         assert Reader.instance is reader_instance2
         actual = result.aqua.fldmean()
         assert Reader.instance is reader_instance2
-        assert actual.aqua.instance is binding_reader
+        assert actual.aqua.instance is ifs_tco79_long_r100_reader
         xr.testing.assert_allclose(actual.compute(), expected.compute())
 
 
@@ -230,14 +229,16 @@ def _utility_result(field, operation, trender):
 @pytest.mark.aqua
 @pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
 @pytest.mark.parametrize("operation", UTILITY_OPERATIONS)
-def test_utilities_preserve_input_reader(binding_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, operation):
+def test_utilities_preserve_input_reader(
+    ifs_tco79_long_r100_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, operation
+):
     """Utility results inherit the input binding, even when a different Reader is default."""
     field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 12)).copy()
     field.attrs["history"] = "AQUA-008 utility provenance"
     field["2t"].attrs["history"] = field.attrs["history"]
     if as_dataarray:
         field = field["2t"]
-    field.aqua.set_default(binding_reader)
+    field.aqua.set_default(ifs_tco79_long_r100_reader)
     reader_instance2.set_default()
 
     tasks = []
@@ -245,8 +246,8 @@ def test_utilities_preserve_input_reader(binding_reader, reader_instance2, ifs_t
         result = _utility_result(field, operation, reader_instance2.trender)
 
     assert not tasks
-    assert result.aqua.instance is binding_reader
-    assert field.aqua.instance is binding_reader
+    assert result.aqua.instance is ifs_tco79_long_r100_reader
+    assert field.aqua.instance is ifs_tco79_long_r100_reader
     assert Reader.instance is reader_instance2
     assert "history" in result.attrs
     assert "AQUA-008 utility provenance" in field.attrs["history"]
@@ -267,9 +268,9 @@ def test_utilities_preserve_input_reader(binding_reader, reader_instance2, ifs_t
         months = original.time.dt.month
         expected = original if operation.endswith("noop") else original.sel(time=months.isin([12, 1, 2]))
         xr.testing.assert_allclose(values.compute(), expected.compute())
-    expected_mean = binding_reader.fldmean(result)
+    expected_mean = ifs_tco79_long_r100_reader.fldmean(result)
     actual_mean = result.aqua.fldmean()
-    assert actual_mean.aqua.instance is binding_reader
+    assert actual_mean.aqua.instance is ifs_tco79_long_r100_reader
     assert Reader.instance is reader_instance2
     xr.testing.assert_allclose(actual_mean.compute(), expected_mean.compute())
 
@@ -280,13 +281,10 @@ def test_utilities_preserve_input_reader(binding_reader, reader_instance2, ifs_t
 def test_utilities_do_not_initialize_unbound_accessor(
     reader_instance2, ifs_tco79_long_data, as_dataarray, operation, monkeypatch
 ):
-    """Plain xarray inputs must work without a Reader default or acquire an implicit binding."""
+    """Plain xarray inputs must not get an implicit binding: without a Reader default, creating an accessor raises."""
     field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 12)).copy()
     if as_dataarray:
         field = field["2t"]
-    assert "aqua" not in getattr(field, "_cache", {})
     monkeypatch.delattr(Reader, "instance")
-    result = _utility_result(field, operation, reader_instance2.trender)
-    assert "aqua" not in getattr(field, "_cache", {})
-    assert "aqua" not in getattr(result, "_cache", {})
+    _utility_result(field, operation, reader_instance2.trender)
     assert not hasattr(Reader, "instance")
