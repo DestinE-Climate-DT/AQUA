@@ -181,7 +181,7 @@ def plot_timeseries(
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     if title:
-        wrapped_title = textwrap.fill(title, width=70)
+        wrapped_title = textwrap.fill(title, width=70, break_on_hyphens=False)
         ax.set_title(wrapped_title)
     else:
         ax.set_title("")
@@ -262,7 +262,7 @@ def plot_seasonalcycle(
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     if title is not None:
-        wrapped_title = textwrap.fill(title, width=60)
+        wrapped_title = textwrap.fill(title, width=70, break_on_hyphens=False)
         ax.set_title(wrapped_title)
     else:
         ax.set_title("")
