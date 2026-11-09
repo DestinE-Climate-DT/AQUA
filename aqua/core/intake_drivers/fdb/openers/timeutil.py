@@ -111,7 +111,12 @@ class FDBTimeMixin:
                 idx = ts.resample(savefreq).min().values
                 ts = pd.Series(idx, index=dates[idx])
 
-        tsr = ts.resample(chunkfreq)
+        if isinstance(chunkfreq, int):
+            if isinstance(chunkfreq, bool) or chunkfreq <= 0:
+                raise ValueError("Time chunk size must be a positive integer")
+            tsr = ts.groupby(np.arange(len(ts)) // chunkfreq)
+        else:
+            tsr = ts.resample(chunkfreq)
         sidx = tsr.min().values
         eidx = tsr.max().values
         chunksize = tsr.count().values

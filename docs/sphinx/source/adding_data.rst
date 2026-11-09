@@ -371,7 +371,8 @@ Some of the parameters are here described:
     By default, the ``chunks`` argument is a string and refers to time-chunking.
     In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
     by passing a dictionary to chunks with the keys ``time`` and ``vertical``.
-    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maximum number of vertical levels
+    ``time`` accepts a time frequency (in pandas notation) or a positive integer counting saved frames,
+    while ``vertical`` is the maximum number of vertical levels
     in each chunk.
 
     An example would be:
@@ -382,13 +383,19 @@ Some of the parameters are here described:
       time: D  # Default time chunk size
       vertical: 3  # Three vertical levels in each chunk
 
+For example, ``reader_kwargs: {chunks: {time: 12}}`` groups 12 consecutive saved frames per chunk
+with the GSV and Polytope engines, leaving a smaller final chunk when needed. This means 12 hours
+for hourly data or 72 hours for six-hourly data. An integer can also be passed directly as ``chunks=12``.
+Frequency strings retain their calendar-based grouping. Chunks must still align with the catalog's
+HPC/bridge availability boundaries.
+
 .. note::
     When using the ``z3fdb`` engine, chunking is supported differently:
 
-    * **Time direction**: Chunking is always by single time steps.
-    * **Level direction**: By default, level chunking is not performed.
-    * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
-    * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
+    * **Time direction**: A positive integer groups that many saved frames; by default each frame is a separate chunk.
+      Frequency strings do not select larger time chunks.
+    * **Level direction**: By default, all levels share a chunk. ``vertical`` (or ``level``) accepts a positive
+      integer chunk size; sizes that do not divide the number of levels fall back to single-level chunks.
 
 .. option:: timestep
 
