@@ -112,6 +112,7 @@ class FDBTimeMixin:
                 ts = pd.Series(idx, index=dates[idx])
 
         if isinstance(chunkfreq, int):
+            # bool subclasses int in Python, but True/False are not valid chunk sizes.
             if isinstance(chunkfreq, bool) or chunkfreq <= 0:
                 raise ValueError("Time chunk size must be a positive integer")
             tsr = ts.groupby(np.arange(len(ts)) // chunkfreq)
