@@ -47,7 +47,7 @@ jobs:
 
   report-failure:
     needs: aqua-conda-tests
-    if: ${{ always() && needs.aqua-conda-tests.result == 'failure' }}
+    if: ${{ always() && (needs.aqua-conda-tests.result == 'failure' || needs.aqua-conda-tests.result == 'success') }}
     permissions:
       contents: read
       issues: write
@@ -55,3 +55,4 @@ jobs:
     uses: ./.github/workflows/report-failure-reusable.yml
     with:
       test-name: Conda
+      result: ${{ needs.aqua-conda-tests.result }}
