@@ -37,7 +37,7 @@ def boxplot(
         add_mean_line (bool, optional): Whether to add dashed lines for means.
         title (str, optional): Title for the plot.
         style (str, optional): Style to apply to the plot.
-        figsize (tuple, optional): Figure size. Defaults to figure_size(0.5), with the common width.
+        figsize (tuple, optional): Figure size. Defaults to figure_size(0.67), with the common width.
         loglevel (str): Logging level, unused but kept for compatibility.
 
     Returns:
@@ -88,7 +88,7 @@ def boxplot(
     df = pd.DataFrame.from_records(records)
 
     # Create figure
-    fig, ax = plt.subplots(figsize=figsize or figure_size(0.5))
+    fig, ax = plt.subplots(figsize=figsize or figure_size(0.67))
 
     # Explicit order for variables and models
     order = [labels[v] for v in variables]
@@ -161,7 +161,7 @@ def boxplot(
     else:
         ax.set_ylabel("Values (various units)", labelpad=12)
 
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper right", fontsize="medium")
     ax.grid(True)
     fig.tight_layout()
     return fig, ax
