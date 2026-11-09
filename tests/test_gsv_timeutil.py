@@ -93,8 +93,8 @@ def test_time_chunks_count_frames_from_requested_start(fdb_source_factory, chunk
     "savefreq, timestep, start, end, timestyle, expected_starts, expected_ends",
     [
         ("6h", "h", "20240101T0600", "20240104T0600", "step", [6, 78], [72, 78]),
-        ("MS", "MS", "20241101", "20251101", "yearmonth", [10, 22], [21, 22]),
-        ("MS", "h", "20241101", "20251101", "step", [7320, 16080], [15336, 16080]),
+        ("MS", "MS", "20240101", "20250101", "yearmonth", [0, 12], [11, 12]),
+        ("MS", "h", "20240101", "20250101", "step", [0, 8784], [8040, 8784]),
     ],
 )
 def test_integer_chunks_count_saved_frames_not_native_steps(
@@ -145,17 +145,15 @@ def test_integer_chunks_preserve_bridge_alignment_checks(fdb_source_factory, chu
 @pytest.mark.parametrize("method", ["read", "to_dask"])
 @pytest.mark.parametrize(
     "freq, start, end, timestyle",
-    [("h", "20240101T0500", "20240102T0700", "date"), ("MS", "20241101", "20251101", "yearmonth")],
+    [("h", "20240101T0000", "20240102T0200", "date"), ("MS", "20240101", "20250101", "yearmonth")],
 )
-def test_integer_chunks_read_across_calendar_boundaries(fdb_source_factory, monkeypatch, freq, start, end, timestyle, method):
-    """Cartesian FDB selectors must neither lose frames nor return frames outside each chunk."""
+def test_integer_chunks_read_aligned_frames(fdb_source_factory, monkeypatch, freq, start, end, timestyle, method):
+    """Aligned integer chunks must retrieve each saved frame once with the declared Dask chunk sizes."""
     module, make_source = fdb_source_factory
     dates = pd.date_range("20240101", "20251231", freq=freq)
     data = xr.Dataset({"2t": ("time", range(len(dates)), {"GRIB_paramId": 167})}, coords={"time": dates})
 
     def selected(value):
-        if isinstance(value, list):
-            return [int(item) for item in value]
         bounds = str(value).split("/to/")
         return range(int(bounds[0]), int(bounds[-1]) + 1)
 

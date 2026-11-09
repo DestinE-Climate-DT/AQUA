@@ -385,9 +385,10 @@ Some of the parameters are here described:
 
 For example, ``reader_kwargs: {chunks: {time: 12}}`` groups 12 consecutive saved frames per chunk
 with the GSV and Polytope engines, leaving a smaller final chunk when needed. This means 12 hours
-for hourly data or 72 hours for six-hourly data. An integer can also be passed directly as ``chunks=12``.
-Frequency strings retain their calendar-based grouping. Chunks must still align with the catalog's
-HPC/bridge availability boundaries.
+for hourly data or 72 hours for six-hourly data with ``timestyle: step``.
+An integer can also be passed directly as ``chunks=12``. Frequency strings retain their calendar-based grouping.
+Choose chunks that stay within a single day for ``timestyle: date`` or a single year for ``timestyle: yearmonth``;
+crossing those boundaries is not handled here. Chunks must also align with the catalog's HPC/bridge availability boundaries.
 
 .. note::
     When using the ``z3fdb`` engine, chunking is supported differently:
