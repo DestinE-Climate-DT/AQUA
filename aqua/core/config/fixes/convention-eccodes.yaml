@@ -53,7 +53,9 @@ convention_name:
       10si: # 10 metre wind speed
         source:
           - 207 # original GRIB2 code
+          - 228005 # avg_10ws
           - 10si
+          - avg_10ws
           - avg_10si  # future proof, does not exist yet
           - sfcwind # cmor
         grib: 207

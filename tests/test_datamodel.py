@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 import xarray as xr
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.data_model import CoordIdentifier, CoordTransformer, scan_coord
@@ -28,19 +29,10 @@ class TestDataModel:
         )
 
     def test_coords_error(self, data):
-        """Error case"""
+        """CoordIdentifier needs the coordinates (the CoordTransformer errors are tested in test_coordtransformer.py)"""
 
         with pytest.raises(TypeError, match="coords must be an Xarray Coordinates object."):
-            CoordIdentifier(data, loglevel="debug")
-
-        with pytest.raises(TypeError, match="data must be an Xarray Dataset or DataArray object."):
-            CoordTransformer(data.coords)
-
-        coord = CoordTransformer(data, loglevel="debug")
-        with pytest.raises(TypeError, match="name must be a string."):
-            coord.transform_coords(name=123)
-        with pytest.raises(FileNotFoundError):
-            coord.transform_coords(name="antani")
+            CoordIdentifier(data, loglevel=LOGLEVEL)
 
     def test_basic_transform_vertical(self):
         """Basic test for the CoordTransformer class."""
@@ -49,12 +41,12 @@ class TestDataModel:
         data = reader.retrieve()
 
         # case for multiple vertical coordinates, ignore along the vertical
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
         assert "nz1" in new.coords
         assert "nz" in new.coords
 
         # case for single vertical coordinate, convert it
-        new = CoordTransformer(data["temp"], loglevel="debug").transform_coords()
+        new = CoordTransformer(data["temp"], loglevel=LOGLEVEL).transform_coords()
 
         assert "depth" in new.coords
         assert "nz1" not in new.coords
@@ -62,18 +54,17 @@ class TestDataModel:
     def test_basic_transform_height(self):
         """Test for height coordinate transformation."""
 
-        reader = Reader(model="ICON", exp="test-r2b0", source="short", loglevel="warning", fix=False)
+        reader = Reader(model="ICON", exp="test-r2b0", source="short", loglevel=LOGLEVEL, fix=False)
         data = reader.retrieve()
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
         assert "height" in new.coords
 
-    def test_basic_transform(self):
+    def test_basic_transform(self, ifs_tco79_long_fixfalse_reader):
         """Basic test for the CoordTransformer class."""
 
-        reader = Reader(model="IFS", exp="test-tco79", source="long", fix=False)
-        data = reader.retrieve(var="2t")
+        data = ifs_tco79_long_fixfalse_reader.retrieve(var="2t")
 
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
 
         assert "lon" in new.coords
         assert "X" == new["lon"].attrs["axis"]
@@ -87,7 +78,7 @@ class TestDataModel:
         """Test for bounds fixing and unit conversion."""
 
         data = xr.open_dataset("AQUA_tests/grids/IFS/tco79_grid.nc")
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
 
         assert "lon_bnds" in new.data_vars
         assert "lat_bnds" in new.data_vars
@@ -104,7 +95,7 @@ class TestDataModel:
         data["deeepth"].attrs = {"standard_name": "depth"}
         data = data.rename({"timing": "time"})
 
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
         assert "lat" in new.coords
         assert "lon" in new.coords
         assert "level" not in new.coords
@@ -123,7 +114,7 @@ class TestDataModel:
         data["LATITUDE"].attrs = {"axis": "Y"}
         data["deeepth"].attrs = {"long_name": "so much water depth"}
 
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
         assert "lat" in new.coords
         assert "lon" in new.coords
         assert "plev" in new.coords
@@ -137,7 +128,7 @@ class TestDataModel:
         data["timing"].attrs = {"axis": "T"}
         data = data.rename({"deeepth": "depth"})
 
-        new = CoordTransformer(data, loglevel="debug").transform_coords()
+        new = CoordTransformer(data, loglevel=LOGLEVEL).transform_coords()
         assert "time" in new.coords
         assert "depth" in new.coords
 
@@ -147,20 +138,20 @@ class TestDataModel:
         data = data.rename({"LATITUDE": "lat"})
         data["longi"].attrs = {"axis": "Y"}
 
-        identifier = CoordIdentifier(data.coords, loglevel="debug")
+        identifier = CoordIdentifier(data.coords, loglevel=LOGLEVEL)
         coord_dict = identifier.identify_coords()
 
         # Check that only one coordinate is identified for each type
         assert coord_dict["longitude"] is None
         assert coord_dict["latitude"]["name"] == "lat"
 
-    def same_score_ranking_case(self, data):
+    def test_same_score_ranking_case(self, data):
         """Test for conflict ranking functionality in CoordIdentifier."""
 
         data = data.rename({"LATITUDE": "lat"})
         data = data.rename({"longi": "latitude"})
 
-        identifier = CoordIdentifier(data.coords, loglevel="debug")
+        identifier = CoordIdentifier(data.coords, loglevel=LOGLEVEL)
         coord_dict = identifier.identify_coords()
 
         # No coordinate should be identified due to same score

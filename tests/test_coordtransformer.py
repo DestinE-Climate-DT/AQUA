@@ -39,8 +39,14 @@ def _regular_dataset(lat_values=None, lon_values=None, lat_decreasing=False):
         lat_values = lat_values[::-1]
     lon_values = lon_values if lon_values is not None else np.array([0.0, 90.0, 180.0, 270.0])
 
+    # the value of a cell is its index: a test can check that the data follows its coordinates
     ds = xr.Dataset(
-        {"var": (["latitude", "longitude"], np.random.rand(len(lat_values), len(lon_values)))},
+        {
+            "var": (
+                ["latitude", "longitude"],
+                np.arange(len(lat_values) * len(lon_values), dtype=float).reshape(len(lat_values), -1),
+            )
+        },
         coords={"latitude": lat_values, "longitude": lon_values},
     )
     ds["latitude"].attrs = {"units": "degrees_north", "standard_name": "latitude"}
@@ -207,7 +213,7 @@ class TestFlipCoordinate:
 
         # Unstructured grids must never be flipped, regardless of direction mismatch
         np.testing.assert_array_equal(result.lat.values, ds.lat.values)
-        assert result.lat.attrs.get("flipped") is None
+        assert result.lat.attrs.get("AQUA_flipped") is None
 
     def test_missing_tgt_direction_is_noop(self):
         ds = _regular_dataset(lat_decreasing=True)
@@ -240,7 +246,7 @@ class TestFlipCoordinate:
         result = transformer.flip_coordinate(ds, src, tgt)
 
         assert result is ds
-        assert result.lat.attrs.get("flipped") is None
+        assert result.lat.attrs.get("AQUA_flipped") is None
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +265,7 @@ class TestConvertUnits:
 
         result = transformer.convert_units(ds, src, tgt)
 
-        np.testing.assert_allclose(result.lon.values, [0.0, 90.0, 180.0])
+        assert result.lon.values == pytest.approx([0.0, 90.0, 180.0])
         assert result.lon.attrs["units"] == "degrees_east"
 
     def test_noop_when_tgt_has_no_units(self):
@@ -343,7 +349,7 @@ class TestConvertUnits:
 
         result = transformer.convert_units(ds, src, tgt)
 
-        np.testing.assert_allclose(result.lon_bnds.values, [[0.0, 90.0], [90.0, 180.0]])
+        assert result.lon_bnds.values == pytest.approx(np.array([[0.0, 90.0], [90.0, 180.0]]))
         assert result.lon_bnds.attrs["units"] == "degrees_east"
 
 
@@ -366,10 +372,15 @@ class TestNormalizeRangeConvention:
         tgt = {"name": self.longitude, "range_convention": "0_to_360"}
         result = transformer.normalize_range_convention(ds, tgt)
 
-        np.testing.assert_allclose(result[self.longitude].values, [10.0, 170.0, 190.0, 350.0])
+        assert result[self.longitude].values == pytest.approx([10.0, 170.0, 190.0, 350.0])
 
     def test_ignores_non_longitude_coordinates(self):
-        ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]))
+        """Only the longitude is wrapped.
+
+        Longitudes are outside the target range on purpose: a latitude wrapped as well ([-170, 10] becomes [10, 190])
+        would be visible. The test used to pass only through the early return for longitudes already in 0_to_360.
+        """
+        ds = _regular_dataset(lat_values=np.array([-170.0, 10.0]), lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
 
         tgt = {"name": self.latitude, "range_convention": "0_to_360"}
@@ -425,7 +436,7 @@ class TestNormalizeRangeConvention:
 
         # Wrapping this just shifts everything cleanly to the 200s (span remains 20).
         # It should succeed.
-        np.testing.assert_allclose(result[self.longitude].values, [260.0, 270.0, 280.0])
+        assert result[self.longitude].values == pytest.approx([260.0, 270.0, 280.0])
 
 
 # ---------------------------------------------------------------------------
@@ -444,19 +455,20 @@ class TestAssignAttributes:
         assert result.lon.attrs["axis"] == "X"
         assert result.lon.attrs["standard_name"] == "longitude"
         # control keys must never be copied as attributes
-        assert "units" not in result.lon.attrs or True  # units handled by convert_units, not here
+        assert "units" not in result.lon.attrs  # units are handled by convert_units, not here
         assert "name" not in result.lon.attrs
         assert "bounds" not in result.lon.attrs
 
-    def test_range_key_never_leaks_into_attrs(self):
-        """Regression test: 'range' is a wrap-convention control key, not a CF attribute."""
+    @pytest.mark.parametrize("key", ["range", "range_convention"])
+    def test_range_key_never_leaks_into_attrs(self, key):
+        """The wrap-convention control key is not a CF attribute (`range` is the obsolete name of the key)."""
         ds = xr.Dataset(coords={"lon": [0.0, 1.0]})
         transformer = CoordTransformer(_regular_dataset(), loglevel=LOGLEVEL)
 
-        tgt = {"name": "lon", "range": "0_to_360", "axis": "X"}
+        tgt = {"name": "lon", key: "0_to_360", "axis": "X"}
         result = transformer.assign_attributes(ds, tgt)
 
-        assert "range" not in result.lon.attrs
+        assert key not in result.lon.attrs
         assert result.lon.attrs["axis"] == "X"
 
     def test_does_not_overwrite_existing_attribute(self):
@@ -492,8 +504,12 @@ class TestTransformCoordsIntegration:
         result = transformer.transform_coords(name="aqua")
 
         assert result.lat.values[0] < result.lat.values[-1]  # flip still happens
-        np.testing.assert_allclose(sorted(result.lon.values), [10.0, 170.0, 190.0, 350.0])
+        assert result.lon.values == pytest.approx([10.0, 170.0, 190.0, 350.0])  # wrapped and sorted by the pipeline
         assert result.lon.attrs["units"] == "degrees_east"
+        # every cell keeps its value: the data follows the flipped latitude and the wrapped and sorted longitude
+        for lat in ds.latitude.values:
+            for lon_before, lon_after in zip([-170.0, -10.0, 10.0, 170.0], [190.0, 350.0, 10.0, 170.0]):
+                assert result["var"].sel(lat=lat, lon=lon_after) == ds["var"].sel(latitude=lat, longitude=lon_before)
 
     def test_flip_coords_false_disables_flipping_but_not_lon_wrap(self):
         ds = _regular_dataset(lat_decreasing=True, lon_values=np.array([-170.0, -10.0, 10.0, 170.0]))
@@ -505,6 +521,8 @@ class TestTransformCoordsIntegration:
         assert result.lat.values[0] > result.lat.values[-1]
         # lon wrap is independent of flip_coords and must still apply
         assert result.lon.values.min() >= 0
+        assert result.lon.values == pytest.approx([10.0, 170.0, 190.0, 350.0])
+        assert result["var"].sel(lat=90.0, lon=190.0) == ds["var"].sel(latitude=90.0, longitude=-170.0)
 
     def test_invalid_name_type_raises(self):
         ds = _regular_dataset()
@@ -529,19 +547,43 @@ class TestCounterReverseCoordinate:
         ds = _regular_dataset(lat_decreasing=True)
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         result = transformer.transform_coords(name="aqua")
-        assert result.lat.attrs.get("flipped") == 1
+        assert result.lat.attrs.get("AQUA_flipped") == 1
+
+        reverted = counter_reverse_coordinate(result)
+
+        assert "AQUA_flipped" not in reverted.lat.attrs
+        # back to original (decreasing) order
+        assert reverted.lat.values[0] > reverted.lat.values[-1]
+
+    def test_reverses_legacy_flipped_attribute(self):
+        """Data carrying the pre-AQUA_flipped attribute name must still be flipped back."""
+        ds = _regular_dataset(lat_decreasing=True)
+        result = CoordTransformer(ds, loglevel=LOGLEVEL).transform_coords(name="aqua")
+        result.lat.attrs["flipped"] = result.lat.attrs.pop("AQUA_flipped")
 
         reverted = counter_reverse_coordinate(result)
 
         assert "flipped" not in reverted.lat.attrs
-        # back to original (decreasing) order
         assert reverted.lat.values[0] > reverted.lat.values[-1]
 
     def test_noop_when_nothing_flipped(self):
         ds = _regular_dataset(lat_decreasing=False)
         transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
         result = transformer.transform_coords(name="aqua")
-        assert result.lat.attrs.get("flipped") is None
+        assert result.lat.attrs.get("AQUA_flipped") is None
 
         reverted = counter_reverse_coordinate(result)
         np.testing.assert_array_equal(reverted.lat.values, result.lat.values)
+
+    def test_rolls_back_wrapped_longitude_and_clears_marker(self):
+        """Data wrapped from -180..180 into 0..360 must be restored to the stored order before regridding."""
+        ds = _regular_dataset(lon_values=np.array([-135.0, -45.0, 45.0, 135.0]))
+        transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
+        result = transformer.transform_coords(name="aqua")
+        np.testing.assert_array_equal(result.lon.values, [45.0, 135.0, 225.0, 315.0])
+        assert result.lon.attrs.get("AQUA_rolled") == 2
+
+        reverted = counter_reverse_coordinate(result)
+
+        assert "AQUA_rolled" not in reverted.lon.attrs
+        np.testing.assert_array_equal(reverted["var"].values, ds["var"].values)

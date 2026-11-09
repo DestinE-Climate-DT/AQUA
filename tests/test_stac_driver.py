@@ -1,6 +1,7 @@
 """Tests for the AQUA STAC intake driver."""
 
 import json
+import os
 from unittest.mock import Mock
 
 import intake
@@ -15,8 +16,6 @@ from aqua.core.backend.catalog_mixin import CatalogMixin
 from aqua.core.configurer import ConfigContext
 from aqua.core.intake_drivers import IntakeSTACSource
 from aqua.core.intake_drivers.stac.stac import _find_item_in_collection, _resolve_href
-
-xr.set_options(keep_attrs=True)
 
 pytestmark = pytest.mark.aqua
 
@@ -41,13 +40,13 @@ def _catalog(path, urlpath, *, metadata=None, parameters=None, **args):
 @pytest.fixture(scope="session")
 def sample_stac_netcdf_path(stac_catalogue_dir):
     """Path to the generated IFS STAC item."""
-    return str(stac_catalogue_dir / "items" / "ifs" / "ifs-long-regridded-r18x9.json")
+    return os.path.join(stac_catalogue_dir, "items", "ifs", "ifs-long-regridded-r18x9.json")
 
 
 @pytest.fixture(scope="session")
 def sample_stac_collection_path(stac_catalogue_dir):
     """Path to the generated IFS STAC collection."""
-    return str(stac_catalogue_dir / "collections" / "ifs.json")
+    return os.path.join(stac_catalogue_dir, "collections", "ifs.json")
 
 
 @pytest.fixture
@@ -516,17 +515,32 @@ class TestSTACBackendIntegration:
     """Backend selectors and item metadata."""
 
     @pytest.mark.parametrize(
-        ("exp", "item", "variable", "grid", "fixer"),
+        ("exp", "item", "variable", "grid", "fixer", "use_aliases"),
         [
-            ("ifs", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test"),
-            ("ifs", "ifs-short-ifs2d-tco79", "2t", "tco79", False),
-            ("nemo", "nemo-eorca1-eorca1-sst-2d", "sst", "eORCA1-2d", False),
-            ("nemo", "nemo-eorca1-eorca1-salinity-3d", "avg_so", "test-eORCA1-3d", False),
-            ("ifs-items", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test"),
-            ("ifs-items", "ifs-short-ifs2d-tco79", "2t", "tco79", None),
+            # model/exp/source selectors for every item
+            ("ifs", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test", False),
+            ("ifs", "ifs-short-ifs2d-tco79", "2t", "tco79", False, False),
+            ("nemo", "nemo-eorca1-eorca1-sst-2d", "sst", "eORCA1-2d", False, False),
+            ("nemo", "nemo-eorca1-eorca1-salinity-3d", "avg_so", "test-eORCA1-3d", False, False),
+            ("ifs-items", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test", False),
+            ("ifs-items", "ifs-short-ifs2d-tco79", "2t", "tco79", None, False),
+            # the collection/item/asset aliases resolve the same way: one case per catalogue entry
+            ("ifs", "ifs-long-regridded-r18x9", "2t", "lon-lat", "ifs-ci-test", True),
+            ("nemo", "nemo-eorca1-eorca1-sst-2d", "sst", "eORCA1-2d", False, True),
+            ("ifs-items", "ifs-short-ifs2d-tco79", "2t", "tco79", None, True),
+        ],
+        ids=[
+            "model-exp-source-ifs-long",
+            "model-exp-source-ifs-short",
+            "model-exp-source-nemo-sst",
+            "model-exp-source-nemo-salinity",
+            "model-exp-source-items-long",
+            "model-exp-source-items-short",
+            "collection-item-asset-ifs-long",
+            "collection-item-asset-nemo-sst",
+            "collection-item-asset-items-short",
         ],
     )
-    @pytest.mark.parametrize("use_aliases", [False, True], ids=["model-exp-source", "collection-item-asset"])
     def test_reader_stac_catalogue(self, stac_catalogue_dir, exp, item, variable, grid, fixer, use_aliases):
         """Retrieve generated STAC examples through the installed CI catalogue and Reader."""
         selectors = (

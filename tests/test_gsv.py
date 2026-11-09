@@ -37,7 +37,6 @@ DEFAULT_GSV_PARAMS = {
     "timestyle": "date",
 }
 
-loglevel = LOGLEVEL
 FDB_HOME = "/app"
 
 # to enable for local testing on Lumi
@@ -188,14 +187,14 @@ class TestGsv:
     def test_reader(self) -> None:
         """Simple test, to check that catalog access works and reads correctly"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=LOGLEVEL)
         data = reader.retrieve(startdate="20080101T1200", enddate="20080101T1200", var="t")
         assert data.t.GRIB_paramId == 130, "Wrong GRIB param in data"
 
     def test_reader_novar(self) -> None:
         """Simple test, to check that catalog access works and reads correctly, no var"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=LOGLEVEL)
         data = reader.retrieve()
         assert data.t.GRIB_paramId == 130, "Wrong GRIB param in data"
 
@@ -203,7 +202,7 @@ class TestGsv:
     def test_reader_xarray(self, engine) -> None:
         """Reading directly into xarray"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=LOGLEVEL, engine=engine)
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
@@ -213,7 +212,7 @@ class TestGsv:
     def test_reader_config_fdb(self, engine, config_fdb_type) -> None:
         """Test reading data with config_fdb passed to Reader as a directory or config file."""
         config = FDB_HOME if config_fdb_type == "dir" else f"{FDB_HOME}/etc/fdb/config.yaml"
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", config_fdb=config, loglevel=loglevel, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", config_fdb=config, loglevel=LOGLEVEL, engine=engine)
         assert reader.backend.kwargs.get("config_fdb") == config
         data = reader.retrieve()
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
@@ -224,7 +223,7 @@ class TestGsv:
         Reading with the variable paramid, we use '130' instead of 't'
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=LOGLEVEL)
         data = reader.retrieve(var="130")
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.t.mean().data == pytest.approx(279.3509), "Field values incorrect"
@@ -237,7 +236,7 @@ class TestGsv:
         Reading with the variable paramid, we use '130' instead of 't'
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=loglevel, engine="z3fdb")
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb", loglevel=LOGLEVEL, engine="z3fdb")
         data = reader.retrieve(var="130")
         assert isinstance(data, xr.Dataset), "Does not return a Dataset"
         assert data.var130.mean().data == pytest.approx(279.3509), "Field values incorrect"
@@ -248,7 +247,7 @@ class TestGsv:
     def test_reader_3d(self, engine) -> None:
         """Testing 3D access"""
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels", loglevel=loglevel, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-levels", loglevel=LOGLEVEL, engine=engine)
         data = reader.retrieve()
         # coordinates read from levels key
         assert all(data.t.coords["plev"].data == [99999.0, 89999.0, 79999.0]), "Wrong coordinates from levels metadata key"
@@ -258,7 +257,7 @@ class TestGsv:
         data = reader.retrieve(level=[900, 800])  # Read only two levels
         assert data.t.isel(plev=1).mean().values == pytest.approx(271.2092), "Field values incorrect"
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-nolevels", loglevel=loglevel, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-nolevels", loglevel=LOGLEVEL, engine=engine)
         data = reader.retrieve()
         # coordinates read from levels key
         assert all(data.t.coords["plev"].data == [100000, 90000, 80000]), "Wrong level info"
@@ -275,7 +274,7 @@ class TestGsv:
             exp="test-fdb",
             source="fdb-levels",
             chunks={"time": "h", chunk_key: 1},
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
             engine=engine,
         )
         data = reader.retrieve()
@@ -294,7 +293,7 @@ class TestGsv:
             exp="test-fdb",
             source="fdb-levels",
             chunks={"time": "h", chunk_key: 2},
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
             engine=engine,
         )
         data_chunk2 = reader2.retrieve(level=[900, 800])
@@ -306,7 +305,7 @@ class TestGsv:
         Reading from a datasource using bridge
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=loglevel, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=LOGLEVEL, engine=engine)
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -322,7 +321,7 @@ class TestGsv:
         Reading from a datasource using new operational schema and auto dates
         """
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=loglevel, engine="gsv")
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-auto", loglevel=LOGLEVEL, engine="gsv")
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -344,7 +343,7 @@ class TestGsv:
             source="hourly-hpz7-sfc",
             startdate="20210101T0000",
             enddate="20210101T2300",
-            loglevel="debug",
+            loglevel=LOGLEVEL,
             engine="polytope",
             chunks="h",
         )
@@ -361,7 +360,7 @@ class TestGsv:
             model="IFS-FESOM-10km",
             exp="story-nudging-Tplus2K",
             source="hourly-hpz7-sfc",
-            loglevel="debug",
+            loglevel=LOGLEVEL,
             engine="polytope",
             areas=False,
         )
@@ -380,7 +379,7 @@ class TestGsv:
             source="hourly-hpz7-sfc",
             startdate="19900101T0000",
             enddate="19910101T0025",
-            loglevel="debug",
+            loglevel=LOGLEVEL,
             engine="polytope",
             areas=False,
         )
@@ -402,7 +401,7 @@ class TestGsv:
             "20080101",
             "20080101",
             metadata={"fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert source.data_start_date == "19900101T0000"
@@ -413,7 +412,7 @@ class TestGsv:
             "20080101",
             metadata={"fdb_home": FDB_HOME, "fdb_home_bridge": FDB_HOME, "fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
             engine="gsv",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert source.data_start_date == "19900101T0000"
@@ -431,7 +430,7 @@ class TestGsv:
                 "fdb_info_file": "tests/catgen/fdb_info_hpc-only.yaml",
             },
             engine="gsv",
-            loglevel=loglevel,
+            loglevel=LOGLEVEL,
         )
 
         assert source.data_start_date == "19900101T0000"
@@ -445,7 +444,7 @@ class TestGsv:
         """
         with LocalCluster(threads_per_worker=1, n_workers=2, dashboard_address=None) as cluster:
             with Client(cluster):
-                reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=loglevel, engine=engine)
+                reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=LOGLEVEL, engine=engine)
                 data = reader.retrieve()
                 # Test if the correct dates have been found
                 assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -465,7 +464,7 @@ def test_fdb_home_bridge_logs(capsys):
         data_start_date="20080101T1200",
         data_end_date="20080101T1200",
         metadata=metadata,
-        loglevel=loglevel,
+        loglevel=LOGLEVEL,
     )
 
     # No assert in the following because we cannot check the stderr logs. This is just for coverage.
@@ -482,7 +481,7 @@ def test_fdb_home_bridge_logs(capsys):
         data_start_date="20080101T1200",
         data_end_date="20080101T1200",
         metadata=metadata,
-        loglevel=loglevel,
+        loglevel=LOGLEVEL,
     )
 
     source.chk_type = [1]

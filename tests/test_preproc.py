@@ -6,8 +6,6 @@ from utils_tests import LOGLEVEL
 
 from aqua import Reader
 
-loglevel = LOGLEVEL
-
 
 @pytest.fixture(params=[("IFS", "test-tco79", "short_masked", "2t")])
 def reader_arguments(request):
@@ -38,10 +36,10 @@ class TestPreproc:
         """
         model, exp, source, variable = reader_arguments
 
-        reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
+        reader = Reader(model=model, exp=exp, source=source, loglevel=LOGLEVEL)
         data = reader.retrieve()
 
-        reader_preproc = Reader(model=model, exp=exp, source=source, preproc=double, loglevel=loglevel)
+        reader_preproc = Reader(model=model, exp=exp, source=source, preproc=double, loglevel=LOGLEVEL)
         data_preproc = reader_preproc.retrieve()
 
         assert (data[variable] * 2).equals(data_preproc[variable])
@@ -52,10 +50,10 @@ class TestPreproc:
         """
         model, exp, source, _ = reader_arguments
 
-        reader = Reader(model=model, exp=exp, source=source, loglevel=loglevel)
+        reader = Reader(model=model, exp=exp, source=source, loglevel=LOGLEVEL)
         data = reader.retrieve()
 
-        reader_preproc = Reader(model=model, exp=exp, source=source, preproc=shift_time, loglevel=loglevel)
+        reader_preproc = Reader(model=model, exp=exp, source=source, preproc=shift_time, loglevel=LOGLEVEL)
         data_preproc = reader_preproc.retrieve()
 
         assert np.array_equal(

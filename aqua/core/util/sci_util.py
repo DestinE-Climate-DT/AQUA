@@ -4,10 +4,6 @@ import xarray as xr
 
 from .util import _preserve_reader_binding
 
-# set default options for xarray
-xr.set_options(keep_attrs=True)
-
-
 TRIPLET_MONTHS = {
     "DJF": [12, 1, 2],  # December-January-February
     "JFM": [1, 2, 3],  # January-February-March

@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Script to calculate orography from data."""
 
-import xarray as xr
-
 from aqua import Reader
 from aqua.core.util import create_folder, log_configure
-
-xr.set_options(keep_attrs=True)
 
 catalog = "nextgems4"
 model = "IFS-FESOM"

@@ -99,26 +99,3 @@ class TestDROPParserLevel:
         parser = drop_parser()
         args = parser.parse_args(level_arg)
         assert args.level == expected
-
-    @pytest.mark.parametrize(
-        "level_str,expected_list",
-        [
-            ("1000", [1000]),
-            ("1000,850,500", [1000, 850, 500]),
-            ("1000.5", [1000.5]),
-            ("1000.5,850.7", [1000.5, 850.7]),
-            ("1000,850.5,500", [1000, 850.5, 500]),
-        ],
-        ids=[
-            "single_int",
-            "multiple_int",
-            "single_float",
-            "multiple_float",
-            "mixed_types",
-        ],
-    )
-    def test_drop_level_string_to_list_conversion(self, level_str, expected_list):
-        """Test conversion logic for comma-separated level strings to properly typed lists."""
-        # This mimics the conversion logic in drop_execute
-        result = [float(lev) if "." in lev else int(lev) for lev in level_str.split(",")]
-        assert result == expected_list

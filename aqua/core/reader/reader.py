@@ -24,9 +24,6 @@ from aqua.core.util import RegridderMetadata, load_multi_yaml, set_attrs
 from .trender import Trender
 from .vertinterpolator import VertInterpolator
 
-# set default options for xarray
-xr.set_options(keep_attrs=True)
-
 
 class Reader:
     """General reader for climate data."""
