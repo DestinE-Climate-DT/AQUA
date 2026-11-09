@@ -395,7 +395,7 @@ class FDBSource(ABC, FDBTimeMixin):
                 request["date"] = f"{dds}/to/{dde}"
                 request["time"] = f"{tts}/to/{tte}"
                 if dds != dde:
-                    # Date and time selectors form a Cartesian product; trim partial days after retrieval.
+                    # Time ranges cannot wrap midnight; FDB applies these clock times to every selected date.
                     times = self.timeaxis[self.timeaxis.slice_indexer(self.chk_start_date[i], self.chk_end_date[i])]
                     request["time"] = sorted(times.strftime("%H%M").unique())
 
@@ -416,6 +416,7 @@ class FDBSource(ABC, FDBTimeMixin):
                 request["year"] = f"{yys}"
             else:
                 request["year"] = f"{yys}/to/{yye}"
+                # Year/month selectors form a Cartesian product; request all months and trim partial years after retrieval.
                 mms, mme = "01", "12"
             if (mms == mme) or first:
                 request["month"] = f"{mms}"
@@ -461,6 +462,7 @@ class FDBSource(ABC, FDBTimeMixin):
 
         dataset = self._retrieve_partition(request, chunk_type=self.chk_type[i], first=first)
         dataset = self._postprocess_partition(dataset)
+        # Trim extra frames from Cartesian selectors; the first=True schema probe already requests one frame.
         if not first:
             dataset = dataset.sel(time=slice(self.chk_start_date[i], self.chk_end_date[i]))
 
