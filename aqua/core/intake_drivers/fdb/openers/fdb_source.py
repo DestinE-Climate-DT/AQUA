@@ -256,7 +256,6 @@ class FDBSource(ABC, FDBTimeMixin):
 
         self._resolve_levels(level)
 
-        # shortcut: date/yearmonth chunks must stay within a day/year; extend request construction to support crossings.
         self._compute_timeaxis(
             timestep=timestep,
             savefreq=savefreq,
