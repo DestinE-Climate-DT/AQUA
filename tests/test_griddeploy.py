@@ -1,8 +1,7 @@
 """Tests for the GridDeployer class."""
 
-from pathlib import Path
-
 import pytest
+from utils_tests import LOGLEVEL
 
 from aqua.core.gridbuilder import griddeploy as griddeploy_module
 from aqua.core.gridbuilder.griddeploy import GridDeployer
@@ -26,7 +25,7 @@ def deployer(monkeypatch, tmp_path):
             return str(tmp_path)
 
     monkeypatch.setattr(griddeploy_module, "ConfigContext", DummyConfigPath)
-    return GridDeployer(loglevel="DEBUG")
+    return GridDeployer(loglevel=LOGLEVEL)
 
 
 def test_grids_deploy_path_single_string(deployer):
@@ -190,7 +189,7 @@ def test_download_grid_skips_if_file_exists(deployer, monkeypatch, tmp_path):
 
     targetdir = tmp_path / "grids"
     existing_file = targetdir / "nested" / "folder" / "mygrid.nc"
-    Path(existing_file.parent).mkdir(parents=True, exist_ok=True)
+    existing_file.parent.mkdir(parents=True, exist_ok=True)
     existing_file.write_bytes(b"existing")
 
     deployer._download_grid(grid_dir="nested/folder", grid_name="mygrid.nc", targetdir=str(targetdir))

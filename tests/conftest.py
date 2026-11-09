@@ -4,19 +4,20 @@ These fixtures use scope="session" to retrieve data once and share across all te
 Reference: https://docs.pytest.org/en/stable/reference/fixtures.html
 """
 
+import glob
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+import warnings
 
 import matplotlib
 import pytest
-from utils_tests import LOGLEVEL, TestCleanupRegistry
+from utils_tests import LOGLEVEL, make_private_config
 
 from aqua import Reader
 from aqua.core.backend.backend import Backend
-from aqua.core.configurer import ConfigContext
 from aqua.core.lock import SafeFileLock
 
 matplotlib.use("Agg")  # Non-interactive backend
@@ -25,15 +26,68 @@ import matplotlib.pyplot as plt
 
 plt.ioff()  # Turn off interactive mode explicitly
 
-STAC_CATALOGUE_DIR = Path(__file__).resolve().parent / "stac_catalogue"
+STAC_CATALOGUE_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "stac_catalogue")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+# entries a test run may legitimately create in the repository root (reports, caches)
+ALLOWED_NEW_ROOT_ENTRIES = {".coverage", "junit.xml", "coverage.xml", "aqua_pytest.log", ".pytest_cache", "__pycache__"}
+
+
+def _ensure_stac_catalogue():
+    """Generate the example STAC catalogue if it is missing or older than the generator or the NetCDF fixtures.
+
+    It runs on the controller before collection, because the catalog tests browse the `stac` sources at import.
+    The lock and the atomic writes of the generator keep concurrent pytest invocations safe.
+    """
+    models = os.path.join(REPO_ROOT, "AQUA_tests", "models")
+    if not os.path.isdir(models):
+        return
+    catalog = os.path.join(STAC_CATALOGUE_DIR, "catalog.json")
+    generator = os.path.join(STAC_CATALOGUE_DIR, "generate_catalog.py")
+    with SafeFileLock(os.path.join(STAC_CATALOGUE_DIR, ".generation.lock"), loglevel=LOGLEVEL):
+        inputs = [generator, *glob.glob(os.path.join(models, "**", "*.nc"), recursive=True)]
+        if os.path.exists(catalog) and os.path.getmtime(catalog) >= max(os.path.getmtime(path) for path in inputs):
+            return
+        if shutil.which("ncdump") is None:
+            warnings.warn("ncdump not found: the STAC test catalogue is not generated", stacklevel=2)
+            return
+        subprocess.run([sys.executable, generator], check=True)
 
 
 @pytest.fixture(scope="session")
 def stac_catalogue_dir():
     """Return the example STAC catalogue prepared before test collection."""
-    if not (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
-        pytest.skip("AQUA_tests/models is not available")
+    if not os.path.exists(os.path.join(STAC_CATALOGUE_DIR, "catalog.json")):
+        pytest.skip("STAC catalogue not generated: AQUA_tests/models or ncdump is not available")
     return STAC_CATALOGUE_DIR
+
+
+@pytest.fixture
+def aqua_caplog(caplog):
+    """`caplog` for the AQUA loggers.
+
+    They do not propagate to the root logger, where pytest collects the records, so the capture handler is
+    attached to the loggers passed to the returned function, for the duration of the test.
+    """
+    attached = []
+
+    def capture(*loggers):
+        for logger in loggers:
+            if caplog.handler not in logger.handlers:
+                logger.addHandler(caplog.handler)
+                attached.append(logger)
+        return caplog
+
+    yield capture
+    for logger in attached:
+        logger.removeHandler(caplog.handler)
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close the matplotlib figures left open by a test."""
+    yield
+    plt.close("all")
 
 
 class DummyBackend(Backend):
@@ -56,26 +110,32 @@ def dummy_backend():
 
 
 # ======================================================================
-# Run global (not per-worker) cleanup hooks for test-generated files
+# Session set-up: private AQUA configuration, controller-only checks
 # ======================================================================
 def pytest_configure(config):
     """
     Runs once at session start on controller and workers with xdist.
-    Cache configdir before any test can modify HOME.
+    The controller builds a private AQUA configuration (see utils_tests.config) and every process
+    exports it as AQUA_CONFIG before collection, so that no test touches the installed one.
     Generate STAC JSON on the controller before catalog discovery during collection.
     Set per-worker TMPDIR to avoid CDO/temp contention in parallel runs.
     """
-    try:
-        config_path = ConfigContext()
-        config._stored_configdir = config_path.configdir
-    except (FileNotFoundError, KeyError):
-        config._stored_configdir = None
-
     workerinput = getattr(config, "workerinput", None)
-    if workerinput is None and (STAC_CATALOGUE_DIR.parent.parent / "AQUA_tests" / "models").is_dir():
-        # The controller configures before xdist starts workers, so no reader sees partial JSON.
-        with SafeFileLock(str(STAC_CATALOGUE_DIR / ".generation.lock"), loglevel=LOGLEVEL):
-            subprocess.run([sys.executable, str(STAC_CATALOGUE_DIR / "generate_catalog.py")], check=True)
+
+    if workerinput is None:
+        try:
+            config._aqua_private_config = make_private_config()
+        except (FileNotFoundError, KeyError):
+            config._aqua_private_config = None  # no installed AQUA: tests will fail on their own
+        config._root_entries = set(os.listdir(REPO_ROOT))
+    else:
+        config._aqua_private_config = workerinput.get("aqua_private_config")
+
+    if config._aqua_private_config:
+        os.environ["AQUA_CONFIG"] = config._aqua_private_config
+
+    if workerinput is None:
+        _ensure_stac_catalogue()  # on the controller, before xdist starts the workers
 
     if workerinput is not None:
         worker_id = workerinput.get("workerid", "master")
@@ -84,31 +144,34 @@ def pytest_configure(config):
         os.environ["TMPDIR"] = tempfile.mkdtemp(prefix=f"aqua_pytest_{worker_id}_", dir=base)
 
 
+@pytest.hookimpl(optionalhook=True)
+def pytest_configure_node(node):
+    """xdist controller hook: give the workers the private configuration built by the controller."""
+    node.workerinput["aqua_private_config"] = node.config._aqua_private_config
+
+
 def pytest_sessionfinish(session, exitstatus):
     """
-    Runs once at the end of the entire test session.
-    Cleanup only runs on the controller, after all workers
-    have finished, preventing deletion of files that other workers
-    still need.
+    Runs once at the end of the entire test session, on the controller only (after all workers
+    have finished, so no file that other workers still need is deleted).
+    Remove the private AQUA configuration and fail the session if tests left new files in the
+    repository root (e.g. weights, areas or output directories written in the current directory).
     """
-    if getattr(session.config, "workerinput", None) is not None:
-        return  # skip cleanup on xdist workers; only controller cleans up
+    config = session.config
+    if getattr(config, "workerinput", None) is not None:
+        return
 
-    # Get stored configdir from session.config (same object as config in pytest_configure)
-    stored_configdir = getattr(session.config, "_stored_configdir", None)
+    if config._aqua_private_config:
+        shutil.rmtree(config._aqua_private_config, ignore_errors=True)
 
-    # Prefer current configdir, but fall back to stored one if ConfigContext() fails (e.g. HOME was deleted)
-    cleanup_configdir = stored_configdir
-    try:
-        config_path = ConfigContext()
-        cleanup_configdir = config_path.configdir
-    except (FileNotFoundError, KeyError):
-        # If HOME was deleted, rely on the stored configdir from pytest_configure
-        pass
-
-    if cleanup_configdir:
-        registry = TestCleanupRegistry(cleanup_configdir)
-        registry.cleanup()
+    leftovers = sorted(
+        entry
+        for entry in set(os.listdir(REPO_ROOT)) - config._root_entries
+        if entry not in ALLOWED_NEW_ROOT_ENTRIES and not entry.startswith(".coverage.")
+    )
+    if leftovers:
+        config.get_terminal_writer().line(f"\nTests left new files in the repository root: {leftovers}", red=True)
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 # ======================================================================
@@ -124,7 +187,7 @@ def _get_xdist_log_path(config):
         return None
     # Handle pytest's distinct path objects if necessary
     root_path = root.path if hasattr(root, "path") else root
-    return Path(root_path) / ".pytest_cache" / "xdist_worker_tests.log"
+    return os.path.join(str(root_path), ".pytest_cache", "xdist_worker_tests.log")
 
 
 def _log_xdist_event(config, event, nodeid, outcome=None):
@@ -146,7 +209,7 @@ def _log_xdist_event(config, event, nodeid, outcome=None):
 
     try:
         # Ensure directory exists
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
         # Append line with flush to ensure it's written immediately
         with open(log_path, "a") as f:
             f.write(f"{line}\n")
@@ -160,9 +223,9 @@ def pytest_sessionstart(session):
     if getattr(session.config, "workerinput", None) is not None:
         return  # only the controller clears; workers append
     log_path = _get_xdist_log_path(session.config)
-    if log_path and log_path.exists():
+    if log_path and os.path.exists(log_path):
         try:
-            log_path.unlink()
+            os.remove(log_path)
         except OSError:
             pass
 
@@ -173,10 +236,10 @@ def pytest_runtest_setup(item):
 
 
 def pytest_runtest_makereport(item, call):
-    """Log test finish event with outcome."""
-    if call.when == "call":
+    """Log test finish event with outcome, including errors in fixture setup and teardown."""
+    if call.when == "call" or call.excinfo:
         outcome = "failed" if call.excinfo else "passed"
-        _log_xdist_event(item.config, "finished", item.nodeid, outcome)
+        _log_xdist_event(item.config, "finished" if call.when == "call" else call.when, item.nodeid, outcome)
 
 
 # ===================== Reader and Retrieve fixtures ===================
@@ -186,11 +249,6 @@ def pytest_runtest_makereport(item, call):
 @pytest.fixture(scope="session")
 def ifs_tco79_short_reader():
     return Reader(model="IFS", exp="test-tco79", source="short", loglevel=LOGLEVEL)
-
-
-@pytest.fixture(scope="session")
-def ifs_tco79_short_data(ifs_tco79_short_reader):
-    return ifs_tco79_short_reader.retrieve()
 
 
 @pytest.fixture(scope="session")
@@ -230,6 +288,7 @@ def ifs_tco79_long_areasfalse_fixfalse_reader():
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_reader():
+    # used through request.getfixturevalue in test_timstat.py
     return Reader(model="IFS", exp="test-tco79", source="long400", fix=False, loglevel=LOGLEVEL)
 
 
@@ -240,6 +299,7 @@ def ifs_tco79_long_fixfalse_data(ifs_tco79_long_fixfalse_reader):
 
 @pytest.fixture(scope="session")
 def ifs_tco79_long400_fixfalse_data(ifs_tco79_long400_fixfalse_reader):
+    # used through request.getfixturevalue in test_timstat.py
     return ifs_tco79_long400_fixfalse_reader.retrieve(var=["2t", "ttr"])
 
 
