@@ -87,7 +87,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **Configuration is declarative**: define grids, fixes, data models, catalogs, and analyses in YAML first; add Python `if/else` only when config cannot express the behaviour
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
-- **Accessor contract**: if a method returns an xarray object intended for chained AQUA operations, call `data.aqua.set_default(self)` before returning
+- **Accessor contract**: if a `Reader` method returns an xarray object intended for chained AQUA operations, call `data.aqua._bind_reader(self)` before returning; only `retrieve()` calls `data.aqua.set_default(self)`, which also changes the global default for new accessors. Core utilities that transform an input keep its binding with `_preserve_reader_binding(input, output)`
 - **Minimize new attributes**: do not create new instance attributes or `AQUA_*` metadata attributes unless strictly necessary; search for and reuse existing ones first
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
 - **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
@@ -239,7 +239,7 @@ def method(self, arg1, arg2=None):
 ## Integration Checklist
 
 - [ ] Semantic data transforms call `log_history()` and preserve `AQUA_*` attrs
-- [ ] xarray outputs for AQUA chaining call `data.aqua.set_default(self)`
+- [ ] xarray outputs for AQUA chaining are bound to their Reader (`_bind_reader` or `_preserve_reader_binding`) without changing the global default
 - [ ] Operations remain lazy until write/output boundaries
 - [ ] No new dependency added unless explicitly requested
 - [ ] Public API changes have a CHANGELOG entry (citing only the PR, not the issue) and new parameters have defaults
