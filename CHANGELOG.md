@@ -12,10 +12,9 @@ ClimateDT workflow modifications:
 
 Unreleased in the current development version (target v1.2.3):
 Complete list:
+- aqua-web: the push job requests memory through a new `push.memory` config key (default `8G`); with one task on `debug` it got 896M and `aqua push` was OOM-killed (#3364).
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
-Unreleased in the current development version (target v1.2.4):
-- aqua-web: the push job requests memory through a new `push.memory` config key (default `8G`); with one task on `debug` it got 896M and `aqua push` was OOM-killed (#PR_NUMBER).
 - Split agent instructions into a small `AGENTS.md` entry point, shared ecosystem rules in `AGENTS.common.md`, and AQUA-core-specific rules in `AGENTS.repo.md` (#3357).
 - Share agent rules for attribute reuse, isolated test outputs, dependency and `environment*.yml` synchronization, usage documentation updates, and precedence of the current implementation over stale documentation (#3357).
 - Remove module-level `xr.set_options(keep_attrs=True)` calls, which silently changed xarray's global state on import; xarray already keeps attrs by default and AQUA passes `keep_attrs=True` explicitly where needed. `AGENTS.md` updated accordingly (#3324).
