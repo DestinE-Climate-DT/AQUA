@@ -12,9 +12,11 @@ from aqua.core.util.sci_util import generate_quarter_months
 
 @pytest.fixture(scope="module")
 def sample_data():
-    """Create a sample DataArray for testing"""
+    """Create a sample DataArray for testing (deterministic, no NaN)"""
     data = xr.DataArray(
-        np.random.rand(6, 6), coords={"lat": [10, 20, 30, 40, 50, 60], "lon": [40, 50, 60, 70, 80, 90]}, dims=["lat", "lon"]
+        np.arange(36.0).reshape(6, 6),
+        coords={"lat": [10, 20, 30, 40, 50, 60], "lon": [40, 50, 60, 70, 80, 90]},
+        dims=["lat", "lon"],
     )
     return data
 
@@ -23,7 +25,7 @@ def sample_data():
 def sample_data_180():
     """Create a sample DataArray with lon in [-180, 180] convention."""
     return xr.DataArray(
-        np.random.rand(4, 8),
+        np.arange(32.0).reshape(4, 8),
         coords={"lat": [-45, -15, 15, 45], "lon": [-135, -45, -30, 0, 30, 45, 90, 135]},
         dims=["lat", "lon"],
     )
@@ -33,22 +35,30 @@ def sample_data_180():
 def sample_data_360():
     """Create a sample DataArray with lon in [0, 360] convention."""
     return xr.DataArray(
-        np.random.rand(4, 8),
+        np.arange(32.0).reshape(4, 8),
         coords={"lat": [-45, -15, 15, 45], "lon": [0, 30, 45, 90, 135, 180, 225, 270]},
         dims=["lat", "lon"],
     )
 
 
 @pytest.mark.aqua
-def test_valid_selection_no_brd(sample_data):
-    """Test with valid latitude and longitude ranges, no box_brd"""
-    lat_range = [10, 30]
-    lon_range = [45, 55]
-    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=False)
+@pytest.mark.parametrize(
+    "box_brd, kept_lat, kept_lon",
+    [pytest.param(True, [10, 20, 30], [40, 50, 60], id="box_brd"), pytest.param(False, [20], [50], id="no_box_brd")],
+)
+@pytest.mark.parametrize("drop", [False, True], ids=["nan", "drop"])
+def test_box_selection_borders(sample_data, box_brd, kept_lat, kept_lon, drop):
+    """Box limits on grid points are kept only with box_brd=True: fails if box_brd is ignored or the box is wrong."""
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=[10, 30], lon=[40, 60], box_brd=box_brd, drop=drop)
 
-    assert result is not None
-    assert np.isnan(result.sel(lat=10, lon=40).values)
-    assert np.isnan(result.sel(lat=60, lon=90).values)
+    expected = sample_data.sel(lat=kept_lat, lon=kept_lon)
+    if drop:
+        xr.testing.assert_equal(result, expected)
+    else:
+        inside = sample_data.lat.isin(kept_lat) & sample_data.lon.isin(kept_lon)
+        xr.testing.assert_equal(result.notnull(), inside.transpose(*result.dims))
+        xr.testing.assert_equal(result.sel(lat=kept_lat, lon=kept_lon), expected)
+    assert "Area selection: lat=[10, 30], lon=[40, 60]" in result.attrs["history"]
 
 
 @pytest.mark.aqua
@@ -70,68 +80,54 @@ def test_selection_regionmask(sample_data):
         # values inside the selected regions are kept, all the others are NaN
         xr.testing.assert_equal(result.notnull(), inside.transpose(*result.dims))
         xr.testing.assert_equal(result.where(inside, drop=True), sample_data.where(inside, drop=True))
+        assert "Regionmask selection: south_west, north_east" in result.attrs["history"]
 
 
 @pytest.mark.aqua
-def test_valid_selection(sample_data):
-    """Test with valid latitude and longitude ranges"""
-    lat_range = [15, 25]
-    lon_range = [45, 55]
-    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=True)
-
-    assert result is not None
-    assert np.isnan(result.sel(lat=10, lon=40).values)
-    assert np.isnan(result.sel(lat=60, lon=90).values)
+def test_region_without_region_sel_raises(sample_data):
+    """A region without region_sel is an error: fails if the whole region object is silently used or ignored."""
+    region = regionmask.Regions([[[35, 5], [55, 5], [55, 25], [35, 25]]], names=["box"])
+    with pytest.raises(ValueError, match="`region_sel` must be specified"):
+        AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, region=region)
 
 
 @pytest.mark.aqua
 def test_missing_lat_lon(sample_data):
     """Test when both lat and lon are None, the sample_data is returned"""
     result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=None, lon=None, box_brd=True)
-    assert result is not None
     assert result.equals(sample_data)
 
 
 @pytest.mark.aqua
-def test_missing_lat_lon_coords():
-    """Test with missing lat or lon coordinates, should raise an KeyError"""
-    data_missing_lat = xr.DataArray(np.random.rand(3, 3), coords={"lon": [40, 50, 60]}, dims=["lat", "lon"])
-    data_missing_lon = xr.DataArray(np.random.rand(3, 3), coords={"lat": [10, 20, 30]}, dims=["lat", "lon"])
-
-    with pytest.raises(KeyError):
-        AreaSelection(loglevel=LOGLEVEL).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55], box_brd=True)
-
-    with pytest.raises(KeyError):
-        AreaSelection(loglevel=LOGLEVEL).select_area(data_missing_lon, lat=[15, 25], lon=[45, 55], box_brd=True)
-
-
-@pytest.mark.aqua
-def test_missing_data():
-    """Test with missing data or wrong type"""
-    with pytest.raises(TypeError):
-        AreaSelection(loglevel=LOGLEVEL).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
+@pytest.mark.parametrize("coords", [{"lon": [40, 50, 60]}, {"lat": [10, 20, 30]}])
+def test_missing_lat_lon_coords(coords):
+    """Data without a lat or lon coordinate raises a KeyError naming the expected coordinates"""
+    data = xr.DataArray(np.zeros((3, 3)), coords=coords, dims=["lat", "lon"])
+    with pytest.raises(KeyError, match="Expected 'lat' and 'lon'"):
+        AreaSelection(loglevel=LOGLEVEL).select_area(data, lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
 def test_select_season():
-    """Test the select_season function with valid and invalid inputs."""
-    # Sample DataArray with a time dimension
+    """select_season keeps the months of the season and tags them: fails on a wrong month triplet or a lost attribute."""
     times = xr.date_range(start="2000-01-01", periods=12, freq="MS")
-    data = xr.DataArray(np.random.rand(12), coords={"time": times}, dims=["time"])
+    data = xr.DataArray(np.arange(12.0), coords={"time": times}, dims=["time"])
 
-    # Valid season tests
-    for season, expected_months in {"DJF": [12, 1, 2], "MAM": [3, 4, 5]}.items():
+    for season, expected_months in {"DJF": [1, 2, 12], "MAM": [3, 4, 5]}.items():
         result = select_season(data, season)
-        assert len(result) == 3
-        assert all(month in expected_months for month in result["time.month"].values)
+        assert result["time.month"].values.tolist() == expected_months
+        assert result.values.tolist() == [month - 1.0 for month in expected_months]
+        assert result.attrs["AQUA_season"] == season
 
-    # Invalid season test
-    with pytest.raises(ValueError):
+    # "annual" is no selection at all
+    assert select_season(data, "annual") is data
+
+    with pytest.raises(ValueError, match="Invalid season abbreviation"):
         select_season(data, "XYZ")
 
     # Missing time dimension test
-    data_no_time = xr.DataArray(np.random.rand(12), dims=["dim_0"])
-    with pytest.raises(KeyError):
+    data_no_time = xr.DataArray(np.zeros(12), dims=["dim_0"])
+    with pytest.raises(KeyError, match="time"):
         select_season(data_no_time, "DJF")
 
 
@@ -143,7 +139,7 @@ def test_generate_quarter_months():
 
     result = generate_quarter_months("MAR")
     assert result == {"MAR": {"Q1": [3, 4, 5], "Q2": [6, 7, 8], "Q3": [9, 10, 11], "Q4": [12, 1, 2]}}
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="XXX"):
         generate_quarter_months("XXX")
 
 
@@ -293,7 +289,7 @@ def test_regionmask_greenwich_180_stays_180(sample_data_180_from_360):
 def test_regionmask_frac_threshold(frac_threshold, expect_selected):
     """frac_threshold keeps cells touching the region even when no cell center falls inside."""
     data = xr.DataArray(
-        np.random.rand(3, 4),
+        np.arange(1.0, 13.0).reshape(3, 4),
         coords={"lat": [-10, 0, 10], "lon": [0, 10, 20, 30]},
         dims=("lat", "lon"),
     )

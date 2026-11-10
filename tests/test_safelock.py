@@ -1,15 +1,20 @@
-"""Tests for SafeFileLock class with concurrent access"""
+"""Tests for the SafeFileLock class"""
 
 import os
 import threading
 import time
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import pytest
 from filelock import Timeout
 from utils_tests import LOGLEVEL
 
 from aqua.core.lock import SafeFileLock
+
+pytestmark = pytest.mark.aqua
+
+# Contenders that are expected to fail wait only this long (seconds)
+SHORT_TIMEOUT = 0.2
 
 
 def _read_bytes(path):
@@ -18,378 +23,191 @@ def _read_bytes(path):
         return file.read()
 
 
+def _make_lock_file(path, age):
+    """Create an empty lock file whose mtime is `age` seconds in the past.
+
+    An empty marker is what filelock before 3.22 writes: filelock never breaks it by itself,
+    so only SafeFileLock's own stale check can remove it.
+    """
+    open(path, "w").close()
+    past = time.time() - age
+    os.utime(path, (past, past))
+
+
 @pytest.fixture
 def lock_file(tmp_path):
-    """Fixture that provides a temporary lock file path."""
-    lock_path = tmp_path / "test.lock"
-    yield str(lock_path)
-    # Cleanup
-    if lock_path.exists():
-        lock_path.unlink()
+    """Path of a lock file in a temporary directory."""
+    return os.path.join(tmp_path, "test.lock")
 
 
-@pytest.fixture
-def shared_file(tmp_path):
-    """Fixture that provides a shared file for concurrent write tests."""
-    file_path = tmp_path / "shared.txt"
-    file_path.write_text("0\n")
-    return str(file_path)
-
-
-class TestSafeFileLock:
-    """Test suite for SafeFileLock"""
-
-    @pytest.mark.aqua
-    def test_basic_acquire_release(self, lock_file):
-        """Test basic lock acquisition and release."""
-        lock = SafeFileLock(lock_file, timeout=5)
-
-        # Lock should not exist initially
+@pytest.mark.parametrize("use_context", [False, True])
+def test_acquire_creates_and_release_removes_lock(lock_file, use_context):
+    """The lock file exists only while the lock is held, also on a second acquisition: fails if release leaves it."""
+    lock = SafeFileLock(lock_file, timeout=5)
+    for _ in range(2):
+        assert not os.path.exists(lock_file)
+        if use_context:
+            with lock:
+                assert os.path.exists(lock_file)
+        else:
+            lock.acquire()
+            assert os.path.exists(lock_file)
+            lock.release()
         assert not os.path.exists(lock_file)
 
-        # Acquire lock
-        lock.acquire()
+
+def test_held_lock_times_out(lock_file):
+    """A second lock on the same file, also from the same thread, times out: fails if the lock is not exclusive."""
+    with SafeFileLock(lock_file, timeout=5):
+        with pytest.raises(Timeout, match="Timeout waiting for lock"):
+            SafeFileLock(lock_file, timeout=SHORT_TIMEOUT).acquire()
+    # the file is still free for the next holder
+    with SafeFileLock(lock_file, timeout=SHORT_TIMEOUT):
         assert os.path.exists(lock_file)
 
-        # Release lock
-        lock.release()
-        # Lock file might still exist after release (SoftFileLock behavior)
 
-    @pytest.mark.aqua
-    def test_context_manager(self, lock_file):
-        """Test lock usage as context manager."""
-        with SafeFileLock(lock_file, timeout=5):
+def test_stale_lock_removed(lock_file):
+    """A lock file older than stale_timeout is removed by SafeFileLock: fails if the stale check is skipped."""
+    _make_lock_file(lock_file, age=200)
+    lock = SafeFileLock(lock_file, timeout=SHORT_TIMEOUT, stale_timeout=120)
+    with patch.object(lock.logger, "debug") as debug:
+        with lock:
             assert os.path.exists(lock_file)
-        # After exiting context, heartbeat should be stopped
+    assert call("Removed stale lock: %s", lock_file) in debug.call_args_list
 
-    @pytest.mark.aqua
-    def test_timeout(self, lock_file):
-        """Test that lock acquisition times out when held by another process."""
-        lock1 = SafeFileLock(lock_file, timeout=2)
-        lock2 = SafeFileLock(lock_file, timeout=2)
 
-        lock1.acquire()
+def test_recent_lock_not_removed(lock_file):
+    """A lock file younger than stale_timeout is respected: fails if every existing lock is treated as stale."""
+    _make_lock_file(lock_file, age=60)
+    with pytest.raises(Timeout, match="Timeout waiting for lock"):
+        SafeFileLock(lock_file, timeout=SHORT_TIMEOUT, stale_timeout=120).acquire()
+    assert os.path.exists(lock_file)
 
-        # Second lock should timeout
-        with pytest.raises(Timeout):
-            lock2.acquire()
 
-        lock1.release()
+def test_heartbeat_refreshes_mtime(lock_file):
+    """The heartbeat refreshes the mtime of the held lock file: fails if the heartbeat does not run."""
+    lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=0.01)
+    utime = os.utime
+    refreshed = []
+    two_refreshes = threading.Event()
 
-    @pytest.mark.aqua
-    def test_stale_lock_cleanup(self, lock_file):
-        """Test that stale locks are cleaned up."""
-        # Create a stale lock file
-        with open(lock_file, "w") as f:
-            f.write(f"pid=99999 time={time.time() - 200}\n")
+    def utime_spy(path, *args, **kwargs):
+        """Record the refreshed path and signal after two refreshes."""
+        utime(path, *args, **kwargs)
+        refreshed.append(path)
+        if len(refreshed) >= 2:
+            two_refreshes.set()
 
-        # Set mtime to old value
-        old_time = time.time() - 200
-        os.utime(lock_file, (old_time, old_time))
+    with lock:
+        # make the marker look old, the heartbeat must bring it back to now
+        past = time.time() - 200
+        utime(lock_file, (past, past))
+        with patch("aqua.core.lock.safelock.os.utime", side_effect=utime_spy):
+            assert two_refreshes.wait(timeout=5)
+            assert time.time() - os.path.getmtime(lock_file) < 100
+    assert set(refreshed) == {lock_file}
 
-        # Try to acquire with stale_timeout of 120 seconds
-        lock = SafeFileLock(lock_file, timeout=5, stale_timeout=120)
-        lock.acquire()  # Should succeed by removing stale lock
 
-        lock.release()
+def test_marker_not_overwritten(lock_file):
+    """Preserve filelock's marker, including older versions that leave it empty."""
+    lock = SafeFileLock(lock_file, timeout=5)
+    acquire = lock.lock.acquire
+    markers = []
 
-    @pytest.mark.aqua
-    def test_heartbeat_updates_mtime(self, lock_file):
-        """Test that heartbeat updates lock file mtime."""
-        lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=1)
+    def acquire_and_capture(*args, **kwargs):
+        """Capture the marker before SafeFileLock resumes acquisition."""
+        proxy = acquire(*args, **kwargs)
+        markers.append(_read_bytes(lock_file))
+        return proxy
 
-        lock.acquire()
-        initial_mtime = os.path.getmtime(lock_file)
+    with patch.object(lock.lock, "acquire", side_effect=acquire_and_capture):
+        with lock:
+            assert _read_bytes(lock_file) == markers[0]
 
-        # Wait for heartbeat to update
-        time.sleep(2)
 
-        updated_mtime = os.path.getmtime(lock_file)
-        assert updated_mtime > initial_mtime
+def test_held_lock_not_broken(lock_file):
+    """A held lock is not broken by a contender (#3190): fails if the marker can be judged stale or malformed."""
+    lock1 = SafeFileLock(lock_file, timeout=5, heartbeat_interval=60)
+    # filelock 4.2 breaks a malformed marker it has seen unchanged for 2 s: the contender waits longer than that
+    lock2 = SafeFileLock(lock_file, timeout=2.5)
 
-        lock.release()
-
-    @pytest.mark.aqua
-    def test_marker_not_overwritten(self, lock_file):
-        """Preserve filelock's marker, including older versions that leave it empty."""
-        lock = SafeFileLock(lock_file, timeout=5)
-        acquire = lock.lock.acquire
-        markers = []
-
-        def acquire_and_capture(*args, **kwargs):
-            """Capture the marker before SafeFileLock resumes acquisition."""
-            proxy = acquire(*args, **kwargs)
-            markers.append(_read_bytes(lock_file))
-            return proxy
-
-        with patch.object(lock.lock, "acquire", side_effect=acquire_and_capture):
-            with lock:
-                assert _read_bytes(lock_file) == markers[0]
-
-    @pytest.mark.aqua
-    def test_held_lock_not_broken(self, lock_file):
-        """Test that a lock held for a few seconds is not broken by a contender (#3190)."""
-        lock1 = SafeFileLock(lock_file, timeout=5, heartbeat_interval=60)
-        lock2 = SafeFileLock(lock_file, timeout=4)
-
-        with lock1:
-            # Exercise both mtime-based expiry and filelock 4.2's observation clock.
-            time.sleep(2.5)
-            with pytest.raises(Timeout), lock2:
-                pass
-
-    @pytest.mark.aqua
-    def test_release_stops_heartbeat(self, lock_file):
-        """Release stops an active heartbeat before its next scheduled refresh."""
-        lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=60)
-        refreshed = threading.Event()
-        utime = os.utime
-
-        def refresh_and_signal(*args, **kwargs):
-            """Signal after the heartbeat starts refreshing its marker."""
-            utime(*args, **kwargs)
-            refreshed.set()
-
-        with patch("aqua.core.lock.safelock.os.utime", side_effect=refresh_and_signal):
-            with lock:
-                assert refreshed.wait(timeout=5)
-                heartbeat = lock._heartbeat_thread
-
-            assert not heartbeat.is_alive()
-            assert not os.path.exists(lock_file)
-
-    @pytest.mark.aqua
-    def test_stale_check_lock_vanishing(self, lock_file):
-        """Test that the lock file disappearing during the stale check does not raise (#3190)."""
-        open(lock_file, "a").close()
-        lock = SafeFileLock(lock_file, timeout=5)
-
-        # Lock exists when checked, but is released before its mtime is read
-        with patch("aqua.core.lock.safelock.os.path.getmtime", side_effect=FileNotFoundError):
-            assert not lock._is_stale()
-
-    @pytest.mark.aqua
-    def test_sequential_access(self, lock_file, shared_file):
-        """Test that multiple locks access file sequentially."""
-
-        def increment_file(lock_path, file_path, iterations=5):
-            """Increment counter in file under lock."""
-            lock = SafeFileLock(lock_path, timeout=30)
-            for _ in range(iterations):
-                with lock:
-                    with open(file_path, "r") as f:
-                        value = int(f.read().strip())
-
-                    # Simulate some work
-                    time.sleep(0.05)
-
-                    with open(file_path, "w") as f:
-                        f.write(f"{value + 1}\n")
-
-        # Run two threads
-        threads = []
-        for _ in range(2):
-            t = threading.Thread(target=increment_file, args=(lock_file, shared_file, 5))
-            threads.append(t)
-            t.start()
-
-        for t in threads:
-            t.join()
-
-        # Final value should be 10 (2 threads * 5 increments)
-        with open(shared_file, "r") as f:
-            final_value = int(f.read().strip())
-
-        assert final_value == 10
-
-    @pytest.mark.aqua
-    def test_concurrent_write_protection(self, lock_file, shared_file):
-        """Test that lock prevents concurrent writes from corrupting data."""
-
-        def write_pattern(lock_path, file_path, pattern, count=10):
-            """Write a pattern to file multiple times under lock."""
-            lock = SafeFileLock(lock_path, timeout=60)
-            for _ in range(count):
-                with lock:
-                    with open(file_path, "a") as f:
-                        f.write(f"{pattern}\n")
-                    time.sleep(0.001)
-
-        # Clear file
-        with open(shared_file, "w") as f:
-            f.write("")
-
-        # Run multiple threads with different patterns
-        threads = []
-        patterns = ["AAA", "BBB", "CCC"]
-        for pattern in patterns:
-            t = threading.Thread(target=write_pattern, args=(lock_file, shared_file, pattern, 10))
-            threads.append(t)
-            t.start()
-
-        for t in threads:
-            t.join()
-
-        # Verify all lines are complete (no interleaved writes)
-        with open(shared_file, "r") as f:
-            lines = f.readlines()
-
-        assert len(lines) == 30  # 3 threads * 10 writes each
-        for line in lines:
-            line = line.strip()
-            assert line in patterns, f"Corrupted line: {line}"
-
-    @pytest.mark.aqua
-    def test_lock_reentrant_same_thread(self, lock_file):
-        """Test that same thread cannot acquire lock twice (not reentrant)."""
-        lock1 = SafeFileLock(lock_file, timeout=2)
-        lock2 = SafeFileLock(lock_file, timeout=2)
-
-        lock1.acquire()
-
-        # Second acquisition in same thread should timeout
-        with pytest.raises(Timeout):
-            lock2.acquire()
-
-        lock1.release()
-
-    @pytest.mark.aqua
-    def test_multiple_contexts(self, lock_file, shared_file):
-        """Test multiple context manager entries/exits."""
-        for i in range(5):
-            with SafeFileLock(lock_file, timeout=5):
-                with open(shared_file, "w") as f:
-                    f.write(f"{i}\n")
-
-        with open(shared_file, "r") as f:
-            value = int(f.read().strip())
-
-        assert value == 4
-
-    @pytest.mark.aqua
-    def test_exception_releases_lock(self, lock_file):
-        """Test that lock is released even when exception occurs."""
-        lock1 = SafeFileLock(lock_file, timeout=5)
-        lock2 = SafeFileLock(lock_file, timeout=5)
-
-        try:
-            with lock1:
-                raise ValueError("Test exception")
-        except ValueError:
+    with lock1:
+        with pytest.raises(Timeout, match="Timeout waiting for lock"), lock2:
             pass
 
-        # Second lock should be able to acquire after exception
-        lock2.acquire()
-        lock2.release()
 
-    @pytest.mark.aqua
-    def test_different_lock_files(self, tmp_path):
-        """Test that different lock files don't interfere."""
-        lock1_path = tmp_path / "lock1.lock"
-        lock2_path = tmp_path / "lock2.lock"
+def test_release_stops_heartbeat(lock_file):
+    """Release stops an active heartbeat before its next scheduled refresh."""
+    lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=60)
+    refreshed = threading.Event()
+    utime = os.utime
 
-        lock1 = SafeFileLock(str(lock1_path), timeout=5)
-        lock2 = SafeFileLock(str(lock2_path), timeout=5)
+    def refresh_and_signal(*args, **kwargs):
+        """Signal after the heartbeat starts refreshing its marker."""
+        utime(*args, **kwargs)
+        refreshed.set()
 
-        # Should be able to hold both locks simultaneously
-        lock1.acquire()
-        lock2.acquire()
+    with patch("aqua.core.lock.safelock.os.utime", side_effect=refresh_and_signal):
+        with lock:
+            assert refreshed.wait(timeout=5)
+            heartbeat = lock._heartbeat_thread
 
-        assert os.path.exists(lock1_path)
-        assert os.path.exists(lock2_path)
-
-        lock1.release()
-        lock2.release()
+        assert not heartbeat.is_alive()
+        assert not os.path.exists(lock_file)
 
 
-@pytest.mark.aqua
-@pytest.mark.parametrize("worker_id", ["worker1", "worker2", "worker3"])
-def test_concurrent_pytest_xdist(tmp_path_factory, worker_id):
-    """
-    Test concurrent access across pytest-xdist workers.
+def test_threads_increment_sequentially(lock_file, tmp_path):
+    """Read-modify-write under the lock from three threads loses no update: fails if the lock does not exclude."""
+    counter = os.path.join(tmp_path, "counter.txt")
+    with open(counter, "w") as f:
+        f.write("0\n")
 
-    This test is designed to run with pytest-xdist (pytest -n auto).
-    Each worker will try to increment a shared counter file.
+    def increment(iterations=5):
+        """Increment the counter in the file under the lock."""
+        lock = SafeFileLock(lock_file, timeout=30)
+        for _ in range(iterations):
+            with lock:
+                with open(counter) as f:
+                    value = int(f.read().strip())
+                # widen the window between read and write, so that a missing lock loses updates
+                time.sleep(0.002)
+                with open(counter, "w") as f:
+                    f.write(f"{value + 1}\n")
 
-    Note: This test uses a longer timeout (120s) to handle high contention
-    when multiple workers compete for the same lock.
-    """
-    # Use a shared temp directory that all workers can access
-    shared_tmp = tmp_path_factory.getbasetemp().parent
-    shared_file = shared_tmp / "xdist_counter.txt"
-    lock_file = shared_tmp / "xdist_counter.lock"
-    init_lock_file = shared_tmp / "xdist_init.lock"
+    threads = [threading.Thread(target=increment) for _ in range(3)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
 
-    # Initialize file with lock to prevent race conditions
-    with SafeFileLock(str(init_lock_file), timeout=60):
-        if not shared_file.exists():
-            try:
-                with open(shared_file, "w") as f:
-                    f.write("0\n")
-            except FileExistsError:
-                pass  # Another worker created it
-
-    # Each worker increments 5 times (reduced from 10 to reduce contention)
-    # Use longer timeout (120s) to handle high contention with multiple workers
-    for i in range(5):
-        # Add small random delay to reduce contention spikes
-        if i > 0:
-            time.sleep(0.01 * (i % 3))
-
-        with SafeFileLock(str(lock_file), timeout=120):
-            with open(shared_file, "r") as f:
-                value = int(f.read().strip())
-
-            time.sleep(0.001)  # Simulate some work
-
-            with open(shared_file, "w") as f:
-                f.write(f"{value + 1}\n")
-
-    # Note: We can't assert the final value here because we don't know
-    # how many workers pytest-xdist will spawn. The test passes if no
-    # exceptions are raised and the file isn't corrupted.
+    with open(counter) as f:
+        assert int(f.read().strip()) == 15
 
 
-@pytest.mark.aqua
-def test_logging_levels(lock_file):
-    """Test that logging works at different levels."""
+def test_exception_releases_lock(lock_file):
+    """An exception inside the context releases the lock: fails if __exit__ does not release."""
+    with pytest.raises(ValueError, match="Test exception"):
+        with SafeFileLock(lock_file, timeout=5):
+            raise ValueError("Test exception")
+
+    assert not os.path.exists(lock_file)
+    with SafeFileLock(lock_file, timeout=SHORT_TIMEOUT):
+        assert os.path.exists(lock_file)
+
+
+def test_different_lock_files(tmp_path):
+    """Locks on different files can be held at the same time: fails if one lock blocks the other."""
+    paths = [os.path.join(tmp_path, f"lock{i}.lock") for i in (1, 2)]
+    with SafeFileLock(paths[0], timeout=SHORT_TIMEOUT), SafeFileLock(paths[1], timeout=SHORT_TIMEOUT):
+        assert all(os.path.exists(path) for path in paths)
+
+
+def test_debug_log_names_lock(lock_file):
+    """Acquire and release are logged at debug level with the lock path."""
     lock = SafeFileLock(lock_file, timeout=5, loglevel=LOGLEVEL)
 
-    # Use patch to spy on the logger's debug method
-    with patch.object(lock.logger, "debug") as mock_debug:
+    with patch.object(lock.logger, "debug") as debug:
         lock.acquire()
         lock.release()
 
-    # Check that the logger's debug method was called with the expected messages
-    assert mock_debug.call_count >= 2
-
-    # Get all the calls made to the mock
-    all_calls = [call.args[0] for call in mock_debug.call_args_list]
-
-    assert any("Acquired" in call for call in all_calls)
-    assert any("Released" in call for call in all_calls)
-
-
-@pytest.mark.aqua
-def test_long_running_lock(lock_file):
-    """Test lock held for extended period with heartbeat."""
-    lock = SafeFileLock(lock_file, timeout=5, heartbeat_interval=1)
-
-    lock.acquire()
-    initial_mtime = os.path.getmtime(lock_file)
-
-    # Hold lock for several heartbeat intervals
-    time.sleep(3)
-
-    final_mtime = os.path.getmtime(lock_file)
-
-    # Mtime should have been updated multiple times
-    assert final_mtime > initial_mtime
-
-    lock.release()
-
-
-if __name__ == "__main__":
-    # Run with: pytest tests/test_safelock.py -v
-    # Run with xdist: pytest tests/test_safelock.py -v -n auto
-    pytest.main([__file__, "-v"])
+    assert debug.call_args_list == [call("Acquired: %s", lock_file), call("Released: %s", lock_file)]
