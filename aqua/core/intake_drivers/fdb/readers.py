@@ -10,8 +10,7 @@ from aqua.core.util import pandas_freq_to_offset
 
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
-from .openers.dates import FDBDatesMixin
-from .openers.timeutil import FDBTimeMixin
+from .openers.dates import FDBDateResolver
 from .openers.z3fdb_opener import _chunk_by_time
 
 
@@ -49,7 +48,7 @@ class PolytopeDatasetReader(BaseReader):
         return open_polytope(data.request, **params)
 
 
-class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
+class Z3FDBDatasetReader(BaseReader):
     output_instance = "xarray:Dataset"
     imports = {}
     optional_imports = {}
@@ -61,7 +60,7 @@ class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
 
     def _resolve_dates(self, data):
         """Resolve availability into a data copy without retaining per-read state."""
-        resolver = copy(self)
+        resolver = FDBDateResolver()
         resolved = copy(data)
         resolver._request = resolved.request = data.request.copy()
         resolver.engine = "z3fdb"

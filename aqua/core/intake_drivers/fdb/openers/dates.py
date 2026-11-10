@@ -19,6 +19,8 @@ from ruamel.yaml import YAML
 
 from aqua.core.util import to_list
 
+from .timeutil import FDBTimeMixin
+
 BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"  # LUMI QUBED STAC API
 
 
@@ -335,3 +337,7 @@ class FDBDatesMixin:
         sorted_dates = sorted(dates)
 
         return sorted_dates[0], sorted_dates[-1]
+
+
+class FDBDateResolver(FDBDatesMixin, FDBTimeMixin):
+    """Hold temporary date-discovery and validation state for one read."""
