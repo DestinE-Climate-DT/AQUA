@@ -30,7 +30,7 @@ def da():
     """Create a test DataArray"""
     lon_values = np.linspace(0, 360, 36)  # Longitude values
     lat_values = np.linspace(-90, 90, 18)  # Latitude values
-    data = np.random.rand(18, 36)  # Example data
+    data = np.arange(18 * 36.0).reshape(18, 36)
     return xr.DataArray(data, dims=["lat", "lon"], coords={"lon": lon_values, "lat": lat_values})
 
 
@@ -74,18 +74,17 @@ def test_plot_box():
 
 
 @pytest.mark.graphics
-def test_minmax_maps(da):
-    """Test the minmax_maps function"""
-    # Create a list of DataArrays
-    maps = [da, da + 1, da + 2]
-
-    # Test the function
-    min_val, max_val = minmax_maps(maps)
-
-    assert min_val < max_val, "Minimum value should be less than maximum value"
-    for i in range(len(maps)):
-        assert min_val <= maps[i].min().values, "Minimum value should be less than minimum value of the map"
-        assert max_val >= maps[i].max().values, "Maximum value should be greater than maximum value of the map"
+@pytest.mark.parametrize(
+    "values, expected",
+    [
+        pytest.param([[-3.0, 1.0], [2.0, 4.0], [0.0, 5.0]], (-5.0, 5.0), id="max_wins"),
+        pytest.param([[-7.0, 1.0], [2.0, 4.0], [0.0, 5.0]], (-7.0, 7.0), id="min_wins"),
+    ],
+)
+def test_minmax_maps(values, expected):
+    """Limits are symmetric around 0 over all the maps, skipping None: fails if a map is ignored or limits are asymmetric."""
+    maps = [xr.DataArray(value) for value in values]
+    assert minmax_maps([maps[0], None, *maps[1:]]) == expected
 
 
 @pytest.fixture(scope="module")
@@ -126,10 +125,37 @@ def test_label(ifs_data):
 
 
 @pytest.mark.graphics
-def test_set_map_title(da):
-    title = set_map_title(da)
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({"title": "My title"}, "My title"),
+        ({}, "2 metre temperature IFS test-tco79"),
+        ({"put_units": True}, "2 metre temperature [K] IFS test-tco79"),
+        ({"put_units": True, "set_units": "m s-1"}, "2 metre temperature [m s$^{-1}$] IFS test-tco79"),
+        ({"use_attr_name": "short_name"}, "2t IFS test-tco79"),
+        ({"use_attr_name": "missing"}, "2 metre temperature IFS test-tco79"),
+        ({"put_model_name": False, "put_exp_name": False}, "2 metre temperature"),
+        ({"skip_varname": True}, " IFS test-tco79"),
+    ],
+)
+def test_set_map_title(kwargs, expected):
+    """The title is built from the variable name, units, model and experiment: fails if a part or an option is lost."""
+    attrs = {
+        "long_name": "2 metre temperature",
+        "short_name": "2t",
+        "units": "K",
+        "AQUA_model": "IFS",
+        "AQUA_exp": "test-tco79",
+    }
+    data = xr.DataArray(np.zeros((2, 2)), dims=["lat", "lon"], attrs=attrs)
+    assert set_map_title(data, loglevel=LOGLEVEL, **kwargs) == expected
 
-    assert title is None, "Title should be None"
+
+@pytest.mark.graphics
+def test_set_map_title_fallbacks(da):
+    """Without long_name the short_name is used; without any attribute there is no title."""
+    assert set_map_title(da.assign_attrs(short_name="2t"), loglevel=LOGLEVEL) == "2t"
+    assert set_map_title(da, loglevel=LOGLEVEL) is None
 
 
 @pytest.mark.graphics
@@ -138,7 +164,7 @@ def test_coord_names():
     # Create a test DataArray
     lon_values = np.linspace(0, 360, 36)
     lat_values = np.linspace(-90, 90, 18)
-    data = np.random.rand(18, 36)
+    data = np.zeros((18, 36))
     da = xr.DataArray(data, dims=["latitude", "longitude"], coords={"longitude": lon_values, "latitude": lat_values})
 
     # Test the function
@@ -221,11 +247,10 @@ class TestHealpixResample:
         assert result.shape == (10, 10)
 
     def test_healpix_resample_default_grid_size(self, healpix_data):
+        """Without limits the whole globe is resampled at 58.6 / nside degrees: (180, 360) / 7.325 = (24, 49) points."""
         data, _, _ = healpix_data
         result = healpix_resample(data, method="nearest")
-        assert isinstance(result, xr.DataArray)
-        assert result.ndim == 2
-        assert result.shape[0] > 0 and result.shape[1] > 0
+        assert result.shape == (24, 49)
 
     def test_healpix_resample_sparse_valid(self):
         nside = 8
@@ -248,11 +273,24 @@ class TestHealpixResample:
 
 @pytest.mark.graphics
 class TestPrettifyLevels:
-    @pytest.mark.parametrize("vmin,vmax,n", [(0, 100, 10), (0, 0.05, 5), (0, 1e5, 4), (-50, 50, 10), (0, 9.999, 0.99)])
-    def test_prettify_levels(self, vmin, vmax, n):
-        levels = prettify_levels(vmin, vmax, n)
-        assert len(levels) >= 1
-        assert (np.diff(levels) > 0).all()
+    @pytest.mark.parametrize(
+        "vmin, vmax, n, expected",
+        [
+            (0, 100, 10, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]),
+            (0, 0.05, 5, [0, 0.01, 0.02, 0.03, 0.04, 0.05]),
+            (0, 1e5, 4, [0, 25000, 50000, 75000, 100000]),
+            (-50, 50, 10, [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50]),
+            (0.3, 1.7, 3, [0, 0.5, 1, 1.5]),
+            (0, 9.999, 0.99, [0]),
+        ],
+    )
+    def test_prettify_levels(self, vmin, vmax, n, expected):
+        """Levels are multiples of a nice step (1, 2, 2.5, 5, 10 times a power of 10) from below vmin up to vmax."""
+        assert prettify_levels(vmin, vmax, n).tolist() == pytest.approx(expected)
+
+    def test_prettify_levels_quarter_step(self):
+        """A step of 0.25 keeps two decimals (levels must be equally spaced, #3376)."""
+        assert prettify_levels(0, 1, 4).tolist() == pytest.approx([0, 0.25, 0.5, 0.75, 1])
 
     def test_prettify_levels_zero_range(self):
         assert prettify_levels(5.0, 5.0, 10).tolist() == [5.0]
