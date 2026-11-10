@@ -5,8 +5,6 @@ import xarray
 from utils_tests import LOGLEVEL
 
 from aqua import Reader
-
-# from aqua.core.intake_drivers.fdb.openers.gsv_source import gsv_available
 from aqua.core.reader import show_catalog_content as catalog
 
 
@@ -37,27 +35,9 @@ def reader(request):
     model, exp, source = request.param
     if source == "intake-esm-test":  # temporary skip of intake esm sources
         pytest.skip("Skipping intake-esm-test for now, not supported for now")
-    # if not gsv_available and "fdb" in source:
-    #     pytest.skip(f"Skipping {model} {exp} {source} because GSV is not available")
     myread = Reader(catalog="ci", model=model, exp=exp, source=source, areas=False, fix=False, loglevel=LOGLEVEL)
     data = myread.retrieve()
     return myread, data
-
-
-# @pytest.fixture(params=_catalog_params(_default_marks))
-# def reader_regrid(request):
-#     """Reader instance fixture"""
-#     model, exp, source = request.param
-#     if source == "intake-esm-test":  # temporary skip of intake esm sources
-#         pytest.skip("Skipping intake-esm-test for now, not supported for now")
-#     # if not gsv_available and "fdb" in source:
-#     #     pytest.skip(f"Skipping {model} {exp} {source} because GSV is not available")
-#     myread = Reader(
-#         catalog="ci", model=model, exp=exp, source=source, areas=True, regrid="r200", loglevel=LOGLEVEL, rebuild=False
-#     )
-#     data = myread.retrieve()
-
-#     return myread, data
 
 
 # --- TESTS --- #
@@ -83,19 +63,7 @@ def test_catalog(reader):
     """
     Checking that both reader and Dataset are retrived in reasonable shape
     """
-    aaa, bbb = reader
-    assert isinstance(aaa, Reader)
-    assert isinstance(bbb, xarray.Dataset)
-
-
-# reader test, get markers from fixture
-# def test_catalog_regridder(reader_regrid):
-#     """
-#     Checking that data can be regridded
-#     """
-#     read, data = reader_regrid
-#     vvv = list(data.data_vars)[-1]
-#     select = data[vvv].isel(time=0)
-#     rgd = read.regrid(select)
-#     assert len(rgd.lon) == 180
-#     assert len(rgd.lat) == 90
+    _, data = reader
+    assert isinstance(data, xarray.Dataset)
+    assert len(data.data_vars) > 0
+    assert all(size > 0 for size in data.sizes.values())

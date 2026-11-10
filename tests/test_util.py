@@ -2,6 +2,7 @@
 
 import logging
 import os
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -77,7 +78,7 @@ class TestFileIsComplete:
     def sample_netcdf(self, tmp_path):
         """Create a sample Dataset and its file"""
         filename = tmp_path / "sample_netcdf.nc"
-        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        data = xr.DataArray(np.random.default_rng(0).random((3, 4, 5)), dims=("time", "lat", "lon"))
         time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
@@ -92,7 +93,7 @@ class TestFileIsComplete:
     @pytest.mark.parametrize("mindate,expected_result", [("2023-12-31", False), ("2025-01-01", True)])
     def test_file_is_complete_full_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
-        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        data = xr.DataArray(np.random.default_rng(0).random((3, 4, 5)), dims=("time", "lat", "lon"))
         time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
@@ -106,7 +107,7 @@ class TestFileIsComplete:
     @pytest.mark.parametrize("mindate,expected_result", [("2023-12-31", False), ("2024-02-01", True)])
     def test_file_is_complete_partial_nan_with_mindate(self, tmp_path, mindate, expected_result):
         filename = tmp_path / "sample_netcdf.nc"
-        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        data = xr.DataArray(np.random.default_rng(0).random((3, 4, 5)), dims=("time", "lat", "lon"))
         time_values = [pd.Timestamp("2024-01-01") + pd.Timedelta(days=i * 40) for i in range(3)]
         data = data.assign_coords(time=time_values)
         data.name = "sample_data"
@@ -124,13 +125,14 @@ class TestFileIsComplete:
         assert result is False
         assert f"File {non_existent_file} not found..." in caplog.messages
 
-    def test_file_is_complete_empty_file(self, tmp_path, aqua_caplog):
+    def test_file_is_complete_no_time_dimension(self, tmp_path, aqua_caplog):
+        """A file without time dimension is not complete"""
         caplog = aqua_caplog(logging.getLogger("file_is_complete"))
-        empty_file = tmp_path / "empty.nc"
-        xr.DataArray().to_netcdf(empty_file)
-        result = file_is_complete(empty_file, loglevel=LOGLEVEL)
+        no_time_file = tmp_path / "no_time.nc"
+        xr.DataArray().to_netcdf(no_time_file)
+        result = file_is_complete(no_time_file, loglevel=LOGLEVEL)
         assert result is False
-        assert f"File {empty_file} has no time dimension!" in caplog.messages
+        assert f"File {no_time_file} has no time dimension!" in caplog.messages
 
     def test_file_is_complete_nan_file(self, tmp_path, aqua_caplog):
         caplog = aqua_caplog(logging.getLogger("file_is_complete"))
@@ -141,19 +143,20 @@ class TestFileIsComplete:
         assert result is False
         assert f"File {nan_file} is empty or full of NaN! Recomputing..." in caplog.messages
 
-    def test_file_is_complete_with_missing_time(self, tmp_path, aqua_caplog):
+    def test_file_is_complete_nan_time_step(self, tmp_path, aqua_caplog):
+        """A file with one time step entirely NaN is not complete"""
         caplog = aqua_caplog(logging.getLogger("file_is_complete"))
-        valid_with_missing_time_file = tmp_path / "valid_with_missing_time.nc"
+        nan_step_file = tmp_path / "nan_time_step.nc"
         data = xr.DataArray(np.random.default_rng(0).random((3, 4, 5)), dims=("time", "lat", "lon"))
         data[0, :, :] = np.nan  # Introduce NaN value
-        data.to_netcdf(valid_with_missing_time_file)
-        result = file_is_complete(valid_with_missing_time_file, loglevel=LOGLEVEL)
+        data.to_netcdf(nan_step_file)
+        result = file_is_complete(nan_step_file, loglevel=LOGLEVEL)
         assert result is False
-        assert f"File {valid_with_missing_time_file} has at least one time step with NaN! Recomputing..." in caplog.messages
+        assert f"File {nan_step_file} has at least one time step with NaN! Recomputing..." in caplog.messages
 
     def test_file_is_complete_valid_with_nan(self, tmp_path):
         valid_with_nan_file = tmp_path / "valid_with_nan.nc"
-        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        data = xr.DataArray(np.random.default_rng(0).random((3, 4, 5)), dims=("time", "lat", "lon"))
         data[:, 1, :] = np.nan  # Introduce NaN value
         data.to_netcdf(valid_with_nan_file)
         result = file_is_complete(valid_with_nan_file)
@@ -200,6 +203,18 @@ def test_format_realization():
 
 
 @pytest.mark.aqua
+def test_format_realization_keeps_input_list():
+    """The list given by the caller is not modified.
+
+    Fails on main: format_realization formats the list in place (util/realizations.py:24-28),
+    so the caller's list changes (documented in the B11 pull request).
+    """
+    realizations = ["1", "test", None]
+    format_realization(realizations)
+    assert realizations == ["1", "test", None]
+
+
+@pytest.mark.aqua
 def test_extract_attrs():
     assert extract_attrs(None, "attr") is None  # Data is None
     ds_with_attr = xr.Dataset()
@@ -241,17 +256,6 @@ def test_lat_to_phrase():
     assert lat_to_phrase(0) == "0°N"
 
 
-# Uncomment this test if the flip_time function is uncommented in aqua/util/coord.py
-# def test_flip_time():
-#     """Test the flip_time function"""
-#     time = np.arange(0, 10)
-#     data = xr.DataArray(np.random.rand(10, 3, 4), dims=("time", "lat", "lon"))
-#     data = data.assign_coords(time=time)
-#     flipped_data = flip_time(data)
-#     assert flipped_data.time.values[0] == 9
-#     assert flipped_data.time.values[-1] == 0
-
-
 @pytest.mark.aqua
 @pytest.mark.parametrize(
     "unit1, unit2, expected",
@@ -278,20 +282,20 @@ def test_multiply_units_no_base_conversion():
 
 
 @pytest.mark.aqua
-def test_multiply_units_no_normalization():
-    """Test multiply_units without normalization"""
-    result = multiply_units("m", "m", normalise_units=False)
-    assert result == "meter ** 2"
+@pytest.mark.parametrize("normalise_units, expected", [(True, "kelvin * meter"), (False, "ampere * meter * radian * second")])
+def test_multiply_units_normalization(normalise_units, expected):
+    """'deg C' is normalised to degC first; without normalisation pint reads it as degree * coulomb"""
+    assert multiply_units("deg C", "m", normalise_units=normalise_units) == expected
 
 
 @pytest.mark.aqua
 def test_cftime_365cal():
-    """Test cftime with 365-day calendar"""
+    """A 365-day calendar file is decoded to its exact date: fails on a calendar shift or an overflowing dtype"""
     reader = Reader(catalog="ci", model="CMCC", exp="cftime_365cal", source="monthly-atm", areas=False, loglevel=LOGLEVEL)
     data = reader.retrieve()
 
-    # Assert that the calendar was correctly translated to datetime64[us]
-    assert np.issubdtype(data.time.dtype, np.datetime64)
+    # The 365-day calendar date beyond 2262 is decoded to datetime64[us], out of the datetime64[ns] range
+    assert data.time.values.tolist() == [np.datetime64("2368-06-16T00:00:00", "us")]
 
 
 @pytest.mark.aqua
@@ -447,6 +451,7 @@ def test_pandas_freq_to_offset(freq_str, expected_offset):
 
 
 @pytest.mark.aqua
+@pytest.mark.skipif(shutil.which("cdo") is None, reason="CDO executable not found")
 class TestCdoHelpers:
     """Tests for the CDO helpers resolved through smmregrid"""
 
@@ -464,6 +469,7 @@ class TestCdoHelpers:
         """A CDO command writes its output, a failing one raises with the CDO message"""
         output = tmp_path / "const.nc"
         run_cdo(["-O", "-f", "nc4", "const,1,r10x5", str(output)])
-        assert xr.open_dataset(output).sizes["lon"] == 10
+        with xr.open_dataset(output) as const:
+            assert const.sizes["lon"] == 10
         with pytest.raises(RuntimeError, match="failed"):
             run_cdo(["not_an_operator", str(output)])

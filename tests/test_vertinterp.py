@@ -1,4 +1,4 @@
-"""Tests for streaming"""
+"""Tests for the vertical interpolation of the Reader"""
 
 import numpy as np
 import pytest
