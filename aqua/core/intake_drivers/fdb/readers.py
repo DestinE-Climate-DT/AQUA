@@ -6,6 +6,7 @@ import xarray as xr
 from intake import BaseReader
 
 from aqua.core.logger import log_configure
+from aqua.core.util import pandas_freq_to_offset
 
 from .datatypes import GSV, Z3FDB, Polytope
 from .openers import open_gsv, open_polytope, open_z3fdb
@@ -93,10 +94,6 @@ class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
             return pd.Timestamp(str(default_val))
         return pd.Timestamp(str(val))
 
-    def _get_frequency_offset(self, freq):
-        """Return the saved-frequency offset separating storage periods."""
-        return pd.tseries.frequencies.to_offset({"M": "MS", "Y": "YS"}.get(freq, freq))
-
     def _read(self, data, **kwargs):
 
         data = self._resolve_dates(data)
@@ -139,7 +136,7 @@ class Z3FDBDatasetReader(BaseReader, FDBDatesMixin, FDBTimeMixin):
             b_start_ts = self._get_bridge_date(data.bridge_start_date, data.data_start_date)
             b_end_ts = self._get_bridge_date(data.bridge_end_date, data.data_end_date)
 
-            offset = self._get_frequency_offset(data.savefreq or data.timestep)
+            offset = pandas_freq_to_offset(data.savefreq or data.timestep)
 
             # Define intersection of bridge with requested range
             bridge_intersect_start = max(start_ts, b_start_ts)
