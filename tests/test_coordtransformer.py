@@ -6,8 +6,7 @@ xarray objects (no Reader / test-catalog data required), so they run fast
 and in isolation from the rest of the framework. They complement:
 
   - test_datamodel.py: end-to-end tests going through Reader.retrieve() and
-    through transform_coords() with the real "aqua" data model, including
-    TestLongitudeRangeNormalization for the 0-360/-180-180 wrap fix.
+    through transform_coords() with the real "aqua" data model.
   - test_coord_flipping.py: focused tests for latitude direction flipping.
 
 This file focuses on unit-level coverage of each CoordTransformer method:
@@ -160,7 +159,7 @@ class TestRenameCoordinate:
         ds = _regular_dataset()
         ds["latitude_bnds"] = (
             ["latitude", "nv"],
-            np.zeros((ds.dims["latitude"], 2)),
+            np.zeros((ds.sizes["latitude"], 2)),
         )
         ds["latitude"].attrs["bounds"] = "latitude_bnds"
 
@@ -355,9 +354,6 @@ class TestConvertUnits:
 
 # ---------------------------------------------------------------------------
 # normalize_range_convention
-# (core coverage also lives in test_datamodel.py::TestLongitudeRangeNormalization;
-#  kept here too since this file is the canonical unit-test home for
-#  CoordTransformer, and to test it alongside the rest of the class's methods)
 # ---------------------------------------------------------------------------
 
 

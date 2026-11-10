@@ -3,8 +3,9 @@ from utils_tests import LOGLEVEL
 
 from aqua import Reader
 
+pytestmark = pytest.mark.aqua
 
-@pytest.mark.aqua
+
 class TestKwargs:
     """Small class to test kwargs"""
 
@@ -23,4 +24,5 @@ class TestKwargs:
         reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", loglevel=LOGLEVEL, **kwargs)
         data = reader.retrieve()
         assert list(data.data_vars) == [variable]
-        assert data.time.dt.year == year
+        assert data.time.size > 0
+        assert set(data.time.dt.year.values) == {year}

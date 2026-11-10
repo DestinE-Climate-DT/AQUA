@@ -1,16 +1,17 @@
-import numpy as np
 import pytest
 from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.exceptions import NoDataError
 
+pytestmark = pytest.mark.aqua
 
-@pytest.mark.aqua
+
 class TestFilterKey:
     """Tests for the filter_key functionality in AQUA Reader"""
 
     def test_filter_key_year(self):
+        """startdate/enddate keep only the file of 1985 (one yearly mean): fails if the files are not filtered."""
         reader = Reader(
             model="FESOM",
             exp="test-pi",
@@ -20,10 +21,10 @@ class TestFilterKey:
             loglevel=LOGLEVEL,
         )
         data = reader.retrieve()
-        assert data.time.size == 1  # Expecting 12 months of data for the year 1985
-        assert np.all(data.time.dt.year == 1985)
+        assert data.time.dt.year.values.tolist() == [1985]
 
     def test_filter_key_year_no_dates(self):
+        """Dates outside the files leave no file to read"""
         with pytest.raises(NoDataError, match="No files found after filtering the catalog!"):
             _ = Reader(
                 model="FESOM",
@@ -35,6 +36,7 @@ class TestFilterKey:
             )
 
     def test_no_filter_key(self):
+        """Without dates all the files (one per year) are read"""
         reader = Reader(model="FESOM", exp="test-pi", source="original_2d_filter", loglevel=LOGLEVEL)
         data = reader.retrieve()
-        assert data.time.size == 2  # Expecting multiple years of data
+        assert data.time.dt.year.values.tolist() == [1985, 1986]

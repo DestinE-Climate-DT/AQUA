@@ -21,12 +21,8 @@ def format_realization(realization: Optional[str | int | list | None] = None) ->
     if not realization:
         return DEFAULT_REALIZATION
     if isinstance(realization, list):
-        for i, r in enumerate(realization):
-            if r is None:
-                realization[i] = DEFAULT_REALIZATION
-            else:
-                realization[i] = f"r{r}" if str(r).isdigit() else str(r)
-        return realization
+        # a new list, the caller's one is left untouched
+        return [DEFAULT_REALIZATION if r is None else (f"r{r}" if str(r).isdigit() else str(r)) for r in realization]
     if isinstance(realization, (int, str)):
         return f"r{realization}" if str(realization).isdigit() else str(realization)
 

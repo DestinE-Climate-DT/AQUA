@@ -38,8 +38,8 @@ class TestLevels:
 
         assert "plev" in data.coords, "Failed to find vertical coordinate"
 
-        # The full data is returned, not filtered
-        assert data["plev"].size > 1
+        # The full data is returned, not filtered: all the 8 levels of the source
+        assert data["plev"].size == 8
 
         assert "Levels [80000] not found in vertical coordinate plev! Returning unfiltered data!" in caplog.messages
 
@@ -51,9 +51,8 @@ class TestLevels:
 
         assert "plev" in data.coords, "Failed to find vertical coordinate"
 
-        # The full data is returned, not filtered, so all original levels should be present.
-        # ERA5 't' has 37 levels by default in the monthly-nn source.
-        assert data["plev"].size > 2
+        # The full data is returned, not filtered: all the 8 levels of the source, also the one that was found
+        assert data["plev"].size == 8
 
         assert "Levels [80000] not found in vertical coordinate plev! Returning unfiltered data!" in caplog.messages
 

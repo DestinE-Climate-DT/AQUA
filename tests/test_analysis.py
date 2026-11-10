@@ -1,5 +1,5 @@
 """
-Refactored tests for aqua.core.analysis module.
+Tests for the aqua.core.analysis module.
 
 Organized into focused test classes covering:
 - Configuration setters (set* methods)
@@ -12,13 +12,17 @@ Organized into focused test classes covering:
 
 import argparse
 import os
-from unittest.mock import MagicMock, patch
+import sys
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 from jinja2 import UndefinedError
 from utils_tests import LOGLEVEL
 
+import aqua.core
 from aqua.core.analysis import Analysis
+from aqua.core.configurer import ConfigContext
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -93,6 +97,25 @@ def temp_env(tmp_path):
     }
 
 
+@pytest.fixture(scope="function")
+def configured_analysis(analysis, temp_env):
+    """Analysis with the experiment and output directory set, as the setters leave it."""
+    analysis.model = "IFS"
+    analysis.exp = "test-tco79"
+    analysis.source = "short"
+    analysis.catalog = "test_catalog"
+    analysis.realization = "r1"
+    analysis.output_dir = temp_env["outdir"]
+    return analysis
+
+
+def _run_collection(analysis, diag_config, cli):
+    """Run a diagnostic collection with the tool subprocess replaced by a mock, and return the mock."""
+    with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
+        analysis.run_diagnostic_collection(collection="atm", diag_config=diag_config, cli=cli)
+    return mock_tool
+
+
 # ============================================================================
 # TestConfigurationSetters: Verify each set* method correctly sets state/guards
 # ============================================================================
@@ -149,68 +172,28 @@ class TestConfigurationSetters:
         assert analysis.startdate is None
         assert analysis.enddate is None
 
-    def test_set_regrid_option_enabled(self, analysis):
-        """Regrid option 'r100' is set correctly."""
-        args = argparse.Namespace(regrid="r100")
-        config = {}
+    @pytest.mark.parametrize("regrid, expected", [("r100", "r100"), ("False", None), ("false", None), (False, None)], ids=str)
+    def test_set_regrid_option(self, analysis, regrid, expected):
+        """A grid name enables regridding; False, 'False' or 'false' disable it (None)."""
+        analysis.set_regrid_option(argparse.Namespace(regrid=regrid), {})
+        assert analysis.regrid == expected
 
-        analysis.set_regrid_option(args, config)
-        assert analysis.regrid == "r100"
-
-    def test_set_regrid_option_disabled_false_string(self, analysis):
-        """Regrid='False' or 'false' disables regrid (sets to None)."""
-        args = argparse.Namespace(regrid="False")
-        config = {}
-
-        analysis.set_regrid_option(args, config)
-        assert analysis.regrid is None
-
-    def test_set_regrid_option_disabled_false_bool(self, analysis):
-        """Regrid=False disables regrid (sets to None)."""
-        args = argparse.Namespace(regrid=False)
-        config = {}
-
-        analysis.set_regrid_option(args, config)
-        assert analysis.regrid is None
-
-    def test_set_realization_formatted(self, analysis):
-        """Realization is formatted via format_realization."""
-        args = argparse.Namespace(realization="r2")
-        config = {}
-
-        analysis.set_realization(args, config)
-        assert analysis.realization == "r2"
-
-    def test_set_realization_none_defaults(self, analysis):
-        """None realization is formatted."""
-        args = argparse.Namespace(realization=None)
-        config = {}
-        analysis.set_realization(args, config)
-        assert analysis.realization == "r1"
-
-    def test_set_realization_ensemble_target(self, analysis):
-        """When target='ensemble', realization is set to 'ensemble' and returns early."""
-        args = argparse.Namespace(target="ensemble", realization=None)
-        config = {}
-
-        analysis.set_realization(args, config)
-        assert analysis.realization == "ensemble"
-
-    def test_set_realization_ensemble_target_overrides_realization(self, analysis):
-        """When target='ensemble', it takes precedence over realization argument."""
-        args = argparse.Namespace(target="ensemble", realization="r5")
-        config = {}
-
-        analysis.set_realization(args, config)
-        assert analysis.realization == "ensemble"
-
-    def test_set_realization_non_ensemble_target(self, analysis):
-        """When target is not 'ensemble', normal realization formatting applies."""
-        args = argparse.Namespace(target="single", realization="r3")
-        config = {}
-
-        analysis.set_realization(args, config)
-        assert analysis.realization == "r3"
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            pytest.param({"realization": "r2"}, "r2", id="name-kept"),
+            pytest.param({"realization": "2"}, "r2", id="digit-string-prefixed"),
+            pytest.param({"realization": 3}, "r3", id="int-prefixed"),
+            pytest.param({"realization": None}, "r1", id="none-default"),
+            pytest.param({"target": "ensemble", "realization": None}, "ensemble", id="ensemble-target"),
+            pytest.param({"target": "ensemble", "realization": "r5"}, "ensemble", id="ensemble-target-wins"),
+            pytest.param({"target": "single", "realization": "r3"}, "r3", id="other-target"),
+        ],
+    )
+    def test_set_realization(self, analysis, args, expected):
+        """Realizations get the 'r' prefix and default to r1; the ensemble target replaces any realization."""
+        analysis.set_realization(argparse.Namespace(**args), {})
+        assert analysis.realization == expected
 
     def test_set_output_directory_custom_path(self, analysis, tmp_path):
         """Output directory is constructed correctly with custom outputdir."""
@@ -226,7 +209,7 @@ class TestConfigurationSetters:
         analysis.set_catalog_model_exp_source(args, config)  # Set catalog/model/exp for output path
         analysis.set_realization(args, config)  # Ensure realization is set for output path
         analysis.set_output_directory(args, config)
-        assert f"{tmp_path}/output_dir/my_catalog/IFS/test-tco79/r1" in analysis.output_dir
+        assert analysis.output_dir == f"{tmp_path}/output_dir/my_catalog/IFS/test-tco79/r1"
 
     def test_set_output_directory_default_path(self, analysis, tmp_path, monkeypatch):
         """Output directory defaults to ./output when not provided."""
@@ -238,7 +221,7 @@ class TestConfigurationSetters:
         analysis.set_catalog_model_exp_source(args, config)  # Set catalog/model/exp for output path
         analysis.set_realization(args, config)  # Ensure realization is set for output path
         analysis.set_output_directory(args, config)
-        assert "./output/my_catalog/IFS/test-tco79/r1" in analysis.output_dir
+        assert analysis.output_dir == "./output/my_catalog/IFS/test-tco79/r1"
 
     def test_set_serial_or_parallel_serial(self, analysis):
         """Serial mode is set correctly when --serial is True."""
@@ -283,208 +266,76 @@ class TestIntegrationFlow:
         assert "--exp test-tco79" in call_kwargs["extra_args"]
         assert "--source short" in call_kwargs["extra_args"]
 
-    @pytest.mark.parametrize("serial", [True, False])
-    def test_run_diagnostic_collection_serial_vs_parallel(self, analysis, temp_env, serial):
-        """Serial vs. parallel mode correctly handles nworkers/nthreads."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
+    @pytest.mark.parametrize(
+        "setup, tool_config, expected, absent",
+        [
+            pytest.param(
+                {"serial": True},
+                {"nworkers": 4, "nthreads": 2},
+                [],
+                ["--nworkers", "--nthreads"],
+                id="serial-no-workers",
+            ),
+            pytest.param(
+                {"serial": False},
+                {"nworkers": 4, "nthreads": 2},
+                ["--nworkers 4", "--nthreads 2"],
+                [],
+                id="parallel-workers",
+            ),
+            pytest.param({"regrid": None}, {}, [], ["--regrid"], id="no-regrid"),
+            pytest.param({"regrid": "r100"}, {}, ["--regrid r100"], [], id="regrid"),
+            pytest.param({"source_oce": "short-oce"}, {"source_oce": True}, ["--source_oce short-oce"], [], id="source-oce"),
+            pytest.param({"cluster": "tcp://127.0.0.1:8786"}, {}, ["--cluster tcp://127.0.0.1:8786"], [], id="cluster"),
+            pytest.param({"cluster": "tcp://127.0.0.1:8786"}, {"nocluster": True}, [], ["--cluster"], id="nocluster"),
+        ],
+    )
+    def test_run_diagnostic_collection_extra_args(self, configured_analysis, temp_env, setup, tool_config, expected, absent):
+        """Options of the analysis and of the tool config become CLI arguments of the tool, and only when they apply."""
+        analysis = configured_analysis
+        if "serial" in setup:
+            analysis.set_serial_or_parallel(argparse.Namespace(serial=setup["serial"], nworkers=4, nthreads=2))
+        if "regrid" in setup:
+            analysis.regrid = setup["regrid"]
+        if "source_oce" in setup:
+            analysis.source_oce = setup["source_oce"]
+        if "cluster" in setup:
+            analysis.dask_cluster = SimpleNamespace(address=setup["cluster"])  # a running cluster, without starting one
 
-        config = {
-            "biases": {
-                "config": temp_env["cfg_biases"],
-                "nworkers": 4,
-                "nthreads": 2,
-            }
-        }
+        mock_tool = _run_collection(analysis, {"biases": {"config": temp_env["cfg_biases"], **tool_config}}, temp_env["cli"])
 
-        analysis.set_serial_or_parallel(argparse.Namespace(serial=serial, nworkers=4, nthreads=2))
+        extra_args = mock_tool.call_args.kwargs["extra_args"]
+        assert all(arg in extra_args for arg in expected)
+        assert not any(arg in extra_args for arg in absent)
 
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
-            )
-
-        call_kwargs = mock_tool.call_args.kwargs
-        if serial:
-            # Serial mode should not add nworkers/nthreads
-            assert "--nworkers" not in call_kwargs["extra_args"]
-            assert "--nthreads" not in call_kwargs["extra_args"]
-        else:
-            # Parallel mode should include them
-            assert "--nworkers 4" in call_kwargs["extra_args"]
-            assert "--nthreads 2" in call_kwargs["extra_args"]
-
-    @pytest.mark.parametrize("regrid", [None, "r100"])
-    def test_run_diagnostic_collection_regrid_flag(self, analysis, temp_env, regrid):
-        """Regrid flag is added when set."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.regrid = regrid
-        analysis.output_dir = temp_env["outdir"]
-
-        config = {"biases": {"config": temp_env["cfg_biases"]}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
-            )
-
-        call_kwargs = mock_tool.call_args.kwargs
-        if regrid:
-            assert f"--regrid {regrid}" in call_kwargs["extra_args"]
-        else:
-            assert "--regrid" not in call_kwargs["extra_args"]
-
-    def test_run_diagnostic_collection_source_oce_allowed(self, analysis, temp_env):
-        """source_oce is added when allowed in tool config."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.source_oce = "short-oce"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
-
-        config = {"biases": {"config": temp_env["cfg_biases"], "source_oce": True}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
-            )
-
-        call_kwargs = mock_tool.call_args.kwargs
-        assert "--source_oce short-oce" in call_kwargs["extra_args"]
-
-    def test_run_diagnostic_collection_cluster_flag(self, analysis, temp_env):
-        """Cluster flag is added when nocluster is not set."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
-        analysis.dask_cluster = MagicMock()
-
-        config = {"biases": {"config": temp_env["cfg_biases"]}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
-            )
-
-        call_kwargs = mock_tool.call_args.kwargs
-        assert "--cluster" in call_kwargs["extra_args"]
-
-    def test_run_diagnostic_collection_nocluster_suppresses_flag(self, analysis, temp_env):
-        """nocluster=True prevents cluster flag from being added."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
-
-        config = {"biases": {"config": temp_env["cfg_biases"], "nocluster": True}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
-            )
-
-        call_kwargs = mock_tool.call_args.kwargs
-        assert "--cluster" not in call_kwargs["extra_args"]
-
-    def test_run_diagnostic_collection_multiple_configs(self, analysis, temp_env):
+    def test_run_diagnostic_collection_multiple_configs(self, configured_analysis, temp_env):
         """Multiple configs produce multiple tool calls with indexed logfiles."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
-
-        cfg_file2 = temp_env["config"] + "/config2.yaml"
+        cfg_file2 = os.path.join(temp_env["config"], "config2.yaml")
         dump_yaml(cfg_file2, {"key": "value2"})
 
-        config = {"biases": {"config": [temp_env["cfg_biases"], cfg_file2]}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
-            )
+        mock_tool = _run_collection(
+            configured_analysis, {"biases": {"config": [temp_env["cfg_biases"], cfg_file2]}}, temp_env["cli"]
+        )
 
         assert mock_tool.call_count == 2
         logfiles = [c.kwargs["logfile"] for c in mock_tool.call_args_list]
         assert logfiles[0].endswith("-1.log")
         assert logfiles[1].endswith("-2.log")
 
-    def test_run_diagnostic_collection_empty_config_no_calls(self, analysis, temp_env):
-        """Empty diag_config triggers no tool invocations."""
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config={},
-                cli=temp_env["cli"],
-            )
+    @pytest.mark.parametrize(
+        "diag_config, cli",
+        [
+            pytest.param({}, "valid", id="empty-config"),
+            pytest.param("biases", {}, id="tool-missing-from-cli"),
+            pytest.param("biases", {"biases": "/nonexistent/script.py"}, id="script-missing"),
+        ],
+    )
+    def test_run_diagnostic_collection_skips(self, configured_analysis, temp_env, diag_config, cli):
+        """No tool runs without a config, without a CLI entry for the tool or when its script does not exist."""
+        diag_config = {"biases": {"config": temp_env["cfg_biases"]}} if diag_config == "biases" else diag_config
+        cli = temp_env["cli"] if cli == "valid" else cli
 
-        mock_tool.assert_not_called()
-
-    def test_run_diagnostic_collection_missing_cli_path_skips(self, analysis, temp_env):
-        """Tool absent from cli dict is skipped silently."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
-
-        config = {"biases": {"config": temp_env["cfg_biases"]}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli={},  # Empty cli dict
-            )
-
-        mock_tool.assert_not_called()
-
-    def test_run_diagnostic_collection_missing_script_skips(self, analysis, temp_env):
-        """Non-existent script file is skipped."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
-
-        config = {"biases": {"config": temp_env["cfg_biases"]}}
-
-        with patch.object(analysis, "run_diagnostic_tool") as mock_tool:
-            analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli={"biases": "/nonexistent/script.py"},
-            )
+        mock_tool = _run_collection(configured_analysis, diag_config, cli)
 
         mock_tool.assert_not_called()
 
@@ -529,8 +380,8 @@ class TestUtilities:
     def test_get_aqua_paths(self, analysis):
         """get_aqua_paths resolves core and diagnostics paths."""
         core_path, diag_path, config_dir = analysis.get_aqua_paths()
-        assert "aqua/core" in core_path or "aqua.core" in core_path
-        assert isinstance(config_dir, str)
+        assert core_path == os.path.dirname(aqua.core.__file__)
+        assert config_dir == ConfigContext().configdir
 
 
 # ============================================================================
@@ -631,7 +482,8 @@ class TestTemplating:
         analysis.exp_kind_dict = load_yaml(kinds_yaml)["historical"]
 
         cfg2 = os.path.join(temp_env["config"], "jinja2.yaml")
-        open(cfg2, "w").write("key: '{{ forcing }}'\n")
+        with open(cfg2, "w") as f:
+            f.write("key: '{{ forcing }}'\n")
 
         result_paths = analysis.configure_template_configs([temp_env["cfg_jinja"], cfg2])
         dirs = {os.path.dirname(p) for p in result_paths}
@@ -688,23 +540,19 @@ class TestParser:
 class TestEdgeCases:
     """Edge cases and boundary conditions."""
 
-    def test_run_command_creates_log_directory(self, analysis, temp_env):
-        """run_command creates log directory if it doesn't exist."""
+    @pytest.mark.parametrize("exit_code", [0, 3])
+    def test_run_command_logs_and_returns_exit_code(self, analysis, temp_env, exit_code):
+        """run_command creates the log directory, writes the output of the command there and returns its exit code."""
         log_file = os.path.join(temp_env["outdir"], "subdir", "test.log")
+        cmd = f"{sys.executable} -c \"import sys; print('hello'); sys.exit({exit_code})\""
 
-        with patch("subprocess.run", return_value=MagicMock(returncode=0)):
-            analysis.run_command("echo test", log_file)
+        assert analysis.run_command(cmd, log_file) == exit_code
+        with open(log_file) as f:
+            assert f.read() == "hello\n"
 
-        assert os.path.exists(log_file)
-
-    def test_run_setup_checker_integration(self, analysis):
+    def test_run_setup_checker_integration(self, configured_analysis):
         """run_setup_checker builds and runs command with correct args."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = "/tmp/output"
+        analysis = configured_analysis
         analysis.aqua_diagnostics_path = "/fake/aqua/diagnostics"
 
         with patch.object(analysis, "run_command", return_value=0) as mock_cmd:
@@ -716,28 +564,22 @@ class TestEdgeCases:
         assert "--model IFS" in cmd_arg
         assert "--exp test-tco79" in cmd_arg
 
-    def test_exp_kind_dict_renders_and_cleans_up(self, analysis, temp_env, kinds_yaml):
-        """exp_kind_dict triggers rendering and temp dir cleanup after running tools."""
-        analysis.model = "IFS"
-        analysis.exp = "test-tco79"
-        analysis.source = "short"
-        analysis.catalog = "test_catalog"
-        analysis.realization = "r1"
-        analysis.output_dir = temp_env["outdir"]
+    def test_exp_kind_dict_renders_and_cleans_up(self, configured_analysis, temp_env, kinds_yaml):
+        """exp_kind_dict renders the configs passed to the tool and removes them after running it."""
+        analysis = configured_analysis
         analysis.exp_kind_dict = load_yaml(kinds_yaml)["historical"]
+        rendered = {}
 
-        config = {"biases": {"config": temp_env["cfg_jinja"]}}
+        def read_rendered_config(**kwargs):
+            """Read the rendered config while it exists, as the tool would."""
+            path = kwargs["extra_args"].split("--config ")[-1]
+            rendered[path] = load_yaml(path)
 
-        with (
-            patch.object(analysis, "run_diagnostic_tool"),
-            patch("aqua.core.analysis.analysis.shutil.rmtree") as mock_rm,
-        ):
+        with patch.object(analysis, "run_diagnostic_tool", side_effect=read_rendered_config):
             analysis.run_diagnostic_collection(
-                collection="atm",
-                diag_config=config,
-                cli=temp_env["cli"],
+                collection="atm", diag_config={"biases": {"config": temp_env["cfg_jinja"]}}, cli=temp_env["cli"]
             )
 
-        # Verify rmtree was called to clean up temp rendered config directory
-        # Called at least once after running diagnostic tools
-        assert mock_rm.call_count >= 1
+        ((path, content),) = rendered.items()
+        assert content == {"model": "past", "source": "CMIP6"}
+        assert not os.path.exists(os.path.dirname(path))
