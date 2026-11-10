@@ -41,7 +41,7 @@ from aqua.core.logger import log_configure, log_history
 from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
 
-from .timeutil import FDBTimeMixin
+from .timeutil import FDBTimeMixin, build_time_request
 
 
 class FDBSource(ABC, FDBTimeMixin):
@@ -387,7 +387,7 @@ class FDBSource(ABC, FDBTimeMixin):
         start = self.chk_start_date[i]
         end = start if first else self.chk_end_date[i]
         request.update(
-            self._build_time_request(
+            build_time_request(
                 self.timestyle,
                 start,
                 end,

@@ -6,38 +6,66 @@ import numpy as np
 import pandas as pd
 
 
+def build_time_request(timestyle, start, end, reference=None, steps=None):
+    """Format inclusive time bounds as MARS/FDB request fields.
+
+    Args:
+        timestyle (str): Storage style: ``date`` for date/time fields,
+            ``yearmonth`` for year/month fields, or ``step`` for forecast steps.
+        start (pandas.Timestamp): First requested timestamp; unused for ``step``.
+        end (pandas.Timestamp): Last requested timestamp; unused for ``step``.
+        reference (tuple[str, str], optional): Forecast reference date and time
+            as ``YYYYMMDD`` and ``HHMM`` strings. Required for ``step``.
+        steps (tuple[int, int], optional): Inclusive forecast step bounds in
+            native timestep units, relative to ``reference``. Required for ``step``.
+
+    Returns:
+        dict[str, str]: Request fields with a single value for equal bounds or
+        ``first/to/last`` for a range. Forecast requests retain the reference
+        date/time and put the range in ``step``.
+
+    Raises:
+        ValueError: If the storage style is unsupported or forecast bounds
+            or their reference are missing.
+    """
+    if timestyle == "step":
+        if reference is None or steps is None:
+            raise ValueError("Step requests require a reference date/time and step bounds.")
+        a, b = steps
+        return {"date": reference[0], "time": reference[1], "step": str(a) if a == b else f"{a}/to/{b}"}
+    if timestyle == "date":
+        keys, formats = ("date", "time"), ("%Y%m%d", "%H%M")
+    elif timestyle == "yearmonth":
+        keys, formats = ("year", "month"), ("%Y", "%m")
+    else:
+        raise ValueError(f"Timestyle {timestyle} not supported")
+    request = {}
+    for key, fmt in zip(keys, formats):
+        a, b = start.strftime(fmt), end.strftime(fmt)
+        request[key] = a if a == b else f"{a}/to/{b}"
+    return request
+
+
 class FDBTimeMixin:
     """Time and calendar calculations for FDB/GSV sources."""
 
     @staticmethod
-    def _date2str(dateobj):
-        """Converts a date object to a date, time string representation"""
-        return dateobj.strftime("%Y%m%d"), dateobj.strftime("%H%M")
-
-    @staticmethod
-    def _date2yyyymm(dateobj):
-        """Converts a date object to year, month string representation"""
-        return dateobj.strftime("%Y"), dateobj.strftime("%m")
-
-    @classmethod
-    def _build_time_request(cls, timestyle, start, end, reference=None, steps=None):
-        """Format date/time, step or year/month request bounds using the FDB storage style."""
-        if timestyle == "step":
-            if reference is None or steps is None:
-                raise ValueError("Step requests require a reference date/time and step bounds.")
-            a, b = steps
-            return {"date": reference[0], "time": reference[1], "step": str(a) if a == b else f"{a}/to/{b}"}
-        if timestyle == "date":
-            keys, convert = ("date", "time"), cls._date2str
-        elif timestyle == "yearmonth":
-            keys, convert = ("year", "month"), cls._date2yyyymm
-        else:
-            raise ValueError(f"Timestyle {timestyle} not supported")
-        return {key: a if a == b else f"{a}/to/{b}" for key, a, b in zip(keys, convert(start), convert(end))}
-
-    @staticmethod
     def _saved_time_indices(dates, savefreq, offset=None):
-        """Select the first native timestep in each saved-frequency bucket."""
+        """Select the first native timestep in each saved-frequency bucket.
+
+        Args:
+            dates (pandas.DatetimeIndex): Chronologically ordered native timestamps.
+            savefreq (str): Pandas resampling frequency for the saved output.
+            offset (pandas.Timedelta, optional): Shift of resampling bucket origins
+                for tick frequencies, for example to retain a daily output clock.
+
+        Returns:
+            numpy.ndarray: Integer positions in ``dates`` of the first timestamp
+            in each bucket, in chronological order.
+
+        Raises:
+            ValueError: If any resampling bucket contains no native timestep.
+        """
         indices = pd.Series(np.arange(len(dates)), index=dates).resample(savefreq, offset=offset).min()
         if indices.isna().any():
             raise ValueError("Saved frequency is finer than the available native timesteps.")

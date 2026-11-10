@@ -19,7 +19,7 @@ from aqua.core.exceptions import NoDataError
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import load_yaml, to_list
 
-from .timeutil import FDBTimeMixin
+from .timeutil import FDBTimeMixin, build_time_request
 
 xr.set_options(keep_attrs=True)
 
@@ -222,8 +222,12 @@ def _build_mars_requests(
         if (delta % pd.Timedelta(base) != pd.Timedelta(0)).any():
             raise ValueError("Requested forecast timestamps are not aligned with timestep and data_start_date.")
         steps = np.asarray(delta / pd.Timedelta(base), dtype=int)
-        part = FDBTimeMixin._build_time_request(
-            timestyle, time[0], time[-1], reference=FDBTimeMixin._date2str(reference), steps=(steps[0], steps[-1])
+        part = build_time_request(
+            timestyle,
+            time[0],
+            time[-1],
+            reference=(reference.strftime("%Y%m%d"), reference.strftime("%H%M")),
+            steps=(steps[0], steps[-1]),
         )
         if len(steps) > 1:
             if (np.diff(steps) == 1).all():
@@ -242,7 +246,7 @@ def _build_mars_requests(
                 groups.append([pattern, [day], values.iloc[0], values.iloc[-1]])
         parts = []
         for pattern, days, first, last in groups:
-            part = FDBTimeMixin._build_time_request(timestyle, first, last)
+            part = build_time_request(timestyle, first, last)
             if (days[-1] - days[0]).days + 1 != len(days):
                 part["date"] = "/".join(day.strftime("%Y%m%d") for day in days)
             if len(pattern) > 1:
@@ -264,7 +268,7 @@ def _build_mars_requests(
                 groups.append(([year], months))
         parts = []
         for years_list, months in groups:
-            part = FDBTimeMixin._build_time_request(
+            part = build_time_request(
                 timestyle, pd.Timestamp(years_list[0], months[0], 1), pd.Timestamp(years_list[-1], months[-1], 1)
             )
             part["year"] = "/".join(map(str, years_list))
