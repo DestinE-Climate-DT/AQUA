@@ -135,18 +135,112 @@ def test_healpix_grid_from_grib(z3fdb_store, fdb_grib_message, ordering):
     assert all(stream.closed for stream in fdb.streams)
 
 
-@pytest.mark.parametrize("south_first", [False, True])
-def test_lonlat_grid_scan_order(z3fdb_store, fdb_grib_message, south_first):
-    """Latitude direction must reshape and, when necessary, reverse the actual field values."""
-    message = fdb_grib_message("regular_ll", Ni=4, Nj=3, latitudeOfFirstGridPointInDegrees=-90 if south_first else 90)
-    z3fdb_store((1, 1, 12), message=message, values=np.arange(12, dtype="float32").reshape(1, 1, 12))
+@pytest.mark.parametrize(
+    "grid, expected_lon, expected_lat, expected_values",
+    [
+        ({}, [0, 90, 180, 270], [90, 0, -90], [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]),
+        (
+            {"latitudeOfFirstGridPointInDegrees": -90, "latitudeOfLastGridPointInDegrees": 90, "jScansPositively": 1},
+            [0, 90, 180, 270],
+            [90, 0, -90],
+            [[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]],
+        ),
+        (
+            {
+                "latitudeOfFirstGridPointInDegrees": 89.5,
+                "latitudeOfLastGridPointInDegrees": -89.5,
+                "jDirectionIncrementInDegrees": 89.5,
+            },
+            [0, 90, 180, 270],
+            [89.5, 0, -89.5],
+            [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+        ),
+        (
+            {
+                "latitudeOfFirstGridPointInDegrees": 20,
+                "latitudeOfLastGridPointInDegrees": 22,
+                "jDirectionIncrementInDegrees": 1,
+                "jScansPositively": 1,
+            },
+            [0, 90, 180, 270],
+            [22, 21, 20],
+            [[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]],
+        ),
+        (
+            {"longitudeOfFirstGridPointInDegrees": 45, "longitudeOfLastGridPointInDegrees": 315},
+            [45, 135, 225, 315],
+            [90, 0, -90],
+            [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+        ),
+        (
+            {"longitudeOfFirstGridPointInDegrees": 270, "longitudeOfLastGridPointInDegrees": 180},
+            [0, 90, 180, 270],
+            [90, 0, -90],
+            [[1, 2, 3, 0], [5, 6, 7, 4], [9, 10, 11, 8]],
+        ),
+        (
+            {"longitudeOfFirstGridPointInDegrees": 270, "longitudeOfLastGridPointInDegrees": 0, "iScansNegatively": 1},
+            [0, 90, 180, 270],
+            [90, 0, -90],
+            [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]],
+        ),
+        (
+            {"jPointsAreConsecutive": 1},
+            [0, 90, 180, 270],
+            [90, 0, -90],
+            [[0, 3, 6, 9], [1, 4, 7, 10], [2, 5, 8, 11]],
+        ),
+        (
+            {"alternativeRowScanning": 1},
+            [0, 90, 180, 270],
+            [90, 0, -90],
+            [[0, 1, 2, 3], [7, 6, 5, 4], [8, 9, 10, 11]],
+        ),
+        (
+            {"jPointsAreConsecutive": 1, "alternativeRowScanning": 1, "latitudeOfLastGridPointInDegrees": 90},
+            [0, 90, 180, 270],
+            [90, 0, -90],
+            [[0, 5, 6, 11], [1, 4, 7, 10], [2, 3, 8, 9]],
+        ),
+    ],
+    ids=[
+        "north-first",
+        "south-first",
+        "half-degree",
+        "north-only",
+        "shifted",
+        "wrapped",
+        "westward",
+        "column-first",
+        "alternating-rows",
+        "alternating-columns",
+    ],
+)
+def test_lonlat_grid_scan_order(z3fdb_store, fdb_grib_message, grid, expected_lon, expected_lat, expected_values):
+    """GRIB extents and scan flags must place each field value at its actual latitude and longitude."""
+    keys = {
+        "Ni": 4,
+        "Nj": 3,
+        "latitudeOfFirstGridPointInDegrees": 90,
+        "latitudeOfLastGridPointInDegrees": -90,
+        "longitudeOfFirstGridPointInDegrees": 0,
+        "longitudeOfLastGridPointInDegrees": 270,
+        "iDirectionIncrementInDegrees": 90,
+        "jDirectionIncrementInDegrees": 90,
+        **grid,
+    }
+    message = fdb_grib_message("regular_ll", **keys)
+    fdb = z3fdb_store((1, 1, 12), message=message, values=np.arange(12, dtype="float32").reshape(1, 1, 12))
     result = open_z3fdb({"param": [130]}, freq="h", startdate="20200101", enddate="20200101")
     assert result.var130.dims == ("time", "lat", "lon")
     assert isinstance(result.var130.data, da.Array)
-    assert result.lon.to_numpy().tolist() == [0, 90, 180, 270]
-    assert result.lat.to_numpy().tolist() == [90, 0, -90]
-    expected = [[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]] if south_first else [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-    assert result.var130.isel(time=0).compute().to_numpy().tolist() == expected
+    assert result.lon.to_numpy().tolist() == expected_lon
+    assert result.lat.to_numpy().tolist() == expected_lat
+    assert result.var130.isel(time=0).compute().to_numpy().tolist() == expected_values
+    assert result.lon.attrs["units"] == "degrees_east"
+    assert result.lat.attrs["units"] == "degrees_north"
+    assert "Spatial coordinates decoded" in result.attrs["history"]
+    fdb.retrieve.assert_called_once()
 
 
 @pytest.mark.parametrize(

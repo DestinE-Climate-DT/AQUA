@@ -158,8 +158,10 @@ It reads metadata with ecCodes and does not require GSV. Supported grid families
 
 * HEALPix: resolution and ring/nested ordering come from GRIB metadata.
   The spatial dimension is ``ncells``, matching GSV, without a synthetic cell index coordinate.
-* Global regular latitude/longitude: dimensions come from GRIB metadata;
-  south-to-north fields are flipped to a north-to-south layout.
+* Regular latitude/longitude: dimensions, coordinate origins, spacing and
+  scan order come from GRIB metadata, including grids whose latitudes exclude
+  the poles or whose longitudes start away from zero. Coordinates and field
+  values are ordered north-to-south and by increasing longitude in [0, 360).
 
 Only these two grid families are supported. Unstructured, reduced Gaussian,
 rotated and other GRIB grid types raise an error, as do grid-size mismatches.

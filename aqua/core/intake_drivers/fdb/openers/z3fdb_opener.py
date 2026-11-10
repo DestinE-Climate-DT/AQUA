@@ -445,15 +445,26 @@ def _read_grib_grid(mars, config=None):
     grid_type = message["gridType"]
     keys = {
         "healpix": ("Nside", "ordering"),
-        "regular_ll": ("Ni", "Nj", "latitudeOfFirstGridPoint"),
+        "regular_ll": (
+            "Ni",
+            "Nj",
+            "latitudeOfFirstGridPointInDegrees",
+            "longitudeOfFirstGridPointInDegrees",
+            "iDirectionIncrementInDegrees",
+            "jDirectionIncrementInDegrees",
+            "iScansNegatively",
+            "jScansPositively",
+            "jPointsAreConsecutive",
+            "alternativeRowScanning",
+        ),
     }
     if grid_type not in keys:
-        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and global regular lon/lat are supported.")
+        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and regular lon/lat are supported.")
     return {"grid_type": grid_type, **{key: message[key] for key in keys[grid_type]}}
 
 
 def add_coordinates(ds, grid, levunits=None):
-    """Attach coordinates from a decoded HEALPix or global regular lon/lat grid.
+    """Attach coordinates from a decoded HEALPix or regular lon/lat grid.
 
     Args:
         ds (xr.Dataset): Dataset with a flat cell dimension in GRIB value order.
@@ -495,22 +506,31 @@ def add_coordinates(ds, grid, levunits=None):
         ni, nj = grid["Ni"], grid["Nj"]
         if ni <= 0 or nj <= 0 or ncell != ni * nj:
             raise ValueError("GRIB grid point count does not match the z3fdb cell dimension.")
+        dlon = grid["iDirectionIncrementInDegrees"] * (-1 if grid["iScansNegatively"] else 1)
+        dlat = grid["jDirectionIncrementInDegrees"] * (1 if grid["jScansPositively"] else -1)
+        lon = (grid["longitudeOfFirstGridPointInDegrees"] + dlon * np.arange(ni)) % 360
+        lat = grid["latitudeOfFirstGridPointInDegrees"] + dlat * np.arange(nj)
+        shape = (ni, nj) if grid["jPointsAreConsecutive"] else (nj, ni)
         variables = {}
         for name, var in ds.data_vars.items():
-            values = var.data.reshape(var.shape[:-1] + (nj, ni))
-            if grid["latitudeOfFirstGridPoint"] < 0:
-                values = values[..., ::-1, :]
+            values = var.data.reshape(var.shape[:-1] + shape)
+            if grid["alternativeRowScanning"]:
+                values = da.where(np.arange(shape[0])[:, None] % 2, values[..., ::-1], values)
+            if grid["jPointsAreConsecutive"]:
+                values = values.swapaxes(-1, -2)
             variables[name] = xr.Variable(var.dims[:-1] + ("lat", "lon"), values, attrs=var.attrs)
         ds = (
             ds.drop_dims("cell")
             .assign(variables)
             .assign_coords(
-                lon=("lon", np.linspace(0, 360, ni, endpoint=False), {"standard_name": "longitude", "units": "degrees_east"}),
-                lat=("lat", np.linspace(90, -90, nj), {"standard_name": "latitude", "units": "degrees_north"}),
+                lon=("lon", lon, {"standard_name": "longitude", "units": "degrees_east"}),
+                lat=("lat", lat, {"standard_name": "latitude", "units": "degrees_north"}),
             )
+            .sortby("lat", ascending=False)
+            .sortby("lon")
         )
     else:
-        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and global regular lon/lat are supported.")
+        raise ValueError(f"Unsupported z3fdb grid type: {grid_type}; only HEALPix and regular lon/lat are supported.")
     log_history(ds, f"Spatial coordinates decoded from GRIB grid {grid}")
     return ds
 

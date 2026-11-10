@@ -207,6 +207,8 @@ def fdb_grib_message():
                 ecc.codes_set(handle, key, value)
             if grid_type == "healpix":
                 ecc.codes_set_values(handle, np.arange(12 * keys["Nside"] ** 2))
+            elif grid_type == "regular_ll":
+                ecc.codes_set_values(handle, np.arange(ecc.codes_get(handle, "Ni") * ecc.codes_get(handle, "Nj")))
             return ecc.codes_get_message(handle)
         finally:
             ecc.codes_release(handle)
