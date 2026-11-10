@@ -131,7 +131,9 @@ class NetCDFWriter(BaseWriter):
             bool: True if successful
         """
         # Prepare monthly files for concatenation (gather, move to tmp, clean year files)
-        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(var, year, minimum_required=12)
+        tmp_monthly_files, year_file, tmp_year_file = self._prepare_concat_monthly_files(
+            var, year, level=level, minimum_required=12
+        )
 
         if tmp_monthly_files is None:
             return False
