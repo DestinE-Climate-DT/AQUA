@@ -21,8 +21,6 @@ from aqua.core.util import load_yaml, to_list
 
 from .timeutil import FDBTimeMixin, build_time_request
 
-xr.set_options(keep_attrs=True)
-
 MARS_KEYS = [
     "date",
     "time",
