@@ -1,164 +1,137 @@
-"""Availability resolution and validation before z3fdb storage routing."""
+"""Availability discovery exercised through Intake and external FDB requests."""
 
+import os
 from copy import deepcopy
-from pathlib import Path
-from unittest.mock import Mock, mock_open
+from unittest.mock import Mock
 
-import dask.array as da
 import pandas as pd
 import pytest
 import requests
-import xarray as xr
 
 from aqua.core.intake_drivers.fdb import IntakeFDBSource
-from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
-from aqua.core.intake_drivers.fdb.openers import dates, timeutil
-from aqua.core.intake_drivers.fdb.openers.dates import FDBDatesMixin
+from aqua.core.intake_drivers.fdb.openers import dates
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource
-from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
-from aqua.core.util import load_yaml
+from aqua.core.util import dump_yaml, load_yaml
 
 pytestmark = pytest.mark.aqua
-INFO_FILE = Path(__file__).parent / "catgen" / "fdb_info_file.yaml"
+INFO_FILE = os.path.join(os.path.dirname(__file__), "catgen", "fdb_info_file.yaml")
 
 
-@pytest.fixture
-def opener(monkeypatch):
-    """Record resolved requests without retrieving any field data."""
-    result = Mock(
-        side_effect=lambda request, **kwargs: xr.Dataset(
-            {"var130": ("time", da.ones(1))}, coords={"time": [pd.Timestamp(kwargs["startdate"])]}
-        )
-    )
-    monkeypatch.setattr("aqua.core.intake_drivers.fdb.readers.open_z3fdb", result)
-    return result
-
-
-def source(**kwargs):
-    """Create an Intake source with three available days and separate FDB paths."""
-    return IntakeFDBSource(
-        **{
-            "request": {"param": [130, 131], "expver": "0001"},
-            "engine": "z3fdb",
-            "data_start_date": "19900101T0000",
-            "data_end_date": "19900103T2300",
-            "metadata": {"fdb_path": "/hpc.yaml", "fdb_path_bridge": "/bridge.yaml"},
-            **kwargs,
-        }
-    )
-
-
-@pytest.mark.parametrize(
-    "filename, expected_configs",
-    [
-        ("fdb_info_file.yaml", ["/bridge.yaml", "/hpc.yaml"]),
-        ("fdb_info_hpc-only.yaml", ["/hpc.yaml"]),
-    ],
-)
-def test_info_file_overrides_catalog(opener, filename, expected_configs):
-    """Existing workflow fixtures override stale catalog dates and experiment IDs."""
-    metadata = {
-        "fdb_path": "/hpc.yaml",
-        "fdb_path_bridge": "/bridge.yaml",
-        "fdb_info_file": str(INFO_FILE.with_name(filename)),
-    }
-    request = {"param": [130], "expver": "0001"}
+@pytest.mark.parametrize("bridge_start", [None, "19900101T0000", "19900102T0000", "hpc-only"])
+@pytest.mark.parametrize("engine", ["z3fdb", "gsv"])
+def test_workflow_file_controls_routing(z3fdb_store, tmp_path, bridge_start, engine, request):
+    """Workflow dates override stale catalog dates; missing bridge starts must retain bridge routing."""
+    counts = [3] if bridge_start == "hpc-only" else [1, 1, 1] if bridge_start == "19900102T0000" else [2, 1]
+    fdb = z3fdb_store([(count, 1, 12) for count in counts])
+    info = load_yaml(INFO_FILE)
+    if bridge_start == "hpc-only":
+        info.pop("bridge")
+    elif bridge_start is None:
+        info["bridge"].pop("bridge_start_date")
+    else:
+        info["bridge"]["bridge_start_date"] = bridge_start
+    info["data"]["expver"] = "a0h3"
+    if "bridge" in info:
+        info["bridge"]["expver"] = "0001"
+    filename = os.path.join(tmp_path, "info.yaml")
+    dump_yaml(filename, info)
+    metadata = {**fdb.metadata, "fdb_info_file": filename}
     original = deepcopy(metadata)
-    catalog = source(request=request, metadata=metadata, data_start_date="20000101", data_end_date="20000102")
-    result = catalog.to_dask()
-    calls = opener.call_args_list
-    assert [c.kwargs["config"] for c in calls] == expected_configs
-    assert calls[0].kwargs["startdate"] == "19900101T0000"
-    assert calls[-1].kwargs["enddate"] == "19900103T2300"
-    assert all(c.args[0]["expver"] == "t039" for c in calls)
-    assert all(c.kwargs["data_start_date"] == "19900101T0000" for c in calls)
-    assert request == {"param": [130], "expver": "0001"}
+    if engine == "gsv":
+        request.getfixturevalue("gsv_boundary")
+    result = IntakeFDBSource(
+        {"param": [130], "expver": "old"},
+        engine=engine,
+        metadata=metadata,
+        savefreq="D",
+        chunks="S",
+        data_start_date="20000101",
+        data_end_date="20000102",
+    ).to_dask()
+    assert result.indexes["time"].equals(pd.date_range("19900101", periods=3, freq="D"))
+    if engine == "z3fdb":
+        stores = ["hpc"] if bridge_start == "hpc-only" else ["hpc", "bridge", "hpc"] if len(counts) == 3 else ["bridge", "hpc"]
+        assert [call.config for call in fdb.calls] == [fdb.configs[name] for name in stores]
+        assert [call.request["expver"] for call in fdb.calls] == ["a0h3" if name == "hpc" else "0001" for name in stores]
     assert metadata == original
-    assert isinstance(result.var130.data, da.Array)
 
 
-def test_info_file_refreshes_dates_and_expvers(opener, monkeypatch):
-    """Each read refreshes workflow dates and keeps HPC/bridge overrides separate."""
-    first = load_yaml(str(INFO_FILE))
-    first["data"]["expver"], first["bridge"]["expver"] = "a0h3", "0001"
-    second = deepcopy(first)
-    second["data"]["data_end_date"] = "19900104T2300"
-    second["bridge"]["bridge_end_date"] = "19900103T2300"
-    second["data"]["expver"], second["bridge"]["expver"] = "a0h4", "0002"
-    read_info = Mock(side_effect=[first, second])
-    monkeypatch.setattr(FDBDatesMixin, "get_fdb_definitions_from_file", read_info)
-    catalog = source(metadata={"fdb_path": "/hpc.yaml", "fdb_path_bridge": "/bridge.yaml", "fdb_info_file": "info.yaml"})
-    catalog.to_dask()
-    catalog.to_dask()
-    assert read_info.call_count == 2
-    assert [c.args[0]["expver"] for c in opener.call_args_list] == ["0001", "a0h3", "0002", "a0h4"]
-    assert [c.kwargs["enddate"] for c in opener.call_args_list] == [
-        "19900102T2300",
-        "19900103T2300",
-        "19900103T2300",
-        "19900104T2300",
-    ]
-
-
-@pytest.mark.parametrize(
-    "config_fdb, metadata, expected_path",
-    [
-        (None, {"fdb_home": "/hpc"}, "/hpc/etc/fdb/config.yaml"),
-        (None, {"fdb_path": "/hpc.yaml"}, "/hpc.yaml"),
-        ("/override.yaml", {"fdb_home": "/unused"}, "/override.yaml"),
-        ("/override", {"fdb_path": "/unused.yaml"}, "/override/etc/fdb/config.yaml"),
-    ],
-)
-def test_auto_dates_use_config_and_hpc_expver(opener, monkeypatch, config_fdb, metadata, expected_path):
-    """Use the shared directory scan, including its conservative last-day policy."""
-    config = mock_open(read_data="spaces: [{roots: [{path: /fdb-root}]}]")
-    monkeypatch.setattr(dates, "open", config, raising=False)
-    listdir = Mock(
-        return_value=[f"d1:climate-dt:cmip6:hist:1:ifs-nemo:1:a0h3:clte:{d}" for d in [19900103, 19900101, 19900102]]
-        + ["d1:climate-dt:cmip6:hist:1:ifs-nemo:1:0001:clte:19910101"]
+def test_workflow_updates_are_seen_on_repeated_read(z3fdb_store, tmp_path):
+    """Reading again must refresh the workflow file rather than reuse old dates or experiment IDs."""
+    fdb = z3fdb_store([(2, 1, 12), (1, 1, 12), (3, 1, 12), (1, 1, 12)])
+    info = load_yaml(INFO_FILE)
+    filename = os.path.join(tmp_path, "info.yaml")
+    dump_yaml(filename, info)
+    source = IntakeFDBSource(
+        {"param": [130]}, engine="z3fdb", savefreq="D", metadata={**fdb.metadata, "fdb_info_file": filename}
     )
-    monkeypatch.setattr(dates.os, "listdir", listdir)
+    first = source.to_dask()
+    info["data"].update(data_end_date="19900104T2300", expver="a0h4")
+    info["bridge"].update(bridge_end_date="19900103T2300", expver="0002")
+    dump_yaml(filename, info)
+    second = source.to_dask()
+    assert first.sizes["time"] == 3 and second.sizes["time"] == 4
+    assert [call.request["expver"] for call in fdb.calls] == ["t039", "t039", "0002", "a0h4"]
+    assert second.indexes["time"][-1] == pd.Timestamp("19900104")
+
+
+@pytest.mark.parametrize("location", ["home", "path", "override-file", "override-home"])
+def test_auto_dates_follow_effective_config(z3fdb_store, tmp_path, location):
+    """Auto discovery must use the selected config and HPC expver, excluding the newest directory."""
+    fdb = z3fdb_store((48, 1, 12))
+    root = os.path.join(tmp_path, "archive")
+    for day in (19900103, 19900101, 19900102):
+        os.makedirs(os.path.join(root, f"d1:climate-dt:cmip6:hist:1:ifs-nemo:1:a0h3:clte:{day}"))
+    os.makedirs(os.path.join(root, "d1:climate-dt:cmip6:hist:1:ifs-nemo:1:0001:clte:19910101"))
+    config = fdb.configs["hpc"]
+    home = os.path.dirname(os.path.dirname(os.path.dirname(config)))
+    dump_yaml(config, {"type": "local", "spaces": [{"roots": [{"path": root}]}]})
     request = dict(
         param=[130],
         expver="0001",
-        **{
-            "class": "d1",
-            "dataset": "climate-dt",
-            "activity": "CMIP6",
-            "experiment": "hist",
-            "generation": 1,
-            "model": "IFS-NEMO",
-            "realization": 1,
-            "stream": "clte",
-        },
+        activity="CMIP6",
+        experiment="hist",
+        generation=1,
+        model="IFS-NEMO",
+        realization=1,
+        stream="clte",
+        dataset="climate-dt",
+        **{"class": "d1"},
     )
-    catalog = source(
-        request=request,
-        config_fdb=config_fdb,
+    metadata = {"fdb_home": home} if location == "home" else {"fdb_path": config}
+    override = config if location == "override-file" else home if location == "override-home" else None
+    result = IntakeFDBSource(
+        request,
+        engine="z3fdb",
         metadata=metadata,
+        config_fdb=override,
         hpc_expver="a0h3",
         data_start_date="auto",
         data_end_date="auto",
-    )
-    catalog.to_dask()
-    config.assert_called_once_with(expected_path, "r")
-    listdir.assert_called_once_with("/fdb-root")
-    call = opener.call_args
-    assert call.kwargs["startdate"] == "19900101T0000"
-    assert call.kwargs["enddate"] == "19900102T2300"
-    assert call.args[0]["expver"] == "a0h3"
+    ).to_dask()
+    assert result.indexes["time"].equals(pd.date_range("19900101", periods=48, freq="h"))
+    assert fdb.calls[0].request["date"] == "19900101/to/19900102"
+    assert fdb.calls[0].request["expver"] == "a0h3"
     assert request["expver"] == "0001"
 
 
-def test_yearmonth_auto_rejected_before_retrieval(opener):
-    """Preserve GSV's explicit restriction on automatic monthly date discovery."""
-    with pytest.raises(ValueError, match="Auto date selection not supported for timestyle=yearmonth"):
-        source(data_end_date="auto", timestyle="yearmonth", savefreq="MS").to_dask()
-    opener.assert_not_called()
+@pytest.mark.parametrize("failure, error", [(requests.Timeout(), TimeoutError), (requests.ConnectionError(), ConnectionError)])
+def test_stac_failure_stops_retrieval(z3fdb_store, monkeypatch, failure, error):
+    """A failed availability query must not fall through to stale FDB routing."""
+    fdb = z3fdb_store((1, 1, 12))
+    monkeypatch.setattr(dates.requests, "get", Mock(side_effect=failure))
+    with pytest.raises(error, match="STAC API request"):
+        IntakeFDBSource(
+            {"param": [130]}, engine="z3fdb", bridge_start_date="stac", data_start_date="19900101", data_end_date="19900103"
+        ).to_dask()
+    assert not fdb.calls
 
 
-def test_stac_dates_preserve_request(opener, monkeypatch):
-    """STAC querying must retain parameters and time keys for the actual read."""
+@pytest.mark.parametrize("discovery", ["stac", "files"])
+def test_bridge_discovery_retains_requests(z3fdb_store, tmp_path, monkeypatch, discovery):
+    """Bridge discovery must select the right storage periods without stripping the field request."""
+    counts = [48, 24] if discovery == "stac" else [24, 24, 24]
+    fdb = z3fdb_store([(count, 1, 12) for count in counts])
     query = Mock(
         return_value=Mock(
             status_code=200,
@@ -166,48 +139,30 @@ def test_stac_dates_preserve_request(opener, monkeypatch):
         )
     )
     monkeypatch.setattr(dates.requests, "get", query)
-    request = {"param": [130, 131], "expver": "0001", "date": 19900101, "time": 0, "step": 0}
-    original = deepcopy(request)
-    catalog = source(request=request, bridge_start_date="stac", bridge_end_date="stac")
-    catalog.to_dask()
-    calls = opener.call_args_list
-    assert [c.kwargs["config"] for c in calls] == ["/bridge.yaml", "/hpc.yaml"]
-    assert calls[0].kwargs["enddate"] == "19900102T2300"
-    assert calls[1].kwargs["startdate"] == "19900103T0000"
-    assert all(c.args[0] == original for c in calls)
+    start, end = "stac", "stac"
+    if discovery == "files":
+        start, end = os.path.join(tmp_path, "start.txt"), os.path.join(tmp_path, "end.txt")
+        for filename, value in [(start, "19900102T0000"), (end, "19900102T2300")]:
+            with open(filename, "w") as stream:
+                stream.write(value + "\n")
+    request = {"param": [130], "expver": "0001", "date": 19900101, "time": 0, "step": 0}
+    original = request.copy()
+    result = IntakeFDBSource(
+        request,
+        engine="z3fdb",
+        metadata=fdb.metadata,
+        data_start_date="19900101",
+        data_end_date="19900103T2300",
+        bridge_start_date=start,
+        bridge_end_date=end,
+    ).to_dask()
+    stores = ["bridge", "hpc"] if discovery == "stac" else ["hpc", "bridge", "hpc"]
+    assert [call.config for call in fdb.calls] == [fdb.configs[name] for name in stores]
+    assert result.indexes["time"].equals(pd.date_range("19900101", periods=72, freq="h"))
+    assert all(call.request["param"] == [130] and call.request["expver"] == "0001" for call in fdb.calls)
     assert request == original
-    assert query.call_args.kwargs["params"] == {"param": 130, "expver": "0001", "root": "root"}
-    assert query.call_args.kwargs["timeout"] == 10
-
-
-@pytest.mark.parametrize(
-    "failure, expected",
-    [
-        (requests.Timeout(), TimeoutError),
-        (requests.ConnectionError(), ConnectionError),
-    ],
-)
-def test_stac_errors_stop_retrieval(opener, monkeypatch, failure, expected):
-    """Discovery failures cannot fall through to a stale storage selection."""
-    monkeypatch.setattr(dates.requests, "get", Mock(side_effect=failure))
-    with pytest.raises(expected):
-        source(bridge_start_date="stac").to_dask()
-    opener.assert_not_called()
-
-
-def test_bridge_date_files(opener, monkeypatch):
-    """Resolve legacy text-file boundaries before storage routing."""
-    monkeypatch.setattr(timeutil.os.path, "isfile", lambda name: name in ("start.txt", "end.txt"))
-    reader = mock_open()
-    reader.side_effect = [
-        mock_open(read_data="19900102T0000\n").return_value,
-        mock_open(read_data="19900102T2300\n").return_value,
-    ]
-    monkeypatch.setattr(timeutil, "open", reader, raising=False)
-    source(bridge_start_date="start.txt", bridge_end_date="end.txt").to_dask()
-    assert [c.kwargs["config"] for c in opener.call_args_list] == ["/hpc.yaml", "/bridge.yaml", "/hpc.yaml"]
-    assert opener.call_args_list[1].kwargs["startdate"] == "19900102T0000"
-    assert opener.call_args_list[1].kwargs["enddate"] == "19900102T2300"
+    if discovery == "stac":
+        assert query.call_args.kwargs == {"params": {"param": 130, "expver": "0001", "root": "root"}, "timeout": 10}
 
 
 @pytest.mark.parametrize(
@@ -217,79 +172,84 @@ def test_bridge_date_files(opener, monkeypatch):
         ({"enddate": "19900104"}, "later than the data end"),
         ({"startdate": "19900103", "enddate": "19900102"}, "later than the end date"),
         ({"data_start_date": "19900104"}, "later than the end date"),
+        ({"data_end_date": "auto", "timestyle": "yearmonth", "savefreq": "MS"}, "Auto date selection not supported"),
     ],
 )
-def test_outside_availability_rejected(opener, kwargs, match):
-    """Fail before querying FDB when the requested window exceeds availability."""
+def test_invalid_availability_stops_retrieval(z3fdb_store, kwargs, match):
+    """Invalid availability bounds must fail before any FDB retrieval."""
+    fdb = z3fdb_store((1, 1, 12))
+    options = dict(data_start_date="19900101", data_end_date="19900103T2300") | kwargs
     with pytest.raises(ValueError, match=match):
-        source(**kwargs).to_dask()
-    opener.assert_not_called()
+        IntakeFDBSource({"param": [130]}, engine="z3fdb", **options).to_dask()
+    assert not fdb.calls
 
 
 @pytest.mark.parametrize(
-    "freq, end, bridge_start, bridge_end, starts",
+    "style, expected",
     [
-        ("D", "19900103T2300", "19900102", "19900102T2300", ["19900101T0000", "19900102T0000", "19900103T0000"]),
-        ("MS", "19900331", "19900201", "19900228T2300", ["19900101T0000", "19900201T0000", "19900301T0000"]),
-        ("YS", "19921231", "19910101", "19911231T2300", ["19900101T0000", "19910101T0000", "19920101T0000"]),
+        ("date", {"date": "20200101/to/20200301", "time": "0000/to/1200"}),
+        ("yearmonth", {"year": "2020", "month": "01/to/03"}),
+        ("step", {"date": "20200101", "time": "0000", "step": "0/to/1452"}),
     ],
 )
-def test_bridge_bounds_match_saved_cadence(opener, freq, end, bridge_start, bridge_end, starts):
-    """End-of-period bridge dates must leave the following HPC field reachable."""
-    source(savefreq=freq, data_end_date=end, bridge_start_date=bridge_start, bridge_end_date=bridge_end).to_dask()
-    assert [c.kwargs["startdate"] for c in opener.call_args_list] == starts
-    assert [c.kwargs["config"] for c in opener.call_args_list] == ["/hpc.yaml", "/bridge.yaml", "/hpc.yaml"]
-
-
-def test_explicit_window_without_availability(opener):
-    """Keep working when only the retrieval window was supplied."""
-    source(data_start_date=None, data_end_date=None, startdate="19900101", enddate="19900102").to_dask()
-    assert opener.call_args.kwargs["startdate"] == "19900101T0000"
-    assert opener.call_args.kwargs["enddate"] == "19900102T0000"
-
-
-def test_forecast_initial_offset_keeps_raw_origin(opener):
-    """Date normalization must not change the origin used for the initial step."""
-    source(data_start_date="19900101T0600", savefreq="D", timestyle="step").to_dask()
-    assert opener.call_args.kwargs["data_start_date"] == "19900101T0600"
-
-
-@pytest.mark.parametrize("filename", ["fdb_info_file.yaml", "fdb_info_hpc-only.yaml"])
-@pytest.mark.parametrize("bridge_start", [None, "19900101T0000", "19900102T0000"])
-def test_gsv_and_z3fdb_resolve_same_availability(monkeypatch, filename, bridge_start):
-    """Both engines use the same existing workflow file and normalization rules."""
-    monkeypatch.setattr(GSVSource, "_check_availability", lambda self: None)
-    monkeypatch.setattr(GSVSource, "_post_init", lambda self: None)
-    replacement = f"  bridge_start_date: {bridge_start}\n" if bridge_start else ""
-    contents = INFO_FILE.with_name(filename).read_text().replace("  bridge_start_date: 19900101T0000\n", replacement)
-    monkeypatch.setattr(dates, "open", mock_open(read_data=contents), raising=False)
-    kwargs = dict(
-        data_start_date="20000101",
-        data_end_date="20000102",
-        savefreq="D",
-        metadata={"fdb_info_file": str(INFO_FILE.with_name(filename))},
+def test_gsv_shared_formatting_unchanged(z3fdb_store, gsv_boundary, style, expected):
+    """Shared time formatting must preserve GSV's schema and full-partition requests."""
+    fdb = z3fdb_store((1, 1, 12))
+    source = GSVSource(
+        {"param": [130]},
+        engine="gsv",
+        metadata=fdb.metadata,
+        timestyle=style,
+        chunks="90D",
+        timestep="h" if style == "date" else "1h",
+        data_start_date="20200101",
+        data_end_date="20200301T1200",
     )
-    gsv = GSVSource({"param": [130], "expver": "0001"}, engine="gsv", **kwargs)
-    data = Z3FDB({"param": [130], "expver": "0001"}, engine="z3fdb", **kwargs)
-    z3 = Z3FDBDatasetReader(data)._resolve_dates(data)
-    if filename == "fdb_info_file.yaml":
-        assert z3.bridge_start_date == (bridge_start or "19900101T0000")
-        assert z3.bridge_end_date == "19900102T0000"
-    for attr in (
-        "data_start_date",
-        "data_end_date",
-        "bridge_start_date",
-        "bridge_end_date",
-        "hpc_expver",
-        "startdate",
-        "enddate",
-    ):
-        assert getattr(z3, attr) == getattr(gsv, attr)
-    assert z3.request == gsv._request
+    result = source.to_dask()
+    assert result.indexes["time"].equals(pd.date_range("20200101", "20200301T1200", freq="h"))
+    assert len(list(source.read_chunked())) == 1
+    assert expected.items() <= gsv_boundary.call_args.args[0].items()
 
 
-def test_missing_info_file_uses_catalog_dates(opener):
-    """Retain GSV's fallback when a workflow info file is unavailable."""
-    source(metadata={"fdb_info_file": "/unavailable-info.yaml", "fdb_path": "/hpc.yaml"}).to_dask()
-    assert opener.call_args.kwargs["enddate"] == "19900103T2300"
-    assert opener.call_args.args[0]["expver"] == "0001"
+@pytest.mark.parametrize("explicit_bounds", [False, True])
+def test_catalog_fallback_without_workflow_file(z3fdb_store, tmp_path, explicit_bounds):
+    """An unavailable info file must retain catalog dates; explicit windows also work without availability bounds."""
+    z3fdb_store((2, 1, 12))
+    bounds = (
+        dict(startdate="19900101", enddate="19900102")
+        if explicit_bounds
+        else dict(data_start_date="19900101", data_end_date="19900102")
+    )
+    result = IntakeFDBSource(
+        {"param": [130]},
+        engine="z3fdb",
+        savefreq="D",
+        metadata={"fdb_info_file": os.path.join(tmp_path, "missing.yaml")},
+        **bounds,
+    ).to_dask()
+    assert result.indexes["time"].equals(pd.date_range("19900101", periods=2, freq="D"))
+
+
+@pytest.mark.parametrize(
+    "freq, end, start, stop, cadence",
+    [
+        ("D", "19900103T2300", "19900102", "19900102T2300", "D"),
+        ("MS", "19900331", "19900201", "19900228T2300", "MS"),
+        ("YS", "19921231", "19910101", "19911231T2300", "YS"),
+    ],
+)
+def test_bridge_bounds_follow_saved_cadence(z3fdb_store, freq, end, start, stop, cadence):
+    """An end-of-period bridge bound must leave the next saved field on HPC reachable."""
+    fdb = z3fdb_store((1, 1, 12))
+    result = IntakeFDBSource(
+        {"param": [130]},
+        engine="z3fdb",
+        metadata=fdb.metadata,
+        savefreq=freq,
+        data_start_date="19900101",
+        data_end_date=end,
+        bridge_start_date=start,
+        bridge_end_date=stop,
+    ).to_dask()
+    assert result.indexes["time"].equals(pd.date_range("19900101", periods=3, freq=cadence))
+    assert [call.config for call in fdb.calls] == [fdb.configs[name] for name in ("hpc", "bridge", "hpc")]
