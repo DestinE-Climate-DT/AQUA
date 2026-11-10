@@ -230,6 +230,25 @@ fixer_name:
           valid_max: 1400
           positive: down
 
+  # CRU TS monthly: temperatures in degrees Celsius, pre is the monthly total (mm).
+  # deltat: monthly divides pre by the number of days of each month. dtr is a difference: no offset, left untouched.
+  CRU-TS-default:
+    convention: eccodes
+    deltat: monthly
+    vars:
+      2t:
+        source: tmp
+        src_units: degC
+      min_2t:
+        source: tmn
+        src_units: degC
+      max_2t:
+        source: tmx
+        src_units: degC
+      tprate:
+        source: pre
+        src_units: mm
+
   # E-OBS monthly: variables are monthly means of daily values (rr in mm/day)
   eobs-eccodes-monthly:
     convention: eccodes
