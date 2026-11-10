@@ -1,6 +1,12 @@
 """Testing if the accessor works"""
 
+import dask.array as da
 import pytest
+import xarray as xr
+from dask.callbacks import Callback
+
+from aqua import Reader
+from aqua.core.util import convert_data_units, select_season
 
 
 # Aliases with module scope for fixtures
@@ -51,14 +57,234 @@ class TestAccessor:
         # Check if the accessor still works with the result: the mean of each regridded field is its own,
         # not the native one (285.75920) and not the one of the other target grid
         # pytest default tolerance (rel=1e-6) on purpose: APPROX_REL (1e-4) would cover the differences between the three means
-        reader_instance.set_default()  # Make sure that the correct reader is used
+        reader_instance2.set_default()  # An unrelated default must not change the result's Reader
         avg = data1r.aqua.fldmean()["2t"].values
         assert avg[1] == pytest.approx(285.753457)
 
-        # Alternative way to do it
-        avg = data2r.aqua.set_default(reader_instance2).aqua.fldmean()["2t"].values
+        # Each regridded result keeps its own Reader without manual rebinding
+        reader_instance.set_default()
+        avg = data2r.aqua.fldmean()["2t"].values
         assert avg[1] == pytest.approx(285.754384)
 
-        # Test accessor on dataarray (should be using the previous default, i.e. the r200 reader)
+        # Test accessor on dataarray (should be using the previous default, i.e. the r100 reader)
         avgda = data2["2t"].aqua.fldmean().values
         assert avgda[1] == pytest.approx(285.75920)  # native data, weighted with the native cell area
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+@pytest.mark.parametrize("use_accessor", [False, True], ids=["reader", "accessor"])
+@pytest.mark.parametrize(
+    "operation", ["select_area", "select_area_regridded", "regrid", "seldate", "histogram", "timmean", "fldmean", "detrend"]
+)
+def test_transformed_result_keeps_reader(
+    ifs_tco79_long_r100_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, use_accessor, operation
+):
+    """Chained operations must use the originating Reader despite another global default."""
+    field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 2)).copy()
+    field.attrs["history"] = "AQUA-008 regression provenance"
+    field["2t"].attrs["history"] = field.attrs["history"]
+    if as_dataarray:
+        field = field["2t"]
+    if operation == "select_area_regridded":
+        field = ifs_tco79_long_r100_reader.regrid(field)
+    field.aqua.set_default(ifs_tco79_long_r100_reader)
+    reader_instance2.set_default()
+
+    method = "select_area" if operation == "select_area_regridded" else operation
+    kwargs = {}
+    if method == "select_area":
+        kwargs = {"lon": [0, 60], "lat": [0, 60]}
+    elif method == "seldate":
+        kwargs = {"startdate": str(field.time.isel(time=0).values)}
+    elif method == "histogram":
+        kwargs = {"bins": 10, "range": (150, 350), "weighted": False}
+
+    tasks = []
+    with Callback(posttask=lambda *args: tasks.append(1)):
+        result = (
+            getattr(field.aqua, method)(**kwargs)
+            if use_accessor
+            else getattr(ifs_tco79_long_r100_reader, method)(field, **kwargs)
+        )
+
+    assert Reader.instance is reader_instance2
+    assert result.aqua.instance is ifs_tco79_long_r100_reader
+    assert not tasks
+    values = result["2t"] if isinstance(result, xr.Dataset) else result
+    assert isinstance(values.data, da.Array)
+    assert "AQUA-008 regression provenance" in result.attrs["history"]
+
+    if method == "histogram":
+        expected_size = field["2t"].size if isinstance(field, xr.Dataset) else field.size
+        assert result.sum().compute().item() == expected_size
+    elif method == "fldmean":
+        xr.testing.assert_allclose(result.compute(), ifs_tco79_long_r100_reader.fldmean(field).compute())
+    else:
+        expected = ifs_tco79_long_r100_reader.fldmean(result)
+        assert Reader.instance is reader_instance2
+        actual = result.aqua.fldmean()
+        assert Reader.instance is reader_instance2
+        assert actual.aqua.instance is ifs_tco79_long_r100_reader
+        xr.testing.assert_allclose(actual.compute(), expected.compute())
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("preprocessing", ["none", "identity", "slice", "other_reader"])
+def test_retrieve_binds_preprocessed_result(reader_instance, reader_instance2, data, monkeypatch, preprocessing):
+    """Preprocessing may return a new object already associated with another Reader."""
+    field = data[["2t"]].isel(time=slice(0, 2))
+    monkeypatch.setattr(reader_instance.backend, "retrieve", lambda **kwargs: field.copy())
+
+    def preprocess(dataset):
+        assert dataset.aqua.instance is reader_instance
+        assert Reader.instance is reader_instance
+        if preprocessing == "identity":
+            return dataset
+        result = dataset.isel(time=slice(0, 1))
+        if preprocessing == "other_reader":
+            result.aqua.set_default(reader_instance2)
+        return result
+
+    monkeypatch.setattr(reader_instance, "preproc", None if preprocessing == "none" else preprocess)
+    reader_instance2.set_default()
+    result = reader_instance.retrieve(var="2t")
+    expected_default = reader_instance2 if preprocessing == "other_reader" else reader_instance
+    assert Reader.instance is expected_default
+    assert result.aqua.instance is reader_instance
+    assert result.sizes["time"] == (2 if preprocessing in ("none", "identity") else 1)
+    expected = reader_instance.fldmean(result)
+    reader_instance2.set_default()
+    xr.testing.assert_allclose(result.aqua.fldmean().compute(), expected.compute())
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("operation", ["regrid_variable", "mean_regridded_variable"])
+def test_retrieve_restores_default_for_variable_access(reader_instance, reader_instance2, operation):
+    """Retrieval must keep legacy variable-extraction chains on the retrieving Reader."""
+    reader_instance2.set_default()
+    dataset = reader_instance.retrieve(var="2t")
+    assert Reader.instance is reader_instance
+
+    if operation == "regrid_variable":
+        result = dataset["2t"].aqua.regrid()
+        assert result.lon.size == 360
+        assert result.aqua.instance is reader_instance
+    else:
+        regridded = reader_instance.regrid(dataset)
+        actual = regridded["2t"].aqua.fldmean()
+        expected = reader_instance.fldmean(regridded["2t"])
+        xr.testing.assert_allclose(actual.compute(), expected.compute())
+        assert actual.aqua.instance is reader_instance
+    assert Reader.instance is reader_instance
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+def test_public_default_and_xarray_slicing(reader_instance, reader_instance2, data, as_dataarray):
+    """Explicit defaults retain their behavior; raw xarray slices get fresh accessors."""
+    field = data[["2t"]].isel(time=slice(0, 2)).copy()
+    if as_dataarray:
+        field = field["2t"]
+    assert field.aqua.set_default(reader_instance) is field
+    assert Reader.instance is reader_instance
+    assert field.aqua.instance is reader_instance
+
+    reader_instance2.set_default()
+    assert Reader.instance is reader_instance2
+    assert field.aqua.instance is reader_instance
+    sliced = field.isel(time=slice(0, 1))
+    assert sliced.aqua.instance is reader_instance2
+
+    assert field.aqua.set_default(reader_instance2) is field
+    assert field.aqua.instance is reader_instance2
+    assert Reader.instance is reader_instance2
+
+
+UTILITY_OPERATIONS = [
+    "units",
+    "units_scale",
+    "units_noop",
+    "season",
+    "season_noop",
+    "trend",
+    "detrend",
+    "coeffs",
+    "coeffs_normalized",
+]
+
+
+def _utility_result(field, operation, trender):
+    """Exercise standalone transforms without using Reader return wrappers."""
+    if operation.startswith("units"):
+        units = {"units": "degC", "units_scale": "mK", "units_noop": "K"}[operation]
+        return convert_data_units(field, "2t", units)
+    if operation.startswith("season"):
+        return select_season(field, "annual" if operation == "season_noop" else "DJF")
+    if operation == "coeffs_normalized":
+        return trender.coeffs(field, normalize=True)
+    return getattr(trender, operation)(field)
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+@pytest.mark.parametrize("operation", UTILITY_OPERATIONS)
+def test_utilities_preserve_input_reader(
+    ifs_tco79_long_r100_reader, reader_instance2, ifs_tco79_long_data, as_dataarray, operation
+):
+    """Utility results inherit the input binding, even when a different Reader is default."""
+    field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 12)).copy()
+    field.attrs["history"] = "AQUA-008 utility provenance"
+    field["2t"].attrs["history"] = field.attrs["history"]
+    if as_dataarray:
+        field = field["2t"]
+    field.aqua.set_default(ifs_tco79_long_r100_reader)
+    reader_instance2.set_default()
+
+    tasks = []
+    with Callback(posttask=lambda *args: tasks.append(1)):
+        result = _utility_result(field, operation, reader_instance2.trender)
+
+    assert not tasks
+    assert result.aqua.instance is ifs_tco79_long_r100_reader
+    assert field.aqua.instance is ifs_tco79_long_r100_reader
+    assert Reader.instance is reader_instance2
+    assert "history" in result.attrs
+    assert "AQUA-008 utility provenance" in field.attrs["history"]
+    if operation.startswith(("units", "season")):
+        assert "AQUA-008 utility provenance" in result.attrs["history"]
+    values = result if as_dataarray else result["2t"]
+    assert isinstance(values.data, da.Array)
+    if operation.endswith("noop"):
+        assert result is field
+
+    original = field if as_dataarray else field["2t"]
+    if operation.startswith("units"):
+        assert original.attrs["units"] == "K"
+        assert values.attrs["units"] == {"units": "degC", "units_scale": "mK", "units_noop": "K"}[operation]
+        factor, offset = {"units": (1, -273.15), "units_scale": (1000, 0), "units_noop": (1, 0)}[operation]
+        xr.testing.assert_allclose(values.compute(), (original * factor + offset).compute())
+    elif operation.startswith("season"):
+        months = original.time.dt.month
+        expected = original if operation.endswith("noop") else original.sel(time=months.isin([12, 1, 2]))
+        xr.testing.assert_allclose(values.compute(), expected.compute())
+    expected_mean = ifs_tco79_long_r100_reader.fldmean(result)
+    actual_mean = result.aqua.fldmean()
+    assert actual_mean.aqua.instance is ifs_tco79_long_r100_reader
+    assert Reader.instance is reader_instance2
+    xr.testing.assert_allclose(actual_mean.compute(), expected_mean.compute())
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("as_dataarray", [False, True], ids=["dataset", "dataarray"])
+@pytest.mark.parametrize("operation", UTILITY_OPERATIONS)
+def test_utilities_do_not_initialize_unbound_accessor(
+    reader_instance2, ifs_tco79_long_data, as_dataarray, operation, monkeypatch
+):
+    """Plain xarray inputs must not get an implicit binding: without a Reader default, creating an accessor raises."""
+    field = ifs_tco79_long_data[["2t"]].isel(time=slice(0, 12)).copy()
+    if as_dataarray:
+        field = field["2t"]
+    monkeypatch.delattr(Reader, "instance")
+    _utility_result(field, operation, reader_instance2.trender)
+    assert not hasattr(Reader, "instance")
