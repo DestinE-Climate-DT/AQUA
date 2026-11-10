@@ -16,7 +16,7 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
-- Upgrade to `smmregrid==0.3.0` (#3368)
+- Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - CI: the reusable failure report workflow also runs on successful scheduled/manual runs on the default branch and closes the open failure issue of that suite; the nightly, release, PyPI and Conda workflows pass their result (#3367)
 - Split agent instructions into a small `AGENTS.md` entry point, shared ecosystem rules in `AGENTS.common.md`, and AQUA-core-specific rules in `AGENTS.repo.md` (#3357).
 - Share agent rules for attribute reuse, isolated test outputs, dependency and `environment*.yml` synchronization, usage documentation updates, and precedence of the current implementation over stale documentation (#3357).

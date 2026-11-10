@@ -310,7 +310,7 @@ class TestRegridder:
         assert len(rgd.lat) == 90
         for level in [0, 6]:
             skipna, masked = rgd.avg_so.isel(level=level), ref.avg_so.isel(level=level)
-            # na_thres 0.5 as without skipna: same land fraction, up to a few cells
+            # na_thres 'auto' (0.5 for ycon) as without skipna: same land fraction, up to a few cells
             assert float(skipna.isnull().mean()) == pytest.approx(float(masked.isnull().mean()), abs=APPROX_ABS)
             both = skipna.notnull() & masked.notnull()
             xr.testing.assert_allclose(skipna.where(both), masked.where(both))
