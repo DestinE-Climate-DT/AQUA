@@ -4,35 +4,38 @@ import cartopy.crs as ccrs
 import pytest
 
 from aqua.core.util import get_projection
+from aqua.core.util.projections import projections_maps
 
-# List of (projection name, expected class, required kwargs if any)
-projection_cases = [
-    {"name": "plate_carree", "expected_cls": ccrs.PlateCarree, "kwargs": {}},
-    {"name": "mollweide", "expected_cls": ccrs.Mollweide, "kwargs": {}},
-    {"name": "orthographic", "expected_cls": ccrs.Orthographic, "kwargs": {"central_longitude": 70, "central_latitude": 0}},
-    {"name": "lambert_conformal", "expected_cls": ccrs.LambertConformal, "kwargs": {"central_longitude": -10}},
-    {"name": "robinson", "expected_cls": ccrs.Robinson, "kwargs": {}},
-    {"name": "lambert_equal_area", "expected_cls": ccrs.LambertAzimuthalEqualArea, "kwargs": {"central_longitude": 0}},
-    {"name": "rotated_pole", "expected_cls": ccrs.RotatedPole, "kwargs": {"pole_longitude": 180, "pole_latitude": 45}},
-]
+pytestmark = pytest.mark.aqua
 
 
-@pytest.mark.aqua
-class TestProjections:
-    """Tests for the `get_projection` utility function."""
+@pytest.mark.parametrize("name, expected_cls", projections_maps.items(), ids=list(projections_maps))
+def test_projection_instantiation(name, expected_cls):
+    """Every supported name gives an instance of its cartopy class with the default arguments."""
+    assert type(get_projection(name)) is expected_cls
 
-    @pytest.mark.parametrize("case", projection_cases)
-    def test_valid_projection_instantiation(self, case):
-        """Test that projections are correctly instantiated from their names."""
-        proj = get_projection(case["name"], **case["kwargs"])
-        assert isinstance(proj, case["expected_cls"]), f"Expected {case['expected_cls']}, got {type(proj)}"
 
-    def test_invalid_projection_name(self):
-        """Test that invalid projection names raise a ValueError."""
-        with pytest.raises(ValueError):
-            get_projection("invalid_proj_name")
+@pytest.mark.parametrize(
+    "name, kwargs, expected_params",
+    [
+        ("orthographic", {"central_longitude": 70, "central_latitude": 10}, {"proj": "ortho", "lon_0": 70, "lat_0": 10}),
+        ("lambert_conformal", {"central_longitude": -10}, {"proj": "lcc", "lon_0": -10}),
+        ("rotated_pole", {"pole_longitude": 180, "pole_latitude": 45}, {"proj": "ob_tran", "o_lat_p": 45, "lon_0": 360}),
+    ],
+    ids=["orthographic", "lambert_conformal", "rotated_pole"],
+)
+def test_projection_kwargs_forwarded(name, kwargs, expected_params):
+    """Keyword arguments reach the cartopy class: fails if they are dropped (the defaults give other parameters)."""
+    params = get_projection(name, **kwargs).proj4_params
+    assert {key: params[key] for key in expected_params} == expected_params
 
-    def test_case_insensitive_lookup(self):
-        """Ensure projection names are case-insensitive."""
-        proj = get_projection("MoLLWeiDE")
-        assert isinstance(proj, ccrs.Mollweide)
+
+def test_invalid_projection_name():
+    """Test that invalid projection names raise a ValueError."""
+    with pytest.raises(ValueError, match="Unsupported projection: 'invalid_proj_name'"):
+        get_projection("invalid_proj_name")
+
+
+def test_case_insensitive_lookup():
+    """Ensure projection names are case-insensitive."""
+    assert type(get_projection("MoLLWeiDE")) is ccrs.Mollweide

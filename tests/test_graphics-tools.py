@@ -220,55 +220,45 @@ class TestHealpixUtils:
             get_npix(np.array([]))
 
 
+HEALPIX_NSIDE = 8
+# output resolution of healpix_resample: 58.6 / nside degrees, about the size of a HEALPix pixel
+HEALPIX_PIXEL_DEG = 58.6 / HEALPIX_NSIDE
+
+
 @pytest.fixture
 def healpix_data():
-    nside = 8
-    npix = hp.nside2npix(nside)
-    data = xr.DataArray(np.random.rand(npix))
-    xlims = (-30, 30)
-    ylims = (-30, 30)
-    return data, xlims, ylims
+    """Two nested HEALPix maps (nside 8) whose values are the latitude and the longitude (in -180..180) of each pixel."""
+    lon, lat = hp.pix2ang(HEALPIX_NSIDE, np.arange(hp.nside2npix(HEALPIX_NSIDE)), nest=True, lonlat=True)
+    return {"lat": xr.DataArray(lat), "lon": xr.DataArray((lon + 180) % 360 - 180)}
 
 
 @pytest.mark.graphics
 class TestHealpixResample:
-    def test_healpix_resample_nearest(self, healpix_data):
-        data, xlims, ylims = healpix_data
-        result = healpix_resample(data, xlims=xlims, ylims=ylims, nx=10, ny=10, method="nearest")
-        assert isinstance(result, xr.DataArray)
-        assert result.ndim == 2
-        assert result.shape == (10, 10)
+    @pytest.mark.parametrize("field", ["lat", "lon"])
+    def test_healpix_resample_nearest(self, healpix_data, field):
+        """Nearest resampling picks a pixel within one pixel size of each output point: fails on swapped lon/lat."""
+        result = healpix_resample(healpix_data[field], xlims=(-30, 30), ylims=(-30, 30), nx=10, ny=12, method="nearest")
+        assert result.dims == ("lat", "lon") and result.shape == (12, 10)
+        assert result.lon.values == pytest.approx(np.arange(-27, 30, 6))
+        assert result.lat.values == pytest.approx(np.arange(-27.5, 30, 5))
+        assert float(abs(result - result[field]).max()) <= HEALPIX_PIXEL_DEG
 
-    def test_healpix_resample_linear(self, healpix_data):
-        data, xlims, ylims = healpix_data
-        result = healpix_resample(data, xlims=xlims, ylims=ylims, nx=10, ny=10, method="linear")
-        assert isinstance(result, xr.DataArray)
-        assert result.ndim == 2
-        assert result.shape == (10, 10)
+    @pytest.mark.parametrize("field", ["lat", "lon"])
+    def test_healpix_resample_linear(self, healpix_data, field):
+        """Linear interpolation of a field linear in lon and lat is exact."""
+        result = healpix_resample(healpix_data[field], xlims=(-30, 30), ylims=(-30, 30), nx=10, ny=12, method="linear")
+        assert result.values == pytest.approx(result[field].broadcast_like(result).values)
 
     def test_healpix_resample_default_grid_size(self, healpix_data):
         """Without limits the whole globe is resampled at 58.6 / nside degrees: (180, 360) / 7.325 = (24, 49) points."""
-        data, _, _ = healpix_data
-        result = healpix_resample(data, method="nearest")
+        result = healpix_resample(healpix_data["lat"], method="nearest")
         assert result.shape == (24, 49)
 
-    def test_healpix_resample_sparse_valid(self):
-        nside = 8
-        full_npix = hp.nside2npix(nside)  # 768, valid
-        selected_cells = np.random.choice(full_npix, size=100, replace=False)
-
-        # Build a *sparse* DataArray, but with npix = 768 (valid)
-        # Set all values to NaN, except for the selected_cells
-        data_array = np.full(full_npix, np.nan, dtype=np.float32)
-        values = np.random.rand(100).astype(np.float32)
-        data_array[selected_cells] = values
-
-        # Assign the 'cell' coordinate
-        var = xr.DataArray(data_array, coords={"cell": np.arange(full_npix)}, dims=["cell"])
-
-        result = healpix_resample(var, nx=20, ny=20, method="nearest")
-        assert isinstance(result, xr.DataArray)
-        assert result.ndim == 2
+    def test_healpix_resample_sparse_not_supported(self):
+        """A map with fewer cells than a full HEALPix grid is rejected by get_nside (the sparse branch is unreachable)."""
+        var = xr.DataArray(np.zeros(100), coords={"cell": np.arange(100)}, dims=["cell"])
+        with pytest.raises(ValueError, match="Invalid HEALPix map: npix=100"):
+            healpix_resample(var, nx=20, ny=20, method="nearest")
 
 
 @pytest.mark.graphics
