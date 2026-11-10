@@ -136,8 +136,9 @@ def plot_gregory_monthly(
         # goes beyond the limits
         t2m_list = t2m_monthly_data + to_list(t2m_ref) if ref else t2m_monthly_data
         t2m_min, t2m_max = evaluate_colorbar_limits(t2m_list, sym=False)
-        t2m_min = min(t2m_min, min(t2m_ref.values)) if ref else 11.5
-        t2m_max = max(t2m_max, max(t2m_ref.values)) if ref else 16.5
+        if ref:
+            t2m_min = min(t2m_min, min(t2m_ref.values))
+            t2m_max = max(t2m_max, max(t2m_ref.values))
         t2m_min = min(t2m_min, 11.5)
         t2m_min = t2m_min - 0.5
         t2m_max = max(t2m_max, 16.5)
@@ -145,8 +146,9 @@ def plot_gregory_monthly(
 
         net_toa_list = net_toa_monthly_data + to_list(net_toa_ref) if ref else net_toa_monthly_data
         toa_min, toa_max = evaluate_colorbar_limits(net_toa_list, sym=False)
-        toa_min = min(toa_min, min(net_toa_ref.values)) if ref else -11.5
-        toa_max = max(toa_max, max(net_toa_ref.values)) if ref else 11.5
+        if ref:
+            toa_min = min(toa_min, min(net_toa_ref.values))
+            toa_max = max(toa_max, max(net_toa_ref.values))
         toa_min = min(toa_min, -11.5)
         toa_min = toa_min - 0.5
         toa_max = max(toa_max, 11.5)
