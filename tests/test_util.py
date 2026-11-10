@@ -204,11 +204,7 @@ def test_format_realization():
 
 @pytest.mark.aqua
 def test_format_realization_keeps_input_list():
-    """The list given by the caller is not modified.
-
-    Fails on main: format_realization formats the list in place (util/realizations.py:24-28),
-    so the caller's list changes (documented in #3375).
-    """
+    """The list given by the caller is not modified (#3378)."""
     realizations = ["1", "test", None]
     format_realization(realizations)
     assert realizations == ["1", "test", None]
