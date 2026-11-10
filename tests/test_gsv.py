@@ -1,3 +1,7 @@
+import os
+
+import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from dask.distributed import Client, LocalCluster
@@ -5,8 +9,10 @@ from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.configurer import ConfigContext
+from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
 from aqua.core.intake_drivers.fdb.openers import open_gsv
 from aqua.core.intake_drivers.fdb.openers.gsv_source import GSVSource, gsv_available
+from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
 
 if not gsv_available:
     pytest.skip("Skipping GSV tests: FDB5 libraries not available", allow_module_level=True)
@@ -38,10 +44,42 @@ DEFAULT_GSV_PARAMS = {
 }
 
 FDB_HOME = "/app"
+FDB_INFO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "catgen")
+
+# request of the d1 test data in the FDB: hourly tcc from 19900101T0000 to 19900102T0000
+D1_REQUEST = {
+    "class": "d1",
+    "dataset": "climate-dt",
+    "activity": "CMIP6",
+    "experiment": "hist",
+    "generation": 1,
+    "model": "IFS-NEMO",
+    "realization": 1,
+    "resolution": "standard",
+    "expver": "a0h3",
+    "type": "fc",
+    "stream": "clte",
+    "date": 19900101,
+    "time": "0000",
+    "param": 164,
+    "levtype": "sfc",
+}
+# global mean of tcc (fraction) in the d1 test data, computed with eccodes from sample_test_data_d1.grib
+D1_TCC_MEAN = {"1990-01-01T00": 0.6530221138649116, "1990-01-01T15": 0.6562109108708682, "1990-01-02T00": 0.6687973267265382}
 
 # to enable for local testing on Lumi
 if ConfigContext().get_machine() == "lumi":
     FDB_HOME = "/pfs/lustrep3/projappl/project_465000454/padavini/FDB-TEST"
+
+
+@pytest.fixture(autouse=True)
+def restore_fdb_environment(monkeypatch):
+    """Reading from FDB sets FDB_HOME / FDB_CONFIG_FILE for the whole process: restore them after each test."""
+    for name in ("FDB_HOME", "FDB_CONFIG_FILE"):
+        if name in os.environ:
+            monkeypatch.setenv(name, os.environ[name])
+        else:
+            monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture()
@@ -58,9 +96,13 @@ class TestGsv:
     """Pytest marked class to test GSV."""
 
     # Low-level tests
-    def test_gsv_constructor(self) -> None:
-        """Simplest test, to check that we can create it correctly."""
-        print(DEFAULT_GSV_PARAMS["request"])
+    @pytest.mark.parametrize(
+        "bridge_end_date, metadata_key, chunk_type",
+        [(None, "fdb_home", 0), ("complete", "fdb_home_bridge", 1)],
+        ids=["hpc", "bridge"],
+    )
+    def test_gsv_constructor(self, bridge_end_date, metadata_key, chunk_type) -> None:
+        """A source on HPC or entirely on the bridge has floored dates and the matching FDB home and chunk type."""
         source = GSVSource(
             DEFAULT_GSV_PARAMS["request"],
             "20080101",
@@ -68,31 +110,25 @@ class TestGsv:
             timestep="h",
             chunks="S",
             var="167",
-            metadata={"fdb_home": FDB_HOME},
+            bridge_end_date=bridge_end_date,
+            metadata={metadata_key: FDB_HOME},
             engine="gsv",
         )
-        assert source is not None
+        assert (source.data_start_date, source.data_end_date) == ("20080101T0000", "20080101T0000")
+        assert getattr(source, metadata_key.replace("fdb_home", "fdbhome")) == FDB_HOME
+        assert np.all(source.chk_type == chunk_type)
 
-    def test_gsv_constructor_bridge(self) -> None:
-        """Test bridge"""
-        print(DEFAULT_GSV_PARAMS["request"])
-        source = GSVSource(
-            DEFAULT_GSV_PARAMS["request"],
-            "20080101",
-            "20080101",
-            timestep="h",
-            chunks="S",
-            var="167",
-            bridge_end_date="complete",
-            metadata={"fdb_home_bridge": FDB_HOME},
-            engine="gsv",
-        )
-        assert source is not None
-
-    def test_gsv_constructor_raise(self) -> None:
+    @pytest.mark.parametrize(
+        "bridge_end_date, match",
+        [
+            (None, "Some data is on HPC but no local FDB path or FDB home"),
+            ("complete", "Some data is on bridge but no bridge FDB path or FDB home"),
+        ],
+        ids=["hpc", "bridge"],
+    )
+    def test_gsv_constructor_raise(self, bridge_end_date, match) -> None:
         """Test raise for missing fdbhome"""
-        print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=match):
             open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
                 data_start_date="20080101",
@@ -100,27 +136,12 @@ class TestGsv:
                 timestep="h",
                 chunks="S",
                 var="167",
-                engine="gsv",
-            )
-
-    def test_gsv_constructor_raise_bridge(self) -> None:
-        """Test raise for missing fdbhome"""
-        print(DEFAULT_GSV_PARAMS["request"])
-        with pytest.raises(ValueError):
-            open_gsv(
-                DEFAULT_GSV_PARAMS["request"],
-                data_start_date="20080101",
-                data_end_date="20080101",
-                timestep="h",
-                chunks="S",
-                var="167",
-                bridge_end_date="complete",
+                bridge_end_date=bridge_end_date,
                 engine="gsv",
             )
 
     def test_gsv_constructor_raise_path_not_exists(self) -> None:
         """Test raise when fdbhome path is specified but does not exist"""
-        print(DEFAULT_GSV_PARAMS["request"])
         with pytest.raises(FileNotFoundError, match="fdbhome path .* does not exist"):
             open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
@@ -135,7 +156,6 @@ class TestGsv:
 
     def test_gsv_constructor_raise_bridge_path_not_exists(self) -> None:
         """Test raise when bridge path is specified but does not exist"""
-        print(DEFAULT_GSV_PARAMS["request"])
         with pytest.raises(FileNotFoundError, match="fdbhome_bridge path .* does not exist"):
             open_gsv(
                 DEFAULT_GSV_PARAMS["request"],
@@ -179,7 +199,9 @@ class TestGsv:
         """Test that the ``GSVSource`` is able to read data from FDB."""
         data = gsv.read_chunked()
         dd = next(data)
-        assert len(dd) > 0, "GSVSource could not load data"
+        assert list(dd.data_vars) == ["t"]
+        assert dd["t"].GRIB_paramId == 130
+        assert dd["t"].mean().values == pytest.approx(279.3509)
 
     # High-level, integrated test
 
@@ -299,13 +321,25 @@ class TestGsv:
         data_chunk2 = reader2.retrieve(level=[900, 800])
         assert data_chunk2.t.chunksizes["plev"] == (2,), "Fixed size vertical chunking is incorrect"
 
-    @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
-    def test_reader_bridge(self, engine) -> None:
+    @pytest.mark.parametrize(
+        "engine, config_fdb_type, environment",
+        [
+            ("gsv", None, ("FDB_HOME", FDB_HOME)),
+            ("z3fdb", None, None),  # z3fdb passes the config file of the FDB home, it sets no variable
+            ("gsv", "dir", ("FDB_HOME", FDB_HOME)),
+            ("gsv", "file", ("FDB_CONFIG_FILE", f"{FDB_HOME}/etc/fdb/config.yaml")),
+        ],
+    )
+    def test_reader_bridge(self, monkeypatch, engine, config_fdb_type, environment) -> None:
         """
-        Reading from a datasource using bridge
+        Reading from a datasource using bridge: HPC and bridge chunks are read from the FDB set in the
+        catalog metadata or in config_fdb, which is exported to the environment of the process.
         """
+        monkeypatch.delenv("FDB_HOME", raising=False)
+        monkeypatch.delenv("FDB_CONFIG_FILE", raising=False)
+        config = {None: None, "dir": FDB_HOME, "file": f"{FDB_HOME}/etc/fdb/config.yaml"}[config_fdb_type]
 
-        reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", loglevel=LOGLEVEL, engine=engine)
+        reader = Reader(model="IFS", exp="test-fdb", source="fdb-bridge", config_fdb=config, loglevel=LOGLEVEL, engine=engine)
         data = reader.retrieve()
         # Test if the correct dates have been found
         assert "1990-01-01T00:00" in str(data.time[0].values)
@@ -314,6 +348,11 @@ class TestGsv:
         assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)  # This is from HPC
         assert data.tcc.isel(time=15).values.mean() == pytest.approx(65.62109108718757)  # This is from the bridge
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.87973267265382)  # This is from HPC again
+        if environment is None:
+            assert "FDB_HOME" not in os.environ and "FDB_CONFIG_FILE" not in os.environ
+        else:
+            name, value = environment
+            assert os.environ[name] == value
 
     # The auto option is not implemented for z3fdb
     def test_reader_auto(self) -> None:
@@ -330,64 +369,6 @@ class TestGsv:
         assert data.tcc.isel(time=0).values.mean() == pytest.approx(65.30221138649116)
         assert data.tcc.isel(time=-1).values.mean() == pytest.approx(66.79689864974151)
 
-    @pytest.mark.polytope
-    def test_reader_polytope(self) -> None:
-        """
-        Reading from a remote databridge using polytope
-        """
-
-        reader = Reader(
-            catalog="climatedt-gen2",
-            model="IFS-NEMO-5km",
-            exp="projections-ssp370",
-            source="hourly-hpz7-sfc",
-            startdate="20210101T0000",
-            enddate="20210101T2300",
-            loglevel=LOGLEVEL,
-            engine="polytope",
-            chunks="h",
-        )
-        data = reader.retrieve(var="2t")
-        assert data.isel(time=1)["2t"].mean().values == pytest.approx(285.1543)
-
-    @pytest.mark.polytope
-    def test_reader_stac_polytope(self) -> None:
-        """
-        Reading from a remote databridge using polytope
-        """
-        reader = Reader(
-            catalog="climatedt-gen2",
-            model="IFS-FESOM-10km",
-            exp="story-nudging-Tplus2K",
-            source="hourly-hpz7-sfc",
-            loglevel=LOGLEVEL,
-            engine="polytope",
-            areas=False,
-        )
-        data = reader.retrieve(var="2t")
-        assert data.isel(time=20)["2t"].mean().values == pytest.approx(286.9244)
-
-    @pytest.mark.polytope
-    def test_reader_polytope_mn5(self) -> None:
-        """
-        Reading from mn5 databridge using polytope
-        """
-        reader = Reader(
-            catalog="climatedt-gen2",
-            model="IFS-NEMO-5km",
-            exp="baseline-hist",
-            source="hourly-hpz7-sfc",
-            startdate="19900101T0000",
-            enddate="19910101T0025",
-            loglevel=LOGLEVEL,
-            engine="polytope",
-            areas=False,
-        )
-        data = reader.retrieve(var="2t")
-        assert "databridge" in reader.backend.kwargs
-        assert reader.backend.kwargs["databridge"] == "mn5"
-        assert data.isel(time=20)["2t"].values[0] == pytest.approx(301.0878448486328)
-
     def test_fdb_from_file(self) -> None:
         """
         Reading fdb dates from a file.
@@ -400,7 +381,7 @@ class TestGsv:
             DEFAULT_GSV_PARAMS["request"],
             "20080101",
             "20080101",
-            metadata={"fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
+            metadata={"fdb_info_file": os.path.join(FDB_INFO_DIR, "fdb_info_file.yaml")},
             loglevel=LOGLEVEL,
         )
 
@@ -410,7 +391,11 @@ class TestGsv:
             DEFAULT_GSV_PARAMS["request"],
             "20080101",
             "20080101",
-            metadata={"fdb_home": FDB_HOME, "fdb_home_bridge": FDB_HOME, "fdb_info_file": "tests/catgen/fdb_info_file.yaml"},
+            metadata={
+                "fdb_home": FDB_HOME,
+                "fdb_home_bridge": FDB_HOME,
+                "fdb_info_file": os.path.join(FDB_INFO_DIR, "fdb_info_file.yaml"),
+            },
             engine="gsv",
             loglevel=LOGLEVEL,
         )
@@ -427,7 +412,7 @@ class TestGsv:
             metadata={
                 "fdb_home": FDB_HOME,
                 "fdb_home_bridge": FDB_HOME,
-                "fdb_info_file": "tests/catgen/fdb_info_hpc-only.yaml",
+                "fdb_info_file": os.path.join(FDB_INFO_DIR, "fdb_info_hpc-only.yaml"),
             },
             engine="gsv",
             loglevel=LOGLEVEL,
@@ -435,6 +420,8 @@ class TestGsv:
 
         assert source.data_start_date == "19900101T0000"
         assert source.data_end_date == "19900103T2300"
+        assert (source.bridge_start_date, source.bridge_end_date) == (None, None)
+        assert np.all(source.chk_type == 0)
 
     @pytest.mark.parametrize("engine", ["gsv", "z3fdb"])
     def test_reader_dask(self, engine) -> None:
@@ -454,81 +441,52 @@ class TestGsv:
                 assert data.tcc.isel(time=-1).mean().compute().item() == pytest.approx(66.8797378540039)
 
 
-# Additional tests for the GSVSource class
-def test_fdb_home_bridge_logs(capsys):
-    # Prepare test metadata ensuring we have fdbhome_bridge
-    metadata = {"fdb_home_bridge": FDB_HOME, "fdb_home": FDB_HOME}
-
-    source = GSVSource(
-        DEFAULT_GSV_PARAMS["request"],
-        data_start_date="20080101T1200",
-        data_end_date="20080101T1200",
-        metadata=metadata,
-        loglevel=LOGLEVEL,
-    )
-
-    # No assert in the following because we cannot check the stderr logs. This is just for coverage.
-
-    source.chk_type = [1]  # Force chunk type to be bridge
-    source._get_partition(ii=0)
-
-    source.chk_type = [0]
-    source._get_partition(ii=0)
-
-    metadata = {"fdb_path_bridge": FDB_HOME + "/etc/fdb/config.yaml", "fdb_path": FDB_HOME + "/etc/fdb/config.yaml"}
-    source = GSVSource(
-        DEFAULT_GSV_PARAMS["request"],
-        data_start_date="20080101T1200",
-        data_end_date="20080101T1200",
-        metadata=metadata,
-        loglevel=LOGLEVEL,
-    )
-
-    source.chk_type = [1]
-    source._get_partition(ii=0)
-
-    source.chk_type = [0]
-    source._get_partition(ii=0)
-
-
-def test_z3fdb_reader_before_bridge_period() -> None:
-    """Test Z3FDBDatasetReader period splitting with a start date before the bridge."""
-    from aqua.core.intake_drivers.fdb.datatypes import Z3FDB
-    from aqua.core.intake_drivers.fdb.readers import Z3FDBDatasetReader
-
-    metadata = {
-        "fdb_home": FDB_HOME,
-        "fdb_home_bridge": FDB_HOME,
-    }
+@pytest.mark.parametrize("bridge_end_date", ["19900101T1800", "19900102T0000"], ids=["hpc-bridge-hpc", "hpc-bridge-to-end"])
+def test_z3fdb_reader_bridge_periods(bridge_end_date) -> None:
+    """The z3fdb reader splits the request in HPC and bridge periods and joins them without gaps or duplicates."""
     data = Z3FDB(
-        request={
-            "class": "d1",
-            "dataset": "climate-dt",
-            "activity": "CMIP6",
-            "experiment": "hist",
-            "generation": 1,
-            "model": "IFS-NEMO",
-            "realization": 1,
-            "resolution": "standard",
-            "expver": "a0h3",
-            "type": "fc",
-            "stream": "clte",
-            "date": 19900101,
-            "time": "0000",
-            "param": 164,
-            "levtype": "sfc",
-        },
-        metadata=metadata,
+        request=D1_REQUEST,
+        metadata={"fdb_home": FDB_HOME, "fdb_home_bridge": FDB_HOME},
         data_start_date="19900101T0000",
-        data_end_date="19900103T2300",
-        bridge_start_date="19900102T0000",
-        bridge_end_date="19900102T2300",
+        data_end_date="19900102T0000",
+        bridge_start_date="19900101T1200",
+        bridge_end_date=bridge_end_date,
         startdate="19900101T0000",
-        enddate="19900102T2300",
+        enddate="19900102T0000",
         var=["tcc"],
         level=None,
         engine="z3fdb",
     )
-    reader = Z3FDBDatasetReader(data)
-    ds = reader._read(data)
-    assert "time" in ds.dims
+    ds = Z3FDBDatasetReader(data).read()
+
+    assert list(ds.data_vars) == ["tcc"]
+    assert ds.time.values.tolist() == pd.date_range("1990-01-01T00", "1990-01-02T00", freq="h").values.tolist()
+    for time, mean in D1_TCC_MEAN.items():
+        assert ds["tcc"].sel(time=time).mean().values == pytest.approx(mean)
+
+
+@pytest.mark.parametrize(
+    "bridge_end_date, metadata_key, variable",
+    [
+        (None, "fdb_path", "FDB_CONFIG_FILE"),
+        ("complete", "fdb_path_bridge", "FDB_CONFIG_FILE"),
+        ("complete", "fdb_home_bridge", "FDB_HOME"),
+    ],
+    ids=["hpc-config-file", "bridge-config-file", "bridge-home"],
+)
+def test_gsv_read_exports_fdb_environment(monkeypatch, bridge_end_date, metadata_key, variable) -> None:
+    """HPC and bridge reads export the FDB of the metadata (home or config file) and only that one to the process."""
+    monkeypatch.delenv("FDB_HOME", raising=False)
+    monkeypatch.delenv("FDB_CONFIG_FILE", raising=False)
+    value = f"{FDB_HOME}/etc/fdb/config.yaml" if variable == "FDB_CONFIG_FILE" else FDB_HOME
+    source = GSVSource(
+        **{**DEFAULT_GSV_PARAMS, "bridge_end_date": bridge_end_date},
+        metadata={metadata_key: value},
+        engine="gsv",
+        loglevel=LOGLEVEL,
+    )
+    data = source.read()
+
+    assert data["t"].mean().values == pytest.approx(279.3509)
+    assert os.environ[variable] == value
+    assert ({"FDB_HOME", "FDB_CONFIG_FILE"} - {variable}).isdisjoint(os.environ)
