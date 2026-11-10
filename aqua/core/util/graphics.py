@@ -469,16 +469,9 @@ def prettify_levels(vmin: float, vmax: float, nlevels: int) -> np.ndarray:
     nice_multipliers = [1, 2, 2.5, 5, 10]
     magnitude = 10 ** np.floor(np.log10(abs(raw_step)))
 
-    best_step = None
-    for multiplier in nice_multipliers:
-        candidate = multiplier * magnitude
-        if candidate >= raw_step:
-            best_step = candidate
-            break
-
-    if best_step is None:
-        multiplier = 10
-        best_step = 10 * magnitude
+    # 10 * magnitude always covers raw_step; the default only guards against floating point rounding
+    multiplier = next((m for m in nice_multipliers if m * magnitude >= raw_step), 10)
+    best_step = multiplier * magnitude
 
     # Build levels aligned to zero if possible (cleaner grid)
     start = np.floor(vmin / best_step) * best_step
