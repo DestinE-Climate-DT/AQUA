@@ -106,17 +106,16 @@ def plot_seasonal_lat_lon_profiles(
 
         ax.set_title(season_title)
         ax.grid(True, linestyle="--", alpha=0.7)
+        if ax.get_legend():
+            ax.get_legend().remove()
 
-        # Show legend only on the first subplot
-        if i == 0:
-            ax.legend(loc="upper right")
-        elif hasattr(ax, "legend_") and ax.legend_:
-            ax.legend_.remove()
+    # One legend for the whole figure, below the panels, so that it never covers the profiles
+    handles, labels = axs[0].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, loc="outside lower center", ncol=min(len(labels), 3), fontsize="medium")
 
-    # Add overall title if provided
+    # Add overall title if provided (placed by the constrained layout, as the legend)
     if title:
-        fig.suptitle(title, y=0.98)
-
-    fig.set_layout_engine("tight")
+        fig.suptitle(title)
 
     return fig, axs
