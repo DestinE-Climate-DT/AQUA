@@ -47,7 +47,8 @@ def plot_lat_lon_profiles(
     # Convert data to list, handling both single DataArrays and lists
     data_list = to_list(data)
 
-    # Create figure if needed
+    # Create figure if needed: a figure created here is a single panel, with a larger legend than panels of other figures
+    new_figure = fig is None and ax is None
     if fig is None:
         fig = plt.figure(figsize=figsize or figure_size(0.5), layout="constrained")  # margins fitted to the labels
     if ax is None:
@@ -103,7 +104,7 @@ def plot_lat_lon_profiles(
 
     # Finalize plot
     if data_labels:
-        ax.legend()
+        ax.legend(fontsize="medium" if new_figure else None)
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     # Set x-label based on the first valid coordinate found
