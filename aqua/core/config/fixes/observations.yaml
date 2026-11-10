@@ -248,6 +248,19 @@ fixer_name:
       tprate:
         source: pre
         src_units: mm
+      # Number of stations contributing to each cell (0: climatology), renamed after the eccodes variable
+      2t_stn:
+        source: tmp_stn
+        src_units: "1"
+      min_2t_stn:
+        source: tmn_stn
+        src_units: "1"
+      max_2t_stn:
+        source: tmx_stn
+        src_units: "1"
+      tprate_stn:
+        source: pre_stn
+        src_units: "1"
 
   # E-OBS monthly: variables are monthly means of daily values (rr in mm/day)
   eobs-eccodes-monthly:
