@@ -60,7 +60,7 @@ def plot_vertical_profile(
         cmap (str, optional): Colormap to use (default 'RdBu_r').
         cbar_label (str, optional): Label for the colorbar. Generated from data if None.
         return_fig (bool, optional): If True, return (fig, ax).
-        figsize (Tuple[int, int], optional): Figure size. Default is figure_size(0.8), with the common width.
+        figsize (Tuple[int, int], optional): Figure size. Default is figure_size(0.9), with the common width.
         fig (plt.Figure, optional): Optional figure to plot on.
         ax (plt.Axes, optional): Optional axes to plot on.
         ax_pos (Tuple[int, int, int], optional): Position of subplot.
@@ -88,7 +88,7 @@ def plot_vertical_profile(
     levels = np.linspace(vmin, vmax, nlevels)
 
     # Prepare figure and axis
-    fig = fig or plt.figure(figsize=figsize or figure_size(0.8), layout="constrained")  # margins fitted to the labels
+    fig = fig or plt.figure(figsize=figsize or figure_size(0.9), layout="constrained")  # margins fitted to the labels
     ax = ax or fig.add_subplot(*ax_pos)
 
     # Plot
