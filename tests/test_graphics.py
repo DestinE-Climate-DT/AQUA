@@ -789,7 +789,7 @@ def test_gregory_axis_limits_expand_to_the_data(plot_func):
 
     Fails on main for plot_gregory_monthly without reference data: gregory.py:139-140 and :148-149 replace
     the data limits with the fixed 11.5/16.5 and -11.5/11.5, so data outside them fall outside the axes
-    (documented in the B10 pull request).
+    (documented in #3374).
     """
     times = np.array(["2000-01-01", "2000-02-01", "2000-03-01"], dtype="datetime64[D]")
     t2m = xr.DataArray([5.0, 12.0, 20.0], dims="time", coords={"time": times})
