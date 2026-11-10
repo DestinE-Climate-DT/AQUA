@@ -292,7 +292,7 @@ class TestPrettifyLevels:
         """A step of 0.25 keeps two decimals (levels must be equally spaced).
 
         Fails on main: get_decimals(0.25) is 1, so 0.25 and 0.75 are rounded to 0.2 and 0.8
-        (and a step of 2.5 gives 0, 2, 5, 8, 10). Source problem documented in the B8 pull request.
+        (and a step of 2.5 gives 0, 2, 5, 8, 10). Source problem documented in #3371.
         """
         assert prettify_levels(0, 1, 4).tolist() == pytest.approx([0, 0.25, 0.5, 0.75, 1])
 
