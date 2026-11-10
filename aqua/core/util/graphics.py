@@ -470,20 +470,23 @@ def prettify_levels(vmin: float, vmax: float, nlevels: int) -> np.ndarray:
     magnitude = 10 ** np.floor(np.log10(abs(raw_step)))
 
     best_step = None
-    for m in nice_multipliers:
-        candidate = m * magnitude
+    for multiplier in nice_multipliers:
+        candidate = multiplier * magnitude
         if candidate >= raw_step:
             best_step = candidate
             break
 
     if best_step is None:
+        multiplier = 10
         best_step = 10 * magnitude
 
     # Build levels aligned to zero if possible (cleaner grid)
     start = np.floor(vmin / best_step) * best_step
     levels = np.arange(start, vmax + best_step * 0.5, best_step)
 
-    return np.round(levels, decimals=get_decimals(best_step))
+    # A step of 2.5 x 10^k has one more significant digit than its order of magnitude
+    decimals = get_decimals(best_step) + (1 if multiplier == 2.5 else 0)
+    return np.round(levels, decimals=decimals)
 
 
 def get_decimals(step: float) -> int:
