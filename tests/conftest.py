@@ -313,6 +313,11 @@ def ifs_tco79_long_data(ifs_tco79_long_reader):
     return ifs_tco79_long_reader.retrieve()
 
 
+@pytest.fixture(scope="session")
+def ifs_tco79_long_r100_reader():
+    return Reader(model="IFS", exp="test-tco79", source="long", loglevel=LOGLEVEL, regrid="r100")
+
+
 # ======================================================================
 # FESOM fixtures
 # ======================================================================
