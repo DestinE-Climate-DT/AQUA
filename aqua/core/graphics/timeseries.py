@@ -77,7 +77,9 @@ def plot_timeseries(
     ConfigStyle(style=style, loglevel=loglevel)
     realization = False
 
-    if fig is None and ax is None:
+    # A figure created here is a single panel: it gets a larger legend than panels of other figures
+    new_figure = fig is None and ax is None
+    if new_figure:
         fig, ax = plt.subplots(1, 1, figsize=figsize or figure_size(0.5), layout="constrained")  # margins fitted to the labels
 
     if (monthly_data is not None and ens_monthly_data is not None) or (
@@ -177,7 +179,7 @@ def plot_timeseries(
         )
 
     if legend and (data_labels != empty_label or ref_label != empty_label or ens_label != empty_label):
-        ax.legend()
+        ax.legend(fontsize="medium" if new_figure else None)
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     if title:
@@ -225,6 +227,8 @@ def plot_seasonalcycle(
     logger = log_configure(loglevel, "PlotSeasonalCycle")
     ConfigStyle(style=style, loglevel=loglevel)
 
+    # A figure created here is a single panel: it gets a larger legend than panels of other figures
+    new_figure = fig is None and ax is None
     if fig is None:
         fig = plt.figure(figsize=figsize or figure_size(0.67), layout="constrained")  # margins fitted to the labels
     if ax is None:
@@ -254,7 +258,7 @@ def plot_seasonalcycle(
         except Exception as e:
             logger.debug(f"Error plotting std data: {e}")
 
-    ax.legend()
+    ax.legend(fontsize="medium" if new_figure else None)
     ax.set_xticks(months_numeric)
     ax.set_xticklabels(months_names)
     ax.set_xlim(0.5, 12.5)
