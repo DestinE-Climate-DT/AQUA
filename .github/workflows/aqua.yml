@@ -20,14 +20,20 @@ jobs:
     # Non-PR events (listed first) always run. On PRs:
     #  - opened/synchronize/reopened: run if the PR is from Dependabot or has the 'run tests' label
     #  - labeled: run only if the label just added is 'run tests', so that adding
-    #    an unrelated label does not restart (and cancel) tests already running
+    #    an unrelated label does not restart (and cancel) tests already running.
+    #    Exception: the label Dependabot adds right after opening its PR also runs the tests.
+    #    Otherwise that skipped run may become the newest run of this workflow and hide the
+    #    passed required check, leaving the PR blocked. The two Dependabot runs share the
+    #    concurrency group, so the newer one cancels the older one.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
       (github.event.action != 'labeled' && (
         github.event.pull_request.user.login == 'dependabot[bot]' ||
         contains(format('|{0}', join(github.event.pull_request.labels.*.name, '|')), '|run tests'))) ||
-      (github.event.action == 'labeled' && startsWith(github.event.label.name, 'run tests'))
+      (github.event.action == 'labeled' && (
+        startsWith(github.event.label.name, 'run tests') ||
+        github.event.sender.login == 'dependabot[bot]'))
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-version: '3.14'
