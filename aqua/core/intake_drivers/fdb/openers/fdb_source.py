@@ -90,7 +90,8 @@ class FDBSource(ABC, FDBTimeMixin):
             bridge_end_date (str, optional): End date of data available on bridge storage. Defaults to None.
             hpc_expver (str, optional): Experiment version override for HPC partition requests. Defaults to None.
             timestyle (str, optional): Request time format style ('date', 'step', or 'yearmonth'). Defaults to 'date'.
-            chunks (str or dict, optional): Chunking frequency ('S' for single, 'D', 'M', 'Y', or dict). Defaults to 'S'.
+            chunks (str or int or dict, optional): Chunking frequency ('S' for single, 'D', 'M', 'Y'),
+                positive saved-frame count, or dict with time/vertical chunks. Defaults to 'S'.
             savefreq (str, optional): Frequency at which data was saved (e.g. 'h', '6h', 'D', 'M'). Defaults to 'h'.
             timestep (str, optional): Integration or sampling timestep (e.g. 'h', '15min'). Defaults to 'h'.
             timeshift (bool or int, optional): Shift applied to time coordinate (e.g. for monthly accumulations).
@@ -224,7 +225,7 @@ class FDBSource(ABC, FDBTimeMixin):
                 ``self.data_start_date`` to preserve historical behaviour).
             savefreq (str): Frequency at which the data are saved.
             timestep (str): Native time step.
-            chunks (str | dict): Time (and optional vertical) chunking specification.
+            chunks (str | int | dict): Time frequency or saved-frame count (and optional vertical chunks).
             level (int | float | list | None): Level(s) requested, overriding the
                 catalog default.
         """
@@ -248,7 +249,7 @@ class FDBSource(ABC, FDBTimeMixin):
             chunking_time = chunks
             chunking_vertical = None
 
-        if chunking_time.upper() == "S":  # special case: time chunking is single saved frame
+        if isinstance(chunking_time, str) and chunking_time.upper() == "S":  # single saved frame
             chunking_time = savefreq
 
         self.data_startdate, self.data_starttime = self._split_date(self.data_start_date)
