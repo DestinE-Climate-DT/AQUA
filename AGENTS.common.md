@@ -83,15 +83,13 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 
 - **No `print()`**: use `self.logger = log_configure(log_level=loglevel, log_name="ClassName")` and pass `loglevel` through every constructor
 - **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigContext` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua`
-- **Prefer `os.path` over `pathlib.Path`** for filesystem paths and directory handling.
 - **Configuration is declarative**: define grids, fixes, data models, catalogs, and analyses in YAML first; add Python `if/else` only when config cannot express the behaviour
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
 - **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
 - **Accessor contract**: if a `Reader` method returns an xarray object intended for chained AQUA operations, call `data.aqua._bind_reader(self)` before returning; only `retrieve()` calls `data.aqua.set_default(self)`, which also changes the global default for new accessors. Core utilities that transform an input keep its binding with `_preserve_reader_binding(input, output)`
 - **Minimize new attributes**: do not create new instance attributes or `AQUA_*` metadata attributes unless strictly necessary; search for and reuse existing ones first
 - **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
-- **Prefer imports at the top of the file**: avoid importing inside functions or methods unless strictly necessary
-- **Pandas is preferred over datetime**: we prefer to use pandas instead of datetime functions. datetime allowed only if the pandas solution would much more complicated.
+- **Coding rules**: follow [Preferred Tools and Coding Rules](#preferred-tools-and-coding-rules) for paths, dates, logging, imports and type hints
 
 ---
 
@@ -180,13 +178,28 @@ class MyProcessor:
         return data  # keep lazy
 ```
 
-- Use `%`-style formatting in all logger calls (`self.logger.info("val: %s", x)`) — never f-strings, to avoid eager string construction
-
 ---
 
-## Code Style
+## Preferred Tools and Coding Rules
 
-All code is linted with **Ruff**: no unused imports, no bare `except`, consistent quoting, line length ≤ 127. Run `ruff check --fix` before submitting.
+These rules apply to new and modified code. Existing code that does not follow them is updated only in lines already being changed, not in drive-by refactors.
+
+- **Linting**: all code is linted with **Ruff**: no unused imports, no bare `except`, consistent quoting, line length ≤ 127. Run `ruff check --fix` before submitting.
+- **Paths are `str`, built with `os.path`** (`os.path.join`, `os.path.exists`, `os.makedirs`, `os.path.realpath`):
+  - Do not import `pathlib` in library code and never return a `Path` object.
+  - Functions taking a path must accept both `str` and `os.PathLike` (the `os.path` functions already do).
+  - In tests, build paths with `os.path.join(tmp_path, "file.nc")`, never `tmp_path / "file.nc"`, so the test works whether a fixture yields a `str` or a `Path`.
+  - Exception: an external API that requires a `Path`; convert at that call site only.
+- **Dates and times use pandas**: `pd.Timestamp`, `pd.Timedelta`, `pd.to_datetime`, `pd.date_range`, `pd.DateOffset`, `pd.tseries.frequencies.to_offset`.
+  - Do not use the `datetime` module or `np.datetime64` / `np.timedelta64`.
+  - Exception: non-standard calendars, which pandas cannot represent; use `cftime` via `xr.date_range(..., calendar=...)` or `xr.CFTimeIndex`.
+  - This rule is about time handling only: numpy remains the default for numerical arrays.
+- **Logger calls use `%`-style arguments**: `self.logger.info("Loaded %s with %d steps", name, nsteps)`. Never f-strings or `.format()` in logger calls, to avoid eager string construction. Elsewhere, use f-strings for string formatting.
+- **Imports at the top of the file**. A function-level import is allowed only for:
+  - an optional dependency, inside `try/except ImportError` (e.g. `gsv`, `polytope`, `z3fdb`);
+  - type-checking-only imports under `if TYPE_CHECKING:`;
+  - breaking an import cycle, with a comment saying which.
+- **Type hints are optional**. When used, write built-in generics and PEP 604 unions (`list[str]`, `dict[str, int]`, `str | None`); do not use `typing.Optional`, `Union`, `List` or `Dict`.
 
 ---
 
