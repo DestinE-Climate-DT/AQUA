@@ -36,6 +36,29 @@ The default regrid method is ``ycon`` which is a conservative regrid method.
 If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
 following the CDO convention.
 
+.. _regrid-missing-values:
+
+Missing values
+^^^^^^^^^^^^^^
+
+A target cell is set to NaN when too large a fraction of its weights falls on missing source points.
+The threshold is the smmregrid ``na_thres`` (maximum fraction of missing weights), which AQUA sets to the
+smmregrid default ``'auto'``, chosen per regrid method:
+
+========================  ===============================================================================
+Regrid method             ``na_thres='auto'``
+========================  ===============================================================================
+``ycon``, ``con``         0.5: NaN if less than half of the target cell is covered by valid source points
+``bil``, ``bic``          1e-6: NaN as soon as one of the neighbours is missing
+``dis``, ``nn``, others   1.0: NaN only if no neighbour is valid
+========================  ===============================================================================
+
+For the conservative methods the threshold always applies.
+For the other methods it applies only to grids using the ``skipna`` path key (see :ref:`grid_definition`):
+without ``skipna`` CDO has already decided which target cells get a value when generating the weights.
+The threshold is not configurable from AQUA.
+See the `smmregrid documentation <https://smmregrid.readthedocs.io/en/latest/>`_ for details.
+
 
 Basic usage of the Regridder()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
