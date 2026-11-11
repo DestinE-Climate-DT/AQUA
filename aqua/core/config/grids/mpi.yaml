@@ -1,8 +1,8 @@
+# HighResMIP atmospheric grids: Max Planck Institute (MPI).
+
 grids:
   mpi-esm1-2-xr-atm:
     path:
       lev: "{{ grids }}/MPI/mpi-esm1-2-xr_atm.nc"
-    space_coord:
-    - lat
-    - lon
+    space_coord: ["lat", "lon"]
     vert_coord: lev

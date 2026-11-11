@@ -5,6 +5,7 @@ from aqua import Reader
 
 
 @pytest.mark.aqua
+@pytest.mark.network
 class TestBucket:
     """Test Reader with bucket functionality"""
 

@@ -1,5 +1,6 @@
 """Test for some of the utils"""
 
+import logging
 import os
 
 import numpy as np
@@ -43,28 +44,27 @@ def test_extract_literal_and_numeric(test_text):
         assert result == expected_output
 
 
-loglevel = LOGLEVEL
-
-
 @pytest.mark.aqua
-def test_convert_data_units():
+def test_convert_data_units(era5_hpz3_monthly_reader):
     """Test the check_data function"""
-    data = Reader(catalog="ci", model="ERA5", exp="era5-hpz3", source="monthly", loglevel=loglevel).retrieve()
+    data = era5_hpz3_monthly_reader.retrieve()
     initial_units = data["tprate"].attrs["units"]
 
     # Dataset test
-    data_test = convert_data_units(data=data, var="tprate", units="mm/day", loglevel=loglevel)
+    data_test = convert_data_units(data=data, var="tprate", units="mm/day", loglevel=LOGLEVEL)
     assert data_test["tprate"].attrs["units"] == "mm/day"
+    # 1 kg m-2 s-1 of water is 1 mm s-1, that is 86400 mm/day
+    assert data_test["tprate"].values == pytest.approx(data["tprate"].values * 86400)
 
     # DataArray test
     data = data["tprate"]
-    data_test = convert_data_units(data=data, var="tprate", units="mm/day", loglevel=loglevel)
-    # We don't test values since this is done in the test_fixer.py
+    data_test = convert_data_units(data=data, var="tprate", units="mm/day", loglevel=LOGLEVEL)
     assert data_test.attrs["units"] == "mm/day"
+    assert data_test.values == pytest.approx(data.values * 86400)
     assert f"Converting units of tprate: from {initial_units} to mm/day" in data_test.attrs["history"]
 
     # Test with no conversion to be done
-    data_test = convert_data_units(data=data, var="tprate", units=initial_units, loglevel=loglevel)
+    data_test = convert_data_units(data=data, var="tprate", units=initial_units, loglevel=LOGLEVEL)
     assert data_test.attrs["units"] == initial_units
     assert f"Converting units of tprate: from {initial_units} to mm/day" not in data_test.attrs["history"]
 
@@ -101,7 +101,7 @@ class TestFileIsComplete:
         dataset = xr.Dataset({"sample_data": data})
         dataset["sample_data"].attrs["mindate"] = mindate
         dataset.to_netcdf(filename)
-        result = file_is_complete(filename, loglevel="info")
+        result = file_is_complete(filename, loglevel=LOGLEVEL)
         assert result == expected_result
 
     @pytest.mark.parametrize("mindate,expected_result", [("2023-12-31", False), ("2024-02-01", True)])
@@ -115,35 +115,42 @@ class TestFileIsComplete:
         dataset = xr.Dataset({"sample_data": data})
         dataset["sample_data"].attrs["mindate"] = mindate
         dataset.to_netcdf(filename)
-        result = file_is_complete(filename, loglevel="info")
+        result = file_is_complete(filename, loglevel=LOGLEVEL)
         assert result == expected_result
 
-    def test_file_is_complete_nonexistent_file(self, tmp_path):
+    def test_file_is_complete_nonexistent_file(self, tmp_path, aqua_caplog):
+        caplog = aqua_caplog(logging.getLogger("file_is_complete"))
         non_existent_file = tmp_path / "non_existent.nc"
-        result = file_is_complete(non_existent_file)
+        result = file_is_complete(non_existent_file, loglevel=LOGLEVEL)
         assert result is False
+        assert f"File {non_existent_file} not found..." in caplog.messages
 
-    def test_file_is_complete_empty_file(self, tmp_path):
+    def test_file_is_complete_empty_file(self, tmp_path, aqua_caplog):
+        caplog = aqua_caplog(logging.getLogger("file_is_complete"))
         empty_file = tmp_path / "empty.nc"
         xr.DataArray().to_netcdf(empty_file)
-        result = file_is_complete(empty_file)
+        result = file_is_complete(empty_file, loglevel=LOGLEVEL)
         assert result is False
+        assert f"File {empty_file} has no time dimension!" in caplog.messages
 
-    def test_file_is_complete_nan_file(self, tmp_path):
+    def test_file_is_complete_nan_file(self, tmp_path, aqua_caplog):
+        caplog = aqua_caplog(logging.getLogger("file_is_complete"))
         nan_file = tmp_path / "nan.nc"
         nan_data = xr.DataArray(np.full((3, 4, 5), np.nan), dims=("time", "lat", "lon"))
         nan_data.to_netcdf(nan_file)
-        result = file_is_complete(nan_file)
+        result = file_is_complete(nan_file, loglevel=LOGLEVEL)
         assert result is False
-        # assert "full of NaN" in caplog.text
+        assert f"File {nan_file} is empty or full of NaN! Recomputing..." in caplog.messages
 
-    def test_file_is_complete_with_missing_time(self, tmp_path):
+    def test_file_is_complete_with_missing_time(self, tmp_path, aqua_caplog):
+        caplog = aqua_caplog(logging.getLogger("file_is_complete"))
         valid_with_missing_time_file = tmp_path / "valid_with_missing_time.nc"
-        data = xr.DataArray(np.random.rand(3, 4, 5), dims=("time", "lat", "lon"))
+        data = xr.DataArray(np.random.default_rng(0).random((3, 4, 5)), dims=("time", "lat", "lon"))
         data[0, :, :] = np.nan  # Introduce NaN value
         data.to_netcdf(valid_with_missing_time_file)
-        result = file_is_complete(valid_with_missing_time_file)
+        result = file_is_complete(valid_with_missing_time_file, loglevel=LOGLEVEL)
         assert result is False
+        assert f"File {valid_with_missing_time_file} has at least one time step with NaN! Recomputing..." in caplog.messages
 
     def test_file_is_complete_valid_with_nan(self, tmp_path):
         valid_with_nan_file = tmp_path / "valid_with_nan.nc"
@@ -310,7 +317,7 @@ def test_multiply_units_no_normalization():
 @pytest.mark.aqua
 def test_cftime_365cal():
     """Test cftime with 365-day calendar"""
-    reader = Reader(catalog="ci", model="CMCC", exp="cftime_365cal", source="monthly-atm", areas=False, loglevel=loglevel)
+    reader = Reader(catalog="ci", model="CMCC", exp="cftime_365cal", source="monthly-atm", areas=False, loglevel=LOGLEVEL)
     data = reader.retrieve()
 
     # Assert that the calendar was correctly translated to datetime64[us]

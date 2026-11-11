@@ -17,7 +17,7 @@ class TestFilterKey:
             source="original_2d_filter",
             startdate="1985-01-01",
             enddate="1985-12-31",
-            LOGLEVEL=LOGLEVEL,
+            loglevel=LOGLEVEL,
         )
         data = reader.retrieve()
         assert data.time.size == 1  # Expecting 12 months of data for the year 1985
@@ -29,12 +29,12 @@ class TestFilterKey:
                 model="FESOM",
                 exp="test-pi",
                 source="original_2d_filter",
-                LOGLEVEL=LOGLEVEL,
+                loglevel=LOGLEVEL,
                 startdate="2020-01-01",
                 enddate="2020-12-31",
             )
 
     def test_no_filter_key(self):
-        reader = Reader(model="FESOM", exp="test-pi", source="original_2d_filter", LOGLEVEL=LOGLEVEL)
+        reader = Reader(model="FESOM", exp="test-pi", source="original_2d_filter", loglevel=LOGLEVEL)
         data = reader.retrieve()
         assert data.time.size == 2  # Expecting multiple years of data

@@ -2,9 +2,7 @@
 
 import xarray as xr
 
-# set default options for xarray
-xr.set_options(keep_attrs=True)
-
+from .util import _preserve_reader_binding
 
 TRIPLET_MONTHS = {
     "DJF": [12, 1, 2],  # December-January-February
@@ -110,7 +108,7 @@ def select_season(xr_data, season: str):
         )
         # Add AQUA_season attribute
         selected.attrs["AQUA_season"] = season
-        return selected
+        return _preserve_reader_binding(xr_data, selected)  # Keep the input Reader without changing the global default.
     elif season == "annual":
         return xr_data
     else:
