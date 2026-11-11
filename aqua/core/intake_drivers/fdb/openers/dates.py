@@ -1,4 +1,4 @@
-"""Date-resolution helpers for FDB/GSV sources (DestinE GSV schema specific).
+"""Date-resolution helpers for FDB sources (DestinE GSV schema specific).
 
 This mixin groups every way the available data window can be discovered for a
 DestinE GSV experiment: from an explicit catalog entry, from an ``fdb_info`` file,
@@ -19,11 +19,13 @@ from ruamel.yaml import YAML
 
 from aqua.core.util import to_list
 
+from .timeutil import FDBTimeMixin
+
 BRIDGE_API_URL = "https://qubed.lumi.apps.dte.destination-earth.eu/api/v2/stac"  # LUMI QUBED STAC API
 
 
 class FDBDatesMixin:
-    """Resolve data/bridge availability dates for a DestinE GSV source."""
+    """Resolve data/bridge availability dates for a DestinE FDB source."""
 
     def _define_start_end_dates(self, data_start_date, data_end_date, bridge_start_date, bridge_end_date):
         """
@@ -36,7 +38,7 @@ class FDBDatesMixin:
             bridge_end_date (str): End date of the bridge data.
         """
         # Getting info from the FDB info file
-        if self.engine == "gsv":
+        if self.engine in ("gsv", "z3fdb"):
             fdb_info = self._read_fdb_info()
         else:
             fdb_info = None
@@ -199,6 +201,7 @@ class FDBDatesMixin:
             return None
         if "bridge" in fdb_info:
             try:
+                fdb_info["bridge"].setdefault("bridge_start_date", fdb_info["data"]["data_start_date"])
                 fdb_info["bridge"]["bridge_start_date"] = self._validate_info_date(fdb_info, "bridge", "start")
                 fdb_info["bridge"]["bridge_end_date"] = self._validate_info_date(fdb_info, "bridge", "end")
             # if bridge dates are wrongly defined, set the bridge block to None
@@ -293,7 +296,8 @@ class FDBDatesMixin:
             tuple: A tuple containing the start and end dates of the dataset
         """
 
-        # Define the base URL for the STAC API
+        # STAC discovery must not change the subsequent data request.
+        params = params.copy()
         params["root"] = "root"
         params["param"] = to_list(params["param"])[0]
         for p in ["date", "time", "step", "year", "month"]:
@@ -333,3 +337,7 @@ class FDBDatesMixin:
         sorted_dates = sorted(dates)
 
         return sorted_dates[0], sorted_dates[-1]
+
+
+class FDBDateResolver(FDBDatesMixin, FDBTimeMixin):
+    """Hold temporary date-discovery and validation state for one read."""

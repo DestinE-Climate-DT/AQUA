@@ -41,7 +41,7 @@ from aqua.core.logger import log_configure, log_history
 from aqua.core.util import to_list
 from aqua.core.util.eccodes import get_eccodes_attr
 
-from .timeutil import FDBTimeMixin
+from .timeutil import FDBTimeMixin, build_time_request
 
 
 class FDBSource(ABC, FDBTimeMixin):
@@ -384,39 +384,17 @@ class FDBSource(ABC, FDBTimeMixin):
         if self.chunking_vertical:
             request["levelist"] = self.chk_vert[j]
 
-        if self.timestyle == "date":
-            dds, tts = self._date2str(self.chk_start_date[i])
-            dde, tte = self._date2str(self.chk_end_date[i])
-            if ((dds == dde) and (tts == tte)) or first:
-                request["date"] = f"{dds}"
-                request["time"] = f"{tts}"
-            else:
-                request["date"] = f"{dds}/to/{dde}"
-                request["time"] = f"{tts}/to/{tte}"
-
-        elif self.timestyle == "step":  # style is 'step'
-            request["date"] = self.data_startdate
-            request["time"] = self.data_starttime
-            s0 = self.chk_start_idx[i]
-            s1 = self.chk_end_idx[i]
-            if s0 == s1 or first:
-                request["step"] = f"{s0}"
-            else:
-                request["step"] = f"{s0}/to/{s1}"
-
-        elif self.timestyle == "yearmonth":  # style is 'yearmonth'
-            yys, mms = self._date2yyyymm(self.chk_start_date[i])
-            yye, mme = self._date2yyyymm(self.chk_end_date[i])
-            if (yys == yye) or first:
-                request["year"] = f"{yys}"
-            else:
-                request["year"] = f"{yys}/to/{yye}"
-            if (mms == mme) or first:
-                request["month"] = f"{mms}"
-            else:
-                request["month"] = f"{mms}/to/{mme}"
-        else:
-            raise ValueError(f"Timestyle {self.timestyle} not supported")
+        start = self.chk_start_date[i]
+        end = start if first else self.chk_end_date[i]
+        request.update(
+            build_time_request(
+                self.timestyle,
+                start,
+                end,
+                reference=(self.data_startdate, self.data_starttime),
+                steps=(self.chk_start_idx[i], self.chk_start_idx[i] if first else self.chk_end_idx[i]),
+            )
+        )
 
         if onelevel:  # limit to one single level
             request["levelist"] = request["levelist"][0]

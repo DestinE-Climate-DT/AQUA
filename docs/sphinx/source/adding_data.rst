@@ -383,12 +383,20 @@ Some of the parameters are here described:
       vertical: 3  # Three vertical levels in each chunk
 
 .. note::
-    When using the ``z3fdb`` engine, chunking is supported differently:
+    With ``z3fdb``, frequency chunks such as ``D``, ``MS`` and ``6h`` group
+    samples by calendar day, calendar month or six-hour interval, including
+    partial bins and bins spanning HPC/bridge periods. ``S`` gives single saved
+    frames. An integer ``time`` value groups that many samples. By default all
+    selected levels share a chunk; ``vertical`` (or ``level``) sets a level count.
 
-    * **Time direction**: Chunking is always by single time steps.
-    * **Level direction**: By default, level chunking is not performed.
-    * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
-    * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
+.. warning::
+    Fixed time counts must fit each native request part's time axis. Vertical
+    sizes must divide the selected level count; otherwise the driver warns and
+    uses single-level chunks. These native constraints come from `z3fdb's API
+    <https://sites.ecmwf.int/docs/fdb/develop/z3fdb/api.html>`_.
+    Frequency-based time chunks can also produce incompatible native read groups
+    and raise an error; the driver does not retry with single-timestep output
+    chunks. See :ref:`z3fdb-chunking` for examples and restrictions.
 
 .. option:: timestep
 
@@ -410,10 +418,12 @@ Some of the parameters are here described:
 
 .. option:: timestyle
 
-    The timestyle parameter can be set to either ``date`` or ``yearmonth`` according to the FDB schema.
+    The timestyle parameter can be ``date``, ``step`` or ``yearmonth`` according to the FDB schema.
     Indeed, it determines how the time axis data is written in the FDB.
 
     The above examples have used ``date``, directly specifying both ``date`` and ``time`` in the request.
+    With ``step``, the reference date/time stays fixed at ``data_start_date`` and forecast steps
+    vary in units of ``timestep``. These styles are honored by both GSV and z3fdb.
     When using instead the ``yearmonth`` timestyle you do not have to set neither time or date in the request.
     On the contrary, the ``year`` and ``month`` keys need to be specified.
     The FDB module will then build the corresponding request.
@@ -422,7 +432,9 @@ Some of the parameters are here described:
 
 .. option:: timeshift
 
-    Timeshift is a boolean parameter used exclusively for shifting the date of monthly data back by one month.
+    Timeshift is a legacy boolean parameter used exclusively for shifting the date of monthly data back by one month.
+    It works only with GSV, not z3fdb. With ``engine="z3fdb"``, leave it unset
+    or false; a true value raises an error.
 
     Implementing this correctly in a general case can be quite complex, so it was decided to implement only the monthly shift.
 

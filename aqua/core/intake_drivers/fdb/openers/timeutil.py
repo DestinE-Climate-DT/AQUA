@@ -6,18 +6,70 @@ import numpy as np
 import pandas as pd
 
 
+def build_time_request(timestyle, start, end, reference=None, steps=None):
+    """Format inclusive time bounds as MARS/FDB request fields.
+
+    Args:
+        timestyle (str): Storage style: ``date`` for date/time fields,
+            ``yearmonth`` for year/month fields, or ``step`` for forecast steps.
+        start (pandas.Timestamp): First requested timestamp; unused for ``step``.
+        end (pandas.Timestamp): Last requested timestamp; unused for ``step``.
+        reference (tuple[str, str], optional): Forecast reference date and time
+            as ``YYYYMMDD`` and ``HHMM`` strings. Required for ``step``.
+        steps (tuple[int, int], optional): Inclusive forecast step bounds in
+            native timestep units, relative to ``reference``. Required for ``step``.
+
+    Returns:
+        dict[str, str]: Request fields with a single value for equal bounds or
+        ``first/to/last`` for a range. Forecast requests retain the reference
+        date/time and put the range in ``step``.
+
+    Raises:
+        ValueError: If the storage style is unsupported or forecast bounds
+            or their reference are missing.
+    """
+    if timestyle == "step":
+        if reference is None or steps is None:
+            raise ValueError("Step requests require a reference date/time and step bounds.")
+        a, b = steps
+        return {"date": reference[0], "time": reference[1], "step": str(a) if a == b else f"{a}/to/{b}"}
+    if timestyle == "date":
+        keys, formats = ("date", "time"), ("%Y%m%d", "%H%M")
+    elif timestyle == "yearmonth":
+        keys, formats = ("year", "month"), ("%Y", "%m")
+    else:
+        raise ValueError(f"Timestyle {timestyle} not supported")
+    request = {}
+    for key, fmt in zip(keys, formats):
+        a, b = start.strftime(fmt), end.strftime(fmt)
+        request[key] = a if a == b else f"{a}/to/{b}"
+    return request
+
+
 class FDBTimeMixin:
     """Time and calendar calculations for FDB/GSV sources."""
 
     @staticmethod
-    def _date2str(dateobj):
-        """Converts a date object to a date, time string representation"""
-        return dateobj.strftime("%Y%m%d"), dateobj.strftime("%H%M")
+    def _saved_time_indices(dates, savefreq, offset=None):
+        """Select the first native timestep in each saved-frequency bucket.
 
-    @staticmethod
-    def _date2yyyymm(dateobj):
-        """Converts a date object to year, month string representation"""
-        return dateobj.strftime("%Y"), dateobj.strftime("%m")
+        Args:
+            dates (pandas.DatetimeIndex): Chronologically ordered native timestamps.
+            savefreq (str): Pandas resampling frequency for the saved output.
+            offset (pandas.Timedelta, optional): Shift of resampling bucket origins
+                for tick frequencies, for example to retain a daily output clock.
+
+        Returns:
+            numpy.ndarray: Integer positions in ``dates`` of the first timestamp
+            in each bucket, in chronological order.
+
+        Raises:
+            ValueError: If any resampling bucket contains no native timestep.
+        """
+        indices = pd.Series(np.arange(len(dates)), index=dates).resample(savefreq, offset=offset).min()
+        if indices.isna().any():
+            raise ValueError("Saved frequency is finer than the available native timesteps.")
+        return indices.to_numpy(dtype=int)
 
     def _add_offset(self, data_start_date, offset, timestep):
         """Sets initial date based on an offset in steps"""
@@ -36,20 +88,20 @@ class FDBTimeMixin:
     def _check_dates(self):
         """Check if starting and ending dates are within given range"""
         startdate = pd.Timestamp(str(self.startdate))
-        start_date = pd.Timestamp(str(self.data_start_date))
+        start_date = pd.Timestamp(str(self.data_start_date)) if self.data_start_date is not None else None
         enddate = pd.Timestamp(str(self.enddate))
-        end_date = pd.Timestamp(str(self.data_end_date))
+        end_date = pd.Timestamp(str(self.data_end_date)) if self.data_end_date is not None else None
 
-        if startdate < start_date:
+        if start_date is not None and startdate < start_date:
             raise ValueError(f"Starting date {self.startdate} is earlier than the data start at {self.data_start_date}.")
 
-        if enddate > end_date:
+        if end_date is not None and enddate > end_date:
             raise ValueError(f"End date {self.enddate} is later than the data end at {self.data_end_date}.")
 
         if startdate > enddate:
             raise ValueError(f"Start date {self.startdate} is later than the end date at {self.enddate}.")
 
-        if start_date > end_date:
+        if start_date is not None and end_date is not None and start_date > end_date:
             raise ValueError(f"Data start date {self.data_start_date} is later than the data end at {self.data_end_date}.")
 
     @staticmethod
@@ -108,7 +160,7 @@ class FDBTimeMixin:
                 ts = pd.Series(idx[1:], index=dates[idx[0:-1]])
                 idx = idx[0:-1]
             else:
-                idx = ts.resample(savefreq).min().values
+                idx = self._saved_time_indices(dates, savefreq)
                 ts = pd.Series(idx, index=dates[idx])
 
         tsr = ts.resample(chunkfreq)

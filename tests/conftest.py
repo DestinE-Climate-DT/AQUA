@@ -11,14 +11,25 @@ import subprocess
 import sys
 import tempfile
 import warnings
+from functools import cache
+from io import BytesIO
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import matplotlib
+import numpy as np
+import pandas as pd
 import pytest
+import xarray as xr
+import zarr
 from utils_tests import LOGLEVEL, make_private_config
 
 from aqua import Reader
 from aqua.core.backend.backend import Backend
+from aqua.core.intake_drivers.fdb.openers import gsv_source
+from aqua.core.intake_drivers.fdb.openers import z3fdb_opener as z
 from aqua.core.lock import SafeFileLock
+from aqua.core.util import dump_yaml
 
 matplotlib.use("Agg")  # Non-interactive backend
 
@@ -240,6 +251,98 @@ def pytest_runtest_makereport(item, call):
     if call.when == "call" or call.excinfo:
         outcome = "failed" if call.excinfo else "passed"
         _log_xdist_event(item.config, "finished" if call.when == "call" else call.when, item.nodeid, outcome)
+
+
+# ===================== FDB boundaries =====================
+@pytest.fixture(scope="session")
+def fdb_grib_message():
+    """Encode grid metadata in memory with ecCodes; no test-data files are written."""
+    ecc = pytest.importorskip("eccodes")
+
+    @cache
+    def encode(grid_type="healpix", **keys):
+        handle = ecc.codes_grib_new_from_samples("regular_ll_sfc_grib2")
+        try:
+            ecc.codes_set(handle, "gridType", grid_type)
+            if grid_type == "healpix":
+                keys = {"Nside": 1, "ordering": 0, "longitudeOfFirstGridPointInDegrees": 45, **keys}
+            for key, value in keys.items():
+                ecc.codes_set(handle, key, value)
+            if grid_type == "healpix":
+                ecc.codes_set_values(handle, np.arange(12 * keys["Nside"] ** 2))
+            elif grid_type == "regular_ll":
+                ecc.codes_set_values(handle, np.arange(ecc.codes_get(handle, "Ni") * ecc.codes_get(handle, "Nj")))
+            return ecc.codes_get_message(handle)
+        finally:
+            ecc.codes_release(handle)
+
+    return encode
+
+
+@pytest.fixture
+def z3fdb_store(monkeypatch, tmp_path, fdb_grib_message):
+    """Replace only native FDB access; run real AQUA helpers and real Zarr/Dask I/O."""
+    if not z.z3fdb_available:
+        pytest.skip("z3fdb and pyfdb are required for the native axis definitions")
+    monkeypatch.setenv("FDB_HOME", str(tmp_path))
+    monkeypatch.delenv("FDB_CONFIG_FILE", raising=False)
+
+    def install(shapes, *, message=None, values=None):
+        shapes = shapes if isinstance(shapes, list) else [shapes]
+        fdb = SimpleNamespace(calls=[], streams=[], stores=[], configs={})
+        for name in ("hpc", "bridge"):
+            config = os.path.join(tmp_path, name, "etc/fdb/config.yaml")
+            os.makedirs(os.path.dirname(config), exist_ok=True)
+            dump_yaml(config, {"type": "local", "name": name})
+            fdb.configs[name] = config
+        fdb.metadata = {"fdb_path": fdb.configs["hpc"], "fdb_path_bridge": fdb.configs["bridge"]}
+
+        def make_builder(config):
+            builder = Mock()
+            builder.add_part.side_effect = lambda request, axes, extractor: fdb.calls.append(
+                SimpleNamespace(request=request.copy(), axes=axes, config=config)
+            )
+
+            def build():
+                shape = shapes[len(fdb.stores) % len(shapes)]
+                axes = builder.add_part.call_args.args[1]
+                chunks = [
+                    size if axis.chunking == z.Chunking.WHOLE_AXIS else getattr(axis.chunking, "chunkShape", 1)
+                    for axis, size in zip(axes, shape)
+                ]
+                chunks += list(shape[len(chunks) :])
+                content = {"shape": shape, "dtype": "float32", "fill_value": 0} if values is None else {"data": values}
+                array = zarr.create_array(store=zarr.storage.MemoryStore(), chunks=tuple(chunks), **content)
+                fdb.stores.append(array.store)
+                return array.store
+
+            builder.build.side_effect = build
+            return builder
+
+        def retrieve(request):
+            stream = BytesIO(fdb_grib_message() if message is None else message)
+            fdb.streams.append(stream)
+            return stream
+
+        fdb.retrieve = Mock(side_effect=retrieve)
+        monkeypatch.setattr(z, "SimpleStoreBuilder", Mock(side_effect=make_builder))
+        monkeypatch.setattr(z.pyfdb, "FDB", Mock(return_value=Mock(retrieve=fdb.retrieve)))
+        return fdb
+
+    return install
+
+
+@pytest.fixture
+def gsv_boundary(monkeypatch):
+    """Replace the external GSV retriever while retaining AQUA's real GSV planning."""
+    if not gsv_source.gsv_available:
+        pytest.skip("GSV is required to check shared time-request compatibility")
+    sample = xr.Dataset(
+        {"t": (("time", "ncells"), np.ones((1, 12)), {"GRIB_paramId": 130})}, coords={"time": [pd.Timestamp("20200101")]}
+    )
+    retrieve = Mock(return_value=sample)
+    monkeypatch.setattr(gsv_source, "GSVRetriever", Mock(return_value=Mock(request_data=retrieve)))
+    return retrieve
 
 
 # ===================== Reader and Retrieve fixtures ===================
