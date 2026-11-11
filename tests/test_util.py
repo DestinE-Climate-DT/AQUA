@@ -13,6 +13,7 @@ from utils_tests import LOGLEVEL
 from aqua import Reader
 from aqua.core.util import (
     convert_data_units,
+    deep_merge,
     extract_attrs,
     extract_literal_and_numeric,
     file_is_complete,
@@ -188,6 +189,35 @@ def test_to_list(arg, expected):
 
 
 @pytest.mark.aqua
+@pytest.mark.aqua
+class TestDeepMerge:
+    """Tests for deep_merge"""
+
+    def test_nested_merge(self):
+        base = {"a": 1, "b": {"x": 1, "y": {"p": 1, "q": 2}}}
+        override = {"b": {"y": {"q": 3}, "z": 4}, "c": 5}
+        assert deep_merge(base, override) == {"a": 1, "b": {"x": 1, "y": {"p": 1, "q": 3}, "z": 4}, "c": 5}
+
+    def test_lists_and_scalars_are_replaced(self):
+        base = {"a": [1, 2], "b": {"x": 1}, "c": 1}
+        override = {"a": [3], "b": 2, "c": {"y": 1}}
+        assert deep_merge(base, override) == {"a": [3], "b": 2, "c": {"y": 1}}
+
+    def test_none_override(self):
+        base = {"a": {"b": 1}}
+        assert deep_merge(base, None) == base
+
+    def test_inputs_not_modified(self):
+        base = {"a": {"x": 1}, "l": [1]}
+        override = {"a": {"y": 2}, "n": {"k": 1}}
+        result = deep_merge(base, override)
+        result["a"]["x"] = 99
+        result["n"]["k"] = 99
+        result["l"].append(2)
+        assert base == {"a": {"x": 1}, "l": [1]}
+        assert override == {"a": {"y": 2}, "n": {"k": 1}}
+
+
 def test_format_realization():
     """Test the format_realization function"""
     assert format_realization() == "r1"
