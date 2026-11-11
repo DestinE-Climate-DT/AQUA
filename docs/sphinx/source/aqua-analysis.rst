@@ -24,6 +24,11 @@ Inside each diagnostic folder, the output will be saved in a subfolder named wit
 The exact list of diagnostics to run and technical details of the analysis
 (such as the number of workers/thread/memory to use for the dask cluster) are specified in the configuration file ``config.aqua-analysis.yaml``.
 
+For FDB sources, set ``engine: z3fdb`` (or another retrieval engine) under ``args``
+in the Intake catalog source entry to use it across collections. Readers use the catalog
+engine unless explicitly overridden through ``reader_kwargs``; when neither specifies
+an engine, they use ``gsv``.
+
 .. note::
     The ``config.aqua-analysis.yaml`` file is available in the `aqua-diagnostic <https://aqua-diagnostics.readthedocs.io/en/latest/>`_ package
     in the ``aqua/diagnostics/config/analysis`` folder and it is installed

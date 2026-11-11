@@ -184,7 +184,7 @@ Key configuration options include:
 - ``frequency``: target temporal frequency (e.g., ``monthly``, ``daily``, ``3hourly``)
 - ``stat``: statistic to compute (``mean``, ``std``, ``max``, ``min``)
 - ``region``: spatial subsetting configuration
-- ``engine``: The engine used for the GSV retrieval, options are 'fdb', 'polytope' and 'z3fdb'.
+- ``engine``: The FDB retrieval engine, options are 'gsv', 'polytope' and 'z3fdb'.
 
 .. warning::
     Catalog detection is automatic, but specify the catalog name explicitly in the configuration
@@ -302,7 +302,7 @@ Controls processing behavior and performance settings:
 .. code-block:: yaml
 
     options:
-      engine: fdb
+      engine: null
       loglevel: INFO
       driver: netcdf
       overwrite: False
@@ -311,10 +311,10 @@ Controls processing behavior and performance settings:
       chunk_target: 128MiB
       performance_reporting: False
 
-- **engine** (string, optional): Data retrieval engine. Default: ``fdb``
+- **engine** (string, optional): Data retrieval engine. Default: ``null`` (use the catalog engine, then ``gsv``).
 
-  - needed only for GSV retrieval, options are 'fdb', 'polytope' and 'z3fdb'
-  - ``fdb``: Fields DataBase, you should be on the same machine where the database is located
+  - needed only for FDB retrieval, options are 'gsv', 'polytope' and 'z3fdb'
+  - ``gsv``: Fields DataBase, you should be on the same machine where the database is located
   - ``polytope``: Polytope service (remote access). Be sure to have the correct credentials and network access to use this option.
   - ``z3fdb``: Alternative FDB engine wrapping FDB GRIB messages into a lazy zarr-like interface.
 
@@ -609,7 +609,9 @@ Usage
 
 .. option:: --engine
 
-    The engine used for the GSV retrieval, options are 'fdb' (default), 'polytope' and 'z3fdb'.
+    The FDB retrieval engine, options are 'gsv', 'polytope' and 'z3fdb'.
+    Overrides ``options.engine`` from the DROP configuration. If neither is set,
+    the catalog engine is used, falling back to ``gsv``.
 
 .. option:: --driver
 

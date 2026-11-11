@@ -4,6 +4,7 @@ import xarray as xr
 
 from aqua.core.configurer import ConfigCatalog
 from aqua.core.data_model import DataModel
+from aqua.core.default import DEFAULT_ENGINE
 from aqua.core.fixer import Fixer
 from aqua.core.logger import log_history
 from aqua.core.util import to_list
@@ -46,7 +47,7 @@ class BackendIntakeFDB(Backend, CatalogMixin):
         chunks: str | dict = None,
         fixer: Fixer = None,
         datamodel: DataModel = None,
-        engine: str = "gsv",
+        engine: str = None,
         databridge: str = None,
         loglevel: str = "WARNING",
         **kwargs,
@@ -64,17 +65,24 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                                            Defaults to None (use the catalog default).
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
             datamodel (DataModel, optional): An instance of DataModel to standardize coordinates. Defaults to None.
-            engine (str, optional): Engine used for GSV retrieval, 'gsv', 'polytope' or 'z3fdb'. Defaults to 'gsv'.
+            engine (str, optional): Engine used for FDB retrieval, 'gsv', 'polytope' or 'z3fdb'.
+                Defaults to None (use the catalog engine, falling back to 'gsv'). Explicit values override the catalog.
             databridge (str, optional): Only for the polytope engine: 'lumi' or 'mn5'. Defaults to None.
             loglevel (str, optional): Logging level. Defaults to 'WARNING'.
             kwargs: Additional intake parameters forwarded to the catalog source entry.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.loglevel = loglevel
-        self.engine = engine
         self.databridge = databridge
 
         self.setup_catalog(model, exp, source, configurer_catalog, catalog, chunks, **kwargs)
+
+        if engine is None:
+            # Intake's resolved constructor arguments preserve aliases such as 'polytope-gsv'.
+            engine = self.esmcat._captured_init_kwargs.get("engine")
+        if engine is None:
+            engine = DEFAULT_ENGINE
+        self.engine = engine
 
         # Check machine compatibility
         self.machine_from_catalog = self.expcat.metadata.get("machine")
@@ -88,13 +96,12 @@ class BackendIntakeFDB(Backend, CatalogMixin):
                 )
 
         # Inject engine and databridge into kwargs for GSV/FDB sources.
-        # CatalogMixin._filter_kwargs is source-agnostic and does not add these;
-        # we mirror the legacy Reader._filter_kwargs GSV logic here.
+        # Explicit engine choices must also override catalog parameter defaults.
         # Use the catalog 'machine' metadata as the polytope databridge target when
         # the caller has not supplied one explicitly (mirrors Reader.machine_from_catalog).
         # The machine name is striped of any partition info (e.g. "lumi-44" -> "lumi").
         needs_rebuild = False
-        if "engine" not in self.kwargs:
+        if self.kwargs.get("engine") != engine:
             self.kwargs["engine"] = engine
             self.logger.debug("Adding engine=%s to filtered kwargs", engine)
             needs_rebuild = True

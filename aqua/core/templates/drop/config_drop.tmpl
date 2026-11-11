@@ -37,8 +37,8 @@ paths:
 # Processing options
 options:
 
-  # The engine used for the GSV retrieval, options are 'gsv' (default), 'polytope' and 'z3fdb'.
-  engine: 'gsv'
+  # FDB retrieval engine: null uses the catalog engine, falling back to 'gsv'; alternatives: 'polytope', 'z3fdb'.
+  engine: null
 
   loglevel: INFO
 

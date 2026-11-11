@@ -82,7 +82,7 @@ class Drop:
         stat="mean",
         stat_kwargs={},
         compact="xarray",
-        engine="gsv",
+        engine=None,
         output_format="netcdf",
         chunk_target=DEFAULT_DROP_CHUNK_TARGET,
         **kwargs,
@@ -139,7 +139,7 @@ class Drop:
             compact (string, opt):   Compact data into yearly files. NetCDF supports "xarray" or "cdo";
                                      Zarr supports "xarray" only. If set to None, no compacting is performed.
                                      Default is "xarray"
-            engine (string, opt):    Engine to be used by the Reader. Default is 'gsv'.
+            engine (string, opt):    Engine to be used by the Reader. Defaults to the catalog engine, then 'gsv'.
             output_format (string, opt): Output format: 'netcdf', 'zarr' or 'icechunk'.
                                          Default is 'netcdf'. When set to 'icechunk',
                                          catalog entry generation is skipped.

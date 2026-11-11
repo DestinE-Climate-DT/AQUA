@@ -344,6 +344,9 @@ Some of the parameters are here described:
     The default is ``gsv``. Alternatives are ``polytope`` (see :ref:`polytope`), ``polytope-gsv`` (functionally identical to ``polytope``at the moment) and ``z3fdb``.
     To use the ``z3fdb`` alternative access method, you must specify ``engine="z3fdb"``
     when instantiating the ``Reader`` class, or configure it as ``engine: z3fdb`` in the intake catalog source entry.
+    An explicit ``Reader(engine=...)`` overrides the catalog engine. Omitting the argument
+    or passing ``None`` uses the engine from the catalog's ``args`` (including templated parameters),
+    falling back to ``gsv`` when neither specifies one.
 
 .. option:: config_fdb
 
