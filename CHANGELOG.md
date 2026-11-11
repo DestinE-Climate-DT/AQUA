@@ -17,6 +17,7 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Add `Reader.info()` and the `data.aqua.info()` accessor to inspect how data were produced: fixer, data model and grids of the Reader, plus the `AQUA_*` attributes and `history` of the data (#XXXX)
 - CI: the labeled run that Dependabot starts when opening its PR also runs the tests, so a skipped run no longer hides the passed required check and blocks the PR (#3389)
 - CI: the AQUA tests workflow also runs on `merge_group` events, so its required check reports in the merge queue.
 - Support positive integer time chunk sizes as saved-frame counts in the GSV and Polytope engines, including partial final chunks (#3363).

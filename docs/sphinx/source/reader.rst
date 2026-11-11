@@ -110,7 +110,14 @@ layout and examples of selecting collections, items and assets.
 The names ``collection``, ``item`` and ``asset`` are aliases for ``model``,
 ``exp`` and ``source``, respectively.
 
-If some information about the data is needed, it is possible to use the ``info()`` method of the ``Reader`` class.
+To check how the retrieved data were produced, use ``reader.info(data)`` or the accessor ``data.aqua.info()``,
+which log (at INFO level) and return a dictionary, displayed as an indented block. The ``"reader"`` key holds the Reader settings: whether the fixer is on
+(``fix``, ``fixer``, ``convention``), the ``datamodel``, the source grid and the target grid
+(``tgt_grid`` is None if regridding is not available).
+The ``"data"`` key holds, once, the ``AQUA_*`` attributes shared by all variables (catalog, model, exp, source, ...)
+and the ``history``; ``AQUA_regridded`` is False if the data have not been regridded.
+The ``"variables"`` key lists only the variables whose ``AQUA_*`` attributes differ, e.g. ``AQUA_formula``
+for a variable derived from a formula.
 
 The ``retrieve()`` method accepts further arguments to select only specific variables or vertical levels as in this example:
 
