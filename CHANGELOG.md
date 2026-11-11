@@ -17,6 +17,8 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Add `CRU-TS-default` fixer for CRU TS monthly data: `tmp`, `tmn`, `tmx` from degrees Celsius to K and `pre` from monthly totals to `tprate`, using the days of each month; station counts `*_stn` renamed after the eccodes names (e.g. `2t_stn`); `degrees Celsius` added to the unit aliases in `default.yaml` (#3382)
+- Agent instructions: map new sources through the eccodes convention first, and write a `fixer_name` only for what the convention cannot express (#3382)
 - CI: the labeled run that Dependabot starts when opening its PR also runs the tests, so a skipped run no longer hides the passed required check and blocks the PR (#3389)
 - CI: the AQUA tests workflow also runs on `merge_group` events, so its required check reports in the merge queue.
 - Support positive integer time chunk sizes as saved-frame counts in the GSV and Polytope engines, including partial final chunks (#3363).

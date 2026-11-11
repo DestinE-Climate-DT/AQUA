@@ -17,6 +17,11 @@ These instructions apply only to the AQUA-core repository. Read them after
 - At write/output boundaries, use `_compute_data()` in the writer to materialise data.
 - CLI commands go in `aqua/core/console/` and register in `AquaConsole.command_map`; parser definitions in `aqua/core/console/parser.py`
 
+## Fixes
+
+- **Convention first, fixer second**: to map a new source to AQUA names and units, first rely on the eccodes convention (`aqua/core/config/fixes/convention-eccodes.yaml`): add the source variable name to the `source` aliases of the target variable, as done for E-OBS (`tg`, `rr`). Write a `fixer_name` block (e.g. in `observations.yaml`) only for what the convention cannot express: source units to override (`src_units`), accumulation time (`deltat`), derived variables, deletions, coordinate renames, or an alias too generic to be safe for every source.
+- Keep each `fixer_name` block minimal: do not repeat what the convention already provides (target units, `grib` attributes).
+
 ## Intake Drivers
 
 - Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope/z3fdb, `icechunk/` for IceChunk); do not bypass Intake
