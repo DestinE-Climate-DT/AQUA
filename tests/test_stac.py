@@ -137,6 +137,22 @@ class TestSTACReader:
         monkeypatch.chdir(tmp_path)  # areas/weights/grids go to ./areas, ./weights, ./grids
         reader = Reader(url=era5_item_url, stac_kwargs="data", loglevel=LOGLEVEL)
         assert reader.retrieve()["2t"].dims[-2:] == ("lat", "lon")
+        assert [p.name for p in (tmp_path / "areas").iterdir()] != ["cell_area_unknown.nc"]
+
+    def test_area_identifier(self, catalog_url, era5_item_url):
+        """Area/weight filenames depend on url and selected asset, so different assets do not collide."""
+        ids = [
+            Reader(url=url, stac_kwargs=sel, areas=False).regridder_metadata.get_path_identifier()
+            for url, sel in [
+                (catalog_url, {"ifs": {IFS_ITEM: "data"}}),
+                (catalog_url, {"era5": {ERA5_ITEM: "data"}}),
+                (era5_item_url, "data"),
+            ]
+        ]
+        assert len(set(ids)) == 3
+        # labels with stac_kwargs do not change the data, hence neither the identifier
+        labelled = Reader(url=era5_item_url, stac_kwargs="data", model="ERA5", areas=False)
+        assert labelled.regridder_metadata.get_path_identifier() == ids[2]
 
 
 class TestSTACErrors:

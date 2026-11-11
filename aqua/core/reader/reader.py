@@ -142,9 +142,15 @@ class Reader:
         self.url = url
         self.stac_kwargs = stac_kwargs
 
-        # Create regridder metadata for filename templating (supports both catalog and path-based backends)
+        # Create regridder metadata for filename templating (supports both catalog and path-based backends).
+        # STAC data are identified by url plus asset selection (stac_kwargs, else collection/item/asset),
+        # so that area and weight files of different assets do not collide.
+        data_path = path
+        if url is not None:
+            selection = stac_kwargs if stac_kwargs is not None else [self.model, self.exp, self.source]
+            data_path = f"{url}#{selection}"
         self.regridder_metadata = RegridderMetadata.from_reader(
-            model=self.model, exp=self.exp, source=self.source, path=path, **kwargs
+            model=self.model, exp=self.exp, source=self.source, path=data_path, **kwargs
         )
         self.kwargs = kwargs
 

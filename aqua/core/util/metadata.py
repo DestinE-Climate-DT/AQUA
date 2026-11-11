@@ -95,8 +95,10 @@ class RegridderMetadata:
         if not self.path:
             raise ValueError("Cannot generate path identifier: path is None")
 
-        # Normalize path for consistent hashing across different representations
-        normalized = Path(self.path).resolve().as_posix()
+        # Normalize local paths for consistent hashing across different representations;
+        # URLs (e.g. s3://, https://) are kept as they are, resolving them would depend on the cwd
+        path = str(self.path)
+        normalized = path if "://" in path else Path(path).resolve().as_posix()
 
         # Use SHA256 for cryptographic stability
         hash_obj = hashlib.sha256(normalized.encode("utf-8"))
