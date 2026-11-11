@@ -577,8 +577,9 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   so that a single 2D weights matrix handles all variables and levels,
   including masks varying in time or along any dimension. A target cell is NaN when the fraction of its weights
   on missing source points exceeds ``na_thres``, which AQUA sets to the smmregrid default ``'auto'``
-  (0.5 for the conservative methods, as without skipna; see :ref:`regrid-missing-values`). It cannot be combined with other keys
-  (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
+  (0.5 for the conservative methods, as without skipna; see :ref:`regrid-missing-values`).
+  The ``skipna`` key must be the only key of ``path``: it cannot be combined with ``2d``, ``2dm`` or 3D keys
+  such as ``depth_full`` (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
   A path value can be the reserved word ``data``: the grid is then taken from the dataset itself,
   as for grids without ``path``. ``path: {skipna: data}`` is the default ``lon-lat-skipna`` grid
   (regular lon-lat data with missing values varying in time).
