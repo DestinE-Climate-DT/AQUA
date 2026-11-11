@@ -169,7 +169,7 @@ used for example in plot titles.
     reader = Reader(path="/path/to/data.nc", model="IFS-NEMO", exp="historical", source="lra-r100-monthly", areas=False)
 
 
-.. note ::
+.. note::
     The xarray access is experimental and may not support all the functionalities of the intake backed.
     For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.
 
