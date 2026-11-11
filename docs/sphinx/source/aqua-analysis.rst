@@ -204,6 +204,52 @@ The name of the resolved kind is available to the templates as ``kind`` (e.g. ``
 so ``kind`` is a reserved key that cannot be defined in the experiment kind file.
 If no experiment kind file is set, the configuration files are used as they are, without templating.
 
+Which kind to use for each Climate DT experiment
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+The experiment kind file of the Climate DT workflow is ``climatedt-experiment-kind.yaml``,
+shipped with AQUA-diagnostics and installed in ``$AQUA_CONFIG/analysis``.
+Choose the kind from the type of experiment and from the CMIP generation of its forcing:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 30 40
+
+   * - Experiment
+     - Kind
+     - Reference datasets and period
+   * - Historical, CMIP6 forcing
+     - ``climatedt-hist-cmip6``
+     - Default references, 1990-2014 (radiation 2001-2024)
+   * - Historical, CMIP7 forcing
+     - ``climatedt-hist-cmip7``
+     - Default references, 1990-2025 (radiation 2001-2025)
+   * - Control (fixed forcing)
+     - ``default``
+     - Default references, 1990-2014 (radiation 2001-2024)
+   * - Projection (SSP), CMIP6 forcing
+     - ``climatedt-projections-cmip6``
+     - Maps as historical CMIP6; timeseries 2000-2024
+   * - Projection (SSP), CMIP7 forcing
+     - ``climatedt-projections-cmip7``
+     - Maps 1990-2025; timeseries 2000-2025
+   * - HighResMIP historical (from 1950), CMIP6 forcing
+     - ``highresmip-hist-cmip6``
+     - 1950-2014; satellite-era references replaced by ERA5
+   * - HighResMIP historical (from 1950), CMIP7 forcing
+     - ``highresmip-hist-cmip7``
+     - 1950-2025; satellite-era references replaced by ERA5
+   * - Storyline (nudged hist, cont and warmer-world runs)
+     - ``storyline``
+     - 2017-2025, OSI-SAF AMSR sea ice
+
+The kind is passed with ``aqua analysis --kind <kind>`` or, for the dashboard runs, in the ``kind`` column of
+the experiment list file (see ``cli/aqua-web/aqua-web.experiment.list``).
+``default`` is used when no kind is given.
+A kind that is not in the file (e.g. a typo, or the removed ``scenario``) stops the analysis with an error
+listing the available kinds, instead of silently running with the wrong reference period.
+For an experiment that does not fit any row, ask the AQUA team before adding a new kind to the file.
+
 Job
 ^^^
 
