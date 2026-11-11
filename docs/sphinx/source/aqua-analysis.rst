@@ -106,7 +106,10 @@ so that the script can be used in a batch job or in a workflow. These override c
 
 .. option:: --serial
 
-    Disable parallel execution with a Dask cluster. All diagnostic collections will run sequentially.
+    Disable the Dask cluster. Each diagnostic tool runs with the single-threaded synchronous Dask scheduler
+    (``DASK_SCHEDULER=synchronous``, unless ``DASK_SCHEDULER`` is already set in the environment), which is useful
+    for profiling. Collections within a ``run`` group are still launched concurrently: add ``--nmaxprocesses 1``
+    to run them one at a time.
 
 .. option:: --nworkers <nworkers>
 
