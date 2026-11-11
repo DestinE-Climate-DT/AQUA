@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 import re
+from unittest.mock import patch
 
 import dask.array as da
 import icechunk
@@ -302,12 +303,11 @@ class TestDROP:
         )
         assert os.path.isfile(file_path)
         # the file just written is complete and its last record is January
-        test.check_integrity(varname=drop_arguments["var"])
-        assert test.check is True
-        assert test.last_record == "20200101"
+        assert test.writer.validate(file_path)
 
         file = xr.open_dataset(file_path)
         assert len(file.time) == 1
+        assert pd.Timestamp(file.time.values[-1]).strftime("%Y%m%d") == "20200101"
         assert pytest.approx(file["2t"][0, 1, 1].item()) == 248.0704
 
         # verify history: it must be written, a file without it is a failure
@@ -514,7 +514,6 @@ class TestDROP:
 
         # file = xr.open_dataset(existing_file)
         # assert len(file.time) == 1
-        # test.check_integrity(varname=drop_arguments["var"])
 
     @pytest.mark.parametrize(
         "output_format,compact_method,num_months,should_concat",
@@ -583,7 +582,7 @@ class TestDROP:
             ds_yearly.close()
         else:
             # With <12 months: concatenation should not happen, monthly files/stores remain
-            assert result is False, f"Concatenation should not happen with {num_months} months"
+            assert not result, f"Concatenation should not happen with {num_months} months"
             assert not os.path.exists(yearly_file), f"Yearly {output_format} file/store should not exist"
 
             # Verify monthly files/stores still exist
@@ -802,6 +801,118 @@ class TestZarrWriter:
         """_write_chunk_to_disk returns False when the write fails."""
         ds = xr.Dataset({"var": xr.DataArray([1.0], dims=["time"])})
         assert writer._write_chunk_to_disk(ds, "/proc/nonexistent/test.zarr", None) is False
+
+
+class TestWriteExistingValidation:
+    """write_variable validates existing yearly/monthly files before skipping them."""
+
+    @pytest.fixture
+    def writer(self, tmp_path):
+        builder = OutputPathBuilder(catalog="ci", model="IFS", exp="test", resolution="r100", frequency="monthly", stat="mean")
+        tmpdir, outdir = tmp_path / "tmp", tmp_path / "out"
+        tmpdir.mkdir()
+        outdir.mkdir()
+        return NetCDFWriter(tmpdir=str(tmpdir), outdir=str(outdir), compact=None, filename_builder=builder, loglevel=LOGLEVEL)
+
+    @pytest.fixture
+    def data(self):
+        time = pd.date_range("2000-01-01", "2000-03-31", freq="D")
+        return xr.DataArray(np.random.rand(len(time)), dims=["time"], coords={"time": time}, name="2t")
+
+    @staticmethod
+    def corrupt(path):
+        with open(path, "w") as f:
+            f.write("corrupted")
+
+    def test_valid_files_are_skipped(self, writer, data):
+        """A second definitive run leaves valid files untouched."""
+        writer.write_variable(data, "2t", definitive=True)
+        jan = writer.get_filename("2t", year=2000, month=1)
+        mtime = os.path.getmtime(jan)
+        writer.write_variable(data, "2t", definitive=True)
+        assert os.path.getmtime(jan) == mtime
+
+    def test_invalid_file_is_regenerated(self, writer, data):
+        """An invalid monthly file is regenerated in a definitive run, but only reported in a dry run."""
+        writer.write_variable(data, "2t", definitive=True)
+        feb = writer.get_filename("2t", year=2000, month=2)
+        self.corrupt(feb)
+
+        writer.write_variable(data, "2t", definitive=False)
+        assert writer.report.invalid == ["2000-02"]
+        assert not writer.validate(feb)
+
+        writer.write_variable(data, "2t", definitive=True)
+        assert writer.validate(feb)
+
+    def test_overwrite(self, writer, data):
+        """With overwrite the existing files are rewritten without being validated or reported as invalid."""
+        writer.write_variable(data, "2t", definitive=True)
+        feb = writer.get_filename("2t", year=2000, month=2)
+        self.corrupt(feb)
+        writer.write_variable(data, "2t", definitive=True, overwrite=True)
+        assert writer.validate(feb)
+        assert writer.report.invalid == [] and writer.report.failed == []
+
+    def test_validate_existing_false(self, writer, data):
+        """Without validation an existing file is always kept."""
+        writer.write_variable(data, "2t", definitive=True)
+        feb = writer.get_filename("2t", year=2000, month=2)
+        self.corrupt(feb)
+        writer.write_variable(data, "2t", definitive=True, validate_existing=False)
+        assert not writer.validate(feb)
+
+    def test_failed_periods_are_reported_once(self, writer, data):
+        """A failing chunk is reported in the final summary and not retried."""
+        with patch.object(writer, "_write_chunk", return_value=False) as write:
+            writer.write_variable(data, "2t", definitive=True)
+        assert write.call_count == 3
+        assert writer.report.failed == ["2000-01 (write)", "2000-02 (write)", "2000-03 (write)"]
+
+
+class TestYearlyFiles:
+    """Yearly files must span 12 months; a partial year is not a failure but cannot fix an invalid yearly file."""
+
+    @pytest.fixture
+    def writer(self, tmp_path):
+        builder = OutputPathBuilder(catalog="ci", model="IFS", exp="test", resolution="r100", frequency="monthly", stat="mean")
+        tmpdir, outdir = tmp_path / "tmp", tmp_path / "out"
+        tmpdir.mkdir()
+        outdir.mkdir()
+        return NetCDFWriter(tmpdir=str(tmpdir), outdir=str(outdir), filename_builder=builder, loglevel=LOGLEVEL)
+
+    @staticmethod
+    def make_data(start, end):
+        time = pd.date_range(start, end, freq="D")
+        return xr.DataArray(np.random.rand(len(time)), dims=["time"], coords={"time": time}, name="2t")
+
+    def test_partial_year_is_not_a_failure(self, writer):
+        """Data ending in June: monthly files are kept, nothing is reported as failed."""
+        writer.write_variable(self.make_data("2000-01-01", "2000-06-30"), "2t", definitive=True)
+        assert writer.report.invalid == [] and writer.report.failed == []
+        assert not os.path.exists(writer.get_filename("2t", year=2000))
+        assert os.path.exists(writer.get_filename("2t", year=2000, month=6))
+
+    def test_yearly_file_with_few_months_is_invalid(self, writer):
+        """A yearly file spanning less than 12 months fails validation."""
+        writer.write_variable(self.make_data("2000-01-01", "2000-12-31"), "2t", definitive=True)
+        yearfile = writer.get_filename("2t", year=2000)
+        assert writer.validate(yearfile, min_months=12)
+        short = self.make_data("2000-01-01", "2000-06-30").to_dataset()
+        short.to_netcdf(yearfile)
+        assert writer.validate(yearfile)
+        assert not writer.validate(yearfile, min_months=12)
+
+    def test_invalid_yearly_file_with_partial_year_is_reported(self, writer):
+        """An invalid yearly file cannot be regenerated from a partial year: it is kept and reported."""
+        writer.write_variable(self.make_data("2000-01-01", "2000-12-31"), "2t", definitive=True)
+        yearfile = writer.get_filename("2t", year=2000)
+        with open(yearfile, "w") as f:
+            f.write("corrupted")
+        writer.write_variable(self.make_data("2000-01-01", "2000-06-30"), "2t", definitive=True)
+        assert writer.report.invalid == ["2000 (partial year requested, may not be regenerated)"]
+        assert "invalid yearly file kept" in writer.report.failed[0]
+        assert os.path.exists(yearfile)
 
 
 class TestDiskChunks:
