@@ -75,6 +75,7 @@ class Drop:
         drop=False,
         overwrite=False,
         definitive=False,
+        validate_existing=True,
         performance_reporting=False,
         rebuild=False,
         regrid_first=False,
@@ -124,6 +125,8 @@ class Drop:
             definitive (bool, opt):  True to create the output file,
                                      False to just explore the reader
                                      operations, default is False
+            validate_existing (bool, opt): True to validate existing output files before skipping them,
+                                     invalid ones are regenerated (only reported in a dry run). Default is True.
             performance_reporting (bool, opt): True to save an html report of the
                                                dask usage, default is False. This will run a single month
                                                to collect the performance data.
@@ -168,6 +171,7 @@ class Drop:
         self.overwrite = overwrite
         self.exclude_incomplete = exclude_incomplete
         self.definitive = definitive
+        self.validate_existing = validate_existing
         self.nworkers = int(nworkers)
         self.nthreads = int(nthreads)
         self.rebuild = rebuild
@@ -250,8 +254,6 @@ class Drop:
         self._set_writer()
 
         # for data reading from FDB
-        self.last_record = None
-        self.check = False
 
         # stats file written in basedir (timestamped, with run details to avoid overwrites)
         _ts = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
@@ -542,25 +544,6 @@ class Drop:
         """Create output filenames (delegates to writer)"""
         return self.writer.get_filename(var, year=year, month=month, level=level, tmp=tmp)
 
-    def check_integrity(self, varname, level=None):
-        """
-        To check if the DROP entry is fine before running (delegates to writer)
-
-        Args:
-            varname (str): Variable name to check
-            level (int, float, or list, opt): Level(s) to check, default is None (all levels)
-        """
-        result = self.writer.check_integrity(varname, level=level, overwrite=self.overwrite)
-        self.check = result["complete"]
-        self.last_record = result["last_record"]
-
-        if self.check:
-            self.logger.info("Data complete for var %s...", varname)
-            if self.last_record:
-                self.logger.info("Last record archived is %s...", self.last_record)
-        else:
-            self.logger.warning("Still need to run for var %s: %s", varname, result["message"])
-
     def _remove_regridded(self, data):
         """Remove regridded attribute to avoid issues with Reader on output files."""
         if hasattr(data, "attrs"):
@@ -644,6 +627,7 @@ class Drop:
             level=self.level,
             overwrite=self.overwrite,
             definitive=self.definitive,
+            validate_existing=self.validate_existing,
             dask=self.dask,
             performance_reporting=self.performance_reporting,
             stats_file=self.stats_file if self.definitive else None,
