@@ -73,6 +73,42 @@ def _detect_format(media_type: str | None, href: str) -> str:
     return "netcdf"
 
 
+def select_asset_key(asset_roles: dict, asset: str | None = None, owner: str = None) -> str:
+    """Select the key of a STAC asset, shared by the intake ``stac`` driver and the pystac backend.
+
+    Args:
+        asset_roles (dict): Mapping of asset keys to their list of roles.
+        asset (str, optional): Requested asset key, or a role matching a single asset.
+            If None, defaults to 'data', then to the only asset with role 'data', then to the first asset.
+        owner (str, optional): Id of the item or collection owning the assets, used in error messages.
+
+    Returns:
+        str: The selected asset key.
+
+    Raises:
+        KeyError: If the requested asset is not found or matches multiple assets by role.
+    """
+    if asset is None:
+        if "data" in asset_roles:
+            return "data"
+        data_role_assets = [k for k, roles in asset_roles.items() if "data" in roles]
+        return data_role_assets[0] if len(data_role_assets) == 1 else next(iter(asset_roles))
+
+    if asset in asset_roles:
+        return asset
+    # Check if asset name was supplied as a role (e.g. role 'data')
+    role_matching = [k for k, roles in asset_roles.items() if asset in roles]
+    if len(role_matching) == 1:
+        return role_matching[0]
+    if len(role_matching) > 1:
+        raise KeyError(
+            f"Asset '{asset}' not found in STAC item '{owner}'. "
+            f"It matches multiple assets by role: {role_matching}. "
+            f"Please specify one of: {list(asset_roles)}"
+        )
+    raise KeyError(f"Asset '{asset}' not found in STAC item '{owner}'. Available assets: {list(asset_roles)}")
+
+
 def _load_stac_item(urlpath: str, storage_options: dict | None) -> dict:
     """Load item JSON, preserving read errors with the attempted path or URL."""
     try:
@@ -392,36 +428,9 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             raise ValueError(f"STAC item '{item_dict.get('id', item_base_urlpath)}' contains no assets.")
         self.assets = assets
 
-        if asset is not None:
-            if asset in assets:
-                asset_key = asset
-            else:
-                # Check if asset name was supplied as a role (e.g. role 'data')
-                role_matching = [k for k, v in assets.items() if asset in v.get("roles", [])]
-                if len(role_matching) == 1:
-                    asset_key = role_matching[0]
-                    self.logger.info("Matched asset role '%s' to asset key '%s'", asset, asset_key)
-                elif len(role_matching) > 1:
-                    raise KeyError(
-                        f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
-                        f"It matches multiple assets by role: {role_matching}. "
-                        f"Please specify one of: {list(assets.keys())}"
-                    )
-                else:
-                    raise KeyError(
-                        f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
-                        f"Available assets: {list(assets.keys())}"
-                    )
-        elif "data" in assets:
-            asset_key = "data"
-        else:
-            # Check if any asset has role "data"
-            data_role_assets = [k for k, v in assets.items() if "data" in v.get("roles", [])]
-            if len(data_role_assets) == 1:
-                asset_key = data_role_assets[0]
-            else:
-                asset_key = next(iter(assets.keys()))
-
+        asset_key = select_asset_key(
+            {k: v.get("roles", []) for k, v in assets.items()}, asset, owner=item_dict.get("id", item_base_urlpath)
+        )
         asset_info = assets[asset_key]
         raw_href = asset_info.get("href")
         if not raw_href:

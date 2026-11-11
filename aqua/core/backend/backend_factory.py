@@ -95,9 +95,14 @@ class BackendFactory:
             "datamodel",
             "loglevel",
         },
+        # model/exp/source/catalog are optional labels for the stac and xarray backends
         "stac": {
             "url",
             "stac_kwargs",
+            "model",
+            "exp",
+            "source",
+            "catalog",
             "chunks",
             "fixer",
             "datamodel",
@@ -105,6 +110,10 @@ class BackendFactory:
         },
         "xarray": {
             "path",
+            "model",
+            "exp",
+            "source",
+            "catalog",
             "xarray_engine",
             "chunks",
             "fixer",
@@ -190,10 +199,10 @@ class BackendFactory:
     def select_backend(self):
         """
         Select the appropriate backend based on the provided parameters.
-        If a path is provided, the xarray backend is selected.
-        Otherwise, the intake backend family is selected.
+        If a url is provided, the pystac backend is selected; if a path is provided,
+        the xarray backend is selected. Otherwise, the intake backend family is selected.
 
-        Please notiche the _check_required_params method ensures that either a path or model/exp/source are provided.
+        Please notice the _check_required_params method ensures that a url, a path or model/exp/source are provided.
         """
         if self.url:
             self._select_backend_stac()
@@ -247,7 +256,6 @@ class BackendFactory:
     def _select_backend_stac(self):
         """Activate direct STAC access through pystac."""
         self.backend_type = "stac"
-        self.logger.warning(" STAC backend is experimental and may not work for all catalogs.")
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
@@ -335,34 +343,18 @@ class BackendFactory:
 
     def _check_required_params(self):
         """
-        Require exactly one complete setup: (model, exp, source), (path), or (url, stac_kwargs).
+        Check that the parameters identify one data location.
+
+        The backend is identified by ``url`` (STAC), then ``path`` (xarray), else by the
+        intake triplet. With ``url`` or ``path``, catalog/model/exp/source are optional labels
+        (with ``url`` they can also select the asset); the intake triplet must be complete.
 
         Raises:
-            ValueError: If no setup is provided, multiple setups are provided, or a setup is incomplete.
+            ValueError: If both url and path are given, or neither is given and model/exp/source is incomplete.
         """
-        modes = {
-            "intake": {"model": self.model, "exp": self.exp, "source": self.source},
-            "xarray": {"path": self.path},
-            "stac": {"url": self.url, "stac_kwargs": self.stac_kwargs},
-        }
-        # for each mode, the parameters the user actually set
-        active = {name: [k for k, v in params.items() if v is not None] for name, params in modes.items()}
-        active = {name: keys for name, keys in active.items() if keys}
-
-        if not active:
-            raise ValueError("No source provided. Use one of: (model, exp, source), (path), or (url, stac_kwargs).")
-
-        if len(active) > 1:
-            details = "; ".join(f"{name}: {keys}" for name, keys in active.items())
-            raise ValueError(
-                f"Inconsistent parameters, multiple setups given ({details}). "
-                "Use only one of: (model, exp, source), (path), or (url, stac_kwargs)."
-            )
-
-        # exactly one mode is active: make sure it is complete
-        ((name, given),) = active.items()
-        missing = [k for k in modes[name] if k not in given]
-        if missing:
-            raise ValueError(
-                f"Incomplete '{name}' setup: missing {missing}. Required parameters are: {list(modes[name].keys())}."
-            )
+        if self.url is not None and self.path is not None:
+            raise ValueError("Both url and path are provided. Please provide only one data location.")
+        if self.url is None and self.path is None:
+            missing = [k for k in ("model", "exp", "source") if getattr(self, k) is None]
+            if missing:
+                raise ValueError(f"Missing {missing}. Please provide either a url, a path, or model, exp and source.")

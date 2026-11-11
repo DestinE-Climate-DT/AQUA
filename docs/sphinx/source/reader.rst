@@ -160,6 +160,13 @@ This is useful when the data is not available in the intake catalog, but is avai
     reader = Reader(path="/path/to/data.nc", areas=False)
     data = reader.retrieve()
 
+``model``, ``exp``, ``source`` and ``catalog`` can be given together with ``path`` as labels:
+they are stored in the ``AQUA_model``, ``AQUA_exp``, ``AQUA_source`` and ``AQUA_catalog`` attributes,
+used for example in plot titles.
+
+.. code-block:: python
+
+    reader = Reader(path="/path/to/data.nc", model="IFS-NEMO", exp="historical", source="lra-r100-monthly", areas=False)
 
 
 .. note ::
@@ -170,14 +177,24 @@ Reader stac access
 ^^^^^^^^^^^^^^^^^^
 
 The ``Reader`` class can also be used to access data from a STAC object (catalog, collection or item) with ``pystac``.
-The reader is initialized with a ``url`` pointing to the STAC JSON file, and the ``stac_kwargs`` argument selects the asset to open:
+The reader is initialized with a ``url`` pointing to the STAC JSON file. The asset to open is selected in one of two ways:
 
-- for a single item, ``stac_kwargs`` is just the asset key (a string);
-- for a collection or a nested catalog, ``stac_kwargs`` is a nested dictionary with one entry per level,
-  made of the child collection and item ids and ending with the asset key.
+- with ``collection``, ``item`` and ``asset`` (synonyms of ``model``, ``exp`` and ``source``), giving only the levels
+  below the ``url``: e.g. ``collection`` and ``item`` for a catalog, ``item`` for a collection, nothing for an item;
+- with ``stac_kwargs``, for any catalog depth: just the asset key (a string) for a single item, or a nested dictionary
+  with one entry per level, made of the child collection and item ids and ending with the asset key.
+  In this case ``collection``, ``item`` and ``asset`` are only labels.
+
+If no asset is given, the ``data`` asset (or the only asset with role ``data``, or the first asset) is opened,
+as in the Intake STAC driver. An asset can also be selected by its role.
+
+The catalog, collection, item and asset ids are stored in the ``AQUA_catalog``, ``AQUA_model``, ``AQUA_exp`` and ``AQUA_source``
+attributes of the data, unless the user provides other labels. ``AQUA_catalog`` is set only when ``url`` points to a catalog.
 
 The asset is opened lazily with xarray, using the ``xarray:open_kwargs`` and ``xarray:storage_options`` defined in the asset, if any,
-and the ``chunks`` given to the ``Reader``.
+and the ``chunks`` given to the ``Reader``. Entries of ``xarray:open_kwargs`` not accepted by ``xarray.open_dataset``
+(e.g. ``url`` or ``metadata`` in the DKRZ EERIE catalogs) are ignored with a warning, and storage options are taken only from
+``xarray:storage_options``.
 Asset ``href`` paths relative to the STAC file are resolved, so that local catalogs work as well.
 This below is a working example of an item, building on the DKRZ EERIE cloud STAC catalog.
 
@@ -216,6 +233,9 @@ which can be used to try the feature offline:
     )
     data = reader.retrieve()
 
-.. note ::
+    # same asset, selected with collection and item (default asset 'data')
+    reader = Reader(url="tests/stac_catalogue/catalog.json", collection="ifs", item="ifs-short-ifs2d-tco79", areas=False)
+
+.. note::
     The stac access is experimental and may not support all the functionalities of the intake backed. it might break if the catalog structure is not as expected.
     For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.

@@ -21,6 +21,10 @@ class BackendXarray(Backend):
     def __init__(
         self,
         path: str,
+        model: str = None,
+        exp: str = None,
+        source: str = None,
+        catalog: str = None,
         xarray_engine: str = None,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
@@ -33,6 +37,10 @@ class BackendXarray(Backend):
 
         Args:
             path (str): Path to the data file or directory.
+            model (str, optional): Label stored as ``AQUA_model`` (e.g. for plot titles). Defaults to None.
+            exp (str, optional): Label stored as ``AQUA_exp``. Defaults to None.
+            source (str, optional): Label stored as ``AQUA_source``. Defaults to None.
+            catalog (str, optional): Label stored as ``AQUA_catalog``. Defaults to None.
             xarray_engine (str, optional): Engine to use for opening the data file. If None, it will be detected automatically.
             chunks (str | dict, optional): Chunking strategy for xarray. Defaults to "auto".
             fixer (Fixer, optional): An instance of Fixer to apply data fixes. Defaults to None.
@@ -48,6 +56,7 @@ class BackendXarray(Backend):
         if xarray_engine not in self.SUPPORTED_ENGINES:
             raise ValueError(f"xarray_engine must be one of {self.SUPPORTED_ENGINES}, got {xarray_engine!r}")
         self.path = path
+        self.labels = {"catalog": catalog, "model": model, "exp": exp, "source": source}
         self.engine = xarray_engine
         self.chunks = chunks
         # TODO: method to validate xarray kwargs
@@ -87,11 +96,9 @@ class BackendXarray(Backend):
         # add history
         data = self.log_history(data)
 
-        # Add info metadata in each dataset
-        info_metadata = {
-            "version": aqua_version,
-        }
-        data = self._set_metadata(data, info_metadata)
+        # Add info metadata in each dataset, with the labels provided by the user
+        info_metadata = {k: v for k, v in self.labels.items() if v is not None}
+        data = self._set_metadata(data, {**info_metadata, "version": aqua_version})
 
         return data
 

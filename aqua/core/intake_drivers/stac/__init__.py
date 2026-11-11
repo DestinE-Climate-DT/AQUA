@@ -1,3 +1,3 @@
-from .stac import IntakeSTACSource
+from .stac import IntakeSTACSource, select_asset_key
 
-__all__ = ["IntakeSTACSource"]
+__all__ = ["IntakeSTACSource", "select_asset_key"]
