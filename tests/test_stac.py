@@ -17,19 +17,19 @@ ERA5_ITEM = "era5-era5-2d-flip-2mon2021"
 @pytest.fixture(scope="module")
 def catalog_url(stac_catalogue_dir):
     """Root catalog of the generated STAC catalogue."""
-    return str(stac_catalogue_dir / "catalog.json")
+    return os.path.join(stac_catalogue_dir, "catalog.json")
 
 
 @pytest.fixture(scope="module")
 def era5_item_url(stac_catalogue_dir):
     """Single STAC item (regular lat-lon grid)."""
-    return str(stac_catalogue_dir / "items" / "era5" / f"{ERA5_ITEM}.json")
+    return os.path.join(stac_catalogue_dir, "items", "era5", f"{ERA5_ITEM}.json")
 
 
 @pytest.fixture(scope="module")
 def collection_url(stac_catalogue_dir):
     """Single STAC collection."""
-    return str(stac_catalogue_dir / "collections" / "ifs.json")
+    return os.path.join(stac_catalogue_dir, "collections", "ifs.json")
 
 
 class TestSTACReader:
