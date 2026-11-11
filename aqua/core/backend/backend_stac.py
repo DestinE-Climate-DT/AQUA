@@ -21,8 +21,8 @@ import xarray as xr
 
 from aqua.core.data_model import DataModel
 from aqua.core.fixer import Fixer
-from aqua.core.intake_drivers.stac import select_asset_key
 from aqua.core.logger import log_history
+from aqua.core.util.stac import select_asset_key
 from aqua.core.version import __version__ as aqua_version
 
 from .backend import Backend
@@ -60,21 +60,22 @@ class BackendSTAC(Backend):
             source (str, optional): Asset key or role. Selects the asset when ``stac_kwargs`` is None,
                 otherwise it is only a label. If no asset is given, 'data' or the first asset is used.
             catalog (str, optional): Label for the catalog. Defaults to the id of the catalog at ``url``.
-            chunks (str | dict, optional): Chunking passed to ``xarray.open_dataset``.
-                ``None`` falls back to ``"auto"`` so STAC assets remain lazy. Defaults
+            chunks (str | dict, optional): Chunking passed to ``xarray.open_dataset``, overriding the asset's own.
+                ``None`` uses the asset ``chunks``, else ``"auto"`` so STAC assets remain lazy. Defaults
                 to ``"auto"``.
             fixer (Fixer, optional): Fixer applied after reading. Defaults to None.
             datamodel (DataModel, optional): Data model applied after the fixer.
                 Defaults to None.
             loglevel (str, optional): Logging level. Defaults to "WARNING".
-            **kwargs: Additional keyword arguments passed to ``xarray.open_dataset``.
+            **kwargs: Additional keyword arguments passed to ``xarray.open_dataset``,
+                overriding the asset ``xarray:open_kwargs``.
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.url = url
         self.stac_kwargs = stac_kwargs
         self.labels = {"catalog": catalog, "model": model, "exp": exp, "source": source}
         self.read_kwargs = kwargs
-        self.read_kwargs["chunks"] = "auto" if chunks is None else chunks
+        self.chunks = chunks
 
     def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
         """Retrieve a minimal sample from the selected STAC asset."""
@@ -150,7 +151,7 @@ class BackendSTAC(Backend):
         return ids, spec
 
     def _get_asset(self) -> tuple:
-        """Walk the STAC tree from url and select the asset.
+        """Walk the STAC tree from url and select the asset, once: later calls reuse the selection.
 
         Returns:
             tuple: The STAC object read from url, the asset key and the pystac.Asset.
@@ -159,18 +160,22 @@ class BackendSTAC(Backend):
             KeyError: If a child, item or asset is not found.
             ValueError: If the object reached has no assets (e.g. a catalog).
         """
+        if hasattr(self, "_selected"):
+            return self._selected
         start = obj = pystac.read_file(self.url)
         ids, asset = self._split_selection()
+        # without stac_kwargs, model/exp/source select the STAC objects: a label-only use fails here
+        hint = "" if self.stac_kwargs is not None else ". Pass stac_kwargs to use model/exp/source only as labels"
 
         for key in ids:
             # the url can already point to the requested collection or item
             if key in (obj.id, getattr(obj, "collection_id", None)):
                 continue
             if isinstance(obj, pystac.Item):
-                raise KeyError(f"cannot descend into '{key}': '{obj.id}' is an Item")
+                raise KeyError(f"cannot descend into '{key}': '{obj.id}' is an Item{hint}")
             nxt = obj.get_child(key) or obj.get_item(key)
             if nxt is None:
-                raise KeyError(f"'{key}' not found in '{obj.id}'")
+                raise KeyError(f"'{key}' not found in '{obj.id}'{hint}")
             obj = nxt
 
         # Items and collections with their own assets
@@ -179,33 +184,38 @@ class BackendSTAC(Backend):
             raise ValueError(f"'{obj.id}' has no assets: please select a collection and an item")
         key = select_asset_key({k: v.roles or [] for k, v in assets.items()}, asset, owner=obj.id)
         self.logger.info("Selected STAC asset '%s' of '%s'", key, obj.id)
-        return start, key, assets[key]
+        self._selected = (start, key, assets[key])
+        return self._selected
 
     def _open_asset(self, asset: pystac.Asset) -> xr.Dataset:
-        """Open the selected STAC asset as an xarray Dataset."""
-        # backend kwargs (chunks, user kwargs) are defaults, overridden by the asset's own xarray:open_kwargs
-        open_kwargs = {**self.read_kwargs, **self._asset_open_kwargs(asset)}
-        storage_options = asset.extra_fields.get("xarray:storage_options")
-        if storage_options is not None:
-            open_kwargs["storage_options"] = storage_options
+        """Open the selected STAC asset as an xarray Dataset.
+
+        The asset ``xarray:open_kwargs`` and ``xarray:storage_options`` are defaults, overridden by the
+        user kwargs and chunks. Asset options not accepted by ``xarray.open_dataset`` or its engine are
+        dropped: some catalogs (e.g. DKRZ EERIE) put there options for another target than the href
+        (``url``, ``root``, ``metadata`` and their ``storage_options``).
+        """
+        fields = asset.extra_fields
+        asset_kwargs = {k: v for k, v in (fields.get("xarray:open_kwargs") or {}).items() if k != "storage_options"}
+        if fields.get("xarray:storage_options") is not None:
+            asset_kwargs["storage_options"] = fields["xarray:storage_options"]
+
+        accepted = self._accepted_kwargs(self.read_kwargs.get("engine", asset_kwargs.get("engine")))
+        dropped = [k for k in asset_kwargs if k not in accepted]
+        if dropped:
+            self.logger.warning("Ignoring STAC asset options %s, not accepted by xarray.open_dataset", dropped)
+        open_kwargs = {k: v for k, v in asset_kwargs.items() if k in accepted} | self.read_kwargs
+        open_kwargs["chunks"] = self.chunks if self.chunks is not None else open_kwargs.get("chunks", "auto")
 
         # relative hrefs (e.g. local catalogs) are resolved against the STAC object they belong to
         return xr.open_dataset(asset.get_absolute_href() or asset.href, **open_kwargs)
 
-    def _asset_open_kwargs(self, asset: pystac.Asset) -> dict:
-        """Return the asset ``xarray:open_kwargs`` accepted by ``xarray.open_dataset`` and its engine.
-
-        Some catalogs (e.g. DKRZ EERIE) put there options for opening another target than the href
-        (``url``, ``root``, ``metadata`` and their ``storage_options``): these are dropped, and the
-        storage options are taken only from ``xarray:storage_options``.
-        """
-        open_kwargs = asset.extra_fields.get("xarray:open_kwargs") or {}
-        allowed = set(inspect.signature(xr.open_dataset).parameters)
-        engine = open_kwargs.get("engine", self.read_kwargs.get("engine"))
-        if isinstance(engine, str) and engine in xr.backends.list_engines():
-            allowed |= set(inspect.signature(xr.backends.list_engines()[engine].open_dataset).parameters)
-        allowed -= {"storage_options", "filename_or_obj", "kwargs"}
-        dropped = [k for k in open_kwargs if k not in allowed]
-        if dropped:
-            self.logger.warning("Ignoring STAC asset xarray:open_kwargs %s, not accepted by xarray.open_dataset", dropped)
-        return {k: v for k, v in open_kwargs.items() if k in allowed}
+    @staticmethod
+    def _accepted_kwargs(engine) -> set:
+        """Keyword arguments of ``xarray.open_dataset`` and of the engine.
+        With an unknown engine (guessed by xarray), ``storage_options`` is accepted."""
+        accepted = set(inspect.signature(xr.open_dataset).parameters) - {"filename_or_obj", "kwargs"}
+        engines = xr.backends.list_engines()
+        if isinstance(engine, str) and engine in engines:
+            return accepted | set(inspect.signature(engines[engine].open_dataset).parameters)
+        return accepted | {"storage_options"}

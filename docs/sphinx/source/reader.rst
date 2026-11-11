@@ -185,16 +185,20 @@ The reader is initialized with a ``url`` pointing to the STAC JSON file. The ass
   with one entry per level, made of the child collection and item ids and ending with the asset key.
   In this case ``collection``, ``item`` and ``asset`` are only labels.
 
+Without ``stac_kwargs``, ``collection``, ``item`` and ``asset`` always select the STAC objects: to label the data
+(e.g. ``model="ERA5"`` for an item whose collection is ``era5``), pass ``stac_kwargs`` as well, for instance just the asset key.
+
 If no asset is given, the ``data`` asset (or the only asset with role ``data``, or the first asset) is opened,
 as in the Intake STAC driver. An asset can also be selected by its role.
 
 The catalog, collection, item and asset ids are stored in the ``AQUA_catalog``, ``AQUA_model``, ``AQUA_exp`` and ``AQUA_source``
 attributes of the data, unless the user provides other labels. ``AQUA_catalog`` is set only when ``url`` points to a catalog.
 
-The asset is opened lazily with xarray, using the ``xarray:open_kwargs`` and ``xarray:storage_options`` defined in the asset, if any,
-and the ``chunks`` given to the ``Reader``. Entries of ``xarray:open_kwargs`` not accepted by ``xarray.open_dataset``
-(e.g. ``url`` or ``metadata`` in the DKRZ EERIE catalogs) are ignored with a warning, and storage options are taken only from
-``xarray:storage_options``.
+The asset is opened lazily with xarray, using the ``xarray:open_kwargs`` and ``xarray:storage_options`` defined in the asset, if any.
+The ``chunks`` given to the ``Reader`` override the asset ones (default ``"auto"``). Entries of ``xarray:open_kwargs`` not accepted by
+``xarray.open_dataset`` (e.g. ``url`` or ``metadata`` in the DKRZ EERIE catalogs) are ignored with a warning. Storage options are
+taken only from ``xarray:storage_options``, and are ignored with a warning when the engine does not accept them (e.g. ``netcdf4``).
+The STAC tree is read once per ``Reader``: create a new ``Reader`` to see changes in the catalog.
 Asset ``href`` paths relative to the STAC file are resolved, so that local catalogs work as well.
 This below is a working example of an item, building on the DKRZ EERIE cloud STAC catalog.
 
