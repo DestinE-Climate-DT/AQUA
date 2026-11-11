@@ -43,7 +43,7 @@ Unreleased in the current development version (target v1.2.4):
 - `CoordTransformer` no longer copies `range_convention` to the longitude attributes nor wraps non-longitude coordinates in `normalize_range_convention` (#3344)
 - `Analysis.configure_experiment_kind` falls back to the `default` entry of the file (it stored the string `"default"`), with a warning instead of an error (#3348)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
-- New pure `pystac` backend: `Reader(url=...)` opens an asset of a STAC catalog, collection or item with xarray, selected with `collection`/`item`/`asset` or with `stac_kwargs`; the STAC ids are stored as `AQUA_catalog`/`AQUA_model`/`AQUA_exp`/`AQUA_source`. `model`/`exp`/`source`/`catalog` given with `path` are now stored as `AQUA_*` labels instead of being ignored; `url` together with `path` raises a `ValueError`. `pystac` added as dependency and `conda-linux-64.lock` relocked (#3164)
+- New pure `pystac` backend: `Reader(url=...)` opens an asset of a STAC catalog, collection or item with xarray, selected with `collection`/`item`/`asset` or with `stac_kwargs`; the STAC ids are stored as `AQUA_catalog`/`AQUA_model`/`AQUA_exp`/`AQUA_source`. `model`/`exp`/`source`/`catalog` given with `path` are now stored as `AQUA_*` labels instead of being ignored (behaviour change); area/weight filenames of STAC data hash `url` and the selected asset; `url` together with `path` raises a `ValueError`. `pystac` added as dependency and `conda-linux-64.lock` relocked (#3164)
 
 ## [v1.2.3]
 
