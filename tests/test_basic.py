@@ -13,16 +13,6 @@ from aqua.core.exceptions import NoRegridError
 class TestAqua:
     """Basic tests for AQUA"""
 
-    @pytest.mark.parametrize("module_name", ["aqua"])
-    def test_aqua_import(self, module_name):
-        """
-        Test if the aqua module is imported correctly
-        """
-        try:
-            __import__(module_name)
-        except ImportError:
-            assert False, "Module {} could not be imported".format(module_name)
-
     def test_reader_init(self):
         """
         Test the initialization of the Reader class
@@ -151,63 +141,54 @@ class TestAqua:
         result = reader.retrieve(var="nonexistent_variable")
         assert len(result.data_vars) == 0
 
-    def test_time_selection(self, ifs_tco79_long_reader):
+    @pytest.mark.parametrize(
+        "reader_fixture, year, steps",
+        [
+            pytest.param("ifs_tco79_long_reader", 2020, 744, id="year-2020"),
+            pytest.param("ifs_tco79_long400_fixfalse_reader", 2420, 744, id="year-2420"),  # beyond the 2262 limit of numpy
+        ],
+    )
+    def test_time_selection(self, request, reader_fixture, year, steps):
         """
-        Test that time selection works correctly, also beyond 2262
+        Test that time selection keeps exactly the hourly steps of March, also beyond 2262,
+        and that a period without data gives an empty selection
         """
-        reader = ifs_tco79_long_reader
+        reader = request.getfixturevalue(reader_fixture)
 
-        data = reader.retrieve(startdate="2020-03-01", enddate="2020-03-31")
+        data = reader.retrieve(startdate=f"{year}-03-01", enddate=f"{year}-03-31")
 
-        assert len(data.time) > 0
         assert "2t" in data
-
-        assert all(data.time.dt.month == 3)
+        assert len(data.time) == steps  # 31 days of 24 hourly steps
+        assert str(data.time.values[0]).startswith(f"{year}-03-01T00:00")
+        assert str(data.time.values[-1]).startswith(f"{year}-03-31T23:00")
 
         data = reader.retrieve(startdate="2300-03-01", enddate="2300-03-31")
 
         assert len(data.time) == 0
 
-    @pytest.fixture(
-        params=[
-            ("IFS", "test-tco79", "short", "r200", "tas"),
-            ("FESOM", "test-pi", "original_2d", "r200", "sst"),
-            ("NEMO", "test-eORCA1", "long-2d", "r200", "sst"),
-        ]
-    )
-    def reader_arguments(self, request):
-        return request.param
-
-    def test_reader_with_different_arguments(self, reader_arguments):
+    def test_nemo_time_precision(self, nemo_test_e_orca1_long_2d_data):
         """
-        Test if the Reader class works with different combinations of arguments
+        NEMO times have a second precision: they are not converted to the nanoseconds of numpy
+        (the other models, with and without regridding, are checked in test_regrid.py)
         """
-        model, exp, source, regrid, _ = reader_arguments
-        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=False, loglevel=LOGLEVEL)
-        data = reader.retrieve()
-
-        # Check the time precision
-        if model == "NEMO":
-            assert data.time.values[0].dtype == "datetime64[s]"
-
-        assert len(data) > 0
+        assert nemo_test_e_orca1_long_2d_data.time.values[0].dtype == "datetime64[s]"
 
     @pytest.mark.parametrize(
-        "realization_input, expected_output, expected_exception",
+        "realization_input, expected_output, expected_exception, error_message",
         [
-            ("r2", 2, None),
-            (3, 3, None),
-            (10, None, ValueError),  # invalid -> expect ValueError
-            ("rX", None, ValueError),  # invalid -> expect ValueError
+            ("r2", 2, None, None),
+            (3, 3, None, None),
+            (10, None, ValueError, "realization=10 is not one of the allowed values: 1,2,3"),
+            ("rX", None, ValueError, "Realization rX format not recognized for type int"),
         ],
     )
-    def test_realization_formatting_int(self, realization_input, expected_output, expected_exception):
+    def test_realization_formatting_int(self, realization_input, expected_output, expected_exception, error_message):
         """
         Test that the realization parameter is correctly formatted or raises for bad input.
         """
         # If the Reader raises during __init__, wrap the constructor in the context manager.
         if expected_exception is not None:
-            with pytest.raises(expected_exception):
+            with pytest.raises(expected_exception, match=error_message):
                 Reader(
                     model="ICON",
                     exp="test-healpix",

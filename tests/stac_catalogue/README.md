@@ -4,8 +4,9 @@ This directory contains a generator for a static STAC 1.0.0 catalog for the NetC
 `AQUA_tests/models` at the AQUA repository root. The fixture directory is
 downloaded separately in CI and is not stored in Git.
 
-Pytest generates the JSON files once per test session using `generate_catalog.py`,
-before test collection or catalog discovery. All generated JSON files, including
+Pytest generates the JSON files using `generate_catalog.py`, before test collection or
+catalog discovery, only if `catalog.json` is missing or older than the generator or a
+NetCDF fixture. All generated JSON files, including
 `catalog.json`, are ignored by Git and remain in this directory after the tests
 finish for inspection or reuse. Only the generator and this README are version controlled.
 
@@ -45,8 +46,9 @@ def test_collection(stac_catalogue_dir):
 
 Generation runs in the controller's `pytest_configure` hook, before pytest-xdist
 starts workers. A shared lock protects generation, and workers only read the
-completed catalog. Generation requires `ncdump` and is skipped if
-`AQUA_tests/models` is unavailable; the fixture then skips dependent tests.
+completed catalog; every file is written atomically. Generation requires `ncdump` and is
+skipped, with a warning, if it is missing or `AQUA_tests/models` is unavailable; the
+fixture then skips dependent tests.
 Generated files are retained after the session for inspection.
 
 Reader integration tests use the STAC Intake examples in the installed `ci`

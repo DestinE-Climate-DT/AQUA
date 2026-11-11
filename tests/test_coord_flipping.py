@@ -6,7 +6,6 @@ from utils_tests import LOGLEVEL
 from aqua import Reader
 from aqua.core.data_model import CoordTransformer
 
-loglevel = LOGLEVEL
 pytestmark = pytest.mark.aqua
 
 
@@ -82,7 +81,7 @@ def test_coord_flipping_lat_decreasing_to_increasing(dataset_decreasing_lat, lat
     sst_data = ds.sst.values
     pres_data = ds.pres.values
 
-    transformer = CoordTransformer(ds, loglevel=loglevel)
+    transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
     ds_transformed = transformer.transform_coords()
 
     # Verify coordinate renaming
@@ -129,7 +128,7 @@ def test_coord_no_flip_when_already_increasing(dataset_increasing_lat, lat_incre
     ds = dataset_increasing_lat
     sst_data = ds.sst.values
 
-    transformer = CoordTransformer(ds, loglevel=loglevel)
+    transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
     ds_transformed = transformer.transform_coords()
 
     # Verify no flip occurred - data should be unchanged
@@ -143,7 +142,7 @@ def test_coord_flipping_disabled(lat_decreasing, lon_values):
     ds = _create_dataset(lat_decreasing, lon_values)
     sst_data = ds.sst.values
 
-    transformer = CoordTransformer(ds, loglevel=loglevel)
+    transformer = CoordTransformer(ds, loglevel=LOGLEVEL)
     ds_transformed = transformer.transform_coords(flip_coords=False)
 
     # Verify no flip occurred despite decreasing lat
@@ -157,7 +156,7 @@ def test_coord_flipping_dataarray(lat_decreasing, lon_values):
     ds = _create_dataset(lat_decreasing, lon_values)
     da = ds.sst
 
-    transformer = CoordTransformer(da, loglevel=loglevel)
+    transformer = CoordTransformer(da, loglevel=LOGLEVEL)
     da_transformed = transformer.transform_coords()
 
     # Verify transformation works for DataArray
@@ -165,19 +164,6 @@ def test_coord_flipping_dataarray(lat_decreasing, lon_values):
     assert "lon" in da_transformed.coords
     assert da_transformed.lat.values[0] < da_transformed.lat.values[-1]
     assert da_transformed.lat.attrs.get("AQUA_flipped", None) == 1
-
-
-def test_counter_reverse_coordinate(dataset_decreasing_lat, lat_decreasing):
-    """Test that counter_reverse_coordinate can undo a flip."""
-    ds = dataset_decreasing_lat
-
-    # Flips lat
-    transformer = CoordTransformer(ds, loglevel=loglevel)
-    ds_transformed = transformer.transform_coords()
-
-    # Verify flip occurred
-    assert ds_transformed.lat.attrs.get("AQUA_flipped", None) == 1
-    assert ds_transformed.lat.values[0] < ds_transformed.lat.values[-1]
 
 
 def test_reader_regrid_flipped():

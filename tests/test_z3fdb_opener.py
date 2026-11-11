@@ -14,11 +14,15 @@ import xarray as xr
 
 from aqua.core.exceptions import NoDataError
 from aqua.core.intake_drivers.fdb import IntakeFDBSource
-from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import open_z3fdb, z3fdb_available
+from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import (
+    open_z3fdb,
+    rebuild_fdb_zarr_store,
+    reduce_fdb_zarr_store,
+    z3fdb_available,
+)
 
-pytestmark = pytest.mark.aqua
 
-
+@pytest.mark.aqua
 @pytest.mark.parametrize(
     "levelist, selected, physical, expected",
     [
@@ -58,6 +62,7 @@ def test_level_selection_across_storage(z3fdb_store, levelist, selected, physica
     assert isinstance(result.var130.data, da.Array)
 
 
+@pytest.mark.aqua
 @pytest.mark.parametrize(
     "mode, bounds, hpc_expver, expected_stores",
     [
@@ -108,6 +113,7 @@ def test_repeated_reads_preserve_routing(z3fdb_store, mode, bounds, hpc_expver, 
     assert "Spatial coordinates decoded" in second.attrs["history"]
 
 
+@pytest.mark.aqua
 @pytest.mark.parametrize("ordering", [0, 1], ids=["ring", "nested"])
 def test_healpix_grid_from_grib(z3fdb_store, fdb_grib_message, ordering):
     """Pixels must retain their values, dimensions and the GRIB ordering rather than guessed ordering."""
@@ -135,6 +141,7 @@ def test_healpix_grid_from_grib(z3fdb_store, fdb_grib_message, ordering):
     assert all(stream.closed for stream in fdb.streams)
 
 
+@pytest.mark.aqua
 @pytest.mark.parametrize(
     "grid, expected_lon, expected_lat, expected_values",
     [
@@ -243,6 +250,7 @@ def test_lonlat_grid_scan_order(z3fdb_store, fdb_grib_message, grid, expected_lo
     fdb.retrieve.assert_called_once()
 
 
+@pytest.mark.aqua
 @pytest.mark.parametrize(
     "grid_type, shape, error, match",
     [
@@ -262,6 +270,7 @@ def test_invalid_grid_rejected(z3fdb_store, fdb_grib_message, grid_type, shape, 
     assert all(stream.closed for stream in fdb.streams)
 
 
+@pytest.mark.aqua
 @pytest.mark.parametrize(
     "chunks, count, expected",
     [
@@ -284,6 +293,7 @@ def test_vertical_chunks(z3fdb_store, caplog, chunks, count, expected):
         assert "falling back to SINGLE_VALUE" in caplog.text
 
 
+@pytest.mark.aqua
 def test_netcdf_and_sample_request(z3fdb_store, tmp_path):
     """Filter unsupported keys, probe one field and preserve requests and history when writing a slice."""
     fdb = z3fdb_store((2, 2, 2, 12))
@@ -337,85 +347,74 @@ CMIP6_MARS_REQ = {
 FDB_HOME = "/app"
 
 
-def test_z3fdb_store_pickling() -> None:
-    """Test FdbZarrStore custom pickling and unpickling."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import z3fdb_available
+@pytest.mark.fdb
+@pytest.mark.skipif(not z3fdb_available, reason="z3fdb not available")
+class TestZ3fdbStore:
+    """FdbZarrStore building and pickling: needs the z3fdb library and an FDB schema."""
 
-    if not z3fdb_available:
-        pytest.skip("z3fdb not available")
+    def test_z3fdb_store_pickling(self) -> None:
+        """Test FdbZarrStore custom pickling and unpickling."""
+        from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
 
-    from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
+        builder = SimpleStoreBuilder(None)
+        axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
+        builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
+        try:
+            store = builder.build()
+        except RuntimeError as e:
+            if "schema" in str(e) or "no data found" in str(e):
+                pytest.skip(f"FDB schema or test data not available: {e}")
+            raise
 
-    builder = SimpleStoreBuilder(None)
-    axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
-    builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
-    try:
-        store = builder.build()
-    except RuntimeError as e:
-        if "schema" in str(e) or "no data found" in str(e):
-            pytest.skip(f"FDB schema or test data not available: {e}")
-        raise
+        # Attach serialization attributes to verify pickling
+        store._config = None
+        store._mars = [CMIP6_MARS_REQ]
+        store._serialized_axes = [(axis.keys, axis.chunking.name) for axis in axes]
+        store._extractor_type_str = ExtractorType.GRIB.name
 
-    # Attach serialization attributes to verify pickling
-    store._config = None
-    store._mars = [CMIP6_MARS_REQ]
-    store._serialized_axes = [(axis.keys, axis.chunking.name) for axis in axes]
-    store._extractor_type_str = ExtractorType.GRIB.name
+        pickled = pickle.dumps(store)
+        unpickled = pickle.loads(pickled)
+        assert unpickled is not None
 
-    pickled = pickle.dumps(store)
-    unpickled = pickle.loads(pickled)
-    assert unpickled is not None
+    def test_z3fdb_rebuild_parameters(self) -> None:
+        """Test rebuild_fdb_zarr_store parameters and path logic."""
+        serialized_axes = [(["date", "time"], "SINGLE_VALUE")]
+        # Test with mars as single dict
+        try:
+            store1 = rebuild_fdb_zarr_store(
+                config=None, mars=CMIP6_MARS_REQ, serialized_axes=serialized_axes, extractor_type_str="GRIB"
+            )
+        except RuntimeError as e:
+            if "schema" in str(e) or "no data found" in str(e):
+                pytest.skip(f"FDB schema or test data not available: {e}")
+            raise
+        assert store1 is not None
 
-
-def test_z3fdb_rebuild_parameters() -> None:
-    """Test rebuild_fdb_zarr_store parameters and path logic."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import rebuild_fdb_zarr_store, z3fdb_available
-
-    if not z3fdb_available:
-        pytest.skip("z3fdb not available")
-
-    serialized_axes = [(["date", "time"], "SINGLE_VALUE")]
-    # Test with mars as single dict
-    try:
-        store1 = rebuild_fdb_zarr_store(
-            config=None, mars=CMIP6_MARS_REQ, serialized_axes=serialized_axes, extractor_type_str="GRIB"
+        # Test with config path and mars as list
+        store2 = rebuild_fdb_zarr_store(
+            config=FDB_HOME, mars=[CMIP6_MARS_REQ], serialized_axes=serialized_axes, extractor_type_str="GRIB"
         )
-    except RuntimeError as e:
-        if "schema" in str(e) or "no data found" in str(e):
-            pytest.skip(f"FDB schema or test data not available: {e}")
-        raise
-    assert store1 is not None
+        assert store2 is not None
 
-    # Test with config path and mars as list
-    store2 = rebuild_fdb_zarr_store(
-        config=FDB_HOME, mars=[CMIP6_MARS_REQ], serialized_axes=serialized_axes, extractor_type_str="GRIB"
-    )
-    assert store2 is not None
+    def test_z3fdb_missing_attrs_raise(self) -> None:
+        """Test reduce_fdb_zarr_store raises TypeError on missing attrs."""
+        from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
 
+        builder = SimpleStoreBuilder(None)
+        axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
+        builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
+        try:
+            store = builder.build()
+        except RuntimeError as e:
+            if "schema" in str(e) or "no data found" in str(e):
+                pytest.skip(f"FDB schema or test data not available: {e}")
+            raise
 
-def test_z3fdb_missing_attrs_raise() -> None:
-    """Test reduce_fdb_zarr_store raises TypeError on missing attrs."""
-    from aqua.core.intake_drivers.fdb.openers.z3fdb_opener import reduce_fdb_zarr_store, z3fdb_available
-
-    if not z3fdb_available:
-        pytest.skip("z3fdb not available")
-
-    from z3fdb import AxisDefinition, Chunking, ExtractorType, SimpleStoreBuilder
-
-    builder = SimpleStoreBuilder(None)
-    axes = [AxisDefinition(["date", "time"], Chunking.SINGLE_VALUE)]
-    builder.add_part(CMIP6_MARS_REQ, axes, ExtractorType.GRIB)
-    try:
-        store = builder.build()
-    except RuntimeError as e:
-        if "schema" in str(e) or "no data found" in str(e):
-            pytest.skip(f"FDB schema or test data not available: {e}")
-        raise
-
-    with pytest.raises(TypeError, match="Cannot pickle FdbZarrStore: missing serialization attributes"):
-        reduce_fdb_zarr_store(store)
+        with pytest.raises(TypeError, match="Cannot pickle FdbZarrStore: missing serialization attributes"):
+            reduce_fdb_zarr_store(store)
 
 
+@pytest.mark.aqua
 def test_z3fdb_without_gsv():
     """Import and use the z3fdb coordinate path when GSV cannot be imported."""
     if not z3fdb_available:
