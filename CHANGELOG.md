@@ -11,6 +11,7 @@ ClimateDT workflow modifications:
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
 Unreleased in the current development version (target v1.2.3):
+- The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 Complete list:
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
@@ -18,6 +19,10 @@ Complete list:
 Unreleased in the current development version (target v1.2.4):
 - Add `CRU-TS-default` fixer for CRU TS monthly data: `tmp`, `tmn`, `tmx` from degrees Celsius to K and `pre` from monthly totals to `tprate`, using the days of each month; station counts `*_stn` renamed after the eccodes names (e.g. `2t_stn`); `degrees Celsius` added to the unit aliases in `default.yaml` (#3382)
 - Agent instructions: map new sources through the eccodes convention first, and write a `fixer_name` only for what the convention cannot express (#3382)
+- CI: the labeled run that Dependabot starts when opening its PR also runs the tests, so a skipped run no longer hides the passed required check and blocks the PR (#3389)
+- CI: the AQUA tests workflow also runs on `merge_group` events, so its required check reports in the merge queue.
+- Support positive integer time chunk sizes as saved-frame counts in the GSV and Polytope engines, including partial final chunks (#3363).
+- `aqua analysis --serial` runs the diagnostic tools with the synchronous Dask scheduler instead of the default threaded one, which used one thread per core with no memory limit (#3366)
 - CI: the reusable failure report workflow also runs on successful scheduled/manual runs on the default branch and closes the open failure issue of that suite; the nightly, release, PyPI and Conda workflows pass their result (#3367)
 - Split agent instructions into a small `AGENTS.md` entry point, shared ecosystem rules in `AGENTS.common.md`, and AQUA-core-specific rules in `AGENTS.repo.md` (#3357).
 - Share agent rules for attribute reuse, isolated test outputs, dependency and `environment*.yml` synchronization, usage documentation updates, and precedence of the current implementation over stale documentation (#3357).
@@ -32,6 +37,7 @@ Unreleased in the current development version (target v1.2.4):
 - Apply the temporary `pytest<9.2` pin also in the CI workflow (conda install mode), which does not read the `pyproject.toml` pin (#3317)
 - Require signatures on agent-opened issues and pull requests, clarify PR checklist applicability, and require explicit human requests for the `ready for review` label in `AGENTS.md` (#3299).
 - Restructure the grid definitions in `aqua/core/config/grids`: unused grids moved to `deprecated.yaml`, duplicated `tl63`/`tl159` removed from the EC-Earth4 file, sections ordered by model cycle, `HealPix.yaml`/`EC-EARTH4.yaml`/`EC-EARTH3.yaml` renamed to lowercase; the duplicated OSI-SAF grids are not defined anymore (`osi-saf-nh-aqua`/`osi-saf-sh-aqua` are to be used); `load_multi_yaml` has a new `check_duplicates` option to detect entries defined in more than one file, used in a test on the grids folder (#3269)
+- DROP validates existing yearly and monthly files at write time (a yearly file must span 12 months) and regenerates the invalid ones (only reported in a dry run), instead of skipping them on existence only; a final report lists the periods that could not be produced (also for icechunk) and `--no-validate` skips the validation of existing files. The unused pre-run `check_integrity` is removed from `Drop` and `BaseWriter` (the icechunk one remains, used when writing) (#3325)
 - Filter z3fdb requests to accept only supported MARS keys, ignoring extra catalog keys such as `expid` as GSV does (#3307)
 - Grid path value `data` takes the grid from the dataset: new `lon-lat-skipna` grid (`path: {skipna: data}`) (#3306)
 - Test suite infrastructure (#3309; #3332, #3333, #3334, #3336, #3337, #3338, #3339, #3358): private `AQUA_CONFIG` and outputs under `tmp_path`, console and regionmask tests offline with a new `network` marker, faster runs (shared regridding weights, DROP in its own xdist group, session fixtures, 11 redundant tests removed), and shared conventions in `AGENTS.repo.md` and `tests/utils_tests` (design principles, tolerances, `LOGLEVEL`, `os.path`)

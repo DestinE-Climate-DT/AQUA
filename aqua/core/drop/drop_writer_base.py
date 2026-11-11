@@ -19,7 +19,7 @@ from dask.distributed import progress
 from dask.distributed.diagnostics import MemorySampler
 from smmregrid import GridType
 
-from aqua.core.drop.drop_util import move_tmp_files
+from aqua.core.drop.drop_util import WriteReport, move_tmp_files
 from aqua.core.logger import log_configure
 
 from .output_path_builder import OutputPathBuilder
@@ -77,12 +77,13 @@ class BaseWriter(ABC):
         """
 
     @abstractmethod
-    def validate(self, path):
+    def validate(self, path, min_months=None):
         """
         Validate file/store integrity.
 
         Args:
             path: Path to file/store to validate
+            min_months: Minimum number of distinct calendar months the file/store must span (optional)
 
         Returns:
             bool: True if valid, False otherwise
@@ -431,61 +432,10 @@ class BaseWriter(ABC):
             level: Level (optional, for filename generation)
 
         Returns:
-            bool: True if successful
+            bool or None: True if concatenated, False on error, None if there are not enough monthly
+            files/stores to concatenate (it is not a failure)
         """
         pass
-
-    def check_integrity(self, var, level=None, overwrite=False, end_date=None):
-        """
-        Check integrity of files/stores for a variable.
-
-        Args:
-            var: Variable name
-            level: Level (optional, for filename generation)
-            overwrite: If True, always report incomplete
-            end_date: Unused in the base implementation; accepted for interface
-                compatibility with subclasses (e.g. IcechunkWriter) that need
-                to verify coverage up to a specific date.
-
-        Returns:
-            dict: {
-                'complete': bool,
-                'last_record': str (YYYYMMDD format) or None,
-                'message': str
-            }
-        """
-        if overwrite:
-            return {"complete": False, "last_record": None, "message": "Overwrite mode enabled"}
-
-        # Check yearly files/stores
-        yearfiles = self.get_filename(var, level=level, year="*")
-        yearfiles = glob.glob(yearfiles)
-
-        if not yearfiles:
-            return {"complete": False, "last_record": None, "message": "No files found"}
-
-        checks = [self.validate(yearfile) for yearfile in yearfiles]
-        all_checks_true = all(checks)
-
-        if all_checks_true:
-            try:
-                # xr.open_mfdataset works with both single and multiple files
-                ds = self._open_files(yearfiles)
-                last_record = ds.time[-1].values
-                last_record_str = pd.to_datetime(last_record).strftime("%Y%m%d")
-                return {
-                    "complete": True,
-                    "last_record": last_record_str,
-                    "message": f"All {len(yearfiles)} files complete",
-                }
-            except Exception as e:
-                return {"complete": False, "last_record": None, "message": f"Error reading files: {e}"}
-        else:
-            return {
-                "complete": False,
-                "last_record": None,
-                "message": f"{sum(checks)}/{len(checks)} files complete",
-            }
 
     def write_variable(
         self,
@@ -497,6 +447,7 @@ class BaseWriter(ABC):
         dask=False,
         performance_reporting=False,
         stats_file=None,
+        validate_existing=True,
     ):
         """
         Write complete variable with all year/month logic.
@@ -504,10 +455,10 @@ class BaseWriter(ABC):
         Template method that orchestrates the complete write process:
         1. Split data into years
         2. For each year:
-           - Check if yearly file exists
+           - Check if yearly file exists and is valid (an invalid one is regenerated)
            - Split into months
            - For each month:
-             * Check if monthly file exists
+             * Check if monthly file exists and is valid (an invalid one is regenerated)
              * Write monthly chunk
              * Validate tmpfile
              * Move tmpfile to outdir (IMMEDIATELY)
@@ -523,28 +474,35 @@ class BaseWriter(ABC):
             dask: If True, use Dask for distributed computing
             performance_reporting: Limit to first month only
             stats_file: Path to stats text file for immediate per-chunk writes. None disables writing.
+            validate_existing: If True, existing files are validated before being skipped and
+                invalid ones are regenerated (only reported if not definitive). If False, an existing
+                file is always considered valid.
         """
+        report = WriteReport(var, definitive)
+
         for year, year_data in self._iter_years(data, performance_reporting):
             self.logger.info("Processing year %s...", str(year))
             yearfile = self.get_filename(var, level=level, year=year)
 
-            # Check if yearly file exists
-            if os.path.exists(yearfile):
-                if not overwrite:
-                    self.logger.info("Yearly file %s already exists, skipping...", yearfile)
-                    continue
-                self.logger.warning("Yearly file %s already exists, overwriting...", yearfile)
+            # Check if yearly file exists and is valid
+            # A valid yearly file must span the 12 months
+            keep, year_invalid = self._check_existing(yearfile, overwrite, validate_existing, definitive, min_months=12)
+            if keep:
+                continue
+            if year_invalid:
+                partial = len(set(year_data.time.dt.month.values)) < 12
+                report.add_invalid(year, note="partial year requested, may not be regenerated" if partial else None)
 
             for month, month_data in self._iter_months_in_year(year_data, performance_reporting):
                 self.logger.info("Processing month %s...", str(month))
                 monthfile = self.get_filename(var, level=level, year=year, month=month)
 
-                # Check if monthly file exists
-                if os.path.exists(monthfile):
-                    if not overwrite:
-                        self.logger.info("Monthly file %s already exists, skipping...", monthfile)
-                        continue
-                    self.logger.warning("Monthly file %s already exists, overwriting...", monthfile)
+                # Check if monthly file exists and is valid
+                keep, is_invalid = self._check_existing(monthfile, overwrite, validate_existing, definitive)
+                if keep:
+                    continue
+                if is_invalid:
+                    report.add_invalid(year, month)
 
                 # Write file
                 if definitive:
@@ -559,11 +517,13 @@ class BaseWriter(ABC):
 
                     if not success:
                         self.logger.error("Failed to write chunk for %s-%s", year, month)
+                        report.add_failed(year, "write", month)
                         continue
 
                     # Validate temp file
                     if not self.validate(tmpfile):
                         self.logger.error("Something has gone wrong in %s!", tmpfile)
+                        report.add_failed(year, "validation", month)
                         continue
 
                     # Move IMMEDIATELY (NetCDF timing, not Zarr's deferred move)
@@ -571,10 +531,59 @@ class BaseWriter(ABC):
                     move_tmp_files(self.tmpdir, self.outdir)
 
             # Concatenate into yearly file if concat enabled
-            if definitive and self._should_concat():
-                self.concat_year_files(var, year, level=level)
+            if definitive:
+                self._concat_year(var, year, level, year_invalid, report)
 
+        report.log(self.logger)
+        self.report = report
         return True
+
+    def _concat_year(self, var, year, level, year_invalid, report):
+        """
+        Concatenate the monthly files of a year, if enabled, and register in the report what went wrong.
+        Not having enough monthly files (e.g. data ending in June) is not a failure, unless it prevents
+        from regenerating an invalid yearly file.
+        """
+        if self._should_concat():
+            concatenated = self.concat_year_files(var, year, level=level)
+            if concatenated is False:
+                report.add_failed(year, "concatenation")
+            elif concatenated is None and year_invalid:
+                report.add_failed(year, "invalid yearly file kept: requested dates do not cover the whole year")
+        elif year_invalid:
+            report.add_failed(year, "invalid yearly file kept: concatenation is disabled")
+
+    def _check_existing(self, path, overwrite, validate_existing, definitive, min_months=None):
+        """
+        Decide what to do with an already existing yearly/monthly file or store.
+
+        Args:
+            path: Path to the file/store
+            overwrite: If True, existing files are overwritten
+            validate_existing: If True, an existing file is validated before being kept
+            definitive: Only used to word the logs (dry run vs actual regeneration)
+            min_months: Minimum number of distinct calendar months the file must span (optional)
+
+        Returns:
+            tuple: (keep: bool, invalid: bool). keep is True if the file is to be left as it is,
+            invalid is True if it exists but fails validation.
+        """
+        if not os.path.exists(path):
+            return False, False
+        if overwrite:
+            self.logger.warning("File %s already exists, overwriting...", path)
+            return False, False
+        if not validate_existing:
+            self.logger.info("File %s already exists, skipping without validation...", path)
+            return True, False
+        if self.validate(path, min_months=min_months):
+            self.logger.info("File %s already exists and is valid, skipping...", path)
+            return True, False
+        if definitive:
+            self.logger.warning("File %s exists but is not valid, regenerating...", path)
+        else:
+            self.logger.warning("File %s exists but is not valid, it would be regenerated in a definitive run", path)
+        return False, True
 
     def _record_chunk_stats(self, var, year, month, t_elapsed, size_bytes, stats_file):
         """Record per-chunk performance stats and optionally append to the stats file.
