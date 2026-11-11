@@ -697,6 +697,27 @@ class TestEdgeCases:
 
         assert os.path.exists(log_file)
 
+    @pytest.mark.parametrize(
+        "serial, preset, expected",
+        [
+            (True, None, "synchronous"),
+            (True, "threads", "threads"),
+            (False, None, ""),
+        ],
+    )
+    def test_run_command_dask_scheduler(self, analysis, tmp_path, monkeypatch, serial, preset, expected):
+        """In serial mode the tools run with the synchronous dask scheduler, unless DASK_SCHEDULER is already set."""
+        if preset is None:
+            monkeypatch.delenv("DASK_SCHEDULER", raising=False)
+        else:
+            monkeypatch.setenv("DASK_SCHEDULER", preset)
+        analysis.serial = serial
+        log_file = tmp_path / "scheduler.log"
+
+        assert analysis.run_command('echo "${DASK_SCHEDULER}"', str(log_file)) == 0
+        assert log_file.read_text().strip() == expected
+        assert os.environ.get("DASK_SCHEDULER") == preset
+
     def test_run_setup_checker_integration(self, analysis):
         """run_setup_checker builds and runs command with correct args."""
         analysis.model = "IFS"
