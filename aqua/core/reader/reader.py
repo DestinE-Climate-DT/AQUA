@@ -11,7 +11,7 @@ from aqua.core.configurer import ConfigContext
 from aqua.core.data_model import DataModel, counter_reverse_coordinate
 
 # set default data model
-from aqua.core.default import DEFAULT_ENGINE, DEFAULT_NPROC
+from aqua.core.default import DEFAULT_NPROC
 from aqua.core.exceptions import NoRegridError
 from aqua.core.fixer import Fixer
 from aqua.core.fldstat import FldStat
@@ -50,7 +50,7 @@ class Reader:
         nproc=DEFAULT_NPROC,
         chunks=None,
         preproc=None,
-        engine=DEFAULT_ENGINE,
+        engine=None,
         collection=None,
         item=None,
         asset=None,
@@ -95,7 +95,7 @@ class Reader:
             preproc (callable, optional): Preprocessing function to apply to the dataset upon retrieval.
                 Defaults to None.
             engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope', 'z3fdb' or 'gsv'.
-                Defaults to DEFAULT_ENGINE ('gsv').
+                Defaults to None (use the catalog engine, falling back to 'gsv'). Explicit values override the catalog.
             collection (str, optional): Synonym for `model` (e.g. in STAC catalogs). Defaults to None.
             item (str, optional): Synonym for `exp` (e.g. in STAC catalogs). Defaults to None.
             asset (str, optional): Synonym for `source` (e.g. in STAC catalogs). Defaults to None.
