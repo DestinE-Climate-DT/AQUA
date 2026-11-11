@@ -188,7 +188,7 @@ These rules apply to new and modified code. Existing code that does not follow t
 - **Paths are `str`, built with `os.path`** (`os.path.join`, `os.path.exists`, `os.makedirs`, `os.path.realpath`):
   - Do not import `pathlib` in library code and never return a `Path` object.
   - Functions taking a path must accept both `str` and `os.PathLike` (the `os.path` functions already do).
-  - In tests, build paths with `os.path.join(tmp_path, "file.nc")`, never `tmp_path / "file.nc"`, so the test works whether a fixture yields a `str` or a `Path`.
+  - Tests: pytest's built-in `tmp_path` / `tmp_path_factory` are `Path` objects by default; leave them as they are (no `str()` wrapping) and `tmp_path / "file.nc"` is allowed on them. Custom fixtures and helpers return `str` paths; build on those with `os.path.join`, never `/`.
   - Exception: an external API that requires a `Path`; convert at that call site only.
 - **Dates and times use pandas**: `pd.Timestamp`, `pd.Timedelta`, `pd.to_datetime`, `pd.date_range`, `pd.DateOffset`, `pd.tseries.frequencies.to_offset`.
   - Do not use the `datetime` module or `np.datetime64` / `np.timedelta64`.
