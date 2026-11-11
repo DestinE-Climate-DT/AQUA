@@ -21,6 +21,7 @@ from aqua.core.regridder import Regridder
 from aqua.core.timstat import TimStat
 from aqua.core.util import RegridderMetadata, load_multi_yaml, set_attrs
 
+from .info import reader_info
 from .trender import Trender
 from .vertinterpolator import VertInterpolator
 
@@ -784,6 +785,17 @@ class Reader:
         data = self.backend.seldate(data, *args, **kwargs)
         data.aqua._bind_reader(self)  # Preserve this output's Reader without changing the global default.
         return data
+
+    def info(self, data):
+        """Log and return the AQUA metadata of the data and the Reader settings that produced it.
+
+        Args:
+            data (xr.Dataset or xr.DataArray): The input dataset or dataarray.
+
+        Returns:
+            AquaInfo: See :func:`aqua.core.reader.info.reader_info`.
+        """
+        return reader_info(self, data)
 
 
 def _check_if_regridded(data):

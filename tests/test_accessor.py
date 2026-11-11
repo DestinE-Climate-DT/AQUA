@@ -45,6 +45,35 @@ class TestAccessor:
         hist = data["2t"].aqua.histogram(bins=200, range=(150, 350), weighted=False)
         assert sum(hist.values) == data["2t"].size
 
+    def test_accessor_info(self, reader_instance, data):
+        """Reader.info and the accessor return the Reader settings, the shared AQUA metadata and per-variable differences"""
+        info = reader_instance.info(data)
+        assert info == data.aqua.info()
+        assert info["reader"] == {
+            "fix": True,
+            "fixer": None,
+            "convention": "eccodes",
+            "datamodel": "aqua",
+            "src_grid": "tco79",
+            "tgt_grid": "r100",
+        }
+        assert {k: info["data"][f"AQUA_{k}"] for k in ("catalog", "model", "exp", "source", "regridded")} == {
+            "catalog": "ci",
+            "model": "IFS",
+            "exp": "test-tco79",
+            "source": "short",
+            "regridded": False,
+        }
+        assert info["data"]["history"] == data.attrs["history"]
+        assert info["variables"] == {}
+        mixed = data.assign(derived=data["2t"].assign_attrs(AQUA_formula="2t*2"))
+        mixed_info = reader_instance.info(mixed)
+        assert mixed_info["variables"] == {"derived": {"AQUA_formula": "2t*2"}}
+        assert "    tgt_grid: r100\n" in repr(mixed_info)
+        assert repr(mixed_info).endswith("variables\n    derived\n        AQUA_formula: 2t*2")
+        regridded = reader_instance.info(reader_instance.regrid(data["2t"]))["data"]
+        assert (regridded["AQUA_regridded"], regridded["AQUA_target_grid"]) == (1, "r100")
+
     def test_accessor_two(self, reader_instance, reader_instance2, data, data2):
         """Test the use of two reader instances"""
         # test accessor on dataset, the object should remember the correct reader

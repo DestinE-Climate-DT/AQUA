@@ -125,3 +125,7 @@ class AquaAccessor:
     def seldate(self, *args, **kwargs):
         """Select data for a specific date or date range."""
         return self.instance.seldate(self._obj, *args, **kwargs)
+
+    def info(self):
+        """Log and return the AQUA metadata of the data and the settings of its Reader."""
+        return self.instance.info(self._obj)
