@@ -9,8 +9,6 @@ from aqua.core.fldstat import AreaSelection
 from aqua.core.util import check_seasonal_chunk_completeness, select_season
 from aqua.core.util.sci_util import generate_quarter_months
 
-loglevel = LOGLEVEL
-
 
 @pytest.fixture(scope="module")
 def sample_data():
@@ -46,7 +44,7 @@ def test_valid_selection_no_brd(sample_data):
     """Test with valid latitude and longitude ranges, no box_brd"""
     lat_range = [10, 30]
     lon_range = [45, 55]
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=False)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=False)
 
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
@@ -55,18 +53,23 @@ def test_valid_selection_no_brd(sample_data):
 
 @pytest.mark.aqua
 def test_selection_regionmask(sample_data):
-    """Test selection using regionmask"""
-    # Define a simple regionmask region
-    region = regionmask.defined_regions.natural_earth_v5_0_0.countries_110
-    region_sel = ["United States of America", "Russia"]
+    """Test selection using regionmask, with regions defined locally (no shapefile download)"""
+    # two boxes covering (lat 10-20, lon 40-50) and (lat 50-60, lon 80-90) of the sample data
+    region = regionmask.Regions(
+        [[[35, 5], [55, 5], [55, 25], [35, 25]], [[75, 45], [95, 45], [95, 65], [75, 65]]],
+        names=["south_west", "north_east"],
+        abbrevs=["SW", "NE"],
+    )
+    inside = (sample_data.lat.isin([10, 20]) & sample_data.lon.isin([40, 50])) | (
+        sample_data.lat.isin([50, 60]) & sample_data.lon.isin([80, 90])
+    )
 
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data, region=region, region_sel=region_sel, box_brd=True)
+    for region_sel in (["south_west", "north_east"], [0, 1]):
+        result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, region=region, region_sel=region_sel, box_brd=True)
 
-    assert result is not None
-    # Check that values outside the selected regions are NaN
-    assert np.isnan(result.sel(lat=0, lon=150, method="nearest").values)
-    # Check that values inside the selected regions are not NaN
-    assert result.sel(lat=40, lon=-100, method="nearest").values is not np.nan
+        # values inside the selected regions are kept, all the others are NaN
+        xr.testing.assert_equal(result.notnull(), inside.transpose(*result.dims))
+        xr.testing.assert_equal(result.where(inside, drop=True), sample_data.where(inside, drop=True))
 
 
 @pytest.mark.aqua
@@ -74,7 +77,7 @@ def test_valid_selection(sample_data):
     """Test with valid latitude and longitude ranges"""
     lat_range = [15, 25]
     lon_range = [45, 55]
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=True)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=lat_range, lon=lon_range, box_brd=True)
 
     assert result is not None
     assert np.isnan(result.sel(lat=10, lon=40).values)
@@ -84,7 +87,7 @@ def test_valid_selection(sample_data):
 @pytest.mark.aqua
 def test_missing_lat_lon(sample_data):
     """Test when both lat and lon are None, the sample_data is returned"""
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data, lat=None, lon=None, box_brd=True)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data, lat=None, lon=None, box_brd=True)
     assert result is not None
     assert result.equals(sample_data)
 
@@ -96,17 +99,17 @@ def test_missing_lat_lon_coords():
     data_missing_lon = xr.DataArray(np.random.rand(3, 3), coords={"lat": [10, 20, 30]}, dims=["lat", "lon"])
 
     with pytest.raises(KeyError):
-        AreaSelection(loglevel=loglevel).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55], box_brd=True)
+        AreaSelection(loglevel=LOGLEVEL).select_area(data_missing_lat, lat=[15, 25], lon=[45, 55], box_brd=True)
 
     with pytest.raises(KeyError):
-        AreaSelection(loglevel=loglevel).select_area(data_missing_lon, lat=[15, 25], lon=[45, 55], box_brd=True)
+        AreaSelection(loglevel=LOGLEVEL).select_area(data_missing_lon, lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
 def test_missing_data():
     """Test with missing data or wrong type"""
     with pytest.raises(TypeError):
-        AreaSelection(loglevel=loglevel).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
+        AreaSelection(loglevel=LOGLEVEL).select_area(lat=[15, 25], lon=[45, 55], box_brd=True)
 
 
 @pytest.mark.aqua
@@ -153,7 +156,7 @@ def test_check_seasonal_chunk_completeness():
     time = t_dec.append(t_feb).append(t_mam)
 
     da = xr.DataArray(np.ones(time.size), coords={"time": time}, dims=["time"])
-    mask = check_seasonal_chunk_completeness(da, resample_frequency="QS-DEC", loglevel="DEBUG")
+    mask = check_seasonal_chunk_completeness(da, resample_frequency="QS-DEC", loglevel=LOGLEVEL)
 
     # Expected seasonal chunk start times under QS-DEC in this range: 2000-12-01 and 2001-03-01
     assert "2000-12-01" in mask.time.dt.strftime("%Y-%m-%d").values
@@ -178,7 +181,7 @@ def test_check_seasonal_chunk_completeness():
 def test_full_globe_selection(data_fixture, lon_limits, request):
     """Full-globe lon requests must select all data regardless of the grid convention."""
     data = request.getfixturevalue(data_fixture)
-    result = AreaSelection(loglevel=loglevel).select_area(data, lon=lon_limits)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(data, lon=lon_limits)
     non_nan = result.values[~np.isnan(result.values)]
     assert len(non_nan) == data.size
 
@@ -204,7 +207,7 @@ def test_partial_lon_selection(data_fixture, lon_limits, expected_in, expected_o
         request (pytest.FixtureRequest): The pytest request object.
     """
     data = request.getfixturevalue(data_fixture)
-    result = AreaSelection(loglevel=loglevel).select_area(data, lon=lon_limits)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(data, lon=lon_limits)
     lat_val = int(data.lat.values[0])
     for lon_val in expected_in:
         assert not np.isnan(result.sel(lat=lat_val, lon=lon_val).values), f"lon={lon_val} should be selected but is NaN"
@@ -217,7 +220,7 @@ def test_partial_lon_selection(data_fixture, lon_limits, expected_in, expected_o
 @pytest.mark.parametrize("to_180", [True, False])
 def test_greenwich_crossing_360(sample_data_360, box_brd, to_180):
     """Box selection crossing Greenwich on a 0..360 grid, with and without lon conversion."""
-    result = AreaSelection(loglevel=loglevel).select_area(
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(
         sample_data_360, lon=[250, 40], box_brd=box_brd, to_180=to_180, default_coords=DEFAULT_COORDS
     )
     lon_in = [-90, 0, 30] if to_180 else [270, 0, 30]
@@ -235,7 +238,7 @@ def test_greenwich_crossing_360(sample_data_360, box_brd, to_180):
 def test_regionmask_greenwich_360(sample_data_360):
     """Region crossing Greenwich on a 0..360 grid is converted to [-180, 180] and sorted."""
     region = regionmask.Regions([[[-40, -20], [40, -20], [40, 20], [-40, 20]]], names=["box"])
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data_360, region=region, region_sel=0)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data_360, region=region, region_sel=0)
 
     assert result.lon.min() < 0
     assert (result.lon.diff("lon") > 0).all()
@@ -264,7 +267,7 @@ def test_regionmask_dateline_crossing(data_fixture, request):
         numbers=[0, 1],
     )
     data = request.getfixturevalue(data_fixture)
-    result = AreaSelection(loglevel=loglevel).select_area(data, region=region, region_sel=[0, 1], drop=True)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(data, region=region, region_sel=[0, 1], drop=True)
 
     assert result.lon.min() >= 0
     assert (result.lon.diff("lon") > 0).all()
@@ -277,7 +280,7 @@ def test_regionmask_dateline_crossing(data_fixture, request):
 def test_regionmask_greenwich_180_stays_180(sample_data_180_from_360):
     """Region crossing Greenwich on a [-180, 180] grid stays in [-180, 180] and sorted."""
     region = regionmask.Regions([[[-100, -20], [40, -20], [40, 20], [-100, 20]]], names=["box"])
-    result = AreaSelection(loglevel=loglevel).select_area(sample_data_180_from_360, region=region, region_sel=0, drop=True)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(sample_data_180_from_360, region=region, region_sel=0, drop=True)
 
     assert result.lon.min() < 0
     assert (result.lon.diff("lon") > 0).all()
@@ -296,7 +299,7 @@ def test_regionmask_frac_threshold(frac_threshold, expect_selected):
     )
     # Thin box inside the cell centered at (lat=0, lon=10), containing no cell center
     region = regionmask.Regions([[[12, -2], [14, -2], [14, 2], [12, 2]]], names=["thin"])
-    result = AreaSelection(loglevel=loglevel).select_area(data, region=region, region_sel=0, frac_threshold=frac_threshold)
+    result = AreaSelection(loglevel=LOGLEVEL).select_area(data, region=region, region_sel=0, frac_threshold=frac_threshold)
 
     assert (not np.isnan(result.values).all()) == expect_selected
     if expect_selected:

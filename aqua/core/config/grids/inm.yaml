@@ -1,6 +1,6 @@
+# HighResMIP atmospheric grids: INM.
+
 grids:
   inm-cm5-h-atm:
-    path: '{{ grids }}/INM/inm-cm5-h_atm.nc'
-    space_coord:
-    - lon
-    - lat
+    path: "{{ grids }}/INM/inm-cm5-h_atm.nc"
+    space_coord: ["lon", "lat"]

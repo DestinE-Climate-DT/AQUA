@@ -206,7 +206,7 @@ class Analysis:
 
         self.serial = get_arg(args, "serial", False)
         if self.serial:
-            self.logger.info("Serial execution enabled; dask cluster will not be used.")
+            self.logger.info("Serial execution enabled: no dask cluster, tools run with the synchronous dask scheduler.")
             if args.nworkers or args.nthreads:
                 self.logger.warning("Serial execution selected, ignoring worker/thread settings.")
         else:
@@ -272,8 +272,12 @@ class Analysis:
             log_dir = os.path.dirname(log_file)
             create_folder(log_dir)
 
+            # Without a cluster each tool falls back to the dask threaded scheduler, with one thread per core
+            # and no memory limit: in serial mode run it single-threaded, unless the user sets DASK_SCHEDULER
+            env = {"DASK_SCHEDULER": "synchronous", **os.environ} if self.serial else None
+
             with open(log_file, "w", encoding="utf-8") as log:
-                process = subprocess.run(cmd, shell=True, stdout=log, stderr=log, text=True, check=False)
+                process = subprocess.run(cmd, shell=True, stdout=log, stderr=log, text=True, check=False, env=env)
                 return process.returncode
         except (OSError, subprocess.SubprocessError) as e:
             self.logger.error("Error running command %s: %s", cmd, e)
@@ -564,12 +568,14 @@ class Analysis:
         complete_dictionary = load_yaml(exp_kind_file)
 
         if exp_kind not in complete_dictionary:
-            self.logger.error("Experiment kind '%s' not found in config file '%s'. Default selected", exp_kind, exp_kind_file)
             if "default" not in complete_dictionary:
                 raise KeyError(
                     f"Default experiment kind not found in config file '{exp_kind_file}'. Please ensure it is defined."
                 )
-        self.exp_kind_dict = complete_dictionary.get(exp_kind, "default")
+            self.logger.warning(
+                "Experiment kind '%s' not found in config file '%s': using the 'default' entry", exp_kind, exp_kind_file
+            )
+        self.exp_kind_dict = complete_dictionary.get(exp_kind, complete_dictionary.get("default"))
 
     def configure_template_configs(self, cfgs):
         """

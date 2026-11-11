@@ -1,65 +1,67 @@
+# Grids used by the AQUA test suite (ci catalog, AQUA_tests data).
+
 grids:
+  # IFS
   tco79-testmask:
     path:
-      2d: '{{ grids }}/IFS/tco79_grid.nc'
-      2dm: '{{ grids }}/IFS/tco79_grid_masked.nc'
+      2d: "{{ grids }}/IFS/tco79_grid.nc"
+      2dm: "{{ grids }}/IFS/tco79_grid_masked.nc"
     masked:
-      vars: ["2t"] # for testing purposes
+      vars: ["2t"]
   tco79-nn:
-      path: '{{ grids }}/IFS/tco79_grid.nc'
-      regrid_method: 'nn'
-  # FESOM
+    path: "{{ grids }}/IFS/tco79_grid.nc"
+    regrid_method: nn
+
+  # FESOM pi mesh
   test-pi-2d:
-    path: '{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc'
-    #space_coord: [nod2]
+    path: "{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc"
     cdo_extra:
-    - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
-    - -selname,cell_area
+      - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
+      - -selname,cell_area
   test-pi-3d:
     path:
-      nz1: '{{ grids }}/FESOM/pi_fesom_mask_nz1.nc'
-      nz: '{{ grids }}/FESOM/pi_fesom_mask_nz.nc'
+      nz1: "{{ grids }}/FESOM/pi_fesom_mask_nz1.nc"
+      nz: "{{ grids }}/FESOM/pi_fesom_mask_nz.nc"
     cdo_extra:
-    - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
-  test-pi-3d-coord-fix:
-    path:
-      nz1: '{{ grids }}/FESOM/pi_fesom_mask_nz1.nc'
-    cdo_extra:
-    - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
+      - -setgrid,{{ grids }}/FESOM/pi_griddes_nodes_IFS.nc
+
   # ICON
   test-healpix:
-    path: '{{ grids }}/ICON/icon_healpix0.nc'
-    cdo_options: --force
+    path: "{{ grids }}/ICON/icon_healpix0.nc"
+    cdo_options: "--force"
   test-r2b0:
     path: ./AQUA_tests/models/ICON/test-lowres/r2b0.nc
+
+  # NEMO
   test-eORCA1-3d:
     path:
-      level: '{{ grids }}/NEMO/test-eorca1_3D.nc'
+      level: "{{ grids }}/NEMO/test-eorca1_3D.nc"
     cdo_extra:
       - -selname,dummy
   test-eORCA1-skipna:
     path:
-      skipna: '{{ grids }}/NEMO/eORCA1_mesh_sfc_grid_T.nc'
-  # Healpix
+      skipna: "{{ grids }}/NEMO/eORCA1_mesh_sfc_grid_T.nc"
+
+  # HEALPix
   test-hpz3-nested:
-    path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
-    cdo_options: '--force'
-    space_coord: ['cells']
+    path: "{{ grids }}/HealPix/hpz3_nested_atm.nc"
+    space_coord: ["cells"]
+    cdo_options: "--force"
   test-hpz3-nested-nn:
-    path: '{{ grids }}/HealPix/hpz3_nested_atm.nc'
-    cdo_options: '--force'
-    space_coord: ['cells']
-    regrid_method: 'nn'
+    path: "{{ grids }}/HealPix/hpz3_nested_atm.nc"
+    space_coord: ["cells"]
+    cdo_options: "--force"
+    regrid_method: nn
   test-hpz7-nested-fdb:
-    path: '{{ grids }}/HealPix/hpz7_nested_atm.nc'
-    cdo_options: '--force'
-    space_coord: ['ncells']
+    path: "{{ grids }}/HealPix/hpz7_nested_atm.nc"
+    space_coord: ["ncells"]
+    cdo_options: "--force"
   test-hpz3-nested-fesom:
-    path: '{{ grids }}/HealPix/fesom_hpz3_nested_oce.nc'
-    space_coord: ['cells']
-    cdo_options: '--force'
+    path: "{{ grids }}/HealPix/fesom_hpz3_nested_oce.nc"
+    space_coord: ["cells"]
+    cdo_options: "--force"
   test-hpz3-nested-fesom-3d:
     path:
-      level: '{{ grids }}/HealPix/fesom_hpz3_nested_oce_level.nc'
-    space_coord: ['cells']
-    cdo_options: '--force'
+      level: "{{ grids }}/HealPix/fesom_hpz3_nested_oce_level.nc"
+    space_coord: ["cells"]
+    cdo_options: "--force"

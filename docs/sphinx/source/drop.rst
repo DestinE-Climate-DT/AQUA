@@ -345,7 +345,8 @@ Controls processing behavior and performance settings:
 
   - ``True``: Replace existing files
   - ``False``: Skip processing if files exist
-  - DROP checks if the existing files are complete before skipping, so it won't skip if files are incomplete or corrupted
+  - DROP checks if the existing files are complete before skipping, so it won't skip if files are incomplete or corrupted (a yearly file must span 12 months): they are regenerated (only reported in a dry run).
+    At the end of each variable, the periods that could not be produced are reported and not retried. Data ending before December is not a failure: the monthly files are kept without a yearly file.
 
 - **exclude_incomplete** (bool, optional): Exclude incomplete temporal chunks. Default: ``False``
 
@@ -628,7 +629,9 @@ Usage
 
 .. option:: --no-validate
 
-    Skip the pre-run integrity check on existing output files. Speeds up startup for large datasets.
+    Do not validate the existing output files: an existing yearly or monthly file is always considered valid and skipped.
+    By default, existing files are validated before being skipped, and invalid ones are regenerated
+    (in a dry run they are only reported). Speeds up startup for large datasets.
 
 .. option:: --catalog CATALOG
 

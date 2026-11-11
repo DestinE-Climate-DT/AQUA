@@ -6,9 +6,6 @@ from utils_tests import APPROX_REL, LOGLEVEL
 
 from aqua import Reader
 
-approx_rel = APPROX_REL
-loglevel = LOGLEVEL
-
 
 @pytest.fixture(params=[("IFS", "test-tco79", "short_masked", "2t", "r100")])
 def reader_arguments(request):
@@ -25,11 +22,11 @@ class TestMask:
         """
         model, exp, source, variable, regrid = reader_arguments
 
-        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=True, loglevel=loglevel)
+        reader = Reader(model=model, exp=exp, source=source, regrid=regrid, fix=True, loglevel=LOGLEVEL)
         data = reader.retrieve()
         rgd = reader.regrid(data[variable])
         masked = rgd.isel(time=0).values
 
         assert not np.isnan(masked[179, 288])
-        assert masked[179, 288] == pytest.approx(246.2005, rel=approx_rel)
+        assert masked[179, 288] == pytest.approx(246.2005, rel=APPROX_REL)
         assert np.isnan(masked[169, 18])

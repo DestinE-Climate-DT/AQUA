@@ -5,14 +5,11 @@ import os
 from urllib.parse import urljoin, urlsplit
 
 import fsspec
-import xarray as xr
 from intake import readers
 
 from aqua.core.intake_drivers.xarray.base import IntakeXarraySourceAdapter, _merge_xarray_kwargs
 from aqua.core.intake_drivers.xarray.readers import TolerantXArrayDatasetReader
 from aqua.core.logger import log_configure
-
-xr.set_options(keep_attrs=True)
 
 # Optional, user-installed support for reading some DKRZ STAC catalogues.
 try:

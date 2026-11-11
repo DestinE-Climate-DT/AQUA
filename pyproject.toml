@@ -102,7 +102,7 @@ tests = [
 ]
 style = [
     "pre-commit",
-    "ruff==0.17.2"
+    "ruff==0.17.4"
 ]
 all = [
     "aqua-core[docs]",
@@ -149,6 +149,7 @@ markers = [
     "console: mark test for console",
     "polytope: mark test that uses polytope",
     "stac: mark test that uses STAC",
+    "network: mark test that needs internet access (GitHub API, S3), always together with its usual marker"
 ]
 
 [tool.coverage.run]

@@ -3,14 +3,21 @@ name: Report test failure (reusable)
 # Can be called from other repositories (e.g. aqua-diagnostics):
 #   uses: DestinE-Climate-DT/AQUA/.github/workflows/report-failure-reusable.yml@main
 # The github context and token are the caller's, so the issue is opened in the calling repository.
+# Pass `result: ${{ needs.<tests>.result }}` and call it on success too: a success on the default branch
+# (schedule or workflow_dispatch) closes the open failure issue of that suite.
 
 on:
   workflow_call:
     inputs:
       test-name:
-        description: Name of the test suite that failed
+        description: Name of the test suite
         required: true
         type: string
+      result:
+        description: Result of the test job ('failure' opens/updates the issue, 'success' closes it)
+        required: false
+        type: string
+        default: failure
 
 permissions:
   contents: read
@@ -26,13 +33,20 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       TEST_NAME: ${{ inputs.test-name }}
     steps:
+      - name: Set issue label
+        run: |
+          # One label per test suite (e.g. 'ci-failure:nightly :clown_face:'), so failures of different suites do not mix
+          echo "LABEL=ci-failure:$(echo "$TEST_NAME" | tr '[:upper:]' '[:lower:]') :clown_face:" >> "$GITHUB_ENV"
+
       - name: Download test artifacts
+        if: inputs.result == 'failure'
         uses: actions/download-artifact@v8
         with:
           pattern: aqua-test-artifacts-*
           path: artifacts
 
       - name: Build failure report
+        if: inputs.result == 'failure'
         run: |
           python3 - <<'EOF'
           import glob, json, os, subprocess
@@ -68,14 +82,36 @@ jobs:
           EOF
 
       - name: Open or update issue
+        if: inputs.result == 'failure'
         run: |
-          # One label per test suite (e.g. 'ci-failure:nightly :clown_face:'), so failures of different suites do not mix
-          LABEL="ci-failure:$(echo "$TEST_NAME" | tr '[:upper:]' '[:lower:]') :clown_face:"
           # Create the label on first use; ignore the error if it already exists
           gh label create "$LABEL" --color B60205 --description "Automatic report of a failed $TEST_NAME test run" 2>/dev/null || true
-          EXISTING=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          EXISTING=$(gh issue list --label "$LABEL" --state open --json number,title --jq '.[0] // empty')
+          TODAY=$(date -u +%Y-%m-%d)
           if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body-file report.md
+            NUMBER=$(echo "$EXISTING" | jq -r .number)
+            # Failure count is stored in the title, e.g. "(3 failures, last: 2026-11-03)"; default to 1 if missing
+            COUNT=$(echo "$EXISTING" | jq -r '.title | capture("\\((?<n>[0-9]+) failures?,").n // 1')
+            COUNT=$((COUNT + 1))
+            # Editing the title and commenting both bump "updated", so the issue tops the "Recently updated" sort
+            gh issue edit "$NUMBER" --title "[CI/CD] $TEST_NAME tests failed ($COUNT failures, last: $TODAY)"
+            { echo "### Failure $TODAY - $RUN_URL"; echo; cat report.md; } > comment.md
+            gh issue comment "$NUMBER" --body-file comment.md
           else
-            gh issue create --label "$LABEL" --type Bug --title "[CI/CD] $TEST_NAME tests failed ($(date -u +%Y-%m-%d))" --body-file report.md
+            gh issue create --label "$LABEL" --type Bug --title "[CI/CD] $TEST_NAME tests failed (1 failure, last: $TODAY)" --body-file report.md
           fi
+
+      - name: Close issue after a successful run
+        # Only scheduled or manual runs close the issue: pushes to test branches (e.g. pypi-test) must not
+        if: inputs.result == 'success' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        run: |
+          # A manual run on a feature branch must not close an issue about the default branch
+          DEFAULT_BRANCH=$(gh repo view "$GH_REPO" --json defaultBranchRef --jq .defaultBranchRef.name)
+          if [ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]; then
+            echo "Run on '$GITHUB_REF_NAME', not on '$DEFAULT_BRANCH': nothing to close"
+            exit 0
+          fi
+          # No output if the label does not exist yet (the suite never failed)
+          for NUMBER in $(gh issue list --label "$LABEL" --state open --json number --jq '.[].number' 2>/dev/null); do
+            gh issue close "$NUMBER" --comment "$TEST_NAME tests passed again: $RUN_URL"
+          done

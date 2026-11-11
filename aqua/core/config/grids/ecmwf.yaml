@@ -1,6 +1,6 @@
+# HighResMIP atmospheric grids: ECMWF.
+
 grids:
   ecmwf-ifs-hr-atm:
-    path: '{{ grids }}/ECMWF/ecmwf-ifs-hr_atm.nc'
-    space_coord:
-    - lat
-    - lon
+    path: "{{ grids }}/ECMWF/ecmwf-ifs-hr_atm.nc"
+    space_coord: ["lat", "lon"]

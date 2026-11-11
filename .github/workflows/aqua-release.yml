@@ -58,7 +58,7 @@ jobs:
 
   report-failure:
     needs: aqua-release-tests
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && needs.aqua-release-tests.result == 'failure' }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && (needs.aqua-release-tests.result == 'failure' || needs.aqua-release-tests.result == 'success') }}
     permissions:
       contents: read
       issues: write
@@ -66,3 +66,4 @@ jobs:
     uses: ./.github/workflows/report-failure-reusable.yml
     with:
       test-name: Release
+      result: ${{ needs.aqua-release-tests.result }}

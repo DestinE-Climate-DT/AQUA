@@ -11,11 +11,6 @@ AQUA can act as a backend for an online web application (a "dashboard") to monit
 A series of scripts is used to automatize running of the diagnostics on experiment output, collecting the figures and storing them
 in a remote object storage. The figures are then used to update a website that shows the results of the analysis.
 
-Currently AQUA supports `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_ (The "AQUA Explorer"), providing a basic static webpage for showing aqua results,
-hosted in CSC Openshift and using the LUMI-O object storage.
-
-An alternative, more complete, dashboard is under development. The future dashboard will use the same LUMI-O storage already used by aqua-web.
-
 The full pipeline is composed of the following components:
 
 1.  The ``aqua-analysis.py`` script that runs several diagnostics for a single experiment on the HPC.
@@ -28,58 +23,45 @@ The full pipeline is composed of the following components:
 
 2.  **(optional, not used in the workflow)** In order to submit several ``aqua-analysis.py`` jobs in parallel, for different experiments,
     the ``submit-aqua-web.py`` script can be used. This script reads a list of experiments from a file and submits the ``aqua-analysis``
-    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to aqua-web wesite using ``push_analysis.sh``.
+    jobs to the HPC. After all the jobs are completed, the script can push the produced figures to a remote site using ``aqua push``.
 
     See the :ref:`submit-aqua-web` section for more details.
 
 
-3.  The ``push_analysis.sh`` bash script is used to push the produced figures to a remote object store (LUMI-O for DestinE).
-    It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the ``aqua-web`` bucket on LUMI-O,
-    creates a ``content.yaml``/ ``content.json`` file for each experiment, and
-    updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
+3.  The ``aqua push`` command sends the produced figures to a remote object store (LUMI-O for DestinE).
+    It collects figures from the ``aqua-analysis.py`` output directory, pushes them to the selected bucket or rsync target,
+    creates a ``content.yaml``/ ``content.json`` file for each experiment.
     It uses the ``experiment.yaml`` file for each experiment created by ``aqua-analysis.py`` to get the metadata.
-    It also generates a general ``experiments.yaml`` file listing all experiments available, stored on LUMI-O in ``s3://aqua-web/content/png``.
+    It also updates ``content/experiments.yaml`` on LUMI-O to list the available experiments.
 
-    See the :ref:`aqua_web` section for more details.
-
-
-4.  The AQUA Explorer software is stored on github in the repository `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_.
-    Any commit in the `aqua-web` repository will trigger a rebuild of the enclosed Dockerfile by the CSC `Rahti 2 service <https://research.csc.fi/-/rahti>`_ using OpenShift. The resulting container will run serving the web pages.
-    As described in the corresponding Dockerfile, contents (figures and documentation) are downloaded from the ``aqua-web`` bucket on LUMI-O, appropriate markdown files are created and  we use python package `mkdocs` to construct static web pages from the markdown files.
+    See the :ref:`aqua_push` section for more details.
 
 
 More details on the available tools and on their dependencies are provided in the following.
 
-.. _aqua_web:
+.. _aqua_push:
 
-Automatic uploading of figures and documentation to aqua-web
-------------------------------------------------------------
+Publishing figures and documentation to a remote site
+-----------------------------------------------------
 
-AQUA figures produced by the analysis can be uploaded to the `aqua-web <https://github.com/DestinE-Climate-DT/aqua-web>`_
-repository to publish them automatically on a dedicated website.
-A script in the ``cli/aqua-web`` folder is available to push figures to the bucket shown by aqua-web.
-
-If you plan to use these scripts outside the AQUA container or environment to push figures to aqua-web,
-you will need the following scripts: ``push-analysis.sh``, ``make_contents.py``, ``pdf_to_png.sh``
-and ``push_s3.py``.
-The following python packages will be needed: ``boto3``, ``pyYAML`` and ``pypdf``.
+AQUA figures produced by the analysis can be uploaded to a remote site for display on a dashboard.
+The installed AQUA command line tool can push figures directly.
 
 Basic usage
 ^^^^^^^^^^^
 
 .. code-block:: bash
 
-    bash push-analysis.sh [OPTIONS] INDIR EXPS
+    aqua push [OPTIONS] INDIR EXPS
 
-This script is used to push the figures produced by the AQUA analysis to the aqua-web repository.
+This command pushes the figures produced by the AQUA analysis to a remote site.
 ``INDIR`` is the directory containing the output, e.g. ``~/work/aqua-analysis/output``.
 ``EXPS`` is the subfolder to push, e.g ``climatedt-gen2/IFS-NEMO-5km/baseline-hist``
 or a text file containing a list of experiments.
-The file should be in the format "catalog model experiment realization".
-In case the compatibility flag ``--no-ensemble``
-has been specified, the file must be in the format "catalog model experiment".
-It creates ``content.yaml`` files for each experiment, pushes the images to the ``aqua-web`` bucket on LUMI-O and
-updates the ``updated.txt`` file on the aqua-web github repository to trigger the website update.
+The file starts with ``catalog model experiment`` and optionally ``realization`` (default ``r1``).
+Trailing metadata columns such as ``kind`` and ``source`` are ignored.
+With ``--no-ensemble``, only the first three columns are used.
+It creates ``content.yaml`` files for each experiment and pushes them with the images to the selected destination.
 
 The needed AWS credentials can be stored in the ``~/.aws/credentials`` file or in environment
 variables ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
@@ -89,16 +71,12 @@ Additional options
 
 .. option:: -b <bucket>, --bucket <bucket>
 
-    The bucket to use for the LUMI-O push (default is 'aqua-web').
+    The S3 bucket to use (the standard AQUA bucket ``aqua-web`` by default).
 
 .. option:: -c <configfile>, --config <configfile>
 
-    Alternate config file for make_contents (default is 'config.aqua-web.yaml' in the script directory).
-    To be used together with the rsync option.
-
-.. option:: -d, --no-update
-
-    Do not update the aqua-web Github repository.
+    Alternate config file for make_contents (default is ``analysis/config.grouping.yaml``
+    under ``AQUA_CONFIG`` or ``~/.aqua``).
 
 .. option:: --no-ensemble
 
@@ -114,12 +92,9 @@ Additional options
 
 .. option:: -l <level>, --loglevel <level>
 
-    Set the log level (1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL). Default is 2.
-
-.. option:: -r <repository>, --repository <repository>
-
-    The remote aqua-web repository to update (default is 'DestinE-Climate-DT/aqua-web').
-    If it starts with 'local:', a local directory is used.
+    Set the log level to DEBUG, INFO, WARNING, ERROR, or CRITICAL (case insensitive).
+    Default is INFO.
+    Use INFO to log progress and successful completion, or DEBUG to log individual transferred files.
 
 .. option:: --rsync <target>
 
@@ -136,8 +111,9 @@ If the rsync option option is used, it will return the return codes from the rsy
 Grouping configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The file ``config.grouping.yaml``, located in the script directory, contains a custom configuration for the aqua-web portal, describing how to group diagnostics.
-It is used by ``make_contents.py``` to create the ``content.yaml`` files for each experiment. A custom config file can be passed with the ``-c`` option.
+The file ``config.grouping.yaml`` in the AQUA analysis configuration describes how to group diagnostics on the remote site.
+It is used by the ``make_contents`` module to create the ``content.yaml`` files for each experiment.
+A custom config file can be passed with the ``-c`` option.
 
 
 AWS credentials file
@@ -167,16 +143,16 @@ The AWS credentials can be stored in the ``~/.aws/credentials`` file or in envir
 
 .. warning::
 
-    This is a basic utility used by the other scripts (but you could also use it directly).
-    Do not use this to push the results of AQUA analysis to LUMI-O for aqua-web but rather
-    use ``push-analysis.py`` described above.
+    This is a basic utility used by the publisher (but you could also use it directly).
+    Do not use this to push the results of AQUA analysis to the remote site but rather
+    use ``aqua push`` described above.
 
 Basic usage
 ^^^^^^^^^^^
 
 .. code-block:: bash
 
-    python push_s3.py <bucket_name> <source> [-d <destination>] [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
+    python -m aqua.core.console.push_s3 <bucket_name> <source> [-d <destination>] [--aws_access_key_id <aws_access_key_id>] [--aws_secret_access_key <aws_secret_access_key>] [--endpoint_url <endpoint_url>]
 
 Options
 ^^^^^^^
@@ -222,7 +198,7 @@ Multiple experiment analysis submitter
 --------------------------------------
 
 A wrapper containing to facilitate automatic submission of analysis of multiple experiments
-in parallel and possible pushing to AQUA Explorer. This is used to implement overnight updates to AQUA Explorer.
+in parallel and possible pushing to a remote storage to be used by a dashboard.
 
 Basic usage
 ^^^^^^^^^^^
@@ -256,7 +232,7 @@ with the arguments ``-m``, ``-e`` and ``-s`` respectively.
 If run without arguments, the script will run the analysis on the default
 experiments specified in the list.
 
-Adding the ``-p`` or ``--push`` flag will push the results to the AQUA Explorer.
+Adding the ``-p`` or ``--push`` flag will push the results to a remote storage.
 
 The extra ``-f`` and ``-n`` flags are used for maintenance and debugging
 and can be used to
@@ -327,7 +303,7 @@ Options
 
 .. option:: -p, --push
 
-    Flag to push to aqua-web. This uses the ``make_push_figures.py`` script.
+    Flag to push to remote storage.
 
 .. option:: -f, --fresh
 

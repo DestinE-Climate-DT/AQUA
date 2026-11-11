@@ -75,7 +75,7 @@ jobs:
 
   report-failure:
     needs: aqua-nightly-tests
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && needs.aqua-nightly-tests.result == 'failure' }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && (needs.aqua-nightly-tests.result == 'failure' || needs.aqua-nightly-tests.result == 'success') }}
     permissions:
       contents: read
       actions: read
@@ -83,3 +83,4 @@ jobs:
     uses: ./.github/workflows/report-failure-reusable.yml
     with:
       test-name: Nightly
+      result: ${{ needs.aqua-nightly-tests.result }}

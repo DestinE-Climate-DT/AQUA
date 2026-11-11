@@ -233,7 +233,8 @@ jobs:
               ;;
             conda)
               ENV_FILE=""
-              EXTRA_ARGS="aqua-core dvc dvc-s3 pytest pytest-cov pytest-xdist pytest-timeout coverage"
+              # pytest=9.1 (i.e. <9.2): remove with the pytest<9.2 pin in pyproject.toml
+              EXTRA_ARGS="aqua-core dvc dvc-s3 pytest=9.1 pytest-cov pytest-xdist pytest-timeout coverage"
               ;;
             *)
               echo "::error::Unknown install-mode '$MODE'"

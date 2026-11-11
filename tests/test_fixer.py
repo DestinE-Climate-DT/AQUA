@@ -5,26 +5,15 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from utils_tests import LOGLEVEL
 
 from aqua import Reader
 from aqua.core.fixer import EvaluateFormula, Fixer
-
-LOGLEVEL = "DEBUG"
-
-
-@pytest.fixture(scope="module")
-def reader_ifs_tco79_long(ifs_tco79_long_reader):
-    return ifs_tco79_long_reader
 
 
 @pytest.fixture(scope="module")
 def data_ifs_tco79_long(ifs_tco79_long_data):
     return ifs_tco79_long_data
-
-
-@pytest.fixture(scope="module")
-def reader_ifs_tco79_long_fixfalse(ifs_tco79_long_fixfalse_reader):
-    return ifs_tco79_long_fixfalse_reader
 
 
 @pytest.fixture(scope="module")
@@ -159,12 +148,12 @@ def test_fixer_fesom_names():
 
 
 @pytest.mark.aqua
-def test_fixer_deltat():
+def test_fixer_deltat(ifs_tco79_long_reader):
     """Check that output for deltat read from metadata and from fixes are the same"""
 
     reader1 = Reader(model="IFS", exp="test-tco79", source="long-deltat", loglevel=LOGLEVEL)
     data_metadata = reader1.retrieve(var="tnlwrf").isel(time=5)
-    reader2 = Reader(model="IFS", exp="test-tco79", source="long", loglevel=LOGLEVEL)
+    reader2 = ifs_tco79_long_reader
     data_fixer = reader2.retrieve(var="tnlwrf").isel(time=5)
     assert data_metadata.equals(data_fixer)
     assert reader1.fixer.deltat == 3600
@@ -225,9 +214,9 @@ def test_fixer_monthly_repeated_retrievals(data_ifs_tco79_long_fixfalse):
         ds_jan.copy(deep=True), destvar=["tnlwrf"]
     )
 
-    assert np.allclose(out_jan["tnlwrf"].values, 1.0)
-    assert np.allclose(out_feb_leap["tnlwrf"].values, 1.0)
-    assert np.allclose(out_feb_nonleap["tnlwrf"].values, 1.0)
+    assert out_jan["tnlwrf"].values == pytest.approx(1.0)
+    assert out_feb_leap["tnlwrf"].values == pytest.approx(1.0)
+    assert out_feb_nonleap["tnlwrf"].values == pytest.approx(1.0)
     assert out_feb_leap["tnlwrf"].equals(fresh_feb_leap["tnlwrf"])
     assert out_jan["tnlwrf"].equals(fresh_jan["tnlwrf"])
 
@@ -237,9 +226,16 @@ def data_2t_tp(era5_hpz3_monthly_data):
     return era5_hpz3_monthly_data
 
 
+@pytest.fixture
+def data_2t_tp_float64(data_2t_tp):
+    """The same fields in float64, for the oracles: EvaluateFormula turns its numeric constants into float64 arrays,
+    so its results are float64 even if the data are float32 (plain xarray arithmetic keeps float32)."""
+    return data_2t_tp[["2t", "tprate"]].astype("float64")
+
+
 @pytest.mark.aqua
 class TestEvaluateFormula:
-    def test_evaluate_formula(self, data_2t_tp):
+    def test_evaluate_formula(self, data_2t_tp, data_2t_tp_float64):
         formula = "2t -273.15"
         convert = EvaluateFormula(
             data=data_2t_tp, formula=formula, units="Celsius", short_name="2t_celsius", long_name="2t converted to Celsius"
@@ -249,11 +245,10 @@ class TestEvaluateFormula:
         assert convert.attrs["long_name"] == "2t converted to Celsius"
         assert convert.attrs["units"] == "Celsius"
 
-        original_values = (data_2t_tp["2t"].isel(time=0) - 273.15).mean()
-        expected_values = convert.isel(time=0).mean()
-        assert np.allclose(original_values.values, expected_values.values)
+        # every value, not only the mean of one time step: the oracle is plain xarray arithmetic
+        assert convert.values == pytest.approx((data_2t_tp_float64["2t"] - 273.15).values)
 
-    def test_complex_formula(self, data_2t_tp):
+    def test_complex_formula(self, data_2t_tp, data_2t_tp_float64):
         formula = "((2t - 273.15)^2)/2 +  (tprate / 1000)"
         convert = EvaluateFormula(
             data=data_2t_tp,
@@ -267,13 +262,11 @@ class TestEvaluateFormula:
         assert convert.attrs["long_name"] == "Complex calculation"
         assert convert.attrs["units"] == "Celsius^2 * hPa"
 
-        original_values = (
-            ((data_2t_tp["2t"].isel(time=0) - 273.15) ** 2) / 2 + (data_2t_tp["tprate"].isel(time=0) / 1000)
-        ).mean()
-        expected_values = convert.isel(time=0).mean()
-        assert np.allclose(original_values.values, expected_values.values)
+        data = data_2t_tp_float64
+        expected = ((data["2t"] - 273.15) ** 2) / 2 + (data["tprate"] / 1000)
+        assert convert.values == pytest.approx(expected.values)
 
-    def test_magnitude(self, data_2t_tp):
+    def test_magnitude(self, data_2t_tp, data_2t_tp_float64):
         """Test magnitude calculation"""
         formula = "(2t^2 + 2t^2)^0.5"
         convert = EvaluateFormula(
@@ -283,17 +276,17 @@ class TestEvaluateFormula:
         assert convert.attrs["short_name"] == "magnitude_2t"
         assert convert.attrs["long_name"] == "Magnitude of 2t vector"
         assert convert.attrs["units"] == "K"
-        original_values = ((data_2t_tp["2t"].isel(time=0) ** 2 + data_2t_tp["2t"].isel(time=0) ** 2) ** 0.5).mean()
-        expected_values = convert.isel(time=0).mean()
-        assert np.allclose(original_values.values, expected_values.values)
+        data = data_2t_tp_float64
+        expected = (data["2t"] ** 2 + data["2t"] ** 2) ** 0.5
+        assert convert.values == pytest.approx(expected.values)
 
     def test_wrong_formula(self, data_2t_tp):
         """Test wrong parentheses handling"""
         formula = "(2t - 273.15)) + (tprate / 1000"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Mismatched parentheses: closing parenthesis without opening"):
             EvaluateFormula(data=data_2t_tp, formula=formula).evaluate()
         formula = "((2t - 273.15) + (tprate / 1000)"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Mismatched parentheses: unclosed opening parenthesis"):
             EvaluateFormula(data=data_2t_tp, formula=formula).evaluate()
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match=r"Variable \+\+ not found in data"):
             EvaluateFormula(data=data_2t_tp, formula="2t ++ tprate").evaluate()

@@ -47,7 +47,7 @@ jobs:
 
   report-failure:
     needs: aqua-pypi-tests
-    if: ${{ always() && needs.aqua-pypi-tests.result == 'failure' }}
+    if: ${{ always() && (needs.aqua-pypi-tests.result == 'failure' || needs.aqua-pypi-tests.result == 'success') }}
     permissions:
       contents: read
       issues: write
@@ -55,3 +55,4 @@ jobs:
     uses: ./.github/workflows/report-failure-reusable.yml
     with:
       test-name: PyPI
+      result: ${{ needs.aqua-pypi-tests.result }}
