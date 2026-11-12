@@ -10,7 +10,7 @@ ClimateDT workflow modifications:
    API changes: removal of `--repository` and `--no-update` (unnecessary).
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
-Unreleased in the current development version (target v1.2.3):
+Unreleased in the current development version (target v1.2.4):
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 Complete list:
 - Graphics: centralization of figures width (#3354)
@@ -18,7 +18,7 @@ Complete list:
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
-Unreleased in the current development version (target v1.2.4):
+- Agents: new "Preferred Tools and Coding Rules" section in `AGENTS.common.md` (paths with `os.path`, dates with pandas, `%`-style logger arguments, function-level imports, type hints) (#3392)
 - `aqua analysis --kind`: experiment kinds are deep-merged on top of the `default` kind, so they only list overrides; unknown kinds raise an error listing the available kinds; the kind name is exposed to the templates as `kind`; new `aqua.core.analysis.resolve_experiment_kind` helper and generic `aqua.core.util.deep_merge` (#3266)
 - CI: the labeled run that Dependabot starts when opening its PR also runs the tests, so a skipped run no longer hides the passed required check and blocks the PR (#3389)
 - CI: the AQUA tests workflow also runs on `merge_group` events, so its required check reports in the merge queue.
