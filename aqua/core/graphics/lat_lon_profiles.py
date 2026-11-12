@@ -50,7 +50,8 @@ def plot_lat_lon_profiles(
     # Create figure if needed: a figure created here is a single panel, with a larger legend than panels of other figures
     new_figure = fig is None and ax is None
     if fig is None:
-        fig = plt.figure(figsize=figsize or figure_size(0.5), layout="constrained")  # margins fitted to the labels
+        figsize = figure_size(0.5) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
 

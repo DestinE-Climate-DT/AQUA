@@ -88,7 +88,8 @@ def plot_vertical_profile(
     levels = np.linspace(vmin, vmax, nlevels)
 
     # Prepare figure and axis
-    fig = fig or plt.figure(figsize=figsize or figure_size(0.9), layout="constrained")  # margins fitted to the labels
+    figsize = figure_size(0.9) if figsize is None else figsize
+    fig = fig or plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     ax = ax or fig.add_subplot(*ax_pos)
 
     # Plot

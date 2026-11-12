@@ -104,7 +104,8 @@ def plot_hovmoller(
 
     # Create figure and axes
     if fig is None:
-        fig = plt.figure(figsize=figsize or figure_size(1.6), layout="constrained")  # margins fitted to the labels
+        figsize = figure_size(1.6) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2])
 

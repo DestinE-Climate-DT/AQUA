@@ -88,7 +88,8 @@ def boxplot(
     df = pd.DataFrame.from_records(records)
 
     # Create figure
-    fig, ax = plt.subplots(figsize=figsize or figure_size(0.67), layout="constrained")  # margins fitted to the labels
+    figsize = figure_size(0.67) if figsize is None else figsize
+    fig, ax = plt.subplots(figsize=figsize, layout="constrained")  # margins fitted to the labels
 
     # Explicit order for variables and models
     order = [labels[v] for v in variables]

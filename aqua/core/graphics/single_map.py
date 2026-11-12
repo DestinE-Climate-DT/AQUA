@@ -133,7 +133,8 @@ def plot_single_map(
 
     if fig is None:
         # compressed layout: margins fitted to the labels, without the empty space around maps of fixed aspect
-        fig = plt.figure(figsize=figsize or figure_size(0.8), layout="compressed")
+        figsize = figure_size(0.8) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="compressed")
     if ax is None:
         ax = fig.add_subplot(ax_pos[0], ax_pos[1], ax_pos[2], projection=proj)
 
@@ -343,7 +344,8 @@ def plot_single_map_diff(
 
     if np.array_equal(np.nan_to_num(data.values), np.nan_to_num(data_ref.values)):
         logger.warning("The values are exactly the same (ignoring NaNs), no difference to plot")
-        fig = plt.figure(figsize=kwargs.get("figsize") or figure_size(0.8), layout="compressed")
+        figsize = figure_size(0.8) if kwargs.get("figsize") is None else kwargs["figsize"]
+        fig = plt.figure(figsize=figsize, layout="compressed")
         ax = fig.add_subplot(111, projection=proj)
     else:
         fig, ax = plot_single_map(

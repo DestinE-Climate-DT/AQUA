@@ -69,7 +69,8 @@ def plot_histogram(
 
     # Create figure if needed
     if fig is None:
-        fig = plt.figure(figsize=figsize or figure_size(0.5), layout="constrained")  # margins fitted to the labels
+        figsize = figure_size(0.5) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
 

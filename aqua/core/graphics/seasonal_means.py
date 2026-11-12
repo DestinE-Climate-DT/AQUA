@@ -81,7 +81,8 @@ def plot_seasonal_lat_lon_profiles(
     else:
         ref_std_data = [None]
 
-    fig, axs = plt.subplots(2, 2, figsize=figsize or figure_size(0.67), layout="constrained")
+    figsize = figure_size(0.67) if figsize is None else figsize
+    fig, axs = plt.subplots(2, 2, figsize=figsize, layout="constrained")
     axs = axs.flatten()
     season_names = ["DJF", "MAM", "JJA", "SON"]
 

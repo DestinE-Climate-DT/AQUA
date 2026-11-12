@@ -47,7 +47,8 @@ def index_plot(
     index = index.load()
 
     if fig is None:
-        fig = plt.figure(figsize=figsize or figure_size(0.8), layout="constrained")  # margins fitted to the labels
+        figsize = figure_size(0.8) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(111)
 
