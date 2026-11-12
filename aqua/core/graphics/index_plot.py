@@ -47,7 +47,7 @@ def index_plot(
     index = index.load()
 
     if fig is None:
-        fig = plt.figure(figsize=figsize or figure_size(0.8))
+        fig = plt.figure(figsize=figsize or figure_size(0.8), layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(111)
 
@@ -113,7 +113,7 @@ def indexes_plot(
     figsize = figure_size(0.65 * len(indexes)) if figsize is None else figsize
     ConfigStyle(style=style, loglevel=loglevel)
 
-    fig, axs = plt.subplots(nrows=len(indexes), ncols=1, figsize=figsize, sharex=False)
+    fig, axs = plt.subplots(nrows=len(indexes), ncols=1, figsize=figsize, sharex=False, layout="constrained")
 
     # Evaluating a common ylim:
     ymin = min(index.min().values for index in indexes)
@@ -140,7 +140,5 @@ def indexes_plot(
 
     if suptitle is not None:
         fig.suptitle(suptitle)
-
-    fig.tight_layout()
 
     return fig, axs

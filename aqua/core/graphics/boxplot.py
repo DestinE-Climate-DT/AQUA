@@ -88,7 +88,7 @@ def boxplot(
     df = pd.DataFrame.from_records(records)
 
     # Create figure
-    fig, ax = plt.subplots(figsize=figsize or figure_size(0.67))
+    fig, ax = plt.subplots(figsize=figsize or figure_size(0.67), layout="constrained")  # margins fitted to the labels
 
     # Explicit order for variables and models
     order = [labels[v] for v in variables]
@@ -163,5 +163,4 @@ def boxplot(
 
     ax.legend(loc="upper right", fontsize="medium")
     ax.grid(True)
-    fig.tight_layout()
     return fig, ax
