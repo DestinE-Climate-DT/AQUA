@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
 Unreleased in the current development version (target v1.2.3):
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 Complete list:
+- Graphics: centralization of figures width (#3354)
 - aqua-web: the push job requests memory through a new `push.memory` config key (default `8G`) and runs on `small` instead of `debug`; with one task on `debug` it got 896M and `aqua push` was OOM-killed (#3364)
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)

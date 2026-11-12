@@ -6,9 +6,11 @@ import numpy as np
 import pytest
 import xarray as xr
 from matplotlib.font_manager import FontProperties
+from matplotlib.layout_engine import ConstrainedLayoutEngine
 from utils_tests import DPI, LOGLEVEL
 
 from aqua import Reader
+from aqua.core.default import DEFAULT_FIGURE_WIDTH
 from aqua.core.graphics import (
     boxplot,
     index_plot,
@@ -29,6 +31,7 @@ from aqua.core.graphics import (
     plot_vertical_profile,
     plot_vertical_profile_diff,
 )
+from aqua.core.util import figure_size
 
 
 # Aliases with module scope for fixtures
@@ -106,6 +109,8 @@ class TestMaps:
         )
         assert fig is not None
         assert ax is not None
+        # Default size: common width, height of a single map
+        assert tuple(fig.get_size_inches()) == pytest.approx(figure_size(0.8))
 
         fig.savefig(tmp_path / "test_plot_single_map.png")
         assert os.path.exists(tmp_path / "test_plot_single_map.png")
@@ -344,6 +349,8 @@ class TestTimeseries:
 
         assert fig is not None
         assert ax is not None
+        # The figure created by the function uses constrained layout (margins fitted to the labels)
+        assert isinstance(fig.get_layout_engine(), ConstrainedLayoutEngine)
 
         fig.savefig(tmp_path / "test_plot_timeseries.png", dpi=DPI)
 
@@ -696,6 +703,16 @@ class TestSeasonalMeans:
         fig.savefig(tmp_path / "test_seasonal_profiles.png", dpi=DPI)
         plt.close(fig)
         assert os.path.exists(tmp_path / "test_seasonal_profiles.png")
+
+    def test_plot_seasonal_lat_lon_profiles_figsize(self):
+        """Test the figsize argument of plot_seasonal_lat_lon_profiles"""
+
+        seasonal_data = [self.djf, self.mam, self.jja, self.son]
+
+        fig, _ = plot_seasonal_lat_lon_profiles(seasonal_data=seasonal_data, figsize=(10, 6.7), loglevel=LOGLEVEL)
+
+        assert tuple(fig.get_size_inches()) == pytest.approx((10, 6.7))
+        plt.close(fig)
 
     def test_plot_seasonal_lat_lon_profiles_with_ref(self, tmp_path):
         """Test plot_seasonal_lat_lon_profiles with reference data"""
@@ -1177,3 +1194,95 @@ class TestIndexPlot:
         fig.savefig(tmp_path / "test_indexes_plot.png", dpi=DPI)
         plt.close(fig)
         assert os.path.exists(tmp_path / "test_indexes_plot.png")
+
+
+# Small synthetic coordinates, enough for every plot function to build its default figure
+TEST_COORDS = {
+    "time": np.arange("2000-01", "2002-01", dtype="datetime64[M]").astype("datetime64[ns]"),
+    "month": np.arange(1, 13),
+    "lat": np.linspace(-90, 90, 19),
+    "lon": np.arange(0, 360, 10.0),
+    "plev": np.array([100000.0, 85000.0, 50000.0, 20000.0, 10000.0]),
+    "center_of_bin": np.linspace(0, 10, 20),
+}
+
+
+def _field(*dims, seed=0):
+    """Random DataArray over the given TEST_COORDS dimensions"""
+    values = np.random.default_rng(seed).normal(size=[len(TEST_COORDS[d]) for d in dims])
+    return xr.DataArray(
+        values,
+        dims=dims,
+        coords={d: TEST_COORDS[d] for d in dims},
+        name="tas",
+        attrs={"long_name": "Test field", "units": "K"},
+    )
+
+
+# Every core plot function, called without fig, ax and figsize, so that it creates its default figure
+DEFAULT_FIGURES = {
+    "single_map": lambda: plot_single_map(_field("lat", "lon"), return_fig=True, loglevel=LOGLEVEL),
+    "single_map_diff": lambda: plot_single_map_diff(
+        _field("lat", "lon"), _field("lat", "lon", seed=1), return_fig=True, loglevel=LOGLEVEL
+    ),
+    "maps": lambda: plot_maps([_field("lat", "lon"), _field("lat", "lon", seed=1)], return_fig=True, loglevel=LOGLEVEL),
+    "maps_diff": lambda: plot_maps_diff(
+        [_field("lat", "lon"), _field("lat", "lon", seed=1)],
+        [_field("lat", "lon", seed=2), _field("lat", "lon", seed=3)],
+        return_fig=True,
+        loglevel=LOGLEVEL,
+    ),
+    "timeseries": lambda: plot_timeseries(monthly_data=_field("time"), loglevel=LOGLEVEL),
+    "seasonalcycle": lambda: plot_seasonalcycle(data=_field("month"), data_labels=["model"], loglevel=LOGLEVEL),
+    "lat_lon_profiles": lambda: plot_lat_lon_profiles(data=_field("lat"), loglevel=LOGLEVEL),
+    "seasonal_lat_lon_profiles": lambda: plot_seasonal_lat_lon_profiles(
+        seasonal_data=[_field("lat", seed=s) for s in range(4)], loglevel=LOGLEVEL
+    ),
+    "histogram": lambda: plot_histogram(data=_field("center_of_bin"), loglevel=LOGLEVEL),
+    "hovmoller": lambda: plot_hovmoller(data=_field("time", "lat", "lon"), return_fig=True, loglevel=LOGLEVEL),
+    "vertical_profile": lambda: plot_vertical_profile(_field("plev", "lat"), var="tas", return_fig=True, loglevel=LOGLEVEL),
+    "vertical_profile_diff": lambda: plot_vertical_profile_diff(
+        _field("plev", "lat"), _field("plev", "lat", seed=1), var="tas", return_fig=True, loglevel=LOGLEVEL
+    ),
+    "vertical_lines": lambda: plot_vertical_lines(_field("plev"), labels=["model"], loglevel=LOGLEVEL),
+    "boxplot": lambda: boxplot(fldmeans=[_field("time").to_dataset()], model_names=["model"], variables=["tas"]),
+    "index_plot": lambda: index_plot(_field("time"), loglevel=LOGLEVEL),
+    "indexes_plot": lambda: indexes_plot([_field("time"), _field("time", seed=1)], loglevel=LOGLEVEL),
+    "gregory_monthly": lambda: plot_gregory_monthly(_field("time"), _field("time", seed=1), loglevel=LOGLEVEL),
+    "gregory_annual": lambda: plot_gregory_annual(_field("time"), _field("time", seed=1), loglevel=LOGLEVEL),
+}
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("make_figure", DEFAULT_FIGURES.values(), ids=DEFAULT_FIGURES.keys())
+def test_default_figure_width_and_layout(make_figure):
+    """Every default figure has the common width and a constrained (or compressed) layout engine"""
+    result = make_figure()
+    fig = result[0] if isinstance(result, tuple) else result
+
+    assert fig.get_figwidth() == DEFAULT_FIGURE_WIDTH
+    assert isinstance(fig.get_layout_engine(), ConstrainedLayoutEngine)
+    plt.close(fig)
+
+
+# Core plot functions with a legend_fontsize argument, called with one labelled line
+LEGEND_FIGURES = {
+    "timeseries": lambda **kw: plot_timeseries(monthly_data=_field("time"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+    "seasonalcycle": lambda **kw: plot_seasonalcycle(data=_field("month"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+    "lat_lon_profiles": lambda **kw: plot_lat_lon_profiles(data=_field("lat"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+    "histogram": lambda **kw: plot_histogram(data=_field("center_of_bin"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+}
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("make_figure", LEGEND_FIGURES.values(), ids=LEGEND_FIGURES.keys())
+def test_legend_fontsize(make_figure):
+    """The legend follows the style size, unless legend_fontsize is given"""
+    fig, ax = make_figure()
+    style_size = FontProperties(size=plt.rcParams["legend.fontsize"]).get_size_in_points()
+    assert ax.get_legend().get_texts()[0].get_fontsize() == style_size
+    plt.close(fig)
+
+    fig, ax = make_figure(legend_fontsize="medium")
+    assert ax.get_legend().get_texts()[0].get_fontsize() == FontProperties(size="medium").get_size_in_points()
+    plt.close(fig)
