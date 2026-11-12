@@ -47,7 +47,7 @@ def create_folder(folder, loglevel="WARNING"):
         logger.info("Folder %s already exists", folder)
 
 
-def file_is_complete(filename, loglevel="WARNING"):
+def file_is_complete(filename, loglevel="WARNING", min_months=None):
     """
     Check if a file or store exists and contains valid, non-NaN data.
 
@@ -58,6 +58,8 @@ def file_is_complete(filename, loglevel="WARNING"):
     Args:
         filename: Path to a NetCDF file or Zarr store.
         loglevel: Logging level.
+        min_months (int, optional): Minimum number of distinct calendar months the time axis must span
+            (e.g. 12 for a yearly file). Not checked if None.
 
     Returns:
         bool: True if the file/store is complete and valid, False otherwise.
@@ -99,6 +101,11 @@ def file_is_complete(filename, loglevel="WARNING"):
         if len(xfield.time) > 1 and not (xfield.time.diff("time") > np.timedelta64(0, "ns")).all():
             logger.error("File %s has unsorted time steps!", filename)
             return False
+        if min_months is not None:
+            n_months = pd.DatetimeIndex(xfield.time.values).to_period("M").nunique()
+            if n_months < min_months:
+                logger.error("File %s spans only %d months, expected at least %d!", filename, n_months, min_months)
+                return False
 
         # NaN check on first variable
         varname = list(xfield.data_vars)[0]
