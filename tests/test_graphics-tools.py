@@ -80,11 +80,11 @@ def test_plot_box():
 def test_figure_size():
     """Test the figure size helpers: common width, height from the shape"""
     assert figure_size(0.8) == pytest.approx((DEFAULT_FIGURE_WIDTH, 0.8 * DEFAULT_FIGURE_WIDTH))
-    # Default grid: 6 x 5 in panels plus 1 in for the title, rescaled to the common width
+    # Default grid: 6 x 5 in panels, rescaled to the common width
     width, height = grid_figure_size(2, 3)
     assert width == DEFAULT_FIGURE_WIDTH
-    assert height / width == pytest.approx((2 * 5 + 1) / (3 * 6))
-    assert grid_figure_size(4, 2, panel_ratio=0.5, title_ratio=0) == pytest.approx(figure_size(1))
+    assert height / width == pytest.approx((2 * 5) / (3 * 6))
+    assert grid_figure_size(4, 2, panel_ratio=0.5) == pytest.approx(figure_size(1))
 
 
 @pytest.mark.graphics
