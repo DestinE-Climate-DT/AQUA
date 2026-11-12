@@ -16,7 +16,7 @@ def plot_lat_lon_profiles(
     style: str | None = None,
     fig: plt.Figure | None = None,
     ax: plt.Axes | None = None,
-    figsize: tuple = None,
+    figsize: tuple | None = None,
     title: str | None = None,
     legend_fontsize: str | float | None = None,
     loglevel: str = "WARNING",

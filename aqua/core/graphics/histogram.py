@@ -16,7 +16,7 @@ def plot_histogram(
     style: str | None = None,
     fig: plt.Figure | None = None,
     ax: plt.Axes | None = None,
-    figsize: tuple = None,
+    figsize: tuple | None = None,
     title: str | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,

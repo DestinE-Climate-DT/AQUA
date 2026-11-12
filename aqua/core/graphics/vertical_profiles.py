@@ -31,7 +31,7 @@ def plot_vertical_profile(
     cmap: str = "RdBu_r",
     cbar_label: Optional[str] = None,
     return_fig: bool = False,
-    figsize: Tuple[int, int] = None,
+    figsize: Optional[tuple] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
     ax_pos: Tuple[int, int, int] = (1, 1, 1),
@@ -60,7 +60,7 @@ def plot_vertical_profile(
         cmap (str, optional): Colormap to use (default 'RdBu_r').
         cbar_label (str, optional): Label for the colorbar. Generated from data if None.
         return_fig (bool, optional): If True, return (fig, ax).
-        figsize (Tuple[int, int], optional): Figure size. Default is figure_size(0.9), with the common width.
+        figsize (tuple, optional): Figure size. Default is figure_size(0.9), with the common width.
         fig (plt.Figure, optional): Optional figure to plot on.
         ax (plt.Axes, optional): Optional axes to plot on.
         ax_pos (Tuple[int, int, int], optional): Position of subplot.

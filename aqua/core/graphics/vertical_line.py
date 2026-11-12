@@ -25,7 +25,7 @@ def plot_vertical_lines(
     logscale: bool = False,
     invert_yaxis: bool = True,
     return_fig: bool = True,
-    figsize: Tuple[int, int] = None,
+    figsize: Optional[tuple] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
     ax_pos: Tuple[int, int, int] = (1, 1, 1),
@@ -50,7 +50,7 @@ def plot_vertical_lines(
         logscale (bool, optional): Use log scale for y-axis if True.
         invert_yaxis (bool, optional): Invert y-axis if True (default True).
         return_fig (bool, optional): If True, return (fig, ax).
-        figsize (Tuple[int, int], optional): Figure size. Default is figure_size(1.2), with the common width.
+        figsize (tuple, optional): Figure size. Default is figure_size(1.2), with the common width.
         fig (plt.Figure, optional): Optional figure to plot on.
         ax (plt.Axes, optional): Optional axes to plot on.
         ax_pos (Tuple[int, int, int], optional): Position of subplot.

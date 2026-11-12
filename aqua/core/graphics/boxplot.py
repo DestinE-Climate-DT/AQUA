@@ -22,7 +22,7 @@ def boxplot(
     add_mean_line: bool = True,
     title: str = None,
     style: str = None,
-    figsize: tuple = None,
+    figsize: tuple | None = None,
     loglevel: str = "WARNING",
 ):
     """

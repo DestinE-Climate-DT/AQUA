@@ -24,12 +24,13 @@ from aqua.core.util import (
     cbar_get_label,
     coord_names,
     evaluate_colorbar_limits,
+    figure_size,
     generate_colorbar_ticks,
     healpix_resample,
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import add_contour_labels, figure_size, get_decimals, isnpixok, prettify_levels
+from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -44,7 +45,7 @@ def plot_single_map(
     extent: Optional[list] = None,
     coastlines: bool = True,
     style: Optional[str] = None,
-    figsize: tuple = None,
+    figsize: Optional[tuple] = None,
     nlevels: int = 11,
     vmin: Optional[float] = None,
     vmax: Optional[float] = None,

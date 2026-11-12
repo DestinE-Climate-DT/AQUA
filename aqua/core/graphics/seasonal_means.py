@@ -16,7 +16,7 @@ def plot_seasonal_lat_lon_profiles(
     data_labels: list = None,
     title: str = None,
     ref_label: str = None,
-    figsize: tuple = None,
+    figsize: tuple | None = None,
 ):
     """
     Plot seasonal lat-lon profiles in a 2x2 subplot layout for the four meteorological seasons.

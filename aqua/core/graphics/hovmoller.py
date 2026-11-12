@@ -25,7 +25,7 @@ def plot_hovmoller(
     style=None,
     contour=True,
     dim="lon",
-    figsize: tuple = None,
+    figsize: tuple | None = None,
     vmin=None,
     vmax=None,
     cmap="PuOr_r",  # defaul map for MJO
