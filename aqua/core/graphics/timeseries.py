@@ -32,6 +32,7 @@ def plot_timeseries(
     ref_label: Optional[str] = None,
     ens_label: Optional[str] = None,
     legend: Optional[bool] = True,
+    legend_fontsize: Optional[str | float] = None,
     style: Optional[str] = None,
     fig: Optional[plt.Figure] = None,
     ax: Optional[plt.Axes] = None,
@@ -62,6 +63,7 @@ def plot_timeseries(
         ref_label (str): label for the reference data
         ens_label (str): label for the ensemble data
         legend (bool): whether to show the legend. Default is True.
+        legend_fontsize (str or float): font size of the legend. Defaults to None, the style legend size.
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
@@ -77,9 +79,7 @@ def plot_timeseries(
     ConfigStyle(style=style, loglevel=loglevel)
     realization = False
 
-    # A figure created here is a single panel: it gets a larger legend than panels of other figures
-    new_figure = fig is None and ax is None
-    if new_figure:
+    if fig is None and ax is None:
         figsize = figure_size(0.5) if figsize is None else figsize
         fig, ax = plt.subplots(1, 1, figsize=figsize, layout="constrained")  # margins fitted to the labels
 
@@ -180,7 +180,7 @@ def plot_timeseries(
         )
 
     if legend and (data_labels != empty_label or ref_label != empty_label or ens_label != empty_label):
-        ax.legend(fontsize="medium" if new_figure else None)
+        ax.legend(fontsize=legend_fontsize)
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     if title:
@@ -203,6 +203,7 @@ def plot_seasonalcycle(
     title: Optional[str] = None,
     fig: plt.Figure = None,
     ax: plt.Axes = None,
+    legend_fontsize: Optional[str | float] = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -219,6 +220,7 @@ def plot_seasonalcycle(
         title (str): title of the plot. Defaults to None.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
+        legend_fontsize (str or float): font size of the legend. Defaults to None, the style legend size.
         loglevel (str): logging level. Defaults to 'WARNING'.
 
     Returns:
@@ -228,8 +230,6 @@ def plot_seasonalcycle(
     logger = log_configure(loglevel, "PlotSeasonalCycle")
     ConfigStyle(style=style, loglevel=loglevel)
 
-    # A figure created here is a single panel: it gets a larger legend than panels of other figures
-    new_figure = fig is None and ax is None
     if fig is None:
         figsize = figure_size(0.67) if figsize is None else figsize
         fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
@@ -260,7 +260,7 @@ def plot_seasonalcycle(
         except Exception as e:
             logger.debug(f"Error plotting std data: {e}")
 
-    ax.legend(fontsize="medium" if new_figure else None)
+    ax.legend(fontsize=legend_fontsize)
     ax.set_xticks(months_numeric)
     ax.set_xticklabels(months_names)
     ax.set_xlim(0.5, 12.5)

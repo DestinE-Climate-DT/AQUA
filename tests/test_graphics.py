@@ -1263,3 +1263,26 @@ def test_default_figure_width_and_layout(make_figure):
     assert fig.get_figwidth() == DEFAULT_FIGURE_WIDTH
     assert isinstance(fig.get_layout_engine(), ConstrainedLayoutEngine)
     plt.close(fig)
+
+
+# Core plot functions with a legend_fontsize argument, called with one labelled line
+LEGEND_FIGURES = {
+    "timeseries": lambda **kw: plot_timeseries(monthly_data=_field("time"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+    "seasonalcycle": lambda **kw: plot_seasonalcycle(data=_field("month"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+    "lat_lon_profiles": lambda **kw: plot_lat_lon_profiles(data=_field("lat"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+    "histogram": lambda **kw: plot_histogram(data=_field("center_of_bin"), data_labels=["model"], loglevel=LOGLEVEL, **kw),
+}
+
+
+@pytest.mark.graphics
+@pytest.mark.parametrize("make_figure", LEGEND_FIGURES.values(), ids=LEGEND_FIGURES.keys())
+def test_legend_fontsize(make_figure):
+    """The legend follows the style size, unless legend_fontsize is given"""
+    fig, ax = make_figure()
+    style_size = FontProperties(size=plt.rcParams["legend.fontsize"]).get_size_in_points()
+    assert ax.get_legend().get_texts()[0].get_fontsize() == style_size
+    plt.close(fig)
+
+    fig, ax = make_figure(legend_fontsize="medium")
+    assert ax.get_legend().get_texts()[0].get_fontsize() == FontProperties(size="medium").get_size_in_points()
+    plt.close(fig)

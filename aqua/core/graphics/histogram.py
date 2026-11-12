@@ -29,6 +29,7 @@ def plot_histogram(
     smooth: bool = False,
     smooth_window: int = 5,
     labelsize: int | None = None,
+    legend_fontsize: str | float | None = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -56,6 +57,7 @@ def plot_histogram(
         smooth (bool, optional): Apply smoothing to the data.
         smooth_window (int, optional): Window size for smoothing.
         labelsize (int | None, optional): Font size for labels. Defaults to the style one.
+        legend_fontsize (str | float | None, optional): Font size of the legend. Defaults to the style one.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -127,7 +129,7 @@ def plot_histogram(
 
     # Finalize plot
     if data_labels or ref_label:
-        ax.legend(loc="upper right")
+        ax.legend(loc="upper right", fontsize=legend_fontsize)
 
     ax.grid(True, linestyle="-", alpha=0.3)
 

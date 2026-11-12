@@ -18,6 +18,7 @@ def plot_lat_lon_profiles(
     ax: plt.Axes | None = None,
     figsize: tuple = None,
     title: str | None = None,
+    legend_fontsize: str | float | None = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -36,6 +37,7 @@ def plot_lat_lon_profiles(
         ax (plt.Axes | None, optional): Matplotlib axes object.
         figsize (tuple, optional): Figure size if a new figure is created. Defaults to figure_size(0.5), with the common width.
         title (str | None, optional): Title for the plot.
+        legend_fontsize (str | float | None, optional): Font size of the legend. Defaults to the style one.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -47,8 +49,7 @@ def plot_lat_lon_profiles(
     # Convert data to list, handling both single DataArrays and lists
     data_list = to_list(data)
 
-    # Create figure if needed: a figure created here is a single panel, with a larger legend than panels of other figures
-    new_figure = fig is None and ax is None
+    # Create figure if needed
     if fig is None:
         figsize = figure_size(0.5) if figsize is None else figsize
         fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
@@ -105,7 +106,7 @@ def plot_lat_lon_profiles(
 
     # Finalize plot
     if data_labels:
-        ax.legend(fontsize="medium" if new_figure else None)
+        ax.legend(fontsize=legend_fontsize)
     ax.grid(True, axis="y", linestyle="-", color="silver", alpha=0.8)
 
     # Set x-label based on the first valid coordinate found
