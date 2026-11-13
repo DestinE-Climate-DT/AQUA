@@ -13,6 +13,7 @@ from aqua.core.logger import log_configure
 from .backend_intake_fdb import BackendIntakeFDB
 from .backend_intake_icechunk import BackendIntakeIcechunk
 from .backend_intake_xarray import BackendIntakeXarray
+from .backend_stac import BackendSTAC
 from .backend_xarray import BackendXarray
 
 
@@ -27,6 +28,7 @@ class BackendFactory:
         "intake_netcdf": BackendIntakeXarray,
         "intake_zarr": BackendIntakeXarray,
         "intake_stac": BackendIntakeXarray,
+        "stac": BackendSTAC,
         "xarray": BackendXarray,
     }
 
@@ -93,8 +95,26 @@ class BackendFactory:
             "datamodel",
             "loglevel",
         },
+        # model/exp/source/catalog are optional labels for the stac and xarray backends
+        "stac": {
+            "url",
+            "stac_path",
+            "xarray_engine",
+            "model",
+            "exp",
+            "source",
+            "catalog",
+            "chunks",
+            "fixer",
+            "datamodel",
+            "loglevel",
+        },
         "xarray": {
             "path",
+            "model",
+            "exp",
+            "source",
+            "catalog",
             "xarray_engine",
             "chunks",
             "fixer",
@@ -115,6 +135,8 @@ class BackendFactory:
         collection: str = None,
         item: str = None,
         asset: str = None,
+        url: str = None,
+        stac_path: str | list[str] = None,
     ):
         if model is not None and collection is not None and model != collection:
             raise ValueError(f"Conflicting values provided for model ({model!r}) and collection ({collection!r})")
@@ -129,6 +151,8 @@ class BackendFactory:
         self.exp = exp if exp is not None else item
         self.source = source if source is not None else asset
         self.path = path
+        self.url = url
+        self.stac_path = stac_path
 
         self.configurer = configurer
         self.loglevel = loglevel
@@ -176,12 +200,14 @@ class BackendFactory:
     def select_backend(self):
         """
         Select the appropriate backend based on the provided parameters.
-        If a path is provided, the xarray backend is selected.
-        Otherwise, the intake backend family is selected.
+        If a url is provided, the pystac backend is selected; if a path is provided,
+        the xarray backend is selected. Otherwise, the intake backend family is selected.
 
-        Please notiche the _check_required_params method ensures that either a path or model/exp/source are provided.
+        Please notice the _check_required_params method ensures that a url, a path or model/exp/source are provided.
         """
-        if self.path:
+        if self.url:
+            self._select_backend_stac()
+        elif self.path:
             self._select_backend_xarray()
         else:
             self.configurer_catalog = ConfigCatalog(self.configurer, catalog=self.catalog, loglevel=self.loglevel)
@@ -226,6 +252,12 @@ class BackendFactory:
         self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         # TODO: this is a temporary solution to avoid errors when using the xarray backend without a catalog.
         #       Notice that a path could be defined in config-aqua.yaml and used when solving the TODO above.
+        self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
+
+    def _select_backend_stac(self):
+        """Activate direct STAC access through pystac."""
+        self.backend_type = "stac"
+        self.logger.warning("Using default path in local folder for areas, weights, and grids.")
         self.machine_paths = {"paths": {"areas": "./areas", "weights": "./weights", "grids": "./grids"}}
 
     def get_metadata(
@@ -290,6 +322,8 @@ class BackendFactory:
             exp=self.exp,
             source=self.source,
             path=self.path,
+            url=self.url,
+            stac_path=self.stac_path,
             configurer=self.configurer,
             configurer_catalog=self.configurer_catalog,
             catalog=self.catalog,
@@ -297,7 +331,6 @@ class BackendFactory:
             fixer=fixer,
             datamodel=datamodel,
             engine=engine,
-            xarray_engine=None,
             loglevel=loglevel,
             **kwargs,
         )
@@ -309,13 +342,19 @@ class BackendFactory:
         return self.BACKEND_TYPES[self.backend_type](**filtered)
 
     def _check_required_params(self):
-        """Check if the required parameters are provided."""
-        if self.path is None and not all(v is not None for v in [self.model, self.exp, self.source]):
-            raise ValueError(
-                "Nor path nor model/exp/source are provided. Please provide either a path or model, exp, and source."
-            )
-        if self.path is not None and any(v is not None for v in [self.model, self.exp, self.source]):
-            self.logger.error(
-                "Both path and model/exp/source are provided.\n"
-                "The model/exp/source parameters will be ignored in favor of the path."
-            )
+        """
+        Check that the parameters identify one data location.
+
+        The backend is identified by ``url`` (STAC), then ``path`` (xarray), else by the
+        intake triplet. With ``url`` or ``path``, catalog/model/exp/source are optional labels
+        (with ``url`` they can also select the asset); the intake triplet must be complete.
+
+        Raises:
+            ValueError: If both url and path are given, or neither is given and model/exp/source is incomplete.
+        """
+        if self.url is not None and self.path is not None:
+            raise ValueError("Both url and path are provided. Please provide only one data location.")
+        if self.url is None and self.path is None:
+            missing = [k for k in ("model", "exp", "source") if getattr(self, k) is None]
+            if missing:
+                raise ValueError(f"Missing {missing}. Please provide either a url, a path, or model, exp and source.")

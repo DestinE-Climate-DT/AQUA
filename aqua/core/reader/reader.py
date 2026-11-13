@@ -32,25 +32,27 @@ class Reader:
 
     def __init__(
         self,
-        model=None,
-        exp=None,
-        source=None,
-        catalog=None,
-        path=None,
-        fix=True,
-        datamodel=None,
-        convention=None,
-        regrid=None,
-        regrid_method=None,
-        areas=True,
-        startdate=None,
-        enddate=None,
-        rebuild=False,
-        loglevel="WARNING",
-        nproc=DEFAULT_NPROC,
-        chunks=None,
-        preproc=None,
+        model: str = None,
+        exp: str = None,
+        source: str = None,
+        catalog: str = None,
+        path: str = None,
+        fix: bool = True,
+        datamodel: str | bool = None,
+        convention: str = None,
+        regrid: str = None,
+        regrid_method: str = None,
+        areas: bool = True,
+        startdate: str = None,
+        enddate: str = None,
+        rebuild: bool = False,
+        loglevel: str = "WARNING",
+        nproc: int = DEFAULT_NPROC,
+        chunks: str | dict = None,
+        preproc: callable = None,
         engine=DEFAULT_ENGINE,
+        url: str = None,
+        stac_path: str | list[str] = None,
         collection=None,
         item=None,
         asset=None,
@@ -59,14 +61,16 @@ class Reader:
         """Initialize the Reader class to identify, retrieve, fix, and regrid climate data.
 
         Data access can be configured either via intake catalogs (specifying `model`, `exp`,
-        and `source`, or their synonyms `collection`, `item`, and `asset`) or directly from local/remote files using `path`.
+        and `source`, or their synonyms `collection`, `item`, and `asset`), directly from local/remote files
+        using `path`, or from a STAC object using `url`. With `path` or `url`, `model`, `exp`, `source` and
+        `catalog` are optional and stored as `AQUA_*` labels.
 
         Args:
-            model (str, optional): Model ID. Mandatory if `path` is not provided. Defaults to None.
+            model (str, optional): Model ID. Mandatory if `path` and `url` are not provided. Defaults to None.
                 `collection` can be used as a synonym.
-            exp (str, optional): Experiment ID. Mandatory if `path` is not provided. Defaults to None.
+            exp (str, optional): Experiment ID. Mandatory if `path` and `url` are not provided. Defaults to None.
                 `item` can be used as a synonym.
-            source (str, optional): Source ID. Mandatory if `path` is not provided. Defaults to None.
+            source (str, optional): Source ID. Mandatory if `path` and `url` are not provided. Defaults to None.
                 `asset` can be used as a synonym.
             catalog (str, optional): Catalog name or path to search for the triplet. Defaults to None
                 (automatically searches installed catalogs).
@@ -96,6 +100,12 @@ class Reader:
                 Defaults to None.
             engine (str, optional): Engine to be used for FDB/GSV retrieval: 'polytope', 'z3fdb' or 'gsv'.
                 Defaults to DEFAULT_ENGINE ('gsv').
+            url (str, optional): URL or path of a STAC JSON document (catalog, collection or item).
+                When provided, data access uses the pystac backend. Defaults to None.
+            stac_path (str or list of str, optional): Path of the asset below the STAC object at `url`:
+                the child/item ids followed by the asset key, e.g. ``["collection", "item", "asset"]``,
+                or just the asset key for an item.
+                If None, the asset is selected with `collection`, `item` and `asset`. Defaults to None.
             collection (str, optional): Synonym for `model` (e.g. in STAC catalogs). Defaults to None.
             item (str, optional): Synonym for `exp` (e.g. in STAC catalogs). Defaults to None.
             asset (str, optional): Synonym for `source` (e.g. in STAC catalogs). Defaults to None.
@@ -128,10 +138,10 @@ class Reader:
         # xarray native argument
         self.path = path
 
-        # Create regridder metadata for filename templating (supports both catalog and path-based backends)
-        self.regridder_metadata = RegridderMetadata.from_reader(
-            model=self.model, exp=self.exp, source=self.source, path=path, **kwargs
-        )
+        # stac native arguments
+        self.url = url
+        self.stac_path = stac_path
+
         self.kwargs = kwargs
 
         # regridding
@@ -176,6 +186,8 @@ class Reader:
             exp=self.exp,
             source=self.source,
             path=self.path,
+            url=self.url,
+            stac_path=self.stac_path,
             configurer=configurer,
             catalog=catalog,
             loglevel=self.loglevel,
@@ -222,6 +234,13 @@ class Reader:
             engine=engine,
             loglevel=self.loglevel,
             **kwargs,
+        )
+
+        # Create regridder metadata for filename templating (supports both catalog and path-based backends).
+        # Backends without a catalog provide the data identifier (the path, or the href of the selected
+        # STAC asset), so that different data do not share area and weight files.
+        self.regridder_metadata = RegridderMetadata.from_reader(
+            model=self.model, exp=self.exp, source=self.source, path=self.backend.data_id, **kwargs
         )
 
         # define tgt grid names

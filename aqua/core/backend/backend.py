@@ -34,6 +34,12 @@ class Backend(ABC):
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name=self.__class__.__name__)
 
+    @property
+    def data_id(self) -> str | None:
+        """Identifier of the data opened without a catalog (e.g. a path), hashed for area/weight filenames.
+        None for catalog-based backends, whose filenames come from model/exp/source."""
+        return None
+
     @abstractmethod
     def retrieve(
         self,

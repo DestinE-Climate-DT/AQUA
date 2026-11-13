@@ -10,6 +10,7 @@ from intake import readers
 from aqua.core.intake_drivers.xarray.base import IntakeXarraySourceAdapter, _merge_xarray_kwargs
 from aqua.core.intake_drivers.xarray.readers import TolerantXArrayDatasetReader
 from aqua.core.logger import log_configure
+from aqua.core.util.stac import select_asset_key
 
 # Optional, user-installed support for reading some DKRZ STAC catalogues.
 try:
@@ -389,36 +390,9 @@ class IntakeSTACSource(IntakeXarraySourceAdapter):
             raise ValueError(f"STAC item '{item_dict.get('id', item_base_urlpath)}' contains no assets.")
         self.assets = assets
 
-        if asset is not None:
-            if asset in assets:
-                asset_key = asset
-            else:
-                # Check if asset name was supplied as a role (e.g. role 'data')
-                role_matching = [k for k, v in assets.items() if asset in v.get("roles", [])]
-                if len(role_matching) == 1:
-                    asset_key = role_matching[0]
-                    self.logger.info("Matched asset role '%s' to asset key '%s'", asset, asset_key)
-                elif len(role_matching) > 1:
-                    raise KeyError(
-                        f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
-                        f"It matches multiple assets by role: {role_matching}. "
-                        f"Please specify one of: {list(assets.keys())}"
-                    )
-                else:
-                    raise KeyError(
-                        f"Asset '{asset}' not found in STAC item '{item_dict.get('id', item_base_urlpath)}'. "
-                        f"Available assets: {list(assets.keys())}"
-                    )
-        elif "data" in assets:
-            asset_key = "data"
-        else:
-            # Check if any asset has role "data"
-            data_role_assets = [k for k, v in assets.items() if "data" in v.get("roles", [])]
-            if len(data_role_assets) == 1:
-                asset_key = data_role_assets[0]
-            else:
-                asset_key = next(iter(assets.keys()))
-
+        asset_key = select_asset_key(
+            {k: v.get("roles", []) for k, v in assets.items()}, asset, owner=item_dict.get("id", item_base_urlpath)
+        )
         asset_info = assets[asset_key]
         raw_href = asset_info.get("href")
         if not raw_href:
