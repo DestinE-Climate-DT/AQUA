@@ -62,6 +62,11 @@ class BackendXarray(Backend):
         # TODO: method to validate xarray kwargs
         # self.xr_kwargs = new_kwargs
 
+    @property
+    def data_id(self) -> str:
+        """The path of the data."""
+        return self.path
+
     def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
         """
         Retrieve minimal data from the path to initialize the Regridder.

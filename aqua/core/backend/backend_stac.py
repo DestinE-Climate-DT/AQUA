@@ -5,12 +5,8 @@ Example:
 
         # walk catalog -> collection -> item, default asset ('data' or the first one)
         reader = Reader(url="https://example.org/catalog.json", collection="ifs", item="item-id", areas=False)
-        # or select the asset with a nested mapping
-        reader = Reader(
-            url="https://example.org/catalog.json",
-            stac_kwargs={"collection": {"item": "asset"}},
-            areas=False,
-        )
+        # or select the asset with its path below url: child/item ids, then the asset key
+        reader = Reader(url="https://example.org/catalog.json", stac_path=["collection", "item", "asset"], areas=False)
         data = reader.retrieve()
 """
 
@@ -34,11 +30,12 @@ class BackendSTAC(Backend):
     def __init__(
         self,
         url: str,
-        stac_kwargs: dict | str = None,
+        stac_path: str | list[str] = None,
         model: str = None,
         exp: str = None,
         source: str = None,
         catalog: str = None,
+        xarray_engine: str = None,
         chunks: str | dict = "auto",
         fixer: Fixer = None,
         datamodel: DataModel = None,
@@ -49,17 +46,19 @@ class BackendSTAC(Backend):
 
         Args:
             url (str): URL or path of the STAC JSON document (catalog, collection or item).
-            stac_kwargs (dict | str, optional): Single-branch nested mapping of child/item ids ending with the
-                asset key, for example ``{"collection": {"item": "asset"}}``. A plain string selects
-                the asset of an item (or a collection-level asset). If None, the asset is selected
+            stac_path (str | list[str], optional): Path of the asset below ``url``: the child/item ids
+                followed by the asset key, for example ``["collection", "item", "asset"]``. A plain string
+                selects the asset of an item (or a collection-level asset). If None, the asset is selected
                 with model/exp/source (collection/item/asset). Defaults to None.
-            model (str, optional): Collection id. Selects the collection when ``stac_kwargs`` is None,
+            model (str, optional): Collection id. Selects the collection when ``stac_path`` is None,
                 otherwise it is only a label. Defaults to the collection of the selected asset.
-            exp (str, optional): Item id. Selects the item when ``stac_kwargs`` is None,
+            exp (str, optional): Item id. Selects the item when ``stac_path`` is None,
                 otherwise it is only a label. Defaults to the item of the selected asset.
-            source (str, optional): Asset key or role. Selects the asset when ``stac_kwargs`` is None,
+            source (str, optional): Asset key or role. Selects the asset when ``stac_path`` is None,
                 otherwise it is only a label. If no asset is given, 'data' or the first asset is used.
             catalog (str, optional): Label for the catalog. Defaults to the id of the catalog at ``url``.
+            xarray_engine (str, optional): Engine for ``xarray.open_dataset`` (e.g. ``"zarr"``), overriding
+                the asset ``xarray:open_kwargs``. If None, the asset engine is used, else xarray guesses it.
             chunks (str | dict, optional): Chunking passed to ``xarray.open_dataset``, overriding the asset's own.
                 ``None`` uses the asset ``chunks``, else ``"auto"`` so STAC assets remain lazy. Defaults
                 to ``"auto"``.
@@ -72,9 +71,9 @@ class BackendSTAC(Backend):
         """
         super().__init__(fixer=fixer, datamodel=datamodel, loglevel=loglevel)
         self.url = url
-        self.stac_kwargs = stac_kwargs
+        self.stac_path = stac_path
         self.labels = {"catalog": catalog, "model": model, "exp": exp, "source": source}
-        self.read_kwargs = kwargs
+        self.read_kwargs = kwargs if xarray_engine is None else kwargs | {"engine": xarray_engine}
         self.chunks = chunks
 
     def retrieve_plain(self, startdate: str = None) -> xr.Dataset:
@@ -116,12 +115,18 @@ class BackendSTAC(Backend):
         )
         labels = self._get_labels(start, key, asset)
         data = self.log_history(data, selection=" ".join(labels[k] for k in ("model", "exp", "source") if labels[k]))
-        metadata = {**labels, "url": self.url, "stac_kwargs": self.stac_kwargs, "version": aqua_version}
+        metadata = {**labels, "url": self.url, "stac_path": self.stac_path, "version": aqua_version}
         return self._set_metadata(data, {k: v for k, v in metadata.items() if v is not None})
+
+    @property
+    def data_id(self) -> str:
+        """Absolute href of the selected asset: identifies the data whatever url and selection led to it."""
+        _, _, asset = self._get_asset()
+        return asset.get_absolute_href() or asset.href
 
     def log_history(self, data: xr.Dataset, selection: str = None) -> xr.Dataset:
         """Add STAC retrieval provenance (the selected model, exp and source) to the dataset history."""
-        selection = selection or self.stac_kwargs
+        selection = selection or self.stac_path
         return log_history(data, f"Retrieved {selection} from {self.url} using AQUA v{aqua_version} with STAC Backend")
 
     def _get_labels(self, start, key: str, asset: pystac.Asset) -> dict:
@@ -139,16 +144,13 @@ class BackendSTAC(Backend):
         return {k: self.labels[k] if self.labels[k] is not None else v for k, v in derived.items()}
 
     def _split_selection(self) -> tuple[list, str | None]:
-        """Return the child/item ids to walk and the asset to select, from stac_kwargs or model/exp/source."""
-        if self.stac_kwargs is None:
+        """Return the child/item ids to walk and the asset to select, from stac_path or model/exp/source."""
+        if self.stac_path is None:
             return [k for k in (self.labels["model"], self.labels["exp"]) if k is not None], self.labels["source"]
-        ids, spec = [], self.stac_kwargs
-        while isinstance(spec, dict):
-            if len(spec) != 1:
-                raise ValueError(f"stac_kwargs must be a single-branch mapping, got {self.stac_kwargs}")
-            ((key, spec),) = spec.items()
-            ids.append(key)
-        return ids, spec
+        path = [self.stac_path] if isinstance(self.stac_path, str) else self.stac_path
+        if not isinstance(path, (list, tuple)) or not path or not all(isinstance(k, str) for k in path):
+            raise ValueError(f"stac_path must be an asset key or a list of ids ending with it, got {self.stac_path!r}")
+        return list(path[:-1]), path[-1]
 
     def _get_asset(self) -> tuple:
         """Walk the STAC tree from url and select the asset, once: later calls reuse the selection.
@@ -164,8 +166,8 @@ class BackendSTAC(Backend):
             return self._selected
         start = obj = pystac.read_file(self.url)
         ids, asset = self._split_selection()
-        # without stac_kwargs, model/exp/source select the STAC objects: a label-only use fails here
-        hint = "" if self.stac_kwargs is not None else ". Pass stac_kwargs to use model/exp/source only as labels"
+        # without stac_path, model/exp/source select the STAC objects: a label-only use fails here
+        hint = "" if self.stac_path is not None else ". Pass stac_path to use model/exp/source only as labels"
 
         for key in ids:
             # the url can already point to the requested collection or item
@@ -173,7 +175,8 @@ class BackendSTAC(Backend):
                 continue
             if isinstance(obj, pystac.Item):
                 raise KeyError(f"cannot descend into '{key}': '{obj.id}' is an Item{hint}")
-            nxt = obj.get_child(key) or obj.get_item(key)
+            # children first: get_items loads the item JSONs one by one until it finds a match
+            nxt = obj.get_child(key) or next(obj.get_items(key), None)
             if nxt is None:
                 raise KeyError(f"'{key}' not found in '{obj.id}'{hint}")
             obj = nxt

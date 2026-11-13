@@ -181,12 +181,12 @@ The reader is initialized with a ``url`` pointing to the STAC JSON file. The ass
 
 - with ``collection``, ``item`` and ``asset`` (synonyms of ``model``, ``exp`` and ``source``), giving only the levels
   below the ``url``: e.g. ``collection`` and ``item`` for a catalog, ``item`` for a collection, nothing for an item;
-- with ``stac_kwargs``, for any catalog depth: just the asset key (a string) for a single item, or a nested dictionary
-  with one entry per level, made of the child collection and item ids and ending with the asset key.
+- with ``stac_path``, for any catalog depth: just the asset key (a string) for a single item, or a list
+  with one entry per level below ``url``, made of the child collection and item ids and ending with the asset key.
   In this case ``collection``, ``item`` and ``asset`` are only labels.
 
-Without ``stac_kwargs``, ``collection``, ``item`` and ``asset`` always select the STAC objects: to label the data
-(e.g. ``model="ERA5"`` for an item whose collection is ``era5``), pass ``stac_kwargs`` as well, for instance just the asset key.
+Without ``stac_path``, ``collection``, ``item`` and ``asset`` always select the STAC objects: to label the data
+(e.g. ``model="ERA5"`` for an item whose collection is ``era5``), pass ``stac_path`` as well, for instance just the asset key.
 
 If no asset is given, the ``data`` asset (or the only asset with role ``data``, or the first asset) is opened,
 as in the Intake STAC driver. An asset can also be selected by its role.
@@ -195,7 +195,8 @@ The catalog, collection, item and asset ids are stored in the ``AQUA_catalog``, 
 attributes of the data, unless the user provides other labels. ``AQUA_catalog`` is set only when ``url`` points to a catalog.
 
 The asset is opened lazily with xarray, using the ``xarray:open_kwargs`` and ``xarray:storage_options`` defined in the asset, if any.
-The ``chunks`` given to the ``Reader`` override the asset ones (default ``"auto"``). Entries of ``xarray:open_kwargs`` not accepted by
+The ``chunks`` given to the ``Reader`` override the asset ones (default ``"auto"``), and so does ``xarray_engine``
+(e.g. ``xarray_engine="zarr"`` for a zarr store whose ``href`` does not end in ``.zarr``). Entries of ``xarray:open_kwargs`` not accepted by
 ``xarray.open_dataset`` (e.g. ``url`` or ``metadata`` in the DKRZ EERIE catalogs) are ignored with a warning. Storage options are
 taken only from ``xarray:storage_options``, and are ignored with a warning when the engine does not accept them (e.g. ``netcdf4``).
 The STAC tree is read once per ``Reader``: create a new ``Reader`` to see changes in the catalog.
@@ -207,7 +208,7 @@ This below is a working example of an item, building on the DKRZ EERIE cloud STA
     from aqua import Reader
     reader = Reader(
         url="https://eerie.cloud.dkrz.de/datasets/HadGEM3-GC5E-HH.historical.v20250409.gr1.Amon/stac",
-        stac_kwargs="eerie-cloud", areas=False,
+        stac_path="eerie-cloud", areas=False,
     )
     data = reader.retrieve()
 
@@ -219,7 +220,7 @@ here a collection, one of its items and the asset of the item (this example requ
     from aqua import Reader
     reader = Reader(
         url="https://km-scale-cloud.dkrz.de/stac-catalog-all.json",
-        stac_kwargs={"km-scale-cloud-dkrz-era5-collection": {"era5-dkrz.surface_analysis_monthly": "eerie-cloud"}},
+        stac_path=["km-scale-cloud-dkrz-era5-collection", "era5-dkrz.surface_analysis_monthly", "eerie-cloud"],
         areas=False,
     )
     data = reader.retrieve()
@@ -232,7 +233,7 @@ which can be used to try the feature offline:
     from aqua import Reader
     reader = Reader(
         url="tests/stac_catalogue/catalog.json",
-        stac_kwargs={"ifs": {"ifs-short-ifs2d-tco79": "data"}},
+        stac_path=["ifs", "ifs-short-ifs2d-tco79", "data"],
         areas=False,
     )
     data = reader.retrieve()
@@ -241,5 +242,7 @@ which can be used to try the feature offline:
     reader = Reader(url="tests/stac_catalogue/catalog.json", collection="ifs", item="ifs-short-ifs2d-tco79", areas=False)
 
 .. note::
-    The stac access is experimental and may not support all the functionalities of the intake backed. it might break if the catalog structure is not as expected.
-    For example, regridding, fixer and other functionalities are not available, since they are based on information available in the intake catalog.
+    The STAC access is experimental. Areas and regridding work with the grid read from the data, as for ``path``:
+    area and weight files are written to ``./areas`` and ``./weights`` in the current directory, with filenames built
+    from a hash of the ``href`` of the selected asset. There is no catalog entry, so no fixer, data model or source grid name
+    is taken from it.

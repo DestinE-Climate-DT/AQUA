@@ -48,6 +48,13 @@ class TestRegridderPath:
             "source": "regridded",
         }
 
+    def test_xarray_engine(self):
+        """xarray_engine given to Reader reaches the xarray backend (it used to clash with a hard-coded None)."""
+        path = os.path.join(AQUA_TESTS, "models", "IFS", "long", "regridded_r18x9.nc")
+        reader = Reader(path=path, xarray_engine="netcdf4", areas=False, loglevel=LOGLEVEL)
+        assert reader.backend.engine == "netcdf4"
+        assert "2t" in reader.retrieve()
+
     def test_missing_triplet(self):
         """Without path or url, the intake triplet must be complete."""
         with pytest.raises(ValueError, match=r"Missing \['source'\]"):

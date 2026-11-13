@@ -98,7 +98,8 @@ class BackendFactory:
         # model/exp/source/catalog are optional labels for the stac and xarray backends
         "stac": {
             "url",
-            "stac_kwargs",
+            "stac_path",
+            "xarray_engine",
             "model",
             "exp",
             "source",
@@ -135,7 +136,7 @@ class BackendFactory:
         item: str = None,
         asset: str = None,
         url: str = None,
-        stac_kwargs: dict | str = None,
+        stac_path: str | list[str] = None,
     ):
         if model is not None and collection is not None and model != collection:
             raise ValueError(f"Conflicting values provided for model ({model!r}) and collection ({collection!r})")
@@ -151,7 +152,7 @@ class BackendFactory:
         self.source = source if source is not None else asset
         self.path = path
         self.url = url
-        self.stac_kwargs = stac_kwargs
+        self.stac_path = stac_path
 
         self.configurer = configurer
         self.loglevel = loglevel
@@ -322,7 +323,7 @@ class BackendFactory:
             source=self.source,
             path=self.path,
             url=self.url,
-            stac_kwargs=self.stac_kwargs,
+            stac_path=self.stac_path,
             configurer=self.configurer,
             configurer_catalog=self.configurer_catalog,
             catalog=self.catalog,
@@ -330,7 +331,6 @@ class BackendFactory:
             fixer=fixer,
             datamodel=datamodel,
             engine=engine,
-            xarray_engine=None,
             loglevel=loglevel,
             **kwargs,
         )

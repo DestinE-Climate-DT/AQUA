@@ -52,7 +52,7 @@ class Reader:
         preproc: callable = None,
         engine=DEFAULT_ENGINE,
         url: str = None,
-        stac_kwargs: dict | str = None,
+        stac_path: str | list[str] = None,
         collection=None,
         item=None,
         asset=None,
@@ -102,9 +102,9 @@ class Reader:
                 Defaults to DEFAULT_ENGINE ('gsv').
             url (str, optional): URL or path of a STAC JSON document (catalog, collection or item).
                 When provided, data access uses the pystac backend. Defaults to None.
-            stac_kwargs (dict or str, optional): Selection of an asset from the STAC object at `url`:
-                a single-branch nested mapping of child/item ids ending with the asset key,
-                e.g. ``{"collection": {"item": "asset"}}``, or just the asset key for an item.
+            stac_path (str or list of str, optional): Path of the asset below the STAC object at `url`:
+                the child/item ids followed by the asset key, e.g. ``["collection", "item", "asset"]``,
+                or just the asset key for an item.
                 If None, the asset is selected with `collection`, `item` and `asset`. Defaults to None.
             collection (str, optional): Synonym for `model` (e.g. in STAC catalogs). Defaults to None.
             item (str, optional): Synonym for `exp` (e.g. in STAC catalogs). Defaults to None.
@@ -140,18 +140,8 @@ class Reader:
 
         # stac native arguments
         self.url = url
-        self.stac_kwargs = stac_kwargs
+        self.stac_path = stac_path
 
-        # Create regridder metadata for filename templating (supports both catalog and path-based backends).
-        # STAC data are identified by url plus asset selection (stac_kwargs, else collection/item/asset),
-        # so that area and weight files of different assets do not collide.
-        data_path = path
-        if url is not None:
-            selection = stac_kwargs if stac_kwargs is not None else [self.model, self.exp, self.source]
-            data_path = f"{url}#{selection}"
-        self.regridder_metadata = RegridderMetadata.from_reader(
-            model=self.model, exp=self.exp, source=self.source, path=data_path, **kwargs
-        )
         self.kwargs = kwargs
 
         # regridding
@@ -197,7 +187,7 @@ class Reader:
             source=self.source,
             path=self.path,
             url=self.url,
-            stac_kwargs=self.stac_kwargs,
+            stac_path=self.stac_path,
             configurer=configurer,
             catalog=catalog,
             loglevel=self.loglevel,
@@ -244,6 +234,13 @@ class Reader:
             engine=engine,
             loglevel=self.loglevel,
             **kwargs,
+        )
+
+        # Create regridder metadata for filename templating (supports both catalog and path-based backends).
+        # Backends without a catalog provide the data identifier (the path, or the href of the selected
+        # STAC asset), so that different data do not share area and weight files.
+        self.regridder_metadata = RegridderMetadata.from_reader(
+            model=self.model, exp=self.exp, source=self.source, path=self.backend.data_id, **kwargs
         )
 
         # define tgt grid names
