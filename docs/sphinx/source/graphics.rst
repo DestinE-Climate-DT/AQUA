@@ -14,7 +14,10 @@ and this includes all the default settings for the plot functions.
 This file can be modified to change the default appearance of the plots.
 Font sizes (titles, axis labels, ticks, legends and figure titles) are set only there:
 they are relative to ``font.size``, so changing it rescales all the text of the figures.
-The default size of the horizontal figures is ``DEFAULT_FIGSIZE_HORIZONTAL`` in ``aqua.core.default``.
+All figures share the same width, ``DEFAULT_FIGURE_WIDTH`` in ``aqua.core.default``, so that text looks equally large
+in figures shown at the same width (e.g. in the AQUA dashboard); the default height depends on the kind of plot.
+To build a figure with the common width, use ``figure_size(height_ratio)`` or, for a grid of panels,
+``grid_figure_size(nrows, ncols)`` from ``aqua.core.util``.
 
 
 Other styles can be created following the `matplotlib guidelines <https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style>`_.

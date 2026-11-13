@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from aqua.core.util import figure_size
+
 from .lat_lon_profiles import plot_lat_lon_profiles
 from .styles import ConfigStyle
 
@@ -14,6 +16,7 @@ def plot_seasonal_lat_lon_profiles(
     data_labels: list = None,
     title: str = None,
     ref_label: str = None,
+    figsize: tuple | None = None,
 ):
     """
     Plot seasonal lat-lon profiles in a 2x2 subplot layout for the four meteorological seasons.
@@ -44,6 +47,7 @@ def plot_seasonal_lat_lon_profiles(
         data_labels (list, optional): List of data_labels for each subplot. If provided, must have 4 elements.
         title (str, optional): Overall title for the 2x2 subplot figure.
         ref_label (str, optional): Label for the reference data in the legend.
+        figsize (tuple, optional): Figure size in inches. Default is figure_size(0.67), with the common width.
 
     Returns:
         fig, axs: Matplotlib figure and axes objects (2x2 subplot layout).
@@ -77,7 +81,8 @@ def plot_seasonal_lat_lon_profiles(
     else:
         ref_std_data = [None]
 
-    fig, axs = plt.subplots(2, 2, figsize=(12, 8), constrained_layout=True)
+    figsize = figure_size(0.67) if figsize is None else figsize
+    fig, axs = plt.subplots(2, 2, figsize=figsize, layout="constrained")
     axs = axs.flatten()
     season_names = ["DJF", "MAM", "JJA", "SON"]
 
@@ -102,17 +107,16 @@ def plot_seasonal_lat_lon_profiles(
 
         ax.set_title(season_title)
         ax.grid(True, linestyle="--", alpha=0.7)
+        if ax.get_legend():
+            ax.get_legend().remove()
 
-        # Show legend only on the first subplot
-        if i == 0:
-            ax.legend(loc="upper right")
-        elif hasattr(ax, "legend_") and ax.legend_:
-            ax.legend_.remove()
+    # One legend for the whole figure, below the panels, so that it never covers the profiles
+    handles, labels = axs[0].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, loc="outside lower center", ncol=min(len(labels), 3), fontsize="medium")
 
-    # Add overall title if provided
+    # Add overall title if provided (placed by the constrained layout, as the legend)
     if title:
-        fig.suptitle(title, y=0.98)
-
-    fig.set_layout_engine("tight")
+        fig.suptitle(title)
 
     return fig, axs

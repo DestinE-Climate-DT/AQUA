@@ -2,9 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-from aqua.core.default import DEFAULT_FIGSIZE_HORIZONTAL
 from aqua.core.logger import log_configure
-from aqua.core.util import to_list, unit_to_latex
+from aqua.core.util import figure_size, to_list, unit_to_latex
 
 from .styles import ConfigStyle
 
@@ -17,7 +16,7 @@ def plot_histogram(
     style: str | None = None,
     fig: plt.Figure | None = None,
     ax: plt.Axes | None = None,
-    figsize: tuple = DEFAULT_FIGSIZE_HORIZONTAL,
+    figsize: tuple | None = None,
     title: str | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
@@ -30,6 +29,7 @@ def plot_histogram(
     smooth: bool = False,
     smooth_window: int = 5,
     labelsize: int | None = None,
+    legend_fontsize: str | float | None = None,
     loglevel: str = "WARNING",
 ):
     """
@@ -44,7 +44,7 @@ def plot_histogram(
         style (str | None, optional): Style for the plot.
         fig (plt.Figure | None, optional): Matplotlib figure object.
         ax (plt.Axes | None, optional): Matplotlib axes object.
-        figsize (tuple, optional): Figure size if a new figure is created.
+        figsize (tuple, optional): Figure size if a new figure is created. Defaults to figure_size(0.5), with the common width.
         title (str | None, optional): Title for the plot.
         xlabel (str | None, optional): Label for x-axis.
         ylabel (str | None, optional): Label for y-axis.
@@ -57,6 +57,7 @@ def plot_histogram(
         smooth (bool, optional): Apply smoothing to the data.
         smooth_window (int, optional): Window size for smoothing.
         labelsize (int | None, optional): Font size for labels. Defaults to the style one.
+        legend_fontsize (str | float | None, optional): Font size of the legend. Defaults to the style one.
         loglevel (str, optional): Logging level.
 
     Returns:
@@ -70,7 +71,8 @@ def plot_histogram(
 
     # Create figure if needed
     if fig is None:
-        fig = plt.figure(figsize=figsize)
+        figsize = figure_size(0.5) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
 
@@ -127,7 +129,7 @@ def plot_histogram(
 
     # Finalize plot
     if data_labels or ref_label:
-        ax.legend(loc="upper right")
+        ax.legend(loc="upper right", fontsize=legend_fontsize)
 
     ax.grid(True, linestyle="-", alpha=0.3)
 
