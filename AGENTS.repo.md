@@ -12,10 +12,15 @@ These instructions apply only to the AQUA-core repository. Read them after
 ## Core Architecture
 
 - **Modularity over monoliths**: when not possible to delegate to specialized (`FixerConfigure`, `FixerOperator`, `FixerDataModel`) sub-classes, use mixins (`InstallMixin`, `CatalogMixin`, `FilesMixin`)
-- **Console logging exception**: existing user-facing `print()` calls in `aqua/core/console/` may remain; update only in files already being modified for functional changes
+- **Console logging exception**: existing user-facing `print()` calls in `aqua/core/console/` and the catalog structure printout in `aqua/core/configurer/catalog.py` may remain; update only in files already being modified for functional changes
 - **Legacy configuration exception**: some legacy install/config flows still use explicit defaults — route new logic through `ConfigContext` but do not refactor existing flows unless already touching them
 - At write/output boundaries, use `_compute_data()` in the writer to materialise data.
 - CLI commands go in `aqua/core/console/` and register in `AquaConsole.command_map`; parser definitions in `aqua/core/console/parser.py`
+
+## Fixes
+
+- **Convention first, fixer second**: to map a new source to AQUA names and units, first rely on the eccodes convention (`aqua/core/config/fixes/convention-eccodes.yaml`): add the source variable name to the `source` aliases of the target variable, as done for E-OBS (`tg`, `rr`). Write a `fixer_name` block (e.g. in `observations.yaml`) only for what the convention cannot express: source units to override (`src_units`), accumulation time (`deltat`), derived variables, deletions, coordinate renames, or an alias too generic to be safe for every source.
+- Keep each `fixer_name` block minimal: do not repeat what the convention already provides (target units, `grib` attributes).
 
 ## Intake Drivers
 

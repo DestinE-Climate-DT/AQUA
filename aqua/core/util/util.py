@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 import sys
 
@@ -35,6 +36,29 @@ def to_list(arg):
     if isinstance(arg, dict):  # Convert dictionary keys to a list
         return list(arg.keys())
     return [arg]
+
+
+def deep_merge(base, override):
+    """
+    Recursively merge two dictionaries, with priority to the override values.
+
+    Nested dictionaries are merged key by key; any other value (including lists)
+    in ``override`` replaces the one in ``base``.
+
+    Args:
+        base (dict): Base dictionary providing the default values.
+        override (dict, optional): Dictionary whose values replace the base ones. None is treated as empty.
+
+    Returns:
+        dict: A new merged dictionary, independent from the inputs (they are not modified).
+    """
+    merged = copy.deepcopy(base)
+    for key, value in (override or {}).items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
 
 
 def get_arg(args, arg, default, config=None, key=None):
