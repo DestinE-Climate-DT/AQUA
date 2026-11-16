@@ -371,7 +371,8 @@ Some of the parameters are here described:
     By default, the ``chunks`` argument is a string and refers to time-chunking.
     In more advanced cases it is possible to chunk both in time and in the vertical (along levels)
     by passing a dictionary to chunks with the keys ``time`` and ``vertical``.
-    In this case ``time`` is as usual a time frequency (in pandas notations) and ``vertical`` is instead the maximum number of vertical levels
+    ``time`` accepts a time frequency (in pandas notation) or a positive integer counting saved frames,
+    while ``vertical`` is the maximum number of vertical levels
     in each chunk.
 
     An example would be:
@@ -382,13 +383,20 @@ Some of the parameters are here described:
       time: D  # Default time chunk size
       vertical: 3  # Three vertical levels in each chunk
 
+For example, ``reader_kwargs: {chunks: {time: 12}}`` groups 12 consecutive saved frames per chunk
+with the GSV and Polytope engines, leaving a smaller final chunk when needed. This means 12 hours
+for hourly data or 72 hours for six-hourly data with ``timestyle: step``.
+An integer can also be passed directly as ``chunks=12``. Frequency strings retain their calendar-based grouping.
+Choose chunks that stay within a single day for ``timestyle: date`` or a single year for ``timestyle: yearmonth``;
+crossing those boundaries is not handled here. Chunks must also align with the catalog's HPC/bridge availability boundaries.
+
 .. note::
     When using the ``z3fdb`` engine, chunking is supported differently:
 
-    * **Time direction**: Chunking is always by single time steps.
-    * **Level direction**: By default, level chunking is not performed.
-    * **Level chunking override**: If ``chunks`` is defined and it is a dictionary with a ``'level'`` key, then chunking is also done in the level direction.
-    * If an integer greater than 1 is passed (e.g. ``chunks={"level": 3}``), the value is ignored and level chunking is still performed as single-value.
+    * **Time direction**: A positive integer groups that many saved frames; by default each frame is a separate chunk.
+      Frequency strings do not select larger time chunks.
+    * **Level direction**: By default, all levels share a chunk. ``vertical`` (or ``level``) accepts a positive
+      integer chunk size; sizes that do not divide the number of levels fall back to single-level chunks.
 
 .. option:: timestep
 
@@ -567,9 +575,11 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
   Alternatively, a single ``skipna`` key pointing to a 2D grid file enables the smmregrid ``skipna`` option:
   missing source points are skipped and the weights renormalized at each call,
   so that a single 2D weights matrix handles all variables and levels,
-  including masks varying in time or along any dimension (a target cell is NaN if more than half of its weights are missing,
-  as without skipna). It cannot be combined with other keys
-  (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
+  including masks varying in time or along any dimension. A target cell is NaN when the fraction of its weights
+  on missing source points exceeds ``na_thres``, which AQUA sets to the smmregrid default ``'auto'``
+  (0.5 for the conservative methods, as without skipna; see :ref:`regrid-missing-values`).
+  The ``skipna`` key must be the only key of ``path``: it cannot be combined with ``2d``, ``2dm`` or 3D keys
+  such as ``depth_full`` (e.g. ``path: {skipna: '{{grids}}/NEMO/my_ocean_grid.nc'}``). Default is off.
   A path value can be the reserved word ``data``: the grid is then taken from the dataset itself,
   as for grids without ``path``. ``path: {skipna: data}`` is the default ``lon-lat-skipna`` grid
   (regular lon-lat data with missing values varying in time).

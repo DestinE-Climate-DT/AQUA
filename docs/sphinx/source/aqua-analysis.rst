@@ -91,9 +91,10 @@ so that the script can be used in a batch job or in a workflow. These override c
 
 .. option:: -k <kind>, --kind <kind>
 
-    Experiment kind to run (e.g. ``historical``, ``scenario``, ``storyline``).
+    Experiment kind to run (e.g. ``climatedt-hist-cmip7``, ``climatedt-projections-cmip6``, ``storyline``).
     This works in combination with the jinja template configuration files available in `AQUA-diagnostics <https://aqua-diagnostics.readthedocs.io/en/latest/>`_,
     and allow for configuring the diagnostics startdate/enddate and other parameters based on the experiment kind.
+    Kinds inherit from the ``default`` kind and only list their overrides (see the Configuration file section below).
     Overrides the value from the configuration file.
 
 .. option:: --setup_checker
@@ -106,7 +107,10 @@ so that the script can be used in a batch job or in a workflow. These override c
 
 .. option:: --serial
 
-    Disable parallel execution with a Dask cluster. All diagnostic collections will run sequentially.
+    Disable the Dask cluster. Each diagnostic tool runs with the single-threaded synchronous Dask scheduler
+    (``DASK_SCHEDULER=synchronous``, unless ``DASK_SCHEDULER`` is already set in the environment), which is useful
+    for profiling. Collections within a ``run`` group are still launched concurrently: add ``--nmaxprocesses 1``
+    to run them one at a time.
 
 .. option:: --nworkers <nworkers>
 
@@ -191,6 +195,18 @@ The configuration file is divided in three main sections:
 Please noticed that a supplementary configuration file is needed for each diagnostic, which contains the specific configuration for that diagnostic (e.g. the variables to use, the time range, etc.).
 These files are specified in the ``script_path`` key of each diagnostic in the ``diagnostics``, and can be templated with jinja to allow for dynamic configuration based on the experiment kind or other parameters.
 The ``templates/config.exp-kind.tmpl`` file contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
+
+The experiment kind file (``experiment_kind`` key of the ``job`` section) must define a ``default`` kind,
+which holds every definition used by the templates.
+Any other kind is recursively merged on top of ``default``, so it only needs to list the keys it overrides.
+If the requested kind is not found in the file, an error listing the available kinds is raised.
+The name of the resolved kind is available to the templates as ``kind`` (e.g. ``{% if kind == 'storyline' %}``),
+so ``kind`` is a reserved key that cannot be defined in the experiment kind file.
+If no experiment kind file is set, the configuration files are used as they are, without templating.
+
+The experiment kinds of the Climate DT workflow are defined in ``climatedt-experiment-kind.yaml``, shipped with AQUA-diagnostics.
+The kind to use for each Climate DT experiment is listed in the
+`AQUA-diagnostics documentation <https://aqua-diagnostics.readthedocs.io/en/latest/analysis_collections.html#which-kind-to-use-for-each-climate-dt-experiment>`_.
 
 Job
 ^^^

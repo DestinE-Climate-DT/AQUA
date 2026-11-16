@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .drop_util import zarr_encoding
+from .drop_util import WriteReport, zarr_encoding
 from .drop_writer_base import BaseWriter
 
 
@@ -97,8 +97,8 @@ class IcechunkWriter(BaseWriter):
         """Return file extension for zarr format."""
         return ".zarr"
 
-    def validate(self, store_path):
-        """Validate icechunk store: must exist and contain at least one time step."""
+    def validate(self, store_path, min_months=None):
+        """Validate icechunk store: must exist and contain at least one time step (min_months is unused)."""
         if not os.path.exists(store_path):
             return False
         try:
@@ -320,6 +320,7 @@ class IcechunkWriter(BaseWriter):
         dask=False,
         performance_reporting=False,
         stats_file=None,
+        validate_existing=True,
     ):
         """
         Write complete variable with monthly commits to icechunk repo.
@@ -341,6 +342,8 @@ class IcechunkWriter(BaseWriter):
             definitive: Actually write files (vs dry-run)
             dask: If True, use Dask for distributed computing
             performance_reporting: Limit to first month only (for benchmarking)
+            stats_file: Path to stats text file for immediate per-chunk writes. None disables writing.
+            validate_existing: Unused; the repo is always checked by check_integrity.
 
         Returns:
             bool: True if successful
@@ -369,6 +372,7 @@ class IcechunkWriter(BaseWriter):
         # mode='w' clobbers; used only for the first write of a fresh/overwrite run.
         # When resuming, all writes must append to the existing store.
         first_session_write = last_record is None
+        report = WriteReport(var, definitive)
 
         for year, year_data in self._iter_years(data, performance_reporting):
             self.logger.info("Processing year %s...", str(year))
@@ -392,6 +396,7 @@ class IcechunkWriter(BaseWriter):
                             month_data, self.main_session, mode=mode, append_dim=append_dim
                         ):
                             self.logger.error("Failed to write month %s-%02d; skipping", year, month)
+                            report.add_failed(year, "write", month)
                             self.main_session = self.repo.writable_session("main")
                             continue
 
@@ -405,6 +410,7 @@ class IcechunkWriter(BaseWriter):
 
                         except Exception as e:
                             self.logger.error("Commit failed for month %s-%02d: %s", year, month, e)
+                            report.add_failed(year, "commit", month)
                             self.main_session = self.repo.writable_session("main")
                             continue
 
@@ -419,6 +425,7 @@ class IcechunkWriter(BaseWriter):
                                 month,
                                 integrity["message"],
                             )
+                            report.add_failed(year, "validation", month)
                             continue
                         self.logger.debug(
                             "Post-commit check passed for %s-%02d (last_record=%s)",
@@ -429,6 +436,7 @@ class IcechunkWriter(BaseWriter):
 
                     except Exception as e:
                         self.logger.error("Write failed for month %s-%02d: %s", year, month, e)
+                        report.add_failed(year, "write", month)
                         self.main_session = self.repo.writable_session("main")
                         continue
 
@@ -440,6 +448,8 @@ class IcechunkWriter(BaseWriter):
             if definitive:
                 self.concat_year_files(var, year)  # Calls optional GC
 
+        report.log(self.logger)
+        self.report = report
         return True
 
     def get_filename(self, var, year=None, month=None, level=None, tmp=False):

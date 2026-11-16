@@ -51,17 +51,18 @@ class ZarrWriter(BaseWriter):
         """Return file extension for this format."""
         return ".zarr"
 
-    def validate(self, store_path):
+    def validate(self, store_path, min_months=None):
         """
         Validate Zarr store integrity.
 
         Args:
             store_path: Path to zarr store
+            min_months: Minimum number of distinct calendar months the store must span (optional)
 
         Returns:
             bool: True if valid, False otherwise
         """
-        return file_is_complete(store_path, loglevel=self.logger.level)
+        return file_is_complete(store_path, loglevel=self.logger.level, min_months=min_months)
 
     def _get_encoding(self, data, var=None):
         """
@@ -135,7 +136,8 @@ class ZarrWriter(BaseWriter):
             level: Level (optional, for filename generation)
 
         Returns:
-            bool: True if successful
+            bool or None: True if concatenated, False on error, None if there are not enough monthly
+            files/stores to concatenate (nothing is done, it is not a failure)
         """
         if not self._should_concat():
             return False
@@ -146,7 +148,7 @@ class ZarrWriter(BaseWriter):
         )
 
         if tmp_monthly_files is None:
-            return False
+            return None
 
         try:
             # Open all monthly stores using class method

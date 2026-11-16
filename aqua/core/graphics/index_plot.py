@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 
 from aqua.core.logger import log_configure
+from aqua.core.util import figure_size
 
 from .styles import ConfigStyle
 
@@ -12,7 +13,7 @@ def index_plot(
     fig: plt.Figure = None,
     ax: plt.Axes = None,
     style: str = None,
-    figsize: tuple = (11, 8.5),
+    figsize: tuple | None = None,
     title: str = None,
     ylim: tuple = None,
     ylabel: str = None,
@@ -29,7 +30,7 @@ def index_plot(
         fig (Figure,opt):      Figure object
         ax (Axes,opt):         Axes object
         style (str, optional): Style to use. Defaults to None (aqua style).
-        figsize (tuple,opt):   Figure size, default is (11, 8.5)
+        figsize (tuple,opt):   Figure size, default is figure_size(0.8), with the common width
         title (str,opt):       Title for the plot. Default is None
         ylim (tuple,opt):      y-axis limits. Default is None
         ylabel (str,opt):      y-axis label. Default is None
@@ -46,7 +47,8 @@ def index_plot(
     index = index.load()
 
     if fig is None:
-        fig = plt.figure(figsize=figsize)
+        figsize = figure_size(0.8) if figsize is None else figsize
+        fig = plt.figure(figsize=figsize, layout="constrained")  # margins fitted to the labels
     if ax is None:
         ax = fig.add_subplot(111)
 
@@ -84,7 +86,7 @@ def indexes_plot(
     indexes: list,
     thresh: float = 0,
     style=None,
-    figsize: tuple = None,
+    figsize: tuple | None = None,
     titles: list = None,
     labels: list = None,
     suptitle: str = None,
@@ -99,7 +101,7 @@ def indexes_plot(
         indexes (list):         List of DataArray objects
         thresh (float,opt):     Threshold for the index, default is 0
         style (str, optional):  Style to use. Defaults to None (aqua style).
-        figsize (tuple,opt):    Figure size, default is (5.5*n_indexes, 8.5)
+        figsize (tuple,opt):    Figure size, default is figure_size(0.65 * n_indexes), with the common width
         titles (list,opt):      List of strings for the titles of the plots. Default is None
         labels (list,opt):      List of strings for the labels of the plots. Default is None
         suptitle (str,opt):     Title for the figure. Default is None
@@ -109,10 +111,10 @@ def indexes_plot(
     Returns:
         fig, axs: Figure and Axes objects
     """
-    figsize = (8.5, 5.5 * len(indexes)) if figsize is None else figsize
+    figsize = figure_size(0.65 * len(indexes)) if figsize is None else figsize
     ConfigStyle(style=style, loglevel=loglevel)
 
-    fig, axs = plt.subplots(nrows=len(indexes), ncols=1, figsize=figsize, sharex=False)
+    fig, axs = plt.subplots(nrows=len(indexes), ncols=1, figsize=figsize, sharex=False, layout="constrained")
 
     # Evaluating a common ylim:
     ymin = min(index.min().values for index in indexes)
@@ -139,7 +141,5 @@ def indexes_plot(
 
     if suptitle is not None:
         fig.suptitle(suptitle)
-
-    fig.tight_layout()
 
     return fig, axs
