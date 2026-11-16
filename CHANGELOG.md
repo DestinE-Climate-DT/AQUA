@@ -13,7 +13,7 @@ ClimateDT workflow modifications:
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
 Complete list:
-- DROP Zarr writer groups on-disk chunks in zarr v3 shards matching the read chunks of the catalog entry (`chunk_target`, default 128MiB), writing one file per read chunk instead of one per time step and level (#3396)
+- DROP Zarr output is sharded to match the read chunks, writing far fewer files (#3396)
 - Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 - Fix DROP NetCDFWriter to correctly compact files when level is selected (#3380)
