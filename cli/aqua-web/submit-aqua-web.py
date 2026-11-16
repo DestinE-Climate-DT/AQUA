@@ -220,6 +220,8 @@ class Submitter:
         definitions["nodes"] = definitions["push"]["nodes"]
         definitions["ntasks_per_node"] = definitions["push"]["ntasks_per_node"]
         definitions["time"] = definitions["push"]["time"]
+        # default keeps configs without push.memory working; 1 task on debug gets 896M, too little for aqua push
+        definitions["memory"] = definitions["push"].get("memory", "8G")
 
         definitions["push"] = "true"
         definitions["explist"] = listfile

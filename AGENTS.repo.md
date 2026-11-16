@@ -12,7 +12,7 @@ These instructions apply only to the AQUA-core repository. Read them after
 ## Core Architecture
 
 - **Modularity over monoliths**: when not possible to delegate to specialized (`FixerConfigure`, `FixerOperator`, `FixerDataModel`) sub-classes, use mixins (`InstallMixin`, `CatalogMixin`, `FilesMixin`)
-- **Console logging exception**: existing user-facing `print()` calls in `aqua/core/console/` may remain; update only in files already being modified for functional changes
+- **Console logging exception**: existing user-facing `print()` calls in `aqua/core/console/` and the catalog structure printout in `aqua/core/configurer/catalog.py` may remain; update only in files already being modified for functional changes
 - **Legacy configuration exception**: some legacy install/config flows still use explicit defaults — route new logic through `ConfigContext` but do not refactor existing flows unless already touching them
 - At write/output boundaries, use `_compute_data()` in the writer to materialise data.
 - CLI commands go in `aqua/core/console/` and register in `AquaConsole.command_map`; parser definitions in `aqua/core/console/parser.py`
