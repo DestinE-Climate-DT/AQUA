@@ -62,7 +62,7 @@ The values below are the built-in defaults; include only the entries you want to
 These defaults are read once when AQUA is imported, from the configuration located by
 ``AQUA_CONFIG`` or, otherwise, ``$HOME/.aqua``. Restart Python or the notebook kernel
 after editing them. Omitted entries keep their built-in values. Explicit arguments
-and catalog or grid settings retain their existing precedence over defaults.
+and catalog or grid settings retain their existing behavior.
 
 Only the eight keys shown above are accepted. Keys are case-insensitive and the
 ``DEFAULT_`` prefix is optional: ``engine``, ``default_engine`` and ``DEFAULT_ENGINE``
