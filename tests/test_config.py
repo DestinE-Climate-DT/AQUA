@@ -116,7 +116,6 @@ assert {name: getattr(default, name) for name in expected} == expected
 assert default.DEFAULT_REALIZATION == "r1"
 consumers = {
     "backend.backend_factory": ("DEFAULT_DATAMODEL", "DEFAULT_CONVENTION"),
-    "backend.backend_intake_fdb": ("DEFAULT_ENGINE",),
     "regridder.regridder": ("DEFAULT_REGRID_METHOD", "DEFAULT_NA_THRES"),
     "console.drop": ("DEFAULT_DROP_CHUNK_TARGET",),
 }
@@ -125,6 +124,7 @@ for module, names in consumers.items():
     assert {name: getattr(consumer, name) for name in names} == {name: expected[name] for name in names}
 for function, argument, name in (
     (Reader, "nproc", "DEFAULT_NPROC"),
+    (Reader, "engine", "DEFAULT_ENGINE"),
     (Fixer, "convention", "DEFAULT_CONVENTION"),
     (Drop, "chunk_target", "DEFAULT_DROP_CHUNK_TARGET"),
     (CatalogEntryBuilder.define_optimal_chunks, "chunk_target", "DEFAULT_DROP_CHUNK_TARGET"),
