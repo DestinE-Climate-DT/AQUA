@@ -21,6 +21,8 @@ Complete list:
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
+Unreleased in the current development version (target v1.2.4):
+- Subset selected polygons before constructing fractional region masks, reducing temporary memory without changing coverage thresholds (#3372).
 - Add `CRU-TS-default` fixer for CRU TS monthly data, and `degrees Celsius` unit alias (#3382)
 - Agent instructions: map new sources through the eccodes convention first, and write a `fixer_name` only for what the convention cannot express (#3382)
 - Agents: new "Preferred Tools and Coding Rules" section in `AGENTS.common.md` (paths with `os.path`, dates with pandas, `%`-style logger arguments, function-level imports, type hints) (#3392)
