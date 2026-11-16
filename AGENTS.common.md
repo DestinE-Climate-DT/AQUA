@@ -50,6 +50,7 @@ When they conflict, the simplest code a human can maintain wins.
   `🤖 Generated with [Agent name](official-product-url)`, using the actual agent's name and official product URL.
   Example: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - Update also the CHANGELOG.md with the new version and the changes introduced in the current version following the same format as other entries in that file (citing only the pull request, not the issue).
+- Keep each CHANGELOG entry compact: one short line saying what changes for the user. No implementation details, rationale, parameter lists or default values; those belong in the pull request and the documentation.
 
 ### Reviewing pull requests
 - If user asks for a review of a pull request, review it looking for consistency, bugs, and if the code is clean and consistent with the general style of the rest of AQUA software. It should be compact, clean, and easy to maintain also by humans.
