@@ -22,6 +22,7 @@ Complete list:
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
 Unreleased in the current development version (target v1.2.4):
+- Allow eight core defaults to be overridden at import time through the optional `defaults` section in `config-aqua.yaml`.
 - Subset selected polygons before constructing fractional region masks, reducing temporary memory without changing coverage thresholds (#3372).
 - Add `CRU-TS-default` fixer for CRU TS monthly data, and `degrees Celsius` unit alias (#3382)
 - Agent instructions: map new sources through the eccodes convention first, and write a `fixer_name` only for what the convention cannot express (#3382)

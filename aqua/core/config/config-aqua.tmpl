@@ -4,6 +4,12 @@ catalog: null
 # please do not modify this if you do not know what you are doing
 machine: auto
 
+# Optional overrides of the DEFAULT_* constants, read when AQUA is imported.
+# Names are case-insensitive; the default_ prefix is optional.
+# Configurable defaults: datamodel, convention, regrid_method, engine, nproc,
+# drop_grid, drop_chunk_target, na_thres.
+defaults: {}
+
 reader:
   catalog: '{{ configdir }}/catalogs/{{ catalog }}/catalog.yaml'
   machine: '{{ configdir }}/catalogs/{{ catalog }}/machine.yaml'
