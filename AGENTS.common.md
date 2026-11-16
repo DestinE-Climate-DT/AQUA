@@ -15,7 +15,21 @@ against the location or URL of this shared file.
 
 ## Core Directives
 
-**Code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
+**Simplicity, code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
+When they conflict, the simplest code a human can maintain wins.
+
+### Scope and size
+
+- Before coding, estimate the change. Stop and write a design proposal instead of code if it exceeds about 400 changed lines or 5 modules (lockfiles, notebooks and generated files excluded), changes public API, or adds a module or a dependency.
+- A design proposal is an issue following the Design proposal template: goal, starting point, non-goals, options, chosen approach, ordered list of pull requests. No code. Implementation starts only after a human confirms in that issue that the approach is agreed.
+- One pull request, one purpose: do only what the issue asks, and never mix refactoring with behaviour changes. Report unrelated findings as issues instead of fixing them.
+- A large task becomes several pull requests (possibly stacked), each within the size budget, passing tests and mergeable on its own.
+
+### Simplicity
+
+- Choose the shortest readable solution, even if less general or less elegant.
+- No new class, mixin, config key or parameter unless it is used at least twice now.
+- No fallbacks, defensive checks or extra options that nobody asked for.
 
 ### Human control of `main`
 
@@ -28,16 +42,19 @@ against the location or URL of this shared file.
 ### Creating issues and pull requests
 
 - Prefix the title of new pull requests or issues with a topic in square brackets, e.g. `[Drop]` and capitalize the first letter of the topic and the first letter of the title.
-- When opening a PR follow the Standard PR template (provided in `.github/PULL_REQUEST_TEMPLATE.md`). Keep only checkboxes whose conditions apply to the actual changes, and check them only when the required work is complete. Remove irrelevant checkboxes instead of marking them complete.
+- When opening a PR follow the Standard PR template (provided in `.github/PULL_REQUEST_TEMPLATE/standard_pull_request.md`). Keep only checkboxes whose conditions apply to the actual changes, and check them only when the required work is complete. Remove irrelevant checkboxes instead of marking them complete.
 - The "Documentation is included if a new feature is included" checkbox applies only when the PR introduces a new feature and includes its user documentation. Edits to agent instructions (`AGENTS.md`) or `CHANGELOG.md` alone do not make this checkbox relevant.
-- When opening an issue follow the issue template (provided in `.github/ISSUE_TEMPLATE.md`) choosing an appropriate issue type from the given options.
+- Keep the pull request body short: a `TL;DR` of three lines at most (what, why, what to read first), then the main changes (behaviour and API only, one line each) and what is left out. About 200 words plus the checklist; do not narrate the diff or list every file.
+- When opening an issue follow one of the issue templates (provided in `.github/ISSUE_TEMPLATE/`) choosing an appropriate issue type from the given options.
 - End the body of every new issue or pull request opened by an agent (Claude, Gemini, Codex, etc.) with a short signature:
   `🤖 Generated with [Agent name](official-product-url)`, using the actual agent's name and official product URL.
   Example: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-- Update also the CHANGELOG.md with the new version and the changes introduced in the current version following the same format as other entries in that file.
+- Update also the CHANGELOG.md with the new version and the changes introduced in the current version following the same format as other entries in that file (citing only the pull request, not the issue).
 
 ### Reviewing pull requests
 - If user asks for a review of a pull request, review it looking for consistency, bugs, and if the code is clean and consistent with the general style of the rest of AQUA software. It should be compact, clean, and easy to maintain also by humans.
+- Start the report with a change map: what the pull request claims, what it actually changes, behaviour and API changes, and which files need human reading versus mechanical ones.
+- Before any line-level comment, flag scope beyond the linked issue, size above the budget (see [Scope and size](#scope-and-size)) and code that could be simpler or deleted.
 - Check with specific attention if there is any code redundancy or if some of new features can be replaced by existing features.
 - Prepare a report with possible action points - ranked with a priority scale (serious, high, low, negligible) - which we will address later.
 
@@ -86,10 +103,9 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **No hardcoded paths**: route installation/catalog/machine resolution through `ConfigContext` and `ConfigLocator`; respect `AQUA_CONFIG` and `$HOME/.aqua`
 - **Configuration is declarative**: define grids, fixes, data models, catalogs, and analyses in YAML first; add Python `if/else` only when config cannot express the behaviour
 - **Protect shared YAML writes**: use `SafeFileLock` + `dump_yaml()`; never use raw `open(..., "w")` on shared metadata files
-- **No new external dependencies** without discussion; check the Reuse Map and External Dependencies section first
 - **Accessor contract**: if a `Reader` method returns an xarray object intended for chained AQUA operations, call `data.aqua._bind_reader(self)` before returning; only `retrieve()` calls `data.aqua.set_default(self)`, which also changes the global default for new accessors. Core utilities that transform an input keep its binding with `_preserve_reader_binding(input, output)`
 - **Minimize new attributes**: do not create new instance attributes or `AQUA_*` metadata attributes unless strictly necessary; search for and reuse existing ones first
-- **Backward compatibility**: public API changes require a CHANGELOG entry (citing only the pull request, not the issue); new parameters must have defaults so existing call sites keep working
+- **Backward compatibility**: new parameters must have defaults so existing call sites keep working
 - **Coding rules**: follow [Preferred Tools and Coding Rules](#preferred-tools-and-coding-rules) for paths, dates, logging, imports and type hints
 
 ---
@@ -105,7 +121,7 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
 
 ## Dask & HPC Guidelines
 
-- Do not trigger computation (`compute`, `persist`) inside transformation or processing code — leave execution control to the caller
+- Do not trigger computation (`compute`, `persist`, `.values`) inside transformation or processing code — leave execution control to the caller
 - **Exception**: materialisation at write/output boundaries is correct and expected (e.g. `to_netcdf()` requires in-memory data)
 - Chunking strategy must be defined at `Reader` level via the `chunks` argument, not downstream
 - Never assume a specific scheduler (threads/processes/distributed); let the caller configure Dask
@@ -115,7 +131,6 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
 ## Data Handling
 
 - Do not call `xr.set_options(keep_attrs=True)` at module level: it mutates xarray's process-global state, and xarray already keeps attrs in unambiguous cases. Where attrs must survive (e.g. `apply_ufunc`, `map`, `load`), pass `keep_attrs=True` to the call or wrap the block in `with xr.set_options(keep_attrs=True):`
-- All xarray operations are lazy by default — do not force `.compute()` early (see Dask & HPC)
 - Preserve provenance: after any transform that changes variables, coordinates, grids, or statistics, call `log_history(data, msg)` and keep `AQUA_*` attrs updated via `set_attrs()` / `update_metadata()`
 - **DataArray → Dataset conversion silently drops Dataset-level attrs** — always copy them explicitly:
   ```python
@@ -123,7 +138,6 @@ All data *read paths* must go through Intake catalogs unless explicitly justifie
   ds = da.to_dataset(name=var_name)
   ds.attrs.update(attrs)
   ```
-- **Attribute loss through slicing is a common silent failure** — verify that Dataset-level attrs (especially `history`) survive `.sel()` in tests
 - Cache expensive results (areas, weights) with a `hasattr` guard:
   ```python
   if not hasattr(self, "_cached_areas"):
@@ -149,11 +163,10 @@ Custom exceptions live in `aqua.core.exceptions`. Raise them in core modules; ca
 
 ## Forbidden Patterns
 
-- Calling `.compute()` or `.values` in transformation/processing code (materialise only at write boundaries)
+In addition to the rules above:
+
 - Looping over xarray dimensions instead of using vectorized operations
 - Re-reading the same dataset multiple times — retrieve once and pass the object
-- Calling `Fixer`, `DataModel`, or `Regridder` directly in user-facing code (use `Reader`)
-- Using `open(..., "w")` on shared catalog/config YAML files (use `SafeFileLock` + `dump_yaml()`)
 - Building a new Dataset from scratch when `assign()` / `assign_coords()` on an existing one would preserve metadata
 
 ---
@@ -206,7 +219,7 @@ These rules apply to new and modified code. Existing code that does not follow t
 
 ## External Dependencies
 
-Prefer in this order before adding anything new: `xarray`, `numpy`, `pandas`, `metpy`, `smmregrid`, `intake`.
+No new external dependency without discussion. Check the Reuse Map first, then prefer in this order: `xarray`, `numpy`, `pandas`, `metpy`, `smmregrid`, `intake`.
 
 - When dependencies change, update the relevant declarations in `pyproject.toml` and `environment*.yml` files, then regenerate the corresponding conda lockfiles using the repository's relock workflow.
 
@@ -246,7 +259,7 @@ def method(self, arg1, arg2=None):
 - Use `Reader(model=..., exp=..., source=...)` to load test data; avoid raw `xr.open_dataset` unless testing I/O directly
 - Prefer shared fixtures in `tests/conftest.py` with `session` or `module` scope to avoid repeated heavy retrievals
 - Favour `pytest.mark.parametrize` over duplicated test bodies
-- When testing write paths, verify that Dataset-level attributes (especially `history`) are present in the output file — attribute loss through slicing or DataArray→Dataset conversion is a common silent failure
+- Verify that Dataset-level attributes (especially `history`) survive slicing (`.sel()`) and are present in written output files — attribute loss through slicing or DataArray→Dataset conversion is a common silent failure
 
 ---
 

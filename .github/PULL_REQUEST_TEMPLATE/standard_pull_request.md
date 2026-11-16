@@ -1,4 +1,14 @@
-## PR description:
+## TL;DR
+
+<!-- Three lines at most: what changes, why, and what the reviewer should read first. -->
+
+## Main changes
+
+<!-- Behaviour and API changes only, one line each. Do not list every file. -->
+
+## Not in this pull request
+
+<!-- What is left out or comes in a follow-up. If above ~400 changed lines or ~5 modules, say why it is not split. -->
 
 ## Issues closed by this pull request:
 
@@ -14,6 +24,8 @@ Please leave the checkboxes that apply to this pull request.
 Make sure to complete the checkboxes before applying the "ready for review" label.
 Please apply the "run tests" label if you want to trigger CI tests.
 
+ - [ ] I have read the whole diff and can explain it (also when AI wrote it).
+ - [ ] Big changes follow a Design proposal issue agreed with the team.
  - [ ] Tests are included if a new feature is included.
  - [ ] Documentation is included if a new feature is included.
  - [ ] Changelog is updated.
