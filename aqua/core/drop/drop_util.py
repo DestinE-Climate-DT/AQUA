@@ -6,6 +6,50 @@ import shutil
 import zarr
 
 
+class WriteReport:
+    """
+    Collect what happens to the existing and to the new yearly/monthly files while writing a variable,
+    to log a final summary. Periods are reported once and never retried within the run.
+
+    Attributes:
+        invalid (list): existing files failing validation, to be regenerated.
+        failed (list): periods that could not be produced, as "period (reason)".
+    """
+
+    def __init__(self, var, definitive):
+        self.var = var
+        self.definitive = definitive
+        self.invalid = []
+        self.failed = []
+
+    @staticmethod
+    def _period(year, month=None):
+        return str(year) if month is None else f"{year}-{int(month):02d}"
+
+    def add_invalid(self, year, month=None, note=None):
+        """Register an existing file failing validation."""
+        period = self._period(year, month)
+        self.invalid.append(f"{period} ({note})" if note else period)
+
+    def add_failed(self, year, reason, month=None):
+        """Register a period that could not be produced."""
+        self.failed.append(f"{self._period(year, month)} ({reason})")
+
+    def log(self, logger):
+        """Log the final summary: invalid files (dry run only, otherwise they are regenerated) and failures."""
+        if self.invalid and not self.definitive:
+            logger.warning(
+                "Dry run for %s: %d invalid existing file(s) would be regenerated: %s",
+                self.var,
+                len(self.invalid),
+                ", ".join(self.invalid),
+            )
+        if self.failed:
+            logger.error(
+                "Variable %s: %d period(s) could not be produced: %s", self.var, len(self.failed), ", ".join(self.failed)
+            )
+
+
 def move_tmp_files(tmp_directory, output_directory):
     """
     Move temporary files from the tmp directory to the output directory.

@@ -61,7 +61,7 @@ def drop_parser(parser=None):
     parser.add_argument('-v', '--var', type=str,
                         help='var to be processed. Use with coherence with --source')
     parser.add_argument('--no-validate', action="store_true",
-                        help='skip pre-run integrity check on existing output files (speeds up startup)')
+                        help='do not validate existing output files, which are skipped if present (speeds up startup)')
     parser.add_argument('--rebuild', action="store_true", help="Rebuild Reader areas and weights")
     parser.add_argument('--realization', type=str,
                         help='realization to be processed. Use with coherence with --model, --exp and --source')
@@ -295,7 +295,7 @@ def drop_cli(
         definitive: bool flag to create definitive files
         overwrite: bool flag to overwrite existing files
         rebuild: bool flag to rebuild the areas and weights
-        no_validate: bool flag to skip pre-run integrity check on existing output files
+        no_validate: bool flag to skip the validation of existing output files (they are kept if present)
         default_nworkers: default number of workers
         default_nthreads: default number of threads per worker
         monitoring: bool flag to enable the dask monitoring
@@ -365,6 +365,7 @@ def drop_cli(
                             stat=src_stat,
                             stat_kwargs=stat_kwargs,
                             definitive=definitive,
+                            validate_existing=not no_validate,
                             overwrite=overwrite,
                             rebuild=rebuild,
                             compact=compact,
@@ -377,10 +378,6 @@ def drop_cli(
                         )
 
                         if catalog_entry != "only":
-                            # check that your DROP output is not already there (it will not work in streaming mode)
-                            if not no_validate:
-                                drop.check_integrity(varname, level=level)
-
                             # retrieve and generate
                             drop.retrieve()
                             drop.drop_generator()

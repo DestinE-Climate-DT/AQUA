@@ -31,7 +31,8 @@ def open_gsv(
         bridge_end_date (str, optional): End date of the bridge data. Defaults to None.
         hpc_expver (str, optional): Alternative expver to be used if the data are on hpc
         timestyle (str, optional): Time style. Defaults to "date".
-        chunks (str or dict, optional): Time and vertical chunking. Defaults to "S".
+        chunks (str or int or dict, optional): Time frequency or positive saved-frame count,
+            optionally combined with vertical chunking in a dict. Defaults to "S".
         savefreq (str, optional): Data saving frequency. Defaults to "h".
         timestep (str, optional): Time step. Defaults to "h".
         timeshift (str, optional): Time shift. Defaults to None.
@@ -78,7 +79,8 @@ def open_polytope(
         bridge_end_date (str, optional): End date of the bridge data. Defaults to None.
         hpc_expver (str, optional): Alternative expver to be used if the data are on hpc
         timestyle (str, optional): Time style. Defaults to "date".
-        chunks (str or dict, optional): Time and vertical chunking. Defaults to "S".
+        chunks (str or int or dict, optional): Time frequency or positive saved-frame count,
+            optionally combined with vertical chunking in a dict. Defaults to "S".
         savefreq (str, optional): Data saving frequency. Defaults to "h".
         timestep (str, optional): Time step. Defaults to "h".
         timeshift (str, optional): Time shift. Defaults to None.
