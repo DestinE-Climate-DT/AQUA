@@ -17,7 +17,7 @@ on:
         description: 'Pytest markers to run (e.g., "aqua or console")'
         required: true
         type: string
-        default: 'aqua or console or fdb or graphics or catgen'
+        default: 'aqua or console or fdb or graphics or catgen or stac'
       pytest-timeout-seconds:
         description: Per-test pytest timeout in seconds
         required: false

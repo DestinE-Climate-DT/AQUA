@@ -28,3 +28,34 @@ class TestRegridderPath:
 
         assert reader.fldmean(rgd).values == pytest.approx(285.98483, rel=APPROX_REL)
         assert reader.fldmax(sample).values == pytest.approx(301.3355, rel=APPROX_REL)
+
+    def test_labels_with_path(self):
+        """model/exp/source/catalog given with path are stored as AQUA_* attributes, not ignored."""
+        reader = Reader(
+            path="./AQUA_tests/models/IFS/long/regridded_r18x9.nc",
+            model="IFS",
+            exp="long",
+            source="regridded",
+            catalog="ci",
+            areas=False,
+            loglevel=LOGLEVEL,
+        )
+        attrs = reader.retrieve()["2t"].attrs
+        assert {k: attrs[f"AQUA_{k}"] for k in ("catalog", "model", "exp", "source")} == {
+            "catalog": "ci",
+            "model": "IFS",
+            "exp": "long",
+            "source": "regridded",
+        }
+
+    def test_xarray_engine(self):
+        """xarray_engine given to Reader reaches the xarray backend (it used to clash with a hard-coded None)."""
+        path = os.path.join(AQUA_TESTS, "models", "IFS", "long", "regridded_r18x9.nc")
+        reader = Reader(path=path, xarray_engine="netcdf4", areas=False, loglevel=LOGLEVEL)
+        assert reader.backend.engine == "netcdf4"
+        assert "2t" in reader.retrieve()
+
+    def test_missing_triplet(self):
+        """Without path or url, the intake triplet must be complete."""
+        with pytest.raises(ValueError, match=r"Missing \['source'\]"):
+            Reader(model="IFS", exp="test-tco79", areas=False)
