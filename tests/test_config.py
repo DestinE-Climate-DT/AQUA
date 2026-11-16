@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import subprocess
@@ -98,30 +97,25 @@ def test_config_defaults_at_import(tmp_path, location, overrides):
         "DEFAULT_DROP_GRID": "lon-lat-r100",
         "DEFAULT_DROP_CHUNK_TARGET": "128MiB",
         "DEFAULT_NA_THRES": "auto",
+        "DEFAULT_REALIZATION": "r1",
     }
     if location != "missing" and overrides:
         expected.update(overrides)
-    script = """
+    script = f"expected = {expected!r}\n" + """
 import importlib
-import json
-import sys
 from inspect import signature
 
 from aqua import Drop, Fixer, Reader
-from aqua.core import default
 from aqua.core.drop.catalog_entry_builder import CatalogEntryBuilder
 
-expected = json.loads(sys.argv[1])
-assert {name: getattr(default, name) for name in expected} == expected
-assert default.DEFAULT_REALIZATION == "r1"
-consumers = {
+for module, names in {
+    "default": expected,
     "backend.backend_factory": ("DEFAULT_DATAMODEL", "DEFAULT_CONVENTION"),
     "regridder.regridder": ("DEFAULT_REGRID_METHOD", "DEFAULT_NA_THRES"),
     "console.drop": ("DEFAULT_DROP_CHUNK_TARGET",),
-}
-for module, names in consumers.items():
+}.items():
     consumer = importlib.import_module("aqua.core." + module)
-    assert {name: getattr(consumer, name) for name in names} == {name: expected[name] for name in names}
+    assert {name: getattr(consumer, name) for name in names} == {name: expected[name] for name in names}, module
 for function, argument, name in (
     (Reader, "nproc", "DEFAULT_NPROC"),
     (Reader, "engine", "DEFAULT_ENGINE"),
@@ -133,9 +127,7 @@ for function, argument, name in (
     assert signature(function).parameters[argument].default == expected[name]
 """
     env = {**os.environ, "AQUA_CONFIG": str(tmp_path), "HOME": str(tmp_path)}
-    result = subprocess.run(
-        [sys.executable, "-c", script, json.dumps(expected)], env=env, capture_output=True, text=True, timeout=60
-    )
+    result = subprocess.run([sys.executable, "-c", script], env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
 
 
