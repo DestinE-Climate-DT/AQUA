@@ -1,5 +1,11 @@
 """AQUA module"""
 from .version import __version__
+# Finish util/configurer initialization before loading defaults to avoid circular imports.
+from . import util as _util
+from .default import _load_defaults
+
+_load_defaults()
+
 from .graphics import plot_single_map, plot_maps, plot_single_map_diff, plot_timeseries
 from .graphics import plot_hovmoller
 from .graphics import plot_lat_lon_profiles, plot_seasonal_lat_lon_profiles
