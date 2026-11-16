@@ -57,7 +57,7 @@ For the conservative methods the threshold always applies.
 For the other methods it applies only to grids using the ``skipna`` path key (see :ref:`grid_definition`):
 without ``skipna`` CDO has already decided which target cells get a value when generating the weights.
 The threshold is not configurable from AQUA.
-See the `smmregrid documentation <https://smmregrid.readthedocs.io/en/latest/>`_ for details.
+See the `na_thres section of the smmregrid documentation <https://smmregrid.readthedocs.io/en/latest/concepts.html#masking-na-thres>`_ for details.
 
 
 Basic usage of the Regridder()

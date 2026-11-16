@@ -13,6 +13,7 @@ ClimateDT workflow modifications:
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
 Complete list:
+- Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 - Fix DROP NetCDFWriter to correctly compact files when level is selected (#3380)
 - Graphics: centralization of figures width (#3354)
@@ -20,7 +21,6 @@ Complete list:
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
-- Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - Add `CRU-TS-default` fixer for CRU TS monthly data, and `degrees Celsius` unit alias (#3382)
 - Agent instructions: map new sources through the eccodes convention first, and write a `fixer_name` only for what the convention cannot express (#3382)
 - Agents: new "Preferred Tools and Coding Rules" section in `AGENTS.common.md` (paths with `os.path`, dates with pandas, `%`-style logger arguments, function-level imports, type hints) (#3392)
