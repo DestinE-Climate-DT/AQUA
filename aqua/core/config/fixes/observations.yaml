@@ -230,6 +230,50 @@ fixer_name:
           valid_max: 1400
           positive: down
 
+  # CRU TS monthly: temperatures in degrees Celsius (mapped to degC in default.yaml), pre is the monthly total (mm).
+  # deltat: monthly divides pre by the number of days of each month. dtr is a difference: no offset, left untouched.
+  CRU-TS-default:
+    convention: eccodes
+    deltat: monthly
+    vars:
+      2t:
+        source: tmp
+      min_2t:
+        source: tmn
+      max_2t:
+        source: tmx
+      tprate:
+        source: pre
+        src_units: mm
+      # Number of stations contributing to each cell (0: climatology), renamed after the eccodes variable
+      2t_stn:
+        source: tmp_stn
+        src_units: "1"
+      min_2t_stn:
+        source: tmn_stn
+        src_units: "1"
+      max_2t_stn:
+        source: tmx_stn
+        src_units: "1"
+      tprate_stn:
+        source: pre_stn
+        src_units: "1"
+      # Interpolation error: mean absolute difference between interpolant and interpolated anomalies (mae),
+      # and its anomaly relative to the long-term mean (maea). Temperature anomalies are differences (K),
+      # precipitation anomalies are relative (%). Not eccodes variables: units are only labelled, not converted.
+      2t_mae:
+        source: tmp_mae
+        src_units: K
+      2t_maea:
+        source: tmp_maea
+        src_units: K
+      tprate_mae:
+        source: pre_mae
+        src_units: "%"
+      tprate_maea:
+        source: pre_maea
+        src_units: "%"
+
   # E-OBS monthly: variables are monthly means of daily values (rr in mm/day)
   eobs-eccodes-monthly:
     convention: eccodes
