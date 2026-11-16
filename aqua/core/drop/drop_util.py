@@ -1,9 +1,11 @@
 """Utility module for DROP"""
 
+import math
 import os
 import shutil
 
 import zarr
+from smmregrid import GridType
 
 
 class WriteReport:
@@ -82,15 +84,17 @@ def move_tmp_files(tmp_directory, output_directory):
             shutil.move(tmp_file_path, new_file_path)
 
 
-def zarr_encoding(chunks, compressor_level=1):
+def zarr_encoding(chunks, shards=None, compressor_level=1):
     """
-    Build zarr v3 encoding with gzip compression and explicit on-disk chunks.
+    Build zarr v3 encoding with gzip compression, explicit on-disk chunks and optional shards.
 
     Shared by ZarrWriter and IcechunkWriter.
 
     Args:
         chunks (dict): Chunk sizes for each variable, as returned by BaseWriter._disk_chunks.
             Variables with None chunks use the zarr default chunking.
+        shards (dict, optional): Shard sizes for each variable; each shard groups many chunks
+            in a single file. Variables missing or with None shards are not sharded. Defaults to None.
         compressor_level (int): Compression level for GzipCodec (1-9). Defaults to 1.
 
     Returns:
@@ -102,4 +106,46 @@ def zarr_encoding(chunks, compressor_level=1):
         encoding[var_name] = {"compressors": (compressor,)}
         if var_chunks:
             encoding[var_name]["chunks"] = var_chunks
+            if shards and shards.get(var_name):
+                encoding[var_name]["shards"] = shards[var_name]
     return encoding or None
+
+
+def target_chunks(data, target, logger=None):
+    """
+    Chunks of a variable filling time then vertical dimensions up to target bytes, horizontal dimensions whole.
+
+    Shared by the read chunks of DROP catalog entries and the shards of the ZarrWriter,
+    so that each read chunk is exactly one shard on disk.
+
+    Args:
+        data (xarray.DataArray): Variable to chunk (only sizes and dtype are used).
+        target (int): Target chunk size in bytes.
+        logger (logging.Logger, optional): Logger to warn when a horizontal slice exceeds the target.
+
+    Returns:
+        dict: Chunk size along each dimension, -1 for horizontal dimensions kept whole.
+            Empty if the variable has no time or no horizontal dimension.
+    """
+    # classify the dimensions with smmregrid: vertical dims are the masked (e.g. depth) and other dims
+    gridtype = GridType(dims=data.dims)
+    # bounds and other auxiliary variables have no time or no horizontal dimensions
+    if not gridtype.time_dims or not gridtype.horizontal_dims:
+        return {}
+    vertical = ([gridtype.mask_dim] if gridtype.mask_dim else []) + gridtype.other_dims
+
+    # horizontal dims are never split, to stay aligned with the on-disk chunks (one horizontal slice)
+    chunks = dict.fromkeys(gridtype.horizontal_dims, -1)
+    slice_bytes = data.dtype.itemsize * math.prod(data.sizes[dim] for dim in gridtype.horizontal_dims)
+
+    # number of horizontal slices fitting in a chunk
+    nslices = target // slice_bytes
+    if nslices < 1 and logger:
+        logger.warning("Horizontal slice of %s (%d bytes) exceeds the chunk target (%d bytes)", data.name, slice_bytes, target)
+
+    for dim in gridtype.time_dims + vertical:
+        size = min(data.sizes[dim], max(nslices, 1))
+        chunks[dim] = size
+        nslices //= size
+
+    return chunks

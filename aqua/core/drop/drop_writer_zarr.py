@@ -12,8 +12,10 @@ import shutil
 
 import xarray as xr
 import zarr
+from dask.utils import parse_bytes
 
-from aqua.core.drop.drop_util import zarr_encoding
+from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET
+from aqua.core.drop.drop_util import target_chunks, zarr_encoding
 from aqua.core.drop.drop_writer_base import BaseWriter
 from aqua.core.util.io_util import file_is_complete
 
@@ -23,6 +25,8 @@ class ZarrWriter(BaseWriter):
     Writer for Zarr format in DROP processing.
 
     Uses atomic two-phase writes and consolidates metadata for efficient reads.
+    On-disk chunks are grouped in zarr v3 shards to limit the number of files: each shard
+    matches a read chunk of the DROP catalog entry, so that a read task opens a single file.
     """
 
     def __init__(
@@ -30,6 +34,7 @@ class ZarrWriter(BaseWriter):
         tmpdir,
         outdir,
         compact="xarray",
+        chunk_target=DEFAULT_DROP_CHUNK_TARGET,
         **kwargs,
     ):
         """
@@ -39,6 +44,8 @@ class ZarrWriter(BaseWriter):
             tmpdir: Temporary directory for atomic writes
             outdir: Output directory for zarr stores
             compact: Whether to concatenate monthly stores into yearly stores
+            chunk_target: Target size of the read chunks and of the shards, as a Dask size string.
+                'auto' uses DEFAULT_DROP_CHUNK_TARGET for the shards. Defaults to DEFAULT_DROP_CHUNK_TARGET.
             **kwargs: Additional arguments passed to BaseWriter
 
         Note:
@@ -46,6 +53,7 @@ class ZarrWriter(BaseWriter):
         """
         super().__init__(tmpdir, outdir, **kwargs)
         self.compact = compact
+        self.shard_target = parse_bytes(DEFAULT_DROP_CHUNK_TARGET if chunk_target == "auto" else chunk_target)
 
     def get_extension(self):
         """Return file extension for this format."""
@@ -64,9 +72,25 @@ class ZarrWriter(BaseWriter):
         """
         return file_is_complete(store_path, loglevel=self.logger.level, min_months=min_months)
 
+    def _disk_shards(self, data, chunks):
+        """
+        Shard sizes grouping the on-disk chunks: the read chunks of the catalog entry (see target_chunks).
+
+        Args:
+            data: xarray DataArray
+            chunks: On-disk chunks, as returned by _disk_chunks
+
+        Returns:
+            tuple: Shard size along each dimension, or None if chunks is None or the variable has no time.
+        """
+        shards = target_chunks(data, self.shard_target) if chunks else {}
+        if not shards:
+            return None
+        return tuple(size if shards.get(dim, -1) == -1 else shards[dim] for dim, size in data.sizes.items())
+
     def _get_encoding(self, data, var=None):
         """
-        Setup encoding with chunks and compression.
+        Setup encoding with chunks, shards and compression.
 
         Zarr v3+ only - uses default xarray compression handling.
 
@@ -77,7 +101,9 @@ class ZarrWriter(BaseWriter):
         Returns:
             dict: Encoding configuration or None
         """
-        return zarr_encoding({var: self._disk_chunks(data[var]) for var in data.data_vars})
+        chunks = {var: self._disk_chunks(data[var]) for var in data.data_vars}
+        shards = {var: self._disk_shards(data[var], chunks[var]) for var in data.data_vars}
+        return zarr_encoding(chunks, shards=shards)
 
     def _write_chunk_to_disk(self, data, tmpfile, encoding):
         """
@@ -154,8 +180,11 @@ class ZarrWriter(BaseWriter):
             # Open all monthly stores using class method
             ds = self._open_files(tmp_monthly_files)
 
-            # Write to yearly store in tmpdir
+            # Write to yearly store in tmpdir, with one dask chunk per shard (shards are written whole)
             encoding = self._get_encoding(ds)
+            for name, enc in encoding.items():
+                if "shards" in enc:
+                    ds[name] = ds[name].chunk(dict(zip(ds[name].dims, enc["shards"])))
             ds.to_zarr(tmp_year_file, mode="w", consolidated=False, encoding=encoding)
 
             # Always consolidate metadata for optimal read performance
