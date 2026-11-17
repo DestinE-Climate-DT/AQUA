@@ -68,7 +68,8 @@ def summarize(old, new, direct):
             change = f"removed `{before}`"
         else:
             change = f"`{before}` → `{after}`"
-            if before.split(".")[0] != after.split(".")[0]:
+            # leading number only: tzdata 2026.6 -> 2026e is not a major change
+            if re.match(r"\d*", before)[0] != re.match(r"\d*", after)[0]:
                 name += " ⚠️"
         rows["direct" if name.split()[0] in direct else "transitive"].append(f"| {name} | {change} |")
 
