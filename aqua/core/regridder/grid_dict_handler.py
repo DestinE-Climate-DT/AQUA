@@ -89,7 +89,7 @@ class GridDictHandler:
         # if a grid name is a valid CDO grid name, return it in the format of a dictionary
         if isinstance(grid_name, str) and CdoGrid(grid_name).grid_kind:
             self.logger.debug("Grid name %s is a valid CDO grid name.", grid_name)
-            return {"path": {self.default_dimension: grid_name}}
+            return self._cdo_grid_dict(grid_name)
 
         # stop if the grid dictionary is not provided
         if self.cfg_grid_dict is None:
@@ -104,9 +104,16 @@ class GridDictHandler:
         if isinstance(grid_dict, str):
             if CdoGrid(grid_dict).grid_kind:
                 self.logger.debug("Grid definition %s is a valid CDO grid name.", grid_dict)
-                return {"path": {self.default_dimension: grid_dict}}
+                return self._cdo_grid_dict(grid_dict)
             raise ValueError(f"Grid name '{grid_dict}' is a string but not a valid CDO grid name.")
         # if the grid dict is a dictionary, return it
+        return grid_dict
+
+    def _cdo_grid_dict(self, grid_name):
+        """Grid dictionary for a CDO grid name. HEALPix edges are not great circles: CDO needs --force."""
+        grid_dict = {"path": {self.default_dimension: grid_name}}
+        if CdoGrid(grid_name).grid_kind.startswith("healpix"):
+            grid_dict["cdo_options"] = "--force"
         return grid_dict
 
     def _normalize_grid_path(self, grid_dict):
