@@ -83,6 +83,18 @@ fixer_name:
         source: ttrc
         src_units: J m**-2 day**-1
 
+  # ERA5 monthly HEALPix (DKRZ, WCRP hackathon): native ie is available, e would clash with it
+  ERA5-healpix:
+    parent: ERA5-destine-v2
+    convention: eccodes
+    vars:
+      ie:
+        source: ie
+        src_units: kg m**-2 s**-1
+      # vo is relative vorticity here, not the CMOR alias of ocean von
+      von:
+        source: [avg_von, von]
+
   # ERA5 daily means of hourly accumulations
   ERA5-daily-destine-v1:
     convention: eccodes
