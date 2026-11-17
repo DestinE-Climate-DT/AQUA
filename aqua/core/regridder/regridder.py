@@ -344,9 +344,10 @@ class Regridder:
         # normalize the tgt grid dictionary and path
         tgt_grid_dict = self.handler.normalize_grid_dict(tgt_grid_name)
 
-        # get the cdo options from the configuration
+        # get the cdo options from the configuration: target options (e.g. --force for HEALPix) are needed too
         cdo_extra = self.src_grid_dict.get("cdo_extra", None)
-        cdo_options = self.src_grid_dict.get("cdo_options", None)
+        cdo_options = to_list(self.src_grid_dict.get("cdo_options")) + to_list(tgt_grid_dict.get("cdo_options"))
+        cdo_options = list(dict.fromkeys(cdo_options))  # drop duplicates, e.g. --force on both grids
 
         weights = {}
         # loop over the vertical coordinates: DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, or any other
