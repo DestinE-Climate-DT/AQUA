@@ -15,8 +15,7 @@ against the location or URL of this shared file.
 
 ## Core Directives
 
-**Simplicity, code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
-When they conflict, the simplest code a human can maintain wins.
+**Code reuse, modularity, minimal dependencies, lazy evaluation, and performance are non-negotiable.**
 
 ### Scope and size
 
@@ -25,11 +24,10 @@ When they conflict, the simplest code a human can maintain wins.
 - One pull request, one purpose: do only what the issue asks, and never mix refactoring with behaviour changes. Report unrelated findings as issues instead of fixing them.
 - A large task becomes several pull requests (possibly stacked), each within the size budget, passing tests and mergeable on its own.
 
-### Simplicity
+### Maintainability
 
-- Choose the shortest readable solution, even if less general or less elegant.
-- No new class, mixin, config key or parameter unless it is used at least twice now.
-- No fallbacks, defensive checks or extra options that nobody asked for.
+- General and elegant solutions are welcome, as long as humans can maintain them. Before building complex or abstract code structures, agree the strategy with the user. Prefer a less general function over one full of obscure Python technicalities.
+- Introduce fallbacks, defensive checks and extra options only when really needed (e.g. to prevent a serious failure); ask the user when in doubt.
 
 ### Human control of `main`
 
@@ -41,6 +39,7 @@ When they conflict, the simplest code a human can maintain wins.
 
 ### Creating issues and pull requests
 
+- Unless instructed otherwise or obvious from the context, always start the branch of a new pull request from `main`.
 - Prefix the title of new pull requests or issues with a topic in square brackets, e.g. `[Drop]` and capitalize the first letter of the topic and the first letter of the title.
 - When opening a PR follow the Standard PR template (provided in `.github/PULL_REQUEST_TEMPLATE/standard_pull_request.md`). Keep only checkboxes whose conditions apply to the actual changes, and check them only when the required work is complete. Remove irrelevant checkboxes instead of marking them complete.
 - The "Documentation is included if a new feature is included" checkbox applies only when the PR introduces a new feature and includes its user documentation. Edits to agent instructions (`AGENTS.md`) or `CHANGELOG.md` alone do not make this checkbox relevant.
@@ -55,7 +54,7 @@ When they conflict, the simplest code a human can maintain wins.
 ### Reviewing pull requests
 - If user asks for a review of a pull request, review it looking for consistency, bugs, and if the code is clean and consistent with the general style of the rest of AQUA software. It should be compact, clean, and easy to maintain also by humans.
 - Start the report with a change map: what the pull request claims, what it actually changes, behaviour and API changes, and which files need human reading versus mechanical ones.
-- Before any line-level comment, flag scope beyond the linked issue, size above the budget (see [Scope and size](#scope-and-size)) and code that could be simpler or deleted.
+- Before any line-level comment, flag scope beyond the linked issue, size above the budget (see [Scope and size](#scope-and-size)) and code that could be simpler to maintain or deleted.
 - Check with specific attention if there is any code redundancy or if some of new features can be replaced by existing features.
 - Prepare a report with possible action points - ranked with a priority scale (serious, high, low, negligible) - which we will address later.
 
@@ -72,6 +71,7 @@ Catalog → Reader → Fixer → DataModel → Regridder → Statistics → Outp
 - **`Reader` is the sole entry point** for all data workflows — it orchestrates `Fixer`, `DataModel`, `Regridder`, and statistics via internal collaborator objects
 - Do not call `Fixer`, `DataModel`, or `Regridder` directly in user-facing code
 - Each step is independent and composable; no step should bypass or duplicate another
+- `Reader` functionalities are classes that can also be used on their own, as `Fixer` and `Regridder`
 
 ---
 

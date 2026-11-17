@@ -42,9 +42,9 @@ Writing code is cheap, especially with AI tools; reviewing it is not. These rule
 - **One Pull Request, one purpose**: refactoring and behaviour changes go in separate Pull Requests.
   Stacked Pull Requests are welcome: each one passing tests and mergeable on its own, listed in the parent issue.
 - **TL;DR first**: the description opens with at most three lines: what changes, why, and what to read first.
-- **Simple beats elegant**: prefer code a colleague can fix in six months without asking you.
-  No abstraction without a second user, no options "for the future".
-- **You own what you submit**: if AI wrote it, you have read every line and can explain it before setting
+- **Maintainable first**: general and elegant solutions are welcome, as long as a colleague can fix the code in
+  six months without asking you. Discuss complex or abstract structures with the team before building them.
+- **You own what you submit**: even if AI wrote it, you have read the diff and can justify its different parts before setting
   `ready for review` 🏂. Keep at most 3 non-draft Pull Requests open at a time.
 - **Review the idea first**: discuss goal and approach before details, and leave style to ruff.
   AI reviews help to map the big changes, but never replace human approval.
