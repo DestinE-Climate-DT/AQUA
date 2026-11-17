@@ -28,6 +28,7 @@ Main changes:
 - Agent instructions split into `AGENTS.md`, `AGENTS.common.md` and `AGENTS.repo.md`
 
 Complete list:
+- CI: conda relock PRs list the changed packages in their description (#3395)
 - Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 - Fix DROP NetCDFWriter to correctly compact files when level is selected (#3380)
