@@ -145,6 +145,44 @@ fixer_name:
       lon:
         source: longitude
 
+  # JRA-3Q monthly HEALPix (DKRZ, WCRP hackathon): time-mean short names. ulwrf/uswrf are TOA upward fluxes,
+  # mslhf/msshf/mer are positive upward despite the eccodes names
+  JRA3Q-healpix:
+    convention: eccodes
+    vars:
+      sp:
+        source: msp
+      msl:
+        source: prmsl
+      u:
+        source: mu
+      v:
+        source: mv
+      r:
+        source: mr
+      tcwv:
+        source: mtcwv
+      slhtf:
+        derived: 0.-mslhf
+        src_units: W m**-2
+      ishf:
+        derived: 0.-msshf
+        src_units: W m**-2
+      ie:
+        derived: 0.-mer
+        src_units: kg m**-2 s**-1
+      ci:
+        source: mci
+      tnlwrf:
+        derived: 0.-ulwrf
+        src_units: W m**-2
+      tnswrf:
+        derived: mtdwswrf-uswrf
+        src_units: W m**-2
+      # vo is relative vorticity here, not the CMOR alias of ocean von
+      von:
+        source: [avg_von, von]
+
   # CERES. The fixer cannot multiply by negative numbers: sign changes use 0.-x
   ceres-ebaf-sfc-destine-v1:
     convention: eccodes
