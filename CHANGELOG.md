@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 Unreleased in the current development version (target v1.2.5):
 
+Complete list:
+- Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
+
 ## [v1.2.4]
 
 ClimateDT workflow modifications:
@@ -28,7 +31,6 @@ Main changes:
 - Agent instructions split into `AGENTS.md`, `AGENTS.common.md` and `AGENTS.repo.md`
 
 Complete list:
-- Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - CI: conda relock PRs list the changed packages in their description (#3395)
 - Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
