@@ -2,6 +2,8 @@
 
 from collections.abc import Mapping
 
+from aqua.core.configurer import ConfigContext
+
 # Only these constants may be overridden in the configuration's defaults section.
 _CONFIGURABLE_DEFAULTS = (
     "DEFAULT_DATAMODEL",
@@ -76,9 +78,6 @@ DEFAULT_NA_THRES = "auto"
 
 def _load_defaults():
     """Apply configured defaults before importing their consumers."""
-    # ConfigContext depends on util, which imports these constants during initialization.
-    from aqua.core.configurer import ConfigContext
-
     try:
         config = ConfigContext().config_dict
     except FileNotFoundError:
