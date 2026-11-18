@@ -5,6 +5,7 @@ import pytest
 
 from aqua import show_catalog_content
 from aqua.core.configurer import ConfigCatalog, ConfigContext
+from aqua.core.util import dump_yaml
 
 
 @pytest.mark.aqua
@@ -45,3 +46,62 @@ def test_show_catalog_content_basic():
             assert isinstance(model_data, dict)
             for _, sources in model_data.items():
                 assert isinstance(sources, list)
+
+
+def _project_install(root, project=None, folders=("analysis/diagnostics", "analysis/claima", "tools")):
+    """Write a minimal installation under ``root``, with the project key only if given."""
+    config = {"machine": "ci"} if project is None else {"machine": "ci", "project": project}
+    dump_yaml(os.path.join(root, "config-aqua.yaml"), config)
+    for folder in folders:
+        os.makedirs(os.path.join(root, folder))
+    return str(root)
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
+    "key, env, expected, subpath",
+    [
+        ("diagnostics", None, "diagnostics", "analysis/diagnostics"),
+        ("diagnostics", "claima", "claima", "analysis/claima"),
+        (None, "claima", "claima", "analysis/claima"),
+        (None, None, None, "analysis"),
+    ],
+)
+def test_project_folder_follows_env_then_key_then_flat(tmp_path, monkeypatch, key, env, expected, subpath):
+    """Fails if AQUA_PROJECT does not win over the key, or a missing key does not give the flat layout."""
+    if env is None:
+        monkeypatch.delenv("AQUA_PROJECT", raising=False)
+    else:
+        monkeypatch.setenv("AQUA_PROJECT", env)
+    context = ConfigContext(configdir=_project_install(tmp_path, project=key))
+
+    assert context.project == expected
+    assert context.get_project_folder("analysis") == os.path.join(str(tmp_path), subpath)
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize(
+    "project, match",
+    [
+        ("climatedt", r"tools folder for project 'climatedt' in .*tools/climatedt"),
+        (None, r"collections folder \(installation without project\) in .*collections"),
+    ],
+)
+def test_project_folder_missing_names_folder_and_project(tmp_path, monkeypatch, project, match):
+    """Fails if a missing folder falls back to another project or the error omits folder and project."""
+    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+    # tools/ exists flat, but there is no tools/climatedt: no fallback to the flat folder
+    context = ConfigContext(configdir=_project_install(tmp_path, project=project))
+
+    with pytest.raises(FileNotFoundError, match=match):
+        context.get_project_folder("tools" if project else "collections")
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("name", ["catgen", "fixes", "analysis/diagnostics"])
+def test_project_folder_rejects_non_project_folders(tmp_path, name):
+    """Fails if a folder that is not project-scoped (catgen included) is accepted."""
+    context = ConfigContext(configdir=_project_install(tmp_path, project="diagnostics"))
+
+    with pytest.raises(ValueError, match=f"'{name}' is not a project folder"):
+        context.get_project_folder(name)
