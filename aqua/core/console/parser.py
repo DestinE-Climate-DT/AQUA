@@ -56,22 +56,22 @@ def parse_arguments():
 
     # top-level commands
     install_parser(subparsers)
-    subparsers.add_parser("uninstall", help="Remove the current AQUA installation")
-    update_parser = subparsers.add_parser(
-        "update", help="Update the AQUA installation files of every component not installed in editable mode"
+    add_command(subparsers, "uninstall", "Remove the current AQUA installation")
+    update_parser = add_command(
+        subparsers, "update", "Update the AQUA installation files of every component not installed in editable mode"
     )
     update_parser.add_argument(
         "-c", "--catalog", type=str, help="Deprecated, use `aqua catalog update`: update a catalog (or 'all')"
     )
-    list_parser = subparsers.add_parser("list", help="Show the AQUA installation and the installed catalogs")
+    list_parser = add_command(subparsers, "list", "Show the AQUA installation and the installed catalogs")
     list_parser.add_argument(
         "-a", "--all", action="store_true", help="Print also all the installed fixes, grids and data_models"
     )
 
-    analysis_parser(parser=subparsers.add_parser("analysis", help="Run AQUA diagnostics"))
-    drop_parser(parser=subparsers.add_parser("drop", help="Data Reduction OPerator"))
-    catgen_parser(parser=subparsers.add_parser("catgen", help="FDB catalog generator"))
-    push_parser(parser=subparsers.add_parser("push", help="Publish AQUA analysis figures to a remote site"))
+    analysis_parser(parser=add_command(subparsers, "analysis", "Run AQUA diagnostics"))
+    drop_parser(parser=add_command(subparsers, "drop", "Data Reduction OPerator"))
+    catgen_parser(parser=add_command(subparsers, "catgen", "FDB catalog generator"))
+    push_parser(parser=add_command(subparsers, "push", "Publish AQUA analysis figures to a remote site."))
 
     # nouns
     parser_dict = {"main": parser, "catalog": catalog_subparser(subparsers)}
@@ -89,6 +89,11 @@ def parse_arguments():
     add_repository_argument(subparsers.add_parser("avail", description="Deprecated, use `aqua catalog avail`"))
 
     return parser_dict
+
+
+def add_command(subparsers, name, text):
+    """Add a top-level command, using ``text`` both in ``aqua -h`` and in ``aqua <name> -h``."""
+    return subparsers.add_parser(name, help=text, description=text)
 
 
 def add_noun(subparsers, name, help_text):
@@ -110,7 +115,7 @@ def add_noun(subparsers, name, help_text):
 
 def install_parser(subparsers):
     """Add ``aqua install``, with one flag per discovered component."""
-    parser = subparsers.add_parser("install", help="Install the AQUA configuration files")
+    parser = add_command(subparsers, "install", "Install the AQUA configuration files")
     parser.add_argument("machine", metavar="MACHINE_NAME", help="Machine on which install AQUA")
     parser.add_argument(
         "-p", "--path", type=str, metavar="AQUA_TARGET_PATH", help="Path where to install AQUA. Default is $HOME/.aqua"
