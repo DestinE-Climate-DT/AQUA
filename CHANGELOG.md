@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v1.2.5):
+Unreleased in the current development version (target v1.3.0):
 
 Complete list:
 - Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old commands remain as deprecated aliases until 2.0 (#3409)
