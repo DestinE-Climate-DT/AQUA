@@ -409,7 +409,7 @@ with the ``AQUA_PROJECT`` environment variable (see :ref:`aqua-project-context`)
 
 .. note::
     Installations that predate project support (no ``project`` key, flat layout such as ``$HOME/.aqua/analysis``)
-    are not supported: ``aqua project set``, ``aqua project list`` and the project folders stop with an error
+    are not supported: ``aqua project set``, ``aqua project list``, ``aqua update`` and the project folders stop with an error
     asking to upgrade the installation with ``aqua install``.
 
 aqua project set <project>
@@ -427,7 +427,8 @@ must have a subfolder with its name. ``core`` is not a project and is refused.
 aqua project list
 ^^^^^^^^^^^^^^^^^
 
-This command lists the installed projects, marking the active one with ``*``.
+This command lists the installed projects with their installation mode (standard or editable)
+and package version, marking the active one with ``*``.
 
 aqua project {install,update,remove} <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
