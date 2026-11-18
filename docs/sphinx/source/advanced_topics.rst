@@ -377,7 +377,7 @@ Active project and project folders
 The configuration folders ``analysis``, ``collections`` and ``tools`` are project-scoped:
 each project installs its files in ``<configdir>/<folder>/<project>`` (see :ref:`aqua-project`).
 The active project is the ``AQUA_PROJECT`` environment variable, if set, otherwise the ``project`` key
-of ``config-aqua.yaml`` (written by ``aqua project set``).
+of ``config-aqua.yaml`` (written by ``aqua install`` and ``aqua project set``).
 Installations that predate project support (no ``project`` key, flat ``<configdir>/<folder>`` layout)
 are not supported: they must be upgraded with ``aqua install``.
 
