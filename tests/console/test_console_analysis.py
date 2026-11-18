@@ -151,7 +151,8 @@ def project_layout(tmp_path, monkeypatch):
 
     `nested`: active project `alpha`, analysis folders for `alpha` and `beta`, both with a package
     `aqua.<project>` under tmp_path (names of no real project, whose installed package would win).
-    `legacy`: no project key and the flat `analysis` folder.
+    `legacy`: no project key and the flat `analysis` folder. `empty`: active project `alpha` without analysis folder
+    (as an installation of aqua-core alone).
     """
     monkeypatch.delenv("AQUA_PROJECT", raising=False)
     monkeypatch.delenv("AQUA_PROJECT_PATH", raising=False)
@@ -167,12 +168,13 @@ def project_layout(tmp_path, monkeypatch):
 
     def _build(layout):
         config = {"machine": "ci", "catalog": None}
-        if layout == "nested":
+        if layout == "legacy":
+            _write_analysis_folder(os.path.join(tmp_path, "analysis"), tmp_path, script)
+        else:
             config["project"] = "alpha"
+        if layout == "nested":
             for project in ("alpha", "beta"):
                 _write_analysis_folder(os.path.join(tmp_path, "analysis", project), tmp_path, script)
-        else:
-            _write_analysis_folder(os.path.join(tmp_path, "analysis"), tmp_path, script)
         dump_yaml(os.path.join(tmp_path, "config-aqua.yaml"), config)
         monkeypatch.setenv("AQUA_CONFIG", str(tmp_path))
         return site
@@ -239,6 +241,7 @@ def test_analysis_project_config_and_env(
     [
         ("legacy", ["-p", "alpha"], "This installation predates project support (no project key in"),
         ("nested", ["-p", "missing"], "Cannot find the analysis folder for project 'missing'"),
+        ("empty", [], "Cannot find the analysis folder for project 'alpha'"),
     ],
 )
 def test_analysis_project_errors(project_layout, recorded_commands, monkeypatch, aqua_caplog, layout, args, message):
@@ -283,6 +286,7 @@ def test_push_grouping_file(project_layout, monkeypatch, tmp_path, layout, args,
     [
         ("legacy", ["-p", "alpha"], 2, "This installation predates project support (no project key in"),
         ("nested", ["-p", "missing"], 1, "Cannot find the analysis folder for project 'missing'"),
+        ("empty", [], 1, "Cannot find the analysis folder for project 'alpha'"),
     ],
 )
 def test_push_project_errors(project_layout, monkeypatch, aqua_caplog, tmp_path, layout, args, status, message):
