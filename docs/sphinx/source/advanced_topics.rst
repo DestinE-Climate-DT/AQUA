@@ -379,9 +379,10 @@ each project installs its files in ``<configdir>/<folder>/<project>`` (see :ref:
 The active project is, in order of precedence:
 
 1. the ``AQUA_PROJECT`` environment variable, if set;
-2. the ``project`` key of ``config-aqua.yaml`` (written by ``aqua project set``);
+2. the ``project`` key of ``config-aqua.yaml`` (written by ``aqua install`` and ``aqua project set``);
 3. none, for installations that predate project support: the folders keep the flat layout
-   ``<configdir>/<folder>`` of previous AQUA versions.
+   ``<configdir>/<folder>`` of previous AQUA versions, and a warning asks to upgrade the installation
+   with ``aqua install``.
 
 The name "project" is provisional and may change in a future release.
 In Python code, the active project and its folders are resolved by ``ConfigContext``:

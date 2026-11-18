@@ -412,10 +412,11 @@ with the ``AQUA_PROJECT`` environment variable (see :ref:`aqua-project-context`)
     and the environment variable alike.
 
 .. note::
-    ``aqua install`` does not write the ``project`` key yet, so current installations have the flat layout
-    of previous AQUA versions (e.g. ``$HOME/.aqua/analysis``), which AQUA keeps reading.
-    On such an installation ``aqua project set`` and ``aqua project list`` stop with an error asking to
-    upgrade it with ``aqua install``.
+    ``aqua install`` writes the ``project`` key (see :ref:`aqua-install`). Installations made before project support
+    have no such key and keep the flat layout of previous AQUA versions (e.g. ``$HOME/.aqua/analysis``):
+    AQUA keeps reading them, with a warning asking to upgrade them with ``aqua install``.
+    On such an installation ``aqua project set``, ``aqua project list`` and ``aqua update`` stop with an error
+    asking to upgrade it.
 
 aqua project set <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -434,7 +435,8 @@ points to this command.
 aqua project list
 ^^^^^^^^^^^^^^^^^
 
-This command lists the installed projects, marking the active one with ``*``.
+This command lists the installed projects with their installation mode (standard or editable)
+and package version, marking the active one with ``*``.
 
 aqua project {install,update,remove} <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
