@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 
@@ -5,6 +6,7 @@ import pytest
 
 from aqua import show_catalog_content
 from aqua.core.configurer import ConfigCatalog, ConfigContext
+from aqua.core.configurer import context as context_module
 from aqua.core.util import dump_yaml
 
 
@@ -105,3 +107,18 @@ def test_project_folder_rejects_non_project_folders(tmp_path, name):
 
     with pytest.raises(ValueError, match=f"'{name}' is not a project folder"):
         context.get_project_folder(name)
+
+
+@pytest.mark.aqua
+def test_pre_project_installation_warns_once(tmp_path, monkeypatch, aqua_caplog):
+    """Fails if an installation without project key gives no upgrade warning, or repeats it in the same process."""
+    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+    monkeypatch.setattr(context_module, "_LEGACY_WARNED", set())
+    configdir = _project_install(tmp_path)
+    caplog = aqua_caplog(logging.getLogger("ConfigContext"))
+
+    assert [ConfigContext(configdir=configdir).project for _ in range(2)] == [None, None]
+
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "predates project support" in warnings[0] and "run `aqua install` to upgrade" in warnings[0]

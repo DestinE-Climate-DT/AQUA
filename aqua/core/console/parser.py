@@ -4,7 +4,7 @@
 AQUA command line parser.
 
 The console follows a noun-first grammar, ``aqua <noun> <verb> [args]`` (e.g. ``aqua catalog add ci``),
-plus a few top-level commands (``install``, ``uninstall``, ``update``, ``list``, ``analysis``, ``drop``,
+plus a few top-level commands (``install``, ``uninstall``, ``update``, ``list``, ``check``, ``analysis``, ``drop``,
 ``catgen``, ``push``). A new noun is added with :func:`add_noun` and registered in the dictionary returned
 by :func:`parse_arguments`; its verbs are dispatched by ``AquaConsole.command_map`` in ``main.py``.
 
@@ -67,6 +67,8 @@ def parse_arguments():
     list_parser.add_argument(
         "-a", "--all", action="store_true", help="Print also all the installed fixes, grids and data_models"
     )
+
+    subparsers.add_parser("check", help="Validate the AQUA installation: project key, active project folders and catalogs")
 
     analysis_parser(parser=subparsers.add_parser("analysis", help="Run AQUA diagnostics"))
     drop_parser(parser=subparsers.add_parser("drop", help="Data Reduction OPerator"))

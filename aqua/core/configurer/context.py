@@ -30,6 +30,9 @@ PROJECT_ENV = "AQUA_PROJECT"
 PROJECT_FOLDERS = ("analysis", "collections", "tools")
 """Configuration folders with one subfolder per project (catgen is not project-scoped)."""
 
+# configuration files of pre-project installations already warned about: the warning is given once per process
+_LEGACY_WARNED = set()
+
 
 class ConfigContext:
     """
@@ -99,7 +102,8 @@ class ConfigContext:
 
         The environment variable ``AQUA_PROJECT`` wins over the ``project`` key of the
         configuration file. A configuration file without the key belongs to an installation
-        that predates project support, whose folders have the flat layout.
+        that predates project support, whose folders have the flat layout: a warning is given
+        once per process.
 
         Returns:
             str | None: Active project name, or None for a pre-project installation.
@@ -114,9 +118,13 @@ class ConfigContext:
             self.logger.debug("Project found in configuration file, set to %s", project)
             return project
 
-        # Hook for the "old installation" warning: switch it on once `aqua install`
-        # writes the project key (until then every installation has the flat layout).
-        self.logger.debug("No %s key in %s: using the flat pre-project layout", PROJECT_KEY, self.config_file)
+        if self.config_file not in _LEGACY_WARNED:
+            _LEGACY_WARNED.add(self.config_file)
+            self.logger.warning(
+                "This installation predates project support (no %s key in %s); run `aqua install` to upgrade",
+                PROJECT_KEY,
+                self.config_file,
+            )
         return None
 
     def get_project_folder(self, name: str) -> str:

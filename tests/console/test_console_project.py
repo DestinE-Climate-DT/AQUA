@@ -32,7 +32,7 @@ def project_install(tmp_path, monkeypatch):
 
 
 def test_project_set_and_list(project_install, run_aqua, capfd):
-    """Fails if `project set` does not write the key or `project list` misses a project or the active mark."""
+    """Fails if `project set` does not write the key or `project list` misses a project, its mode or the active mark."""
     configfile = project_install()
 
     run_aqua(["project", "set", "claima"])
@@ -41,7 +41,9 @@ def test_project_set_and_list(project_install, run_aqua, capfd):
     capfd.readouterr()
     run_aqua(["project", "list"])
     out, _ = capfd.readouterr()
-    assert out.splitlines()[1:] == ["* claima", "  diagnostics"]
+    # the package version depends on the environment: aqua-claima may be installed or not
+    lines = out.splitlines()[1:]
+    assert [line.split(", aqua-")[0] for line in lines] == ["* claima (standard", "  diagnostics (standard"]
 
 
 @pytest.mark.parametrize(
