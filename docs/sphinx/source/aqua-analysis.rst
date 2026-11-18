@@ -13,7 +13,8 @@ Basic usage
     aqua analysis <options>
 
 Without any argument, the script will look for a default configuration file ``config.aqua-analysis.yaml``
-in your installation folder (see :ref:`aqua-install`) and run all the diagnostics available in AQUA on an hard-coded dataset
+in the ``analysis`` folder of the active project of your installation (see :ref:`aqua-install` and :ref:`aqua_analysis_project`)
+and run all the diagnostics available in AQUA on an hard-coded dataset
 (IFS-NEMO-5km baseline-hist from ClimateDT gen2), which is available on LUMI.
 
 The output of the analysis directory in the ``./output`` folder.
@@ -64,7 +65,15 @@ so that the script can be used in a batch job or in a workflow. These override c
 .. option:: --config <config>
 
     The config file to use.
-    Default is ``config.aqua-analysis.yaml`` in the AQUA installation folder.
+    Default is ``config.aqua-analysis.yaml`` (``config.aqua-analysis-ensemble.yaml`` for ``aqua analysis ensemble``)
+    in the ``analysis`` folder of the project, see :ref:`aqua_analysis_project`.
+    An explicit config file wins over the project folder.
+
+.. option:: -p <project>, --project <project>
+
+    The project to use for this run instead of the active one: the default config file is taken from
+    ``analysis/<project>`` and ``AQUA_PROJECT`` is set to ``<project>`` for the diagnostic tools.
+    It stops with an error on an installation that predates project support: run ``aqua install`` to upgrade it.
 
 .. option:: --regrid <target_grid>
 
@@ -167,6 +176,31 @@ only the setup checker log.
 
 The report can be disabled with ``report: false`` in the ``job`` section of the configuration file,
 while ``report_warnings: true`` lists also the distinct ``WARNING`` messages.
+
+.. _aqua_analysis_project:
+
+Projects
+--------
+
+.. note::
+    The name "project" is provisional and may change in a future release.
+
+An installation can hold the configuration of several projects, each in its own subfolder of the
+project-scoped configuration folders (e.g. ``~/.aqua/analysis/<project>``); one of them is the active project,
+set by the ``project`` key of ``config-aqua.yaml`` or overridden by the ``AQUA_PROJECT`` environment variable.
+``aqua analysis`` takes its default configuration file from the ``analysis`` folder of the active project,
+or of the project selected with ``-p/--project``.
+
+Before reading the configuration file, ``aqua analysis`` exports two environment variables that the file can use:
+
+- ``AQUA_PROJECT``: the name of the project (e.g. ``diagnostics``);
+- ``AQUA_PROJECT_PATH``: the installation path of the ``aqua.<project>`` package (empty if it is not installed),
+  e.g. to locate the command line tools shipped by the project: ``${AQUA_PROJECT_PATH}/cli/my_tool.py``.
+
+Both variables are inherited by the diagnostic tools, which then read the configuration of the same project.
+An installation that predates project support (no ``project`` key in ``config-aqua.yaml``) keeps the flat layout:
+the default configuration file is ``analysis/config.aqua-analysis.yaml``, the two variables are not exported
+and ``-p`` is refused.
 
 Configuration file
 ------------------

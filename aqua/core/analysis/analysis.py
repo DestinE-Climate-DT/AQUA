@@ -14,6 +14,7 @@ from importlib import resources as pypath
 import pandas as pd
 
 from aqua.core.configurer import ConfigCatalog, ConfigContext
+from aqua.core.configurer.context import PROJECT_ENV, PROJECT_KEY
 from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, deep_merge, dump_yaml, format_realization, get_arg, load_yaml, to_list
@@ -22,6 +23,8 @@ from .report import AnalysisReport
 
 # reserved template variable holding the resolved experiment kind name
 KIND_KEY = "kind"
+# environment variable holding the installation path of the active project package
+PROJECT_PATH_ENV = f"{PROJECT_ENV}_PATH"
 
 
 class Analysis:
@@ -34,7 +37,8 @@ class Analysis:
         Args:
             config_file_path (str): Path to the AQUA analysis configuration file.
             default_config_name (str): Name of the config file to use, resolved in the
-                installed "analysis" config directory, when config_file_path is not provided.
+                "analysis" folder of the active project (``ConfigContext.get_project_folder``)
+                when config_file_path is not provided.
                 Allows different entry points (e.g. the ensemble one) to ship their own default
                 pipeline definition without duplicating any of the execution machinery.
             loglevel (str): Logging level for the analysis instance.
@@ -42,12 +46,12 @@ class Analysis:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
 
-        self.aqua_configdir = ConfigContext().get_config_dir()
+        self.context = ConfigContext(loglevel=loglevel)
+        self.aqua_configdir = self.context.get_config_dir()
 
-        if config_file_path is None:
-            self.config_file_path = os.path.join(self.aqua_configdir, "analysis", default_config_name)
-        else:
-            self.config_file_path = os.path.expandvars(config_file_path)
+        # the default config is resolved by get_config, the analysis folder is not needed before
+        self.default_config_name = default_config_name
+        self.config_file_path = os.path.expandvars(config_file_path) if config_file_path else None
 
         self.config = None
         self.aqua_core_path = None
@@ -78,7 +82,17 @@ class Analysis:
         self._results_lock = threading.Lock()
 
     def get_config(self):
-        """Load the configuration file and return the config dictionary."""
+        """Load the configuration file and return the config dictionary.
+
+        Without an explicit config file, the default one is taken from the analysis folder of the active project.
+        """
+        if self.config_file_path is None:
+            try:
+                analysis_folder = self.context.get_project_folder("analysis")
+            except FileNotFoundError as e:
+                self.logger.error("%s", e)
+                sys.exit(1)
+            self.config_file_path = os.path.join(analysis_folder, self.default_config_name)
 
         if not os.path.exists(self.config_file_path):
             self.logger.error("Config file %s not found.", self.config_file_path)
@@ -258,6 +272,22 @@ class Analysis:
         self.logger.debug("AQUA diagnostics path: %s", self.aqua_diagnostics_path)
 
         return self.aqua_core_path, self.aqua_diagnostics_path, self.aqua_configdir
+
+    def get_project_env(self):
+        """Environment variables describing the active project, to be expanded in the analysis config.
+
+        Returns:
+            dict: ``AQUA_PROJECT`` (project name) and ``AQUA_PROJECT_PATH`` (installation path of the
+            ``aqua.<project>`` package, empty if not installed), or an empty dict for an installation
+            without project.
+        """
+        project = self.context.project
+        if project is None:
+            self.logger.debug("No project set: %s and %s are not exported", PROJECT_ENV, PROJECT_PATH_ENV)
+            return {}
+        project_path = self.context.packages.get_package_path(f"aqua.{project}")
+        self.logger.debug("Project %s, package path: %s", project, project_path)
+        return {PROJECT_ENV: project, PROJECT_PATH_ENV: project_path}
 
     def run_command(self, cmd: str, log_file: str) -> int:
         """
@@ -654,6 +684,31 @@ class Analysis:
             if value is not None:
                 args += f" --{flag} {value}"
         return args
+
+
+def select_project(project, loglevel="WARNING"):
+    """
+    Select the active project for this process by exporting ``AQUA_PROJECT``.
+
+    The selection is inherited by every ``ConfigContext`` created afterwards, including those of the
+    diagnostic tools run as subprocesses. Nothing is done if ``project`` is None.
+
+    Args:
+        project (str | None): Project name.
+        loglevel (str): Logging level. Defaults to WARNING.
+
+    Raises:
+        ValueError: If the installation predates project support (no project key in ``config-aqua.yaml``).
+    """
+    if project is None:
+        return
+    context = ConfigContext(loglevel=loglevel)
+    if not context.config_dict.get(PROJECT_KEY):
+        raise ValueError(
+            f"This installation predates project support (no {PROJECT_KEY} key in {context.config_file}): "
+            "run `aqua install` to upgrade it"
+        )
+    os.environ[PROJECT_ENV] = project
 
 
 def resolve_experiment_kind(kinds, kind):

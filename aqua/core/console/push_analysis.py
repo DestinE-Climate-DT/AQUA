@@ -17,6 +17,8 @@ import pandas as pd
 from dateutil.tz import tzlocal
 
 from aqua import __version__ as aqua_version
+from aqua.core.analysis import select_project
+from aqua.core.configurer import ConfigContext
 from aqua.core.logger import log_configure
 
 from .make_contents import main as make_contents
@@ -32,7 +34,8 @@ def push_parser(parser=None):
     parser.add_argument("indir", help="Analysis output directory")
     parser.add_argument("exps", help="Experiment path or a text file listing experiments")
     parser.add_argument("-b", "--bucket", default="aqua-web", help="Name of the S3 bucket to publish to")
-    parser.add_argument("-c", "--config", help="Configuration file path")
+    parser.add_argument("-c", "--config", help="Configuration file path (default: config.grouping.yaml of the project)")
+    parser.add_argument("-p", "--project", help="Project whose grouping file is used, instead of the active one")
     parser.add_argument("--no-ensemble", action="store_true", help="Do not assume ensemble structure")
     parser.add_argument("-f", "--format", default=",".join(FORMATS), help=f"Formats to publish (default: {','.join(FORMATS)})")
     parser.add_argument(
@@ -227,10 +230,10 @@ def push_options(args):
     formats = tuple(fmt.strip() for fmt in args.format.split(","))
     if not formats or any(fmt not in FORMATS for fmt in formats):
         raise ValueError(f"--format must be a comma-separated selection of {', '.join(FORMATS)}")
+    select_project(args.project, loglevel=args.loglevel)  # -p overrides the active project
     config = args.config
     if config is None:
-        root = os.environ.get("AQUA_CONFIG") or os.path.join(os.path.expanduser("~"), ".aqua")
-        config = os.path.join(root, "analysis", "config.grouping.yaml")
+        config = os.path.join(ConfigContext(loglevel=args.loglevel).get_project_folder("analysis"), "config.grouping.yaml")
     return {
         "indir": args.indir,
         "exps": args.exps,
@@ -252,6 +255,9 @@ def push_execute(args, logger=None):
     except ValueError as exc:
         logger.error("%s", exc)
         return 2
+    except FileNotFoundError as exc:
+        logger.error("%s", exc)
+        return 1
     try:
         push_analysis(**options)
     except S3TransferError as exc:
