@@ -17,6 +17,13 @@ These instructions apply only to the AQUA-core repository. Read them after
 - At write/output boundaries, use `_compute_data()` in the writer to materialise data.
 - CLI commands go in `aqua/core/console/` and register in `AquaConsole.command_map`; parser definitions in `aqua/core/console/parser.py`
 
+## Plugins (`aqua.plugins`)
+
+- Packages such as `aqua-diagnostics` or `aqua-claima` plug into `aqua install`/`update`/`list` through an entry point in the `aqua.plugins` group: `<name> = "aqua.<name>:get_install_dirs"`. Each plugin is a *project* (the name "project" is provisional: keep its spellings in the `PROJECT_*` constants of `configurer/context.py`); core is neither a plugin nor a project.
+- `get_install_dirs()` returns the plugin contract v2: `{"contract": 2, "config": [...], "flat": [...], "templates": [...], "files": [...]}`. `config` folders are project-scoped (`~/.aqua/<dir>/<project>`, one of `analysis`, `collections`, `tools`), `flat` go to `~/.aqua/<dir>`, `templates` to `~/.aqua/templates/<dir>`, `files` are single files merged into the flat `~/.aqua/<dir>`. Missing keys are empty lists; a dict without `"contract": 2`, an unknown key or a non-list value is rejected.
+- Validation and discovery live in `console/components.py`, installation in `console/install.py`; user documentation in `docs/sphinx/source/aqua_console.rst` (section "Plugins and projects"). Update both when the contract changes.
+- Console tests use the fake plugin in `tests/fixtures/mockplugin` registered by the `mock_plugin_entrypoint` fixture of `tests/console/test_console_components.py`, never a real plugin.
+
 ## Fixes
 
 - **Convention first, fixer second**: to map a new source to AQUA names and units, first rely on the eccodes convention (`aqua/core/config/fixes/convention-eccodes.yaml`): add the source variable name to the `source` aliases of the target variable, as done for E-OBS (`tg`, `rr`). Write a `fixer_name` block (e.g. in `observations.yaml`) only for what the convention cannot express: source units to override (`src_units`), accumulation time (`deltat`), derived variables, deletions, coordinate renames, or an alias too generic to be safe for every source.

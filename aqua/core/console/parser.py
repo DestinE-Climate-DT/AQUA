@@ -40,6 +40,8 @@ def parse_arguments():
     subparsers.add_parser("uninstall", description="Remove the current AQUA installation")
     subparsers.add_parser("update", description="Update the AQUA installation files not installed in editable mode")
     list_parser = subparsers.add_parser("list", description="List the current AQUA installation and its catalogs")
+    check_help = "Validate the AQUA installation: project key, active project folders and catalogs"
+    subparsers.add_parser("check", help=check_help, description=check_help)
 
     # subparser for other AQUA commands as they are importing the parser from their code
     analysis_subparser = subparsers.add_parser("analysis", description="Run AQUA diagnostics")
