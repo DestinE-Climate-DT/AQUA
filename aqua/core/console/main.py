@@ -17,10 +17,11 @@ from .files import FilesMixin
 # this are used to check existence of aqua.diagnostics
 from .install import InstallMixin
 from .parser import parse_arguments
+from .project import ProjectMixin
 from .push_analysis import push_execute
 
 
-class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
+class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
     """Class for AquaConsole, the AQUA command line interface for
     installation, catalog, grids, fixes and styles editing.
 
@@ -53,6 +54,13 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
                 "update": self.catalog_update,
                 "list": self.catalog_list,
                 "avail": self.catalog_avail,
+            },
+            "project": {
+                "install": self.project_not_implemented,
+                "update": self.project_not_implemented,
+                "remove": self.project_not_implemented,
+                "set": self.project_set,
+                "list": self.project_list,
             },
             "grids": {
                 **files,

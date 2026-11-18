@@ -74,7 +74,7 @@ def parse_arguments():
     push_parser(parser=subparsers.add_parser("push", help="Publish AQUA analysis figures to a remote site"))
 
     # nouns
-    parser_dict = {"main": parser, "catalog": catalog_subparser(subparsers)}
+    parser_dict = {"main": parser, "catalog": catalog_subparser(subparsers), "project": project_subparser(subparsers)}
     for name in FILE_NOUNS:
         parser_dict[name] = file_subparser(subparsers, name)
 
@@ -165,6 +165,25 @@ def catalog_subparser(subparsers):
     )
     verbs.add_parser("list", help="List the installed catalogs")
     add_repository_argument(verbs.add_parser("avail", help="List the catalogs available on GitHub"))
+    return parser
+
+
+def project_subparser(subparsers):
+    """Add the ``project`` noun (the name "project" is provisional)."""
+    parser, verbs = add_noun(subparsers, "project", "Install, select and update AQUA projects")
+
+    install = verbs.add_parser("install", help="Install a project")
+    install.add_argument("project", metavar="PROJECT_NAME", help="Project to be installed")
+    install.add_argument(
+        "-e", "--editable", type=str, help="Install a project in editable mode from the original source: provide the Path"
+    )
+    for verb, help_text in (
+        ("update", "Update the files of a project not installed in editable mode"),
+        ("remove", "Remove an installed project"),
+        ("set", "Set an installed project as the active one in config-aqua.yaml"),
+    ):
+        verbs.add_parser(verb, help=help_text).add_argument("project", metavar="PROJECT_NAME", help=f"Project to {verb}")
+    verbs.add_parser("list", help="List the installed projects, marking the active one")
     return parser
 
 

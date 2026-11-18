@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.5):
 
 - Console noun-first grammar `aqua <noun> <verb>`: new `catalog` noun (`add`, `remove`, `set`, `update <name|all>`, `list`, `avail`), `list` verb for `grids` and `fixes`, new `styles` noun, `aqua grids set` renamed `aqua grids path`. `aqua add`, `remove`, `set`, `avail`, `update -c` and `grids set` are deprecated aliases until 2.0. Only `--core` and `--diagnostics` keep a one-letter `aqua install` flag (#3409)
-- `ConfigContext.project` (from `AQUA_PROJECT` or the `project` key of `config-aqua.yaml`) and `ConfigContext.get_project_folder()` for the project-scoped `analysis`, `collections` and `tools` folders, with the flat layout for installations without project (#PR2)
+- `ConfigContext.project` (from `AQUA_PROJECT` or the `project` key of `config-aqua.yaml`) and `ConfigContext.get_project_folder()` for the project-scoped `analysis`, `collections` and `tools` folders, with the flat layout for installations without project; new `aqua project` noun with `set` and `list` (`install`, `update`, `remove` not implemented yet) (#PR2)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
 
 ## [v1.2.4]
