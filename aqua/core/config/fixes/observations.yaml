@@ -83,6 +83,18 @@ fixer_name:
         source: ttrc
         src_units: J m**-2 day**-1
 
+  # ERA5 monthly HEALPix (DKRZ, WCRP hackathon): native ie is available, e would clash with it
+  ERA5-healpix:
+    parent: ERA5-destine-v2
+    convention: eccodes
+    vars:
+      ie:
+        source: ie
+        src_units: kg m**-2 s**-1
+      # vo is relative vorticity here, not the CMOR alias of ocean von
+      von:
+        source: [avg_von, von]
+
   # ERA5 daily means of hourly accumulations
   ERA5-daily-destine-v1:
     convention: eccodes
@@ -144,6 +156,102 @@ fixer_name:
         source: latitude
       lon:
         source: longitude
+
+  # JRA-3Q monthly HEALPix (DKRZ, WCRP hackathon): time-mean short names. ulwrf/uswrf are TOA upward fluxes,
+  # mslhf/msshf/mer are positive upward despite the eccodes names
+  JRA3Q-healpix:
+    convention: eccodes
+    vars:
+      slhtf:
+        derived: 0.-mslhf
+        src_units: W m**-2
+      ishf:
+        derived: 0.-msshf
+        src_units: W m**-2
+      ie:
+        derived: 0.-mer
+        src_units: kg m**-2 s**-1
+      sp:
+        source: msp
+      msl:
+        source: prmsl
+      u:
+        source: mu
+      v:
+        source: mv
+      r:
+        source: mr
+      tcwv:
+        source: mtcwv
+      ci:
+        source: mci
+      tnlwrf:
+        derived: 0.-ulwrf
+        src_units: W m**-2
+      tnswrf:
+        derived: mtdwswrf-uswrf
+        src_units: W m**-2
+      # vo is relative vorticity here, not the CMOR alias of ocean von
+      von:
+        source: [avg_von, von]
+
+  # MERRA-2 monthly HEALPix (DKRZ, WCRP hackathon): GMAO names, turbulent fluxes positive upward
+  MERRA2-healpix:
+    convention: eccodes
+    vars:
+      tprate:
+        source: prectotcorr
+      msl:
+        source: slp
+      10u:
+        source: u10m
+      10v:
+        source: v10m
+      q:
+        source: qv
+      r:
+        source: rh
+      w:
+        source: omega
+      tcwv:
+        source: tqv
+      tclw:
+        source: tql
+      tciw:
+        source: tqi
+      tcc:
+        source: cldtot
+      ci:
+        source: frseaice
+      ie:
+        derived: 0.-evap
+        src_units: kg m**-2 s**-1
+      slhtf:
+        derived: 0.-eflux
+        src_units: W m**-2
+      ishf:
+        derived: 0.-hflux
+        src_units: W m**-2
+      snswrf:
+        source: swgnt
+      sdswrf:
+        source: swgdn
+      snlwrf:
+        source: lwgnt
+      sdlwrf:
+        source: lwgab
+      tdswrf:
+        source: swtdn
+      tnswrf:
+        source: swtnt
+      tnlwrf:
+        derived: 0.-lwtup
+        src_units: W m**-2
+      tnswrfcs:
+        source: swtntclr
+      tnlwrfcs:
+        derived: 0.-lwtupclr
+        src_units: W m**-2
 
   # CERES. The fixer cannot multiply by negative numbers: sign changes use 0.-x
   ceres-ebaf-sfc-destine-v1:
