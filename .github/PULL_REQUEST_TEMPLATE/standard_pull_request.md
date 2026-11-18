@@ -1,4 +1,10 @@
-## PR description:
+## TL;DR
+
+<!-- Three lines at most: what changes, why, and what the reviewer should read first. -->
+
+## Main changes
+
+<!-- Behaviour and API changes only, one line each. Do not list every file. -->
 
 ## Issues closed by this pull request:
 
@@ -14,6 +20,8 @@ Please leave the checkboxes that apply to this pull request.
 Make sure to complete the checkboxes before applying the "ready for review" label.
 Please apply the "run tests" label if you want to trigger CI tests.
 
+ - [ ] I have read the diff and can justify its different parts (even if written by AI).
+ - [ ] Big changes follow a Design proposal issue agreed with the team.
  - [ ] Tests are included if a new feature is included.
  - [ ] Documentation is included if a new feature is included.
  - [ ] Changelog is updated.
