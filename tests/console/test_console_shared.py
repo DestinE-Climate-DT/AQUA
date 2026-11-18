@@ -1,5 +1,6 @@
 """Console catalog, grid, and fixes operations."""
 
+import logging
 import os
 import tempfile
 
@@ -22,13 +23,13 @@ class TestCatalogOperations:
 
         # add two catalogs
         for catalog_name in ["ci", "obs"]:
-            run_aqua(["add", catalog_name])
+            run_aqua(["catalog", "add", catalog_name])
             assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs", catalog_name))
             config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
             assert catalog_name in config_file["catalog"]
 
         # set catalog
-        run_aqua(["set", "ci"])
+        run_aqua(["catalog", "set", "ci"])
         assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs/ci"))
         config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
         assert config_file["catalog"][0] == "ci"
@@ -47,12 +48,12 @@ class TestCatalogOperations:
         leftover = os.path.join(mydir, ".aqua/catalogs/ci/leftover.txt")
         with open(leftover, "w", encoding="utf-8") as f:
             f.write("not in the repository\n")
-        run_aqua(["-v", "update", "-c", "ci"])
+        run_aqua(["-v", "catalog", "update", "ci"])
         assert os.path.isfile(os.path.join(mydir, ".aqua/catalogs/ci/catalog.yaml"))
         assert not os.path.exists(leftover)
 
         # remove catalog
-        run_aqua(["remove", "ci"])
+        run_aqua(["catalog", "remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
     def test_editable_catalog_operations(self, aqua_install, run_aqua, catalog_copy_path):
@@ -60,12 +61,12 @@ class TestCatalogOperations:
         mydir = aqua_install
 
         # add catalog with editable option
-        run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
+        run_aqua(["-v", "catalog", "add", "ci", "-e", catalog_copy_path])
         assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs/ci"))
 
         # update a catalog installed in editable mode (should fail)
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "update", "-c", "ci"])
+            run_aqua(["-v", "catalog", "update", "ci"])
         assert excinfo.value.code == 1
 
         # a positional catalog name is invalid CLI syntax
@@ -74,7 +75,7 @@ class TestCatalogOperations:
         assert excinfo.value.code == 2
 
         # remove existing catalog from link
-        run_aqua(["remove", "ci"])
+        run_aqua(["catalog", "remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
 
@@ -103,7 +104,7 @@ class TestGridAndFixOperations:
         assert not os.path.exists(os.path.join(mydir, ".aqua/grids/garelli.yaml"))
 
         # set the grids path in the config-aqua.yaml
-        run_aqua(["-v", "grids", "set", os.path.join(mydir, "pippo")])
+        run_aqua(["-v", "grids", "path", os.path.join(mydir, "pippo")])
         assert os.path.exists(os.path.join(mydir, "pippo", "grids"))
         assert os.path.exists(os.path.join(mydir, "pippo", "areas"))
         assert os.path.exists(os.path.join(mydir, "pippo", "weights"))
@@ -138,8 +139,8 @@ class TestGridAndFixOperations:
         assert excinfo.value.code == 1
 
         # set the grids path in the config-aqua.yaml with the block already existing
-        run_aqua(["-v", "grids", "set", os.path.join(mydir, "pippo")])
-        run_aqua(["-v", "grids", "set", os.path.join(mydir, "pluto")])
+        run_aqua(["-v", "grids", "path", os.path.join(mydir, "pippo")])
+        run_aqua(["-v", "grids", "path", os.path.join(mydir, "pluto")])
         assert os.path.exists(os.path.join(mydir, "pluto", "grids"))
         config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
         assert config_file["paths"] == {
@@ -147,6 +148,33 @@ class TestGridAndFixOperations:
             "areas": os.path.join(mydir, "pluto", "areas"),
             "weights": os.path.join(mydir, "pluto", "weights"),
         }
+
+    @pytest.mark.parametrize("noun, shipped", [("grids", "healpix.yaml"), ("fixes", "ifs.yaml"), ("styles", "aqua.mplstyle")])
+    def test_file_nouns_list(self, aqua_install, run_aqua, capfd, noun, shipped):
+        """`aqua <noun> list` lists the files of that folder only: a wrong folder misses the shipped file."""
+        mydir = aqua_install
+        capfd.readouterr()
+        run_aqua([noun, "list"])
+        out, _ = capfd.readouterr()
+        assert f"AQUA current installed {noun} in {os.path.join(mydir, '.aqua', noun)}:" in out
+        assert os.path.join(mydir, ".aqua", noun, shipped) in out
+
+    def test_styles_operations(self, aqua_install, run_aqua):
+        """`aqua styles add/remove` installs and removes a matplotlib style file; a YAML file is not a style."""
+        mydir = aqua_install
+        style = os.path.join(mydir, "mystyle.mplstyle")
+        with open(style, "w", encoding="utf-8") as f:
+            f.write("lines.linewidth: 3\n")
+
+        run_aqua(["styles", "add", style, "-e"])
+        assert os.path.islink(os.path.join(mydir, ".aqua/styles/mystyle.mplstyle"))
+        run_aqua(["styles", "remove", "mystyle.mplstyle"])
+        assert not os.path.lexists(os.path.join(mydir, ".aqua/styles/mystyle.mplstyle"))
+
+        notastyle = os.path.join(mydir, "notastyle.yaml")
+        dump_yaml(notastyle, {"grids": {}})
+        run_aqua(["styles", "add", notastyle])
+        assert not os.path.exists(os.path.join(mydir, ".aqua/styles/notastyle.yaml"))
 
     def test_grids_deploy_entrypoint(self, aqua_install, run_aqua, monkeypatch):
         """Test that `aqua grids deploy` reaches GridDeployer with a realistic grid name."""
@@ -159,7 +187,7 @@ class TestGridAndFixOperations:
         monkeypatch.setattr(GridDeployer, "deploy", fake_deploy)
 
         # Keep the call realistic: configure default paths before deploy.
-        run_aqua(["-v", "grids", "set", os.path.join(mydir, "deploy-target")])
+        run_aqua(["-v", "grids", "path", os.path.join(mydir, "deploy-target")])
         run_aqua(["-v", "grids", "deploy", "hpz1-nested"])
 
         assert called == ["hpz1-nested"]
@@ -174,8 +202,14 @@ class TestCatalogListingAndErrors:
 
         # getting fixture
 
-        run_aqua(["add", "ci"])
-        run_aqua(["add", "ciccio", "-e", catalog_copy_path])
+        run_aqua(["catalog", "add", "ci"])
+        run_aqua(["catalog", "add", "ciccio", "-e", catalog_copy_path])
+        run_aqua(["catalog", "list"])
+        out, _ = capfd.readouterr()
+        assert "AQUA current installed catalogs in" in out
+        assert "ciccio (editable" in out
+        assert "ifs.yaml" not in out
+
         run_aqua(["list", "-a"])
 
         out, _ = capfd.readouterr()
@@ -185,12 +219,12 @@ class TestCatalogListingAndErrors:
         assert "ifs.yaml" in out
         assert "healpix.yaml" in out
 
-        run_aqua(["avail", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
+        run_aqua(["catalog", "avail", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
         out, _ = capfd.readouterr()
 
         assert all(f"'{name}'" in out for name in ("ci", "climatedt-gen2", "obs"))
 
-        run_aqua(["-v", "update", "-c", "all"])
+        run_aqua(["-v", "catalog", "update", "all"])
 
         out, _ = capfd.readouterr()
         assert ".aqua/catalogs/ci .." in out
@@ -200,7 +234,9 @@ class TestCatalogListingAndErrors:
 
         # Try to add a catalog that doesn't exist in the repository
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["add", "nonexistent-catalog-test-xyz", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
+            run_aqua(
+                ["catalog", "add", "nonexistent-catalog-test-xyz", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"]
+            )
         assert excinfo.value.code == 1
 
     @pytest.mark.parametrize("is_editable", [False, True])
@@ -229,7 +265,7 @@ class TestCatalogListingAndErrors:
                 monkeypatch.setattr(catalog, "dump_yaml", failing_dump_yaml)
 
                 with pytest.raises(SystemExit) as excinfo:
-                    run_aqua(["-v", "add", catalog_name, "-e", src_dir])
+                    run_aqua(["-v", "catalog", "add", catalog_name, "-e", src_dir])
         else:
             # Simulate a failed download after the catalog directory was created.
             def fail_after_partial_download(self, catalog, repository=None):
@@ -239,7 +275,7 @@ class TestCatalogListingAndErrors:
             monkeypatch.setattr(catalog.CatalogMixin, "_add_catalog_github", fail_after_partial_download)
 
             with pytest.raises(SystemExit) as excinfo:
-                run_aqua(["-v", "add", catalog_name])
+                run_aqua(["-v", "catalog", "add", catalog_name])
 
         # both must fail
         assert excinfo.value.code == 1
@@ -256,5 +292,82 @@ class TestCatalogListingAndErrors:
     def test_update_nonexistent_catalog(self, aqua_install, run_aqua):
         """Test updating a catalog that doesn't exist"""
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["update", "-c", "non_existent_catalog"])
+            run_aqua(["catalog", "update", "non_existent_catalog"])
         assert excinfo.value.code == 1
+
+
+def _catalog_order(mydir):
+    return to_list(load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"])
+
+
+def _add_leftover(mydir):
+    with open(os.path.join(mydir, ".aqua/catalogs/ci/leftover.txt"), "w", encoding="utf-8") as f:
+        f.write("not in the repository\n")
+
+
+# deprecated command line, new command, preparation (catalogs to add or callables), check of the effect.
+# The test id is the deprecated command named by the warning.
+DEPRECATED_ALIASES = [
+    pytest.param(
+        ["add", "ci"], "catalog add", [], lambda d, out: os.path.isdir(os.path.join(d, ".aqua/catalogs/ci")), id="add"
+    ),
+    pytest.param(
+        ["remove", "ci"],
+        "catalog remove",
+        ["ci"],
+        lambda d, out: not os.path.exists(os.path.join(d, ".aqua/catalogs/ci")),
+        id="remove",
+    ),
+    pytest.param(["set", "ci"], "catalog set", ["ci", "obs"], lambda d, out: _catalog_order(d) == ["ci", "obs"], id="set"),
+    pytest.param(["avail"], "catalog avail", [], lambda d, out: "'climatedt-gen2'" in out, id="avail"),
+    pytest.param(
+        ["update", "-c", "ci"],
+        "catalog update",
+        ["ci", _add_leftover],
+        lambda d, out: (
+            os.path.isfile(os.path.join(d, ".aqua/catalogs/ci/catalog.yaml"))
+            and not os.path.exists(os.path.join(d, ".aqua/catalogs/ci/leftover.txt"))
+        ),
+        id="update -c",
+    ),
+    pytest.param(
+        ["grids", "set", "{home}/aliased"],
+        "grids path",
+        [],
+        lambda d, out: (
+            load_yaml(os.path.join(d, ".aqua", "config-aqua.yaml"))["paths"]["grids"] == os.path.join(d, "aliased", "grids")
+        ),
+        id="grids set",
+    ),
+]
+
+
+@pytest.mark.xdist_group(name="console_deprecated_aliases")
+class TestDeprecatedAliases:
+    """The verb-first commands of AQUA < 1.3, kept until AQUA 2.0."""
+
+    @pytest.mark.parametrize("command, new, prepare, check", DEPRECATED_ALIASES)
+    def test_deprecated_alias(
+        self, aqua_install, run_aqua, capfd, aqua_caplog, fake_github, request, command, new, prepare, check
+    ):
+        """A deprecated alias has the effect of the new command and warns once naming both: a missing alias or
+        a wrong handler fails the check, a missing or repeated warning the comparison."""
+        mydir = aqua_install
+        old = request.node.callspec.id
+        for step in prepare:
+            step(mydir) if callable(step) else run_aqua(["catalog", "add", step])
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+        capfd.readouterr()
+
+        try:
+            run_aqua([arg.format(home=mydir) for arg in command])
+
+            out, _ = capfd.readouterr()
+            assert check(mydir, out)
+            deprecations = [r.getMessage() for r in caplog.records if "deprecated" in r.getMessage()]
+            assert deprecations == [f"`aqua {old}` is deprecated and will be removed in AQUA 2.0, use `aqua {new}` instead"]
+        finally:
+            # the installation is shared by the class: leave no catalog behind, even on failure
+            for catalog_name in ("ci", "obs"):
+                if os.path.lexists(os.path.join(mydir, ".aqua/catalogs", catalog_name)):
+                    run_aqua(["catalog", "remove", catalog_name])

@@ -59,7 +59,7 @@ class CatalogMixin:
             rate_info,
         )
 
-    def set(self, args):
+    def catalog_set(self, args):
         """Set an installed catalog as the one used in the config-aqua.yaml
 
         Args:
@@ -74,7 +74,7 @@ class CatalogMixin:
             self.logger.error("%s catalog is not installed!", args.catalog)
             sys.exit(1)
 
-    def add(self, args):
+    def catalog_add(self, args):
         """Add a catalog and set it as a default in config-aqua.yaml
 
         Args:
@@ -121,7 +121,7 @@ class CatalogMixin:
         print("Installing catalog in editable mode from", editable, "to", self.configpath)
         if os.path.exists(editable):
             if os.path.exists(cdir):
-                self.logger.error("Catalog %s already installed in %s, please consider `aqua remove`", catalog, cdir)
+                self.logger.error("Catalog %s already installed in %s, please consider `aqua catalog remove`", catalog, cdir)
                 sys.exit(1)
             else:
                 os.symlink(editable, cdir)
@@ -199,7 +199,7 @@ class CatalogMixin:
             sys.exit(1)
         return parts[0], parts[1]
 
-    def avail(self, args):
+    def catalog_avail(self, args):
         """
         Return the catalog available on the Github website
 
@@ -263,8 +263,35 @@ class CatalogMixin:
                 self.logger.error("Error occurred while fetching catalog: %s", e)
                 sys.exit(1)
         else:
-            self.logger.error("Catalog %s already installed in %s, please consider `aqua update`.", catalog, cdir)
+            self.logger.error("Catalog %s already installed in %s, please consider `aqua catalog update`.", catalog, cdir)
             sys.exit(1)
+
+    def catalog_update(self, args):
+        """Update an installed catalog, or all of them, by downloading it again if not installed in editable mode
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()
+        if args.catalog == "all":
+            self.logger.info("Updating all AQUA catalogs")
+            catalogs = self._list_folder(f"{self.configpath}/{CATPATH}", return_list=True, silent=True)
+            for catalog in catalogs:
+                print(f"Updating catalog {catalog} ..")
+                self._update_catalog(os.path.basename(catalog))
+        else:
+            self._update_catalog(args.catalog)
+
+    def catalog_list(self, args):
+        """List the installed catalogs
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()
+        cdir = f"{self.configpath}/{CATPATH}"
+        print("AQUA current installed catalogs in", cdir, ":")
+        self._list_folder(cdir)
 
     def _update_catalog(self, catalog):
         """Update a catalog by copying it if not installed in editable mode
@@ -282,7 +309,7 @@ class CatalogMixin:
             self._add_catalog_github(catalog)
             self._set_catalog(catalog)
         else:
-            self.logger.error("%s does not appear to be installed, please consider `aqua add`", catalog)
+            self.logger.error("%s does not appear to be installed, please consider `aqua catalog add`", catalog)
             sys.exit(1)
 
     def _set_catalog(self, catalog):
@@ -315,7 +342,7 @@ class CatalogMixin:
 
             dump_yaml(self.configfile, cfg)
 
-    def remove(self, args):
+    def catalog_remove(self, args):
         """Remove a catalog
 
         Args:

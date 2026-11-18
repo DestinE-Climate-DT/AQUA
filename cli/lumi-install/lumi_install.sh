@@ -226,4 +226,4 @@ while true; do
   esac
 done
 
-log_message WARNING "AQUA environment has been installed, please remember to to run 'aqua install' and 'aqua add lumi'"
+log_message WARNING "AQUA environment has been installed, please remember to to run 'aqua install' and 'aqua catalog add lumi'"

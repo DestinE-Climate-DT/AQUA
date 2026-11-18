@@ -251,7 +251,7 @@ If an open issue with that label already exists, the report is added as a commen
    The same data is versioned with DVC in the `aqua-dvc` repository (the CI default), but pulling it requires
    access to that repository and credentials for the DVC remote.
    `./download_data_for_tests.sh` downloads an older archive and is **deprecated**.
-3. Configure AQUA as CI does: `aqua install github`, `aqua add ci`, and set the `grids`, `weights` and `areas` paths in `~/.aqua/config-aqua.yaml` to `./AQUA_tests/...`.
+3. Configure AQUA as CI does: `aqua install github`, `aqua catalog add ci`, and set the `grids`, `weights` and `areas` paths in `~/.aqua/config-aqua.yaml` to `./AQUA_tests/...`.
 4. Run the tests from the repository root, e.g.:
    ```bash
    pytest -m aqua                                        # core tests

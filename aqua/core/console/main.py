@@ -22,7 +22,10 @@ from .push_analysis import push_execute
 
 class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
     """Class for AquaConsole, the AQUA command line interface for
-    installation, catalog, grids and fixes editing"""
+    installation, catalog, grids, fixes and styles editing.
+
+    Commands are dispatched by ``command_map``: a top-level command maps to its handler, a noun
+    (``aqua <noun> <verb>``) to a dictionary of verb handlers."""
 
     def __init__(self):
         """The main AQUA command line interface"""
@@ -37,28 +40,54 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         self.logger = None
         self.loglevel = "WARNING"
 
+        files = {"add": self.file_add, "remove": self.remove_file, "list": self.file_list}
         self.command_map = {
             "install": self.install,
-            "add": self.add,
-            "remove": self.remove,
-            "set": self.set,
             "uninstall": self.uninstall,
-            "avail": self.avail,
+            "update": self.update_dispatch,
             "list": self.list,
-            "update": self.update,
-            "fixes": {"add": self.fixes_add, "remove": self.remove_file},
+            "catalog": {
+                "add": self.catalog_add,
+                "remove": self.catalog_remove,
+                "set": self.catalog_set,
+                "update": self.catalog_update,
+                "list": self.catalog_list,
+                "avail": self.catalog_avail,
+            },
             "grids": {
-                "add": self.grids_add,
-                "remove": self.remove_file,
-                "set": self.grids_set,
+                **files,
+                "path": self.grids_path,
                 "build": self.grids_build,
                 "deploy": self.grids_deploy,
+                "set": self._deprecated("grids set", "grids path", self.grids_path),
             },
+            "fixes": files,
+            "styles": files,
             "analysis": self.analysis,
             "drop": self.drop,
             "catgen": self.catgen,
             "push": self.push,
+            # deprecated verb-first catalog commands, to be removed in AQUA 2.0
+            "add": self._deprecated("add", "catalog add", self.catalog_add),
+            "remove": self._deprecated("remove", "catalog remove", self.catalog_remove),
+            "set": self._deprecated("set", "catalog set", self.catalog_set),
+            "avail": self._deprecated("avail", "catalog avail", self.catalog_avail),
         }
+
+    def _deprecated(self, old, new, handler):
+        """Wrap the handler of a deprecated alias: it warns once, naming the new command, then runs the handler."""
+
+        def alias(args):
+            self.logger.warning("`aqua %s` is deprecated and will be removed in AQUA 2.0, use `aqua %s` instead", old, new)
+            return handler(args)
+
+        return alias
+
+    def update_dispatch(self, args):
+        """`aqua update` refreshes the installation; the deprecated `aqua update -c <catalog>` updates a catalog."""
+        if args.catalog:
+            return self._deprecated("update -c", "catalog update", self.catalog_update)(args)
+        return self.update(args)
 
     def execute(self):
         """Parse AQUA class and run the required command"""
@@ -83,20 +112,18 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin):
         self.aquapath = {name: info["path"] for name, info in self.components.items()}
 
         command = args.command
-        method = self.command_map.get(command, parser.print_help)
-
         if command not in self.command_map:
             parser.print_help()
-        else:
-            # nested map
-            if isinstance(self.command_map[command], dict):
-                if args.nested_command:
-                    self.command_map[command][args.nested_command](args)
-                else:
-                    parser_dict[command].print_help()
-            # default
-            else:
-                return method(args)
+            return None
+
+        method = self.command_map[command]
+        # nouns: aqua <noun> <verb>
+        if isinstance(method, dict):
+            if not args.nested_command:
+                parser_dict[command].print_help()
+                return None
+            method = method[args.nested_command]
+        return method(args)
 
     def analysis(self, args):
         """

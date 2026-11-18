@@ -98,7 +98,7 @@ The idea of the regridder is first to generate the weights for the interpolation
 then to use them for each regridding operation.
 The ``Reader`` generates the regridding weights automatically (with CDO) if not already
 existent and stored in a directory specified in the ``config/catalogs/<catalog-name>/machine.yaml`` file
-or set with the ``aqua grids set <path>`` command (see :ref:`aqua-grids`).
+or set with the ``aqua grids path <path>`` command (see :ref:`aqua-grids`).
 If the ``machine.yaml`` is used, a ``default`` argument will be used as path if no machine name match is found.
 
 In other words, weights are computed externally by CDO (an operation that needs to be done only once) and
