@@ -90,6 +90,10 @@ With this command the configuration file and the default data models, grids and 
 AQUA core is always installed. On top of it, any other AQUA component installed in the current environment
 (``aqua-diagnostics`` and any further package following the same convention, see :ref:`aqua-console-plugins`)
 is automatically detected and its configuration/template files are copied as well.
+Each of these packages is a *project*: its project-scoped folders are installed in a subfolder named after it
+(e.g. ``analysis/diagnostics``), and the last project installed becomes the active one,
+written in the ``project`` key of ``config-aqua.yaml``. If a bare ``aqua install`` installs several projects,
+a warning names the one that is now active.
 
 By default, the destination folder will be ``$HOME/.aqua``.
 It is possible to specify from where to copy and where to store.
@@ -141,15 +145,23 @@ Optional arguments are:
 
 .. _aqua-console-plugins:
 
-How AQUA discovers installable components
+Plugins and projects: the plugin contract
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``aqua install`` no longer hardcodes the list of components it knows how to install: besides ``core``,
+``aqua install`` does not hardcode the list of components it knows how to install: besides ``core``,
 any Python package can advertise itself as an installable AQUA component through a standard
-`entry point <https://packaging.python.org/en/latest/specifications/entry-points/>`_.
-This is how ``aqua-diagnostics`` itself is discovered, and it is the mechanism a new package
-(e.g. a future ``aqua-fishery``) would use to plug into ``aqua install``/``aqua update`` without
-any change needed in AQUA core.
+`entry point <https://packaging.python.org/en/latest/specifications/entry-points/>`_
+in the ``aqua.plugins`` group. This is how ``aqua-diagnostics`` is discovered, and it is the mechanism
+a project package (e.g. ``aqua-claima``) uses to plug into ``aqua install``, ``aqua update`` and ``aqua list``
+without any change in AQUA core.
+
+.. note::
+    The name *project* is provisional and it will change in a future release.
+
+Every plugin is a **project**: its name is the entry point name (``diagnostics``, ``claima``, ...),
+which is also the name of its subfolder in the installation, the value of the ``project`` key of
+``config-aqua.yaml`` and the ``--<name>`` option of ``aqua install``.
+AQUA core is not a plugin and not a project.
 
 A plugin package needs two things:
 
@@ -158,28 +170,75 @@ A plugin package needs two things:
    .. code-block:: toml
 
        [project.entry-points."aqua.plugins"]
-       diagnostics = "aqua.diagnostics:get_install_dirs"
+       claima = "aqua.claima:get_install_dirs"
 
-2. A ``get_install_dirs()`` function, importable from that module, returning the list of
-   config and template directories to install:
+2. A ``get_install_dirs()`` function, importable from that module, returning a dictionary that follows
+   the **plugin contract version 2**:
 
    .. code-block:: python
 
        def get_install_dirs():
-           return {"config": DIAGNOSTIC_CONFIG_DIRECTORIES, "templates": DIAGNOSTIC_TEMPLATE_DIRECTORIES}
+           return {
+               "contract": 2,
+               "config": ["analysis", "collections", "tools"],
+               "flat": [],
+               "templates": [],
+               "files": ["grids"],
+           }
 
-At runtime, ``aqua install`` looks up all packages registered under the ``aqua.plugins`` entry point
-group, and for each of them builds a ``--<name>`` CLI option (``<name>`` being the entry point name,
-e.g. ``diagnostics``). A package that is registered but cannot be imported (e.g. installed metadata
-left over after an incomplete removal) is simply skipped with a warning, rather than breaking the install.
+The folder names are relative to the ``aqua/<name>/config`` folder of the package
+(``aqua/<name>/templates`` for ``templates``), and they are installed as follows:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Key
+     - Installed as
+     - Example (``aqua-diagnostics``)
+   * - ``config``
+     - project-scoped folders: ``<config>/<dir>/<name>``. The project-scoped folders are ``analysis``,
+       ``collections`` and ``tools``.
+     - ``analysis``, ``collections``, ``tools``
+   * - ``flat``
+     - whole folders shared by everybody: ``<config>/<dir>``
+     - ``definitions``
+   * - ``templates``
+     - whole folders: ``<config>/templates/<dir>``
+     - ``collections``
+   * - ``files``
+     - single files merged into the flat ``<config>/<dir>`` (e.g. an extra grid file); the file names must not
+       collide with those of AQUA core or of other projects
+     - none
+
+Rules:
+
+- ``"contract": 2`` is mandatory. A plugin returning a dictionary without it (the version 1 contract of
+  ``aqua-diagnostics`` < 0.27.0) is rejected and ``aqua install`` stops with an error asking to update that plugin.
+- Missing list keys default to an empty list. Unknown keys and values that are not lists are rejected,
+  with an error naming the package.
+- In editable mode (``--<name> <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
+  the links are made at the ``<config>/<dir>/<name>`` level,
+  so that different projects can be editable or not independently.
+- ``get_install_dirs()`` may check the version of AQUA core and raise an exception if it is too old:
+  the message is shown by ``aqua install``.
+- AQUA core installs ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles`` flat: ``catgen`` is a core tool
+  and it is not project-scoped.
+
+A package that is registered but cannot be imported (e.g. installed metadata left over after an incomplete
+removal) is skipped with a warning, rather than breaking the install.
+
+.. note::
+    The ``files`` key is accepted, but the single files are not installed yet: this will come with the
+    ``aqua project`` verbs.
 
 .. _aqua-list:
 
 aqua list
 ---------
 
-This command lists some information about the current AQUA installation and
-report the available catalogs in the installation folder.
+This command lists some information about the current AQUA installation (path, machine, available components),
+the installed projects with their installation mode (standard or editable) and package version,
+marking the active one with ``*``, and the available catalogs in the installation folder.
 It will show also if a catalog is installed in editable mode.
 
 .. option:: -a, --all
@@ -202,10 +261,26 @@ If the installation was done in editable mode, only the links will be removed.
 aqua update
 -----------
 
-This command will update the configuration files of every AQUA component discovered in the current
-environment (core plus any registered plugin, see :ref:`aqua-console-plugins`), except those installed
-in editable mode, which are left untouched since they already point to the developer's own working copy.
+This command will update the configuration files of AQUA core and of every project installed
+(see :ref:`aqua-console-plugins`), except those installed in editable mode, which are left untouched
+since they already point to the developer's own working copy.
+Each project is refreshed in its own ``<dir>/<project>`` folders, so other projects and user folders are kept.
+An installation that predates project support (no ``project`` key in ``config-aqua.yaml``) must be upgraded
+with ``aqua install`` first.
 To update the catalogs, use :ref:`aqua-catalog-update`.
+
+.. _aqua-check:
+
+aqua check
+----------
+
+This command validates the current installation and exits with a non-zero code if a check fails:
+
+- the ``project`` key is present in ``config-aqua.yaml``: an installation without it predates project support
+  and has to be upgraded with ``aqua install``;
+- the active project is installed (a missing ``analysis``, ``collections`` or ``tools`` folder of the active
+  project is only reported as a warning);
+- the ``catalog.yaml`` of every installed catalog can be loaded.
 
 .. _aqua-catalog:
 

@@ -15,6 +15,8 @@ from aqua.core.configurer.context import PROJECT_FOLDERS, PROJECT_KEY
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
+from .components import component_version
+
 
 class ProjectMixin:
     """Mixin for AQUA project operations"""
@@ -50,9 +52,17 @@ class ProjectMixin:
             args (argparse.Namespace): arguments from the command line
         """
         self._check_project_layout()
+        self._print_projects()
+
+    def _print_projects(self):
+        """Print the installed projects with their mode and package version, marking the active one with *."""
         print(f"AQUA projects installed in {self.configpath}:")
         for name in self._installed_projects():
-            print(f"{'*' if name == self.configurer.project else ' '} {name}")
+            links = [os.path.islink(os.path.join(self.configpath, folder, name)) for folder in PROJECT_FOLDERS]
+            mode = "editable" if any(links) else "standard"
+            version = component_version(name)
+            package = f"aqua-{name} {version}" if version else f"aqua-{name} package not found"
+            print(f"{'*' if name == self.configurer.project else ' '} {name} ({mode}, {package})")
 
     def project_not_implemented(self, args):
         """Placeholder of the project verbs not available yet (install, update, remove)

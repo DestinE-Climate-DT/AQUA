@@ -9,6 +9,8 @@ AQUA is developed and tested with Python 3.14 and it supports Python>=3.12,<3.15
 .. note ::
 
     If you want to install also AQUA-diagnostics, please refer to the `AQUA-diagnostics installation guide <https://aqua-diagnostics.readthedocs.io/en/latest/installation.html>`_.
+    AQUA-diagnostics and the other project packages are plugins of ``aqua install``: their requirements are
+    described in :ref:`aqua-console-plugins`.
 
 .. _installation-conda:
 

@@ -47,6 +47,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
             "uninstall": self.uninstall,
             "update": self.update,
             "list": self.list,
+            "check": self.check,
             "catalog": {
                 "add": self.catalog_add,
                 "remove": self.catalog_remove,
