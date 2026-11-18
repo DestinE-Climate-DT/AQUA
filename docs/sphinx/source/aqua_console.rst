@@ -36,6 +36,8 @@ Nouns and their verbs:
      - Verbs
    * - :ref:`catalog <aqua-catalog>`
      - ``add <name> [-e path] [-r user/repo]``, ``remove <name>``, ``set <name>``, ``update <name|all>``, ``list``, ``avail [-r user/repo]``
+   * - :ref:`project <aqua-project>`
+     - ``set <name>``, ``list`` (``install <name> [-e path]``, ``update <name>``, ``remove <name>`` not available yet)
    * - :ref:`grids <aqua-grids>`
      - ``add <file> [-e]``, ``remove <file>``, ``list``, ``path <path>``, ``build ...``, ``deploy <name>``
    * - :ref:`fixes <aqua-fixes>`
@@ -317,6 +319,53 @@ aqua catalog list
 ^^^^^^^^^^^^^^^^^
 
 This command lists the installed catalogs, showing which ones are installed in editable mode.
+
+.. _aqua-project:
+
+aqua project
+------------
+
+The ``project`` noun selects the AQUA project, i.e. the package shipping configuration (and optionally diagnostics)
+that AQUA uses: for example ``diagnostics``. Each project has its own subfolder in the project-scoped
+configuration folders ``analysis``, ``collections`` and ``tools`` (e.g. ``$HOME/.aqua/analysis/diagnostics``),
+while all the other folders (catalogs, grids, fixes, ``catgen``, ...) are shared.
+The active project is stored in the ``project`` key of ``config-aqua.yaml`` and can be overridden
+with the ``AQUA_PROJECT`` environment variable (see :ref:`aqua-project-context`).
+
+.. note::
+    The name "project" is provisional and may change in a future release, for the command, the configuration key
+    and the environment variable alike.
+
+.. note::
+    ``aqua install`` does not write the ``project`` key yet, so current installations have the flat layout
+    of previous AQUA versions (e.g. ``$HOME/.aqua/analysis``), which AQUA keeps reading.
+    On such an installation ``aqua project set`` and ``aqua project list`` stop with an error asking to
+    upgrade it with ``aqua install``.
+
+aqua project set <project>
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command sets the active project in ``config-aqua.yaml``.
+The project must be installed, i.e. at least one of ``analysis``, ``collections`` and ``tools``
+must have a subfolder with its name. ``core`` is not a project and is refused.
+``aqua catalog set <name>`` with the name of an installed project, and no catalog with that name,
+points to this command.
+
+.. option:: project
+
+    The name of the project to be set as active.
+    **It is a mandatory argument.**
+
+aqua project list
+^^^^^^^^^^^^^^^^^
+
+This command lists the installed projects, marking the active one with ``*``.
+
+aqua project {install,update,remove} <project>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These verbs are reserved for installing (``install <project> [-e path]``, with ``-e`` taking a path as for
+``aqua catalog add``), updating and removing a project. They are not available yet and stop with an error.
 
 .. _aqua-fixes:
 

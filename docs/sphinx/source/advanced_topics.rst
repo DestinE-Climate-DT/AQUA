@@ -369,6 +369,35 @@ This can be done by adding the following line to your `.bashrc` or `.bash_profil
 
 This will make clear for the code where to find the AQUA catalog and the configuration files.
 
+.. _aqua-project-context:
+
+Active project and project folders
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The configuration folders ``analysis``, ``collections`` and ``tools`` are project-scoped:
+each project installs its files in ``<configdir>/<folder>/<project>`` (see :ref:`aqua-project`).
+The active project is, in order of precedence:
+
+1. the ``AQUA_PROJECT`` environment variable, if set;
+2. the ``project`` key of ``config-aqua.yaml`` (written by ``aqua project set``);
+3. none, for installations that predate project support: the folders keep the flat layout
+   ``<configdir>/<folder>`` of previous AQUA versions.
+
+The name "project" is provisional and may change in a future release.
+In Python code, the active project and its folders are resolved by ``ConfigContext``:
+
+.. code-block:: python
+
+    from aqua.core.configurer import ConfigContext
+
+    context = ConfigContext()
+    context.project                       # e.g. "diagnostics", or None for a pre-project installation
+    context.get_project_folder("tools")   # <configdir>/tools/<project>, or <configdir>/tools
+
+``get_project_folder`` accepts only ``analysis``, ``collections`` and ``tools`` (``catgen`` is not project-scoped)
+and raises ``FileNotFoundError``, naming the folder and the active project, if the folder does not exist:
+there is no fallback from one project to another.
+
 Add new catalogs as developer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
