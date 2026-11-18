@@ -43,7 +43,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
 
         files = {"add": self.file_add, "remove": self.remove_file, "list": self.file_list}
         self.command_map = {
-            "install": self.install,
+            "install": self.install_dispatch,
             "uninstall": self.uninstall,
             "update": self.update_dispatch,
             "list": self.list,
@@ -57,9 +57,9 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
                 "avail": self.catalog_avail,
             },
             "project": {
-                "install": self.project_not_implemented,
-                "update": self.project_not_implemented,
-                "remove": self.project_not_implemented,
+                "install": self.project_install,
+                "update": self.project_update,
+                "remove": self.project_remove,
                 "set": self.project_set,
                 "list": self.project_list,
             },
@@ -91,6 +91,17 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
             return handler(args)
 
         return alias
+
+    def install_dispatch(self, args):
+        """`aqua install` installs AQUA; the deprecated `aqua install <machine> --<project>` without core, on an
+        existing installation, adds the project with `aqua project install`."""
+        projects = {name: getattr(args, name) for name in self.components if name != "core" and getattr(args, name)}
+        if args.core is not None or not projects or not self._check(silent=True, return_info=True)["installed"]:
+            return self.install(args)
+        for name, path in projects.items():
+            args.project, args.editable = name, None if path == "standard" else path
+            self._deprecated(f"install --{name}", f"project install {name}", self.project_install)(args)
+        return None
 
     def update_dispatch(self, args):
         """`aqua update` refreshes the installation; the deprecated `aqua update -c <catalog>` updates a catalog."""

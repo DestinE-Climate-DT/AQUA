@@ -9,6 +9,7 @@ The name "project" is provisional: its spellings live in ``aqua.core.configurer.
 """
 
 import os
+import shutil
 import sys
 
 from aqua.core.configurer.context import PROJECT_FOLDERS, PROJECT_KEY
@@ -16,6 +17,9 @@ from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
 from .components import component_version
+
+# active project after the active one is removed, as in config-aqua.tmpl
+DEFAULT_PROJECT = "diagnostics"
 
 
 class ProjectMixin:
@@ -40,10 +44,70 @@ class ProjectMixin:
             sys.exit(1)
 
         self.logger.info("Setting project to %s", args.project)
-        with SafeFileLock(self.configfile + ".lock", loglevel=self.loglevel):
-            cfg = load_yaml(self.configfile)
-            cfg[PROJECT_KEY] = args.project
-            dump_yaml(self.configfile, cfg)
+        self._write_project(args.project)
+
+    def project_install(self, args):
+        """Add a project to an existing installation, copied or linked with -e, and make it the active one
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check_project_layout(args.project)
+        self._check_project_package(args.project)
+        if args.project in self._installed_projects():
+            self.logger.error(
+                "Project %s is already installed: use `aqua project update %s` or `aqua project remove %s`",
+                args.project,
+                args.project,
+                args.project,
+            )
+            sys.exit(1)
+
+        mode = {"mode": "editable", "path": args.editable} if args.editable else {"mode": "standard", "path": None}
+        self._install_component(args.project, mode)
+        self._set_installed_project([args.project])
+
+    def project_update(self, args):
+        """Copy again the folders and extra files of an installed project, skipping editable ones
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check_installed_project(args.project)
+        self._check_project_package(args.project)
+        self.logger.info("Updating project %s", args.project)
+        self._update_component(args.project)
+
+    def project_remove(self, args):
+        """Remove the folders and extra files of an installed project; if it was active, activate the default one
+
+        The extra files are found by listing the package: they are kept if the package is not available.
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        name = args.project
+        self._check_installed_project(name)
+
+        targets = [os.path.join(self.configpath, folder, name) for folder in PROJECT_FOLDERS]
+        files = []
+        if self.components.get(name, {}).get("path"):
+            targets += [target for _, target in self._component_targets(name) if target not in targets]
+            files = [self._flat_file(kind, file) for kind, file in self._project_files(name, self.components[name]["path"])]
+        else:
+            self.logger.warning("aqua.%s package not found: its extra files, if any, are not removed", name)
+
+        for target in targets + files:
+            if os.path.islink(target) or os.path.isfile(target):
+                self.logger.info("Removing %s", target)
+                os.remove(target)
+            elif os.path.isdir(target):
+                self.logger.info("Removing %s", target)
+                shutil.rmtree(target)
+
+        if self.configurer.config_dict.get(PROJECT_KEY) == name:
+            self.logger.warning("Removed the active project %s, %s is now the active project", name, DEFAULT_PROJECT)
+            self._write_project(DEFAULT_PROJECT)
 
     def project_list(self, args):
         """List the installed projects, marking the active one
@@ -64,17 +128,30 @@ class ProjectMixin:
             package = f"aqua-{name} {version}" if version else f"aqua-{name} package not found"
             print(f"{'*' if name == self.configurer.project else ' '} {name} ({mode}, {package})")
 
-    def project_not_implemented(self, args):
-        """Placeholder of the project verbs not available yet (install, update, remove)
+    def _write_project(self, name):
+        """Write the active project in config-aqua.yaml."""
+        configfile = os.path.join(self.configpath, "config-aqua.yaml")
+        with SafeFileLock(configfile + ".lock", loglevel=self.loglevel):
+            cfg = load_yaml(configfile)
+            cfg[PROJECT_KEY] = name
+            dump_yaml(configfile, cfg)
 
-        Args:
-            args (argparse.Namespace): arguments from the command line
+    def _check_installed_project(self, name):
+        """Check the installation and exit if the project is not installed."""
+        self._check_project_layout(name)
+        if name not in self._installed_projects():
+            self.logger.error("Project %s is not installed", name)
+            sys.exit(1)
 
-        Raises:
-            NotImplementedError: always, after checking the project name.
-        """
-        self._refuse_core(args.project)
-        raise NotImplementedError(f"`aqua project {args.nested_command}` is available in a later PR")
+    def _check_project_package(self, name):
+        """Exit if the package of a project is not available or breaks the plugin contract."""
+        info = self.components.get(name)
+        if info is not None and info["error"]:
+            self.logger.error(info["error"])
+            sys.exit(1)
+        if info is None or info["path"] is None:
+            self.logger.error("aqua.%s package not found", name)
+            sys.exit(1)
 
     def _refuse_core(self, name):
         """Exit if the name is core, which is not a project."""

@@ -3,5 +3,4 @@ __version__ = "0.1.0"
 
 
 def get_install_dirs():
-    # "files" is validated but not installed yet
     return {"contract": 2, "config": ["analysis"], "templates": ["mock_templates"], "files": ["grids"]}

@@ -180,12 +180,45 @@ class InstallMixin:
 
         source_path = self._validate_component_path(component, mode["path"]) if link else self.components[component]["path"]
 
+        files = self._project_files(component, source_path)
+        existing = [self._flat_file(kind, file) for kind, file in files if os.path.lexists(self._flat_file(kind, file))]
+        if existing:
+            self.logger.error("Cannot install %s, these files already exist: %s", component, ", ".join(existing))
+            sys.exit(1)
+
         for source, target in self._component_targets(component, source_path):
             if not os.path.exists(source):
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
                 continue
             os.makedirs(os.path.dirname(target), exist_ok=True)
             self._copy_update_folder_file(source, target, link=link)
+
+        for kind, file in files:
+            os.makedirs(os.path.join(self.configpath, kind), exist_ok=True)
+            self._file_add(kind, file, link=link)
+
+    def _project_files(self, component, source):
+        """Extra files of a project, listed from the ``files`` folders of its package.
+
+        Args:
+            component (str): component name, e.g. 'claima'
+            source (str): config folder of the component package
+
+        Returns:
+            list: (kind, file) tuples, where kind is the flat folder (e.g. 'grids') the file goes to
+        """
+        files = []
+        for kind in self.components[component]["file_dirs"]:
+            folder = os.path.join(source, kind)
+            if os.path.isdir(folder):
+                files += [(kind, os.path.join(folder, name)) for name in sorted(os.listdir(folder))]
+            else:
+                self.logger.warning("%s declared by %s does not exist, skipping it", folder, component)
+        return files
+
+    def _flat_file(self, kind, file):
+        """Path of an extra file once installed in the flat ``<configpath>/<kind>`` folder."""
+        return os.path.join(self.configpath, kind, os.path.basename(file))
 
     def _determine_component_mode(self, args, name):
         """
@@ -255,27 +288,13 @@ class InstallMixin:
                 if not self._remove_installation(confirm=True):
                     sys.exit()
 
-        # Validation: installing non-core components requires core to already be installed
+        # Projects are added to an existing installation by `aqua project install` (see AquaConsole.install_dispatch)
         if not core_mode and other_requested:
-            if not install_info["components"]["core"]["installed"]:
-                self.logger.error(
-                    "Cannot install %s without core. Install core first or use full installation.",
-                    ", ".join(other_requested),
-                )
-                sys.exit(1)
-            self._check_project_layout()
-            for name in other_requested:
-                if install_info["components"].get(name, {}).get("installed"):
-                    self.logger.error(
-                        "%s component is already installed. We cannot add it again, please use 'aqua uninstall' before",
-                        name,
-                    )
-                    sys.exit(1)
-            self.logger.info(
-                "Core already installed (%s mode), adding component(s): %s",
-                install_info["components"]["core"]["mode"],
+            self.logger.error(
+                "Cannot install %s without core. Install core first or use full installation.",
                 ", ".join(other_requested),
             )
+            sys.exit(1)
 
         # Install core first, always, if requested
         if core_mode:
@@ -331,11 +350,7 @@ class InstallMixin:
         else:
             self.logger.info("Project %s installed and set as the active project", active)
 
-        configfile = os.path.join(self.configpath, "config-aqua.yaml")
-        with SafeFileLock(configfile + ".lock", loglevel=self.loglevel):
-            cfg = load_yaml(configfile)
-            cfg[PROJECT_KEY] = active
-            dump_yaml(configfile, cfg)
+        self._write_project(active)
 
     def _config_home(self):
         """Configure the AQUA installation folder, by default inside $HOME"""
@@ -448,7 +463,8 @@ class InstallMixin:
     def update(self, args):
         """Update the installation files of core and of every installed project, skipping editable folders.
 
-        Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another.
+        Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another;
+        the extra files of the projects are added again after core has refreshed its flat folders.
         """
         self._check_project_layout()
         self.logger.info("Updating AQUA installation...")
@@ -465,19 +481,35 @@ class InstallMixin:
 
     def _update_component(self, component):
         """
-        Update the folders of an installed component, skipping those in editable mode.
+        Update the folders and extra files of an installed component, skipping those in editable mode.
+
+        Core folders are replaced. The folders of a project are copied over the installed ones: shipped files
+        are overwritten, user files with other names are kept. Extra files are copied again one by one.
 
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
         """
-        for source, target in self._component_targets(component, self.components[component]["path"]):
+        source_path = self.components[component]["path"]
+        for source, target in self._component_targets(component, source_path):
             if os.path.islink(target):
                 self.logger.info("Skipping %s (editable mode)", target)
             elif not os.path.exists(source):
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
-            else:
+            elif component == "core":
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 self._copy_update_folder_file(source, target, update=True)
+            else:
+                self.logger.info("Updating %s ...", target)
+                shutil.copytree(source, target, dirs_exist_ok=True)
+
+        for kind, file in self._project_files(component, source_path):
+            target = self._flat_file(kind, file)
+            if os.path.islink(target):
+                self.logger.info("Skipping %s (editable mode)", target)
+                continue
+            if os.path.exists(target):
+                os.remove(target)
+            self._file_add(kind, file)
 
     def _copy_update_folder_file(self, source, target, link=False, update=False):
         """Generic function to copy or update a source to a target folder"""

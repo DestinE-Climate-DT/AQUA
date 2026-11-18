@@ -135,6 +135,8 @@ Optional arguments are:
     two component names with the same initial do not collide. Run ``aqua install --help``
     to see the exact list of components available in your environment.
     The default behaviour, when no component flag is specified at all, is to install every discovered component.
+    On an existing installation, ``aqua install <machine> --<project>`` is a deprecated alias of
+    :ref:`aqua project install <aqua-project-install>`.
 
 .. option:: --path, -p <path>
 
@@ -224,12 +226,13 @@ Rules:
 - AQUA core installs ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles`` flat: ``catgen`` is a core tool
   and it is not project-scoped.
 
+- The ``files`` of a project are copied (linked in editable mode) one by one into the flat folder, as
+  ``aqua grids add`` does: the installation stops if a file with the same name already exists.
+  There is no record of which project installed a file: ``aqua project update`` and ``aqua project remove``
+  list the files of the installed package again.
+
 A package that is registered but cannot be imported (e.g. installed metadata left over after an incomplete
 removal) is skipped with a warning, rather than breaking the install.
-
-.. note::
-    The ``files`` key is accepted, but the single files are not installed yet: this will come with the
-    ``aqua project`` verbs.
 
 .. _aqua-list:
 
@@ -264,7 +267,8 @@ aqua update
 This command will update the configuration files of AQUA core and of every project installed
 (see :ref:`aqua-console-plugins`), except those installed in editable mode, which are left untouched
 since they already point to the developer's own working copy.
-Each project is refreshed in its own ``<dir>/<project>`` folders, so other projects and user folders are kept.
+Each project is refreshed in its own ``<dir>/<project>`` folders, as ``aqua project update`` does, so other projects
+and user files are kept; the extra files of the projects are added again after core has refreshed its flat folders.
 An installation that predates project support (no ``project`` key in ``config-aqua.yaml``) must be upgraded
 with ``aqua install`` first.
 To update the catalogs, use :ref:`aqua-catalog-update`.
@@ -415,7 +419,7 @@ with the ``AQUA_PROJECT`` environment variable (see :ref:`aqua-project-context`)
     ``aqua install`` writes the ``project`` key (see :ref:`aqua-install`). Installations made before project support
     have no such key and keep the flat layout of previous AQUA versions (e.g. ``$HOME/.aqua/analysis``):
     AQUA keeps reading them, with a warning asking to upgrade them with ``aqua install``.
-    On such an installation ``aqua project set``, ``aqua project list`` and ``aqua update`` stop with an error
+    On such an installation the ``aqua project`` verbs and ``aqua update`` stop with an error
     asking to upgrade it.
 
 aqua project set <project>
@@ -438,11 +442,31 @@ aqua project list
 This command lists the installed projects with their installation mode (standard or editable)
 and package version, marking the active one with ``*``.
 
-aqua project {install,update,remove} <project>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. _aqua-project-install:
 
-These verbs are reserved for installing (``install <project> [-e path]``, with ``-e`` taking a path as for
-``aqua catalog add``), updating and removing a project. They are not available yet and stop with an error.
+aqua project install <project> [-e path]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command adds a project to an existing installation and makes it the active one.
+Its folders and extra files (see :ref:`aqua-console-plugins`) are copied from the package installed
+in the current environment.
+
+.. option:: -e, --editable <path>
+
+    Link the folders and the extra files from the repository of the project at ``<path>``
+    (the link is made at the ``<dir>/<project>`` level), as for ``aqua catalog add``.
+
+aqua project update <project>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command copies again the folders and extra files of an installed project from its package:
+shipped files are overwritten, user files with other names are kept, editable (linked) entries are skipped.
+
+aqua project remove <project>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command removes the folders and extra files of an installed project (links only, in editable mode).
+If it was the active project, ``diagnostics`` becomes the active one.
 
 .. _aqua-fixes:
 

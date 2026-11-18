@@ -89,7 +89,7 @@ class FilesMixin:
         grid_deployer.deploy(source_grid_name=args.source_grid_name)
 
     def _file_add(self, kind, file, link=False):
-        """Add a personalized file to the fixes/grids/styles folder
+        """Add a personalized file to the fixes/grids/styles folder of an installation already checked
 
         Args:
             kind (str): the kind of file to be added: 'fixes', 'grids' or 'styles'
@@ -98,7 +98,6 @@ class FilesMixin:
         """
 
         file = os.path.abspath(file)
-        self._check()
         basefile = os.path.basename(file)
         pathfile = f"{self.configpath}/{kind}/{basefile}"
         if not os.path.exists(pathfile):

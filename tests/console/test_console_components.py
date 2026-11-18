@@ -177,15 +177,22 @@ class TestPluginInstall:
         assert _project(home) == "mockother"
         assert any("the last one, mockother, is now the active project" in r.getMessage() for r in caplog.records)
 
-    def test_adding_a_project_makes_it_active(self, mock_plugin_entrypoint, home, run_aqua):
-        """Fails if core alone changes the template project, or adding a project does not switch to it."""
+    def test_adding_a_project_makes_it_active(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if core alone changes the template project, adding a project does not switch to it, or the
+        deprecated `aqua install --<project>` does not warn once naming `aqua project install`."""
         run_aqua(["install", MACHINE, "--core"])
         assert not os.path.exists(os.path.join(home, "analysis"))
         assert _project(home) == "diagnostics"
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
 
         run_aqua(["install", MACHINE, "--mockplugin"])
         assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
         assert _project(home) == "mockplugin"
+        deprecations = [r.getMessage() for r in caplog.records if "deprecated" in r.getMessage()]
+        assert deprecations == [
+            "`aqua install --mockplugin` is deprecated and will be removed in AQUA 2.0, "
+            "use `aqua project install mockplugin` instead"
+        ]
 
         run_aqua(["install", MACHINE, "--mockother"])
         assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
@@ -206,7 +213,8 @@ class TestPluginInstall:
         assert os.path.islink(os.path.join(home, "templates", "mock_templates"))
 
     def test_update_refreshes_projects_and_preserves_others(self, mock_plugin_entrypoint, home, run_aqua):
-        """Fails if `aqua update` does not restore a shipped file, or deletes a folder of another project."""
+        """Fails if `aqua update` does not restore a shipped file, deletes a user file or a folder of another project,
+        or loses the extra files of a project when core refreshes its flat folders."""
         run_aqua(["install", MACHINE])
         shipped = os.path.join(home, "analysis", "mockplugin", "dummy.yaml")
         os.remove(shipped)
@@ -214,11 +222,17 @@ class TestPluginInstall:
         os.makedirs(os.path.dirname(foreign))
         dump_yaml(foreign, {"user": True})
 
+        user = os.path.join(home, "analysis", "mockplugin", "user.yaml")
+        dump_yaml(user, {"user": True})
+
         run_aqua(["update"])
 
         assert os.path.isfile(shipped)
         assert os.path.isfile(os.path.join(home, "analysis", "mockother", "dummy.yaml"))
         assert load_yaml(foreign) == {"user": True}
+        assert load_yaml(user) == {"user": True}
+        # core replaces its flat grids folder: the extra file of the project must be added again
+        assert os.path.isfile(os.path.join(home, "grids", "mockplugin-grid.yaml"))
 
     def test_old_contract_plugin_stops_install(self, mock_plugin_entrypoint, monkeypatch, home, run_aqua, aqua_caplog):
         """Fails if a plugin with the v1 contract is installed, or the installation starts before the error."""
@@ -323,3 +337,106 @@ class TestPluginInstall:
         """A registered entry point whose module cannot be imported must not break a bare install"""
         run_aqua(["install", MACHINE])
         assert os.path.isfile(os.path.join(home, "config-aqua.yaml"))
+
+
+MOCKPLUGIN_CONFIG = os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua", "mockplugin", "config")
+
+
+def _mockplugin_paths(home):
+    """Installed folders and extra file of `mockplugin`."""
+    return {
+        "analysis": os.path.join(home, "analysis", "mockplugin"),
+        "templates": os.path.join(home, "templates", "mock_templates"),
+        "grid": os.path.join(home, "grids", "mockplugin-grid.yaml"),
+    }
+
+
+class TestProjectVerbs:
+    """`aqua project install`, `update` and `remove` with the fake plugins, on a core installation."""
+
+    def test_install_update_remove_standard(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if a project or its extra file is not copied, update does not restore shipped files or deletes a user
+        file, or remove leaves a folder or the extra file behind or does not reset the active project."""
+        run_aqua(["install", MACHINE, "--core"])
+        paths = _mockplugin_paths(home)
+
+        run_aqua(["project", "install", "mockplugin"])
+        assert all(os.path.exists(p) and not os.path.islink(p) for p in paths.values())
+        assert _project(home) == "mockplugin"
+
+        shipped = os.path.join(paths["analysis"], "dummy.yaml")
+        user = os.path.join(paths["analysis"], "user.yaml")
+        dump_yaml(shipped, {"dummy": False})
+        dump_yaml(paths["grid"], {"grids": {}})
+        dump_yaml(user, {"user": True})
+        run_aqua(["project", "update", "mockplugin"])
+        assert load_yaml(shipped) == {"dummy": True}
+        assert load_yaml(paths["grid"]) == load_yaml(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
+        assert load_yaml(user) == {"user": True}
+
+        run_aqua(["project", "remove", "mockplugin"])
+        assert not any(os.path.lexists(p) for p in paths.values())
+        assert os.path.isdir(os.path.join(home, "grids"))  # core folder kept
+        assert _project(home) == "diagnostics"
+
+    def test_install_update_remove_editable(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if an editable project or its extra file is not linked, update replaces a link, or remove deletes
+        the linked sources instead of the links."""
+        run_aqua(["install", MACHINE, "--core"])
+        run_aqua(["install", MACHINE, "--mockother"])
+        paths = _mockplugin_paths(home)
+
+        run_aqua(["project", "install", "mockplugin", "-e", MOCKPLUGIN_FIXTURE_ROOT])
+        assert all(os.path.islink(p) for p in paths.values())
+        assert os.path.realpath(paths["grid"]) == os.path.realpath(
+            os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml")
+        )
+
+        run_aqua(["project", "update", "mockplugin"])
+        assert all(os.path.islink(p) for p in paths.values())
+
+        run_aqua(["project", "set", "mockother"])
+        run_aqua(["project", "remove", "mockplugin"])
+        assert not any(os.path.lexists(p) for p in paths.values())
+        assert os.path.isfile(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
+        assert _project(home) == "mockother"  # an inactive project is removed without changing the active one
+
+    @pytest.mark.parametrize(
+        "command, message",
+        [
+            (["project", "install", "mockplugin"], "Project mockplugin is already installed"),
+            (["project", "install", "ghost"], "aqua.ghost package not found"),
+            (["project", "update", "mockother"], "Project mockother is not installed"),
+            (["project", "remove", "mockother"], "Project mockother is not installed"),
+        ],
+    )
+    def test_project_verb_errors(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, command, message):
+        """Fails if a project is installed twice, a missing package is installed, or a project not installed is
+        updated or removed."""
+        run_aqua(["install", MACHINE, "--core"])
+        run_aqua(["project", "install", "mockplugin"])
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(command)
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith(message) for r in caplog.records)
+        assert _project(home) == "mockplugin"
+
+    def test_extra_file_collision_stops_install(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if an extra file overwrites a file with the same name, or the project is installed anyway."""
+        run_aqua(["install", MACHINE, "--core"])
+        paths = _mockplugin_paths(home)
+        dump_yaml(paths["grid"], {"grids": {}})
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "install", "mockplugin"])
+
+        assert excinfo.value.code == 1
+        assert any(
+            r.getMessage() == f"Cannot install mockplugin, these files already exist: {paths['grid']}" for r in caplog.records
+        )
+        assert load_yaml(paths["grid"]) == {"grids": {}}
+        assert not os.path.exists(paths["analysis"])
