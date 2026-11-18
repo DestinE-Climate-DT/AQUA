@@ -26,6 +26,13 @@ It exploits the capabilities of the Jinja2 package to obtain a cleaner and more 
 
     The logging level, following the python standards.
 
+.. note::
+
+    The catalog generator reads its files from ``~/.aqua/catgen``, which is installed by AQUA core
+    and is the same for every project: unlike ``analysis``, ``collections`` and ``tools``, it is not
+    split by project (see :ref:`aqua-console-plugins`), because the generator is a core tool tied to
+    the ClimateDT data portfolio rather than to a diagnostic project.
+
 Basic usage
 ^^^^^^^^^^^
 
