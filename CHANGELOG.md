@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v1.3.0):
+Unreleased in the current development version (target v1.2.5):
 
 Complete list:
 - Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old `aqua add`, `remove`, `set`, `avail`, `update -c` and `grids set` are removed (#3409)

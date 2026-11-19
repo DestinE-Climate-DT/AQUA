@@ -10,12 +10,7 @@ import pytest
 
 import aqua
 from aqua.core.console import components as components_module
-from aqua.core.console.components import (
-    PluginContractError,
-    _resolve_component_info,
-    discover_aqua_components,
-    validate_install_dirs,
-)
+from aqua.core.console.components import _resolve_component_info, discover_aqua_components, validate_install_dirs
 from aqua.core.console.parser import parse_arguments
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -82,9 +77,9 @@ class TestPluginContract:
     """The dictionary returned by get_install_dirs() and its resolution into component info."""
 
     def test_missing_keys_default_to_empty_lists(self):
-        """Fails if a v2 plugin must declare every key, or the lists end up under the wrong info key."""
-        dirs = validate_install_dirs("claima", {"contract": 2, "config": ["analysis"], "files": ["grids"]})
-        assert dirs == {"config_dirs": ["analysis"], "flat_dirs": [], "template_dirs": [], "file_dirs": ["grids"]}
+        """Fails if a v2 plugin must declare every key, or a single folder name is not read as a list."""
+        dirs = validate_install_dirs("claima", {"contract": 2, "config": ["analysis"], "files": "grids"})
+        assert dirs == {"config": ["analysis"], "flat": [], "templates": [], "files": ["grids"]}
 
     @pytest.mark.parametrize(
         "data, match",
@@ -92,61 +87,31 @@ class TestPluginContract:
             ({"config": ["mock_config"], "templates": ["mock_templates"]}, "uses an old plugin contract"),
             ({"contract": 1, "config": ["analysis"]}, "uses an old plugin contract"),
             ({"contract": 2, "config": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
-            ({"contract": 2, "config": "analysis"}, "'config' in get_install_dirs.. must be a list"),
         ],
     )
     def test_invalid_install_dirs_are_rejected_naming_the_package(self, data, match):
-        """Fails if a v1 dictionary, an unknown key or a non-list value is accepted, or the error omits the package."""
-        with pytest.raises(PluginContractError, match=f"plugin aqua-mockplugin.*{match}"):
+        """Fails if a v1 dictionary or an unknown key is accepted, or the error omits the package."""
+        with pytest.raises(ValueError, match=f"plugin aqua-mockplugin.*{match}"):
             validate_install_dirs("mockplugin", data)
 
-    def test_unknown_module_returns_not_installed(self):
-        info = _resolve_component_info("doesnotexist_xyz")
+    def test_unresolvable_path_returns_not_installed(self):
+        info = _resolve_component_info("doesnotexist_xyz", {"contract": 2, "config": ["a"]})
         assert (info["installed"], info["path"], info["error"]) == (False, None, None)
 
-    def test_module_without_get_install_dirs_returns_not_installed(self, monkeypatch):
-        monkeypatch.setattr(components_module, "import_module", lambda name: object())
-        assert _resolve_component_info("somemodule")["installed"] is False
-
-    def test_unresolvable_path_returns_not_installed(self):
-        info = _resolve_component_info("doesnotexist_xyz", data={"contract": 2, "config": ["a"]})
-        assert info["installed"] is False
-
-    def test_core_is_flat_and_not_a_project(self):
-        """Fails if core installs a project-scoped folder (catgen included) or is reported as a project."""
-        info = _resolve_component_info("core")
-        assert (info["project"], info["config_dirs"]) == (False, [])
-        assert info["flat_dirs"] == ["catgen", "data_model", "fixes", "grids", "styles"]
-
     def test_discover_resolves_v2_and_reports_broken_plugins(self, mock_plugin_entrypoint, monkeypatch):
-        """Fails if a v2 plugin is not installable, or a broken/old plugin raises instead of being reported."""
+        """Fails if core is not flat, a v2 plugin is not installable, or a broken/old plugin is not reported."""
         components = discover_aqua_components()
 
+        assert components["core"]["config"] == []
+        assert components["core"]["flat"] == ["catgen", "data_model", "fixes", "grids", "styles"]
         assert components["mockplugin"]["installed"] is True
-        assert components["mockplugin"]["config_dirs"] == ["analysis"]
-        assert components["mockplugin"]["file_dirs"] == ["grids"]
+        assert (components["mockplugin"]["config"], components["mockplugin"]["files"]) == (["analysis"], ["grids"])
         assert (components["brokenplugin"]["installed"], components["brokenplugin"]["error"]) == (False, None)
 
         monkeypatch.setattr("aqua.mockplugin.get_install_dirs", lambda: {"config": ["analysis"]})
         discover_aqua_components.cache_clear()
         components = discover_aqua_components()
         assert (components["mockplugin"]["installed"], components["mockplugin"]["error"]) == (False, OLD_CONTRACT)
-
-    def test_discover_ignores_a_plugin_named_core(self, mock_plugin_entrypoint, monkeypatch):
-        entry_points_with_core = MOCK_ENTRY_POINTS + [
-            EntryPoint(name="core", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins")
-        ]
-        monkeypatch.setattr(
-            components_module,
-            "entry_points",
-            lambda *a, **k: entry_points_with_core if k.get("group") == "aqua.plugins" else real_entry_points(*a, **k),
-        )
-        discover_aqua_components.cache_clear()
-
-        with pytest.warns(UserWarning, match="Ignoring unexpected 'core'"):
-            components = discover_aqua_components()
-
-        assert components["core"]["config_dirs"] == []
 
     def test_install_flags_do_not_collide(self, mock_plugin_entrypoint):
         """Only core and diagnostics keep a one-letter install flag: with one per plugin, `climatemock` would

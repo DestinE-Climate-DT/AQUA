@@ -13,7 +13,7 @@ its ``get_install_dirs()`` returns a dictionary following the plugin contract ve
     }
 
 Folder names are relative to ``aqua/<project>/config`` (``aqua/<project>/templates`` for ``templates``).
-Missing list keys default to empty lists. Core is not a plugin: its folders are the constants below.
+Missing keys default to empty lists. Core is not a plugin, but its folders follow the same contract.
 """
 
 import importlib.resources as pypath
@@ -24,14 +24,18 @@ from functools import cache
 from importlib import import_module
 from importlib.metadata import entry_points
 
-# directories of aqua-core installed in the AQUA config folder: core is not a project, so all are flat
-CORE_FLAT_DIRECTORIES = ["catgen", "data_model", "fixes", "grids", "styles"]
-CORE_TEMPLATE_DIRECTORIES = ["catgen", "drop", "gridbuilder"]
+from aqua.core.util import to_list
 
-# plugin contract implemented by this aqua-core
+# plugin contract implemented by this aqua-core, and the folder lists it defines
 PLUGIN_CONTRACT = 2
-# keys of the dictionary returned by get_install_dirs() and the info keys they are stored in
-PLUGIN_DIR_KEYS = {"config": "config_dirs", "flat": "flat_dirs", "templates": "template_dirs", "files": "file_dirs"}
+PLUGIN_KEYS = ("config", "flat", "templates", "files")
+
+# folders of aqua-core installed in the AQUA config folder: core is not a project, so all are flat
+CORE_INSTALL_DIRS = {
+    "contract": PLUGIN_CONTRACT,
+    "flat": ["catgen", "data_model", "fixes", "grids", "styles"],
+    "templates": ["catgen", "drop", "gridbuilder"],
+}
 
 # module-level logger, independent of any CLI's configured loglevel.
 # Callers that care about their own loglevel should re-log the (cached,
@@ -39,101 +43,51 @@ PLUGIN_DIR_KEYS = {"config": "config_dirs", "flat": "flat_dirs", "templates": "t
 _logger = logging.getLogger("aqua.components")
 
 
-class PluginContractError(ValueError):
-    """The dictionary returned by a plugin's get_install_dirs() does not follow the plugin contract."""
-
-
-def _empty_info(name, error=None):
-    """Info dictionary of a component that cannot be installed."""
-    info = {"installed": False, "project": name != "core", "path": None, "error": error}
-    info.update(dict.fromkeys(PLUGIN_DIR_KEYS.values(), []))
-    return info
-
-
 def validate_install_dirs(name, data):
-    """Check the dictionary returned by the ``get_install_dirs()`` of plugin ``aqua-<name>``.
+    """Check the dictionary returned by ``get_install_dirs()`` of ``aqua-<name>`` and return its folder lists.
 
     Args:
-        name (str): plugin (project) name.
+        name (str): component name.
         data (dict): the dictionary returned by ``get_install_dirs()``.
 
     Returns:
-        dict: the four lists of folders, under the info keys ``config_dirs``, ``flat_dirs``,
-        ``template_dirs`` and ``file_dirs``; missing keys are empty lists.
+        dict: one list per key of ``PLUGIN_KEYS``, empty if missing.
 
     Raises:
-        PluginContractError: if the plugin uses an old contract, an unknown key or a value that is not a list.
+        ValueError: if the plugin uses an old contract or an unknown key.
     """
     if not isinstance(data, dict) or data.get("contract") != PLUGIN_CONTRACT:
-        raise PluginContractError(
-            f"plugin aqua-{name} uses an old plugin contract, please update it (e.g. aqua-diagnostics>=0.27.0)"
-        )
-    unknown = sorted(set(data) - set(PLUGIN_DIR_KEYS) - {"contract"})
+        raise ValueError(f"plugin aqua-{name} uses an old plugin contract, please update it (e.g. aqua-diagnostics>=0.27.0)")
+    unknown = set(data) - set(PLUGIN_KEYS) - {"contract"}
     if unknown:
-        raise PluginContractError(
-            f"plugin aqua-{name}: unknown key(s) {', '.join(unknown)} in get_install_dirs(), "
-            f"allowed keys are contract, {', '.join(PLUGIN_DIR_KEYS)}"
-        )
-    dirs = {}
-    for key, info_key in PLUGIN_DIR_KEYS.items():
-        value = data.get(key, [])
-        if not isinstance(value, list):
-            raise PluginContractError(f"plugin aqua-{name}: '{key}' in get_install_dirs() must be a list, not {value!r}")
-        dirs[info_key] = value
-    return dirs
+        raise ValueError(f"plugin aqua-{name}: unknown key(s) {', '.join(sorted(unknown))} in get_install_dirs()")
+    return {key: to_list(data.get(key)) for key in PLUGIN_KEYS}
 
 
-def _resolve_component_info(name, data=None):
+def _resolve_component_info(name, data):
     """
     Build a uniform info dict for an aqua component (core or plugin).
 
     Args:
         name (str): component name, e.g. "core", "diagnostics", "claima"
-        data (dict, optional): the dictionary returned by the plugin's get_install_dirs(),
-            already obtained from an entry point call. Not used for "core", which is resolved
-            from its constants.
+        data (dict or None): the dictionary returned by get_install_dirs(); None if it could not be obtained
 
     Returns:
-        dict: {
-            "installed": bool,       # the package and its config folder are available
-            "project": bool,         # False for core only
-            "config_dirs": list,     # project-scoped folders
-            "flat_dirs": list,
-            "template_dirs": list,
-            "file_dirs": list,
-            "path": str or None,     # the package config folder
-            "error": str or None,    # why the plugin cannot be installed (e.g. old contract)
-        }
+        dict: {"installed": bool, "path": str or None, "error": str or None, plus one list per key of PLUGIN_KEYS},
+        where ``path`` is the package config folder and ``error`` why the plugin cannot be installed.
     """
-    module_name = f"aqua.{name}"
-
-    if name == "core":
-        dirs = {
-            "config_dirs": [],
-            "flat_dirs": CORE_FLAT_DIRECTORIES,
-            "template_dirs": CORE_TEMPLATE_DIRECTORIES,
-            "file_dirs": [],
-        }
-    else:
-        if data is None:
-            try:
-                data = import_module(module_name).get_install_dirs()
-            except (ImportError, AttributeError) as e:
-                warnings.warn(f"Could not resolve aqua component '{name}': {e}")
-                return _empty_info(name)
-        try:
-            dirs = validate_install_dirs(name, data)
-        except PluginContractError as e:
-            return _empty_info(name, error=str(e))
-
-    path = None
-    if any(dirs.values()):
-        try:
-            path = os.path.join(pypath.files(module_name), "config")
-        except ModuleNotFoundError:
-            return _empty_info(name)
-
-    return {"installed": path is not None, "project": name != "core", "path": path, "error": None, **dirs}
+    info = {"installed": False, "path": None, "error": None, **dict.fromkeys(PLUGIN_KEYS, [])}
+    if data is None:
+        return info
+    try:
+        info.update(validate_install_dirs(name, data))
+        info["path"] = os.path.join(pypath.files(f"aqua.{name}"), "config")
+    except ValueError as e:
+        info["error"] = str(e)
+    except ModuleNotFoundError:
+        pass
+    info["installed"] = info["path"] is not None
+    return info
 
 
 @cache
@@ -150,24 +104,20 @@ def discover_aqua_components():
     regardless of how many callers (parser construction, CLI __init__,
     tests, ...) invoke this.
     """
-    components = {"core": _resolve_component_info("core")}
+    components = {"core": _resolve_component_info("core", CORE_INSTALL_DIRS)}
 
     for ep in entry_points(group="aqua.plugins"):
-        if ep.name == "core":
-            warnings.warn("Ignoring unexpected 'core' entry point in aqua.plugins group")
-            continue
         try:
             get_install_dirs = ep.load()
         except Exception as e:
             warnings.warn(f"Could not load aqua plugin '{ep.name}': {e}")
-            components[ep.name] = _empty_info(ep.name)
+            components[ep.name] = _resolve_component_info(ep.name, None)
             continue
         try:
-            data = get_install_dirs()
+            components[ep.name] = _resolve_component_info(ep.name, get_install_dirs())
         except Exception as e:
-            components[ep.name] = _empty_info(ep.name, error=f"plugin aqua-{ep.name}: {e}")
-            continue
-        components[ep.name] = _resolve_component_info(ep.name, data)
+            components[ep.name] = _resolve_component_info(ep.name, None)
+            components[ep.name]["error"] = f"plugin aqua-{ep.name}: {e}"
 
     _logger.debug(
         "Discovered aqua components: %s",

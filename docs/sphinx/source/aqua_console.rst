@@ -211,8 +211,8 @@ Rules:
 
 - ``"contract": 2`` is mandatory. A plugin returning a dictionary without it (the version 1 contract of
   ``aqua-diagnostics`` < 0.27.0) is rejected and ``aqua install`` stops with an error asking to update that plugin.
-- Missing list keys default to an empty list. Unknown keys and values that are not lists are rejected,
-  with an error naming the package.
+- Missing keys default to an empty list and a single folder name is read as a one-item list.
+  Unknown keys are rejected, with an error naming the package.
 - In editable mode (``--<name> <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
   the links are made at the ``<config>/<dir>/<name>`` level,
   so that different projects can be editable or not independently.
