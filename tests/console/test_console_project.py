@@ -50,11 +50,11 @@ def test_project_set_and_list(project_install, run_aqua, capfd):
         (["project", "set", "climatedt"], "Project climatedt is not installed: none of analysis, collections, tools"),
         (["project", "set", "core"], "core is not a project"),
         (["project", "install", "core"], "core is not a project"),
-        (["set", "claima"], "claima is a project, not a catalog: use `aqua project set claima`"),
+        (["catalog", "set", "claima"], "claima is a project, not a catalog: use `aqua project set claima`"),
     ],
 )
 def test_project_errors(project_install, run_aqua, aqua_caplog, command, message):
-    """Fails if a missing project or core can be set, or `aqua set <project>` does not point to `project set`."""
+    """Fails if a missing project or core can be set, or `aqua catalog set <project>` does not point to `project set`."""
     configfile = project_install()
     caplog = aqua_caplog(logging.getLogger("AQUA"))
 
