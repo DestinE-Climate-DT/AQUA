@@ -277,6 +277,17 @@ class TestPluginInstall:
         assert "* mockother (standard, aqua-mockother 0.1.0)" in out
         assert "  mockplugin (editable, aqua-mockplugin 0.1.0)" in out
 
+    def test_list_all_skips_plugins_not_installed(self, mock_plugin_entrypoint, home, run_aqua, capfd):
+        """Fails if `aqua list -a` lists (or crashes on) the folders of a plugin available but not installed."""
+        run_aqua(["install", MACHINE, "--core"])
+        capfd.readouterr()
+
+        run_aqua(["list", "-a"])
+
+        out = capfd.readouterr().out
+        assert f"AQUA current installed grids in {home}:" in out
+        assert "analysis" not in out and "mock_templates" not in out
+
     def test_check_valid_installation(self, mock_plugin_entrypoint, home, run_aqua, capfd):
         """Fails if `aqua check` rejects an installation with its active project and a loadable catalog."""
         _install_projects(run_aqua, "mockplugin")

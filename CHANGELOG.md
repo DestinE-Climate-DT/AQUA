@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.3.0):
 
 Complete list:
-- Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old commands remain as deprecated aliases until 2.0 (#3409)
+- Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old `aqua add`, `remove`, `set`, `avail`, `update -c` and `grids set` are removed (#3409)
 - New `aqua project set` and `aqua project list` commands to select the active project, and `ConfigContext.project` to read it (#3410)
 - Breaking: plugins must declare the plugin contract v2 and are installed in per-project folders; new `aqua check` command to validate an installation (#3412)
 - New `aqua project install`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3413)

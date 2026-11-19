@@ -46,7 +46,7 @@ Nouns and their verbs:
      - ``add <file> [-e]``, ``remove <file>``, ``list``
 
 ``aqua <noun>`` without a verb, or ``aqua <noun> -h``, prints the verbs of that noun.
-The commands of previous AQUA versions are still accepted, with a warning (see :ref:`aqua-deprecated`).
+Some commands of previous AQUA versions have been replaced (see :ref:`aqua-deprecated`).
 
 The main command has some options listed below:
 
@@ -656,17 +656,16 @@ For a complete description of the analysis tool, please refer to the :ref:`aqua_
 
 .. _aqua-deprecated:
 
-Deprecated commands
--------------------
+Commands changed in AQUA 1.3
+----------------------------
 
-The commands of previous AQUA versions are kept as aliases until AQUA 2.0.
-They do the same as the new command and print a warning naming it.
+The following commands of previous AQUA versions have been removed and give a usage error.
 Please update your scripts to the new syntax.
 
 .. list-table::
    :header-rows: 1
 
-   * - Deprecated command
+   * - Removed command
      - New command
    * - ``aqua add <catalog> [-e path] [-r user/repo]``
      - ``aqua catalog add <catalog> [-e path] [-r user/repo]``
@@ -680,3 +679,5 @@ Please update your scripts to the new syntax.
      - ``aqua catalog update <catalog|all>``
    * - ``aqua grids set <path>``
      - ``aqua grids path <path>``
+   * - ``aqua install <machine> --<project> [path]``
+     - ``aqua project install <project> [-e path]``
