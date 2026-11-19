@@ -63,7 +63,6 @@ def _project_install(root, project=None, folders=("analysis/diagnostics", "analy
     [
         ("diagnostics", None, "diagnostics", "analysis/diagnostics"),
         ("diagnostics", "claima", "claima", "analysis/claima"),
-        (None, "claima", "claima", "analysis/claima"),
     ],
 )
 def test_project_folder_follows_env_then_key(tmp_path, monkeypatch, key, env, expected, subpath):
@@ -80,15 +79,20 @@ def test_project_folder_follows_env_then_key(tmp_path, monkeypatch, key, env, ex
 
 @pytest.mark.aqua
 @pytest.mark.parametrize(
-    "project, match",
+    "project, env, match",
     [
-        ("climatedt", r"tools folder for project 'climatedt' in .*tools/climatedt"),
-        (None, r"No project set in .*config-aqua.yaml: this installation predates project support, run `aqua install`"),
+        ("climatedt", None, r"tools folder for project 'climatedt' in .*tools/climatedt"),
+        (None, None, r"No project set in .*config-aqua.yaml: this installation predates project support, run `aqua install`"),
+        (None, "claima", r"No project set in .*config-aqua.yaml: this installation predates project support"),
     ],
 )
-def test_project_folder_refuses_missing_folder_and_flat_layout(tmp_path, monkeypatch, project, match):
-    """Fails if a missing folder falls back to another project or the flat layout, or the error is not explicit."""
-    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+def test_project_folder_refuses_missing_folder_and_flat_layout(tmp_path, monkeypatch, project, env, match):
+    """Fails if a missing folder falls back to another project or the flat layout, if AQUA_PROJECT gives a project
+    to an installation without project key, or if the error is not explicit."""
+    if env is None:
+        monkeypatch.delenv("AQUA_PROJECT", raising=False)
+    else:
+        monkeypatch.setenv("AQUA_PROJECT", env)
     # tools/ exists flat, but there is no tools/<project>: neither layout falls back to it
     context = ConfigContext(configdir=_project_install(tmp_path, project=project))
 

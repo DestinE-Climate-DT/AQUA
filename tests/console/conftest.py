@@ -12,6 +12,7 @@ from fsspec.implementations.dirfs import DirFileSystem
 from utils_tests import AQUA_TESTS
 
 from aqua.core.console.main import AquaConsole
+from aqua.core.util import dump_yaml
 
 
 @pytest.fixture(scope="session")
@@ -146,15 +147,37 @@ def run_aqua_console_with_input():
     return _run_aqua_console
 
 
+@pytest.fixture
+def project_install(tmp_path, monkeypatch):
+    """Return a function building a minimal installation under tmp_path, found through AQUA_CONFIG.
+
+    By default the active project is `diagnostics` and `claima` is installed too; `project=None` writes no project key
+    (pre-project layout), `folders` replaces the default project folders. Returns the path of config-aqua.yaml.
+    """
+    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+
+    def _build(project="diagnostics", folders=("analysis/diagnostics", "tools/diagnostics", "collections/claima")):
+        config = {"machine": "ci", "catalog": None}
+        if project is not None:
+            config["project"] = project
+        dump_yaml(os.path.join(tmp_path, "config-aqua.yaml"), config)
+        for folder in (*folders, "catalogs"):
+            os.makedirs(os.path.join(tmp_path, folder), exist_ok=True)
+        monkeypatch.setenv("AQUA_CONFIG", str(tmp_path))
+        return os.path.join(tmp_path, "config-aqua.yaml")
+
+    return _build
+
+
 @pytest.fixture(scope="session")
 def run_aqua():
-    """Run an AQUA console command in-process."""
+    """Run an AQUA console command in-process and return its exit status."""
 
     def _run_aqua_console(args):
         old_argv = sys.argv
         try:
             _set_aqua_args(args)
-            AquaConsole().execute()
+            return AquaConsole().execute()
         finally:
             sys.argv = old_argv
 

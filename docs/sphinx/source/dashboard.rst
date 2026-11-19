@@ -75,8 +75,14 @@ Additional options
 
 .. option:: -c <configfile>, --config <configfile>
 
-    Alternate config file for make_contents (default is ``analysis/config.grouping.yaml``
-    under ``AQUA_CONFIG`` or ``~/.aqua``).
+    Alternate config file for make_contents (default is ``config.grouping.yaml`` in the ``analysis`` folder
+    of the project, see :ref:`aqua_analysis_project`, under ``AQUA_CONFIG`` or ``~/.aqua``).
+
+.. option:: -p <project>, --project <project>
+
+    Take the default config file from the ``analysis`` folder of this project instead of the active one.
+    It stops with an error on an installation that predates project support.
+    It is ignored when ``-c`` is given.
 
 .. option:: --no-ensemble
 
