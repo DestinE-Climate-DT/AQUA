@@ -8,8 +8,6 @@ import os
 import shutil
 import sys
 
-import intake
-
 from aqua.core.configurer import ConfigContext, ConfigLocator, ConfigPackages
 from aqua.core.configurer.context import PROJECT_FOLDERS, PROJECT_KEY
 from aqua.core.lock import SafeFileLock
@@ -113,9 +111,9 @@ class InstallMixin:
         def src(*parts):
             return os.path.join(source, *parts) if source else None
 
-        targets = [(src(d), os.path.join(self.configpath, d, component)) for d in info["config_dirs"]]
-        targets += [(src(d), os.path.join(self.configpath, d)) for d in info["flat_dirs"]]
-        targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["template_dirs"]]
+        targets = [(src(d), os.path.join(self.configpath, d, component)) for d in info["config"]]
+        targets += [(src(d), os.path.join(self.configpath, d)) for d in info["flat"]]
+        targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["templates"]]
         return targets
 
     def _check_component_installed(self, component):
@@ -174,18 +172,30 @@ class InstallMixin:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
             mode (dict): Installation mode with 'mode' and 'path' keys
         """
-        self.logger.debug("Installing component '%s' with mode: %s", component, mode)
-        link = mode["mode"] == "editable"
         self.logger.info("Installing %s in %s mode", component, mode["mode"])
+        if mode["mode"] == "editable":
+            self._copy_component(component, self._validate_component_path(component, mode["path"]), link=True)
+        else:
+            self._copy_component(component, self.components[component]["path"])
 
-        source_path = self._validate_component_path(component, mode["path"]) if link else self.components[component]["path"]
+    def _copy_component(self, component, source_path, link=False, update=False):
+        """
+        Copy (or link) the folders of a component; when updating, folders installed in editable mode are skipped.
 
+        Args:
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
+            source_path (str): config folder of the component package or repository
+            link (bool): link the folders instead of copying them
+            update (bool): replace the folders already installed
+        """
         for source, target in self._component_targets(component, source_path):
-            if not os.path.exists(source):
+            if update and os.path.islink(target):
+                self.logger.info("Skipping %s (editable mode)", target)
+            elif not os.path.exists(source):
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
-                continue
-            os.makedirs(os.path.dirname(target), exist_ok=True)
-            self._copy_update_folder_file(source, target, link=link)
+            else:
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                self._copy_update_folder_file(source, target, link=link, update=update)
 
     def _determine_component_mode(self, args, name):
         """
@@ -308,34 +318,17 @@ class InstallMixin:
         # Create catalogs directory
         os.makedirs(os.path.join(self.configpath, CATPATH), exist_ok=True)
 
-        # set machine and active project
+        # set machine and active project: the last project installed
         self._set_machine(args)
-        self._set_installed_project(projects)
-        self.logger.info("AQUA installation completed successfully in %s", self.configpath)
-
-    def _set_installed_project(self, projects):
-        """Make the last installed project the active one in config-aqua.yaml, logging the choice.
-
-        Args:
-            projects (list): projects installed by this command, in installation order
-        """
-        if not projects:
-            return
-        active = projects[-1]
         if len(projects) > 1:
             self.logger.warning(
                 "Installed projects %s: the last one, %s, is now the active project (change it with `aqua project set`)",
                 ", ".join(projects),
-                active,
+                projects[-1],
             )
-        else:
-            self.logger.info("Project %s installed and set as the active project", active)
-
-        configfile = os.path.join(self.configpath, "config-aqua.yaml")
-        with SafeFileLock(configfile + ".lock", loglevel=self.loglevel):
-            cfg = load_yaml(configfile)
-            cfg[PROJECT_KEY] = active
-            dump_yaml(configfile, cfg)
+        if projects:
+            self._project_set(projects[-1])
+        self.logger.info("AQUA installation completed successfully in %s", self.configpath)
 
     def _config_home(self):
         """Configure the AQUA installation folder, by default inside $HOME"""
@@ -459,25 +452,9 @@ class InstallMixin:
                 self.logger.error("Cannot update %s: %s", name, info["error"])
                 failed = True
             elif info["path"] is not None and (name == "core" or self._check_component_installed(name)):
-                self._update_component(name)
+                self._copy_component(name, info["path"], update=True)
         if failed:
             sys.exit(1)
-
-    def _update_component(self, component):
-        """
-        Update the folders of an installed component, skipping those in editable mode.
-
-        Args:
-            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
-        """
-        for source, target in self._component_targets(component, self.components[component]["path"]):
-            if os.path.islink(target):
-                self.logger.info("Skipping %s (editable mode)", target)
-            elif not os.path.exists(source):
-                self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
-            else:
-                os.makedirs(os.path.dirname(target), exist_ok=True)
-                self._copy_update_folder_file(source, target, update=True)
 
     def _copy_update_folder_file(self, source, target, link=False, update=False):
         """Generic function to copy or update a source to a target folder"""
@@ -527,7 +504,7 @@ class InstallMixin:
         if self.configurer.config_dict.get(PROJECT_KEY):
             self._print_projects()
         else:
-            print("AQUA projects: none, this installation predates project support (run `aqua install` to upgrade it)")
+            print(f"AQUA projects: none. {self._pre_project_message()}")
 
         self.catalog_list(args)
 
@@ -550,10 +527,7 @@ class InstallMixin:
         failures = []
 
         if not self.configurer.config_dict.get(PROJECT_KEY):
-            failures.append(
-                f"This installation predates project support (no {PROJECT_KEY} key in {self.configfile}): "
-                "run `aqua install` to upgrade it"
-            )
+            failures.append(self._pre_project_message())
         else:
             active = self.configurer.project
             installed = self._installed_projects()
@@ -574,7 +548,7 @@ class InstallMixin:
         for catalog in catalogs:
             catalog_file = os.path.join(catdir, catalog, "catalog.yaml")
             try:
-                list(intake.open_catalog(catalog_file))
+                load_yaml(catalog_file)
             except Exception as e:
                 failures.append(f"Catalog {catalog} cannot be loaded from {catalog_file}: {e}")
 

@@ -39,10 +39,18 @@ class ProjectMixin:
             )
             sys.exit(1)
 
-        self.logger.info("Setting project to %s", args.project)
+        self._project_set(args.project)
+
+    def _project_set(self, project):
+        """Modify the config-aqua.yaml with the active project
+
+        Args:
+            project (str): the project to be set as the active one in the config-aqua.yaml
+        """
+        self.logger.info("Setting project to %s", project)
         with SafeFileLock(self.configfile + ".lock", loglevel=self.loglevel):
             cfg = load_yaml(self.configfile)
-            cfg[PROJECT_KEY] = args.project
+            cfg[PROJECT_KEY] = project
             dump_yaml(self.configfile, cfg)
 
     def project_list(self, args):
@@ -88,12 +96,15 @@ class ProjectMixin:
             self._refuse_core(name)
         self._check()
         if not self.configurer.config_dict.get(PROJECT_KEY):
-            self.logger.error(
-                "This installation predates project support (no %s key in %s): run `aqua install` to upgrade it",
-                PROJECT_KEY,
-                self.configfile,
-            )
+            self.logger.error(self._pre_project_message())
             sys.exit(1)
+
+    def _pre_project_message(self):
+        """Message for an installation that predates project support (no project key)."""
+        return (
+            f"This installation predates project support (no {PROJECT_KEY} key in {self.configfile}): "
+            "run `aqua install` to upgrade it"
+        )
 
     def _installed_projects(self):
         """Names of the subfolders of the project-scoped folders, empty for a pre-project installation."""
