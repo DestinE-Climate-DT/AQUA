@@ -203,6 +203,7 @@ def plot_seasonalcycle(
     title: Optional[str] = None,
     fig: plt.Figure = None,
     ax: plt.Axes = None,
+    legend: bool = True,
     legend_fontsize: Optional[str | float] = None,
     loglevel: str = "WARNING",
 ):
@@ -220,6 +221,7 @@ def plot_seasonalcycle(
         title (str): title of the plot. Defaults to None.
         fig (plt.Figure): figure object to plot on
         ax (plt.Axes): axis object to plot on
+        legend (bool): whether to show the legend. Defaults to True.
         legend_fontsize (str or float): font size of the legend. Defaults to None, the style legend size.
         loglevel (str): logging level. Defaults to 'WARNING'.
 
@@ -260,7 +262,8 @@ def plot_seasonalcycle(
         except Exception as e:
             logger.debug(f"Error plotting std data: {e}")
 
-    ax.legend(fontsize=legend_fontsize)
+    if legend:
+        ax.legend(fontsize=legend_fontsize)
     ax.set_xticks(months_numeric)
     ax.set_xticklabels(months_names)
     ax.set_xlim(0.5, 12.5)
@@ -274,6 +277,69 @@ def plot_seasonalcycle(
         ax.set_title("")
 
     return fig, ax
+
+
+def plot_seasonalcycle_bias(
+    data: list[xr.DataArray] | xr.DataArray,
+    ref_data: xr.DataArray,
+    std_data: Optional[xr.DataArray] = None,
+    data_labels: Optional[list] = None,
+    ref_label: Optional[str] = None,
+    style: Optional[str] = None,
+    figsize: Optional[tuple] = None,
+    title: Optional[str] = None,
+    legend_fontsize: Optional[str | float] = None,
+    loglevel: str = "WARNING",
+):
+    """
+    Plot the seasonal cycle of the data and the reference data (left panel)
+    next to the difference of the data from the reference (right panel).
+
+    Args:
+        data (list of xr.DataArray): data to plot
+        ref_data (xr.DataArray): reference data to plot and to compute the difference from
+        std_data (xr.DataArray): standard deviation of the reference data, shown as a band in both panels
+        data_labels (list of str): labels for the data
+        ref_label (str): label for the reference data
+        style (str): style to use for the plot. By default the schema specified in the configuration file is used.
+        figsize (tuple): size of the figure. Defaults to figure_size(0.4), with the common width.
+        title (str): title of the left panel. Defaults to None.
+        legend_fontsize (str or float): font size of the legend. Defaults to None, the style legend size.
+        loglevel (str): logging level. Defaults to 'WARNING'.
+
+    Returns:
+        fig, (ax, ax_bias) (tuple): figure and the two axis objects
+    """
+    figsize = figure_size(0.4) if figsize is None else figsize
+    fig, (ax, ax_bias) = plt.subplots(1, 2, figsize=figsize, width_ratios=[2, 1], layout="constrained")
+
+    plot_seasonalcycle(
+        data=data,
+        ref_data=ref_data,
+        std_data=std_data,
+        data_labels=data_labels,
+        ref_label=ref_label,
+        style=style,
+        title=title,
+        fig=fig,
+        ax=ax,
+        legend_fontsize=legend_fontsize,
+        loglevel=loglevel,
+    )
+    # The reference becomes the zero line, so its std band is drawn around it
+    plot_seasonalcycle(
+        data=[d - ref_data for d in to_list(data)],
+        ref_data=xr.zeros_like(ref_data),
+        std_data=std_data,
+        style=style,
+        title=f"Difference from {ref_label or 'reference'}",
+        fig=fig,
+        ax=ax_bias,
+        legend=False,
+        loglevel=loglevel,
+    )
+
+    return fig, (ax, ax_bias)
 
 
 def _extend_cycle(data: xr.DataArray, loglevel: str = "WARNING"):
