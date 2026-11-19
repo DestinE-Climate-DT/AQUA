@@ -9,7 +9,7 @@ import shutil
 import sys
 
 from aqua.core.configurer import ConfigContext, ConfigLocator, ConfigPackages
-from aqua.core.configurer.context import PROJECT_FOLDERS, PROJECT_KEY
+from aqua.core.configurer.context import PRE_PROJECT_MESSAGE, PROJECT_FOLDERS
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -97,7 +97,7 @@ class InstallMixin:
 
         Project-scoped folders go to ``<configpath>/<dir>/<component>``, flat folders to ``<configpath>/<dir>``,
         templates to ``<configpath>/templates/<dir>``. The ``files`` of a plugin are not whole folders and are not
-        listed here.
+        listed here (see ``_component_files``).
 
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
@@ -115,6 +115,26 @@ class InstallMixin:
         targets += [(src(d), os.path.join(self.configpath, d)) for d in info["flat"]]
         targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["templates"]]
         return targets
+
+    def _component_files(self, component, source):
+        """Extra files of a component, as (source, target) pairs: each file of its ``files`` folders goes to the
+        flat ``<configpath>/<dir>``.
+
+        Args:
+            component (str): component name, e.g. 'claima'
+            source (str): config folder of the component package or repository
+
+        Returns:
+            list: (source, target) tuples
+        """
+        files = []
+        for kind in self.components[component]["files"]:
+            folder = os.path.join(source, kind)
+            if not os.path.isdir(folder):
+                self.logger.warning("%s declared by %s does not exist, skipping it", folder, component)
+                continue
+            files += [(os.path.join(folder, n), os.path.join(self.configpath, kind, n)) for n in sorted(os.listdir(folder))]
+        return files
 
     def _check_component_installed(self, component):
         """
@@ -180,46 +200,45 @@ class InstallMixin:
 
     def _copy_component(self, component, source_path, link=False, update=False):
         """
-        Copy (or link) the folders of a component; when updating, folders installed in editable mode are skipped.
+        Copy (or link) the folders and extra files of a component; when updating, those in editable mode are skipped.
+
+        A first installation stops before any change if an extra file would overwrite an existing file, and keeps
+        the shared (flat or templates) folders of a project already present.
+        Updating a project copies its folders over the installed ones, so user files with other names are kept;
+        core folders are replaced.
 
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
             source_path (str): config folder of the component package or repository
-            link (bool): link the folders instead of copying them
-            update (bool): replace the folders already installed
+            link (bool): link the folders and files instead of copying them
+            update (bool): replace the folders and files already installed
         """
-        for source, target in self._component_targets(component, source_path):
+        files = self._component_files(component, source_path)
+        existing = [target for _, target in files if os.path.lexists(target)]
+        if existing and not update:
+            self.logger.error("Cannot install %s, these files already exist: %s", component, ", ".join(existing))
+            sys.exit(1)
+
+        for source, target in self._component_targets(component, source_path) + files:
             if update and os.path.islink(target):
                 self.logger.info("Skipping %s (editable mode)", target)
             elif not os.path.exists(source):
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
+            elif update and component != "core" and os.path.isdir(source):
+                self.logger.info("Updating %s ...", target)
+                shutil.copytree(source, target, dirs_exist_ok=True)
+            elif not update and component != "core" and os.path.lexists(target):
+                # a flat or templates folder shared by projects, kept by `aqua project remove`
+                self.logger.info("%s is already installed, keeping it", target)
             else:
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 self._copy_update_folder_file(source, target, link=link, update=update)
 
-    def _determine_component_mode(self, args, name):
-        """
-        Determine the installation mode for a single component, given the
-        full args namespace. Handles the "no component flags at all -> install
-        everything in standard mode" fallback centrally.
-
-        Args:
-            args (argparse.Namespace): CLI arguments
-            name (str): component name, e.g. "core", "diagnostics", "emulators"
-
-        Returns:
-            dict or None: same shape as _get_install_mode's return value.
-        """
-        requested = {n: getattr(args, n, None) for n in self.components}
-
-        if not any(v is not None for v in requested.values()):
-            # bare `aqua install`: install every known component, standard mode
-            return {"mode": "standard", "path": None}
-
-        return self._get_install_mode(requested.get(name))
-
     def install(self, args):
-        """Install AQUA, find the folders and then install
+        """Install AQUA: core and the diagnostics project, or only the one selected with -c or -d
+
+        Other projects are added with ``aqua project install``; ``-d`` alone adds diagnostics to an existing
+        installation in the same way.
 
         Args:
             args (argparse.Namespace): arguments from the command line
@@ -238,96 +257,49 @@ class InstallMixin:
         # Check current installation status
         install_info = self._check(silent=True, return_info=True)
 
-        # Determine installation mode for every known component (core + all plugins)
-        modes = {name: self._determine_component_mode(args, name) for name in self.components}
-        self.logger.debug("Installation modes: %s", modes)
+        core_mode = self._get_install_mode(args.core)
+        diagnostics_mode = self._get_install_mode(args.diagnostics)
+        if core_mode is None and diagnostics_mode is None:
+            # bare `aqua install`: core and diagnostics, standard mode
+            core_mode = diagnostics_mode = {"mode": "standard", "path": None}
+        self.logger.debug("Installation modes: core %s, diagnostics %s", core_mode, diagnostics_mode)
 
-        core_mode = modes.get("core")
-        other_requested = {name: mode for name, mode in modes.items() if name != "core" and mode}
-
-        # Plugins breaking the contract (e.g. an old contract) stop the installation before anything is changed
-        broken = [self.components[name]["error"] for name in other_requested if self.components[name]["error"]]
-        if broken:
-            for error in broken:
-                self.logger.error(error)
+        diagnostics = self.components.get("diagnostics", {"path": None, "error": None})
+        # a diagnostics package breaking the contract (e.g. an old contract) stops the installation before any change
+        if diagnostics_mode and diagnostics["error"]:
+            self.logger.error(diagnostics["error"])
             sys.exit(1)
+
+        if not core_mode:
+            if not install_info["installed"]:
+                self.logger.error("Cannot install diagnostics without core. Install core first or use full installation.")
+                sys.exit(1)
+            self._project_add("diagnostics", diagnostics_mode)
+            return
 
         if install_info["installed"]:
             self.logger.warning("AQUA installation found in %s", self.configpath)
-            if core_mode:
-                other_installed = [n for n in install_info["components"] if n != "core"]
-                self.logger.warning("Proceeding will remove the existing installation and all catalogs.")
-                if other_installed:
-                    self.logger.warning(
-                        "It will remove the following components if already installed: %s",
-                        ", ".join(other_installed),
-                    )
-                if not self._remove_installation(confirm=True):
-                    sys.exit()
+            self.logger.warning("Proceeding will remove the existing installation, its projects and all catalogs.")
+            if not self._remove_installation(confirm=True):
+                sys.exit()
 
-        # Validation: installing non-core components requires core to already be installed
-        if not core_mode and other_requested:
-            if not install_info["components"]["core"]["installed"]:
-                self.logger.error(
-                    "Cannot install %s without core. Install core first or use full installation.",
-                    ", ".join(other_requested),
-                )
-                sys.exit(1)
-            self._check_project_layout()
-            for name in other_requested:
-                if install_info["components"].get(name, {}).get("installed"):
-                    self.logger.error(
-                        "%s component is already installed. We cannot add it again, please use 'aqua uninstall' before",
-                        name,
-                    )
-                    sys.exit(1)
-            self.logger.info(
-                "Core already installed (%s mode), adding component(s): %s",
-                install_info["components"]["core"]["mode"],
-                ", ".join(other_requested),
-            )
-
-        # Install core first, always, if requested
-        if core_mode:
-            self.logger.debug("Installing core component")
-            self._install_component("core", core_mode)
-
-            self.logger.debug("Creating config-aqua.yaml configuration file")
-            self._copy_update_folder_file(
-                os.path.join(self.components["core"]["path"], "config-aqua.tmpl"),
-                os.path.join(self.configpath, "config-aqua.yaml"),
-            )
-
-        # Install every other requested component, i.e. every project (diagnostics, claima, climatedt, ...)
-        projects = []
-        for name, mode in other_requested.items():
-            if self.components[name]["path"] is not None:
-                self.logger.debug("Installing %s component", name)
-                self._install_component(name, mode)
-                projects.append(name)
-            else:
-                msg = f"aqua.{name} package not found. Skipping {name} installation."
-                if core_mode:
-                    # full install: missing optional component is just a warning
-                    self.logger.warning(msg)
-                else:
-                    # explicit request for a missing component is a hard error
-                    self.logger.error(msg)
-                    sys.exit(1)
+        self.logger.debug("Installing core component")
+        self._install_component("core", core_mode)
+        self.logger.debug("Creating config-aqua.yaml configuration file")
+        self._copy_update_folder_file(
+            os.path.join(self.components["core"]["path"], "config-aqua.tmpl"),
+            os.path.join(self.configpath, "config-aqua.yaml"),
+        )
 
         # Create catalogs directory
         os.makedirs(os.path.join(self.configpath, CATPATH), exist_ok=True)
-
-        # set machine and active project: the last project installed
         self._set_machine(args)
-        if len(projects) > 1:
-            self.logger.warning(
-                "Installed projects %s: the last one, %s, is now the active project (change it with `aqua project set`)",
-                ", ".join(projects),
-                projects[-1],
-            )
-        if projects:
-            self._project_set(projects[-1])
+
+        # the active project of config-aqua.tmpl is diagnostics
+        if diagnostics_mode and diagnostics["path"] is not None:
+            self._install_component("diagnostics", diagnostics_mode)
+        elif diagnostics_mode:
+            self.logger.warning("aqua.diagnostics package not found. Skipping diagnostics installation.")
         self.logger.info("AQUA installation completed successfully in %s", self.configpath)
 
     def _config_home(self):
@@ -441,7 +413,8 @@ class InstallMixin:
     def update(self, args):
         """Update the installation files of core and of every installed project, skipping editable folders.
 
-        Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another.
+        Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another;
+        the extra files of the projects are copied again after core has replaced its flat folders.
         """
         self._check_project_layout()
         self.logger.info("Updating AQUA installation...")
@@ -501,10 +474,10 @@ class InstallMixin:
         print(f"\t - AQUA available components: {', '.join(self.components)}")
         print(f"\t - AQUA available packages: {', '.join(ConfigPackages.avail_packages())}")
 
-        if self.configurer.config_dict.get(PROJECT_KEY):
+        if self.configurer.has_project_layout():
             self._print_projects()
         else:
-            print(f"AQUA projects: none. {self._pre_project_message()}")
+            print(f"AQUA projects: none. {PRE_PROJECT_MESSAGE.format(config_file=self.configfile)}")
 
         self.catalog_list(args)
 
@@ -526,8 +499,8 @@ class InstallMixin:
         self._check()
         failures = []
 
-        if not self.configurer.config_dict.get(PROJECT_KEY):
-            failures.append(self._pre_project_message())
+        if not self.configurer.has_project_layout():
+            failures.append(PRE_PROJECT_MESSAGE.format(config_file=self.configfile))
         else:
             active = self.configurer.project
             installed = self._installed_projects()
