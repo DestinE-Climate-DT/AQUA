@@ -12,7 +12,7 @@ Complete list:
 - New `aqua project set` and `aqua project list` commands to select the active project, and `ConfigContext.project` to read it (#3410)
 - Breaking: plugins must declare the plugin contract v2 and are installed in per-project folders; new `aqua check` command to validate an installation (#3412)
 - New `aqua project install`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3416)
-- `aqua analysis` and `aqua push` read the configuration of the active project, selectable with `-p/--project` (#PR)
+- `aqua analysis` and `aqua push` read the configuration of the active project, selectable with `-p/--project` (#3418)
 - Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
 
