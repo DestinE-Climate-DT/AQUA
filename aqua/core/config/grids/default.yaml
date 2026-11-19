@@ -45,6 +45,14 @@ grids:
       2d: "{{ grids }}/lonlat/r100_grid.nc"
     space_coord: ["lon", "lat"]
 
+  # Regular grid interpolated by FDB (EERIE)
+  r025s-flat:
+    path:
+      2d: /work/ab0995/a270260/aqua_eerie_grid/phase2/r025s_northfirst.txt
+    space_coord: ["value"]
+    cellareas: /work/ab0995/a270260/aqua_eerie_grid/phase2/cell_area_r025s_flat.nc
+    cellareas_var: cell_area
+
   # Regular lon-lat target grids: rXXXs are staggered (poles included)
   r005s: r7200x3601
   r005: r7200x3600
