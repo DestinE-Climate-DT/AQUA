@@ -39,7 +39,8 @@ jobs:
     uses: ./.github/workflows/aqua-test-reusable.yml
     with:
       python-version: '3.14'
-      pytest-markers: 'aqua or console or polytope or fdb or graphics or catgen'
+      # TODO(project-support): catgen tests temporarily disabled while the BSC GitLab (data portfolio) is down; restore before merging into main
+      pytest-markers: 'aqua or console or polytope or fdb or graphics'
       enable-parallel: true
       enable-coverage: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
       install-mode: 'local'
