@@ -45,7 +45,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
         self.command_map = {
             "install": self.install,
             "uninstall": self.uninstall,
-            "update": self.update_dispatch,
+            "update": self.update,
             "list": self.list,
             "catalog": {
                 "add": self.catalog_add,
@@ -67,7 +67,6 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
                 "path": self.grids_path,
                 "build": self.grids_build,
                 "deploy": self.grids_deploy,
-                "set": self._deprecated("grids set", "grids path", self.grids_path),
             },
             "fixes": files,
             "styles": files,
@@ -75,27 +74,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
             "drop": self.drop,
             "catgen": self.catgen,
             "push": self.push,
-            # deprecated verb-first catalog commands, to be removed in AQUA 2.0
-            "add": self._deprecated("add", "catalog add", self.catalog_add),
-            "remove": self._deprecated("remove", "catalog remove", self.catalog_remove),
-            "set": self._deprecated("set", "catalog set", self.catalog_set),
-            "avail": self._deprecated("avail", "catalog avail", self.catalog_avail),
         }
-
-    def _deprecated(self, old, new, handler):
-        """Wrap the handler of a deprecated alias: it warns once, naming the new command, then runs the handler."""
-
-        def alias(args):
-            self.logger.warning("`aqua %s` is deprecated and will be removed in AQUA 2.0, use `aqua %s` instead", old, new)
-            return handler(args)
-
-        return alias
-
-    def update_dispatch(self, args):
-        """`aqua update` refreshes the installation; the deprecated `aqua update -c <catalog>` updates a catalog."""
-        if args.catalog:
-            return self._deprecated("update -c", "catalog update", self.catalog_update)(args)
-        return self.update(args)
 
     def execute(self):
         """Parse AQUA class and run the required command"""
