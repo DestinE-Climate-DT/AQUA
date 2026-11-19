@@ -19,13 +19,8 @@ from aqua.core.configurer import ConfigPackages
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.console.builder import builder_parser
 from aqua.core.console.catgen import catgen_parser
-from aqua.core.console.components import discover_aqua_components
 from aqua.core.console.drop import drop_parser
 from aqua.core.console.push_analysis import push_parser
-
-# Components keeping a one-letter install flag for backward compatibility: every other plugin gets the
-# long flag only, since two plugin names with the same initial (or starting with "c") would collide.
-SHORT_INSTALL_FLAGS = {"core": "-c", "diagnostics": "-d"}
 
 # Nouns managing files that can be added to the AQUA configuration folder of the same name
 FILE_NOUNS = ["grids", "fixes", "styles"]
@@ -116,22 +111,21 @@ def add_noun(subparsers, name, help_text):
 
 
 def install_parser(subparsers):
-    """Add ``aqua install``, with one flag per discovered component."""
-    parser = add_command(subparsers, "install", "Install the AQUA configuration files")
+    """Add ``aqua install``: core and diagnostics by default, other projects via ``aqua project install``."""
+    parser = subparsers.add_parser("install", help="Install the AQUA configuration files")
     parser.add_argument("machine", metavar="MACHINE_NAME", help="Machine on which install AQUA")
     parser.add_argument(
         "-p", "--path", type=str, metavar="AQUA_TARGET_PATH", help="Path where to install AQUA. Default is $HOME/.aqua"
     )
-    for name in discover_aqua_components():
-        flags = [SHORT_INSTALL_FLAGS[name]] if name in SHORT_INSTALL_FLAGS else []
+    for flag, name in (("-c", "core"), ("-d", "diagnostics")):
         parser.add_argument(
-            *flags,
+            flag,
             f"--{name}",
             nargs="?",
             const="standard",
             type=str,
             metavar=f"AQUA_{name.upper()}_PATH",
-            help=f"Install AQUA {name}. Without path: standard installation of {name} only. "
+            help=f"Install AQUA {name} only. Without path: standard installation. "
             "With path: editable installation from that path",
         )
     return parser

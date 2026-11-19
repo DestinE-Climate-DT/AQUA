@@ -87,13 +87,11 @@ aqua install
 ------------
 
 With this command the configuration file and the default data models, grids and fixes are copied to the destination folder.
-AQUA core is always installed. On top of it, any other AQUA component installed in the current environment
-(``aqua-diagnostics`` and any further package following the same convention, see :ref:`aqua-console-plugins`)
-is automatically detected and its configuration/template files are copied as well.
-Each of these packages is a *project*: its project-scoped folders are installed in a subfolder named after it
-(e.g. ``analysis/diagnostics``), and the last project installed becomes the active one,
-written in the ``project`` key of ``config-aqua.yaml``. If a bare ``aqua install`` installs several projects,
-a warning names the one that is now active.
+A bare ``aqua install`` installs AQUA core and, if ``aqua-diagnostics`` is installed in the current environment,
+the ``diagnostics`` project: its project-scoped folders go in a subfolder named after it (e.g. ``analysis/diagnostics``)
+and it is the active project, written in the ``project`` key of ``config-aqua.yaml``.
+Other projects (see :ref:`aqua-console-plugins`) are added with
+:ref:`aqua project install <aqua-project-install>`.
 
 By default, the destination folder will be ``$HOME/.aqua``.
 It is possible to specify from where to copy and where to store.
@@ -128,15 +126,8 @@ Optional arguments are:
     allowing developers to work on their local copy of AQUA diagnostics.
 
 .. note::
-    ``--diagnostics`` is only one example: **every** AQUA component discovered in the current environment
-    gets its own ``--<component-name>`` option automatically, following the same syntax
-    (bare flag for a standard install, or a path for an editable one). Only ``--core`` and ``--diagnostics``
-    also have a one-letter form (``-c`` and ``-d``): the other components have the long option only, so that
-    two component names with the same initial do not collide. Run ``aqua install --help``
-    to see the exact list of components available in your environment.
-    The default behaviour, when no component flag is specified at all, is to install every discovered component.
-    On an existing installation, ``aqua install <machine> --<project>`` is a deprecated alias of
-    :ref:`aqua project install <aqua-project-install>`.
+    ``-c`` alone installs only core; ``-d`` alone adds diagnostics to an existing installation,
+    as ``aqua project install diagnostics``. Without ``-c`` and ``-d``, both are installed in standard mode.
 
 .. option:: --path, -p <path>
 
@@ -162,7 +153,7 @@ without any change in AQUA core.
 
 Every plugin is a **project**: its name is the entry point name (``diagnostics``, ``claima``, ...),
 which is also the name of its subfolder in the installation, the value of the ``project`` key of
-``config-aqua.yaml`` and the ``--<name>`` option of ``aqua install``.
+``config-aqua.yaml`` and the argument of ``aqua project install``.
 AQUA core is not a plugin and not a project.
 
 A plugin package needs two things:
@@ -218,7 +209,7 @@ Rules:
   ``aqua-diagnostics`` < 0.27.0) is rejected and ``aqua install`` stops with an error asking to update that plugin.
 - Missing list keys default to an empty list. Unknown keys and values that are not lists are rejected,
   with an error naming the package.
-- In editable mode (``--<name> <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
+- In editable mode (``aqua project install <name> -e <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
   the links are made at the ``<config>/<dir>/<name>`` level,
   so that different projects can be editable or not independently.
 - ``get_install_dirs()`` may check the version of AQUA core and raise an exception if it is too old:

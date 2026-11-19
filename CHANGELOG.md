@@ -11,7 +11,7 @@ Complete list:
 - Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old commands remain as deprecated aliases until 2.0 (#3409)
 - New `aqua project set` and `aqua project list` commands to select the active project, and `ConfigContext.project` to read it (#3410)
 - Breaking: plugins must declare the plugin contract v2 and are installed in per-project folders; new `aqua check` command to validate an installation (#3412)
-- New `aqua project install`, `update` and `remove` commands; projects can ship extra grids, fixes and styles files (#3413)
+- New `aqua project install`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3413)
 - Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
 

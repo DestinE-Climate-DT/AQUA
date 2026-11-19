@@ -220,29 +220,11 @@ class InstallMixin:
         """Path of an extra file once installed in the flat ``<configpath>/<kind>`` folder."""
         return os.path.join(self.configpath, kind, os.path.basename(file))
 
-    def _determine_component_mode(self, args, name):
-        """
-        Determine the installation mode for a single component, given the
-        full args namespace. Handles the "no component flags at all -> install
-        everything in standard mode" fallback centrally.
-
-        Args:
-            args (argparse.Namespace): CLI arguments
-            name (str): component name, e.g. "core", "diagnostics", "emulators"
-
-        Returns:
-            dict or None: same shape as _get_install_mode's return value.
-        """
-        requested = {n: getattr(args, n, None) for n in self.components}
-
-        if not any(v is not None for v in requested.values()):
-            # bare `aqua install`: install every known component, standard mode
-            return {"mode": "standard", "path": None}
-
-        return self._get_install_mode(requested.get(name))
-
     def install(self, args):
-        """Install AQUA, find the folders and then install
+        """Install AQUA: core and the diagnostics project, or only the one selected with -c or -d
+
+        Other projects are added with ``aqua project install``. ``-d`` alone adds diagnostics to an existing
+        installation.
 
         Args:
             args (argparse.Namespace): arguments from the command line
@@ -261,96 +243,52 @@ class InstallMixin:
         # Check current installation status
         install_info = self._check(silent=True, return_info=True)
 
-        # Determine installation mode for every known component (core + all plugins)
-        modes = {name: self._determine_component_mode(args, name) for name in self.components}
-        self.logger.debug("Installation modes: %s", modes)
+        core_mode = self._get_install_mode(args.core)
+        diagnostics_mode = self._get_install_mode(args.diagnostics)
+        if core_mode is None and diagnostics_mode is None:
+            # bare `aqua install`: core and diagnostics, standard mode
+            core_mode = diagnostics_mode = {"mode": "standard", "path": None}
+        self.logger.debug("Installation modes: core %s, diagnostics %s", core_mode, diagnostics_mode)
 
-        core_mode = modes.get("core")
-        other_requested = {name: mode for name, mode in modes.items() if name != "core" and mode}
-
-        # Plugins breaking the contract (e.g. an old contract) stop the installation before anything is changed
-        broken = [self.components[name]["error"] for name in other_requested if self.components[name]["error"]]
-        if broken:
-            for error in broken:
-                self.logger.error(error)
+        diagnostics = self.components.get("diagnostics", {"path": None, "error": None})
+        # a diagnostics package breaking the contract (e.g. an old contract) stops the installation before any change
+        if diagnostics_mode and diagnostics["error"]:
+            self.logger.error(diagnostics["error"])
             sys.exit(1)
+
+        if not core_mode:
+            if not install_info["installed"]:
+                self.logger.error("Cannot install diagnostics without core. Install core first or use full installation.")
+                sys.exit(1)
+            self._project_add("diagnostics", diagnostics_mode)
+            return
 
         if install_info["installed"]:
             self.logger.warning("AQUA installation found in %s", self.configpath)
-            if core_mode:
-                other_installed = [n for n in install_info["components"] if n != "core"]
-                self.logger.warning("Proceeding will remove the existing installation and all catalogs.")
-                if other_installed:
-                    self.logger.warning(
-                        "It will remove the following components if already installed: %s",
-                        ", ".join(other_installed),
-                    )
-                if not self._remove_installation(confirm=True):
-                    sys.exit()
+            self.logger.warning("Proceeding will remove the existing installation, its projects and all catalogs.")
+            if not self._remove_installation(confirm=True):
+                sys.exit()
 
-        # Projects are added to an existing installation by `aqua project install` (see AquaConsole.install_dispatch)
-        if not core_mode and other_requested:
-            self.logger.error(
-                "Cannot install %s without core. Install core first or use full installation.",
-                ", ".join(other_requested),
-            )
-            sys.exit(1)
+        self.logger.debug("Installing core component")
+        self._install_component("core", core_mode)
+        self.logger.debug("Creating config-aqua.yaml configuration file")
+        self._copy_update_folder_file(
+            os.path.join(self.components["core"]["path"], "config-aqua.tmpl"),
+            os.path.join(self.configpath, "config-aqua.yaml"),
+        )
 
-        # Install core first, always, if requested
-        if core_mode:
-            self.logger.debug("Installing core component")
-            self._install_component("core", core_mode)
-
-            self.logger.debug("Creating config-aqua.yaml configuration file")
-            self._copy_update_folder_file(
-                os.path.join(self.components["core"]["path"], "config-aqua.tmpl"),
-                os.path.join(self.configpath, "config-aqua.yaml"),
-            )
-
-        # Install every other requested component, i.e. every project (diagnostics, claima, climatedt, ...)
-        projects = []
-        for name, mode in other_requested.items():
-            if self.components[name]["path"] is not None:
-                self.logger.debug("Installing %s component", name)
-                self._install_component(name, mode)
-                projects.append(name)
-            else:
-                msg = f"aqua.{name} package not found. Skipping {name} installation."
-                if core_mode:
-                    # full install: missing optional component is just a warning
-                    self.logger.warning(msg)
-                else:
-                    # explicit request for a missing component is a hard error
-                    self.logger.error(msg)
-                    sys.exit(1)
+        if diagnostics_mode and diagnostics["path"] is not None:
+            self._install_component("diagnostics", diagnostics_mode)
+            self.logger.info("Project diagnostics installed and set as the active project")
+        elif diagnostics_mode:
+            self.logger.warning("aqua.diagnostics package not found. Skipping diagnostics installation.")
 
         # Create catalogs directory
         os.makedirs(os.path.join(self.configpath, CATPATH), exist_ok=True)
 
-        # set machine and active project
+        # set machine (the active project is diagnostics, from config-aqua.tmpl)
         self._set_machine(args)
-        self._set_installed_project(projects)
         self.logger.info("AQUA installation completed successfully in %s", self.configpath)
-
-    def _set_installed_project(self, projects):
-        """Make the last installed project the active one in config-aqua.yaml, logging the choice.
-
-        Args:
-            projects (list): projects installed by this command, in installation order
-        """
-        if not projects:
-            return
-        active = projects[-1]
-        if len(projects) > 1:
-            self.logger.warning(
-                "Installed projects %s: the last one, %s, is now the active project (change it with `aqua project set`)",
-                ", ".join(projects),
-                active,
-            )
-        else:
-            self.logger.info("Project %s installed and set as the active project", active)
-
-        self._write_project(active)
 
     def _config_home(self):
         """Configure the AQUA installation folder, by default inside $HOME"""

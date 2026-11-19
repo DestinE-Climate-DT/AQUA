@@ -52,20 +52,30 @@ class ProjectMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        self._check_project_layout(args.project)
-        self._check_project_package(args.project)
-        if args.project in self._installed_projects():
+        mode = {"mode": "editable", "path": args.editable} if args.editable else {"mode": "standard", "path": None}
+        self._project_add(args.project, mode)
+
+    def _project_add(self, name, mode):
+        """Add a project to an existing installation and make it the active one.
+
+        Args:
+            name (str): project name
+            mode (dict): installation mode with 'mode' ('standard' or 'editable') and 'path' keys
+        """
+        self._check_project_layout(name)
+        self._check_project_package(name)
+        if name in self._installed_projects():
             self.logger.error(
                 "Project %s is already installed: use `aqua project update %s` or `aqua project remove %s`",
-                args.project,
-                args.project,
-                args.project,
+                name,
+                name,
+                name,
             )
             sys.exit(1)
 
-        mode = {"mode": "editable", "path": args.editable} if args.editable else {"mode": "standard", "path": None}
-        self._install_component(args.project, mode)
-        self._set_installed_project([args.project])
+        self._install_component(name, mode)
+        self.logger.info("Project %s installed and set as the active project", name)
+        self._write_project(name)
 
     def project_update(self, args):
         """Copy again the folders and extra files of an installed project, skipping editable ones
