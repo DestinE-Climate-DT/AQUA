@@ -75,7 +75,7 @@ To add a new catalog to the AQUA catalog we need to create a
 new folder that will contain the configuration files.
 
 You can create the folder where you prefer and then add it to the
-available catalogs with the ``aqua add`` command (see :ref:`aqua-add`).
+available catalogs with the ``aqua catalog add`` command (see :ref:`aqua-add`).
 This will copy or link the required files, allowing to have your custom catalog
 folder under version control if needed.
 
@@ -140,11 +140,11 @@ More informations about how to add them can be found in the :ref:`add-data` sect
 Adding the catalog to the AQUA package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is done with the ``aqua add`` command.
+This is done with the ``aqua catalog add`` command.
 
 .. code-block:: bash
 
-    aqua add new_catalog -e /path/to/your/catalog/new_catalog
+    aqua catalog add new_catalog -e /path/to/your/catalog/new_catalog
 
 .. note::
     This command will create a symbolic link to the new catalog in the ``$AQUA/config/catalogs`` directory.

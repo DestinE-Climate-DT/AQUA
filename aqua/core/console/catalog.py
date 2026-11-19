@@ -59,7 +59,7 @@ class CatalogMixin:
             rate_info,
         )
 
-    def set(self, args):
+    def catalog_set(self, args):
         """Set an installed catalog as the one used in the config-aqua.yaml
 
         Args:
@@ -69,12 +69,12 @@ class CatalogMixin:
         self._check()
 
         if os.path.exists(f"{self.configpath}/{CATPATH}/{args.catalog}"):
-            self._set_catalog(args.catalog)
+            self._catalog_set(args.catalog)
         else:
             self.logger.error("%s catalog is not installed!", args.catalog)
             sys.exit(1)
 
-    def add(self, args):
+    def catalog_add(self, args):
         """Add a catalog and set it as a default in config-aqua.yaml
 
         Args:
@@ -88,15 +88,15 @@ class CatalogMixin:
 
         try:
             if args.editable is not None:
-                self._add_catalog_editable(args.catalog, args.editable)
+                self._catalog_add_editable(args.catalog, args.editable)
             else:
                 with GitHubAPIRequestTracker(self.logger, f"catalog {args.catalog}") as request_tracker:
-                    self._add_catalog_github(args.catalog, args.repository, request_tracker=request_tracker)
+                    self._catalog_add_github(args.catalog, args.repository, request_tracker=request_tracker)
 
             # validate only the new catalog: raises if its catalog or machine file is missing
             ConfigCatalog(catalog=args.catalog, loglevel=self.loglevel)
 
-            self._set_catalog(args.catalog)
+            self._catalog_set(args.catalog)
 
         except (Exception, SystemExit) as e:
             if is_new_catalog_dir and os.path.exists(cdir):
@@ -113,7 +113,7 @@ class CatalogMixin:
             )
             sys.exit(1)
 
-    def _add_catalog_editable(self, catalog, editable):
+    def _catalog_add_editable(self, catalog, editable):
         """Add a catalog in editable mode (i.e. link)"""
 
         cdir = f"{self.configpath}/{CATPATH}/{catalog}"
@@ -121,7 +121,7 @@ class CatalogMixin:
         print("Installing catalog in editable mode from", editable, "to", self.configpath)
         if os.path.exists(editable):
             if os.path.exists(cdir):
-                self.logger.error("Catalog %s already installed in %s, please consider `aqua remove`", catalog, cdir)
+                self.logger.error("Catalog %s already installed in %s, please consider `aqua catalog remove`", catalog, cdir)
                 sys.exit(1)
             else:
                 os.symlink(editable, cdir)
@@ -199,7 +199,7 @@ class CatalogMixin:
             sys.exit(1)
         return parts[0], parts[1]
 
-    def avail(self, args):
+    def catalog_avail(self, args):
         """
         Return the catalog available on the Github website
 
@@ -213,7 +213,7 @@ class CatalogMixin:
         print("Available ClimateDT catalogs at are:")
         print(available_catalog)
 
-    def _add_catalog_github(self, catalog, repository=None, request_tracker=None):
+    def _catalog_add_github(self, catalog, repository=None, request_tracker=None):
         """
         Add a catalog from a remote Github repository.
         Default repository is the Climate-DT repository
@@ -263,10 +263,37 @@ class CatalogMixin:
                 self.logger.error("Error occurred while fetching catalog: %s", e)
                 sys.exit(1)
         else:
-            self.logger.error("Catalog %s already installed in %s, please consider `aqua update`.", catalog, cdir)
+            self.logger.error("Catalog %s already installed in %s, please consider `aqua catalog update`.", catalog, cdir)
             sys.exit(1)
 
-    def _update_catalog(self, catalog):
+    def catalog_update(self, args):
+        """Update an installed catalog, or all of them, by downloading it again if not installed in editable mode
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()
+        if args.catalog == "all":
+            self.logger.info("Updating all AQUA catalogs")
+            catalogs = self._list_folder(f"{self.configpath}/{CATPATH}", return_list=True, silent=True)
+            for catalog in catalogs:
+                print(f"Updating catalog {catalog} ..")
+                self._catalog_update(os.path.basename(catalog))
+        else:
+            self._catalog_update(args.catalog)
+
+    def catalog_list(self, args):
+        """List the installed catalogs
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()
+        cdir = f"{self.configpath}/{CATPATH}"
+        print("AQUA current installed catalogs in", cdir, ":")
+        self._list_folder(cdir)
+
+    def _catalog_update(self, catalog):
         """Update a catalog by copying it if not installed in editable mode
 
         Args:
@@ -279,13 +306,13 @@ class CatalogMixin:
                 sys.exit(1)
             self.logger.info("Removing %s from %s", catalog, cdir)
             shutil.rmtree(cdir)
-            self._add_catalog_github(catalog)
-            self._set_catalog(catalog)
+            self._catalog_add_github(catalog)
+            self._catalog_set(catalog)
         else:
-            self.logger.error("%s does not appear to be installed, please consider `aqua add`", catalog)
+            self.logger.error("%s does not appear to be installed, please consider `aqua catalog add`", catalog)
             sys.exit(1)
 
-    def _set_catalog(self, catalog):
+    def _catalog_set(self, catalog):
         """Modify the config-aqua.yaml with the proper catalog
 
         Args:
@@ -315,7 +342,7 @@ class CatalogMixin:
 
             dump_yaml(self.configfile, cfg)
 
-    def remove(self, args):
+    def catalog_remove(self, args):
         """Remove a catalog
 
         Args:
@@ -331,12 +358,12 @@ class CatalogMixin:
                 os.unlink(cdir)
             else:
                 shutil.rmtree(cdir)
-            self._clean_catalog(args.catalog)
+            self._catalog_clean(args.catalog)
         else:
             self.logger.error("Catalog %s is not installed in %s, cannot remove it", args.catalog, cdir)
             sys.exit(1)
 
-    def _clean_catalog(self, catalog):
+    def _catalog_clean(self, catalog):
         """
         Remove catalog from the configuration file
         """

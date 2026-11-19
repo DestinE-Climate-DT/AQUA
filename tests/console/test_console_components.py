@@ -9,12 +9,15 @@ import pytest
 import aqua
 from aqua.core.console import components as components_module
 from aqua.core.console.components import _resolve_component_info, discover_aqua_components
+from aqua.core.console.parser import parse_arguments
 
 MOCKPLUGIN_FIXTURE_ROOT = os.path.join(os.path.dirname(__file__), "..", "fixtures", "mockplugin")
 MACHINE = "github"
 MOCK_ENTRY_POINTS = [
     EntryPoint(name="mockplugin", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins"),
     EntryPoint(name="brokenplugin", value="aqua.brokenplugin:get_install_dirs", group="aqua.plugins"),
+    # a plugin name starting with "c", as core: one-letter install flags would collide
+    EntryPoint(name="climatemock", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins"),
 ]
 
 
@@ -165,6 +168,17 @@ class TestPluginInstall:
         assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
 
         run_aqua_console_with_input(["uninstall"], "yes")
+
+    def test_install_flags_do_not_collide(self, mock_plugin_entrypoint):
+        """Only core and diagnostics keep a one-letter install flag: with one per plugin, `climatemock` would
+        register `-c` again and the parser could not be built."""
+        parser = parse_arguments()["main"]
+
+        args = parser.parse_args(["install", MACHINE, "-c", "--climatemock", "--mockplugin", "/some/path"])
+        assert (args.core, args.climatemock, args.mockplugin) == ("standard", "standard", "/some/path")
+        with pytest.raises(SystemExit) as excinfo:
+            parser.parse_args(["install", MACHINE, "-m"])
+        assert excinfo.value.code == 2
 
     def test_discover_reports_broken_plugin_as_not_installed(self, mock_plugin_entrypoint):
         """discover_aqua_components must mark an unresolvable plugin as not installed, without raising"""

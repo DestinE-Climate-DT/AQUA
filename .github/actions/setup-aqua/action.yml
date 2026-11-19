@@ -20,9 +20,12 @@ runs:
         POLYTOPE_KEY: ${{ inputs.polytope-key }}
       run: |
         aqua -vv install github
+        # aqua-core < 1.3 has no `catalog` noun: AQUA-diagnostics CI runs this action with the released aqua-core.
+        # TODO: drop the fallback once AQUA-diagnostics requires aqua-core>=1.3.
+        if aqua catalog --help > /dev/null 2>&1; then catalog_add=(catalog add); else catalog_add=(add); fi
         while IFS= read -r catalog; do
           [ -n "$catalog" ] || continue
-          aqua -vv add "$catalog"
+          aqua -vv "${catalog_add[@]}" "$catalog"
         done <<< "$AQUA_CATALOGS"
         aqua -vv list
         cat >> "$HOME/.aqua/config-aqua.yaml" <<EOF

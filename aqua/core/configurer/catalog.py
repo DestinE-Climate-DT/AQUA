@@ -50,7 +50,7 @@ class ConfigCatalog:
 
         # set the catalog as the first available and get all configurations
         if not self.catalog_available:
-            self.logger.warning('No available catalogs found. Please run "aqua add CATALOG_NAME" to install one')
+            self.logger.warning('No available catalogs found. Please run "aqua catalog add CATALOG_NAME" to install one')
             self.catalog = None
             self.catalog_file = None
             self.machine_file = None
@@ -92,7 +92,7 @@ class ConfigCatalog:
             str: the path to the catalog or machine file
         """
         if self.catalog is None:
-            raise KeyError('No AQUA catalog is installed. Please run "aqua add CATALOG_NAME"')
+            raise KeyError('No AQUA catalog is installed. Please run "aqua catalog add CATALOG_NAME"')
 
         catalog = catalog or self.catalog
         definitions = {"catalog": catalog, "configdir": self.paths.configdir}
@@ -100,7 +100,7 @@ class ConfigCatalog:
         self.logger.debug("%s file is %s", filename_key, file_path)
         if not os.path.exists(file_path):
             raise FileNotFoundError(
-                f'Cannot find {filename_key} file in {file_path}. Did you install it with "aqua add {catalog}"?'
+                f'Cannot find {filename_key} file in {file_path}. Did you install it with "aqua catalog add {catalog}"?'
             )
 
         return file_path

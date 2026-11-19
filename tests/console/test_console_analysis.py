@@ -51,7 +51,7 @@ class TestAquaConsoleAnalysis:
     def test_console_analysis_minimal(self, aqua_install, run_aqua, tmp_path, catalog_copy_path):
         """Minimal smoke test: verifies aqua analysis routes through the config without
         running real subprocesses."""
-        run_aqua(["add", "ci", "-e", catalog_copy_path])
+        run_aqua(["catalog", "add", "ci", "-e", catalog_copy_path])
 
         dummy_script = tmp_path / "cli_dummy.py"
         dummy_script.touch()

@@ -436,32 +436,22 @@ class InstallMixin:
             sys.exit()
 
     def update(self, args):
-        """Update an existing catalog by copying it if not installed in editable mode"""
+        """Update the installation files of every component, skipping those installed in editable mode"""
 
         self._check()
-        if args.catalog:
-            if args.catalog == "all":
-                self.logger.info("Updating all AQUA catalogs")
-                catalogs = self._list_folder(f"{self.configpath}/{CATPATH}", return_list=True, silent=True)
-                for catalog in catalogs:
-                    print(f"Updating catalog {catalog} ..")
-                    self._update_catalog(os.path.basename(catalog))
-            else:
-                self._update_catalog(args.catalog)
-        else:
-            self.logger.info("Updating AQUA installation...")
+        self.logger.info("Updating AQUA installation...")
 
-            # Update every discovered component (core + all installed plugins)
-            # that isn't in editable mode
-            for name, info in self.components.items():
-                if info.get("path") is None:
-                    continue
-                self._update_component(
-                    source_path=info["path"],
-                    config_dirs=info["config_dirs"],
-                    template_dirs=info["template_dirs"],
-                    component_name=name,
-                )
+        # Update every discovered component (core + all installed plugins)
+        # that isn't in editable mode
+        for name, info in self.components.items():
+            if info.get("path") is None:
+                continue
+            self._update_component(
+                source_path=info["path"],
+                config_dirs=info["config_dirs"],
+                template_dirs=info["template_dirs"],
+                component_name=name,
+            )
 
     def _update_component(self, source_path, config_dirs, template_dirs, component_name):
         """
@@ -534,15 +524,12 @@ class InstallMixin:
 
         self._check()
 
-        cdir = f"{self.configpath}/{CATPATH}"
-
         print("AQUA environment information:")
         print(f"\t - AQUA installation path: {self.configpath}")
         print(f"\t - AQUA available components: {', '.join(self.components)}")
         print(f"\t - AQUA available packages: {', '.join(ConfigPackages.avail_packages())}")
 
-        print("AQUA current installed catalogs in", cdir, ":")
-        self._list_folder(cdir)
+        self.catalog_list(args)
 
         if args.all:
             for _, info in self.components.items():

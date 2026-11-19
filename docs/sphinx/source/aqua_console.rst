@@ -19,21 +19,32 @@ Here we give a brief overview of the features.
 If you are a developer, you may want to read the :ref:`dev-notes` section.
 
 The entry point for the console is the command ``aqua``.
-It has the following subcommands:
+Commands follow the grammar ``aqua <noun> <verb> [arguments]``, e.g. ``aqua catalog add ci``,
+plus a few top-level commands acting on the whole installation or running a tool.
 
-- :ref:`aqua-install`
-- :ref:`aqua-avail`
-- :ref:`aqua-add`
-- :ref:`aqua-remove`
-- :ref:`aqua-set`
-- :ref:`aqua-uninstall`
-- :ref:`aqua-list`
-- :ref:`aqua-update`
-- :ref:`aqua-fixes`
-- :ref:`aqua-grids`
-- :ref:`aqua-drop`
-- :ref:`aqua-analysis`
-- :ref:`aqua_push`
+Top-level commands:
+
+- :ref:`aqua-install`, :ref:`aqua-uninstall`, :ref:`aqua-update`, :ref:`aqua-list`
+- :ref:`aqua-drop`, :ref:`aqua-analysis`, :ref:`aqua_push` and ``aqua catgen`` (see :ref:`catalog_generator`)
+
+Nouns and their verbs:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Noun
+     - Verbs
+   * - :ref:`catalog <aqua-catalog>`
+     - ``add <name> [-e path] [-r user/repo]``, ``remove <name>``, ``set <name>``, ``update <name|all>``, ``list``, ``avail [-r user/repo]``
+   * - :ref:`grids <aqua-grids>`
+     - ``add <file> [-e]``, ``remove <file>``, ``list``, ``path <path>``, ``build ...``, ``deploy <name>``
+   * - :ref:`fixes <aqua-fixes>`
+     - ``add <file> [-e]``, ``remove <file>``, ``list``
+   * - :ref:`styles <aqua-fixes>`
+     - ``add <file> [-e]``, ``remove <file>``, ``list``
+
+``aqua <noun>`` without a verb, or ``aqua <noun> -h``, prints the verbs of that noun.
+Some commands of previous AQUA versions have been replaced (see :ref:`aqua-deprecated`).
 
 The main command has some options listed below:
 
@@ -98,13 +109,13 @@ Mandatory arguments are:
 
 Optional arguments are:
 
-.. option:: --core, --core <path/to/aqua-core/repo>
+.. option:: -c, --core, --core <path/to/aqua-core/repo>
 
     If used without specifying a path, it will copy the configuration files from the AQUA core package installed in the current environment.
     If a path is specified, the folders containing the configuration files will be linked from the specified path,
     allowing developers to work on their local copy of AQUA core.
 
-.. option:: --diagnostics, --diagnostics <path/to/aqua-diagnostics/repo>
+.. option:: -d, --diagnostics, --diagnostics <path/to/aqua-diagnostics/repo>
 
     If used without specifying a path, it will copy the configuration files from the AQUA diagnostics package installed in the current environment.
     If a path is specified, the folders containing the configuration files will be linked from the specified path,
@@ -113,7 +124,9 @@ Optional arguments are:
 .. note::
     ``--diagnostics`` is only one example: **every** AQUA component discovered in the current environment
     gets its own ``--<component-name>`` option automatically, following the same syntax
-    (bare flag for a standard install, or a path for an editable one). Run ``aqua install --help``
+    (bare flag for a standard install, or a path for an editable one). Only ``--core`` and ``--diagnostics``
+    also have a one-letter form (``-c`` and ``-d``): the other components have the long option only, so that
+    two component names with the same initial do not collide. Run ``aqua install --help``
     to see the exact list of components available in your environment.
     The default behaviour, when no component flag is specified at all, is to install every discovered component.
 
@@ -158,10 +171,63 @@ group, and for each of them builds a ``--<name>`` CLI option (``<name>`` being t
 e.g. ``diagnostics``). A package that is registered but cannot be imported (e.g. installed metadata
 left over after an incomplete removal) is simply skipped with a warning, rather than breaking the install.
 
+.. _aqua-list:
+
+aqua list
+---------
+
+This command lists some information about the current AQUA installation and
+report the available catalogs in the installation folder.
+It will show also if a catalog is installed in editable mode.
+
+.. option:: -a, --all
+
+    This will show also all the fixes, grids and data models installed
+
+.. _aqua-uninstall:
+
+aqua uninstall
+--------------
+
+This command removes the configuration and catalog files from the installation folder.
+If the installation was done in editable mode, only the links will be removed.
+
+.. note::
+    If you need to reinstall aqua, the command ``aqua install`` will ask if you want to overwrite the existing files.
+
+.. _aqua-update:
+
+aqua update
+-----------
+
+This command will update the configuration files of every AQUA component discovered in the current
+environment (core plus any registered plugin, see :ref:`aqua-console-plugins`), except those installed
+in editable mode, which are left untouched since they already point to the developer's own working copy.
+To update the catalogs, use :ref:`aqua-catalog-update`.
+
+.. _aqua-catalog:
+
+aqua catalog
+------------
+
+The ``catalog`` noun manages the catalogs installed in the configuration folder.
+
+.. note::
+    The default catalogs are detached from the AQUA repository and
+    they are available in the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_ repository.
+    It is possible to use other catalogs as well. The folder structure has to be the same
+    as the default catalog.
+
+.. warning::
+    Adding, updating or listing catalogs from GitHub makes use of the GitHub API.
+    These are limited to 60 requests per hour for unauthenticated users and it may easily hit the limit.
+    If you encounter this issue, you can generate a personal access token and set it as an environment variable
+    ``GITHUB_TOKEN``, together with a ``GITHUB_USER`` variable with your GitHub username.
+
 .. _aqua-avail:
 
-aqua avail
-----------
+aqua catalog avail
+^^^^^^^^^^^^^^^^^^
 
 This simple command will print all the available catalogs to be installed from a repository.
 By default this will be the `Climate-DT-catalog <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
@@ -174,21 +240,12 @@ By default this will be the `Climate-DT-catalog <https://github.com/DestinE-Clim
 
 .. _aqua-add:
 
-aqua add <catalog>
-------------------
+aqua catalog add <catalog>
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This command adds a catalog to the list of available catalogs.
+This command adds a catalog to the list of available catalogs and sets it as the default one.
 It will copy the catalog folder and files to the destination folder.
-As before, it is possible to specify if symbolic links have to be created
-and it is possible to install extra catalogs not present in the AQUA release.
-
-.. note::
-    The default catalog is detached from the AQUA repository and
-    it is available `here <https://github.com/DestinE-Climate-DT/Climate-DT-catalog>`_.
-    It is possible to use other catalogs as well. The folder structure has to be the same
-    as the default catalog.
-
-Multiple catalogs can be installed with multiple calls to ``aqua add``.
+Multiple catalogs can be installed with multiple calls to ``aqua catalog add``.
 By default the catalog will be downloaded from the external Climate-DT catalog repository,
 if a matching catalog is found. It is possible to specify a different repository.
 As shown below, it is also possible to specify a local path and install the catalog from there.
@@ -213,16 +270,10 @@ ideal for developers.
     The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
     If this option is not specified, the default repository will be used.
 
-.. warning::
-    Adding a catalog not in editable mode makes use of GitHub API.
-    These are limited to 60 requests per hour for unauthenticated users and it may easily hit the limit.
-    If you encounter this issue, you can generate a personal access token and set it as an environment variable
-    ``GITHUB_TOKEN``, together with a ``GITHUB_USER`` variable with your GitHub username.
-
 .. _aqua-remove:
 
-aqua remove <catalog>
----------------------
+aqua catalog remove <catalog>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It removes a catalog from the list of available catalogs.
 This means that the catalog folder will be removed from the installation folder or the link will be deleted
@@ -235,8 +286,8 @@ if the catalog is installed in editable mode.
 
 .. _aqua-set:
 
-aqua set <catalog>
-------------------
+aqua catalog set <catalog>
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This command sets the default main catalog to be used.
 Since it is possible to have multiple catalogs installed and accessible at the same time,
@@ -249,87 +300,56 @@ catalogs, to use the first one found in the selected catalog.
     The name of the catalog to be set as default.
     **It is a mandatory argument.**
 
-.. _aqua-list:
+.. _aqua-catalog-update:
 
-aqua list
----------
+aqua catalog update <catalog>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This command lists some information about the current AQUA installation and
-report the available catalogs in the installation folder.
-It will show also if a catalog is installed in editable mode.
+This command downloads the catalog again from the Climate-DT repository, overwriting the current installation.
+If the catalog is installed in editable mode, this command will not work.
 
-.. option:: -a, -all
+.. option:: catalog
 
-    This will show also all the fixes, grids and data models installed
+    The name of the catalog to be updated, or ``all`` to update all the catalogs installed not in editable mode.
+    **It is a mandatory argument.**
 
-.. _aqua-uninstall:
+aqua catalog list
+^^^^^^^^^^^^^^^^^
 
-aqua uninstall
---------------
-
-This command removes the configuration and catalog files from the installation folder.
-If the installation was done in editable mode, only the links will be removed.
-
-.. note::
-    If you need to reinstall aqua, the command ``aqua install`` will ask if you want to overwrite the existing files.
-
-.. _aqua-update:
-
-aqua update
------------
-
-This command will update the configuration files of every AQUA component discovered in the current
-environment (core plus any registered plugin, see :ref:`aqua-console-plugins`), except those installed
-in editable mode, which are left untouched since they already point to the developer's own working copy.
-
-.. option:: -c, --catalog
-
-    This command will check if there is a new version of the catalog available and update it by overwriting the current installation.
-    This will work only for catalogs installed from the Climate-DT repository.
-    If the catalog is installed in editable mode, this command will not work.
-    It is possible to specify 'all' as catalog name to update all the catalogs installed not in editable mode.
-
+This command lists the installed catalogs, showing which ones are installed in editable mode.
 
 .. _aqua-fixes:
 
-aqua fixes {add,remove} <fixes-file>
--------------------------------------
+aqua {grids,fixes,styles} {add,remove,list}
+-------------------------------------------
 
-This submcommand is able to add or remove a fixes YAML file to the list of available installed fixes.
-It will copy the fix file to the destination folder, or create a symbolic link if the editable mode is used.
-This is useful if a new external fix is created and needs to be added to the list of available fixes.
+The ``grids``, ``fixes`` and ``styles`` nouns manage the files of the configuration folder with the same name:
+grids and fixes YAML files, and matplotlib style files (``.mplstyle``) used by the AQUA graphics.
+``add`` copies a file to the configuration folder, or creates a symbolic link if the editable mode is used.
+This is useful if a new external file is created and needs to be added to the available ones.
+A grids or fixes file is added only if it can be merged with the files already installed.
+``remove`` removes a file (or its link), ``list`` lists the installed files.
 
-.. option:: <fix-file>
+.. option:: <file>
 
-    The path of the file to be added.
-    This is a mandatory field.
+    The path of the file to be added, or the name of the file to be removed.
+    This is a mandatory field for ``add`` and ``remove``.
 
 .. option:: -e, --editable
 
-    It will create a symbolic link to the fix folder. Valid only for ``aqua fixes add``
+    It will create a symbolic link to the file. Valid only for ``add``.
 
 .. _aqua-grids:
 
-aqua grids {add,remove} <grid-file>
------------------------------------
+aqua grids
+----------
 
-This subcommand is able to add or remove a grids YAML file to the list of available installed grids.
-It will copy the grids file to the destination folder, or create a symbolic link if the editable mode is used.
-This is useful if new external grids are created and need to be added to the list of available grids.
-
-.. option:: <grid-file>
-
-    The path of the file to be added.
-    This is a mandatory field.
-
-.. option:: -e, --editable
-
-    It will create a symbolic link to the grid folder. Valid only for ``aqua grids add``
+Besides ``add``, ``remove`` and ``list``, the ``grids`` noun has three verbs to set up the grids of a machine.
 
 .. _aqua-grids-set:
 
-aqua grids set <path>
----------------------
+aqua grids path <path>
+^^^^^^^^^^^^^^^^^^^^^^
 
 This subcommand sets in the configuration file the path to the grids, areas and weights folders.
 If you need to deploy grids in this path, you can use the ``aqua grids deploy`` command (see :ref:`aqua-grids-deploy`).
@@ -350,7 +370,7 @@ If you need to deploy grids in this path, you can use the ``aqua grids deploy`` 
 .. _aqua-grids-deploy:
 
 aqua grids deploy <grid-name>
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This subcommand is used to deploy a grid from a bucket to the local file system.
 It is useful to set up AQUA in a new machine, where the grids are not available yet.
@@ -360,7 +380,7 @@ If a match is found, the grid will be deployed from the bucket to the local file
 .. note::
 
     In order to avoid unwanted overriding of existing grids in a shared system,
-    the command will work only if the user has set a custom path for the grids, areas and weights folders with the ``aqua grids set`` command.
+    the command will work only if the user has set a custom path for the grids, areas and weights folders with the ``aqua grids path`` command.
     See the :ref:`aqua-grids-set` section for more details.
 
 .. option:: <grid-name>
@@ -379,7 +399,7 @@ Example usage:
 .. _aqua-grids-build:
 
 aqua grids build
-----------------
+^^^^^^^^^^^^^^^^
 
 This subcommand is used to build grids from sources. Given a specific ``Reader()`` source, it tries to build a grid file based on the data available.
 This is available for regular, healpix, curvilinear grids. Partial support for unstructured grids is also available, while gaussian grids are not supported yet.
@@ -492,3 +512,29 @@ aqua analysis <analysis-options>
 This subcommand launch the analysis tool, which is a flexible wrapper for the diagnostics.
 It allows to run a set of diagnostics on a specific experiment.
 For a complete description of the analysis tool, please refer to the :ref:`aqua_analysis` section.
+
+.. _aqua-deprecated:
+
+Commands changed in AQUA 1.3
+----------------------------
+
+The following commands of previous AQUA versions have been removed and give a usage error.
+Please update your scripts to the new syntax.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Removed command
+     - New command
+   * - ``aqua add <catalog> [-e path] [-r user/repo]``
+     - ``aqua catalog add <catalog> [-e path] [-r user/repo]``
+   * - ``aqua remove <catalog>``
+     - ``aqua catalog remove <catalog>``
+   * - ``aqua set <catalog>``
+     - ``aqua catalog set <catalog>``
+   * - ``aqua avail [-r user/repo]``
+     - ``aqua catalog avail [-r user/repo]``
+   * - ``aqua update -c <catalog|all>``
+     - ``aqua catalog update <catalog|all>``
+   * - ``aqua grids set <path>``
+     - ``aqua grids path <path>``

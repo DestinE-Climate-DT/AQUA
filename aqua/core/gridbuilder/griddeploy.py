@@ -44,7 +44,7 @@ class GridDeployer:
         cfg = load_yaml(filename)
         if "paths" not in cfg or "grids" not in cfg["paths"]:
             self.logger.error(
-                "Default grids path is not set in %s. Please set it with the aqua grids set command before deploying the grids.",  # noqa E501
+                "Default grids path is not set in %s. Please set it with the aqua grids path command before deploying the grids.",  # noqa E501
                 self.configfile,
             )
             raise ValueError("Default grids path is not set in the config file.")
