@@ -155,9 +155,6 @@ in the ``aqua.plugins`` group. This is how ``aqua-diagnostics`` is discovered, a
 a project package (e.g. ``aqua-claima``) uses to plug into ``aqua install``, ``aqua update`` and ``aqua list``
 without any change in AQUA core.
 
-.. note::
-    The name *project* is provisional and it will change in a future release.
-
 Every plugin is a **project**: its name is the entry point name (``diagnostics``, ``claima``, ...),
 which is also the name of its subfolder in the installation, the value of the ``project`` key of
 ``config-aqua.yaml`` and the ``--<name>`` option of ``aqua install``.

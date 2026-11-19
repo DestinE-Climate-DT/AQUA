@@ -1,7 +1,7 @@
 # aqua/core/components.py
 """Discovery of installed aqua.* components: core plus the plugins of the ``aqua.plugins`` entry-point group.
 
-A plugin is a project (the name "project" is provisional): its entry-point name is the project name, and
+A plugin is a project: its entry-point name is the project name, and
 its ``get_install_dirs()`` returns a dictionary following the plugin contract version 2::
 
     {
