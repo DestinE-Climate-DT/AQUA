@@ -219,7 +219,9 @@ def test_rsync_index_read_only_ignores_missing_file(tmp_path, monkeypatch, stder
 
 def test_aqua_push_preserves_transfer_exit_code(monkeypatch, tmp_path):
     """The AQUA entry point returns the publisher's failure status."""
-    monkeypatch.setattr(sys, "argv", ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"])
+    # explicit grouping file: the default one depends on the installation (tested in tests/console)
+    argv = ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "-c", str(tmp_path / "grouping.yaml")]
+    monkeypatch.setattr(sys, "argv", argv)
     monkeypatch.setattr(push_analysis, "push_analysis", Mock(side_effect=push_s3.S3TransferError("upload failed", 3)))
     assert console_main.main() == 3
 
@@ -276,7 +278,8 @@ def test_publisher_accepts_named_log_levels(tmp_path, monkeypatch, level, expect
     """The CLI passes standard AQUA log level names to the publisher."""
     publish = Mock()
     monkeypatch.setattr(push_analysis, "push_analysis", publish)
-    arguments = ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1"]
+    # explicit grouping file: the default one depends on the installation (tested in tests/console)
+    arguments = ["aqua", "push", str(tmp_path), "catalog/model/experiment/r1", "-c", str(tmp_path / "grouping.yaml")]
     if level is not None:
         arguments.extend(["--loglevel", level])
     monkeypatch.setattr(sys, "argv", arguments)

@@ -100,25 +100,26 @@ class ConfigContext:
         """
         Name of the active project. Cached automatically on first access.
 
-        The environment variable ``AQUA_PROJECT`` wins over the ``project`` key of the
-        configuration file. A configuration file without the key belongs to an installation
-        that predates project support, which ``get_project_folder`` refuses.
+        The ``project`` key of the configuration file decides whether the installation has the
+        project layout: without it (installation predating project support, refused by
+        ``get_project_folder``) there is no project, whatever ``AQUA_PROJECT`` says. With it,
+        the environment variable ``AQUA_PROJECT`` overrides the name given by the key.
 
         Returns:
             str | None: Active project name, or None for an installation without project.
         """
+        if not self.has_project_layout():
+            self.logger.debug("No %s key in %s", PROJECT_KEY, self.config_file)
+            return None
+
         project = os.environ.get(PROJECT_ENV)
         if project:
             self.logger.debug("Project set to %s by the %s environment variable", project, PROJECT_ENV)
             return project
 
         project = self.config_dict.get(PROJECT_KEY)
-        if project:
-            self.logger.debug("Project found in configuration file, set to %s", project)
-            return project
-
-        self.logger.debug("No %s key in %s", PROJECT_KEY, self.config_file)
-        return None
+        self.logger.debug("Project found in configuration file, set to %s", project)
+        return project or None
 
     def has_project_layout(self) -> bool:
         """
