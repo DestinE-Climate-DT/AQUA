@@ -1,6 +1,5 @@
 """Console catalog, grid, and fixes operations."""
 
-import logging
 import os
 import tempfile
 
@@ -255,7 +254,7 @@ class TestCatalogListingAndErrors:
                 with open(os.path.join(src_dir, "machine.yaml"), "w", encoding="utf-8") as f:
                     f.write("{}")
 
-                # define a mock failing dump_yaml function to fail during _set_catalog
+                # define a mock failing dump_yaml function to fail during _catalog_set
                 def failing_dump_yaml(filepath, data):
                     if "config-aqua.yaml" in filepath:
                         raise PermissionError("Simulated write failure")
@@ -272,7 +271,7 @@ class TestCatalogListingAndErrors:
                 os.makedirs(os.path.join(self.configpath, "catalogs", catalog))
                 raise SystemExit(1)
 
-            monkeypatch.setattr(catalog.CatalogMixin, "_add_catalog_github", fail_after_partial_download)
+            monkeypatch.setattr(catalog.CatalogMixin, "_catalog_add_github", fail_after_partial_download)
 
             with pytest.raises(SystemExit) as excinfo:
                 run_aqua(["-v", "catalog", "add", catalog_name])
@@ -296,78 +295,20 @@ class TestCatalogListingAndErrors:
         assert excinfo.value.code == 1
 
 
-def _catalog_order(mydir):
-    return to_list(load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"])
-
-
-def _add_leftover(mydir):
-    with open(os.path.join(mydir, ".aqua/catalogs/ci/leftover.txt"), "w", encoding="utf-8") as f:
-        f.write("not in the repository\n")
-
-
-# deprecated command line, new command, preparation (catalogs to add or callables), check of the effect.
-# The test id is the deprecated command named by the warning.
-DEPRECATED_ALIASES = [
-    pytest.param(
-        ["add", "ci"], "catalog add", [], lambda d, out: os.path.isdir(os.path.join(d, ".aqua/catalogs/ci")), id="add"
-    ),
-    pytest.param(
-        ["remove", "ci"],
-        "catalog remove",
-        ["ci"],
-        lambda d, out: not os.path.exists(os.path.join(d, ".aqua/catalogs/ci")),
-        id="remove",
-    ),
-    pytest.param(["set", "ci"], "catalog set", ["ci", "obs"], lambda d, out: _catalog_order(d) == ["ci", "obs"], id="set"),
-    pytest.param(["avail"], "catalog avail", [], lambda d, out: "'climatedt-gen2'" in out, id="avail"),
-    pytest.param(
-        ["update", "-c", "ci"],
-        "catalog update",
-        ["ci", _add_leftover],
-        lambda d, out: (
-            os.path.isfile(os.path.join(d, ".aqua/catalogs/ci/catalog.yaml"))
-            and not os.path.exists(os.path.join(d, ".aqua/catalogs/ci/leftover.txt"))
-        ),
-        id="update -c",
-    ),
-    pytest.param(
-        ["grids", "set", "{home}/aliased"],
-        "grids path",
-        [],
-        lambda d, out: (
-            load_yaml(os.path.join(d, ".aqua", "config-aqua.yaml"))["paths"]["grids"] == os.path.join(d, "aliased", "grids")
-        ),
-        id="grids set",
-    ),
+# verb-first commands of AQUA < 1.3, replaced by `aqua catalog <verb>` and `aqua grids path`
+REMOVED_COMMANDS = [
+    ["add", "ci"],
+    ["remove", "ci"],
+    ["set", "ci"],
+    ["avail"],
+    ["update", "-c", "ci"],
+    ["grids", "set", "path"],
 ]
 
 
-@pytest.mark.xdist_group(name="console_deprecated_aliases")
-class TestDeprecatedAliases:
-    """The verb-first commands of AQUA < 1.3, kept until AQUA 2.0."""
-
-    @pytest.mark.parametrize("command, new, prepare, check", DEPRECATED_ALIASES)
-    def test_deprecated_alias(
-        self, aqua_install, run_aqua, capfd, aqua_caplog, fake_github, request, command, new, prepare, check
-    ):
-        """A deprecated alias has the effect of the new command and warns once naming both: a missing alias or
-        a wrong handler fails the check, a missing or repeated warning the comparison."""
-        mydir = aqua_install
-        old = request.node.callspec.id
-        for step in prepare:
-            step(mydir) if callable(step) else run_aqua(["catalog", "add", step])
-        caplog = aqua_caplog(logging.getLogger("AQUA"))
-        capfd.readouterr()
-
-        try:
-            run_aqua([arg.format(home=mydir) for arg in command])
-
-            out, _ = capfd.readouterr()
-            assert check(mydir, out)
-            deprecations = [r.getMessage() for r in caplog.records if "deprecated" in r.getMessage()]
-            assert deprecations == [f"`aqua {old}` is deprecated and will be removed in AQUA 2.0, use `aqua {new}` instead"]
-        finally:
-            # the installation is shared by the class: leave no catalog behind, even on failure
-            for catalog_name in ("ci", "obs"):
-                if os.path.lexists(os.path.join(mydir, ".aqua/catalogs", catalog_name)):
-                    run_aqua(["catalog", "remove", catalog_name])
+@pytest.mark.parametrize("command", REMOVED_COMMANDS, ids=[" ".join(c[:2]) for c in REMOVED_COMMANDS])
+def test_removed_commands_are_rejected(run_aqua, command):
+    """The removed commands are a usage error (exit code 2): a leftover alias would run its handler instead."""
+    with pytest.raises(SystemExit) as excinfo:
+        run_aqua(command)
+    assert excinfo.value.code == 2
