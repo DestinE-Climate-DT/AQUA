@@ -1,8 +1,14 @@
 """Configuration path helpers for AQUA.
 
-This module resolves the configuration directory/file and the machine name.
-It knows nothing about catalogs - that responsibility lives entirely in
+This module resolves the configuration directory/file, the machine name and the
+active project. It knows nothing about catalogs - that responsibility lives entirely in
 `config_catalog.ConfigCatalog`, since "catalog" is an intake concept in AQUA.
+
+Example:
+    >>> from aqua.core.configurer import ConfigContext
+    >>> context = ConfigContext()
+    >>> context.project  # e.g. "diagnostics", or None for an installation without project
+    >>> context.get_project_folder("analysis")  # ~/.aqua/analysis/<project>
 """
 
 import os
@@ -15,6 +21,13 @@ from aqua.core.util.yaml import load_yaml
 
 from .locator import ConfigLocator
 from .packages import ConfigPackages
+
+PROJECT_KEY = "project"
+"""Key of ``config-aqua.yaml`` holding the active project."""
+PROJECT_ENV = "AQUA_PROJECT"
+"""Environment variable overriding the active project."""
+PROJECT_FOLDERS = ("analysis", "collections", "tools")
+"""Configuration folders with one subfolder per project (catgen is not project-scoped)."""
 
 
 class ConfigContext:
@@ -77,6 +90,63 @@ class ConfigContext:
 
         self.logger.warning("No machine entry found in configuration file, set to unknown")
         return "unknown"
+
+    @cached_property
+    def project(self) -> str | None:
+        """
+        Name of the active project. Cached automatically on first access.
+
+        The environment variable ``AQUA_PROJECT`` wins over the ``project`` key of the
+        configuration file. A configuration file without the key belongs to an installation
+        that predates project support, which ``get_project_folder`` refuses.
+
+        Returns:
+            str | None: Active project name, or None for an installation without project.
+        """
+        project = os.environ.get(PROJECT_ENV)
+        if project:
+            self.logger.debug("Project set to %s by the %s environment variable", project, PROJECT_ENV)
+            return project
+
+        project = self.config_dict.get(PROJECT_KEY)
+        if project:
+            self.logger.debug("Project found in configuration file, set to %s", project)
+            return project
+
+        self.logger.debug("No %s key in %s", PROJECT_KEY, self.config_file)
+        return None
+
+    def get_project_folder(self, name: str) -> str:
+        """
+        Return the path of a project-scoped configuration folder.
+
+        The path is ``<configdir>/<name>/<project>``. The flat ``<configdir>/<name>`` layout
+        of installations predating project support is not supported, and there is no
+        fallback from one project to another.
+
+        Args:
+            name (str): Folder name, one of ``analysis``, ``collections``, ``tools``.
+
+        Returns:
+            str: Path of the folder.
+
+        Raises:
+            ValueError: If ``name`` is not a project-scoped folder.
+            FileNotFoundError: If no project is set or the folder does not exist.
+        """
+        if name not in PROJECT_FOLDERS:
+            raise ValueError(f"'{name}' is not a project folder, choose among {', '.join(PROJECT_FOLDERS)}")
+
+        if self.project is None:
+            raise FileNotFoundError(
+                f"No {PROJECT_KEY} set in {self.config_file}: this installation predates project support, "
+                "run `aqua install` to upgrade it"
+            )
+
+        folder = os.path.join(self.configdir, name, self.project)
+        if not os.path.isdir(folder):
+            raise FileNotFoundError(f"Cannot find the {name} folder for project '{self.project}' in {folder}")
+        return folder
 
     def get_machine(self) -> str:
         """

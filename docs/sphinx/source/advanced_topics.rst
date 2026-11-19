@@ -75,7 +75,7 @@ To add a new catalog to the AQUA catalog we need to create a
 new folder that will contain the configuration files.
 
 You can create the folder where you prefer and then add it to the
-available catalogs with the ``aqua add`` command (see :ref:`aqua-add`).
+available catalogs with the ``aqua catalog add`` command (see :ref:`aqua-add`).
 This will copy or link the required files, allowing to have your custom catalog
 folder under version control if needed.
 
@@ -140,11 +140,11 @@ More informations about how to add them can be found in the :ref:`add-data` sect
 Adding the catalog to the AQUA package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is done with the ``aqua add`` command.
+This is done with the ``aqua catalog add`` command.
 
 .. code-block:: bash
 
-    aqua add new_catalog -e /path/to/your/catalog/new_catalog
+    aqua catalog add new_catalog -e /path/to/your/catalog/new_catalog
 
 .. note::
     This command will create a symbolic link to the new catalog in the ``$AQUA/config/catalogs`` directory.
@@ -368,6 +368,32 @@ This can be done by adding the following line to your `.bashrc` or `.bash_profil
     export AQUA_CONFIG=/path/to/config_files
 
 This will make clear for the code where to find the AQUA catalog and the configuration files.
+
+.. _aqua-project-context:
+
+Active project and project folders
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The configuration folders ``analysis``, ``collections`` and ``tools`` are project-scoped:
+each project installs its files in ``<configdir>/<folder>/<project>`` (see :ref:`aqua-project`).
+The active project is the ``AQUA_PROJECT`` environment variable, if set, otherwise the ``project`` key
+of ``config-aqua.yaml`` (written by ``aqua install`` and ``aqua project set``).
+Installations that predate project support (no ``project`` key, flat ``<configdir>/<folder>`` layout)
+are not supported: they must be upgraded with ``aqua install``.
+
+In Python code, the active project and its folders are resolved by ``ConfigContext``:
+
+.. code-block:: python
+
+    from aqua.core.configurer import ConfigContext
+
+    context = ConfigContext()
+    context.project                       # e.g. "diagnostics", or None for an installation without project
+    context.get_project_folder("tools")   # <configdir>/tools/<project>
+
+``get_project_folder`` accepts only ``analysis``, ``collections`` and ``tools`` (``catgen`` is not project-scoped)
+and raises ``FileNotFoundError`` if no project is set, asking to run ``aqua install``, or if the folder
+does not exist, naming the folder and the active project: there is no fallback from one project to another.
 
 Add new catalogs as developer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -9,6 +9,7 @@ import shutil
 import sys
 
 from aqua.core.configurer import ConfigContext, ConfigLocator, ConfigPackages
+from aqua.core.configurer.context import PROJECT_FOLDERS, PROJECT_KEY
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -91,50 +92,64 @@ class InstallMixin:
                 )
                 sys.exit(1)
 
+    def _component_targets(self, component, source=None):
+        """Folders installed by a component, as (source, target) pairs.
+
+        Project-scoped folders go to ``<configpath>/<dir>/<component>``, flat folders to ``<configpath>/<dir>``,
+        templates to ``<configpath>/templates/<dir>``. The ``files`` of a plugin are not whole folders and are not
+        listed here.
+
+        Args:
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
+            source (str, optional): config folder of the component package; if None, sources are None
+
+        Returns:
+            list: (source, target) tuples
+        """
+        info = self.components[component]
+
+        def src(*parts):
+            return os.path.join(source, *parts) if source else None
+
+        targets = [(src(d), os.path.join(self.configpath, d, component)) for d in info["config"]]
+        targets += [(src(d), os.path.join(self.configpath, d)) for d in info["flat"]]
+        targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["templates"]]
+        return targets
+
     def _check_component_installed(self, component):
         """
         Check if a specific component is already installed
 
         Args:
-            component (str): 'core' or 'diagnostics'
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
 
         Returns:
-            bool: True if component is installed
+            bool: True if any folder of the component is installed (per ``<dir>/<project>`` for a project)
         """
-
-        # get the first config directory for the component
-        directories = self._get_config_dirs(component)
-        for directory in directories:
-            if os.path.exists(os.path.join(self.configpath, directory)):
-                return True
-        return False
+        return self._get_component_mode(component) is not None
 
     def _get_component_mode(self, component):
         """
         Check if a component is installed in editable mode
 
         Args:
-            component (str): 'core' or 'diagnostics'
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
 
         Returns:
-            str: 'editable', 'standard', or 'not_installed'
+            str or None: 'editable' or 'standard' from the first installed folder, None if not installed
         """
-        # Check the installation mode based on the first config directory
-        directories = self._get_config_dirs(component)
-        for directory in directories:
-            path = os.path.join(self.configpath, directory)
-            if os.path.islink(path):
+        for _, target in self._component_targets(component):
+            if os.path.islink(target):
                 return "editable"
-            if os.path.exists(path):
+            if os.path.exists(target):
                 return "standard"
-
         return None
 
     def _validate_component_path(self, component, custom_path):
         """Validate that editable install path exists and return the source path
 
         Args:
-            component (str): 'core' or 'diagnostics'
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
             custom_path (str): Path to the editable installation
 
         Returns:
@@ -146,54 +161,41 @@ class InstallMixin:
             sys.exit(1)
         return actual_source
 
-    def _install_component(self, component, mode, source_path, config_dirs, template_dirs):
+    def _install_component(self, component, mode):
         """
-        Install a component (core or diagnostics) in either standard or editable mode.
+        Install a component in either standard or editable mode.
+
+        A project (any plugin) installs its project-scoped folders in ``<configpath>/<dir>/<project>``:
+        in editable mode the link is made at that level.
 
         Args:
-            component (str): 'core' or 'diagnostics'
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
             mode (dict): Installation mode with 'mode' and 'path' keys
-            source_path (str): Default source path for the component
-            config_dirs (list): List of config directories to install
-            template_dirs (list): List of template directories to install
         """
-        self.logger.debug(
-            f"Installing component '{component}' with mode: {mode}, "
-            f"source_path: {source_path}, config_dirs: {config_dirs}, template_dirs: {template_dirs}"
-        )
-        install_mode = mode["mode"]
-        custom_path = mode["path"]
-
-        self.logger.info(f"Installing {component} in {install_mode} mode")
-
-        # define if we need to link
-        link = bool(install_mode == "editable")
-
-        # Determine the actual source path
-        if link:
-            actual_source = self._validate_component_path(component, custom_path)
+        self.logger.info("Installing %s in %s mode", component, mode["mode"])
+        if mode["mode"] == "editable":
+            self._copy_component(component, self._validate_component_path(component, mode["path"]), link=True)
         else:
-            # Use the default source path
-            actual_source = source_path
+            self._copy_component(component, self.components[component]["path"])
 
-        # Install config directories
-        os.makedirs(self.configpath, exist_ok=True)
-        for directory in config_dirs:
-            source = os.path.join(actual_source, directory)
-            target = os.path.join(self.configpath, directory)
+    def _copy_component(self, component, source_path, link=False, update=False):
+        """
+        Copy (or link) the folders of a component; when updating, folders installed in editable mode are skipped.
 
-            self._copy_update_folder_file(source, target, link=link)
-
-        # do the same for the templates
-        template_source_base = os.path.join(actual_source, "..", "templates")
-
-        os.makedirs(self.templatepath, exist_ok=True)
-        for directory in template_dirs:
-            source = os.path.join(template_source_base, directory)
-            target = os.path.join(self.templatepath, directory)
-
-            if os.path.exists(source):
-                self._copy_update_folder_file(source, target, link=link)
+        Args:
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
+            source_path (str): config folder of the component package or repository
+            link (bool): link the folders instead of copying them
+            update (bool): replace the folders already installed
+        """
+        for source, target in self._component_targets(component, source_path):
+            if update and os.path.islink(target):
+                self.logger.info("Skipping %s (editable mode)", target)
+            elif not os.path.exists(source):
+                self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
+            else:
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                self._copy_update_folder_file(source, target, link=link, update=update)
 
     def _determine_component_mode(self, args, name):
         """
@@ -243,6 +245,13 @@ class InstallMixin:
         core_mode = modes.get("core")
         other_requested = {name: mode for name, mode in modes.items() if name != "core" and mode}
 
+        # Plugins breaking the contract (e.g. an old contract) stop the installation before anything is changed
+        broken = [self.components[name]["error"] for name in other_requested if self.components[name]["error"]]
+        if broken:
+            for error in broken:
+                self.logger.error(error)
+            sys.exit(1)
+
         if install_info["installed"]:
             self.logger.warning("AQUA installation found in %s", self.configpath)
             if core_mode:
@@ -264,6 +273,7 @@ class InstallMixin:
                     ", ".join(other_requested),
                 )
                 sys.exit(1)
+            self._check_project_layout()
             for name in other_requested:
                 if install_info["components"].get(name, {}).get("installed"):
                     self.logger.error(
@@ -280,36 +290,21 @@ class InstallMixin:
         # Install core first, always, if requested
         if core_mode:
             self.logger.debug("Installing core component")
-            core_info = self.components["core"]
-            self._install_component(
-                component="core",
-                mode=core_mode,
-                source_path=core_info["path"],
-                config_dirs=core_info["config_dirs"],
-                template_dirs=core_info["template_dirs"],
-            )
+            self._install_component("core", core_mode)
 
             self.logger.debug("Creating config-aqua.yaml configuration file")
             self._copy_update_folder_file(
-                os.path.join(core_info["path"], "config-aqua.tmpl"),
+                os.path.join(self.components["core"]["path"], "config-aqua.tmpl"),
                 os.path.join(self.configpath, "config-aqua.yaml"),
             )
 
-        # Install every other requested component (diagnostics, emulators, ecearth, climatedt, ...)
-        for name, mode in modes.items():
-            if name == "core" or not mode:
-                continue
-
-            info = self.components.get(name, {})
-            if info.get("path") is not None:
+        # Install every other requested component, i.e. every project (diagnostics, claima, climatedt, ...)
+        projects = []
+        for name, mode in other_requested.items():
+            if self.components[name]["path"] is not None:
                 self.logger.debug("Installing %s component", name)
-                self._install_component(
-                    component=name,
-                    mode=mode,
-                    source_path=info["path"],
-                    config_dirs=info["config_dirs"],
-                    template_dirs=info["template_dirs"],
-                )
+                self._install_component(name, mode)
+                projects.append(name)
             else:
                 msg = f"aqua.{name} package not found. Skipping {name} installation."
                 if core_mode:
@@ -323,8 +318,16 @@ class InstallMixin:
         # Create catalogs directory
         os.makedirs(os.path.join(self.configpath, CATPATH), exist_ok=True)
 
-        # set machine
+        # set machine and active project: the last project installed
         self._set_machine(args)
+        if len(projects) > 1:
+            self.logger.warning(
+                "Installed projects %s: the last one, %s, is now the active project (change it with `aqua project set`)",
+                ", ".join(projects),
+                projects[-1],
+            )
+        if projects:
+            self._project_set(projects[-1])
         self.logger.info("AQUA installation completed successfully in %s", self.configpath)
 
     def _config_home(self):
@@ -436,64 +439,22 @@ class InstallMixin:
             sys.exit()
 
     def update(self, args):
-        """Update an existing catalog by copying it if not installed in editable mode"""
+        """Update the installation files of core and of every installed project, skipping editable folders.
 
-        self._check()
-        if args.catalog:
-            if args.catalog == "all":
-                self.logger.info("Updating all AQUA catalogs")
-                catalogs = self._list_folder(f"{self.configpath}/{CATPATH}", return_list=True, silent=True)
-                for catalog in catalogs:
-                    print(f"Updating catalog {catalog} ..")
-                    self._update_catalog(os.path.basename(catalog))
-            else:
-                self._update_catalog(args.catalog)
-        else:
-            self.logger.info("Updating AQUA installation...")
-
-            # Update every discovered component (core + all installed plugins)
-            # that isn't in editable mode
-            for name, info in self.components.items():
-                if info.get("path") is None:
-                    continue
-                self._update_component(
-                    source_path=info["path"],
-                    config_dirs=info["config_dirs"],
-                    template_dirs=info["template_dirs"],
-                    component_name=name,
-                )
-
-    def _update_component(self, source_path, config_dirs, template_dirs, component_name):
+        Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another.
         """
-        Update a component (core or diagnostics), skipping directories in editable mode.
+        self._check_project_layout()
+        self.logger.info("Updating AQUA installation...")
 
-        Args:
-            source_path (str): Source path for the component
-            config_dirs (list): List of config directories
-            template_dirs (list): List of template directories
-            component_name (str): Name of the component for logging
-        """
-        for directory in config_dirs:
-            target = os.path.join(self.configpath, directory)
-
-            # Skip if in editable mode
-            if os.path.islink(target):
-                self.logger.info(f"Skipping {component_name}/{directory} (editable mode)")
-                continue
-
-            source = os.path.join(source_path, directory)
-            self._copy_update_folder_file(source, target, update=True)
-
-        for directory in template_dirs:
-            target = os.path.join(self.templatepath, directory)
-
-            # Skip if in editable mode
-            if os.path.islink(target):
-                self.logger.info(f"Skipping {component_name}/{directory} template (editable mode)")
-                continue
-
-            source = os.path.join(source_path, "..", "templates", directory)
-            self._copy_update_folder_file(source, target, update=True)
+        failed = False
+        for name, info in self.components.items():
+            if info["error"]:
+                self.logger.error("Cannot update %s: %s", name, info["error"])
+                failed = True
+            elif info["path"] is not None and (name == "core" or self._check_component_installed(name)):
+                self._copy_component(name, info["path"], update=True)
+        if failed:
+            sys.exit(1)
 
     def _copy_update_folder_file(self, source, target, link=False, update=False):
         """Generic function to copy or update a source to a target folder"""
@@ -534,21 +495,68 @@ class InstallMixin:
 
         self._check()
 
-        cdir = f"{self.configpath}/{CATPATH}"
-
         print("AQUA environment information:")
         print(f"\t - AQUA installation path: {self.configpath}")
+        print(f"\t - AQUA machine: {self.configurer.config_dict.get('machine')}")
         print(f"\t - AQUA available components: {', '.join(self.components)}")
         print(f"\t - AQUA available packages: {', '.join(ConfigPackages.avail_packages())}")
 
-        print("AQUA current installed catalogs in", cdir, ":")
-        self._list_folder(cdir)
+        if self.configurer.config_dict.get(PROJECT_KEY):
+            self._print_projects()
+        else:
+            print(f"AQUA projects: none. {self._pre_project_message()}")
+
+        self.catalog_list(args)
 
         if args.all:
-            for _, info in self.components.items():
-                for content in info["config_dirs"]:
-                    print(f"AQUA current installed {content} in {self.configpath}:")
-                    self._list_folder(os.path.join(self.configpath, content))
+            for name in self.components:
+                for _, target in self._component_targets(name):
+                    if os.path.isdir(target):
+                        print(f"AQUA current installed {os.path.relpath(target, self.configpath)} in {self.configpath}:")
+                        self._list_folder(target)
+
+    def check(self, args):
+        """Validate the installation: project key, active project folders and catalogs.
+
+        Exits with a non-zero code if a check fails.
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check()
+        failures = []
+
+        if not self.configurer.config_dict.get(PROJECT_KEY):
+            failures.append(self._pre_project_message())
+        else:
+            active = self.configurer.project
+            installed = self._installed_projects()
+            if active in installed:
+                for folder in PROJECT_FOLDERS:
+                    if not os.path.isdir(os.path.join(self.configpath, folder, active)):
+                        self.logger.warning("Project %s has no %s folder", active, folder)
+            elif installed:
+                failures.append(
+                    f"The active project {active} is not installed (installed: {', '.join(installed)}): "
+                    "use `aqua project set` or install it"
+                )
+            else:
+                self.logger.warning("No project is installed: only aqua-core configuration is available")
+
+        catdir = os.path.join(self.configpath, CATPATH)
+        catalogs = sorted(os.listdir(catdir)) if os.path.isdir(catdir) else []
+        for catalog in catalogs:
+            catalog_file = os.path.join(catdir, catalog, "catalog.yaml")
+            try:
+                load_yaml(catalog_file)
+            except Exception as e:
+                failures.append(f"Catalog {catalog} cannot be loaded from {catalog_file}: {e}")
+
+        for failure in failures:
+            self.logger.error(failure)
+        if failures:
+            sys.exit(1)
+        print(f"AQUA installation in {self.configpath} is valid ({len(catalogs)} catalogs checked)")
 
     @staticmethod
     def _list_folder(mydir, return_list=False, silent=False):
@@ -579,20 +587,6 @@ class InstallMixin:
 
         if return_list:
             return list_files
-
-    def _get_config_dirs(self, component):
-        """
-        Get the config directories for a component
-
-        Args:
-            component (str): component name, e.g. 'core', 'diagnostics', 'emulators'
-
-        Returns:
-            list: List of config directories
-        """
-        if component not in self.components:
-            raise ValueError(f"Unknown component: {component}. Available components: {', '.join(self.components)}")
-        return self.components[component]["config_dirs"]
 
     @staticmethod
     def _get_install_mode(specific_arg):

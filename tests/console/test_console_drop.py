@@ -18,7 +18,7 @@ def test_console_drop(tmp_path, set_home, run_aqua, run_aqua_console_with_input,
     set_home(mydir)
 
     run_aqua(["install", MACHINE])
-    run_aqua(["add", "ci", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
+    run_aqua(["catalog", "add", "ci", "--repository", "DestinE-Climate-DT/Climate-DT-catalog"])
 
     drop_test = os.path.join(mydir, "faketrip.yaml")
     dump_yaml(

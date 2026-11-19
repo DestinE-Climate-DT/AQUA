@@ -32,7 +32,7 @@ The `-e $AQUA/config` will guarantee that instead of copying other necessary fil
 A catalog can be added to the `$HOME/.aqua` folder with the following command:
 
 ```bash
-aqua add <catalog-name>
+aqua catalog add <catalog-name>
 ```
 
 This will download from the catalog repository the most updated version of the selected catalog, if found. This will work also if you don't have access to the repository.
@@ -40,7 +40,7 @@ This will download from the catalog repository the most updated version of the s
 To add the observations, for example:
 
 ```bash
-aqua add obs
+aqua catalog add obs
 ```
 
 However, it is possible to link our files, because we're working with a developer version of the catalog or we're working on a new catalog. AQUA has the possibility to add new catalogs not part of the official repository, in order to support other projects.
@@ -48,8 +48,8 @@ However, it is possible to link our files, because we're working with a develope
 Let's add the other catalogs used in the session:
 
 ```bash
-aqua add nextgems3
-aqua add nextgems4
+aqua catalog add nextgems3
+aqua catalog add nextgems4
 ```
 
 As for the install, the `-e` flag will link the selected catalog instead of copying the files.
