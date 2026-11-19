@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AQUA command line parser.
-
-The console follows a noun-first grammar, ``aqua <noun> <verb> [args]`` (e.g. ``aqua catalog add ci``),
-plus a few top-level commands (``install``, ``uninstall``, ``update``, ``list``, ``analysis``, ``drop``,
-``catgen``, ``push``). A new noun is added with :func:`add_noun` and registered in the dictionary returned
-by :func:`parse_arguments`; its verbs are dispatched by ``AquaConsole.command_map`` in ``main.py``.
-
-The verb-first commands of AQUA < 1.3 (``aqua add``, ``aqua remove``, ``aqua set``, ``aqua avail``,
-``aqua update -c`` and ``aqua grids set``) have been removed.
+AQUA command line parser
 """
 
 import argparse
@@ -23,24 +15,12 @@ from aqua.core.console.components import discover_aqua_components
 from aqua.core.console.drop import drop_parser
 from aqua.core.console.push_analysis import push_parser
 
-# Components keeping a one-letter install flag for backward compatibility: every other plugin gets the
-# long flag only, since two plugin names with the same initial (or starting with "c") would collide.
-SHORT_INSTALL_FLAGS = {"core": "-c", "diagnostics": "-d"}
-
-# Nouns managing files that can be added to the AQUA configuration folder of the same name
-FILE_NOUNS = ["grids", "fixes", "styles"]
-
 
 def parse_arguments():
-    """Build the AQUA console parser.
-
-    Returns:
-        dict: the main parser under ``"main"`` and one parser per noun (used to print the noun help
-        when the verb is missing).
-    """
+    """Parse arguments for AQUA console"""
 
     parser = argparse.ArgumentParser(prog="aqua", description="AQUA command line tool")
-    subparsers = parser.add_subparsers(dest="command", metavar="COMMAND", title="commands")
+    subparsers = parser.add_subparsers(dest="command", help="Available AQUA commands")
 
     # Parser for the aqua main command
     parser.add_argument(
@@ -54,61 +34,53 @@ def parse_arguments():
         "-vv", "--very-verbose", action="store_true", help="Increase verbosity of the output to DEBUG loglevel"
     )
 
-    # top-level commands
-    install_parser(subparsers)
-    add_command(subparsers, "uninstall", "Remove the current AQUA installation")
-    add_command(subparsers, "update", "Update the AQUA installation files of every component not installed in editable mode")
-    list_parser = add_command(subparsers, "list", "Show the AQUA installation and the installed catalogs")
-    list_parser.add_argument(
-        "-a", "--all", action="store_true", help="Print also all the installed fixes, grids and data_models"
+    # List of the subparsers with actions
+    # Corresponding to the different aqua commands available (see command map)
+    install_parser = subparsers.add_parser("install", description="Install AQUA configuration files")
+    subparsers.add_parser("uninstall", description="Remove the current AQUA installation")
+    subparsers.add_parser("update", description="Update the AQUA installation files not installed in editable mode")
+    list_parser = subparsers.add_parser("list", description="List the current AQUA installation and its catalogs")
+
+    # subparser for other AQUA commands as they are importing the parser from their code
+    analysis_subparser = subparsers.add_parser("analysis", description="Run AQUA diagnostics")
+    analysis_subparser = analysis_parser(parser=analysis_subparser)
+
+    drop_subparser = subparsers.add_parser("drop", description="Data Reduction OPerator")
+    drop_subparser = drop_parser(parser=drop_subparser)
+
+    catgen_subparser = subparsers.add_parser("catgen", description="FDB catalog generator")
+    catgen_subparser = catgen_parser(parser=catgen_subparser)
+
+    push_subparser = subparsers.add_parser("push", description="Publish AQUA analysis figures to a remote site.")
+    push_parser(parser=push_subparser)
+
+    # subparsers for catalogs: aqua catalog <verb>
+    parser_catalog = subparsers.add_parser("catalog", help="catalog related commands")
+    catalog_subparsers = parser_catalog.add_subparsers(dest="nested_command")
+    catalog_add_parser = catalog_subparsers.add_parser("add", help="Add a catalog in the current AQUA installation")
+    catalog_remove_parser = catalog_subparsers.add_parser("remove", help="Remove a catalog in the current AQUA installation")
+    catalog_set_parser = catalog_subparsers.add_parser(
+        "set", help="Set an installed catalog as the predefined in config-aqua.yaml"
     )
+    catalog_update_parser = catalog_subparsers.add_parser("update", help="Update a catalog in the current AQUA installation")
+    catalog_subparsers.add_parser("list", help="List the currently installed AQUA catalogs")
+    catalog_avail_parser = catalog_subparsers.add_parser("avail", help="List the ClimateDT available catalogs on GitHub")
 
-    analysis_parser(parser=add_command(subparsers, "analysis", "Run AQUA diagnostics"))
-    drop_parser(parser=add_command(subparsers, "drop", "Data Reduction OPerator"))
-    catgen_parser(parser=add_command(subparsers, "catgen", "FDB catalog generator"))
-    push_parser(parser=add_command(subparsers, "push", "Publish AQUA analysis figures to a remote site."))
+    # subparsers for grids, fixes and styles
+    parser_grids = file_subparser(subparsers, "grids")
+    parser_fixes = file_subparser(subparsers, "fixes")
+    parser_styles = file_subparser(subparsers, "styles")
 
-    # nouns
-    parser_dict = {"main": parser, "catalog": catalog_subparser(subparsers)}
-    for name in FILE_NOUNS:
-        parser_dict[name] = file_subparser(subparsers, name)
-
-    return parser_dict
-
-
-def add_command(subparsers, name, text):
-    """Add a top-level command, using ``text`` both in ``aqua -h`` and in ``aqua <name> -h``."""
-    return subparsers.add_parser(name, help=text, description=text)
-
-
-def add_noun(subparsers, name, help_text):
-    """Add a noun, i.e. a command of the form ``aqua <name> <verb>``.
-
-    Args:
-        subparsers (argparse._SubParsersAction): the subparsers of the main parser.
-        name (str): the noun.
-        help_text (str): one-line description shown in ``aqua -h``.
-
-    Returns:
-        tuple: the noun parser and its verb subparsers; ``verbs.add_parser(<verb>)`` adds a verb, whose
-        name is stored in ``args.nested_command``.
-    """
-    noun = subparsers.add_parser(name, help=help_text, description=help_text)
-    verbs = noun.add_subparsers(dest="nested_command", metavar="VERB", title="verbs")
-    return noun, verbs
-
-
-def install_parser(subparsers):
-    """Add ``aqua install``, with one flag per discovered component."""
-    parser = add_command(subparsers, "install", "Install the AQUA configuration files")
-    parser.add_argument("machine", metavar="MACHINE_NAME", help="Machine on which install AQUA")
-    parser.add_argument(
+    # extra parsers arguments
+    install_parser.add_argument("machine", metavar="MACHINE_NAME", help="Machine on which install AQUA")
+    install_parser.add_argument(
         "-p", "--path", type=str, metavar="AQUA_TARGET_PATH", help="Path where to install AQUA. Default is $HOME/.aqua"
     )
+    # Only core and diagnostics have a one-letter flag: a plugin starting with "c" would collide with core
+    short_flags = {"core": ["-c"], "diagnostics": ["-d"]}
     for name in discover_aqua_components():
-        flags = [SHORT_INSTALL_FLAGS[name]] if name in SHORT_INSTALL_FLAGS else []
-        parser.add_argument(
-            *flags,
+        install_parser.add_argument(
+            *short_flags.get(name, []),
             f"--{name}",
             nargs="?",
             const="standard",
@@ -117,69 +89,71 @@ def install_parser(subparsers):
             help=f"Install AQUA {name}. Without path: standard installation of {name} only. "
             "With path: editable installation from that path",
         )
-    return parser
 
+    list_parser.add_argument(
+        "-a", "--all", action="store_true", help="Print also all the installed fixes, grids and data_models"
+    )
 
-def add_catalog_name_argument(parser, help_text):
-    """Add the positional catalog name."""
-    parser.add_argument("catalog", metavar="CATALOG_NAME", help=help_text)
-
-
-def add_repository_argument(parser):
-    """Add the -r/--repository option for commands reading from GitHub."""
-    parser.add_argument("-r", "--repository", type=str, help="Use a specific GitHub repository: provide the user/repo string")
-
-
-def add_catalog_add_arguments(parser):
-    """Add the arguments of ``aqua catalog add``."""
-    add_catalog_name_argument(parser, "Catalog to be installed")
-    parser.add_argument(
+    catalog_add_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be installed")
+    catalog_add_parser.add_argument(
         "-e", "--editable", type=str, help="Install a catalog in editable mode from the original source: provide the Path"
     )
-    add_repository_argument(parser)
-
-
-def catalog_subparser(subparsers):
-    """Add the ``catalog`` noun."""
-    parser, verbs = add_noun(subparsers, "catalog", "Install, select and update AQUA catalogs")
-
-    add_catalog_add_arguments(verbs.add_parser("add", help="Add a catalog and set it as the default"))
-    add_catalog_name_argument(verbs.add_parser("remove", help="Remove an installed catalog"), "Catalog to be removed")
-    add_catalog_name_argument(
-        verbs.add_parser("set", help="Set an installed catalog as the default in config-aqua.yaml"),
-        "Catalog to be used in AQUA",
+    catalog_add_parser.add_argument(
+        "-r", "--repository", type=str, help="Install a catalog from a specific repository: provide the user/repo string"
     )
-    add_catalog_name_argument(
-        verbs.add_parser("update", help="Download again a catalog not installed in editable mode"),
-        "Catalog to be updated, or 'all' for every installed catalog",
+
+    catalog_remove_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be removed")
+
+    catalog_set_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be used in AQUA")
+
+    catalog_update_parser.add_argument(
+        "catalog", metavar="CATALOG_NAME", help="Catalog to be updated, or 'all' for every installed catalog"
     )
-    verbs.add_parser("list", help="List the installed catalogs")
-    add_repository_argument(verbs.add_parser("avail", help="List the catalogs available on GitHub"))
-    return parser
+
+    catalog_avail_parser.add_argument(
+        "-r", "--repository", type=str, help="Explore a specific repository: provide the user/repo string"
+    )
+
+    # create a dictionary to simplify the call
+    parser_dict = {
+        "main": parser,
+        "catalog": parser_catalog,
+        "fixes": parser_fixes,
+        "grids": parser_grids,
+        "styles": parser_styles,
+    }
+
+    return parser_dict
 
 
-def file_subparser(subparsers, name):
-    """Add a noun handling the files of an AQUA configuration folder: ``grids``, ``fixes`` or ``styles``."""
-    parser, verbs = add_noun(subparsers, name, f"{name} related commands")
+def file_subparser(main_parser, name):
+    """Compact subparsers for file handling - fixes, grids and styles"""
 
-    parser_add = verbs.add_parser("add", help=f"Add a {name} file in the current AQUA installation")
+    # subparsers for fixes, grids and styles
+    parser = main_parser.add_parser(name, help=f"{name} related commands")
+    subparsers = parser.add_subparsers(dest="nested_command")
+
+    parser_add = subparsers.add_parser("add", help=f"Add a {name} file in the current AQUA installation")
     parser_add.add_argument("file", help=f"The {name} file to add")
     parser_add.add_argument(
         "-e", "--editable", action="store_true", help=f"Add a {name} file in editable mode from the original path"
     )
-    parser_remove = verbs.add_parser("remove", help=f"Remove a {name} file")
+    parser_remove = subparsers.add_parser("remove", help=f"Remove a {name} file")
     parser_remove.add_argument("file", help=f"The {name} file to remove")
-    verbs.add_parser("list", help=f"List the installed {name} files")
+    subparsers.add_parser("list", help=f"List the installed {name} files")
 
-    # The grids can have a default path overriding the one of the individual catalogs:
-    # it creates a block in config-aqua.yaml for grids, areas and weights.
+    # We have for the grids the possibility to set a default path to overwrite the individual catalog one
+    # This will create a block in the config-aqua.yaml file for grids, areas and weights.
     if name == "grids":
-        path_help = "Set a grids path (with grids, areas and weights subfolders) as the default in config-aqua.yaml"
-        verbs.add_parser("path", help=path_help).add_argument("path", help="The grids path to set as default")
-        builder_parser(verbs.add_parser("build", help="Build grids from data sources"))
-        verbs.add_parser(
-            "deploy", help="Deploy grids. Requires to set the default path with the `aqua grids path` command"
-        ).add_argument(
+        parser_path = subparsers.add_parser("path", help=f"Set a {name} path as the default in config-aqua.yaml")
+        parser_path.add_argument("path", help=f"The {name} path to set as default")
+        parser_build = subparsers.add_parser("build", help=f"Build {name} grids from data sources")
+        parser_build = builder_parser(parser_build)
+        parser_deploy = subparsers.add_parser(
+            "deploy",
+            help=f"Deploy {name} grids. Requires to set the default path with the aqua grids path command",
+        )  # noqa: E501
+        parser_deploy.add_argument(
             "source_grid_name", help="The source grid name to deploy. Can be a wildcard to deploy all the matching grids"
         )
 
