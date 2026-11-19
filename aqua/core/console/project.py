@@ -5,7 +5,7 @@ AQUA project operations mixin: ``aqua project <verb>``.
 
 A project is a package shipping configuration (and optionally diagnostics) installed in the
 project-scoped folders ``<configdir>/<folder>/<project>`` (see ``ConfigContext.get_project_folder``).
-The name "project" is provisional: its spellings live in ``aqua.core.configurer.context``.
+The project key and folder names live in ``aqua.core.configurer.context``.
 """
 
 import os

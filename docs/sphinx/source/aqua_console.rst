@@ -333,14 +333,9 @@ The active project is stored in the ``project`` key of ``config-aqua.yaml`` and 
 with the ``AQUA_PROJECT`` environment variable (see :ref:`aqua-project-context`).
 
 .. note::
-    The name "project" is provisional and may change in a future release, for the command, the configuration key
-    and the environment variable alike.
-
-.. note::
-    ``aqua install`` does not write the ``project`` key yet, so current installations have the flat layout
-    of previous AQUA versions (e.g. ``$HOME/.aqua/analysis``), which AQUA keeps reading.
-    On such an installation ``aqua project set`` and ``aqua project list`` stop with an error asking to
-    upgrade it with ``aqua install``.
+    Installations that predate project support (no ``project`` key, flat layout such as ``$HOME/.aqua/analysis``)
+    are not supported: ``aqua project set``, ``aqua project list`` and the project folders stop with an error
+    asking to upgrade the installation with ``aqua install``.
 
 aqua project set <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -348,8 +343,6 @@ aqua project set <project>
 This command sets the active project in ``config-aqua.yaml``.
 The project must be installed, i.e. at least one of ``analysis``, ``collections`` and ``tools``
 must have a subfolder with its name. ``core`` is not a project and is refused.
-``aqua catalog set <name>`` with the name of an installed project, and no catalog with that name,
-points to this command.
 
 .. option:: project
 

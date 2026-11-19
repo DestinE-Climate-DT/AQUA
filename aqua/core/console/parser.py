@@ -66,7 +66,7 @@ def parse_arguments():
     catalog_subparsers.add_parser("list", help="List the currently installed AQUA catalogs")
     catalog_avail_parser = catalog_subparsers.add_parser("avail", help="List the ClimateDT available catalogs on GitHub")
 
-    # subparsers for projects: aqua project <verb> (the name "project" is provisional)
+    # subparsers for projects: aqua project <verb>
     parser_project = subparsers.add_parser("project", help="project related commands")
     project_subparsers = parser_project.add_subparsers(dest="nested_command")
     project_install_parser = project_subparsers.add_parser("install", help="Install a project")

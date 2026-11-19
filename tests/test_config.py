@@ -64,11 +64,10 @@ def _project_install(root, project=None, folders=("analysis/diagnostics", "analy
         ("diagnostics", None, "diagnostics", "analysis/diagnostics"),
         ("diagnostics", "claima", "claima", "analysis/claima"),
         (None, "claima", "claima", "analysis/claima"),
-        (None, None, None, "analysis"),
     ],
 )
-def test_project_folder_follows_env_then_key_then_flat(tmp_path, monkeypatch, key, env, expected, subpath):
-    """Fails if AQUA_PROJECT does not win over the key, or a missing key does not give the flat layout."""
+def test_project_folder_follows_env_then_key(tmp_path, monkeypatch, key, env, expected, subpath):
+    """Fails if AQUA_PROJECT does not win over the key, or the folder is not the project subfolder."""
     if env is None:
         monkeypatch.delenv("AQUA_PROJECT", raising=False)
     else:
@@ -84,17 +83,18 @@ def test_project_folder_follows_env_then_key_then_flat(tmp_path, monkeypatch, ke
     "project, match",
     [
         ("climatedt", r"tools folder for project 'climatedt' in .*tools/climatedt"),
-        (None, r"collections folder \(installation without project\) in .*collections"),
+        (None, r"No project set in .*config-aqua.yaml: this installation predates project support, run `aqua install`"),
     ],
 )
-def test_project_folder_missing_names_folder_and_project(tmp_path, monkeypatch, project, match):
-    """Fails if a missing folder falls back to another project or the error omits folder and project."""
+def test_project_folder_refuses_missing_folder_and_flat_layout(tmp_path, monkeypatch, project, match):
+    """Fails if a missing folder falls back to another project or the flat layout, or the error is not explicit."""
     monkeypatch.delenv("AQUA_PROJECT", raising=False)
-    # tools/ exists flat, but there is no tools/climatedt: no fallback to the flat folder
+    # tools/ exists flat, but there is no tools/<project>: neither layout falls back to it
     context = ConfigContext(configdir=_project_install(tmp_path, project=project))
 
+    assert context.project == project
     with pytest.raises(FileNotFoundError, match=match):
-        context.get_project_folder("tools" if project else "collections")
+        context.get_project_folder("tools")
 
 
 @pytest.mark.aqua

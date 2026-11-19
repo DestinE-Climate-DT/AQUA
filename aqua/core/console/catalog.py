@@ -70,9 +70,6 @@ class CatalogMixin:
 
         if os.path.exists(f"{self.configpath}/{CATPATH}/{args.catalog}"):
             self._catalog_set(args.catalog)
-        elif args.catalog in self._installed_projects():
-            self.logger.error("%s is a project, not a catalog: use `aqua project set %s`", args.catalog, args.catalog)
-            sys.exit(1)
         else:
             self.logger.error("%s catalog is not installed!", args.catalog)
             sys.exit(1)
