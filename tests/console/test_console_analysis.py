@@ -151,8 +151,8 @@ def project_layout(tmp_path, monkeypatch):
 
     `nested`: active project `alpha`, analysis folders for `alpha` and `beta`, both with a package
     `aqua.<project>` under tmp_path (names of no real project, whose installed package would win).
-    `legacy`: no project key and the flat `analysis` folder. `empty`: active project `alpha` without analysis folder
-    (as an installation of aqua-core alone).
+    `legacy`: no project key (installation predating project support).
+    `empty`: active project `alpha` without analysis folder (as an installation of aqua-core alone).
     """
     monkeypatch.delenv("AQUA_PROJECT", raising=False)
     monkeypatch.delenv("AQUA_PROJECT_PATH", raising=False)
@@ -168,9 +168,7 @@ def project_layout(tmp_path, monkeypatch):
 
     def _build(layout):
         config = {"machine": "ci", "catalog": None}
-        if layout == "legacy":
-            _write_analysis_folder(os.path.join(tmp_path, "analysis"), tmp_path, script)
-        else:
+        if layout != "legacy":
             config["project"] = "alpha"
         if layout == "nested":
             for project in ("alpha", "beta"):
@@ -211,8 +209,6 @@ def _aqua(monkeypatch, args):
         ("nested", ["-p", "beta"], "beta/config.aqua-analysis.yaml", "beta"),
         ("nested", ["ensemble", "--project", "beta"], "beta/config.aqua-analysis-ensemble.yaml", "beta"),
         ("nested", ["-p", "beta", "--config", "CUSTOM"], "config.aqua-analysis.yaml", "beta"),
-        ("legacy", [], "config.aqua-analysis.yaml", None),
-        ("legacy", ["ensemble"], "config.aqua-analysis-ensemble.yaml", None),
         ("legacy", ["--config", "CUSTOM"], "config.aqua-analysis.yaml", None),
     ],
 )
@@ -220,7 +216,9 @@ def test_analysis_project_config_and_env(
     project_layout, recorded_commands, monkeypatch, tmp_path, layout, args, label, project
 ):
     """Fails if the default config is not taken from the (selected) project folder, if `--config` does not win,
-    or if AQUA_PROJECT and AQUA_PROJECT_PATH are not exported to the config (or are exported without project)."""
+    or if AQUA_PROJECT and AQUA_PROJECT_PATH are not exported to the config (or are exported without project).
+
+    Without project only an explicit `--config` runs: the default one is refused (see test_analysis_project_errors)."""
     site = project_layout(layout)
     args = [str(tmp_path / "config.aqua-analysis.yaml") if arg == "CUSTOM" else arg for arg in args]
 
@@ -240,13 +238,15 @@ def test_analysis_project_config_and_env(
     "layout, args, message",
     [
         ("legacy", ["-p", "alpha"], "This installation predates project support (no project key in"),
+        ("legacy", [], "No project set in"),
+        ("legacy", ["ensemble"], "No project set in"),
         ("nested", ["-p", "missing"], "Cannot find the analysis folder for project 'missing'"),
         ("empty", [], "Cannot find the analysis folder for project 'alpha'"),
     ],
 )
 def test_analysis_project_errors(project_layout, recorded_commands, monkeypatch, aqua_caplog, layout, args, message):
-    """Fails if `-p` is accepted on an installation without project (with no pointer to `aqua install`),
-    or if a project without analysis folder runs instead of stopping."""
+    """Fails if `-p` or the default config are accepted on an installation without project (with no pointer to
+    `aqua install`), or if a project without analysis folder runs instead of stopping."""
     project_layout(layout)
     caplog = aqua_caplog(logging.getLogger("AQUA Analysis"), logging.getLogger("AquaAnalysis"))
 
@@ -266,7 +266,7 @@ def test_analysis_project_errors(project_layout, recorded_commands, monkeypatch,
         ("nested", [], "analysis/alpha/config.grouping.yaml"),
         ("nested", ["-p", "beta"], "analysis/beta/config.grouping.yaml"),
         ("nested", ["--project", "beta", "-c", "CUSTOM"], "config.grouping.yaml"),
-        ("legacy", [], "analysis/config.grouping.yaml"),
+        ("legacy", ["-c", "CUSTOM"], "config.grouping.yaml"),
     ],
 )
 def test_push_grouping_file(project_layout, monkeypatch, tmp_path, layout, args, grouping):
@@ -285,12 +285,14 @@ def test_push_grouping_file(project_layout, monkeypatch, tmp_path, layout, args,
     "layout, args, status, message",
     [
         ("legacy", ["-p", "alpha"], 2, "This installation predates project support (no project key in"),
+        ("legacy", [], 1, "No project set in"),
         ("nested", ["-p", "missing"], 1, "Cannot find the analysis folder for project 'missing'"),
         ("empty", [], 1, "Cannot find the analysis folder for project 'alpha'"),
     ],
 )
 def test_push_project_errors(project_layout, monkeypatch, aqua_caplog, tmp_path, layout, args, status, message):
-    """Fails if `aqua push -p` is accepted without project support or publishes with a missing grouping folder."""
+    """Fails if `aqua push` (default grouping file or `-p`) runs without project support, or publishes with a missing
+    grouping folder."""
     project_layout(layout)
     caplog = aqua_caplog(logging.getLogger("AQUA"))
     published = []

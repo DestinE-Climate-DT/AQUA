@@ -182,9 +182,6 @@ while ``report_warnings: true`` lists also the distinct ``WARNING`` messages.
 Projects
 --------
 
-.. note::
-    The name "project" is provisional and may change in a future release.
-
 An installation can hold the configuration of several projects, each in its own subfolder of the
 project-scoped configuration folders (e.g. ``~/.aqua/analysis/<project>``); one of them is the active project,
 set by the ``project`` key of ``config-aqua.yaml`` or overridden by the ``AQUA_PROJECT`` environment variable.
@@ -198,9 +195,9 @@ Before reading the configuration file, ``aqua analysis`` exports two environment
   e.g. to locate the command line tools shipped by the project: ``${AQUA_PROJECT_PATH}/cli/my_tool.py``.
 
 Both variables are inherited by the diagnostic tools, which then read the configuration of the same project.
-An installation that predates project support (no ``project`` key in ``config-aqua.yaml``) keeps the flat layout:
-the default configuration file is ``analysis/config.aqua-analysis.yaml``, the two variables are not exported
-and ``-p`` is refused.
+On an installation that predates project support (no ``project`` key in ``config-aqua.yaml``)
+only an explicit ``--config`` works: the default configuration file and ``-p`` are refused and the two variables
+are not exported. Run ``aqua install`` to upgrade the installation.
 
 Configuration file
 ------------------
