@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.5):
 
 Complete list:
-- Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old commands remain as deprecated aliases until 2.0 (#3409)
+- Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old `aqua add`, `remove`, `set`, `avail`, `update -c` and `grids set` are removed (#3409)
 - Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
 

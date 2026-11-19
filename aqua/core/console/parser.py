@@ -9,7 +9,7 @@ plus a few top-level commands (``install``, ``uninstall``, ``update``, ``list``,
 by :func:`parse_arguments`; its verbs are dispatched by ``AquaConsole.command_map`` in ``main.py``.
 
 The verb-first commands of AQUA < 1.3 (``aqua add``, ``aqua remove``, ``aqua set``, ``aqua avail``,
-``aqua update -c`` and ``aqua grids set``) are kept as deprecated aliases until AQUA 2.0.
+``aqua update -c`` and ``aqua grids set``) have been removed.
 """
 
 import argparse
@@ -57,12 +57,7 @@ def parse_arguments():
     # top-level commands
     install_parser(subparsers)
     add_command(subparsers, "uninstall", "Remove the current AQUA installation")
-    update_parser = add_command(
-        subparsers, "update", "Update the AQUA installation files of every component not installed in editable mode"
-    )
-    update_parser.add_argument(
-        "-c", "--catalog", type=str, help="Deprecated, use `aqua catalog update`: update a catalog (or 'all')"
-    )
+    add_command(subparsers, "update", "Update the AQUA installation files of every component not installed in editable mode")
     list_parser = add_command(subparsers, "list", "Show the AQUA installation and the installed catalogs")
     list_parser.add_argument(
         "-a", "--all", action="store_true", help="Print also all the installed fixes, grids and data_models"
@@ -77,16 +72,6 @@ def parse_arguments():
     parser_dict = {"main": parser, "catalog": catalog_subparser(subparsers)}
     for name in FILE_NOUNS:
         parser_dict[name] = file_subparser(subparsers, name)
-
-    # deprecated verb-first catalog commands: no help, so they are not listed in `aqua -h`
-    add_catalog_add_arguments(subparsers.add_parser("add", description="Deprecated, use `aqua catalog add`"))
-    add_catalog_name_argument(
-        subparsers.add_parser("remove", description="Deprecated, use `aqua catalog remove`"), "Catalog to be removed"
-    )
-    add_catalog_name_argument(
-        subparsers.add_parser("set", description="Deprecated, use `aqua catalog set`"), "Catalog to be used in AQUA"
-    )
-    add_repository_argument(subparsers.add_parser("avail", description="Deprecated, use `aqua catalog avail`"))
 
     return parser_dict
 
@@ -191,10 +176,6 @@ def file_subparser(subparsers, name):
     if name == "grids":
         path_help = "Set a grids path (with grids, areas and weights subfolders) as the default in config-aqua.yaml"
         verbs.add_parser("path", help=path_help).add_argument("path", help="The grids path to set as default")
-        # deprecated alias of `grids path`: no help, so it is not listed
-        verbs.add_parser("set", description="Deprecated, use `aqua grids path`").add_argument(
-            "path", help="The grids path to set as default"
-        )
         builder_parser(verbs.add_parser("build", help="Build grids from data sources"))
         verbs.add_parser(
             "deploy", help="Deploy grids. Requires to set the default path with the `aqua grids path` command"
