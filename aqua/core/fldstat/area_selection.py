@@ -100,7 +100,9 @@ class AreaSelection:
                 reg_mask = reg_mask.fillna(False)  # handle NaNs from regionmask
             else:
                 # Select cells touching the region, based on the fractional coverage of each cell
-                frac = region.mask_3D_frac_approx(data[lon_name], data[lat_name], **mask_kwargs)
+                # Subset polygons before the eager, oversampled masks are allocated.
+                mask_regions = region[region_numbers] if region_numbers else region
+                frac = mask_regions.mask_3D_frac_approx(data[lon_name], data[lat_name], **mask_kwargs)
                 reg_mask = frac.sel(region=region_numbers).sum("region") > frac_threshold
 
             selected = data.where(reg_mask, drop=drop)

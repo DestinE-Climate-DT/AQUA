@@ -119,6 +119,8 @@ class TestRegridder:
         # couple of CDO grids
         assert gdh.normalize_grid_dict("n256") == {"path": {"2d": "n256"}}
         assert gdh.normalize_grid_dict("r100x50") == {"path": {"2d": "r100x50"}}
+        # HEALPix: CDO needs --force
+        assert gdh.normalize_grid_dict("hpr3") == {"path": {"2d": "hpr3"}, "cdo_options": "--force"}
 
         # test of errors
         with pytest.raises(ValueError, match="Grid name 'ciao' not found in the configuration."):
@@ -310,7 +312,7 @@ class TestRegridder:
         assert len(rgd.lat) == 90
         for level in [0, 6]:
             skipna, masked = rgd.avg_so.isel(level=level), ref.avg_so.isel(level=level)
-            # na_thres 0.5 as without skipna: same land fraction, up to a few cells
+            # na_thres 'auto' (0.5 for ycon) as without skipna: same land fraction, up to a few cells
             assert float(skipna.isnull().mean()) == pytest.approx(float(masked.isnull().mean()), abs=APPROX_ABS)
             both = skipna.notnull() & masked.notnull()
             xr.testing.assert_allclose(skipna.where(both), masked.where(both))
@@ -465,17 +467,22 @@ class TestRegridder:
 
 
 @pytest.mark.aqua
-def test_non_latlon_interpolation():
-    """
-    Test interpolation to a non regular grid,
-    checking appropriate logging message
-    """
-    reader = Reader(model="IFS", exp="test-tco79", source="short", regrid="F80", fix=True, loglevel=LOGLEVEL, rebuild=True)
+@pytest.mark.parametrize(
+    "regrid, shape, first",
+    [
+        ("F80", (160, 320), 246.71156470963325),
+        # HEALPix zoom 3 nested: fails if --force is not passed to CDO for a HEALPix target
+        ("hpr3", (768,), 295.8759716912618),
+    ],
+)
+def test_non_latlon_interpolation(regrid, shape, first):
+    """Interpolation to a non regular grid fails if the target grid is not built or the weights are wrong."""
+    reader = Reader(model="IFS", exp="test-tco79", source="short", regrid=regrid, fix=True, loglevel=LOGLEVEL, rebuild=True)
 
     data = reader.retrieve(var="2t")["2t"].isel(time=0).aqua.regrid()
 
-    assert data.shape == (160, 320)
-    assert data.values[0, 0] == pytest.approx(246.71156470963325)
+    assert data.shape == shape
+    assert data.values.flat[0] == pytest.approx(first)
 
 
 @pytest.mark.aqua

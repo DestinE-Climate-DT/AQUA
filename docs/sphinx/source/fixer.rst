@@ -12,6 +12,14 @@ with the same variable names and units.
 The default convention for metadata (e.g. variable names and units) is **WMO GRIB2**.
 
 The fixing is done by default when we initialize the ``Reader`` class (it can be disabled with ``fix=False``).
+
+.. warning::
+
+    With ``engine="z3fdb"``, ``fix=False`` produces output without GRIB-derived
+    variable metadata such as units and parameter IDs, and numeric parameters
+    retain names such as ``var167``. See :ref:`z3fdb-metadata` for the metadata
+    differences from GSV and the attributes that fixing can restore.
+
 The fix use a common convention to make general changes, and can be extended using the instructions in the ``aqua/core/config/fixes`` folder.
 The ``aqua/core/config/fixes`` folder contains fixes in YAML files.
 A new fix can be added to the folder and the filename can be freely chosen.

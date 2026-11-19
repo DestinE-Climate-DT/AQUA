@@ -53,5 +53,6 @@ DEFAULT_GRID_DATA = "data"  # reserved grid path value: the grid is taken from t
 DEFAULT_DIMENSION_SKIPNA = "skipna"  # single grid path regridded with smmregrid skipna
 # grid path keys regridded with 2D weights (no mask_dim in smmregrid)
 DEFAULT_2D_DIMENSIONS = [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, DEFAULT_DIMENSION_SKIPNA]
-# max fraction of missing source weights before a target cell is NaN: smmregrid default without skipna
-DEFAULT_NA_THRES = 0.5
+# max fraction of missing source weights before a target cell is NaN: 'auto' is the smmregrid default of each
+# method (0.5 for conservative, 1e-6 for bil/bic, 1.0 otherwise)
+DEFAULT_NA_THRES = "auto"

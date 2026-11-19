@@ -36,6 +36,29 @@ The default regrid method is ``ycon`` which is a conservative regrid method.
 If you want to use a different regrid method, you can specify it in the ``regrid_method`` keyword,
 following the CDO convention.
 
+.. _regrid-missing-values:
+
+Missing values
+^^^^^^^^^^^^^^
+
+A target cell is set to NaN when too large a fraction of its weights falls on missing source points.
+The threshold is the smmregrid ``na_thres`` (maximum fraction of missing weights), which AQUA sets to the
+smmregrid default ``'auto'``, chosen per regrid method:
+
+========================  ===============================================================================
+Regrid method             ``na_thres='auto'``
+========================  ===============================================================================
+``ycon``, ``con``         0.5: NaN if less than half of the target cell is covered by valid source points
+``bil``, ``bic``          1e-6: NaN as soon as one of the neighbours is missing
+``dis``, ``nn``, others   1.0: NaN only if no neighbour is valid
+========================  ===============================================================================
+
+For the conservative methods the threshold always applies.
+For the other methods it applies only to grids using the ``skipna`` path key (see :ref:`grid_definition`):
+without ``skipna`` CDO has already decided which target cells get a value when generating the weights.
+The threshold is not configurable from AQUA.
+See the `na_thres section of the smmregrid documentation <https://smmregrid.readthedocs.io/en/latest/concepts.html#masking-na-thres>`_ for details.
+
 
 Basic usage of the Regridder()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -139,9 +162,12 @@ The list is available in the ``aqua/core/config/grids/default.yaml`` file.
 
 .. note::
     Inside the ``aqua/core/config/grids`` directory, it is possible to define custom grids that can be used in the regridding process.
-    Currently grids supported by CDO, which do not require extra CDO options, are supported and can be used directly as target grids.
-    We are planning to be able to support also more complex irregular grids as target grids in the future (e.g. allowing to regrid everything to
-    HealPix grids).
+    Grids supported by CDO can be used directly as target grids. CDO options needed by the target grid (``cdo_options``) are used
+    when generating the weights.
+
+HEALPix target grids can be given with their CDO names, ``hp<nside>_nested`` (or ``_ring``) or ``hpr<zoom>`` (nested), where
+``nside = 2^zoom``: for example ``regrid='hp8_nested'`` or ``regrid='hpr3'`` for zoom level 3.
+AQUA adds the ``--force`` CDO option they need automatically.
 
 Oceanic grid files naming scheme
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
