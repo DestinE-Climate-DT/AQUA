@@ -66,6 +66,17 @@ def parse_arguments():
     catalog_subparsers.add_parser("list", help="List the currently installed AQUA catalogs")
     catalog_avail_parser = catalog_subparsers.add_parser("avail", help="List the ClimateDT available catalogs on GitHub")
 
+    # subparsers for projects: aqua project <verb>
+    parser_project = subparsers.add_parser("project", help="project related commands")
+    project_subparsers = parser_project.add_subparsers(dest="nested_command")
+    project_install_parser = project_subparsers.add_parser("install", help="Install a project")
+    project_update_parser = project_subparsers.add_parser("update", help="Update a project not installed in editable mode")
+    project_remove_parser = project_subparsers.add_parser("remove", help="Remove an installed project")
+    project_set_parser = project_subparsers.add_parser(
+        "set", help="Set an installed project as the active one in config-aqua.yaml"
+    )
+    project_subparsers.add_parser("list", help="List the installed projects, marking the active one")
+
     # subparsers for grids, fixes and styles
     parser_grids = file_subparser(subparsers, "grids")
     parser_fixes = file_subparser(subparsers, "fixes")
@@ -114,10 +125,19 @@ def parse_arguments():
         "-r", "--repository", type=str, help="Explore a specific repository: provide the user/repo string"
     )
 
+    project_install_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be installed")
+    project_install_parser.add_argument(
+        "-e", "--editable", type=str, help="Install a project in editable mode from the original source: provide the Path"
+    )
+    project_update_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be updated")
+    project_remove_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be removed")
+    project_set_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be used in AQUA")
+
     # create a dictionary to simplify the call
     parser_dict = {
         "main": parser,
         "catalog": parser_catalog,
+        "project": parser_project,
         "fixes": parser_fixes,
         "grids": parser_grids,
         "styles": parser_styles,
