@@ -9,9 +9,10 @@ The project key and folder names live in ``aqua.core.configurer.context``.
 """
 
 import os
+import shutil
 import sys
 
-from aqua.core.configurer.context import PROJECT_FOLDERS, PROJECT_KEY
+from aqua.core.configurer.context import PRE_PROJECT_MESSAGE, PROJECT_FOLDERS, PROJECT_KEY
 from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml
 
@@ -72,17 +73,75 @@ class ProjectMixin:
             package = f"aqua-{name} {version}" if version else f"aqua-{name} package not found"
             print(f"{'*' if name == self.configurer.project else ' '} {name} ({mode}, {package})")
 
-    def project_not_implemented(self, args):
-        """Placeholder of the project verbs not available yet (install, update, remove)
+    def project_install(self, args):
+        """Add a project to an existing installation, copied or linked with -e, and make it the active one
 
         Args:
             args (argparse.Namespace): arguments from the command line
-
-        Raises:
-            NotImplementedError: always, after checking the project name.
         """
-        self._refuse_core(args.project)
-        raise NotImplementedError(f"`aqua project {args.nested_command}` is available in a later PR")
+        mode = {"mode": "editable", "path": args.editable} if args.editable else {"mode": "standard", "path": None}
+        self._project_add(args.project, mode)
+
+    def _project_add(self, name, mode):
+        """Add a project to an existing installation and make it the active one.
+
+        Args:
+            name (str): project name
+            mode (dict): installation mode with 'mode' ('standard' or 'editable') and 'path' keys
+        """
+        self._check_project_layout(name)
+        self._check_project_package(name)
+        if name in self._installed_projects():
+            self.logger.error("Project %s is already installed: use `aqua project update %s`", name, name)
+            sys.exit(1)
+        self._install_component(name, mode)
+        self._project_set(name)
+
+    def project_update(self, args):
+        """Copy again the folders and extra files of an installed project, skipping editable ones
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        self._check_installed_project(args.project)
+        self._check_project_package(args.project)
+        self._copy_component(args.project, self.components[args.project]["path"], update=True)
+
+    def project_remove(self, args):
+        """Remove the project-scoped folders and the extra files of an installed project
+
+        Folders shared with other projects (``flat`` and ``templates`` of the plugin contract) are kept.
+        The extra files are found by listing the package: without the package they are kept, with a warning.
+        If the project was active, another installed project becomes active, if any.
+
+        Args:
+            args (argparse.Namespace): arguments from the command line
+        """
+        name = args.project
+        self._check_installed_project(name)
+
+        targets = [os.path.join(self.configpath, folder, name) for folder in PROJECT_FOLDERS]
+        path = self.components.get(name, {}).get("path")
+        if path:
+            targets += [target for _, target in self._component_files(name, path)]
+        else:
+            self.logger.warning("aqua.%s package not found: its extra files, if any, are kept", name)
+
+        for target in targets:
+            if os.path.islink(target) or os.path.isfile(target):
+                self.logger.info("Removing %s", target)
+                os.remove(target)
+            elif os.path.isdir(target):
+                self.logger.info("Removing %s", target)
+                shutil.rmtree(target)
+
+        if self.configurer.config_dict.get(PROJECT_KEY) == name:
+            others = self._installed_projects()
+            if others:
+                self.logger.warning("Removed the active project %s, %s is now the active project", name, others[0])
+            else:
+                self.logger.warning("Removed the active project %s, no project is installed", name)
+            self._project_set(others[0] if others else None)
 
     def _refuse_core(self, name):
         """Exit if the name is core, which is not a project."""
@@ -95,20 +154,30 @@ class ProjectMixin:
         if name is not None:
             self._refuse_core(name)
         self._check()
-        if not self.configurer.config_dict.get(PROJECT_KEY):
-            self.logger.error(self._pre_project_message())
+        if not self.configurer.has_project_layout():
+            self.logger.error(PRE_PROJECT_MESSAGE.format(config_file=self.configfile))
             sys.exit(1)
 
-    def _pre_project_message(self):
-        """Message for an installation that predates project support (no project key)."""
-        return (
-            f"This installation predates project support (no {PROJECT_KEY} key in {self.configfile}): "
-            "run `aqua install` to upgrade it"
-        )
+    def _check_installed_project(self, name):
+        """Check the installation and exit if the project is not installed."""
+        self._check_project_layout(name)
+        if name not in self._installed_projects():
+            self.logger.error("Project %s is not installed", name)
+            sys.exit(1)
+
+    def _check_project_package(self, name):
+        """Exit if the package of a project is not available or breaks the plugin contract."""
+        info = self.components.get(name)
+        if info is not None and info["error"]:
+            self.logger.error(info["error"])
+            sys.exit(1)
+        if info is None or info["path"] is None:
+            self.logger.error("aqua.%s package not found", name)
+            sys.exit(1)
 
     def _installed_projects(self):
         """Names of the subfolders of the project-scoped folders, empty for a pre-project installation."""
-        if not self.configurer.config_dict.get(PROJECT_KEY):
+        if not self.configurer.has_project_layout():
             return []
         names = set()
         for folder in PROJECT_FOLDERS:

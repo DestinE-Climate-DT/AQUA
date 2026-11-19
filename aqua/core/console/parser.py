@@ -11,7 +11,6 @@ from aqua.core.configurer import ConfigPackages
 from aqua.core.console.analysis import analysis_parser
 from aqua.core.console.builder import builder_parser
 from aqua.core.console.catgen import catgen_parser
-from aqua.core.console.components import discover_aqua_components
 from aqua.core.console.drop import drop_parser
 from aqua.core.console.push_analysis import push_parser
 
@@ -89,17 +88,16 @@ def parse_arguments():
     install_parser.add_argument(
         "-p", "--path", type=str, metavar="AQUA_TARGET_PATH", help="Path where to install AQUA. Default is $HOME/.aqua"
     )
-    # Only core and diagnostics have a one-letter flag: a plugin starting with "c" would collide with core
-    short_flags = {"core": ["-c"], "diagnostics": ["-d"]}
-    for name in discover_aqua_components():
+    # only core and diagnostics: other projects are installed with `aqua project install`
+    for flag, name in (("-c", "core"), ("-d", "diagnostics")):
         install_parser.add_argument(
-            *short_flags.get(name, []),
+            flag,
             f"--{name}",
             nargs="?",
             const="standard",
             type=str,
             metavar=f"AQUA_{name.upper()}_PATH",
-            help=f"Install AQUA {name}. Without path: standard installation of {name} only. "
+            help=f"Install AQUA {name} only. Without path: standard installation. "
             "With path: editable installation from that path",
         )
 

@@ -87,13 +87,10 @@ aqua install
 ------------
 
 With this command the configuration file and the default data models, grids and fixes are copied to the destination folder.
-AQUA core is always installed. On top of it, any other AQUA component installed in the current environment
-(``aqua-diagnostics`` and any further package following the same convention, see :ref:`aqua-console-plugins`)
-is automatically detected and its configuration/template files are copied as well.
-Each of these packages is a *project*: its project-scoped folders are installed in a subfolder named after it
-(e.g. ``analysis/diagnostics``), and the last project installed becomes the active one,
-written in the ``project`` key of ``config-aqua.yaml``. If a bare ``aqua install`` installs several projects,
-a warning names the one that is now active.
+A bare ``aqua install`` installs AQUA core and, if ``aqua-diagnostics`` is installed in the current environment,
+the ``diagnostics`` project: its project-scoped folders go in a subfolder named after it (e.g. ``analysis/diagnostics``)
+and it is the active project, written in the ``project`` key of ``config-aqua.yaml``.
+Other projects (see :ref:`aqua-console-plugins`) are added with :ref:`aqua project install <aqua-project-install>`.
 
 By default, the destination folder will be ``$HOME/.aqua``.
 It is possible to specify from where to copy and where to store.
@@ -128,13 +125,8 @@ Optional arguments are:
     allowing developers to work on their local copy of AQUA diagnostics.
 
 .. note::
-    ``--diagnostics`` is only one example: **every** AQUA component discovered in the current environment
-    gets its own ``--<component-name>`` option automatically, following the same syntax
-    (bare flag for a standard install, or a path for an editable one). Only ``--core`` and ``--diagnostics``
-    also have a one-letter form (``-c`` and ``-d``): the other components have the long option only, so that
-    two component names with the same initial do not collide. Run ``aqua install --help``
-    to see the exact list of components available in your environment.
-    The default behaviour, when no component flag is specified at all, is to install every discovered component.
+    ``-c`` alone installs only core; ``-d`` alone adds diagnostics to an existing installation,
+    as ``aqua project install diagnostics``. Without ``-c`` and ``-d``, both are installed in standard mode.
 
 .. option:: --path, -p <path>
 
@@ -152,12 +144,12 @@ Plugins and projects: the plugin contract
 any Python package can advertise itself as an installable AQUA component through a standard
 `entry point <https://packaging.python.org/en/latest/specifications/entry-points/>`_
 in the ``aqua.plugins`` group. This is how ``aqua-diagnostics`` is discovered, and it is the mechanism
-a project package (e.g. ``aqua-claima``) uses to plug into ``aqua install``, ``aqua update`` and ``aqua list``
+a project package (e.g. ``aqua-claima``) uses to plug into ``aqua project install``, ``aqua update`` and ``aqua list``
 without any change in AQUA core.
 
 Every plugin is a **project**: its name is the entry point name (``diagnostics``, ``claima``, ...),
 which is also the name of its subfolder in the installation, the value of the ``project`` key of
-``config-aqua.yaml`` and the ``--<name>`` option of ``aqua install``.
+``config-aqua.yaml`` and the argument of ``aqua project install``.
 AQUA core is not a plugin and not a project.
 
 A plugin package needs two things:
@@ -213,20 +205,20 @@ Rules:
   ``aqua-diagnostics`` < 0.27.0) is rejected and ``aqua install`` stops with an error asking to update that plugin.
 - Missing keys default to an empty list and a single folder name is read as a one-item list.
   Unknown keys are rejected, with an error naming the package.
-- In editable mode (``--<name> <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
+- In editable mode (``aqua project install <name> -e <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
   the links are made at the ``<config>/<dir>/<name>`` level,
   so that different projects can be editable or not independently.
 - ``get_install_dirs()`` may check the version of AQUA core and raise an exception if it is too old:
   the message is shown by ``aqua install``.
+- The ``files`` of a project are copied (linked in editable mode) one by one into the flat folder:
+  the installation stops if a file with the same name already exists. ``aqua project update`` and
+  ``aqua project remove`` find them by listing the installed package again.
+- ``flat`` and ``templates`` folders are shared: ``aqua project remove`` keeps them.
 - AQUA core installs ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles`` flat: ``catgen`` is a core tool
   and it is not project-scoped.
 
 A package that is registered but cannot be imported (e.g. installed metadata left over after an incomplete
 removal) is skipped with a warning, rather than breaking the install.
-
-.. note::
-    The ``files`` key is accepted, but the single files are not installed yet: this will come with the
-    ``aqua project`` verbs.
 
 .. _aqua-list:
 
@@ -261,9 +253,9 @@ aqua update
 This command will update the configuration files of AQUA core and of every project installed
 (see :ref:`aqua-console-plugins`), except those installed in editable mode, which are left untouched
 since they already point to the developer's own working copy.
-Each project is refreshed in its own ``<dir>/<project>`` folders, so other projects and user folders are kept.
-An installation that predates project support (no ``project`` key in ``config-aqua.yaml``) must be upgraded
-with ``aqua install`` first.
+Each project is refreshed as by ``aqua project update``, so other projects and user files are kept;
+the extra files of the projects are copied again after core has replaced its flat folders.
+An installation that predates project support is refused (see :ref:`aqua-pre-project`).
 To update the catalogs, use :ref:`aqua-catalog-update`.
 
 .. _aqua-check:
@@ -273,8 +265,7 @@ aqua check
 
 This command validates the current installation and exits with a non-zero code if a check fails:
 
-- the ``project`` key is present in ``config-aqua.yaml``: an installation without it predates project support
-  and has to be upgraded with ``aqua install``;
+- the ``project`` key is present in ``config-aqua.yaml`` (see :ref:`aqua-pre-project`);
 - the active project is installed (a missing ``analysis``, ``collections`` or ``tools`` folder of the active
   project is only reported as a warning);
 - the ``catalog.yaml`` of every installed catalog can be loaded.
@@ -404,9 +395,11 @@ while all the other folders (catalogs, grids, fixes, ``catgen``, ...) are shared
 The active project is stored in the ``project`` key of ``config-aqua.yaml`` and can be overridden
 with the ``AQUA_PROJECT`` environment variable (see :ref:`aqua-project-context`).
 
+.. _aqua-pre-project:
+
 .. note::
     Installations that predate project support (no ``project`` key, flat layout such as ``$HOME/.aqua/analysis``)
-    are not supported: ``aqua project set``, ``aqua project list``, ``aqua update`` and the project folders stop with an error
+    are not supported: the ``aqua project`` verbs, ``aqua update`` and the project folders stop with an error
     asking to upgrade the installation with ``aqua install``.
 
 aqua project set <project>
@@ -427,11 +420,33 @@ aqua project list
 This command lists the installed projects with their installation mode (standard or editable)
 and package version, marking the active one with ``*``.
 
-aqua project {install,update,remove} <project>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. _aqua-project-install:
 
-These verbs are reserved for installing (``install <project> [-e path]``, with ``-e`` taking a path as for
-``aqua catalog add``), updating and removing a project. They are not available yet and stop with an error.
+aqua project install <project> [-e path]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command adds a project to an existing installation and makes it the active one.
+Its folders and extra files (see :ref:`aqua-console-plugins`) are copied from the package installed
+in the current environment.
+
+.. option:: -e, --editable <path>
+
+    Link the folders and the extra files from the repository of the project at ``<path>``
+    (the link is made at the ``<dir>/<project>`` level), as for ``aqua catalog add``.
+
+aqua project update <project>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command copies again the folders and extra files of an installed project from its package:
+shipped files are overwritten, user files with other names are kept, editable (linked) entries are skipped.
+
+aqua project remove <project>
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This command removes the ``analysis``, ``collections`` and ``tools`` folders of a project and its extra files
+(only the links, in editable mode); shared folders are kept.
+If it was the active project, another installed project becomes active; if none is left, the ``project`` key
+stays empty until a project is installed.
 
 .. _aqua-fixes:
 
@@ -653,3 +668,5 @@ Please update your scripts to the new syntax.
      - ``aqua catalog update <catalog|all>``
    * - ``aqua grids set <path>``
      - ``aqua grids path <path>``
+   * - ``aqua install <machine> --<project> [path]``
+     - ``aqua project install <project> [-e path]``

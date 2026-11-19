@@ -28,6 +28,10 @@ PROJECT_ENV = "AQUA_PROJECT"
 """Environment variable overriding the active project."""
 PROJECT_FOLDERS = ("analysis", "collections", "tools")
 """Configuration folders with one subfolder per project (catgen is not project-scoped)."""
+PRE_PROJECT_MESSAGE = (
+    f"No {PROJECT_KEY} set in {{config_file}}: this installation predates project support, run `aqua install` to upgrade it"
+)
+"""Error for an installation without the project key, formatted with its ``config_file``."""
 
 
 class ConfigContext:
@@ -116,6 +120,17 @@ class ConfigContext:
         self.logger.debug("No %s key in %s", PROJECT_KEY, self.config_file)
         return None
 
+    def has_project_layout(self) -> bool:
+        """
+        Whether the configuration file has the ``project`` key, i.e. the installation has per-project folders.
+
+        The key may be empty (no active project) once every project has been removed.
+
+        Returns:
+            bool: False for an installation that predates project support.
+        """
+        return PROJECT_KEY in self.config_dict
+
     def get_project_folder(self, name: str) -> str:
         """
         Return the path of a project-scoped configuration folder.
@@ -138,10 +153,7 @@ class ConfigContext:
             raise ValueError(f"'{name}' is not a project folder, choose among {', '.join(PROJECT_FOLDERS)}")
 
         if self.project is None:
-            raise FileNotFoundError(
-                f"No {PROJECT_KEY} set in {self.config_file}: this installation predates project support, "
-                "run `aqua install` to upgrade it"
-            )
+            raise FileNotFoundError(PRE_PROJECT_MESSAGE.format(config_file=self.config_file))
 
         folder = os.path.join(self.configdir, name, self.project)
         if not os.path.isdir(folder):
