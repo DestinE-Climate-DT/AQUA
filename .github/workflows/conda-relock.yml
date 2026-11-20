@@ -22,21 +22,17 @@ jobs:
     # Job-level concurrency: a run skipped by the condition above never enters the group, so adding another
     # label together with 'conda-lock' does not cancel the real relock (workflow-level concurrency would)
     concurrency:
-      group: conda-relock-${{ github.event.pull_request.head.ref || 'main' }}
+      group: conda-relock-${{ github.event.pull_request.head.ref || github.ref_name }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - name: Determine target branch
         id: target-branch
         env:
-          EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        # PR events relock the PR branch; manual runs the branch selected in "Use workflow from"; schedule runs main
         run: |
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            target_branch="$PR_HEAD_REF"
-          else
-            target_branch="main"
-          fi
+          target_branch="${PR_HEAD_REF:-$GITHUB_REF_NAME}"
           echo "target_branch=$target_branch" >> "$GITHUB_OUTPUT"
           echo "relock_branch=relock-conda-to/$target_branch" >> "$GITHUB_OUTPUT"
 
