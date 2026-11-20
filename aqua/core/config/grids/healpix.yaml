@@ -41,3 +41,9 @@ grids:
     path: "{{ grids }}/HealPix/hpz8_nested_atm.nc"
     space_coord: ["cell"]
     cdo_options: "--force"
+
+  # HEALPix zoom 6 (nside=64) in the DLESyM (DLWP-HEALPix) layout: 12 base faces of 64x64 cells,
+  # data[face, height, width] is the HEALPix pixel (ix = 63 - height, iy = 63 - width) of that face
+  dlesym-hpz6:
+    path: "{{ grids }}/HealPix/dlesym_hpz6.nc"
+    space_coord: ["face", "height", "width"]

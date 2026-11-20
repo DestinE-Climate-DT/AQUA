@@ -357,6 +357,24 @@ class TestRegridder:
         assert float(out.min()) == pytest.approx(280.0) and float(out.max()) == pytest.approx(280.0)
         assert out.isel(time=1).notnull().sum() > 0.8 * out.isel(time=1).size
 
+    def test_three_horizontal_dims(self, era5_hpz3_monthly_data, regrid_paths):
+        """Cells stored along three dimensions, as in dlesym-hpz6, are regridded in the order of the flattened array"""
+        cells = era5_hpz3_monthly_data["2t"].isel(time=0)
+        faces = xr.DataArray(cells.values.reshape(12, 8, 8), dims=("face", "height", "width"), name="2t")
+        path = "./AQUA_tests/grids/HealPix/hpz3_nested_atm.nc"
+        grids = {
+            "cells": {"path": path, "space_coord": ["cells"], "cdo_options": "--force"},
+            "faces": {"path": path, "space_coord": ["face", "height", "width"], "cdo_options": "--force"},
+        }
+        cfg = {"grids": grids, "paths": regrid_paths}
+        regridded = {}
+        for name, data in {"cells": cells, "faces": faces}.items():
+            regridder = Regridder(cfg, src_grid_name=name, loglevel=LOGLEVEL)
+            regridder.weights(tgt_grid_name="r36x18", regrid_method="ycon")
+            regridded[name] = regridder.regrid(data)
+        assert regridded["faces"].dims == ("lat", "lon")
+        xr.testing.assert_equal(regridded["faces"], regridded["cells"].drop_vars("time"))
+
     @pytest.mark.xdist_group(name="regrid_fesom3d")  # same worker as the rebuild of the weights it uses
     def test_levels_and_regrid(self, fesom3d_r100_rebuilt):
         """
