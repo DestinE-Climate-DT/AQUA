@@ -464,6 +464,29 @@ class TestAlignAreaCoordinates:
         with pytest.raises(ValueError, match="Mismatch in values for coordinate 'lon'"):
             fld.align_area_coordinates(data, area=area)
 
+    def test_single_precision_rounding_step_aligns(self):
+        """One float32 rounding step (1.53e-5 at 220.5, as after cdo gridarea) must align: a fixed 1.5e-5 tolerance raises."""
+        lon_data = np.array([100.5, 220.5, 359.5], dtype="float32")
+        lon_area = lon_data.copy()
+        lon_area[1] = np.nextafter(lon_area[1], np.float32(0))
+        area, data = self._make_area_and_data(lon_area, lon_data)
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        aligned = fld.align_area_coordinates(data, area=area)
+
+        np.testing.assert_array_equal(aligned.lon.values, lon_data)
+
+    def test_double_precision_tolerance_not_widened(self):
+        """The same 1.53e-5 difference between float64 coordinates must still raise: only float32 widens the tolerance."""
+        lon_data = np.array([100.5, 220.5, 359.5])
+        lon_area = lon_data.copy()
+        lon_area[1] = np.nextafter(np.float32(220.5), np.float32(0))
+        area, data = self._make_area_and_data(lon_area, lon_data)
+
+        fld = FldStat(area=area, horizontal_dims=["lat", "lon"], loglevel=LOGLEVEL)
+        with pytest.raises(ValueError, match="Mismatch in values for coordinate 'lon'"):
+            fld.align_area_coordinates(data, area=area)
+
     def test_genuine_convention_mismatch_still_raises(self):
         """A real longitude-convention mismatch (0-360 vs -180/180) must still raise."""
         lon_data = np.array([0.0, 18.0, 36.0, 342.0])
