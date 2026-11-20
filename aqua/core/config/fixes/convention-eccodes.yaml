@@ -15,7 +15,16 @@ convention_name:
           - D2M # AQUA ERA5
           - d2m
           - tdps # cmor
+          - tdas # aimip
         grib: 168
+      2sh: # 2 metre specific humidity
+        source:
+          - 174096 # original GRIB2 code
+          - 235089 # avg_2sh
+          - 2sh
+          - avg_2sh
+          - huss # cmor
+        grib: 174096
       2t: # 2 meter temperature
         source:
           - 167 # original GRIB2 code
@@ -87,7 +96,6 @@ convention_name:
           - 235246 # avg_clwc
           - clwc
           - avg_clwc
-          - lwp # cmor
         grib: 246
       hcc: # High cloud cover
         source:
@@ -325,7 +333,7 @@ convention_name:
           - avg_ie
           - mer
           - E # AQUA ERA5
-          - evspsbl # cmor
+          # - evspsbl # cmor --> sign wrong, see cmor fixer
         grib: 232
       iews: # Eastward turbulent surface stress (iews is the instantaneous value for GRIB)
         source:
@@ -359,7 +367,7 @@ convention_name:
           - SSHF # AQUA ERA5
           - sshf
           - msshf # legacy eccodes
-          - hfss # cmor
+          # - hfss # cmor --> sign wrong, see cmor fixer
         grib: 231
       lsprate: # large scale precipitation rate
         source:
@@ -403,7 +411,7 @@ convention_name:
           - mslhf # legacy eccodes
           - slhf
           - SLHF # AQUA ERA5
-          # - hfls # cmor --> sign wrong
+          # - hfls # cmor --> sign wrong, see cmor fixer
         grib: 260002
       snlwrf: # Surface net long-wave radiation flux
         source:
@@ -472,7 +480,7 @@ convention_name:
           - mtnlwrf
           - ttr
           - TTR # AQUA ERA5
-          # - rlut # cmor --> sign wrong
+          # - rlut # cmor --> sign wrong, see cmor fixer
         grib: 260672
       tnlwrfcs: # Top net long-wave radiation flux clear sky
         source:
@@ -696,17 +704,17 @@ convention_name:
           - avg_snvol
         grib: 262009
 
-    #### OROGRAPHY and LAND SEA MASK ####
-    lsm: # Land-sea mask for the atmosphere
-      source:
-        - 172 # original GRIB2 code
-        - land_sea_mask
-        - lsm
-        - sftlf # cmor
-      grib: 172
-    orog: # Orography
-      source:
-        - 228002 # original GRIB2 code
-        - orography
-        - orog # cmor
-      grib: 228002
+      #### OROGRAPHY and LAND SEA MASK ####
+      lsm: # Land-sea mask for the atmosphere
+        source:
+          - 172 # original GRIB2 code
+          - land_sea_mask
+          - lsm
+          - sftlf # cmor
+        grib: 172
+      orog: # Orography
+        source:
+          - 228002 # original GRIB2 code
+          - orography
+          - orog # cmor
+        grib: 228002
