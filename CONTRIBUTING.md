@@ -73,7 +73,8 @@ this triggers the `conda-relock` workflow on your branch, which regenerates the 
 (`[Conda-Lock] Relock AQUA-core for <your-branch>`) targeting your branch, with the `run tests` 🏃 label already set.
 If tests in that PR pass, merge it into your branch to update the lockfiles. Remember to remove the label to avoid further triggering of relocking. 
 
-The relock workflow also runs every Monday on `main`, and can be launched manually from the GitHub Actions tab (`workflow_dispatch`), in which case it relocks `main`.
+The relock workflow also runs every Monday on `main`, and can be launched manually from the GitHub Actions tab (`workflow_dispatch`), in which case it relocks the branch selected in *Use workflow from* and opens the PR against it.
+Run it manually on your branch when the label does not start the workflow: GitHub does not run `pull_request` workflows on a PR with merge conflicts.
 
 ### Finalizing a Pull Request
 
