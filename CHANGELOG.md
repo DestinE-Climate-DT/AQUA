@@ -10,6 +10,7 @@ Unreleased in the current development version (target v1.2.5):
 Complete list:
 - Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
+- New `cmor` fixer for CMOR variables needing sign or unit changes, and fixes to the eccodes convention
 
 ## [v1.2.4]
 
