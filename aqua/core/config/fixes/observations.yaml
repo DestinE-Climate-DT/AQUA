@@ -185,7 +185,7 @@ fixer_name:
         source: mr
       tcwv:
         source: mtcwv
-      ci:
+      siconc:
         source: mci
       tnlwrf:
         derived: 0.-ulwrf
@@ -226,7 +226,7 @@ fixer_name:
         source: tqi
       tcc:
         source: cldtot
-      ci:
+      siconc:
         source: frseaice
       ie:
         derived: 0.-evap
