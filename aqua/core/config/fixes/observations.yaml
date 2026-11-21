@@ -83,10 +83,12 @@ fixer_name:
         source: ttrc
         src_units: J m**-2 day**-1
 
-  # ERA5 monthly HEALPix (DKRZ, WCRP hackathon): native ie is available, e would clash with it
+  # ERA5 monthly HEALPix (DKRZ, WCRP hackathon): monthly means of daily accumulations (deltat = 1 day),
+  # native ie is available, e would clash with it
   ERA5-healpix:
     parent: ERA5-destine-v2
     convention: eccodes
+    deltat: 86400
     vars:
       ie:
         source: ie
