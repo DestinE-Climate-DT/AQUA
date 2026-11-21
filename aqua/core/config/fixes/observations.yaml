@@ -158,7 +158,7 @@ fixer_name:
         source: longitude
 
   # JRA-3Q monthly HEALPix (DKRZ, WCRP hackathon): time-mean short names. ulwrf/uswrf are TOA upward fluxes,
-  # mslhf/msshf/mer are positive upward despite the eccodes names
+  # mslhf/msshf/mer/mtnlwrfcs are positive upward despite the eccodes names
   JRA3Q-healpix:
     convention: eccodes
     vars:
@@ -190,6 +190,9 @@ fixer_name:
         src_units: W m**-2
       tnswrf:
         derived: mtdwswrf-uswrf
+        src_units: W m**-2
+      tnlwrfcs:
+        derived: 0.-mtnlwrfcs
         src_units: W m**-2
       # vo is relative vorticity here, not the CMOR alias of ocean von
       von:
