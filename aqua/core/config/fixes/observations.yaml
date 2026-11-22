@@ -207,6 +207,7 @@ fixer_name:
   MERRA2-healpix:
     convention: eccodes
     vars:
+      # observation-corrected between 60S and 60N, drier than the model prectot (which balances evap)
       tprate:
         source: prectotcorr
       msl:
@@ -246,8 +247,10 @@ fixer_name:
         source: swgdn
       snlwrf:
         source: lwgnt
+      # lwgab is the absorbed flux, i.e. surface emissivity times the downward flux
       sdlwrf:
-        source: lwgab
+        derived: lwgab/emis
+        src_units: W m**-2
       tdswrf:
         source: swtdn
       tnswrf:
