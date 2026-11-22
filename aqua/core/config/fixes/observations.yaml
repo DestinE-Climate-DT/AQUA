@@ -89,6 +89,9 @@ fixer_name:
     parent: ERA5-destine-v2
     convention: eccodes
     deltat: 86400
+    # ci/sst: land is 9999 (undeclared fill value), mixed into coastal cells by the remapping.
+    # Names before and after the rename, so it works whatever the delete order (#3406)
+    delete: [ci, sst, siconc, tos]
     vars:
       ie:
         source: ie
