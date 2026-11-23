@@ -98,8 +98,8 @@ def plot_single_map(
         loglevel (str, optional):    Log level. Defaults to 'WARNING'.
 
     Keyword Args:
-        nxticks (int, optional):     Number of x ticks. Defaults to 7.
-        nyticks (int, optional):     Number of y ticks. Defaults to 7.
+        nxticks (int, optional):     Maximum number of x ticks. Defaults to 7.
+        nyticks (int, optional):     Maximum number of y ticks. Defaults to 7.
         ticks_rounding (int, optional):  Number of digits to round the ticks.
                                          Defaults to 0 for full map, 1 if min-max < 10,
                                          2 if min-max < 1.
