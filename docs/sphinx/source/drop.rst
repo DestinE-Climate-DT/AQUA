@@ -375,6 +375,9 @@ Controls processing behavior and performance settings:
     If a single horizontal slice is larger than the target, the chunk holds one slice.
   - NetCDF, Zarr and Icechunk outputs are written with one on-disk chunk per horizontal slice (one time step, one level),
     so read chunks are always aligned.
+  - Zarr outputs group the on-disk chunks in zarr v3 shards equal to the read chunks, so that each read chunk is a
+    single file and the number of files (inodes) stays low. Each shard is held in memory while written.
+    With ``auto``, shards use the default ``128MiB``.
 
   .. note::
 
