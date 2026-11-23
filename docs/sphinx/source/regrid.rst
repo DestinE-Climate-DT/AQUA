@@ -162,9 +162,12 @@ The list is available in the ``aqua/core/config/grids/default.yaml`` file.
 
 .. note::
     Inside the ``aqua/core/config/grids`` directory, it is possible to define custom grids that can be used in the regridding process.
-    Currently grids supported by CDO, which do not require extra CDO options, are supported and can be used directly as target grids.
-    We are planning to be able to support also more complex irregular grids as target grids in the future (e.g. allowing to regrid everything to
-    HealPix grids).
+    Grids supported by CDO can be used directly as target grids. CDO options needed by the target grid (``cdo_options``) are used
+    when generating the weights.
+
+HEALPix target grids can be given with their CDO names, ``hp<nside>_nested`` (or ``_ring``) or ``hpr<zoom>`` (nested), where
+``nside = 2^zoom``: for example ``regrid='hp8_nested'`` or ``regrid='hpr3'`` for zoom level 3.
+AQUA adds the ``--force`` CDO option they need automatically.
 
 Oceanic grid files naming scheme
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

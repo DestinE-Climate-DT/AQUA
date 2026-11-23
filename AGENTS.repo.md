@@ -24,14 +24,14 @@ These instructions apply only to the AQUA-core repository. Read them after
 
 ## Intake Drivers
 
-- Extend an Intake driver to support new data formats (see `aqua/core/intake_drivers/` — `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope/z3fdb, `icechunk/` for IceChunk); do not bypass Intake
+- Intake drivers live in `aqua/core/intake_drivers/`: `xarray/` for the netcdf/zarr sources, `fdb/` for FDB/GSV/Polytope/z3fdb, `icechunk/` for IceChunk
 - AQUA uses intake ≥2 (pinned in `pyproject.toml`) with v1-style YAML catalogs; the `netcdf`, `zarr`, `gsv` and `icechunk` drivers are registered by AQUA itself (see `aqua/core/intake_drivers/__init__.py`)
 
 ## Test Assets and CI Selection
 
 - Tests live in `tests/`; fixtures and reference assets come from `AQUA_tests/` plus the repository-level `cell_area_*.nc` / `weights_*.nc`
 - Mark every new test with an appropriate marker registered in `pyproject.toml` (for example, `pytestmark = pytest.mark.aqua` at module level or `@pytest.mark.console` on a test; add `network` to the few tests that need internet access, together with the usual marker so that CI selects them; an offline run deselects them with `-m "(aqua or console or graphics or catgen) and not network"`). CI runs pytest with `-m` filters and skips unmarked tests; verify collection with the marker expression used by the relevant workflow.
-- Never create new test data files — parametrize over existing grids (`test-r2b0`, `test-pi-2d`, `test-healpix`, `test-hpz3-nested`)
+- Parametrize over the existing grids (`test-r2b0`, `test-pi-2d`, `test-healpix`, `test-hpz3-nested`)
 
 ## Test Design Principles
 
@@ -42,7 +42,7 @@ New and refactored tests follow six principles (rationale and batch plan: issue 
    - Every assertion checks a value (hard-coded reference or independent oracle). Errors use `pytest.raises(..., match=)`.
    - The test name states the behaviour; a one-line docstring says what wrong code would make it fail.
    - Tests write only under `tmp_path` and never touch the installed `~/.aqua`, the current directory or the network. The session runs on a private `AQUA_CONFIG` (`tests/utils_tests/config.py`) and fails if new files appear in the repository root.
-   - One batch of changes is one PR, tests only, of about 5 modules and 400 lines at most.
+   - One batch of changes is one PR, tests only, within the size budget of `AGENTS.common.md`.
 2. **Time maintained or reduced**
    - Retrieve once, in a session fixture. No new heavy retrieval or `rebuild=True` for a single assertion.
    - No `sleep`, no unseeded random data: each test passes alone, in random order and under `-n --dist loadgroup`.

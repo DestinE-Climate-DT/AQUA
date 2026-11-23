@@ -5,15 +5,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ## [Unreleased]
 
-Unreleased in the current development version (target v1.2.4):
+Unreleased in the current development version (target v1.2.5):
+
+Complete list:
+- Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
+- Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
+- DROP Zarr output is sharded to match the read chunks, writing far fewer files (#3396)
+
+## [v1.2.4]
 
 ClimateDT workflow modifications:
 - `aqua push` substitutes `push_analysis.sh`.
    API changes: removal of `--repository` and `--no-update` (unnecessary).
    Workflow example: `aqua push --bucket ${BUCKET} --loglevel DEBUG ${indir} ${exps}`
 
+Main changes:
+- New `aqua push` command, a Python port of `push_analysis.sh`
+- Upgrade to `smmregrid==0.3.0`, with `na_thres='auto'` in the regridder
+- `aqua analysis`: experiment kinds deep-merged on top of the `default` kind, `--serial` uses the synchronous Dask scheduler, memory and wall time table in the report
+- DROP validates existing files at write time and regenerates the invalid ones; `check_integrity` removed
+- Fix regridding of lon-lat sources stored on [-180, 180)
+- z3fdb: level selection, grid coordinates, time handling, chunking and routing improvements; upgrade to z3fdb 5.25
+- Grid definitions restructured, new `lon-lat-skipna` grid taking the mask from the data
+- Accessor bindings preserved on transformed output; no more module-level `xr.set_options(keep_attrs=True)`
+- New fixes and eccodes conventions (CRU TS, E-OBS, GPM IMERG, MSWEP, `10si`)
+- Test suite refactored: offline, faster, values checked against independent oracles
+- Agent instructions split into `AGENTS.md`, `AGENTS.common.md` and `AGENTS.repo.md`
+
 Complete list:
-- DROP Zarr output is sharded to match the read chunks, writing far fewer files (#3396)
 - Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 - Fix DROP NetCDFWriter to correctly compact files when level is selected (#3380)
@@ -22,7 +41,6 @@ Complete list:
 - Preserve accessor bindings on transformed output while retaining the global default-setting behavior of `retrieve()` (#3251)
 - Add eccodes alias convention of time-mean 10 metre wind speed (`228005`, `avg_10ws`) to `10si` (#3328)
 - Port `push_analysis.sh` to Python and add `aqua push`; remove the legacy Git repository update and `updated.txt` write, accept named log levels (INFO by default) (#3219).
-Unreleased in the current development version (target v1.2.4):
 - Subset selected polygons before constructing fractional region masks, reducing temporary memory without changing coverage thresholds (#3372).
 - Add `CRU-TS-default` fixer for CRU TS monthly data, and `degrees Celsius` unit alias (#3382)
 - Agent instructions: map new sources through the eccodes convention first, and write a `fixer_name` only for what the convention cannot express (#3382)
@@ -33,13 +51,14 @@ Unreleased in the current development version (target v1.2.4):
 - Support positive integer time chunk sizes as saved-frame counts in the GSV and Polytope engines, including partial final chunks (#3363).
 - `aqua analysis --serial` runs the diagnostic tools with the synchronous Dask scheduler instead of the default threaded one, which used one thread per core with no memory limit (#3366)
 - CI: the reusable failure report workflow also runs on successful scheduled/manual runs on the default branch and closes the open failure issue of that suite; the nightly, release, PyPI and Conda workflows pass their result (#3367)
+- CI: the failure issue title shows the number of failures and the date of the last one, and each new failure comment starts with its date and run link (#3323)
 - Split agent instructions into a small `AGENTS.md` entry point, shared ecosystem rules in `AGENTS.common.md`, and AQUA-core-specific rules in `AGENTS.repo.md` (#3357).
 - Share agent rules for attribute reuse, isolated test outputs, dependency and `environment*.yml` synchronization, usage documentation updates, and precedence of the current implementation over stale documentation (#3357).
 - Improve z3fdb level selection, grid coordinates, time handling, chunking and HPC/bridge availability/routing; default missing bridge start dates for GSV and z3fdb (#3316).
 - Remove module-level `xr.set_options(keep_attrs=True)` calls, which silently changed xarray's global state on import; xarray already keeps attrs by default and AQUA passes `keep_attrs=True` explicitly where needed. `AGENTS.md` updated accordingly (#3324).
 - Fix regridding of lon-lat sources stored on [-180, 180): the data model records the longitude roll and `Reader.regrid()` undoes it before applying the weights (#3321)
 - Backends convert dict attributes (e.g. `_earthkit` from GRIB-to-zarr data) to strings, so that data can be saved to NetCDF (#3300)
-- Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock`
+- Upgrade `z3fdb` to >=5.25.0.33 on all platforms and require `findlibs>=0.1.4`, which fixes the eccodes/cartopy crash on Linux; relock `conda-linux-64.lock` (#3314)
 - eccodes convention: GPM IMERG V07 and MSWEP `precipitation` mapped to `tprate` (#3311)
 - Store the catalog generator's Autosubmit `expid` in source metadata instead of the FDB request (#3308)
 - eccodes convention: new `max_2t` and `min_2t` variables and fixes for E-OBS (#3310)
@@ -55,6 +74,7 @@ Unreleased in the current development version (target v1.2.4):
 - `CoordTransformer` no longer copies `range_convention` to the longitude attributes nor wraps non-longitude coordinates in `normalize_range_convention` (#3344)
 - `Analysis.configure_experiment_kind` falls back to the `default` entry of the file (it stored the string `"default"`), with a warning instead of an error (#3348)
 - Data model sorts the longitude dimension after wrapping it into the target range convention (#3306)
+- Let user kwargs override catalog xarray options consistently in the NetCDF, Zarr, and STAC Intake drivers, preserving explicit None values and effective backend read options (#3283)
 
 ## [v1.2.3]
 
@@ -85,7 +105,6 @@ Complete list:
 - Upgrade to eccodes 2.50: conda `eccodes` and pip `eccodes` bindings aligned to `>=2.50.0,<2.51`. `eccodeslib` is no longer a dependency: from 2.49 its `eckitlib` bundles PROJ/sqlite that crash with the conda ones used by cartopy (#3163); `z3fdb==5.23.2.27` stays pinned on Linux for the same reason (#3253)
 - Update the `fdb` extra to `gsv-interface>=2.18.0` (was hard-pinned to `==2.13.1`) (#3277)
 - Regridder: a `skipna` key in the grid `path` enables the smmregrid `skipna` option, with a single 2D weights matrix (`_lskipna` in the weights filename) for all variables and levels; masks varying in time or along any dimension are handled at regridding time, with `na_thres=0.5` as without `skipna`. Off by default (#3274)
-- Let user kwargs override catalog xarray options consistently in the NetCDF, Zarr, and STAC Intake drivers, preserving explicit None values and effective backend read options (#3282)
 - Upgrade to `smmregrid==0.2.0`; CDO is no longer a direct dependency: it comes with the conda-forge `smmregrid` package on Linux and from Homebrew on macOS. `python-cdo` is removed; all CDO calls go through the new `get_cdo()`/`run_cdo()` helpers in `aqua.core.util`, which resolve the executable (argument, `CDO` env variable, PATH) and check its version via smmregrid (#3231)
 - ERA5 `era5-r025s` grid: add `siconc`, `ci`, `CI`, `avg_siconc` and `avg_tos` to the masked variables, so sea-ice and SST fields are regridded with the land-sea mask (#3268)
 - Add pull request review instructions to AGENTS.md (#3285)
@@ -1697,7 +1716,8 @@ This is mostly built on the `AQUA` `Reader` class which support for climate mode
 This is the AQUA pre-release to be sent to internal reviewers.
 Documentations is completed and notebooks are working.
 
-[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.3...HEAD
+[unreleased]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.4...HEAD
+[v1.2.4]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.3...v1.2.4
 [v1.2.3]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.2...v1.2.3
 [v1.2.2]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.1...v1.2.2
 [v1.2.1]: https://github.com/DestinE-Climate-DT/AQUA/compare/v1.2.0...v1.2.1

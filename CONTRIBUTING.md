@@ -6,7 +6,7 @@ We welcome contributions to the AQUA project in many forms, and there's always p
 
 ## Reporting issues
 
-Before opening an issue, please [search the if the issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments). If it does, please add a comment to the existing issue instead of opening a new one.
+Before opening an issue, please [search if the issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments). If it does, please add a comment to the existing issue instead of opening a new one.
 
 As a general rule, if you are unsure, please open an issue anyway and we will help you.
 There is no automatic assignement of issues to anyone. If it is a bug, please fill all the cases and verify that reproducible code is reported.
@@ -30,13 +30,32 @@ The contribution workflow is based on Pull Requests (PR).
 A Pull Request is a request to merge a set of changes into the `main` branch of the repository.
 It is the main way to contribute to AQUA.
 
+### Keeping Pull Requests reviewable
+
+Writing code is cheap, especially with AI tools; reviewing it is not. These rules apply to everybody, human or agent.
+
+- **Size**: aim for at most about 400 changed lines and 5 modules (lockfiles, notebooks and generated files excluded).
+  If larger, split it, or explain in the description why it cannot be split.
+- **Big changes start with an issue**: new modules, public API changes, new dependencies and anything above the size
+  budget need a **Design proposal** issue (goal, starting point, options, planned split into Pull Requests).
+  Implementation starts only once the team has agreed in the issue.
+- **One Pull Request, one purpose**: refactoring and behaviour changes go in separate Pull Requests.
+  Stacked Pull Requests are welcome: each one passing tests and mergeable on its own, listed in the parent issue.
+- **TL;DR first**: the description opens with at most three lines: what changes, why, and what to read first.
+- **Maintainable first**: general and elegant solutions are welcome, as long as a colleague can fix the code in
+  six months without asking you. Discuss complex or abstract structures with the team before building them.
+- **You own what you submit**: even if AI wrote it, you have read the diff and can justify its different parts before setting
+  `ready for review` 🏂. Keep at most 3 non-draft Pull Requests open at a time.
+- **Review the idea first**: discuss goal and approach before details, and leave style to ruff.
+  AI reviews help to map the big changes, but never replace human approval.
+
 ### Creating a Pull Request
 
 Pull requests can be created directly in the AQUA repository, creating your own fork of the repository is not mandatory.
 
 When creating a Pull Request, please make sure to:
 - add a meaningful title and description
-- use square bracker to identify the topic (e.g. [Console], [CI/CD])
+- use square brackets to identify the topic (e.g. [Console], [CI/CD])
 - reference the issue it solves in the description, if any
 - start from the `main` branch if your Pull Request wants to be merged in the `main` branch
 - point to the correct branch
@@ -48,7 +67,7 @@ If your Pull Request is adding some new dependencies, please make sure to state 
 We use conda-lock files to guarantee a fully reproducible environment. Tests use these files to reproduce always the exact same
 environment.
 
-If a new dependency has been added, please make sure to update the `environment.yml` and `pyproject.toml` files.
+If a new dependency has been added, please make sure to update the `environment.yml`, `environment-pypi.yml` and `pyproject.toml` files.
 In this case you will also need to regenerate the conda-lock files. To do so, add the `conda-lock` 🐍 label to your Pull Request:
 this triggers the `conda-relock` workflow on your branch, which regenerates the lock files and opens a new PR
 (`[Conda-Lock] Relock AQUA-core for <your-branch>`) targeting your branch, with the `run tests` 🏃 label already set.
@@ -66,7 +85,7 @@ A label `ready for review` 🏂 can be added to the Pull Request to indicate tha
 Before asking for a review, please make sure to:
 - Be up to date with the `main` branch
 - Run the tests successfully
-- If a new dependency has been added to the framework, please make sure to update the `environment.yml` and `pyproject.toml` files and relock the environment via the `conda-lock` label (see above).
+- If a new dependency has been added, update the environment files and relock (see [Conda-lock](#conda-lock))
 - Please notice that a lumi_install.sh script is available to install the framework on a LUMI machine.
   It is located in the `cli/lumi-install` folder.
 - If a new feature has been added, please make sure to update the documentation accordingly
@@ -82,6 +101,7 @@ Do not merge your Pull Request yourself, it will be merged by the AQUA team.
 
 Enhancements of existing features or new features may be suggested by opening an issue in the AQUA repository.
 Please use the **Feature request** issue template, which sets the `Feature` issue type.
+For a big change, use the **Design proposal** template instead (see [Keeping Pull Requests reviewable](#keeping-pull-requests-reviewable)).
 
 ### Coding style checks with ruff and pre-commit in a Pull Request
 

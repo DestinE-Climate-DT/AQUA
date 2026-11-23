@@ -1,0 +1,41 @@
+name: Lock file diff
+description: >-
+  Markdown summary of the packages changed between two conda-lock explicit lock files,
+  to be used as a pull request body. Direct dependencies are listed first, transitive ones
+  are folded, major version changes are flagged.
+  Run it after setting up an environment with conda-lock (it provides python and pyyaml).
+
+inputs:
+  old-lock:
+    description: Lock file before relocking
+    required: true
+  new-lock:
+    description: Lock file after relocking
+    required: true
+  env-file:
+    description: Conda environment file listing the direct dependencies
+    default: environment.yml
+  pyproject:
+    description: pyproject.toml listing the direct dependencies
+    default: pyproject.toml
+
+outputs:
+  body-path:
+    description: Path of the markdown summary
+    value: ${{ steps.diff.outputs.body-path }}
+
+runs:
+  using: composite
+  steps:
+    - id: diff
+      shell: bash -l {0}
+      env:
+        OLD_LOCK: ${{ inputs.old-lock }}
+        NEW_LOCK: ${{ inputs.new-lock }}
+        ENV_FILE: ${{ inputs.env-file }}
+        PYPROJECT: ${{ inputs.pyproject }}
+        SCRIPT: ${{ github.action_path }}/lock_diff.py
+      run: |
+        body="$RUNNER_TEMP/lock-diff.md"
+        python "$SCRIPT" "$OLD_LOCK" "$NEW_LOCK" --env "$ENV_FILE" --pyproject "$PYPROJECT" > "$body"
+        echo "body-path=$body" >> "$GITHUB_OUTPUT"
