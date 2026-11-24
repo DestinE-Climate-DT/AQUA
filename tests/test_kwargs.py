@@ -1,4 +1,5 @@
 import pytest
+from intake.catalog.local import LocalCatalogEntry
 from utils_tests import LOGLEVEL
 
 from aqua import Reader
@@ -24,3 +25,16 @@ class TestKwargs:
         data = reader.retrieve()
         assert list(data.data_vars) == [variable]
         assert data.time.dt.year == year
+
+    def test_metadata_templated_on_kwargs(self, monkeypatch):
+        """Metadata templated on an intake parameter follows the value passed to the Reader."""
+        init = LocalCatalogEntry.__init__
+
+        def templated_init(entry, name, *args, metadata=None, **kwargs):
+            if name == "kwargs-2d":  # as the online HEALPix sources do with hpz{{ zoom }}-nested
+                metadata = {**metadata, "source_grid_name": "test-pi-{{ variable }}"}
+            init(entry, name, *args, metadata=metadata, **kwargs)
+
+        monkeypatch.setattr(LocalCatalogEntry, "__init__", templated_init)
+        reader = Reader(model="FESOM", exp="test-pi", source="kwargs-2d", variable="a_ice", areas=False, loglevel=LOGLEVEL)
+        assert reader.src_grid_name == "test-pi-a_ice"
