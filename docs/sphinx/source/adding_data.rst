@@ -105,6 +105,7 @@ Finally, the ``metadata`` entry contains optional additional information useful 
     - ``source_grid_name``: the grid name defined in ``aqua-grids.yaml`` to be used for areas and regridding.
       if set to ``null`` or not specified, the regridder will try to guess the grid based on the data coordinates, but this can be costly and not always successful.
       if set to ``False``, the regridder will be disabled and no attempt to guess the grid will be done.
+      It can be templated on the source intake parameters, e.g. ``hpz{{ zoom }}-nested``: the Reader resolves it with the value it receives (``Reader(..., zoom=5)``).
     - ``fixer_name``: the name of the fixer defined in the fixes folder
     - ``deltat`` (optional): the cumulation window of fluxes in the dataset. This is a fixer option. If not present, the default is 1 second.
     - ``time_coder`` (optional): xarray builds on pandas, and pandas support a limited time range becuase time precision is based on nanoseconds.
@@ -555,10 +556,10 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
     icon-healpix:
         path:
-            2d: '{{grids}}/HealPix/icon_hpx{zoom}_atm_2d.nc'   # this is the default 2d grid
-            2dm: '{{grids}}/HealPix/icon_hpx{zoom}_oce_2d.nc'  # this is an additional and optional 2d grid used if data are masked
-            depth_full: '{{grids}}/HealPix/icon_hpx{zoom}_oce_depth_full.nc'
-            depth_half: '{{grids}}/HealPix/icon_hpx{zoom}_oce_depth_half.nc'
+            2d: '{{grids}}/HealPix/icon_hpx{{ zoom }}_atm_2d.nc'   # this is the default 2d grid
+            2dm: '{{grids}}/HealPix/icon_hpx{{ zoom }}_oce_2d.nc'  # this is an additional and optional 2d grid used if data are masked
+            depth_full: '{{grids}}/HealPix/icon_hpx{{ zoom }}_oce_depth_full.nc'
+            depth_half: '{{grids}}/HealPix/icon_hpx{{ zoom }}_oce_depth_half.nc'
         masked:   # This is the attribute used to distinguish variables which should go into the masked category
             component: ocean
         space_coord: ["cell"]
@@ -572,12 +573,9 @@ As an example, we use the healpix grid for ICON and tco1279 for IFS:
 
 .. note::
 
-    Two kinds of template replacement are available in the files contained in the ``aqua/core/config/grids`` folder.
-    The Jinja formatting ``{{ var }}`` is used to set variables as path that comes from the ``catalog.yaml`` file.
-    The default python formatting ``{}`` is used for file structure which comes
-    Reader arguments, as model, experiment or any other kwargs the user might set.
-    Please pay attention to which one you are using in your files.
-    In the future we will try to uniform this towards the Jinja formatting.
+    The files contained in the ``aqua/core/config/grids`` folder use the Jinja formatting ``{{ var }}``.
+    Variables are taken from the machine paths of the ``catalog.yaml`` file (e.g. ``{{ grids }}``)
+    and from the intake parameters of the source (e.g. ``{{ zoom }}``), including their catalog defaults.
 
 
 - ``path``: Path to the grid data file, can be a single file if the grid is 2d,

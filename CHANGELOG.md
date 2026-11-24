@@ -9,6 +9,9 @@ Unreleased in the current development version (target v1.2.5):
 
 Complete list:
 - Graphics: longitude and latitude ticks at round values (#3426)
+- Grid paths use the Jinja `{{ zoom }}` syntax, filled in from the source intake parameters (#3427)
+- Reader resolves `source_grid_name` with the intake parameters (e.g. `zoom`), so templated grid names follow the requested zoom (#3407)
+- New `ERA5-healpix`, `JRA3Q-healpix` and `MERRA2-healpix` fixers for the online HEALPix reanalyses in the obs catalog (#3408)
 - Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
 - DROP Zarr output is sharded to match the read chunks, writing far fewer files (#3396)
