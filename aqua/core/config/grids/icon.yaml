@@ -67,19 +67,19 @@ grids:
   # The 2dm grid is used for variables with attribute component=ocean.
   icon-R02B08-hp-nested:  # nextGEMS cycle4, 72 depth_full levels
     path:
-      2d: "{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc"
-      2dm: "{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_v1.nc"
-      depth_full: "{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_full_v1.nc"
-      depth_half: "{{ grids }}/HealPix/icon-R02B08_hpz{zoom}_nested_oce_depth_half_v1.nc"
+      2d: "{{ grids }}/HealPix/hpz{{ zoom }}_nested_atm.nc"
+      2dm: "{{ grids }}/HealPix/icon-R02B08_hpz{{ zoom }}_nested_oce_v1.nc"
+      depth_full: "{{ grids }}/HealPix/icon-R02B08_hpz{{ zoom }}_nested_oce_depth_full_v1.nc"
+      depth_half: "{{ grids }}/HealPix/icon-R02B08_hpz{{ zoom }}_nested_oce_depth_half_v1.nc"
     space_coord: ["cell"]
     masked:
       component: ocean
   icon-R02B09-hp-nested:  # nextGEMS cycle3, 128 depth_full levels
     path:
-      2d: "{{ grids }}/HealPix/hpz{zoom}_nested_atm.nc"
-      2dm: "{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_v1.nc"
-      depth_full: "{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_full_v1.nc"
-      depth_half: "{{ grids }}/HealPix/icon-R02B09_hpz{zoom}_nested_oce_depth_half_v1.nc"
+      2d: "{{ grids }}/HealPix/hpz{{ zoom }}_nested_atm.nc"
+      2dm: "{{ grids }}/HealPix/icon-R02B09_hpz{{ zoom }}_nested_oce_v1.nc"
+      depth_full: "{{ grids }}/HealPix/icon-R02B09_hpz{{ zoom }}_nested_oce_depth_full_v1.nc"
+      depth_half: "{{ grids }}/HealPix/icon-R02B09_hpz{{ zoom }}_nested_oce_depth_half_v1.nc"
     space_coord: ["cell"]
     masked:
       component: ocean
