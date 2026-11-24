@@ -233,6 +233,10 @@ The function will automatically plot what is available, so it is possible to plo
     Example of a ``plot_seasonalcycle()`` output done with the timeseries diagnostic.
     The plot shows the seasonal cycle of the 2 meters temperature for the IFS-NEMO scenario and the ERA5 reference dataset.
 
+The function ``plot_seasonalcycle_difference()`` takes the same inputs, with ``ref_data`` required,
+and adds a second panel below it with the difference of each dataset from the reference.
+The standard deviation of the reference, if given, is shown as a band in both panels.
+
 Multiple maps
 ^^^^^^^^^^^^^
 
