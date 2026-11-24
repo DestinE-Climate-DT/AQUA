@@ -224,6 +224,11 @@ class Reader:
             **kwargs,
         )
 
+        # metadata templated on intake parameters (e.g. hpz{{ zoom }}-nested) resolve only in the backend entry
+        if getattr(self.backend, "metadata", None):
+            backend_factory.metadata = self.backend.metadata
+            self.src_grid_name = backend_factory.get_metadata()[1]
+
         # define tgt grid names
         self.tgt_grid_name = regrid
 
