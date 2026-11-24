@@ -101,8 +101,6 @@ class TestMaps:
             title="Test plot",
             cbar_label="Sea surface temperature [°C]",
             dpi=DPI,
-            nxticks=5,
-            nyticks=5,
             ticks_rounding=1,
             cbar_ticks_rounding=1,
             loglevel=LOGLEVEL,
@@ -111,6 +109,9 @@ class TestMaps:
         assert ax is not None
         # Default size: common width, height of a single map
         assert tuple(fig.get_size_inches()) == pytest.approx(figure_size(0.8))
+        # Default: at most 7 ticks per axis, at round values within the data range
+        assert list(ax.get_xticks()) == pytest.approx([-180, -120, -60, 0, 60, 120, 180])
+        assert list(ax.get_yticks()) == pytest.approx([-60, -30, 0, 30, 60])
 
         fig.savefig(tmp_path / "test_plot_single_map.png")
         assert os.path.exists(tmp_path / "test_plot_single_map.png")

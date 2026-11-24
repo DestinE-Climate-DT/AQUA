@@ -346,7 +346,7 @@ def set_ticks(
         data (xr.DataArray): Data to plot.
         fig (matplotlib.figure.Figure): Figure.
         ax (matplotlib.axes._subplots.AxesSubplot): Axes.
-        nticks (tuple): Number of ticks for x and y axes.
+        nticks (tuple): Maximum number of ticks for x and y axes, placed at round values within the data range.
         lon_name (str): Name of the longitude coordinate.
         lat_name (str): Name of the latitude coordinate.
         ticks_rounding (int, optional): Number of digits to round the ticks.
@@ -371,9 +371,9 @@ def set_ticks(
         logger.critical("No longitude coordinate found, setting default values")
         lon_min = -180
         lon_max = 180
-    step = (lon_max - lon_min) / (nxticks - 1)
-    xticks = np.arange(lon_min, lon_max + 1, step)
+    xticks = cticker.LongitudeLocator(nbins=nxticks - 1).tick_values(lon_min, lon_max)
     xticks = ticks_round(ticks=xticks, round_to=ticks_rounding)
+    xticks = xticks[(xticks >= lon_min) & (xticks <= lon_max)]
     logger.debug("Setting longitude ticks to %s", xticks)
     ax.set_xticks(xticks, crs=proj)
     lon_formatter = cticker.LongitudeFormatter()
@@ -394,9 +394,9 @@ def set_ticks(
         logger.critical("No latitude coordinate found, setting default values")
         lat_min = -90
         lat_max = 90
-    step = (lat_max - lat_min) / (nyticks - 1)
-    yticks = np.arange(lat_min, lat_max + 1, step)
+    yticks = cticker.LatitudeLocator(nbins=nyticks - 1).tick_values(lat_min, lat_max)
     yticks = ticks_round(ticks=yticks, round_to=ticks_rounding)
+    yticks = yticks[(yticks >= lat_min) & (yticks <= lat_max)]
     logger.debug("Setting latitude ticks to %s", yticks)
     ax.set_yticks(yticks, crs=proj)
     lat_formatter = cticker.LatitudeFormatter()
