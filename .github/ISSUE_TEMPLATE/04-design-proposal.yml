@@ -1,0 +1,49 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+name: Design proposal
+description: "Propose a big change and agree on the strategy before coding"
+title: "[Design] "
+labels: ["discussion :speech_balloon:"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template before any big change: a new module, a public API change, a new dependency,
+        or anything above about 400 changed lines or 5 modules.
+        Keep it short and high level: no code. Implementation starts once the team has agreed here.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What problem is solved, and for whom? What is explicitly out of scope?
+    validations:
+      required: true
+  - type: textarea
+    id: starting-point
+    attributes:
+      label: Starting point
+      description: How does it work today? Which existing classes or functions can be reused?
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: Alternative approaches, with the main pros and cons of each.
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
+      description: The chosen option and why. Mention changes to public API, configuration and dependencies.
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Pull request plan
+      description: Checklist of small pull requests (or sub-issues), in order, each mergeable on its own.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
