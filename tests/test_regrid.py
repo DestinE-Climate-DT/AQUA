@@ -244,6 +244,18 @@ class TestRegridder:
         assert cosine_weighted_mean(rgd["t"].isel(time=0, height=0)) == pytest.approx(207.20236, rel=APPROX_REL)
         assert cosine_weighted_mean(rgd["t"].isel(time=0, height=45)) == pytest.approx(215.01335, rel=APPROX_REL)
 
+    def test_grid_path_intake_params(self, tmp_path):
+        """Grid paths are rendered with the source intake parameters (e.g. {{ zoom }})"""
+        reader = Reader(model="ICON", exp="test-healpix", source="short", areas=False, loglevel=LOGLEVEL)
+        (tmp_path / "grids.yaml").write_text(
+            'grids:\n  test-healpix:\n    path: "{{ grids }}/ICON/icon_healpix{{ zoom }}.nc"\n    cdo_options: "--force"\n'
+        )
+        reader.grids_folder = tmp_path
+        reader.backend.kwargs = {"zoom": 0}  # fake intake parameter of the source
+
+        reader._configure_regridder(reader.machine_paths, areas=True)
+        assert reader.regridder.src_grid_path["2d"].endswith("/ICON/icon_healpix0.nc")
+
     @pytest.mark.xdist_group(name="regrid_fesom3d")  # same worker as the other user of the rebuilt weights
     def test_recompute_weights_fesom3d(self, fesom3d_r100_rebuilt):
         """

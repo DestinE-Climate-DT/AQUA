@@ -224,6 +224,11 @@ class Reader:
             **kwargs,
         )
 
+        # metadata templated on intake parameters (e.g. hpz{{ zoom }}-nested) resolve only in the backend entry
+        if getattr(self.backend, "metadata", None):
+            backend_factory.metadata = self.backend.metadata
+            self.src_grid_name = backend_factory.get_metadata()[1]
+
         # define tgt grid names
         self.tgt_grid_name = regrid
 
@@ -298,10 +303,9 @@ class Reader:
                 self.logger.warning("Grid metadata is False, regrid and areas disabled")
                 return False, False
 
-            # create the configuration dictionary
-            cfg_regrid = load_multi_yaml(
-                folder_path=self.grids_folder, definitions=machine_paths["paths"], loglevel=self.loglevel
-            )
+            # create the configuration dictionary: grid paths can use the source intake parameters (e.g. {{ zoom }})
+            definitions = {**getattr(self.backend, "kwargs", {}), **machine_paths["paths"]}
+            cfg_regrid = load_multi_yaml(folder_path=self.grids_folder, definitions=definitions, loglevel=self.loglevel)
             cfg_regrid = {**machine_paths, **cfg_regrid}
 
             if self.src_grid_name is None:
