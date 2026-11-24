@@ -3,7 +3,7 @@
 # Use it as parent of model-specific fixes producing CMOR-like output.
 
 fixer_name:
-  cmor:
+  cmor-to-eccodes:
     convention: eccodes
     vars:
       tnswrf:  # top net short-wave radiation flux

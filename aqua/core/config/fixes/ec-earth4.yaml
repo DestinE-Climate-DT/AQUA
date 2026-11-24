@@ -3,7 +3,7 @@
 fixer_name:
   # IFS atmosphere
   ec-earth4-ifs:
-    parent: cmor
+    parent: cmor-to-eccodes
     convention: eccodes
     coords:
       time:
@@ -22,7 +22,7 @@ fixer_name:
       - hfss
       - evspsbl
     vars:
-      # CMOR variables requiring a sign change come from the cmor parent
+      # CMOR variables requiring a sign change come from the cmor-to-eccodes parent
       # Non-CMOR variables
       snlwrf:  # surface net long-wave radiation flux
         source: rlns
