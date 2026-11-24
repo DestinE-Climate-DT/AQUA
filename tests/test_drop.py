@@ -949,6 +949,35 @@ class TestDiskChunks:
         assert self._chunks(writer, ds) == expected
 
 
+@pytest.mark.parametrize(
+    "chunk_target,expected",
+    # one horizontal slice is 5 * 6 * 8 = 240 bytes: shards fill time, then levels
+    [("1GiB", (3, 4, 5, 6)), ("960B", (3, 1, 5, 6)), ("1B", (1, 1, 5, 6))],
+    ids=["whole_store", "split_levels", "one_slice"],
+)
+def test_zarr_shards(drop_arguments, tmp_path, chunk_target, expected):
+    """ZarrWriter shards are the read chunks of the catalog entry, one file each."""
+    writer = ZarrWriter(tmpdir=str(tmp_path), outdir=str(tmp_path), chunk_target=chunk_target, loglevel=LOGLEVEL)
+    ds = xr.Dataset(
+        {"var": (("time", "level", "lat", "lon"), np.random.rand(3, 4, 5, 6))},
+        coords={"time": pd.date_range("2020-01-01", periods=3)},
+    )
+    encoding = writer._get_encoding(ds)
+    assert encoding["var"]["shards"] == expected
+
+    store = tmp_path / "var_2020.zarr"
+    ds.to_zarr(store, mode="w", consolidated=False, encoding=encoding)
+    xr.testing.assert_identical(xr.open_zarr(store, consolidated=False).load(), ds)
+    # one file per shard instead of one per chunk
+    nfiles = sum(len(files) for _, _, files in os.walk(store / "var" / "c"))
+    assert nfiles == -(-3 // expected[0]) * -(-4 // expected[1])
+
+    # the read chunks of the catalog entry match the shards
+    builder = CatalogEntryBuilder(catalog="ci", **drop_arguments, resolution="r100", frequency="monthly", loglevel=LOGLEVEL)
+    chunks = builder.define_optimal_chunks(str(tmp_path / "*.zarr"), output_format="zarr", chunk_target=chunk_target)
+    assert chunks == {"time": expected[0], "level": expected[1], "lat": -1, "lon": -1}
+
+
 class TestIcechunkWriter:
     """Unit and integration tests for IcechunkWriter (integrity check, resume, skip)."""
 
