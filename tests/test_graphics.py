@@ -24,7 +24,7 @@ from aqua.core.graphics import (
     plot_maps_diff,
     plot_seasonal_lat_lon_profiles,
     plot_seasonalcycle,
-    plot_seasonalcycle_bias,
+    plot_seasonalcycle_difference,
     plot_single_map,
     plot_single_map_diff,
     plot_timeseries,
@@ -1235,7 +1235,7 @@ DEFAULT_FIGURES = {
     ),
     "timeseries": lambda: plot_timeseries(monthly_data=_field("time"), loglevel=LOGLEVEL),
     "seasonalcycle": lambda: plot_seasonalcycle(data=_field("month"), data_labels=["model"], loglevel=LOGLEVEL),
-    "seasonalcycle_bias": lambda: plot_seasonalcycle_bias(
+    "seasonalcycle_difference": lambda: plot_seasonalcycle_difference(
         data=_field("month"), ref_data=_field("month", seed=1), loglevel=LOGLEVEL
     ),
     "lat_lon_profiles": lambda: plot_lat_lon_profiles(data=_field("lat"), loglevel=LOGLEVEL),
@@ -1293,10 +1293,10 @@ def test_legend_fontsize(make_figure):
 
 
 @pytest.mark.graphics
-def test_plot_seasonalcycle_bias_values():
-    """The right panel draws data minus reference, in the same colour as the left panel, around a zero line"""
+def test_plot_seasonalcycle_difference_values():
+    """The bottom panel draws data minus reference, in the same colour as the top panel, around a zero line"""
     data, ref = _field("month"), _field("month", seed=1)
-    fig, (ax, ax_bias) = plot_seasonalcycle_bias(
+    fig, (ax, ax_diff) = plot_seasonalcycle_difference(
         data=data,
         ref_data=ref,
         std_data=_field("month", seed=2) ** 2,
@@ -1306,10 +1306,10 @@ def test_plot_seasonalcycle_bias_values():
     )
 
     # Lines are cycle-extended: December first, January last
-    bias_line, zero_line = ax_bias.get_lines()
-    assert bias_line.get_ydata()[1:13] == pytest.approx((data - ref).values)
+    diff_line, zero_line = ax_diff.get_lines()
+    assert diff_line.get_ydata()[1:13] == pytest.approx((data - ref).values)
     assert zero_line.get_ydata() == pytest.approx(np.zeros(14))
-    assert bias_line.get_color() == ax.get_lines()[0].get_color()
-    assert ax_bias.get_title() == "Difference from obs"
-    assert ax_bias.get_legend() is None
+    assert diff_line.get_color() == ax.get_lines()[0].get_color()
+    assert ax_diff.get_title() == "Difference from obs"
+    assert ax_diff.get_legend() is None
     plt.close(fig)

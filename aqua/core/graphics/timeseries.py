@@ -279,7 +279,7 @@ def plot_seasonalcycle(
     return fig, ax
 
 
-def plot_seasonalcycle_bias(
+def plot_seasonalcycle_difference(
     data: list[xr.DataArray] | xr.DataArray,
     ref_data: xr.DataArray,
     std_data: Optional[xr.DataArray] = None,
@@ -292,8 +292,8 @@ def plot_seasonalcycle_bias(
     loglevel: str = "WARNING",
 ):
     """
-    Plot the seasonal cycle of the data and the reference data (left panel)
-    next to the difference of the data from the reference (right panel).
+    Plot the seasonal cycle of the data and the reference data (top panel)
+    above the difference of the data from the reference (bottom panel).
 
     Args:
         data (list of xr.DataArray): data to plot
@@ -302,16 +302,16 @@ def plot_seasonalcycle_bias(
         data_labels (list of str): labels for the data
         ref_label (str): label for the reference data
         style (str): style to use for the plot. By default the schema specified in the configuration file is used.
-        figsize (tuple): size of the figure. Defaults to figure_size(0.4), with the common width.
-        title (str): title of the left panel. Defaults to None.
+        figsize (tuple): size of the figure. Defaults to figure_size(1.0), with the common width.
+        title (str): title of the top panel. Defaults to None.
         legend_fontsize (str or float): font size of the legend. Defaults to None, the style legend size.
         loglevel (str): logging level. Defaults to 'WARNING'.
 
     Returns:
-        fig, (ax, ax_bias) (tuple): figure and the two axis objects
+        fig, (ax, ax_diff) (tuple): figure and the two axis objects
     """
-    figsize = figure_size(0.4) if figsize is None else figsize
-    fig, (ax, ax_bias) = plt.subplots(1, 2, figsize=figsize, width_ratios=[2, 1], layout="constrained")
+    figsize = figure_size(1.0) if figsize is None else figsize
+    fig, (ax, ax_diff) = plt.subplots(2, 1, figsize=figsize, height_ratios=[2, 1], sharex=True, layout="constrained")
 
     plot_seasonalcycle(
         data=data,
@@ -326,6 +326,9 @@ def plot_seasonalcycle_bias(
         legend_fontsize=legend_fontsize,
         loglevel=loglevel,
     )
+    # The month axis is shared: labels and tick marks only on the bottom panel
+    ax.set_xlabel("")
+    ax.tick_params(axis="x", bottom=False)
     # The reference becomes the zero line, so its std band is drawn around it
     plot_seasonalcycle(
         data=[d - ref_data for d in to_list(data)],
@@ -334,12 +337,12 @@ def plot_seasonalcycle_bias(
         style=style,
         title=f"Difference from {ref_label or 'reference'}",
         fig=fig,
-        ax=ax_bias,
+        ax=ax_diff,
         legend=False,
         loglevel=loglevel,
     )
 
-    return fig, (ax, ax_bias)
+    return fig, (ax, ax_diff)
 
 
 def _extend_cycle(data: xr.DataArray, loglevel: str = "WARNING"):
