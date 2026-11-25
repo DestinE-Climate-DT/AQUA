@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ## [Unreleased]
 
 AQUA core complete list:
+- Timeseries plots no longer fail when a series has a single time step, e.g. one year of annual data (#3432)
 
 AQUA diagnostics complete list:
 

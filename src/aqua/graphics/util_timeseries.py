@@ -4,6 +4,16 @@ import xarray as xr
 from aqua.util import to_list
 
 
+def _plot_line(da: xr.DataArray, **plot_kwargs):
+    """Plot a 1D timeseries, also when it has a single point (e.g. one year of annual data)."""
+    # A single point is invisible without a marker
+    if da.size == 1:
+        plot_kwargs.setdefault('marker', 'o')
+
+    # plot.line keeps a length-1 time axis, which da.plot() would squeeze and fail on
+    return da.plot.line(**plot_kwargs)
+
+
 def plot_timeseries_data(ax: plt.Axes,
                          data: xr.DataArray | list[xr.DataArray],
                          data_labels: str | list[str] = None,
@@ -55,7 +65,7 @@ def plot_timeseries_data(ax: plt.Axes,
                 'alpha': 0.5
             })
 
-        line = da.plot(**plot_kwargs)
+        line = _plot_line(da, **plot_kwargs)
         # xarray returns a list for multiple lines, but just a Line2D for 1D plots
         if isinstance(line, list):
             lines.extend(line)
@@ -118,7 +128,7 @@ def plot_timeseries_ref_data(ax: plt.Axes,
                                 ref_da + 2.*std_da,
                                 facecolor='black', alpha=0.2)
 
-        ref_da.plot(**plot_kwargs)
+        _plot_line(ref_da, **plot_kwargs)
 
 
 def plot_timeseries_ensemble(ax: plt.Axes,
@@ -163,4 +173,4 @@ def plot_timeseries_ensemble(ax: plt.Axes,
                             data + 2.*std_data,
                             alpha=0.2, facecolor="#f89e13")
             
-    data.plot(**plot_kwargs)
+    _plot_line(data, **plot_kwargs)

@@ -62,6 +62,8 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: DestinE-Climate-DT/Climate-DT-catalog
+          # v0.19 is not compatible with the latest catalogs: use the tag of the v0.19 operational cycle
+          ref: e26.1_v2
           path: Climate-DT-catalog
           token: ${{ secrets.AQUA_GITHUB_PAT }}
       - name: Checkout DVC repo
@@ -154,9 +156,9 @@ jobs:
           # Initialize the AQUA catalog in the $HOME/.aqua folder
           aqua -vv install github
           # Add the climatedt-phase1 catalog (for polytope testing)
-          aqua -vv add climatedt-phase1
+          aqua -vv add climatedt-phase1 -e $GITHUB_WORKSPACE/Climate-DT-catalog/catalogs/climatedt-phase1
           # Add the ci/cd catalog
-          aqua -vv add ci
+          aqua -vv add ci -e $GITHUB_WORKSPACE/Climate-DT-catalog/catalogs/ci
           # Double check the catalogs
           aqua -vv list
           # add default paths to the config
