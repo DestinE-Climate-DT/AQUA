@@ -358,6 +358,18 @@ class TestTimeseries:
         # Check the file was created
         assert os.path.exists(tmp_path / "test_plot_timeseries.png")
 
+    def test_plot_timeseries_single_annual_point(self):
+        """A one-point annual series is drawn as a marker; da.plot() would squeeze time and raise."""
+        t1_yearly = self.reader.timmean(self.t1, freq="YS", center_time=True).isel(time=[0])
+
+        _, ax = plot_timeseries(monthly_data=self.t1, annual_data=t1_yearly, ref_annual_data=t1_yearly, data_labels="t1")
+
+        single = [line for line in ax.get_lines() if len(line.get_xdata()) == 1]
+        assert len(single) == 2  # model and reference annual
+        assert all(line.get_marker() == "o" for line in single)
+        assert single[0].get_ydata()[0] == pytest.approx(float(t1_yearly.values[0]))
+        plt.close()
+
     def test_plot_seasonalcycle(self, tmp_path):
         """Test the plot_seasonalcycle function"""
         t1_seasonal = self.t1.groupby("time.month").mean("time")
