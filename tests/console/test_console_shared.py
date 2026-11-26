@@ -1,5 +1,6 @@
 """Console catalog, grid, and fixes operations."""
 
+import logging
 import os
 import tempfile
 
@@ -55,7 +56,7 @@ class TestCatalogOperations:
         run_aqua(["catalog", "remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
-    def test_editable_catalog_operations(self, aqua_install, run_aqua, catalog_copy_path):
+    def test_editable_catalog_operations(self, aqua_install, run_aqua, catalog_copy_path, aqua_caplog):
         """Test editable catalog operations."""
         mydir = aqua_install
 
@@ -63,10 +64,13 @@ class TestCatalogOperations:
         run_aqua(["-v", "catalog", "add", "ci", "-e", catalog_copy_path])
         assert os.path.isdir(os.path.join(mydir, ".aqua/catalogs/ci"))
 
-        # update a catalog installed in editable mode (should fail)
-        with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "catalog", "update", "ci"])
-        assert excinfo.value.code == 1
+        # update a catalog installed in editable mode: nothing to do, the link is kept
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+        run_aqua(["-v", "catalog", "update", "ci"])
+        assert os.path.islink(os.path.join(mydir, ".aqua/catalogs/ci"))
+        assert "ci is installed in editable mode: it follows its repository, nothing to update" in [
+            r.getMessage() for r in caplog.records
+        ]
 
         # a positional catalog name is invalid CLI syntax
         with pytest.raises(SystemExit) as excinfo:

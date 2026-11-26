@@ -382,7 +382,8 @@ aqua catalog update <catalog>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This command downloads the catalog again from the Climate-DT repository, overwriting the current installation.
-If the catalog is installed in editable mode, this command will not work.
+A catalog installed in editable mode follows its repository: it is not touched, with a warning,
+and ``aqua catalog update all`` goes on with the other catalogs.
 
 .. option:: catalog
 
