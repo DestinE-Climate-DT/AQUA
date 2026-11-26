@@ -71,7 +71,9 @@ def plot_single_map(
     Args:
         data (xr.DataArray):         Data to plot.
         contour (bool, optional):    If True, plot a contour map, otherwise a pcolormesh. Defaults to True.
-        sym (bool, optional):        If True, set the colorbar to be symmetrical. Defaults to False.
+        sym (bool, optional):        If True, the colorbar is symmetric around zero, with limits from the 99th
+                                     percentile of the absolute values, rounded. vmin and vmax are ignored.
+                                     Defaults to False.
         proj (cartopy.crs.Projection, optional): Projection to use. Defaults to ccrs.Robinson().
         gridlines (bool, optional):  If True, add gridlines. Defaults to False
         extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
