@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Unreleased in the current development version (target v1.2.5):
 
 Complete list:
+- Daily workflow opening or updating a `ci-failure` issue with the errors of the latest AQUA analysis run (#3434)
 - Timeseries plots no longer fail when a series has a single time step, e.g. one year of annual data (#3431)
 - New `plot_seasonalcycle_difference` graphics function: seasonal cycle above its difference from a reference (#3417)
 - Grid paths use the Jinja `{{ zoom }}` syntax, filled in from the source intake parameters (#3427)
