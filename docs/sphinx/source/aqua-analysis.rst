@@ -73,7 +73,8 @@ so that the script can be used in a batch job or in a workflow. These override c
 
     The project to use for this run instead of the active one: the default config file is taken from
     ``analysis/<project>`` and ``AQUA_PROJECT`` is set to ``<project>`` for the diagnostic tools.
-    It stops with an error on an installation that predates project support: run ``aqua install`` to upgrade it.
+    Without ``--config``, it stops with an error on an installation that predates project support:
+    run ``aqua install`` to upgrade it.
 
 .. option:: --regrid <target_grid>
 
@@ -196,8 +197,9 @@ Before reading the configuration file, ``aqua analysis`` exports two environment
 
 Both variables are inherited by the diagnostic tools, which then read the configuration of the same project.
 On an installation that predates project support (no ``project`` key in ``config-aqua.yaml``)
-only an explicit ``--config`` works: the default configuration file and ``-p`` are refused and the two variables
-are not exported. Run ``aqua install`` to upgrade the installation.
+only an explicit ``--config`` works: the default configuration file is refused, ``-p`` only sets ``AQUA_PROJECT``
+(which such an installation ignores) and ``AQUA_PROJECT_PATH`` is not exported. Run ``aqua install`` to upgrade the
+installation.
 
 Configuration file
 ------------------
