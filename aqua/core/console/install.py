@@ -22,15 +22,6 @@ CATPATH = "catalogs"
 class InstallMixin:
     """Mixin for AQUA installation operations"""
 
-    def _component_summary(self):
-        return {
-            name: {
-                "installed": self._check_component_installed(name),
-                "mode": self._get_component_mode(name),
-            }
-            for name in self.components
-        }
-
     def _check(self, silent=False, return_info=False):
         """
         Check installation and optionally return detailed information
@@ -40,17 +31,7 @@ class InstallMixin:
             return_info (bool): If True, return installation info dict instead of exiting
 
         Returns:
-            dict or None: If return_info=True, returns:
-                {
-                    'installed': bool,
-                    'configpath': str or None,
-                    'components': {
-                        'core': {'installed': bool, 'mode': str},
-                        'diagnostics': {'installed': bool, 'mode': str},
-                        'emulators': {'installed': bool, 'mode': str},
-                        ...
-                    }
-                }
+            dict or None: If return_info=True, returns {'installed': bool, 'configpath': str or None}
         """
         checklevel = "ERROR" if silent else self.loglevel
 
@@ -62,19 +43,11 @@ class InstallMixin:
             self.logger.debug("AQUA found in %s", self.configpath)
 
             if return_info:
-                return {
-                    "installed": True,
-                    "configpath": self.configpath,
-                    "components": self._component_summary(),
-                }
+                return {"installed": True, "configpath": self.configpath}
 
         except FileNotFoundError:
             if return_info:
-                return {
-                    "installed": False,
-                    "configpath": None,
-                    "components": {name: {"installed": False, "mode": "not_installed"} for name in self.components},
-                }
+                return {"installed": False, "configpath": None}
 
             locator = ConfigLocator(logger=self.logger)
             try:
@@ -142,35 +115,6 @@ class InstallMixin:
                 continue
             files += [(os.path.join(folder, n), os.path.join(self.configpath, kind, n)) for n in sorted(os.listdir(folder))]
         return files
-
-    def _check_component_installed(self, component):
-        """
-        Check if a specific component is already installed
-
-        Args:
-            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
-
-        Returns:
-            bool: True if any folder of the component is installed (per ``<dir>/<project>`` for a project)
-        """
-        return self._get_component_mode(component) is not None
-
-    def _get_component_mode(self, component):
-        """
-        Check if a component is installed in editable mode
-
-        Args:
-            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
-
-        Returns:
-            str or None: 'editable' or 'standard' from the first installed folder, None if not installed
-        """
-        for _, target in self._component_targets(component):
-            if os.path.islink(target):
-                return "editable"
-            if os.path.exists(target):
-                return "standard"
-        return None
 
     def _validate_component_path(self, component, custom_path):
         """Validate that editable install path exists and return the source path
