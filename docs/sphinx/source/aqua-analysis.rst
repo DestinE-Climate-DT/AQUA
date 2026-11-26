@@ -189,17 +189,12 @@ project-scoped configuration folders (e.g. ``~/.aqua/analysis/<project>``); one 
 ``aqua analysis`` takes its default configuration file from the ``analysis`` folder of the active project,
 or of the project selected with ``-p/--project``.
 
-Before reading the configuration file, ``aqua analysis`` exports two environment variables that the file can use:
-
-- ``AQUA_PROJECT``: the name of the project (e.g. ``diagnostics``);
-- ``AQUA_PROJECT_PATH``: the installation path of the ``aqua.<project>`` package (empty if it is not installed),
-  e.g. to locate the command line tools shipped by the project: ``${AQUA_PROJECT_PATH}/cli/my_tool.py``.
-
-Both variables are inherited by the diagnostic tools, which then read the configuration of the same project.
+Before reading the configuration file, ``aqua analysis`` exports the project name (e.g. ``diagnostics``) as
+``AQUA_PROJECT``: the file can use it as ``${AQUA_PROJECT}``, and the diagnostic tools inherit it, so they read
+the configuration of the same project.
 On an installation that predates project support (no ``project`` key in ``config-aqua.yaml``)
-only an explicit ``--config`` works: the default configuration file is refused, ``-p`` only sets ``AQUA_PROJECT``
-(which such an installation ignores) and ``AQUA_PROJECT_PATH`` is not exported. Run ``aqua install`` to upgrade the
-installation.
+only an explicit ``--config`` works: the default configuration file is refused, and ``-p`` only sets ``AQUA_PROJECT``,
+which such an installation ignores. Run ``aqua install`` to upgrade the installation.
 
 Configuration file
 ------------------

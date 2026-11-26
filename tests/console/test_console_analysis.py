@@ -8,7 +8,6 @@ import pytest
 from utils_tests import LOGLEVEL
 
 from aqua.core.analysis import Analysis
-from aqua.core.configurer import ConfigPackages
 from aqua.core.console import push_analysis
 from aqua.core.util import dump_yaml
 
@@ -117,11 +116,9 @@ NO_FOLDER = "Cannot find the analysis folder for project"
 
 
 @pytest.fixture
-def analysis_project(project_install, tmp_path, monkeypatch):
+def analysis_project(project_install, tmp_path):
     """Return a function building an installation (see `project_install`) with the same analysis configs in each
-    analysis folder and in tmp_path (the custom config). The package of a project `<name>` is at `site/aqua.<name>`."""
-    monkeypatch.delenv("AQUA_PROJECT_PATH", raising=False)
-    monkeypatch.setattr(ConfigPackages, "get_package_path", lambda self, package, required=False: f"site/{package}")
+    analysis folder and in tmp_path (the custom config)."""
     script = tmp_path / "cli_tool.py"
     script.touch()
     job = {"catalog": "ci", "model": "IFS", "exp": "test", "source": "lra", "outputdir": str(tmp_path / "output")}
@@ -143,11 +140,11 @@ def analysis_project(project_install, tmp_path, monkeypatch):
 
 @pytest.fixture
 def recorded_runs(monkeypatch):
-    """Record, for each diagnostic tool run, the analysis config used and the project variables the tool inherits."""
+    """Record, for each diagnostic tool run, the analysis config used and the project the tool inherits."""
     runs = []
 
     def _record(self, cmd, log_file):
-        runs.append((self.config_file_path, os.environ.get("AQUA_PROJECT"), os.environ.get("AQUA_PROJECT_PATH")))
+        runs.append((self.config_file_path, os.environ.get("AQUA_PROJECT")))
         return 0
 
     monkeypatch.setattr(Analysis, "run_command", _record)
@@ -163,32 +160,27 @@ def published(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "project, args, config, env",
+    "project, args, config, exported",
     [
-        ("alpha", [], "analysis/alpha/config.aqua-analysis.yaml", ("alpha", "site/aqua.alpha")),
-        ("alpha", ["ensemble"], "analysis/alpha/config.aqua-analysis-ensemble.yaml", ("alpha", "site/aqua.alpha")),
-        ("alpha", ["-p", "beta"], "analysis/beta/config.aqua-analysis.yaml", ("beta", "site/aqua.beta")),
-        (
-            "alpha",
-            ["ensemble", "--project", "beta"],
-            "analysis/beta/config.aqua-analysis-ensemble.yaml",
-            ("beta", "site/aqua.beta"),
-        ),
-        ("alpha", ["-p", "beta", "--config", "CUSTOM"], "config.aqua-analysis.yaml", ("beta", "site/aqua.beta")),
-        (None, ["--config", "CUSTOM"], "config.aqua-analysis.yaml", (None, None)),
+        ("alpha", [], "analysis/alpha/config.aqua-analysis.yaml", "alpha"),
+        ("alpha", ["ensemble"], "analysis/alpha/config.aqua-analysis-ensemble.yaml", "alpha"),
+        ("alpha", ["-p", "beta"], "analysis/beta/config.aqua-analysis.yaml", "beta"),
+        ("alpha", ["ensemble", "--project", "beta"], "analysis/beta/config.aqua-analysis-ensemble.yaml", "beta"),
+        ("alpha", ["-p", "beta", "--config", "CUSTOM"], "config.aqua-analysis.yaml", "beta"),
+        (None, ["--config", "CUSTOM"], "config.aqua-analysis.yaml", None),
         # without project key, -p only sets AQUA_PROJECT, which ConfigContext ignores
-        (None, ["-p", "alpha", "--config", "CUSTOM"], "config.aqua-analysis.yaml", ("alpha", None)),
+        (None, ["-p", "alpha", "--config", "CUSTOM"], "config.aqua-analysis.yaml", "alpha"),
     ],
 )
-def test_analysis_project_config_and_env(analysis_project, recorded_runs, run_aqua, tmp_path, project, args, config, env):
+def test_analysis_project_config_and_env(analysis_project, recorded_runs, run_aqua, tmp_path, project, args, config, exported):
     """Fails if the default config is not taken from the (selected) project folder, if `--config` does not win,
-    or if the diagnostic tools do not inherit AQUA_PROJECT and AQUA_PROJECT_PATH (or inherit them without project)."""
+    or if the diagnostic tools do not inherit AQUA_PROJECT (or inherit it without project)."""
     analysis_project(project, folders=("analysis/alpha", "analysis/beta") if project else ())
     args = [str(tmp_path / "config.aqua-analysis.yaml") if arg == "CUSTOM" else arg for arg in args]
 
     run_aqua(["analysis", *args, "--serial", "-l", LOGLEVEL])
 
-    assert recorded_runs == [(str(tmp_path / config), *env)]
+    assert recorded_runs == [(str(tmp_path / config), exported)]
 
 
 @pytest.mark.parametrize(

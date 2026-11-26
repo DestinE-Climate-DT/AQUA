@@ -101,7 +101,8 @@ def analysis_execute(args):
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
-    os.environ.update(analyzer.get_project_env())  # AQUA_PROJECT and AQUA_PROJECT_PATH, if a project is set
+    if analyzer.context.project:  # inherited by the diagnostic tools and usable as ${AQUA_PROJECT} in the config
+        os.environ[PROJECT_ENV] = analyzer.context.project
     config = expand_env_vars(config)  # expand environment variables in the config
 
     # extract default
