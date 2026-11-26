@@ -9,6 +9,7 @@ Unreleased in the current development version (target v1.2.5):
 
 Complete list:
 - New `cmor-to-eccodes` fixer for CMOR variables needing sign or unit changes, and fixes to the eccodes convention (#3422)
+- Timeseries plots no longer fail when a series has a single time step, e.g. one year of annual data (#3431)
 - New `plot_seasonalcycle_difference` graphics function: seasonal cycle above its difference from a reference (#3417)
 - Grid paths use the Jinja `{{ zoom }}` syntax, filled in from the source intake parameters (#3427)
 - Reader resolves `source_grid_name` with the intake parameters (e.g. `zoom`), so templated grid names follow the requested zoom (#3407)
