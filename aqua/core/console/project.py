@@ -110,8 +110,8 @@ class ProjectMixin:
     def project_remove(self, args):
         """Remove the project-scoped folders and the extra files of an installed project
 
-        Folders shared with other projects (``flat`` and ``templates`` of the plugin contract) are kept.
-        The extra files are found by listing the package: without the package they are kept, with a warning.
+        Its ``flat`` folders are removed too, while ``templates`` folders, shared with other projects, are kept.
+        The flat folders and extra files are found from the package: without the package they are kept, with a warning.
         If the project was active, another installed project becomes active, if any.
 
         Args:
@@ -123,9 +123,9 @@ class ProjectMixin:
         targets = [os.path.join(self.configpath, folder, name) for folder in PROJECT_FOLDERS]
         path = self.components.get(name, {}).get("path")
         if path:
-            targets += [target for _, target in self._component_files(name, path)]
+            targets += self._project_flat_dirs(name) + [target for _, target in self._component_files(name, path)]
         else:
-            self.logger.warning("aqua.%s package not found: its extra files, if any, are kept", name)
+            self.logger.warning("aqua.%s package not found: its flat folders and extra files, if any, are kept", name)
 
         for target in targets:
             if os.path.islink(target) or os.path.isfile(target):

@@ -3,4 +3,10 @@ __version__ = "0.1.0"
 
 
 def get_install_dirs():
-    return {"contract": 2, "config": ["analysis"], "templates": ["mock_templates"], "files": ["grids"]}
+    return {
+        "contract": 2,
+        "config": ["analysis"],
+        "flat": ["mock_flat"],
+        "templates": ["mock_templates"],
+        "files": ["grids"],
+    }
