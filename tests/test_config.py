@@ -49,8 +49,8 @@ def test_show_catalog_content_basic():
 
 
 def _project_install(root, project=None, folders=("analysis/diagnostics", "analysis/claima", "tools")):
-    """Write a minimal installation under ``root``, with the project key only if given."""
-    config = {"machine": "ci"} if project is None else {"machine": "ci", "project": project}
+    """Write a minimal installation under ``root``, with the project key only if given (``""`` for an empty key)."""
+    config = {"machine": "ci"} if project is None else {"machine": "ci", "project": project or None}
     dump_yaml(os.path.join(root, "config-aqua.yaml"), config)
     for folder in folders:
         os.makedirs(os.path.join(root, folder))
@@ -63,6 +63,7 @@ def _project_install(root, project=None, folders=("analysis/diagnostics", "analy
     [
         ("diagnostics", None, "diagnostics", "analysis/diagnostics"),
         ("diagnostics", "claima", "claima", "analysis/claima"),
+        ("", "claima", "claima", "analysis/claima"),  # empty key: the project layout is there, AQUA_PROJECT applies
     ],
 )
 def test_project_folder_follows_env_then_key(tmp_path, monkeypatch, key, env, expected, subpath):
