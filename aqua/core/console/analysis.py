@@ -46,10 +46,10 @@ def analysis_parser(parser=None):
 
     # configuration
     parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
-    parser.add_argument("--config", type=str,
-                        help="Configuration file (default: config.aqua-analysis[-<target>].yaml of the project)")
-    parser.add_argument("-p", "--project", type=str,
-                        help="Project whose analysis configuration is used, instead of the active one")
+    parser.add_argument(
+        "--config", type=str, help="Configuration file (default: config.aqua-analysis[-<target>].yaml of the project)"
+    )
+    parser.add_argument("-p", "--project", type=str, help="Project of the analysis configuration, instead of the active one")
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
     parser.add_argument("--setup_checker", action="store_true", help="Run the setup checker")
 
