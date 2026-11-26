@@ -223,7 +223,8 @@ Rules:
   and ``aqua project remove`` deletes it. A project cannot declare as ``flat`` a folder of AQUA core or of the
   project layout (``catgen``, ``data_model``, ``fixes``, ``grids``, ``styles``, ``analysis``, ``collections``,
   ``tools``, ``templates``, ``catalogs``): to add files to these, use ``files``.
-- ``templates`` folders are shared: ``aqua project remove`` keeps them.
+- ``templates`` folders are shared: ``aqua project remove`` keeps them, and a project cannot declare one with the name of
+  a core template folder (``catgen``, ``drop``, ``gridbuilder``).
 - AQUA core installs ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles`` flat: ``catgen`` is a core tool
   and it is not project-scoped.
 
