@@ -29,7 +29,7 @@ OLD_CONTRACT = "plugin aqua-mockplugin uses an old plugin contract, please updat
 
 @pytest.fixture
 def mock_plugin_entrypoint(monkeypatch, tmp_path_factory):
-    """Register fake aqua.plugins entry points: `mockplugin`, a copy of it named `mockother`, and broken ones.
+    """Register only fake aqua.plugins entry points: `mockplugin`, a copy of it named `mockother`, and broken ones.
 
     `mockother` is generated under a temporary folder, as a second installable project.
     """
@@ -43,7 +43,7 @@ def mock_plugin_entrypoint(monkeypatch, tmp_path_factory):
 
     def fake_entry_points(*args, **kwargs):
         if kwargs.get("group") == "aqua.plugins":
-            return list(real_entry_points(*args, **kwargs)) + MOCK_ENTRY_POINTS
+            return list(MOCK_ENTRY_POINTS)  # never the real plugins: the tests must not depend on the environment
         return real_entry_points(*args, **kwargs)
 
     monkeypatch.setattr(components_module, "entry_points", fake_entry_points)
@@ -137,27 +137,14 @@ class TestPluginInstall:
     """`aqua install`, `update`, `list` and `check` with the fake plugins."""
 
     def test_bare_install_skips_other_projects(self, mock_plugin_entrypoint, home, run_aqua):
-        """Fails if a bare install installs a discovered project other than diagnostics, or changes the active one."""
+        """Fails if a bare install installs a discovered project other than diagnostics, makes it active, leaves
+        `diagnostics` active without installing it, or drops the project key (the empty key marks an installation
+        with project support)."""
         run_aqua(["install", MACHINE])
 
         assert os.path.isdir(os.path.join(home, "catgen"))  # core folders stay flat
         assert not os.path.exists(os.path.join(home, "analysis", "mockplugin"))
-        assert _project(home) == "diagnostics"
-
-    def test_bare_install_without_diagnostics_keeps_an_empty_project_key(
-        self, mock_plugin_entrypoint, monkeypatch, home, run_aqua
-    ):
-        """Fails if a bare install without the diagnostics package leaves `diagnostics` as the active project,
-        or drops the project key that marks an installation with project support."""
-        fixture_entry_points = components_module.entry_points
-
-        def without_diagnostics(*args, **kwargs):
-            return [ep for ep in fixture_entry_points(*args, **kwargs) if ep.name != "diagnostics"]
-
-        monkeypatch.setattr(components_module, "entry_points", without_diagnostics)
-        discover_aqua_components.cache_clear()
-        run_aqua(["install", MACHINE])
-
+        # the fake plugins have no diagnostics package
         assert load_yaml(os.path.join(home, "config-aqua.yaml")).get("project", "missing") is None
 
     def test_adding_a_project_makes_it_active(self, mock_plugin_entrypoint, home, run_aqua):
@@ -422,7 +409,6 @@ class TestProjectVerbs:
             (["project", "install", "ghost"], "aqua.ghost package not found"),
             (["project", "update", "mockother"], "Project mockother is not installed"),
             (["project", "remove", "mockother"], "Project mockother is not installed"),
-            (["install", MACHINE, "-d"], "aqua.diagnostics package not found"),
         ],
     )
     def test_project_verb_errors(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, command, message):
@@ -436,6 +422,18 @@ class TestProjectVerbs:
 
         assert excinfo.value.code == 1
         assert any(r.getMessage().startswith(message) for r in caplog.records)
+        assert _project(home) == "mockplugin"
+
+    def test_diagnostics_only_install_fails_without_the_package(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if `aqua install -d` succeeds, or changes the active project, when aqua-diagnostics is missing."""
+        _install_projects(run_aqua, "mockplugin")
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["install", MACHINE, "-d"])
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("aqua.diagnostics package not found") for r in caplog.records)
         assert _project(home) == "mockplugin"
 
     @pytest.mark.parametrize("clash, existing", [("grid", "grid"), ("flat", "flat_file")])
