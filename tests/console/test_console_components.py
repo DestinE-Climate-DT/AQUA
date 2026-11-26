@@ -142,12 +142,28 @@ class TestPluginInstall:
         assert not os.path.exists(os.path.join(home, "analysis", "mockplugin"))
         assert _project(home) == "diagnostics"
 
+    def test_bare_install_without_diagnostics_keeps_an_empty_project_key(
+        self, mock_plugin_entrypoint, monkeypatch, home, run_aqua
+    ):
+        """Fails if a bare install without the diagnostics package leaves `diagnostics` as the active project,
+        or drops the project key that marks an installation with project support."""
+        fixture_entry_points = components_module.entry_points
+
+        def without_diagnostics(*args, **kwargs):
+            return [ep for ep in fixture_entry_points(*args, **kwargs) if ep.name != "diagnostics"]
+
+        monkeypatch.setattr(components_module, "entry_points", without_diagnostics)
+        discover_aqua_components.cache_clear()
+        run_aqua(["install", MACHINE])
+
+        assert load_yaml(os.path.join(home, "config-aqua.yaml")).get("project", "missing") is None
+
     def test_adding_a_project_makes_it_active(self, mock_plugin_entrypoint, home, run_aqua):
         """Fails if core alone changes the template project, project folders are installed flat, or adding a
         project does not switch to it."""
         run_aqua(["install", MACHINE, "--core"])
         assert not os.path.exists(os.path.join(home, "analysis"))
-        assert _project(home) == "diagnostics"
+        assert load_yaml(os.path.join(home, "config-aqua.yaml")).get("project", "missing") is None
 
         run_aqua(["project", "install", "mockplugin"])
         assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
