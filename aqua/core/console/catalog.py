@@ -302,8 +302,8 @@ class CatalogMixin:
         cdir = f"{self.configpath}/{CATPATH}/{catalog}"
         if os.path.exists(cdir):
             if os.path.islink(cdir):
-                self.logger.error("%s catalog has been installed in editable mode, no need to update", catalog)
-                sys.exit(1)
+                self.logger.warning("%s is installed in editable mode: it follows its repository, nothing to update", catalog)
+                return
             self.logger.info("Removing %s from %s", catalog, cdir)
             shutil.rmtree(cdir)
             self._catalog_add_github(catalog)
