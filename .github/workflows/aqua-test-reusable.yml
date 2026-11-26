@@ -194,8 +194,6 @@ jobs:
 
 
       - name: Clone GitLab data-portfolio repository
-        # only the catgen tests use the data portfolio
-        if: contains(inputs.pytest-markers, 'catgen')
         run: |
           git clone https://oauth2:${{ secrets.BSC_GITLAB }}@gitlab.earth.bsc.es/digital-twins/de_340-3/data-portfolio data-portfolio
           cd data-portfolio
