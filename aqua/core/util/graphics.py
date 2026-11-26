@@ -519,6 +519,27 @@ def prettify_levels(vmin: float, vmax: float, nlevels: int) -> np.ndarray:
     return np.round(levels, decimals=get_decimals(best_step))
 
 
+def prettify_limit(limit: float, nlevels: int = 11) -> float:
+    """
+    Round up a symmetric colorbar limit so that its level boundaries are round numbers.
+
+    Args:
+        limit (float): Positive limit of the colorbar ``[-limit, limit]``.
+        nlevels (int): Number of colorbar levels. Defaults to 11.
+
+    Returns:
+        float: The rounded limit, at most a third larger. Non-positive values are returned unchanged.
+    """
+    if not np.isfinite(limit) or limit <= 0:
+        return limit
+    # The boundaries are multiples of limit / nlevels: round it to a short number.
+    # The tolerance keeps a step that is already round, e.g. 0.06 / 0.01 = 5.999999999999999
+    raw_step = limit / nlevels
+    magnitude = 10 ** np.floor(np.log10(raw_step))
+    step = next(m * magnitude for m in [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10] if m * magnitude >= raw_step * (1 - 1e-9))
+    return float(f"{step * nlevels:.12g}")
+
+
 def get_decimals(step: float) -> int:
     """Return the number of decimal places needed for a given step size."""
     if step >= 1:
