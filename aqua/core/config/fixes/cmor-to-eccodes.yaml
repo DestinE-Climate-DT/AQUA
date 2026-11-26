@@ -1,0 +1,25 @@
+# CMOR fixes: CMOR variables that cannot be mapped to the eccodes convention by a rename,
+# because of the opposite sign (CMOR fluxes are positive upward) or of the split upward/downward components.
+# Use it as parent of model-specific fixes producing CMOR-like output.
+
+fixer_name:
+  cmor-to-eccodes:
+    convention: eccodes
+    vars:
+      tnswrf:  # top net short-wave radiation flux
+        derived: rsdt-rsut
+      tnlwrf:  # top net long-wave radiation flux
+        derived: -rlut
+      snswrf:  # surface net short-wave radiation flux
+        derived: rsds-rsus
+      snlwrf:  # surface net long-wave radiation flux
+        derived: rlds-rlus
+      slhtf:  # surface latent heat net flux
+        derived: -hfls
+      ishf:  # surface sensible heat net flux
+        derived: -hfss
+      ie:  # evaporation or moisture flux
+        derived: -evspsbl
+      z:  # geopotential, from geopotential height (standard gravity)
+        derived: zg*9.80665
+        src_units: m**2 s**-2

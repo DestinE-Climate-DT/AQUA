@@ -3,6 +3,7 @@
 fixer_name:
   # IFS atmosphere
   ec-earth4-ifs:
+    parent: cmor-to-eccodes
     convention: eccodes
     coords:
       time:
@@ -21,22 +22,7 @@ fixer_name:
       - hfss
       - evspsbl
     vars:
-      # CMOR variables requiring a sign change
-      tnswrf:
-        derived: rsdt-rsut
-        grib: 260671
-      tnlwrf:
-        derived: -rlut
-        grib: 260672
-      slhtf:  # surface latent heat net flux
-        derived: -hfls
-        grib: 260002
-      ishf:  # surface sensible heat net flux
-        derived: -hfss
-        grib: 231
-      ie:  # evaporation or moisture flux
-        derived: -evspsbl
-        grib: 232
+      # CMOR variables requiring a sign change come from the cmor-to-eccodes parent
       # Non-CMOR variables
       snlwrf:  # surface net long-wave radiation flux
         source: rlns
