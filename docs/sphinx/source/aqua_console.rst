@@ -92,6 +92,12 @@ the ``diagnostics`` project: its project-scoped folders go in a subfolder named 
 and it is the active project, written in the ``project`` key of ``config-aqua.yaml``.
 Other projects (see :ref:`aqua-console-plugins`) are added with :ref:`aqua project install <aqua-project-install>`.
 
+.. note::
+    ``diagnostics`` is not a project like the others: it is the default configuration of AQUA, shipped with
+    ``aqua-diagnostics``, used by :ref:`aqua analysis <aqua_analysis>` to run the analysis and evaluation of an experiment.
+    It is installed and handled as a project only to share the same mechanism: other projects
+    (e.g. ``claima``) add their own configuration on top of AQUA core in the same way.
+
 By default, the destination folder will be ``$HOME/.aqua``.
 It is possible to specify from where to copy and where to store.
 It is also possible to ask for an editable installation, so that only links are created, ideal for developers,
@@ -150,7 +156,7 @@ without any change in AQUA core.
 Every plugin is a **project**: its name is the entry point name (``diagnostics``, ``claima``, ...),
 which is also the name of its subfolder in the installation, the value of the ``project`` key of
 ``config-aqua.yaml`` and the argument of ``aqua project install``.
-AQUA core is not a plugin and not a project.
+AQUA core is not a plugin and not a project; ``diagnostics`` is the default project, installed by ``aqua install``.
 
 A plugin package needs two things:
 
@@ -393,7 +399,8 @@ aqua project
 ------------
 
 The ``project`` noun selects the AQUA project, i.e. the package shipping configuration (and optionally diagnostics)
-that AQUA uses: for example ``diagnostics``. Each project has its own subfolder in the project-scoped
+that AQUA uses: for example ``claima``, or ``diagnostics``, the default configuration installed by ``aqua install``
+(see :ref:`aqua-install`). Each project has its own subfolder in the project-scoped
 configuration folders ``analysis``, ``collections`` and ``tools`` (e.g. ``$HOME/.aqua/analysis/diagnostics``),
 while all the other folders (catalogs, grids, fixes, ``catgen``, ...) are shared.
 The active project is stored in the ``project`` key of ``config-aqua.yaml`` and can be overridden
