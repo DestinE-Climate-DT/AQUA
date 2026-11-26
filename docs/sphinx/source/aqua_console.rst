@@ -189,7 +189,7 @@ The folder names are relative to the ``aqua/<name>/config`` folder of the packag
        ``collections`` and ``tools``.
      - ``analysis``, ``collections``, ``tools``
    * - ``flat``
-     - whole folders shared by everybody: ``<config>/<dir>``
+     - whole folders owned by the project: ``<config>/<dir>``
      - ``definitions``
    * - ``templates``
      - whole folders: ``<config>/templates/<dir>``
@@ -213,7 +213,11 @@ Rules:
 - The ``files`` of a project are copied (linked in editable mode) one by one into the flat folder:
   the installation stops if a file with the same name already exists. ``aqua project update`` and
   ``aqua project remove`` find them by listing the installed package again.
-- ``flat`` and ``templates`` folders are shared: ``aqua project remove`` keeps them.
+- A ``flat`` folder belongs to the project that declares it: the installation stops if it already exists,
+  and ``aqua project remove`` deletes it. A project cannot declare as ``flat`` a folder of AQUA core or of the
+  project layout (``catgen``, ``data_model``, ``fixes``, ``grids``, ``styles``, ``analysis``, ``collections``,
+  ``tools``, ``templates``, ``catalogs``): to add files to these, use ``files``.
+- ``templates`` folders are shared: ``aqua project remove`` keeps them.
 - AQUA core installs ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles`` flat: ``catgen`` is a core tool
   and it is not project-scoped.
 
@@ -443,8 +447,8 @@ shipped files are overwritten, user files with other names are kept, editable (l
 aqua project remove <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This command removes the ``analysis``, ``collections`` and ``tools`` folders of a project and its extra files
-(only the links, in editable mode); shared folders are kept.
+This command removes the ``analysis``, ``collections`` and ``tools`` folders of a project, its ``flat`` folders
+and its extra files (only the links, in editable mode); shared ``templates`` folders are kept.
 If it was the active project, another installed project becomes active; if none is left, the ``project`` key
 stays empty until a project is installed.
 

@@ -24,6 +24,7 @@ from functools import cache
 from importlib import import_module
 from importlib.metadata import entry_points
 
+from aqua.core.configurer.context import PROJECT_FOLDERS
 from aqua.core.util import to_list
 
 # plugin contract implemented by this aqua-core, and the folder lists it defines
@@ -36,6 +37,9 @@ CORE_INSTALL_DIRS = {
     "flat": ["catgen", "data_model", "fixes", "grids", "styles"],
     "templates": ["catgen", "drop", "gridbuilder"],
 }
+
+# top-level folders of the AQUA config folder that a project cannot declare as flat
+RESERVED_FLAT_DIRS = (*CORE_INSTALL_DIRS["flat"], *PROJECT_FOLDERS, "templates", "catalogs")
 
 # module-level logger, independent of any CLI's configured loglevel.
 # Callers that care about their own loglevel should re-log the (cached,
@@ -54,14 +58,18 @@ def validate_install_dirs(name, data):
         dict: one list per key of ``PLUGIN_KEYS``, empty if missing.
 
     Raises:
-        ValueError: if the plugin uses an old contract or an unknown key.
+        ValueError: if the plugin uses an old contract, an unknown key or a flat folder reserved by core.
     """
     if not isinstance(data, dict) or data.get("contract") != PLUGIN_CONTRACT:
         raise ValueError(f"plugin aqua-{name} uses an old plugin contract, please update it (e.g. aqua-diagnostics>=0.27.0)")
     unknown = set(data) - set(PLUGIN_KEYS) - {"contract"}
     if unknown:
         raise ValueError(f"plugin aqua-{name}: unknown key(s) {', '.join(sorted(unknown))} in get_install_dirs()")
-    return {key: to_list(data.get(key)) for key in PLUGIN_KEYS}
+    dirs = {key: to_list(data.get(key)) for key in PLUGIN_KEYS}
+    reserved = sorted(set(dirs["flat"]) & set(RESERVED_FLAT_DIRS))
+    if name != "core" and reserved:
+        raise ValueError(f"plugin aqua-{name}: flat folder(s) {', '.join(reserved)} reserved by aqua-core")
+    return dirs
 
 
 def _resolve_component_info(name, data):

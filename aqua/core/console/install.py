@@ -116,6 +116,10 @@ class InstallMixin:
         targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["templates"]]
         return targets
 
+    def _project_flat_dirs(self, component):
+        """Flat folders of a project in the AQUA config folder: installed and removed with the project."""
+        return [os.path.join(self.configpath, d) for d in self.components[component]["flat"]]
+
     def _component_files(self, component, source):
         """Extra files of a component, as (source, target) pairs: each file of its ``files`` folders goes to the
         flat ``<configpath>/<dir>``.
@@ -202,8 +206,8 @@ class InstallMixin:
         """
         Copy (or link) the folders and extra files of a component; when updating, those in editable mode are skipped.
 
-        A first installation stops before any change if an extra file would overwrite an existing file, and keeps
-        the shared (flat or templates) folders of a project already present.
+        A first installation of a project stops before any change if one of its flat folders or extra files already
+        exists (a project owns them, and `aqua project remove` deletes them); it keeps a templates folder already present.
         Updating a project copies its folders over the installed ones, so user files with other names are kept;
         core folders are replaced.
 
@@ -214,9 +218,10 @@ class InstallMixin:
             update (bool): replace the folders and files already installed
         """
         files = self._component_files(component, source_path)
-        existing = [target for _, target in files if os.path.lexists(target)]
+        owned = [target for _, target in files] + (self._project_flat_dirs(component) if component != "core" else [])
+        existing = [target for target in owned if os.path.lexists(target)]
         if existing and not update:
-            self.logger.error("Cannot install %s, these files already exist: %s", component, ", ".join(existing))
+            self.logger.error("Cannot install %s, these files or folders already exist: %s", component, ", ".join(existing))
             sys.exit(1)
 
         for source, target in self._component_targets(component, source_path) + files:
@@ -228,7 +233,7 @@ class InstallMixin:
                 self.logger.info("Updating %s ...", target)
                 shutil.copytree(source, target, dirs_exist_ok=True)
             elif not update and component != "core" and os.path.lexists(target):
-                # a flat or templates folder shared by projects, kept by `aqua project remove`
+                # a templates folder shared by projects, kept by `aqua project remove`
                 self.logger.info("%s is already installed, keeping it", target)
             else:
                 os.makedirs(os.path.dirname(target), exist_ok=True)

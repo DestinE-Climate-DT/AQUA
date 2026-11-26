@@ -92,10 +92,12 @@ class TestPluginContract:
             ({"config": ["mock_config"], "templates": ["mock_templates"]}, "uses an old plugin contract"),
             ({"contract": 1, "config": ["analysis"]}, "uses an old plugin contract"),
             ({"contract": 2, "config": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
+            ({"contract": 2, "flat": ["definitions", "grids", "tools"]}, "flat folder.s. grids, tools reserved by aqua-core"),
         ],
     )
     def test_invalid_install_dirs_are_rejected_naming_the_package(self, data, match):
-        """Fails if a v1 dictionary or an unknown key is accepted, or the error omits the package."""
+        """Fails if a v1 dictionary, an unknown key or a flat folder of core or of the project layout is accepted,
+        or the error omits the package."""
         with pytest.raises(ValueError, match=f"plugin aqua-mockplugin.*{match}"):
             validate_install_dirs("mockplugin", data)
 
@@ -314,9 +316,10 @@ MOCKPLUGIN_CONFIG = os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua", "mockplugin", 
 
 
 def _mockplugin_paths(home):
-    """Project folder and extra file installed by `mockplugin`."""
+    """Project folder, flat folder and extra file installed by `mockplugin`."""
     return {
         "analysis": os.path.join(home, "analysis", "mockplugin"),
+        "flat": os.path.join(home, "mock_flat"),
         "grid": os.path.join(home, "grids", "mockplugin-grid.yaml"),
     }
 
@@ -326,7 +329,8 @@ class TestProjectVerbs:
 
     def test_install_update_remove_standard(self, mock_plugin_entrypoint, home, run_aqua):
         """Fails if a project or its extra file is not copied, update does not restore shipped files or deletes a user
-        file, or remove leaves the project folder or the extra file behind, or deletes a shared folder."""
+        file, or remove leaves the project folder, the flat folder or the extra file behind, or deletes a shared
+        folder."""
         _install_projects(run_aqua, "mockother")
         paths = _mockplugin_paths(home)
 
@@ -412,18 +416,24 @@ class TestProjectVerbs:
         assert any(r.getMessage().startswith(message) for r in caplog.records)
         assert _project(home) == "mockplugin"
 
-    def test_extra_file_collision_stops_install(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
-        """Fails if an extra file overwrites a file with the same name, or the project is installed anyway."""
+    @pytest.mark.parametrize("clash, existing", [("grid", "grid"), ("flat", "flat_file")])
+    def test_existing_flat_folder_or_extra_file_stops_install(
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, clash, existing
+    ):
+        """Fails if an extra file or a flat folder of a project overwrites one already there (that `project remove`
+        would then delete), or the project is installed anyway."""
         run_aqua(["install", MACHINE, "--core"])
         paths = _mockplugin_paths(home)
-        dump_yaml(paths["grid"], {"grids": {}})
+        paths["flat_file"] = os.path.join(paths["flat"], "user.yaml")
+        os.makedirs(os.path.dirname(paths[existing]), exist_ok=True)
+        dump_yaml(paths[existing], {"user": True})
         caplog = aqua_caplog(logging.getLogger("AQUA"))
 
         with pytest.raises(SystemExit) as excinfo:
             run_aqua(["project", "install", "mockplugin"])
 
         assert excinfo.value.code == 1
-        expected = f"Cannot install mockplugin, these files already exist: {paths['grid']}"
+        expected = f"Cannot install mockplugin, these files or folders already exist: {paths[clash]}"
         assert any(r.getMessage() == expected for r in caplog.records)
-        assert load_yaml(paths["grid"]) == {"grids": {}}
+        assert load_yaml(paths[existing]) == {"user": True}
         assert not os.path.exists(paths["analysis"])
