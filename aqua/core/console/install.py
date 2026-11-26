@@ -300,9 +300,11 @@ class InstallMixin:
         os.makedirs(os.path.join(self.configpath, CATPATH), exist_ok=True)
         self._set_machine(args)
 
-        # the active project of config-aqua.tmpl is diagnostics
+        # the project key of config-aqua.tmpl is empty: diagnostics becomes active only if it is installed
         if diagnostics_mode and diagnostics["path"] is not None:
             self._install_component("diagnostics", diagnostics_mode)
+            self.configfile = os.path.join(self.configpath, "config-aqua.yaml")
+            self._project_set("diagnostics")
         elif diagnostics_mode:
             self.logger.warning("aqua.diagnostics package not found. Skipping diagnostics installation.")
         self.logger.info("AQUA installation completed successfully in %s", self.configpath)

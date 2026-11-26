@@ -4,8 +4,9 @@ catalog: null
 # please do not modify this if you do not know what you are doing
 machine: auto
 
-# active project: set by `aqua install` and `aqua project set`
-project: diagnostics
+# active project: set by `aqua install`, `aqua project install` and `aqua project set`
+# the key must stay, even if empty: it marks an installation with project support
+project:
 
 reader:
   catalog: '{{ configdir }}/catalogs/{{ catalog }}/catalog.yaml'
