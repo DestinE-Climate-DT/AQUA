@@ -151,16 +151,17 @@ def run_aqua_console_with_input():
 def project_install(tmp_path, monkeypatch):
     """Return a function building a minimal installation under tmp_path, found through AQUA_CONFIG.
 
-    By default the active project is `diagnostics` and `claima` is installed too; `project=None` writes no project key
-    (pre-project layout), `project=""` an empty one (no active project), `folders` replaces the default project folders.
+    `project` is the value of the project key, a name or the list of the installed projects with the active one first:
+    by default `diagnostics` is active and `claima` is installed too. `project=None` writes no project key
+    (pre-project layout), `project=""` an empty one (no project installed), `folders` replaces the default project folders.
     Returns the path of config-aqua.yaml.
     """
     monkeypatch.delenv("AQUA_PROJECT", raising=False)
 
-    def _build(project="diagnostics", folders=("analysis/diagnostics", "tools/diagnostics", "collections/claima")):
+    def _build(project=("diagnostics", "claima"), folders=("analysis/diagnostics", "tools/diagnostics", "collections/claima")):
         config = {"machine": "ci", "catalog": None}
         if project is not None:
-            config["project"] = project or None
+            config["project"] = (list(project) if isinstance(project, tuple) else project) or None
         dump_yaml(os.path.join(tmp_path, "config-aqua.yaml"), config)
         for folder in (*folders, "catalogs"):
             os.makedirs(os.path.join(tmp_path, folder), exist_ok=True)

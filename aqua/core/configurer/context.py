@@ -7,6 +7,7 @@ active project. It knows nothing about catalogs - that responsibility lives enti
 Example:
     >>> from aqua.core.configurer import ConfigContext
     >>> context = ConfigContext()
+    >>> context.projects  # installed projects, the active one first, e.g. ["diagnostics", "claima"]
     >>> context.project  # e.g. "diagnostics", or None for an installation without project
     >>> context.get_project_folder("analysis")  # ~/.aqua/analysis/<project>
 """
@@ -17,13 +18,14 @@ from functools import cached_property
 from jinja2 import Template
 
 from aqua.core.logger import log_configure
+from aqua.core.util.util import to_list
 from aqua.core.util.yaml import load_yaml
 
 from .locator import ConfigLocator
 from .packages import ConfigPackages
 
 PROJECT_KEY = "project"
-"""Key of ``config-aqua.yaml`` holding the active project."""
+"""Key of ``config-aqua.yaml`` holding the installed projects, the active one first (as ``catalog`` does)."""
 PROJECT_ENV = "AQUA_PROJECT"
 """Environment variable overriding the active project."""
 PROJECT_FOLDERS = ("analysis", "collections", "tools")
@@ -103,7 +105,8 @@ class ConfigContext:
         The ``project`` key of the configuration file decides whether the installation has the
         project layout: without it (installation predating project support, refused by
         ``get_project_folder``) there is no project, whatever ``AQUA_PROJECT`` says. With it,
-        the environment variable ``AQUA_PROJECT`` overrides the name given by the key.
+        the active project is the first of ``projects``, unless the environment variable
+        ``AQUA_PROJECT`` selects another one.
 
         Returns:
             str | None: Active project name, or None for an installation without project.
@@ -117,9 +120,19 @@ class ConfigContext:
             self.logger.debug("Project set to %s by the %s environment variable", project, PROJECT_ENV)
             return project
 
-        project = self.config_dict.get(PROJECT_KEY)
+        project = self.projects[0] if self.projects else None
         self.logger.debug("Project found in configuration file, set to %s", project)
-        return project or None
+        return project
+
+    @cached_property
+    def projects(self) -> list[str]:
+        """
+        Installed projects, as listed by the ``project`` key of the configuration file: the active one first.
+
+        Returns:
+            list[str]: Installed project names (the key may hold a single name), empty if there is none.
+        """
+        return to_list(self.config_dict.get(PROJECT_KEY))
 
     def has_project_layout(self) -> bool:
         """
@@ -148,8 +161,8 @@ class ConfigContext:
 
         Raises:
             ValueError: If ``name`` is not a project-scoped folder.
-            FileNotFoundError: If no project is active (or the installation predates project support) or the folder
-                does not exist.
+            FileNotFoundError: If no project is active (or the installation predates project support), the project
+                is not installed or the folder does not exist.
         """
         if name not in PROJECT_FOLDERS:
             raise ValueError(f"'{name}' is not a project folder, choose among {', '.join(PROJECT_FOLDERS)}")
@@ -161,6 +174,12 @@ class ConfigContext:
                     "or select an installed one with `aqua project set <name>`"
                 )
             raise FileNotFoundError(PRE_PROJECT_MESSAGE.format(config_file=self.config_file))
+
+        if self.project not in self.projects:
+            raise FileNotFoundError(
+                f"Project '{self.project}' is not installed (installed: {', '.join(self.projects) or 'none'}): "
+                "add it with `aqua project install`"
+            )
 
         folder = os.path.join(self.configdir, name, self.project)
         if not os.path.isdir(folder):

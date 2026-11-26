@@ -10,24 +10,25 @@ pytestmark = pytest.mark.console
 
 
 def test_project_set_and_list(project_install, run_aqua, capfd):
-    """Fails if `project set` does not write the key or `project list` misses a project, its mode or the active mark."""
+    """Fails if `project set` does not move the project to the top of the installed ones, or `project list` misses a
+    project or its mode, or does not list the projects in alphabetical order."""
     configfile = project_install()
 
     run_aqua(["project", "set", "claima"])
-    assert load_yaml(configfile)["project"] == "claima"
+    assert load_yaml(configfile)["project"] == ["claima", "diagnostics"]
 
     capfd.readouterr()
     run_aqua(["project", "list"])
     out, _ = capfd.readouterr()
     # the package version depends on the environment: aqua-claima may be installed or not
     lines = out.splitlines()[1:]
-    assert [line.split(", aqua-")[0] for line in lines] == ["* claima (standard", "  diagnostics (standard"]
+    assert [line.split(", aqua-")[0] for line in lines] == ["\t - claima (standard", "\t - diagnostics (standard"]
 
 
 @pytest.mark.parametrize(
     "command, message",
     [
-        (["project", "set", "climatedt"], "Project climatedt is not installed: none of analysis, collections, tools"),
+        (["project", "set", "climatedt"], "Project climatedt is not installed: add it with `aqua project install climatedt`"),
         (["project", "set", "core"], "core is not a project"),
         (["project", "install", "core"], "core is not a project"),
         (["project", "update", "core"], "core is not a project"),
@@ -36,7 +37,7 @@ def test_project_set_and_list(project_install, run_aqua, capfd):
     ],
 )
 def test_project_errors(project_install, run_aqua, aqua_caplog, command, message):
-    """Fails if a missing project or core can be set, or a project name is accepted as a catalog."""
+    """Fails if a project that is not listed or core can be set, or a project name is accepted as a catalog."""
     configfile = project_install()
     caplog = aqua_caplog(logging.getLogger("AQUA"))
 
@@ -44,7 +45,7 @@ def test_project_errors(project_install, run_aqua, aqua_caplog, command, message
         run_aqua(command)
 
     assert any(r.getMessage().startswith(message) for r in caplog.records)
-    assert load_yaml(configfile)["project"] == "diagnostics"
+    assert load_yaml(configfile)["project"] == ["diagnostics", "claima"]
 
 
 @pytest.mark.parametrize("command", [["project", "set", "diagnostics"], ["project", "list"]])

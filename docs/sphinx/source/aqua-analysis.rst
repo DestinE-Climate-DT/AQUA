@@ -187,7 +187,7 @@ An installation can hold the configuration of several projects, each in its own 
 project-scoped configuration folders (e.g. ``~/.aqua/analysis/<project>``); one of them is the active project
 (see :ref:`aqua-project-context`).
 ``aqua analysis`` takes its default configuration file from the ``analysis`` folder of the active project,
-or of the project selected with ``-p/--project``.
+or of the installed project selected with ``-p/--project``.
 
 Before reading the configuration file, ``aqua analysis`` exports the project name (e.g. ``diagnostics``) as
 ``AQUA_PROJECT``: the file can use it as ``${AQUA_PROJECT}``, and the diagnostic tools inherit it, so they read

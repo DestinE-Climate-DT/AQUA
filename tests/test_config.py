@@ -49,7 +49,8 @@ def test_show_catalog_content_basic():
 
 
 def _project_install(root, project=None, folders=("analysis/diagnostics", "analysis/claima", "tools")):
-    """Write a minimal installation under ``root``, with the project key only if given (``""`` for an empty key)."""
+    """Write a minimal installation under ``root``, with the project key only if given (``""`` for an empty key):
+    a name, or the list of the installed projects with the active one first."""
     config = {"machine": "ci"} if project is None else {"machine": "ci", "project": project or None}
     dump_yaml(os.path.join(root, "config-aqua.yaml"), config)
     for folder in folders:
@@ -62,12 +63,13 @@ def _project_install(root, project=None, folders=("analysis/diagnostics", "analy
     "key, env, expected, subpath",
     [
         ("diagnostics", None, "diagnostics", "analysis/diagnostics"),
-        ("diagnostics", "claima", "claima", "analysis/claima"),
-        ("", "claima", "claima", "analysis/claima"),  # empty key: the project layout is there, AQUA_PROJECT applies
+        (["claima", "diagnostics"], None, "claima", "analysis/claima"),
+        (["diagnostics", "claima"], "claima", "claima", "analysis/claima"),
     ],
 )
 def test_project_folder_follows_env_then_key(tmp_path, monkeypatch, key, env, expected, subpath):
-    """Fails if AQUA_PROJECT does not win over the key, or the folder is not the project subfolder."""
+    """Fails if the active project is not the first of the installed ones, if AQUA_PROJECT does not win over it,
+    or the folder is not the project subfolder."""
     if env is None:
         monkeypatch.delenv("AQUA_PROJECT", raising=False)
     else:
@@ -76,6 +78,18 @@ def test_project_folder_follows_env_then_key(tmp_path, monkeypatch, key, env, ex
 
     assert context.project == expected
     assert context.get_project_folder("analysis") == os.path.join(str(tmp_path), subpath)
+
+
+@pytest.mark.aqua
+@pytest.mark.parametrize("key, installed", [("diagnostics", "diagnostics"), ("", "none")])
+def test_project_folder_refuses_project_not_listed(tmp_path, monkeypatch, key, installed):
+    """Fails if AQUA_PROJECT selects a project that is not listed as installed, even with its folder there."""
+    monkeypatch.setenv("AQUA_PROJECT", "claima")
+    context = ConfigContext(configdir=_project_install(tmp_path, project=key))
+
+    assert context.projects == ([key] if key else [])
+    with pytest.raises(FileNotFoundError, match=rf"Project 'claima' is not installed \(installed: {installed}\)"):
+        context.get_project_folder("analysis")
 
 
 @pytest.mark.aqua

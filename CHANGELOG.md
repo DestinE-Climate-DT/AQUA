@@ -13,6 +13,8 @@ Complete list:
 - Breaking: plugins must declare the plugin contract v2 and are installed in per-project folders; new `aqua check` command to validate an installation (#3412)
 - New `aqua project install`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3416)
 - `aqua analysis` and `aqua push` read the configuration of the active project, selectable with `-p/--project` (#3418)
+- The `project` key of `config-aqua.yaml` lists the installed projects, the active one first, as `catalog` does (#3414)
+- `aqua update` keeps the links of editable projects in the core folders; only aqua-diagnostics can install `templates` folders (#3414)
 - Timeseries plots no longer fail when a series has a single time step, e.g. one year of annual data (#3431)
 - New `plot_seasonalcycle_difference` graphics function: seasonal cycle above its difference from a reference (#3417)
 - Grid paths use the Jinja `{{ zoom }}` syntax, filled in from the source intake parameters (#3427)

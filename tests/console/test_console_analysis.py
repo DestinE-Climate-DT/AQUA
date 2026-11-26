@@ -114,7 +114,9 @@ CONFIG_FILES = ("config.aqua-analysis.yaml", "config.aqua-analysis-ensemble.yaml
 PRE_PROJECT = "No project set in"
 NO_FOLDER = "Cannot find the analysis folder for project"
 NO_ACTIVE = "No active project in"
+NOT_INSTALLED = "Project '{}' is not installed"
 BOTH = ("analysis/alpha", "analysis/beta")
+INSTALLED = ["alpha", "beta"]  # project key listing both projects, alpha being the active one
 
 
 @pytest.fixture
@@ -166,14 +168,12 @@ def published(monkeypatch):
     [
         ("alpha", [], "analysis/alpha/config.aqua-analysis.yaml", "alpha"),
         ("alpha", ["ensemble"], "analysis/alpha/config.aqua-analysis-ensemble.yaml", "alpha"),
-        ("alpha", ["-p", "beta"], "analysis/beta/config.aqua-analysis.yaml", "beta"),
-        ("alpha", ["ensemble", "--project", "beta"], "analysis/beta/config.aqua-analysis-ensemble.yaml", "beta"),
+        (INSTALLED, ["-p", "beta"], "analysis/beta/config.aqua-analysis.yaml", "beta"),
+        (INSTALLED, ["ensemble", "--project", "beta"], "analysis/beta/config.aqua-analysis-ensemble.yaml", "beta"),
         ("alpha", ["-p", "beta", "--config", "CUSTOM"], "config.aqua-analysis.yaml", "beta"),
         (None, ["--config", "CUSTOM"], "config.aqua-analysis.yaml", None),
         # without project key, -p only sets AQUA_PROJECT, which ConfigContext ignores
         (None, ["-p", "alpha", "--config", "CUSTOM"], "config.aqua-analysis.yaml", "alpha"),
-        # empty project key (last project removed): -p selects an installed project
-        ("", ["-p", "beta"], "analysis/beta/config.aqua-analysis.yaml", "beta"),
     ],
 )
 def test_analysis_project_config_and_env(analysis_project, recorded_runs, run_aqua, tmp_path, project, args, config, exported):
@@ -193,16 +193,18 @@ def test_analysis_project_config_and_env(analysis_project, recorded_runs, run_aq
         (None, (), [], PRE_PROJECT),
         (None, (), ["ensemble"], PRE_PROJECT),
         (None, (), ["-p", "alpha"], PRE_PROJECT),
-        ("alpha", ("analysis/alpha",), ["-p", "missing"], f"{NO_FOLDER} 'missing'"),
-        ("alpha", (), [], f"{NO_FOLDER} 'alpha'"),  # as an installation of aqua-core alone
+        ("alpha", BOTH, ["-p", "beta"], f"{NOT_INSTALLED.format('beta')} (installed: alpha)"),
+        ("", BOTH, ["-p", "beta"], f"{NOT_INSTALLED.format('beta')} (installed: none)"),  # empty project key
+        ("alpha", (), [], f"{NO_FOLDER} 'alpha'"),  # listed, but its folder is missing
         ("alpha", ("analysis/alpha",), ["--config", "missing.yaml"], "Config file missing.yaml not found"),
         ("", BOTH, [], NO_ACTIVE),
     ],
 )
 def test_analysis_project_errors(analysis_project, recorded_runs, run_aqua, aqua_caplog, project, folders, args, message):
     """Fails if the default config or `-p` are accepted on an installation without project (with no pointer to
-    `aqua install`), if the default config is accepted without active project, or if a missing project folder or
-    config file runs instead of stopping with an error."""
+    `aqua install`), if the default config is accepted without active project, if `-p` selects a project that is not
+    listed as installed (even with its folder there), or if a missing project folder or config file runs instead of
+    stopping with an error."""
     analysis_project(project, folders=folders)
     caplog = aqua_caplog(logging.getLogger("AQUA Analysis"))
 
@@ -220,10 +222,9 @@ def test_analysis_project_errors(analysis_project, recorded_runs, run_aqua, aqua
     "project, args, grouping",
     [
         ("alpha", [], "analysis/alpha/config.grouping.yaml"),
-        ("alpha", ["-p", "beta"], "analysis/beta/config.grouping.yaml"),
+        (INSTALLED, ["-p", "beta"], "analysis/beta/config.grouping.yaml"),
         ("alpha", ["--project", "beta", "-c", "CUSTOM"], "config.grouping.yaml"),
         (None, ["-c", "CUSTOM"], "config.grouping.yaml"),
-        ("", ["-p", "beta"], "analysis/beta/config.grouping.yaml"),  # empty project key
     ],
 )
 def test_push_grouping_file(analysis_project, published, run_aqua, tmp_path, project, args, grouping):
@@ -241,14 +242,16 @@ def test_push_grouping_file(analysis_project, published, run_aqua, tmp_path, pro
     [
         (None, (), [], PRE_PROJECT),
         (None, (), ["-p", "alpha"], PRE_PROJECT),
-        ("alpha", ("analysis/alpha",), ["-p", "missing"], f"{NO_FOLDER} 'missing'"),
-        ("alpha", (), [], f"{NO_FOLDER} 'alpha'"),  # as an installation of aqua-core alone
+        ("alpha", BOTH, ["-p", "beta"], f"{NOT_INSTALLED.format('beta')} (installed: alpha)"),
+        ("", BOTH, ["-p", "beta"], f"{NOT_INSTALLED.format('beta')} (installed: none)"),  # empty project key
+        ("alpha", (), [], f"{NO_FOLDER} 'alpha'"),  # listed, but its folder is missing
         ("", BOTH, [], NO_ACTIVE),
     ],
 )
 def test_push_project_errors(analysis_project, published, run_aqua, aqua_caplog, tmp_path, project, folders, args, message):
     """Fails if `aqua push` (default grouping file or `-p`) runs without project support, if the default grouping file
-    is accepted without active project, or if it publishes with a missing grouping folder."""
+    is accepted without active project, if `-p` selects a project not listed as installed, or if it publishes with a
+    missing grouping folder."""
     analysis_project(project, folders=folders)
     caplog = aqua_caplog(logging.getLogger("AQUA"))
 

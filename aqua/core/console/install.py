@@ -116,9 +116,12 @@ class InstallMixin:
         targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["templates"]]
         return targets
 
-    def _project_flat_dirs(self, component):
-        """Flat folders of a project in the AQUA config folder: installed and removed with the project."""
-        return [os.path.join(self.configpath, d) for d in self.components[component]["flat"]]
+    def _project_owned_dirs(self, component):
+        """Flat and templates folders of a project in the AQUA config folder: installed and removed with the project."""
+        info = self.components[component]
+        return [os.path.join(self.configpath, d) for d in info["flat"]] + [
+            os.path.join(self.configpath, "templates", d) for d in info["templates"]
+        ]
 
     def _component_files(self, component, source):
         """Extra files of a component, as (source, target) pairs: each file of its ``files`` folders goes to the
@@ -222,14 +225,10 @@ class InstallMixin:
         """
         First installation of the (source, target) pairs of a component.
 
-        A project owns its targets except the templates folders, shared by projects: the installation stops before
-        any change if one of them already exists, while a templates folder already present is kept.
+        A project owns its targets: the installation stops before any change if one of them already exists.
         If a copy fails, the targets created so far are removed, so that no half-installed project is left.
         """
-        project = component != "core"
-        templates = [os.path.join(self.configpath, "templates", d) for d in self.components[component]["templates"]]
-        shared = templates if project else []
-        existing = [target for _, target in targets if project and target not in shared and os.path.lexists(target)]
+        existing = [target for _, target in targets if component != "core" and os.path.lexists(target)]
         if existing:
             self.logger.error("Cannot install %s, these files or folders already exist: %s", component, ", ".join(existing))
             sys.exit(1)
@@ -239,8 +238,6 @@ class InstallMixin:
             for source, target in targets:
                 if not os.path.exists(source):
                     self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
-                elif target in shared and os.path.lexists(target):
-                    self.logger.info("%s is already installed, keeping it", target)
                 else:
                     os.makedirs(os.path.dirname(target), exist_ok=True)
                     self._copy_update_folder_file(source, target, link=link)
@@ -255,8 +252,9 @@ class InstallMixin:
         """
         Copy again the (source, target) pairs of an installed component, skipping the editable (linked) ones.
 
-        Core folders are replaced. Project folders are copied over the installed ones, so user files with other
-        names are kept, as well as files removed or renamed in the package.
+        Core folders are replaced, but for the links they hold (extra files of editable projects, files added with
+        ``-e``), which are kept. Project folders are copied over the installed ones, so user files with other names
+        are kept, as well as files removed or renamed in the package.
         """
         skipped = [target for _, target in targets if os.path.islink(target)]
         if skipped and len(skipped) == len(targets):
@@ -267,12 +265,28 @@ class InstallMixin:
                 self.logger.info("Skipping %s (editable mode)", target)
             elif not os.path.exists(source):
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
-            elif component != "core" and os.path.isdir(source):
+            elif os.path.isdir(source):
                 self.logger.info("Updating %s ...", target)
-                shutil.copytree(source, target, dirs_exist_ok=True)
+                kept = self._clean_core_folder(target) if component == "core" else []
+                # a kept link is never written through, even if the package ships a file with its name
+                shutil.copytree(
+                    source, target, dirs_exist_ok=True, ignore=lambda folder, _, kept=kept: kept if folder == source else []
+                )
             else:
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 self._copy_update_folder_file(source, target, update=True)
+
+    def _clean_core_folder(self, folder):
+        """Empty an installed core folder, if present, but for its links: return the names of the links kept."""
+        kept = []
+        for name in os.listdir(folder) if os.path.isdir(folder) else []:
+            entry = os.path.join(folder, name)
+            if os.path.islink(entry):
+                self.logger.info("Keeping %s (editable mode)", entry)
+                kept.append(name)
+            else:
+                self._remove_target(entry)
+        return kept
 
     def _remove_target(self, target):
         """Remove an installed file, link or folder, if present."""
@@ -471,11 +485,12 @@ class InstallMixin:
         self.logger.info("Updating AQUA installation...")
 
         failed = False
+        installed = ["core", *self._installed_projects()]
         for name, info in self.components.items():
             if info["error"]:
                 self.logger.error("Cannot update %s: %s", name, info["error"])
                 failed = True
-            elif info["path"] is not None and (name == "core" or self._check_component_installed(name)):
+            elif info["path"] is not None and name in installed:
                 self._copy_component(name, info["path"], update=True)
         if failed:
             sys.exit(1)
@@ -540,7 +555,7 @@ class InstallMixin:
                         self._list_folder(target)
 
     def check(self, args):
-        """Validate the installation: project key, active project folders and catalogs.
+        """Validate the installation: project key, installed projects against their folders, and catalogs.
 
         Exits with a non-zero code if a check fails.
 
@@ -555,17 +570,31 @@ class InstallMixin:
         else:
             active = self.configurer.project
             installed = self._installed_projects()
-            if active in installed:
-                for folder in PROJECT_FOLDERS:
-                    if not os.path.isdir(os.path.join(self.configpath, folder, active)):
-                        self.logger.warning("Project %s has no %s folder", active, folder)
-            elif installed:
+            if active and active not in installed:
                 failures.append(
-                    f"The active project {active} is not installed (installed: {', '.join(installed)}): "
+                    f"The active project {active} is not installed (installed: {', '.join(installed) or 'none'}): "
                     "use `aqua project set` or install it"
                 )
-            else:
+            if not installed:
                 self.logger.warning("No project is installed: only aqua-core configuration is available")
+
+            # the projects listed in config-aqua.yaml against the project folders found in the installation
+            for name in installed:
+                folders = self.components.get(name, {}).get("config") or PROJECT_FOLDERS
+                missing = [folder for folder in folders if not os.path.isdir(os.path.join(self.configpath, folder, name))]
+                if len(missing) == len(folders):
+                    failures.append(
+                        f"Project {name} is listed in {self.configfile} but none of its folders ({', '.join(folders)}) "
+                        f"is installed: use `aqua project remove {name}` and install it again"
+                    )
+                else:
+                    for folder in missing:
+                        self.logger.warning("Project %s has no %s folder", name, folder)
+            for folder in PROJECT_FOLDERS:
+                path = os.path.join(self.configpath, folder)
+                for name in sorted(os.listdir(path)) if os.path.isdir(path) else []:
+                    if os.path.isdir(os.path.join(path, name)) and name not in installed:
+                        self.logger.warning("%s/%s does not belong to an installed project", folder, name)
 
         catdir = os.path.join(self.configpath, CATPATH)
         catalogs = sorted(os.listdir(catdir)) if os.path.isdir(catdir) else []

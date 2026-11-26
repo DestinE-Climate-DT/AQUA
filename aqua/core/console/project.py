@@ -5,6 +5,7 @@ AQUA project operations mixin: ``aqua project <verb>``.
 
 A project is a package shipping configuration (and optionally diagnostics) installed in the
 project-scoped folders ``<configdir>/<folder>/<project>`` (see ``ConfigContext.get_project_folder``).
+The installed projects are listed by the project key of ``config-aqua.yaml``, the active one first.
 The project key and folder names live in ``aqua.core.configurer.context``.
 """
 
@@ -13,7 +14,7 @@ import sys
 
 from aqua.core.configurer.context import PRE_PROJECT_MESSAGE, PROJECT_FOLDERS, PROJECT_KEY
 from aqua.core.lock import SafeFileLock
-from aqua.core.util import dump_yaml, load_yaml
+from aqua.core.util import dump_yaml, load_yaml, to_list
 
 from .components import component_version
 
@@ -30,31 +31,32 @@ class ProjectMixin:
         self._check_project_layout(args.project)
 
         if args.project not in self._installed_projects():
-            self.logger.error(
-                "Project %s is not installed: none of %s has a %s subfolder in %s",
-                args.project,
-                ", ".join(PROJECT_FOLDERS),
-                args.project,
-                self.configpath,
-            )
+            self.logger.error("Project %s is not installed: add it with `aqua project install %s`", args.project, args.project)
             sys.exit(1)
 
         self._project_set(args.project)
 
-    def _project_set(self, project):
-        """Modify the config-aqua.yaml with the active project
+    def _project_set(self, project, remove=False):
+        """Modify the list of installed projects of the config-aqua.yaml, as done for the catalogs
+
+        The project becomes the first of the list, i.e. the active one, or is removed from it.
+        A single project is written as a string, and the key is kept, empty, when no project is left.
 
         Args:
             project (str): the project to be set as the active one in the config-aqua.yaml
+            remove (bool): remove the project from the list instead
         """
-        self.logger.info("Setting project to %s", project)
+        self.logger.info("%s project %s", "Removing" if remove else "Setting", project)
         with SafeFileLock(self.configfile + ".lock", loglevel=self.loglevel):
             cfg = load_yaml(self.configfile)
-            cfg[PROJECT_KEY] = project
+            projects = [name for name in to_list(cfg.get(PROJECT_KEY)) if name != project]
+            if not remove:
+                projects.insert(0, project)
+            cfg[PROJECT_KEY] = projects[0] if len(projects) == 1 else projects or None
             dump_yaml(self.configfile, cfg)
 
     def project_list(self, args):
-        """List the installed projects, marking the active one
+        """List the installed projects
 
         Args:
             args (argparse.Namespace): arguments from the command line
@@ -63,14 +65,14 @@ class ProjectMixin:
         self._print_projects()
 
     def _print_projects(self):
-        """Print the installed projects with their mode and package version, marking the active one with *."""
+        """Print the installed projects in alphabetical order, with their mode and package version."""
         print(f"AQUA projects installed in {self.configpath}:")
-        for name in self._installed_projects():
+        for name in sorted(self._installed_projects()):
             links = [os.path.islink(os.path.join(self.configpath, folder, name)) for folder in PROJECT_FOLDERS]
             mode = "editable" if any(links) else "standard"
             version = component_version(name)
             package = f"aqua-{name} {version}" if version else f"aqua-{name} package not found"
-            print(f"{'*' if name == self.configurer.project else ' '} {name} ({mode}, {package})")
+            print(f"\t - {name} ({mode}, {package})")
 
     def project_install(self, args):
         """Add a project to an existing installation, copied or linked with -e, and make it the active one
@@ -109,8 +111,8 @@ class ProjectMixin:
     def project_remove(self, args):
         """Remove the project-scoped folders and the extra files of an installed project
 
-        Its ``flat`` folders are removed too, while ``templates`` folders, shared with other projects, are kept.
-        The flat folders and extra files are found from the package: without the package they are kept, with a warning.
+        Its ``flat`` and ``templates`` folders are removed too.
+        These folders and the extra files are found from the package: without the package they are kept, with a warning.
         If the project was active, another installed project becomes active, if any.
 
         Args:
@@ -122,20 +124,22 @@ class ProjectMixin:
         targets = [os.path.join(self.configpath, folder, name) for folder in PROJECT_FOLDERS]
         path = self.components.get(name, {}).get("path")
         if path:
-            targets += self._project_flat_dirs(name) + [target for _, target in self._component_files(name, path)]
+            targets += self._project_owned_dirs(name) + [target for _, target in self._component_files(name, path)]
         else:
-            self.logger.warning("aqua.%s package not found: its flat folders and extra files, if any, are kept", name)
+            self.logger.warning(
+                "aqua.%s package not found: its flat and templates folders and extra files, if any, are kept", name
+            )
 
         for target in targets:
             self._remove_target(target)
 
-        if self.configurer.config_dict.get(PROJECT_KEY) == name:
-            others = self._installed_projects()
-            if others:
-                self.logger.warning("Removed the active project %s, %s is now the active project", name, others[0])
-            else:
-                self.logger.warning("Removed the active project %s, no project is installed", name)
-            self._project_set(others[0] if others else None)
+        active = self._installed_projects()[0] == name
+        self._project_set(name, remove=True)
+        others = self._installed_projects()
+        if active and others:
+            self.logger.warning("Removed the active project %s, %s is now the active project", name, others[0])
+        elif active:
+            self.logger.warning("Removed the active project %s, no project is installed", name)
 
     def _refuse_core(self, name):
         """Exit if the name is core, which is not a project."""
@@ -170,12 +174,5 @@ class ProjectMixin:
             sys.exit(1)
 
     def _installed_projects(self):
-        """Names of the subfolders of the project-scoped folders, empty for a pre-project installation."""
-        if not self.configurer.has_project_layout():
-            return []
-        names = set()
-        for folder in PROJECT_FOLDERS:
-            path = os.path.join(self.configpath, folder)
-            if os.path.isdir(path):
-                names.update(name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name)))
-        return sorted(names)
+        """Projects listed in config-aqua.yaml, the active one first: empty for a pre-project installation."""
+        return to_list(load_yaml(self.configfile).get(PROJECT_KEY))

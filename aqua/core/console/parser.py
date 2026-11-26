@@ -76,7 +76,7 @@ def parse_arguments():
     project_set_parser = project_subparsers.add_parser(
         "set", help="Set an installed project as the active one in config-aqua.yaml"
     )
-    project_subparsers.add_parser("list", help="List the installed projects, marking the active one")
+    project_subparsers.add_parser("list", help="List the installed projects")
 
     # subparsers for grids, fixes and styles
     parser_grids = file_subparser(subparsers, "grids")
