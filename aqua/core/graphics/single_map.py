@@ -30,7 +30,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels
+from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels, prettify_limit
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -145,12 +145,14 @@ def plot_single_map(
         ax.set_extent(extent, ccrs.PlateCarree())
 
     # Evaluate vmin and vmax if not given
-    if vmin is None or vmax is None:
-        vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
-    else:
-        if sym:
+    if sym:
+        if vmin is not None and vmax is not None:
             logger.warning("sym=True, vmin and vmax given will be ignored")
-            vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
+        # The 1% most extreme values saturate, so a few outliers do not wash out the map
+        vmax = prettify_limit(np.nanpercentile(np.abs(data), 99), nlevels=nlevels)
+        vmin = -vmax
+    elif vmin is None or vmax is None:
+        vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
 
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
