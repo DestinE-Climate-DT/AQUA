@@ -98,6 +98,21 @@ def test_project_folder_refuses_missing_folder_and_flat_layout(tmp_path, monkeyp
 
 
 @pytest.mark.aqua
+def test_project_folder_with_empty_key_does_not_suggest_reinstalling(tmp_path, monkeypatch):
+    """Fails if an installation whose last project was removed (empty key) is told to run `aqua install`, which
+    would wipe it, instead of adding or selecting a project."""
+    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+    _project_install(tmp_path)
+    dump_yaml(os.path.join(tmp_path, "config-aqua.yaml"), {"machine": "ci", "project": None})
+    context = ConfigContext(configdir=str(tmp_path))
+
+    assert context.has_project_layout()
+    with pytest.raises(FileNotFoundError, match=r"No active project in .*`aqua project install <name>`") as excinfo:
+        context.get_project_folder("analysis")
+    assert "predates" not in str(excinfo.value)
+
+
+@pytest.mark.aqua
 @pytest.mark.parametrize("name", ["catgen", "fixes", "analysis/diagnostics"])
 def test_project_folder_rejects_non_project_folders(tmp_path, name):
     """Fails if a folder that is not project-scoped (catgen included) is accepted."""

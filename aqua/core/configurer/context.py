@@ -147,12 +147,18 @@ class ConfigContext:
 
         Raises:
             ValueError: If ``name`` is not a project-scoped folder.
-            FileNotFoundError: If no project is set or the folder does not exist.
+            FileNotFoundError: If no project is active (or the installation predates project support) or the folder
+                does not exist.
         """
         if name not in PROJECT_FOLDERS:
             raise ValueError(f"'{name}' is not a project folder, choose among {', '.join(PROJECT_FOLDERS)}")
 
         if self.project is None:
+            if self.has_project_layout():
+                raise FileNotFoundError(
+                    f"No active project in {self.config_file}: add one with `aqua project install <name>` "
+                    "or select an installed one with `aqua project set <name>`"
+                )
             raise FileNotFoundError(PRE_PROJECT_MESSAGE.format(config_file=self.config_file))
 
         folder = os.path.join(self.configdir, name, self.project)
