@@ -96,11 +96,14 @@ class TestPluginContract:
             ({"contract": 2, "config": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
             ({"contract": 2, "flat": ["definitions", "grids", "tools"]}, "flat folder.s. grids, tools reserved by aqua-core"),
             ({"contract": 2, "templates": ["mock_templates"]}, "only aqua-diagnostics can install templates folders"),
+            ({"contract": 2, "config": ["tools", "grids"]}, "config folder.s. grids not allowed, choose among analysis"),
+            ({"contract": 2, "files": ["styles", "catalogs"]}, "files folder.s. catalogs not allowed, choose among grids"),
         ],
     )
     def test_invalid_install_dirs_are_rejected_naming_the_package(self, data, match):
-        """Fails if a v1 dictionary, an unknown key, a flat folder of core or of the project layout, or a templates
-        folder of a project other than diagnostics is accepted, or the error omits the package."""
+        """Fails if a v1 dictionary, an unknown key, a flat folder of core or of the project layout, a templates
+        folder of a project other than diagnostics, a config folder that is not project-scoped or a files folder other
+        than grids, fixes and styles is accepted, or the error omits the package."""
         with pytest.raises(ValueError, match=f"plugin aqua-mockplugin.*{match}"):
             validate_install_dirs("mockplugin", data)
 
@@ -112,7 +115,7 @@ class TestPluginContract:
             validate_install_dirs("diagnostics", {"contract": 2, "templates": ["collections", "drop"]})
 
     def test_unresolvable_path_returns_not_installed(self):
-        info = _resolve_component_info("doesnotexist_xyz", {"contract": 2, "config": ["a"]})
+        info = _resolve_component_info("doesnotexist_xyz", {"contract": 2, "config": ["analysis"]})
         assert (info["installed"], info["path"], info["error"]) == (False, None, None)
 
     def test_discover_resolves_v2_and_reports_broken_plugins(self, mock_plugin_entrypoint, monkeypatch):

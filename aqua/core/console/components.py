@@ -9,7 +9,7 @@ its ``get_install_dirs()`` returns a dictionary following the plugin contract ve
         "config": ["analysis", "collections", "tools"],  # project-scoped: ~/.aqua/<dir>/<project>
         "flat": ["definitions"],  # whole folders: ~/.aqua/<dir>
         "templates": ["collections"],  # whole folders: ~/.aqua/templates/<dir>, only for aqua-diagnostics
-        "files": ["grids"],  # single files merged into the flat ~/.aqua/<dir>
+        "files": ["grids"],  # single files merged into the flat ~/.aqua/<dir>: grids, fixes or styles
     }
 
 Folder names are relative to ``aqua/<project>/config`` (``aqua/<project>/templates`` for ``templates``).
@@ -38,6 +38,9 @@ CORE_INSTALL_DIRS = {
     "templates": ["catgen", "drop", "gridbuilder"],
 }
 
+# core folders where a project can add single files: those of the `aqua grids|fixes|styles add` commands
+FILES_DIRS = ("grids", "fixes", "styles")
+
 # projects allowed to install templates folders: with a single owner, they are installed and removed with it
 TEMPLATES_PROJECTS = ("diagnostics",)
 
@@ -61,7 +64,8 @@ def validate_install_dirs(name, data):
         dict: one list per key of ``PLUGIN_KEYS``, empty if missing.
 
     Raises:
-        ValueError: if the plugin uses an old contract, an unknown key, a flat or templates folder reserved by core,
+        ValueError: if the plugin uses an old contract, an unknown key, a config folder that is not project-scoped,
+            a files folder other than ``FILES_DIRS``, a flat or templates folder reserved by core,
             or templates folders without being allowed to (``TEMPLATES_PROJECTS``).
     """
     if not isinstance(data, dict) or data.get("contract") != PLUGIN_CONTRACT:
@@ -70,6 +74,12 @@ def validate_install_dirs(name, data):
     if unknown:
         raise ValueError(f"plugin aqua-{name}: unknown key(s) {', '.join(sorted(unknown))} in get_install_dirs()")
     dirs = {key: to_list(data.get(key)) for key in PLUGIN_KEYS}
+    for key, allowed in (("config", PROJECT_FOLDERS), ("files", FILES_DIRS)):
+        wrong = sorted(set(dirs[key]) - set(allowed))
+        if wrong:
+            raise ValueError(
+                f"plugin aqua-{name}: {key} folder(s) {', '.join(wrong)} not allowed, choose among {', '.join(allowed)}"
+            )
     reserved = sorted(set(dirs["flat"]) & set(RESERVED_FLAT_DIRS))
     if name != "core" and reserved:
         raise ValueError(f"plugin aqua-{name}: flat folder(s) {', '.join(reserved)} reserved by aqua-core")

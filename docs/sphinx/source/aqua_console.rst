@@ -211,6 +211,8 @@ Rules:
   ``aqua-diagnostics`` < 0.27.0) is rejected and ``aqua install`` stops with an error asking to update that plugin.
 - Missing keys default to an empty list and a single folder name is read as a one-item list.
   Unknown keys are rejected, with an error naming the package.
+- ``config`` accepts only the project-scoped folders ``analysis``, ``collections`` and ``tools``, and ``files`` only
+  ``grids``, ``fixes`` and ``styles``: any other folder name is rejected.
 - In editable mode (``aqua project install <name> -e <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
   the links are made at the ``<config>/<dir>/<name>`` level,
   so that different projects can be editable or not independently.
