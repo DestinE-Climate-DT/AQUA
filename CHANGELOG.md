@@ -11,7 +11,7 @@ Complete list:
 - Noun-first console commands (`aqua catalog add`, `aqua grids path`, new `styles` noun); the old `aqua add`, `remove`, `set`, `avail`, `update -c` and `grids set` are removed (#3409)
 - New `aqua project set` and `aqua project list` commands to select the active project, and `ConfigContext.project` to read it (#3410)
 - Breaking: plugins must declare the plugin contract v2 and are installed in per-project folders; new `aqua check` command to validate an installation (#3412)
-- New `aqua project install`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3416)
+- New `aqua project add`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3416)
 - `aqua analysis` and `aqua push` read the configuration of the active project, selectable with `-p/--project` (#3418)
 - The `project` key of `config-aqua.yaml` lists the installed projects, the active one first, as `catalog` does (#3414)
 - `aqua update` keeps the links of editable projects in the core folders; only aqua-diagnostics can install `templates` folders (#3414)

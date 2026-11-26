@@ -2,6 +2,7 @@
 
 import logging
 import os
+import shutil
 import tempfile
 
 import pytest
@@ -17,7 +18,7 @@ pytestmark = pytest.mark.console
 class TestCatalogOperations:
     """Catalog add, update, and remove operations."""
 
-    def test_catalog_operations(self, aqua_install, run_aqua, fake_github):
+    def test_catalog_operations(self, aqua_install, run_aqua, fake_github, capfd):
         """Test catalog add, set, update, remove operations."""
         mydir = aqua_install
 
@@ -34,6 +35,32 @@ class TestCatalogOperations:
         config_file = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
         assert config_file["catalog"][0] == "ci"
 
+        # a folder that the catalog key does not list is not an installed catalog: no verb acts on it
+        stray = os.path.join(mydir, ".aqua/catalogs/stray")
+        os.makedirs(stray)
+        for verb in ("set", "update", "remove"):
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(["catalog", verb, "stray"])
+            assert excinfo.value.code == 1
+            assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == ["ci", "obs"]
+            assert os.path.isdir(stray)
+        capfd.readouterr()
+        run_aqua(["catalog", "list"])
+        listed = capfd.readouterr().out
+        assert "catalogs/ci" in listed and "catalogs/obs" in listed and "stray" not in listed
+        os.rmdir(stray)
+
+        # a catalog of the key whose folder is gone stops every verb, with the way to restore it
+        obs = os.path.join(mydir, ".aqua/catalogs/obs")
+        os.rename(obs, obs + ".moved")
+        for command in (["set", "obs"], ["update", "obs"], ["update", "all"], ["remove", "obs"], ["list"]):
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(["catalog", *command])
+            assert excinfo.value.code == 1
+            assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == ["ci", "obs"]
+            assert not os.path.exists(obs)
+        os.rename(obs + ".moved", obs)
+
         # update the installation files: a modified file of the installation is restored
         fixes = os.path.join(mydir, ".aqua/fixes/ifs.yaml")
         with open(fixes, encoding="utf-8") as f:
@@ -44,19 +71,21 @@ class TestCatalogOperations:
         with open(fixes, encoding="utf-8") as f:
             assert f.read() == original
 
-        # update a catalog: it is downloaded again, a file added to the installed copy is gone
-        leftover = os.path.join(mydir, ".aqua/catalogs/ci/leftover.txt")
+        # update a catalog: it is downloaded again, a file added to the installed copy is gone,
+        # and the active catalog does not change
+        leftover = os.path.join(mydir, ".aqua/catalogs/obs/leftover.txt")
         with open(leftover, "w", encoding="utf-8") as f:
             f.write("not in the repository\n")
-        run_aqua(["-v", "catalog", "update", "ci"])
-        assert os.path.isfile(os.path.join(mydir, ".aqua/catalogs/ci/catalog.yaml"))
+        run_aqua(["-v", "catalog", "update", "obs"])
+        assert os.path.isfile(os.path.join(mydir, ".aqua/catalogs/obs/catalog.yaml"))
         assert not os.path.exists(leftover)
+        assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == ["ci", "obs"]
 
         # remove catalog
         run_aqua(["catalog", "remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
-    def test_editable_catalog_operations(self, aqua_install, run_aqua, catalog_copy_path, aqua_caplog):
+    def test_editable_catalog_operations(self, aqua_install, run_aqua, catalog_copy_path, aqua_caplog, tmp_path):
         """Test editable catalog operations."""
         mydir = aqua_install
 
@@ -80,6 +109,16 @@ class TestCatalogOperations:
         # remove existing catalog from link
         run_aqua(["catalog", "remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
+
+        # an editable catalog whose source was deleted is still removed, also from the catalog key
+        configfile = os.path.join(mydir, ".aqua", "config-aqua.yaml")
+        source = tmp_path / "gone"
+        shutil.copytree(catalog_copy_path, source)
+        run_aqua(["catalog", "add", "gone", "-e", str(source)])
+        shutil.rmtree(source)
+        run_aqua(["catalog", "remove", "gone"])
+        assert not os.path.lexists(os.path.join(mydir, ".aqua/catalogs/gone"))
+        assert "gone" not in to_list(load_yaml(configfile)["catalog"])
 
 
 @pytest.mark.xdist_group(name="console_grid_fix_operations")
@@ -135,6 +174,12 @@ class TestGridAndFixOperations:
         # remove non existing grid file
         run_aqua(["-v", "grids", "remove", "garelli.yaml"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/grids/garelli.yaml"))
+
+        # a link whose source was deleted is still removed
+        run_aqua(["-v", "grids", "add", gridtest, "-e"])
+        os.remove(gridtest)
+        run_aqua(["-v", "grids", "remove", "garelli.yaml"])
+        assert not os.path.lexists(os.path.join(mydir, ".aqua/grids/garelli.yaml"))
 
         # error for already non existing file
         with pytest.raises(SystemExit) as excinfo:

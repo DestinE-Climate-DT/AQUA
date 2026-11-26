@@ -126,7 +126,7 @@ def test_project_folder_with_empty_key_does_not_suggest_reinstalling(tmp_path, m
     context = ConfigContext(configdir=str(tmp_path))
 
     assert context.has_project_layout()
-    with pytest.raises(FileNotFoundError, match=r"No active project in .*`aqua project install <name>`") as excinfo:
+    with pytest.raises(FileNotFoundError, match=r"No active project in .*`aqua project add <name>`") as excinfo:
         context.get_project_folder("analysis")
     assert "predates" not in str(excinfo.value)
 

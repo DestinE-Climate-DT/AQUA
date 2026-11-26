@@ -67,12 +67,30 @@ class CatalogMixin:
         """
 
         self._check()
+        self._check_installed_catalog(args.catalog)
+        self._catalog_set(args.catalog)
 
-        if os.path.exists(f"{self.configpath}/{CATPATH}/{args.catalog}"):
-            self._catalog_set(args.catalog)
-        else:
-            self.logger.error("%s catalog is not installed!", args.catalog)
+    def _installed_catalogs(self):
+        """Catalogs listed in config-aqua.yaml, the active one first: as for the projects, these are the installed ones."""
+        return to_list(load_yaml(self.configfile)["catalog"])
+
+    def _check_installed_catalog(self, catalog):
+        """Exit if the catalog is not listed in config-aqua.yaml or its folder is missing: return its folder."""
+        cdir = f"{self.configpath}/{CATPATH}/{catalog}"
+        if catalog not in self._installed_catalogs():
+            self.logger.error("Catalog %s is not installed: add it with `aqua catalog add %s`", catalog, catalog)
             sys.exit(1)
+        # lexists: an editable catalog whose source is gone is a dangling link, which can still be removed
+        if not os.path.lexists(cdir):
+            self.logger.error(
+                "Catalog %s is listed in %s but %s is missing: add it again with `aqua catalog add %s`",
+                catalog,
+                self.configfile,
+                cdir,
+                catalog,
+            )
+            sys.exit(1)
+        return cdir
 
     def catalog_add(self, args):
         """Add a catalog and set it as a default in config-aqua.yaml
@@ -275,10 +293,12 @@ class CatalogMixin:
         self._check()
         if args.catalog == "all":
             self.logger.info("Updating all AQUA catalogs")
-            catalogs = self._list_folder(f"{self.configpath}/{CATPATH}", return_list=True, silent=True)
-            for catalog in catalogs:
-                print(f"Updating catalog {catalog} ..")
-                self._catalog_update(os.path.basename(catalog))
+            # every folder is checked before the first catalog is downloaded again
+            for catalog in self._installed_catalogs():
+                self._check_installed_catalog(catalog)
+            for catalog in self._installed_catalogs():
+                print(f"Updating catalog {self.configpath}/{CATPATH}/{catalog} ..")
+                self._catalog_update(catalog)
         else:
             self._catalog_update(args.catalog)
 
@@ -289,28 +309,24 @@ class CatalogMixin:
             args (argparse.Namespace): arguments from the command line
         """
         self._check()
-        cdir = f"{self.configpath}/{CATPATH}"
-        print("AQUA current installed catalogs in", cdir, ":")
-        self._list_folder(cdir)
+        folders = [self._check_installed_catalog(catalog) for catalog in sorted(self._installed_catalogs())]
+        print("AQUA current installed catalogs in", f"{self.configpath}/{CATPATH}", ":")
+        for folder in folders:
+            editable = f" (editable from {os.readlink(folder)})" if os.path.islink(folder) else ""
+            print(f"\t - {folder}{editable}")
 
     def _catalog_update(self, catalog):
-        """Update a catalog by copying it if not installed in editable mode
+        """Update a catalog by downloading it again if not installed in editable mode: the active catalog is unchanged
 
         Args:
             catalog (str): the catalog to be updated
         """
-        cdir = f"{self.configpath}/{CATPATH}/{catalog}"
-        if os.path.exists(cdir):
-            if os.path.islink(cdir):
-                self.logger.warning("%s is installed in editable mode: it follows its repository, nothing to update", catalog)
-                return
-            self.logger.info("Removing %s from %s", catalog, cdir)
-            shutil.rmtree(cdir)
-            self._catalog_add_github(catalog)
-            self._catalog_set(catalog)
-        else:
-            self.logger.error("%s does not appear to be installed, please consider `aqua catalog add`", catalog)
-            sys.exit(1)
+        cdir = self._check_installed_catalog(catalog)
+        if os.path.islink(cdir):
+            self.logger.warning("%s is installed in editable mode: it follows its repository, nothing to update", catalog)
+            return
+        self._remove_target(cdir)
+        self._catalog_add_github(catalog)
 
     def _catalog_set(self, catalog):
         """Modify the config-aqua.yaml with the proper catalog
@@ -351,17 +367,10 @@ class CatalogMixin:
         self._check()
         if "/" in args.catalog:
             args.catalog = os.path.basename(args.catalog)
-        cdir = f"{self.configpath}/{CATPATH}/{args.catalog}"
+        cdir = self._check_installed_catalog(args.catalog)
         print("Remove the AQUA catalog", args.catalog, "from", cdir)
-        if os.path.exists(cdir):
-            if os.path.islink(cdir):
-                os.unlink(cdir)
-            else:
-                shutil.rmtree(cdir)
-            self._catalog_clean(args.catalog)
-        else:
-            self.logger.error("Catalog %s is not installed in %s, cannot remove it", args.catalog, cdir)
-            sys.exit(1)
+        self._remove_target(cdir)
+        self._catalog_clean(args.catalog)
 
     def _catalog_clean(self, catalog):
         """
@@ -370,12 +379,9 @@ class CatalogMixin:
 
         with SafeFileLock(self.configfile + ".lock", loglevel=self.loglevel):
             cfg = load_yaml(self.configfile)
-            if isinstance(cfg["catalog"], str):
-                cfg["catalog"] = None
-            else:
-                cfg["catalog"].remove(catalog)
-                if not cfg["catalog"]:
-                    cfg["catalog"] = None
+            # as for the projects: a catalog not listed leaves the key as it is, the last one left is a string
+            catalogs = [name for name in to_list(cfg["catalog"]) if name != catalog]
+            cfg["catalog"] = catalogs[0] if len(catalogs) == 1 else catalogs or None
             self.logger.info("Catalog %s removed, catalogs %s are available", catalog, cfg["catalog"])
             dump_yaml(self.configfile, cfg)
 

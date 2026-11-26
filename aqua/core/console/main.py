@@ -57,7 +57,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
                 "avail": self.catalog_avail,
             },
             "project": {
-                "install": self.project_install,
+                "add": self.project_add,
                 "update": self.project_update,
                 "remove": self.project_remove,
                 "set": self.project_set,

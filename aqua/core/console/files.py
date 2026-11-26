@@ -123,12 +123,9 @@ class FilesMixin:
         kind = args.command
         file = os.path.basename(args.file)
         pathfile = f"{self.configpath}/{kind}/{file}"
-        if os.path.exists(pathfile):
-            self.logger.info("Removing %s", pathfile)
-            if os.path.islink(pathfile):
-                os.unlink(pathfile)
-            else:
-                os.remove(pathfile)
+        # lexists: an editable file whose source is gone is a dangling link, still to be removed
+        if os.path.lexists(pathfile):
+            self._remove_target(pathfile)
         else:
             self.logger.error("%s file %s is not installed in AQUA, cannot remove it", kind, file)
             sys.exit(1)

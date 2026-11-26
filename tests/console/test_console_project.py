@@ -28,12 +28,12 @@ def test_project_set_and_list(project_install, run_aqua, capfd):
 @pytest.mark.parametrize(
     "command, message",
     [
-        (["project", "set", "climatedt"], "Project climatedt is not installed: add it with `aqua project install climatedt`"),
+        (["project", "set", "climatedt"], "Project climatedt is not installed: add it with `aqua project add climatedt`"),
         (["project", "set", "core"], "core is not a project"),
-        (["project", "install", "core"], "core is not a project"),
+        (["project", "add", "core"], "core is not a project"),
         (["project", "update", "core"], "core is not a project"),
         (["project", "remove", "core"], "core is not a project"),
-        (["catalog", "set", "claima"], "claima catalog is not installed!"),
+        (["catalog", "set", "claima"], "Catalog claima is not installed: add it with `aqua catalog add claima`"),
     ],
 )
 def test_project_errors(project_install, run_aqua, aqua_caplog, command, message):

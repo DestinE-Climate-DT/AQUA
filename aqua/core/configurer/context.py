@@ -170,7 +170,7 @@ class ConfigContext:
         if self.project is None:
             if self.has_project_layout():
                 raise FileNotFoundError(
-                    f"No active project in {self.config_file}: add one with `aqua project install <name>` "
+                    f"No active project in {self.config_file}: add one with `aqua project add <name>` "
                     "or select an installed one with `aqua project set <name>`"
                 )
             raise FileNotFoundError(PRE_PROJECT_MESSAGE.format(config_file=self.config_file))
@@ -178,7 +178,7 @@ class ConfigContext:
         if self.project not in self.projects:
             raise FileNotFoundError(
                 f"Project '{self.project}' is not installed (installed: {', '.join(self.projects) or 'none'}): "
-                "add it with `aqua project install`"
+                "add it with `aqua project add`"
             )
 
         folder = os.path.join(self.configdir, name, self.project)

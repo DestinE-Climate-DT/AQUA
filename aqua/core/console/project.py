@@ -31,8 +31,9 @@ class ProjectMixin:
         self._check_project_layout(args.project)
 
         if args.project not in self._installed_projects():
-            self.logger.error("Project %s is not installed: add it with `aqua project install %s`", args.project, args.project)
+            self.logger.error("Project %s is not installed: add it with `aqua project add %s`", args.project, args.project)
             sys.exit(1)
+        self._check_project_folders(args.project)
 
         self._project_set(args.project)
 
@@ -66,6 +67,8 @@ class ProjectMixin:
 
     def _print_projects(self):
         """Print the installed projects in alphabetical order, with their mode and package version."""
+        for name in self._installed_projects():
+            self._check_project_folders(name)
         print(f"AQUA projects installed in {self.configpath}:")
         for name in sorted(self._installed_projects()):
             links = [os.path.islink(os.path.join(self.configpath, folder, name)) for folder in PROJECT_FOLDERS]
@@ -74,7 +77,7 @@ class ProjectMixin:
             package = f"aqua-{name} {version}" if version else f"aqua-{name} package not found"
             print(f"\t - {name} ({mode}, {package})")
 
-    def project_install(self, args):
+    def project_add(self, args):
         """Add a project to an existing installation, copied or linked with -e, and make it the active one
 
         Args:
@@ -105,6 +108,7 @@ class ProjectMixin:
             args (argparse.Namespace): arguments from the command line
         """
         self._check_installed_project(args.project)
+        self._check_project_folders(args.project)
         self._check_project_package(args.project)
         self._copy_component(args.project, self.components[args.project]["path"], update=True)
 
@@ -112,7 +116,7 @@ class ProjectMixin:
         """Remove the project-scoped folders and the extra files of an installed project
 
         Its ``flat`` and ``templates`` folders are removed too.
-        These folders and the extra files are found from the package: without the package they are kept, with a warning.
+        These folders and the extra files are found from the package: without the package nothing is removed.
         If the project was active, another installed project becomes active, if any.
 
         Args:
@@ -120,15 +124,11 @@ class ProjectMixin:
         """
         name = args.project
         self._check_installed_project(name)
+        self._check_project_package(name)
 
         targets = [os.path.join(self.configpath, folder, name) for folder in PROJECT_FOLDERS]
-        path = self.components.get(name, {}).get("path")
-        if path:
-            targets += self._project_owned_dirs(name) + [target for _, target in self._component_files(name, path)]
-        else:
-            self.logger.warning(
-                "aqua.%s package not found: its flat and templates folders and extra files, if any, are kept", name
-            )
+        targets += self._project_owned_dirs(name)
+        targets += [target for _, target in self._component_files(name, self.components[name]["path"])]
 
         for target in targets:
             self._remove_target(target)
@@ -163,6 +163,21 @@ class ProjectMixin:
             self.logger.error("Project %s is not installed", name)
             sys.exit(1)
 
+    def _check_project_folders(self, name):
+        """Exit if none of the project-scoped folders of a listed project is in the installation, as for a catalog
+        without its folder. `aqua project remove` does not check it: it is the way out."""
+        folders = self.components.get(name, {}).get("config") or PROJECT_FOLDERS
+        if not any(os.path.lexists(os.path.join(self.configpath, folder, name)) for folder in folders):
+            self.logger.error(
+                "Project %s is listed in %s but none of its folders (%s) is installed: "
+                "use `aqua project remove %s` and add it again",
+                name,
+                self.configfile,
+                ", ".join(folders),
+                name,
+            )
+            sys.exit(1)
+
     def _check_project_package(self, name):
         """Exit if the package of a project is not available or breaks the plugin contract."""
         info = self.components.get(name)
@@ -170,7 +185,7 @@ class ProjectMixin:
             self.logger.error(info["error"])
             sys.exit(1)
         if info is None or info["path"] is None:
-            self.logger.error("aqua.%s package not found", name)
+            self.logger.error("aqua.%s package not found: install it in the current environment first", name)
             sys.exit(1)
 
     def _installed_projects(self):

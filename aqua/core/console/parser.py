@@ -70,7 +70,7 @@ def parse_arguments():
     # subparsers for projects: aqua project <verb>
     parser_project = subparsers.add_parser("project", help="project related commands")
     project_subparsers = parser_project.add_subparsers(dest="nested_command")
-    project_install_parser = project_subparsers.add_parser("install", help="Install a project")
+    project_add_parser = project_subparsers.add_parser("add", help="Add a project to the current AQUA installation")
     project_update_parser = project_subparsers.add_parser("update", help="Update a project not installed in editable mode")
     project_remove_parser = project_subparsers.add_parser("remove", help="Remove an installed project")
     project_set_parser = project_subparsers.add_parser(
@@ -88,7 +88,7 @@ def parse_arguments():
     install_parser.add_argument(
         "-p", "--path", type=str, metavar="AQUA_TARGET_PATH", help="Path where to install AQUA. Default is $HOME/.aqua"
     )
-    # only core and diagnostics: other projects are installed with `aqua project install`
+    # only core and diagnostics: other projects are installed with `aqua project add`
     for flag, name in (("-c", "core"), ("-d", "diagnostics")):
         install_parser.add_argument(
             flag,
@@ -125,9 +125,9 @@ def parse_arguments():
         "-r", "--repository", type=str, help="Explore a specific repository: provide the user/repo string"
     )
 
-    project_install_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be installed")
-    project_install_parser.add_argument(
-        "-e", "--editable", type=str, help="Install a project in editable mode from the original source: provide the Path"
+    project_add_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be added")
+    project_add_parser.add_argument(
+        "-e", "--editable", type=str, help="Add a project in editable mode from the original source: provide the Path"
     )
     project_update_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be updated")
     project_remove_parser.add_argument("project", metavar="PROJECT_NAME", help="Project to be removed")

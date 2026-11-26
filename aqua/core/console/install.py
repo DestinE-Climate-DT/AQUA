@@ -244,7 +244,7 @@ class InstallMixin:
     def install(self, args):
         """Install AQUA: core and the diagnostics project, or only the one selected with -c or -d
 
-        Other projects are added with ``aqua project install``; ``-d`` alone adds diagnostics to an existing
+        Other projects are added with ``aqua project add``; ``-d`` alone adds diagnostics to an existing
         installation in the same way.
 
         Args:
@@ -427,6 +427,10 @@ class InstallMixin:
         """
         self._check_project_layout()
         self.logger.info("Updating AQUA installation...")
+
+        # as `aqua project update`: a listed project without folders stops the update before any change
+        for name in self._installed_projects():
+            self._check_project_folders(name)
 
         failed = False
         installed = ["core", *self._installed_projects()]
