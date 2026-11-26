@@ -1,0 +1,68 @@
+name: AQUA analysis report
+
+# Every day, read the latest run of the AQUA analysis monitor
+# (https://climate-web.polito.it/aqua-analysis/) and open an issue with its errors.
+# If the issue is already open it is updated (new title with the run date, report as a comment).
+# If the latest run has no errors the open issue is closed.
+# Needs the repository secrets AQUA_MONITOR_USER and AQUA_MONITOR_PASSWORD.
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # 10:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  build-report:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.report.outputs.result }}
+      title: ${{ steps.report.outputs.title }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the report of the latest run
+        id: report
+        env:
+          AQUA_MONITOR_USER: ${{ secrets.AQUA_MONITOR_USER }}
+          AQUA_MONITOR_PASSWORD: ${{ secrets.AQUA_MONITOR_PASSWORD }}
+        run: |
+          mkdir report
+          # Exit code 3: the latest run has no errors; any other non-zero code is a real failure of the script
+          set +e
+          python3 cli/aqua-web/aqua_analysis_issue_report.py --output report/report.md --title-file title.txt
+          CODE=$?
+          set -e
+          if [ "$CODE" -eq 0 ]; then
+            echo "result=failure" >> "$GITHUB_OUTPUT"
+            echo "title=$(cat title.txt)" >> "$GITHUB_OUTPUT"
+          elif [ "$CODE" -eq 3 ]; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          else
+            exit "$CODE"
+          fi
+
+      - name: Upload the report
+        if: steps.report.outputs.result == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: aqua-analysis-report
+          path: report/report.md
+
+  report-failure:
+    needs: build-report
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    uses: ./.github/workflows/report-failure-reusable.yml
+    with:
+      test-name: Analysis
+      result: ${{ needs.build-report.outputs.result }}
+      label: ci-failure
+      report-artifact: aqua-analysis-report
+      title: ${{ needs.build-report.outputs.title }}

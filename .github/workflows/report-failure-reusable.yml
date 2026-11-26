@@ -18,6 +18,21 @@ on:
         required: false
         type: string
         default: failure
+      label:
+        description: "Issue label identifying the open issue to update (default: 'ci-failure:<test-name> :clown_face:')"
+        required: false
+        type: string
+        default: ''
+      report-artifact:
+        description: Name of an artifact holding a ready-made report.md, used as issue text instead of the junit report
+        required: false
+        type: string
+        default: ''
+      title:
+        description: "Fixed issue title (default: '[CI/CD] <test-name> tests failed (N failures, last: <date>)')"
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -32,21 +47,27 @@ jobs:
       GH_REPO: ${{ github.repository }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       TEST_NAME: ${{ inputs.test-name }}
+      INPUT_LABEL: ${{ inputs.label }}
+      INPUT_TITLE: ${{ inputs.title }}
     steps:
       - name: Set issue label
         run: |
           # One label per test suite (e.g. 'ci-failure:nightly :clown_face:'), so failures of different suites do not mix
-          echo "LABEL=ci-failure:$(echo "$TEST_NAME" | tr '[:upper:]' '[:lower:]') :clown_face:" >> "$GITHUB_ENV"
+          echo "LABEL=${INPUT_LABEL:-ci-failure:$(echo "$TEST_NAME" | tr '[:upper:]' '[:lower:]') :clown_face:}" >> "$GITHUB_ENV"
 
       - name: Download test artifacts
         if: inputs.result == 'failure'
         uses: actions/download-artifact@v8
         with:
-          pattern: aqua-test-artifacts-*
+          pattern: ${{ inputs.report-artifact || 'aqua-test-artifacts-*' }}
           path: artifacts
 
+      - name: Use the supplied report
+        if: inputs.result == 'failure' && inputs.report-artifact != ''
+        run: cp artifacts/*/report.md report.md
+
       - name: Build failure report
-        if: inputs.result == 'failure'
+        if: inputs.result == 'failure' && inputs.report-artifact == ''
         run: |
           python3 - <<'EOF'
           import glob, json, os, subprocess
@@ -93,12 +114,14 @@ jobs:
             # Failure count is stored in the title, e.g. "(3 failures, last: 2026-11-03)"; default to 1 if missing
             COUNT=$(echo "$EXISTING" | jq -r '.title | capture("\\((?<n>[0-9]+) failures?,").n // 1')
             COUNT=$((COUNT + 1))
+            TITLE="${INPUT_TITLE:-[CI/CD] $TEST_NAME tests failed ($COUNT failures, last: $TODAY)}"
             # Editing the title and commenting both bump "updated", so the issue tops the "Recently updated" sort
-            gh issue edit "$NUMBER" --title "[CI/CD] $TEST_NAME tests failed ($COUNT failures, last: $TODAY)"
+            gh issue edit "$NUMBER" --title "$TITLE"
             { echo "### Failure $TODAY - $RUN_URL"; echo; cat report.md; } > comment.md
             gh issue comment "$NUMBER" --body-file comment.md
           else
-            gh issue create --label "$LABEL" --type Bug --title "[CI/CD] $TEST_NAME tests failed (1 failure, last: $TODAY)" --body-file report.md
+            TITLE="${INPUT_TITLE:-[CI/CD] $TEST_NAME tests failed (1 failure, last: $TODAY)}"
+            gh issue create --label "$LABEL" --type Bug --title "$TITLE" --body-file report.md
           fi
 
       - name: Close issue after a successful run
