@@ -85,18 +85,16 @@ class Analysis:
         """Load the configuration file and return the config dictionary.
 
         Without an explicit config file, the default one is taken from the analysis folder of the active project.
+
+        Raises:
+            FileNotFoundError: If the config file, or the analysis folder of the project, does not exist.
         """
         if self.config_file_path is None:
-            try:
-                analysis_folder = self.context.get_project_folder("analysis")
-            except FileNotFoundError as e:
-                self.logger.error("%s", e)
-                sys.exit(1)
+            analysis_folder = self.context.get_project_folder("analysis")
             self.config_file_path = os.path.join(analysis_folder, self.default_config_name)
 
         if not os.path.exists(self.config_file_path):
-            self.logger.error("Config file %s not found.", self.config_file_path)
-            sys.exit(1)
+            raise FileNotFoundError(f"Config file {self.config_file_path} not found.")
 
         self.config = load_yaml(self.config_file_path)
         self.logger.info("AQUA analysis config loaded: %s", self.config_file_path)

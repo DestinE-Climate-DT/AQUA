@@ -6,7 +6,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from aqua.core.analysis import Analysis
-from aqua.core.configurer.context import PRE_PROJECT_MESSAGE, PROJECT_ENV
+from aqua.core.configurer.context import PROJECT_ENV
 from aqua.core.logger import log_configure
 from aqua.core.util import expand_env_vars, get_arg
 
@@ -88,12 +88,13 @@ def analysis_execute(args):
 
     # Initialize analyzer
     analyzer = Analysis(config_file_path=args.config, loglevel=loglevel, default_config_name=default_config_name)
-    if project and not analyzer.context.has_project_layout():
-        logger.error(PRE_PROJECT_MESSAGE.format(config_file=analyzer.context.config_file))
-        sys.exit(1)
 
     # Load config and get AQUA paths
-    config = analyzer.get_config()
+    try:
+        config = analyzer.get_config()
+    except FileNotFoundError as e:
+        logger.error("%s", e)
+        sys.exit(1)
     aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
     # TODO: make a function or move it into the class

@@ -81,8 +81,8 @@ Additional options
 .. option:: -p <project>, --project <project>
 
     Take the default config file from the ``analysis`` folder of this project instead of the active one.
-    It stops with an error on an installation that predates project support.
-    It is ignored when ``-c`` is given.
+    It is ignored when ``-c`` is given; without ``-c``, it stops with an error on an installation that predates
+    project support.
 
 .. option:: --no-ensemble
 
