@@ -373,9 +373,9 @@ class TestProjectVerbs:
         assert os.path.isdir(os.path.join(home, "grids"))
         assert os.path.isdir(os.path.join(home, "analysis", "mockother"))
 
-    def test_install_update_remove_editable(self, mock_plugin_entrypoint, home, run_aqua):
-        """Fails if an editable project or its extra file is not linked, update replaces a link, or remove deletes
-        the linked sources instead of the links."""
+    def test_install_update_remove_editable(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if an editable project or its extra file is not linked, update replaces a link or does not say that
+        there is nothing to update, or remove deletes the linked sources instead of the links."""
         run_aqua(["install", MACHINE, "--core"])
         paths = _mockplugin_paths(home)
 
@@ -385,8 +385,12 @@ class TestProjectVerbs:
             os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml")
         )
 
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
         run_aqua(["project", "update", "mockplugin"])
         assert all(os.path.islink(p) for p in paths.values())
+        assert [r.getMessage() for r in caplog.records if "editable mode" in r.getMessage()] == [
+            "mockplugin is installed in editable mode: it follows its repository, nothing to update"
+        ]
 
         run_aqua(["project", "remove", "mockplugin"])
         assert not any(os.path.lexists(p) for p in paths.values())
@@ -455,3 +459,24 @@ class TestProjectVerbs:
         assert any(r.getMessage() == expected for r in caplog.records)
         assert load_yaml(paths[existing]) == {"user": True}
         assert not os.path.exists(paths["analysis"])
+
+    @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores folder permissions")
+    def test_failed_copy_removes_the_partial_project(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if a copy failing midway leaves the folders copied before it, so that the project looks installed."""
+        run_aqua(["install", MACHINE, "--core"])
+        paths = _mockplugin_paths(home)
+        templates = os.path.join(home, "templates", "mock_templates")
+        grids = os.path.dirname(paths["grid"])
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        os.chmod(grids, 0o555)  # the extra grid file is copied last, after the folders
+        try:
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(["project", "install", "mockplugin"])
+        finally:
+            os.chmod(grids, 0o755)
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("Cannot install mockplugin: ") for r in caplog.records)
+        assert not any(os.path.lexists(p) for p in [*paths.values(), templates])
+        assert _project(home) != "mockplugin"

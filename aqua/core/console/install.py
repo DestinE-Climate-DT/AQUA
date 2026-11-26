@@ -206,40 +206,82 @@ class InstallMixin:
         """
         Copy (or link) the folders and extra files of a component; when updating, those in editable mode are skipped.
 
-        A first installation of a project stops before any change if one of its flat folders or extra files already
-        exists (a project owns them, and `aqua project remove` deletes them); it keeps a templates folder already present.
-        Updating a project copies its folders over the installed ones, so user files with other names are kept;
-        core folders are replaced.
-
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
             source_path (str): config folder of the component package or repository
             link (bool): link the folders and files instead of copying them
             update (bool): replace the folders and files already installed
         """
-        files = self._component_files(component, source_path)
-        owned = [target for _, target in files] + (self._project_flat_dirs(component) if component != "core" else [])
-        existing = [target for target in owned if os.path.lexists(target)]
-        if existing and not update:
+        targets = self._component_targets(component, source_path) + self._component_files(component, source_path)
+        if update:
+            self._update_targets(component, targets)
+        else:
+            self._install_targets(component, targets, link)
+
+    def _install_targets(self, component, targets, link):
+        """
+        First installation of the (source, target) pairs of a component.
+
+        A project owns its targets except the templates folders, shared by projects: the installation stops before
+        any change if one of them already exists, while a templates folder already present is kept.
+        If a copy fails, the targets created so far are removed, so that no half-installed project is left.
+        """
+        project = component != "core"
+        templates = [os.path.join(self.configpath, "templates", d) for d in self.components[component]["templates"]]
+        shared = templates if project else []
+        existing = [target for _, target in targets if project and target not in shared and os.path.lexists(target)]
+        if existing:
             self.logger.error("Cannot install %s, these files or folders already exist: %s", component, ", ".join(existing))
             sys.exit(1)
 
-        templates = [os.path.join(self.configpath, "templates", d) for d in self.components[component]["templates"]]
+        created = []
+        try:
+            for source, target in targets:
+                if not os.path.exists(source):
+                    self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
+                elif target in shared and os.path.lexists(target):
+                    self.logger.info("%s is already installed, keeping it", target)
+                else:
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    self._copy_update_folder_file(source, target, link=link)
+                    created.append(target)
+        except OSError as e:
+            for target in reversed(created):
+                self._remove_target(target)
+            self.logger.error("Cannot install %s: %s. The files installed so far have been removed", component, e)
+            sys.exit(1)
 
-        for source, target in self._component_targets(component, source_path) + files:
-            if update and os.path.islink(target):
+    def _update_targets(self, component, targets):
+        """
+        Copy again the (source, target) pairs of an installed component, skipping the editable (linked) ones.
+
+        Core folders are replaced. Project folders are copied over the installed ones, so user files with other
+        names are kept, as well as files removed or renamed in the package.
+        """
+        skipped = [target for _, target in targets if os.path.islink(target)]
+        if skipped and len(skipped) == len(targets):
+            self.logger.warning("%s is installed in editable mode: it follows its repository, nothing to update", component)
+            return
+        for source, target in targets:
+            if target in skipped:
                 self.logger.info("Skipping %s (editable mode)", target)
             elif not os.path.exists(source):
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
-            elif update and component != "core" and os.path.isdir(source):
+            elif component != "core" and os.path.isdir(source):
                 self.logger.info("Updating %s ...", target)
                 shutil.copytree(source, target, dirs_exist_ok=True)
-            elif not update and component != "core" and target in templates and os.path.lexists(target):
-                # a templates folder shared by projects, kept by `aqua project remove`
-                self.logger.info("%s is already installed, keeping it", target)
             else:
                 os.makedirs(os.path.dirname(target), exist_ok=True)
-                self._copy_update_folder_file(source, target, link=link, update=update)
+                self._copy_update_folder_file(source, target, update=True)
+
+    def _remove_target(self, target):
+        """Remove an installed file, link or folder, if present."""
+        if os.path.islink(target) or os.path.isfile(target):
+            self.logger.info("Removing %s", target)
+            os.remove(target)
+        elif os.path.isdir(target):
+            self.logger.info("Removing %s", target)
+            shutil.rmtree(target)
 
     def install(self, args):
         """Install AQUA: core and the diagnostics project, or only the one selected with -c or -d

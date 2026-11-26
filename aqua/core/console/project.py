@@ -9,7 +9,6 @@ The project key and folder names live in ``aqua.core.configurer.context``.
 """
 
 import os
-import shutil
 import sys
 
 from aqua.core.configurer.context import PRE_PROJECT_MESSAGE, PROJECT_FOLDERS, PROJECT_KEY
@@ -128,12 +127,7 @@ class ProjectMixin:
             self.logger.warning("aqua.%s package not found: its flat folders and extra files, if any, are kept", name)
 
         for target in targets:
-            if os.path.islink(target) or os.path.isfile(target):
-                self.logger.info("Removing %s", target)
-                os.remove(target)
-            elif os.path.isdir(target):
-                self.logger.info("Removing %s", target)
-                shutil.rmtree(target)
+            self._remove_target(target)
 
         if self.configurer.config_dict.get(PROJECT_KEY) == name:
             others = self._installed_projects()

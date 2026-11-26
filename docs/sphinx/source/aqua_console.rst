@@ -451,6 +451,12 @@ aqua project update <project>
 
 This command copies again the folders and extra files of an installed project from its package:
 shipped files are overwritten, user files with other names are kept, editable (linked) entries are skipped.
+A project installed entirely in editable mode follows its repository and is not touched.
+
+.. note::
+    The update never deletes a file: a file that the new version of the package removes or renames stays in the
+    installation, next to the new one. This keeps the user files; to get rid of the old files, use
+    ``aqua project remove <project>`` followed by ``aqua project install <project>``.
 
 aqua project remove <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
