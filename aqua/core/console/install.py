@@ -224,6 +224,8 @@ class InstallMixin:
             self.logger.error("Cannot install %s, these files or folders already exist: %s", component, ", ".join(existing))
             sys.exit(1)
 
+        templates = [os.path.join(self.configpath, "templates", d) for d in self.components[component]["templates"]]
+
         for source, target in self._component_targets(component, source_path) + files:
             if update and os.path.islink(target):
                 self.logger.info("Skipping %s (editable mode)", target)
@@ -232,7 +234,7 @@ class InstallMixin:
             elif update and component != "core" and os.path.isdir(source):
                 self.logger.info("Updating %s ...", target)
                 shutil.copytree(source, target, dirs_exist_ok=True)
-            elif not update and component != "core" and os.path.lexists(target):
+            elif not update and component != "core" and target in templates and os.path.lexists(target):
                 # a templates folder shared by projects, kept by `aqua project remove`
                 self.logger.info("%s is already installed, keeping it", target)
             else:

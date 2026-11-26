@@ -93,10 +93,12 @@ class TestPluginContract:
             ({"contract": 1, "config": ["analysis"]}, "uses an old plugin contract"),
             ({"contract": 2, "config": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
             ({"contract": 2, "flat": ["definitions", "grids", "tools"]}, "flat folder.s. grids, tools reserved by aqua-core"),
+            ({"contract": 2, "templates": ["mock_templates", "drop"]}, "templates folder.s. drop reserved by aqua-core"),
         ],
     )
     def test_invalid_install_dirs_are_rejected_naming_the_package(self, data, match):
-        """Fails if a v1 dictionary, an unknown key or a flat folder of core or of the project layout is accepted,
+        """Fails if a v1 dictionary, an unknown key, a flat folder of core or of the project layout, or a templates
+        folder of core is accepted,
         or the error omits the package."""
         with pytest.raises(ValueError, match=f"plugin aqua-mockplugin.*{match}"):
             validate_install_dirs("mockplugin", data)

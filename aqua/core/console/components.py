@@ -58,7 +58,7 @@ def validate_install_dirs(name, data):
         dict: one list per key of ``PLUGIN_KEYS``, empty if missing.
 
     Raises:
-        ValueError: if the plugin uses an old contract, an unknown key or a flat folder reserved by core.
+        ValueError: if the plugin uses an old contract, an unknown key, or a flat or templates folder reserved by core.
     """
     if not isinstance(data, dict) or data.get("contract") != PLUGIN_CONTRACT:
         raise ValueError(f"plugin aqua-{name} uses an old plugin contract, please update it (e.g. aqua-diagnostics>=0.27.0)")
@@ -69,6 +69,9 @@ def validate_install_dirs(name, data):
     reserved = sorted(set(dirs["flat"]) & set(RESERVED_FLAT_DIRS))
     if name != "core" and reserved:
         raise ValueError(f"plugin aqua-{name}: flat folder(s) {', '.join(reserved)} reserved by aqua-core")
+    clash = sorted(set(dirs["templates"]) & set(CORE_INSTALL_DIRS["templates"]))
+    if name != "core" and clash:
+        raise ValueError(f"plugin aqua-{name}: templates folder(s) {', '.join(clash)} reserved by aqua-core")
     return dirs
 
 
