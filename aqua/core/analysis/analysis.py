@@ -14,7 +14,6 @@ from importlib import resources as pypath
 import pandas as pd
 
 from aqua.core.configurer import ConfigCatalog, ConfigContext
-from aqua.core.configurer.context import PROJECT_ENV
 from aqua.core.daskcluster import DaskCluster
 from aqua.core.logger import log_configure
 from aqua.core.util import create_folder, deep_merge, dump_yaml, format_realization, get_arg, load_yaml, to_list
@@ -23,8 +22,6 @@ from .report import AnalysisReport
 
 # reserved template variable holding the resolved experiment kind name
 KIND_KEY = "kind"
-# environment variable holding the installation path of the active project package
-PROJECT_PATH_ENV = f"{PROJECT_ENV}_PATH"
 
 
 class Analysis:
@@ -270,22 +267,6 @@ class Analysis:
         self.logger.debug("AQUA diagnostics path: %s", self.aqua_diagnostics_path)
 
         return self.aqua_core_path, self.aqua_diagnostics_path, self.aqua_configdir
-
-    def get_project_env(self):
-        """Environment variables describing the active project, to be expanded in the analysis config.
-
-        Returns:
-            dict: ``AQUA_PROJECT`` (project name) and ``AQUA_PROJECT_PATH`` (installation path of the
-            ``aqua.<project>`` package, empty if not installed), or an empty dict for an installation
-            without project.
-        """
-        project = self.context.project
-        if project is None:
-            self.logger.debug("No project set: %s and %s are not exported", PROJECT_ENV, PROJECT_PATH_ENV)
-            return {}
-        project_path = self.context.packages.get_package_path(f"aqua.{project}")
-        self.logger.debug("Project %s, package path: %s", project, project_path)
-        return {PROJECT_ENV: project, PROJECT_PATH_ENV: project_path}
 
     def run_command(self, cmd: str, log_file: str) -> int:
         """
