@@ -13,8 +13,14 @@ Complete list:
 - Breaking: plugins must declare the plugin contract v2 and are installed in per-project folders; new `aqua check` command to validate an installation (#3412)
 - New `aqua project install`, `update` and `remove` commands, with extra project files; breaking: `aqua install` only installs core and diagnostics (#3416)
 - `aqua analysis` and `aqua push` read the configuration of the active project, selectable with `-p/--project` (#3418)
+- Timeseries plots no longer fail when a series has a single time step, e.g. one year of annual data (#3431)
+- New `plot_seasonalcycle_difference` graphics function: seasonal cycle above its difference from a reference (#3417)
+- Grid paths use the Jinja `{{ zoom }}` syntax, filled in from the source intake parameters (#3427)
+- Reader resolves `source_grid_name` with the intake parameters (e.g. `zoom`), so templated grid names follow the requested zoom (#3407)
+- New `ERA5-healpix`, `JRA3Q-healpix` and `MERRA2-healpix` fixers for the online HEALPix reanalyses in the obs catalog (#3408)
 - Contributing and agent guidelines to keep pull requests small and reviewable: size budget, Design proposal issue template, TL;DR in the pull request template (#3398)
 - Regridding to HEALPix target grids, given as CDO names (e.g. `hpr3`, `hp8_nested`) or grid files; the target grid `cdo_options` are now used for the weights (#3401)
+- DROP Zarr output is sharded to match the read chunks, writing far fewer files (#3396)
 
 ## [v1.2.4]
 
@@ -37,7 +43,6 @@ Main changes:
 - Agent instructions split into `AGENTS.md`, `AGENTS.common.md` and `AGENTS.repo.md`
 
 Complete list:
-- CI: conda relock PRs list the changed packages in their description (#3395)
 - Upgrade to `smmregrid==0.3.0`; the regridder passes `na_thres='auto'` (smmregrid default of each method: 0.5 for conservative as before, 1e-6 for `bil`/`bic` and 1.0 otherwise, effective only with `skipna` for non-conservative methods) (#3368)
 - The analysis report adds a memory and wall time table built from the line of the `Profiler` logger of the diagnostics CLIs (aqua-diagnostics PR 558), sorted by the maximum memory of each tool process (#3356)
 - Fix DROP NetCDFWriter to correctly compact files when level is selected (#3380)

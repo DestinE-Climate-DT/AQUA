@@ -32,8 +32,12 @@ def _plot_lx(da: xr.DataArray, ax: plt.Axes, **plot_kwargs):
         # Set LaTeX units only on the copy
         da.attrs["units"] = units_latex
 
-    # Call xarray plot - it will automatically use the LaTeX
-    result = da.plot(ax=ax, **plot_kwargs)
+    # A single point (e.g. one year of annual data) is invisible without a marker
+    if da.size == 1:
+        plot_kwargs.setdefault("marker", "o")
+
+    # plot.line keeps a length-1 time axis, which da.plot() would squeeze and fail on
+    result = da.plot.line(ax=ax, **plot_kwargs)
 
     return result
 

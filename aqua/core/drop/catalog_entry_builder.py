@@ -1,18 +1,17 @@
 """Class to create a catalog entry for DROP"""
 
 import glob
-import math
 import os
 
 import xarray as xr
 from dask.utils import parse_bytes
-from smmregrid import GridType
 
 # default grid name and chunk target size for DROP outputs, if not specified otherwise
 from aqua.core.default import DEFAULT_DROP_CHUNK_TARGET, DEFAULT_DROP_GRID
 from aqua.core.logger import log_configure
 from aqua.core.util import format_realization, replace_intake_vars, replace_urlpath_jinja
 
+from .drop_util import target_chunks
 from .output_path_builder import OutputPathBuilder
 
 
@@ -144,36 +143,9 @@ class CatalogEntryBuilder:
         for sample in samples.values():
             with xr.open_dataset(sample, engine=engine, chunks={}) as ds:
                 for var in ds.data_vars:
-                    self._merge_chunks(chunks, self._variable_chunks(ds[var], target))
+                    self._merge_chunks(chunks, target_chunks(ds[var], target, logger=self.logger))
 
         self.logger.info("Chunks for target size %s: %s", chunk_target, chunks)
-        return chunks
-
-    def _variable_chunks(self, data, target):
-        """Chunks of a single variable, filling time then vertical dimensions up to target bytes."""
-        # classify the dimensions with smmregrid: vertical dims are the masked (e.g. depth) and other dims
-        gridtype = GridType(dims=data.dims)
-        # bounds and other auxiliary variables have no time or no horizontal dimensions
-        if not gridtype.time_dims or not gridtype.horizontal_dims:
-            return {}
-        vertical = ([gridtype.mask_dim] if gridtype.mask_dim else []) + gridtype.other_dims
-
-        # horizontal dims are never split, to stay aligned with the on-disk chunks (one horizontal slice)
-        chunks = dict.fromkeys(gridtype.horizontal_dims, -1)
-        slice_bytes = data.dtype.itemsize * math.prod(data.sizes[dim] for dim in gridtype.horizontal_dims)
-
-        # number of horizontal slices fitting in a chunk
-        nslices = target // slice_bytes
-        if nslices < 1:
-            self.logger.warning(
-                "Horizontal slice of %s (%d bytes) exceeds the chunk target (%d bytes)", data.name, slice_bytes, target
-            )
-
-        for dim in gridtype.time_dims + vertical:
-            size = min(data.sizes[dim], max(nslices, 1))
-            chunks[dim] = size
-            nslices //= size
-
         return chunks
 
     @staticmethod

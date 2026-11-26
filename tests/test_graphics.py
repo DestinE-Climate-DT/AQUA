@@ -24,6 +24,7 @@ from aqua.core.graphics import (
     plot_maps_diff,
     plot_seasonal_lat_lon_profiles,
     plot_seasonalcycle,
+    plot_seasonalcycle_difference,
     plot_single_map,
     plot_single_map_diff,
     plot_timeseries,
@@ -356,6 +357,18 @@ class TestTimeseries:
 
         # Check the file was created
         assert os.path.exists(tmp_path / "test_plot_timeseries.png")
+
+    def test_plot_timeseries_single_annual_point(self):
+        """A one-point annual series is drawn as a marker; da.plot() would squeeze time and raise."""
+        t1_yearly = self.reader.timmean(self.t1, freq="YS", center_time=True).isel(time=[0])
+
+        _, ax = plot_timeseries(monthly_data=self.t1, annual_data=t1_yearly, ref_annual_data=t1_yearly, data_labels="t1")
+
+        single = [line for line in ax.get_lines() if len(line.get_xdata()) == 1]
+        assert len(single) == 2  # model and reference annual
+        assert all(line.get_marker() == "o" for line in single)
+        assert single[0].get_ydata()[0] == pytest.approx(float(t1_yearly.values[0]))
+        plt.close()
 
     def test_plot_seasonalcycle(self, tmp_path):
         """Test the plot_seasonalcycle function"""
@@ -1234,6 +1247,9 @@ DEFAULT_FIGURES = {
     ),
     "timeseries": lambda: plot_timeseries(monthly_data=_field("time"), loglevel=LOGLEVEL),
     "seasonalcycle": lambda: plot_seasonalcycle(data=_field("month"), data_labels=["model"], loglevel=LOGLEVEL),
+    "seasonalcycle_difference": lambda: plot_seasonalcycle_difference(
+        data=_field("month"), ref_data=_field("month", seed=1), loglevel=LOGLEVEL
+    ),
     "lat_lon_profiles": lambda: plot_lat_lon_profiles(data=_field("lat"), loglevel=LOGLEVEL),
     "seasonal_lat_lon_profiles": lambda: plot_seasonal_lat_lon_profiles(
         seasonal_data=[_field("lat", seed=s) for s in range(4)], loglevel=LOGLEVEL
@@ -1285,4 +1301,27 @@ def test_legend_fontsize(make_figure):
 
     fig, ax = make_figure(legend_fontsize="medium")
     assert ax.get_legend().get_texts()[0].get_fontsize() == FontProperties(size="medium").get_size_in_points()
+    plt.close(fig)
+
+
+@pytest.mark.graphics
+def test_plot_seasonalcycle_difference_values():
+    """The bottom panel draws data minus reference, in the same colour as the top panel, around a zero line"""
+    data, ref = _field("month"), _field("month", seed=1)
+    fig, (ax, ax_diff) = plot_seasonalcycle_difference(
+        data=data,
+        ref_data=ref,
+        std_data=_field("month", seed=2) ** 2,
+        data_labels=["model"],
+        ref_label="obs",
+        loglevel=LOGLEVEL,
+    )
+
+    # Lines are cycle-extended: December first, January last
+    diff_line, zero_line = ax_diff.get_lines()
+    assert diff_line.get_ydata()[1:13] == pytest.approx((data - ref).values)
+    assert zero_line.get_ydata() == pytest.approx(np.zeros(14))
+    assert diff_line.get_color() == ax.get_lines()[0].get_color()
+    assert ax_diff.get_title() == "Difference from obs"
+    assert ax_diff.get_legend() is None
     plt.close(fig)
