@@ -30,7 +30,7 @@ from aqua.core.util import (
     set_map_title,
     set_ticks,
 )
-from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels
+from aqua.core.util.graphics import add_contour_labels, get_decimals, isnpixok, prettify_levels, prettify_limit
 
 from .gridlines import draw_manual_gridlines
 from .styles import ConfigStyle
@@ -71,7 +71,9 @@ def plot_single_map(
     Args:
         data (xr.DataArray):         Data to plot.
         contour (bool, optional):    If True, plot a contour map, otherwise a pcolormesh. Defaults to True.
-        sym (bool, optional):        If True, set the colorbar to be symmetrical. Defaults to False.
+        sym (bool, optional):        If True, the colorbar is symmetric around zero, with limits from the 99th
+                                     percentile of the absolute values, rounded. vmin and vmax are ignored.
+                                     Defaults to False.
         proj (cartopy.crs.Projection, optional): Projection to use. Defaults to ccrs.Robinson().
         gridlines (bool, optional):  If True, add gridlines. Defaults to False
         extent (list, optional):     Extent of the map to limit the projection. Defaults to None.
@@ -145,12 +147,17 @@ def plot_single_map(
         ax.set_extent(extent, ccrs.PlateCarree())
 
     # Evaluate vmin and vmax if not given
-    if vmin is None or vmax is None:
-        vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
-    else:
-        if sym:
+    if sym:
+        if vmin is not None and vmax is not None:
             logger.warning("sym=True, vmin and vmax given will be ignored")
-            vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
+        # The 1% most extreme values saturate, so a few outliers do not wash out the map
+        limit = np.nanpercentile(np.abs(data), 99)
+        if not limit > 0:  # more than 99% of zeros: fall back to the maximum
+            limit = float(np.abs(data).max())
+        vmax = prettify_limit(limit, nlevels=nlevels)
+        vmin = -vmax
+    elif vmin is None or vmax is None:
+        vmin, vmax = evaluate_colorbar_limits(maps=[data], sym=sym)
 
     logger.debug("Setting vmin to %s, vmax to %s", vmin, vmax)
     if contour:
@@ -228,8 +235,10 @@ def plot_single_map(
         cbar_label = cbar_get_label(data, cbar_label=cbar_label, loglevel=loglevel)
         logger.debug(f"Setting colorbar label to {cbar_label}")
 
-        # Colorbar below the map, attached to its axes so that the layout engine places it
-        cbar = fig.colorbar(cs, ax=ax, location="bottom", shrink=0.8, aspect=40, label=cbar_label)
+        # Colorbar below the map, attached to its axes so that the layout engine places it.
+        # contourf already extends both ends; a symmetric pcolormesh saturates too, so show it
+        extend = "both" if sym and not contour else None
+        cbar = fig.colorbar(cs, ax=ax, location="bottom", shrink=0.8, aspect=40, label=cbar_label, extend=extend)
 
         cbar_ticks_rounding = kwargs.get("cbar_ticks_rounding", None)
         cbar_ticks = generate_colorbar_ticks(

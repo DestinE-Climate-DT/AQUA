@@ -25,6 +25,7 @@ from aqua.core.util.graphics import (
     minmax_maps,
     plot_box,
     prettify_levels,
+    prettify_limit,
 )
 
 
@@ -270,6 +271,23 @@ class TestPrettifyLevels:
 
     def test_prettify_levels_zero_range(self):
         assert prettify_levels(5.0, 5.0, 10).tolist() == [5.0]
+
+    @pytest.mark.parametrize(
+        "limit,nlevels,expected",
+        [
+            (0.2005, 11, 0.22),  # boundaries at odd multiples of 0.02
+            (0.893, 11, 1.1),
+            (1.132, 11, 1.32),
+            (0.66, 11, 0.66),  # already round: unchanged despite 0.66 / 11 = 0.06000000000000001
+            (8.79, 11, 8.8),
+            (1.449e-6, 11, 1.65e-6),
+            (29.8767, 5, 30),
+            (0.0, 11, 0.0),
+        ],
+    )
+    def test_prettify_limit(self, limit, nlevels, expected):
+        """A limit not rounded up to a round step per level, or smaller than the input, fails."""
+        assert prettify_limit(limit, nlevels) == pytest.approx(expected)
 
     @pytest.mark.parametrize("step,expected", [(1, 0), (0.5, 1), (0.05, 2), (0.001, 3), (0.99, 1)])
     def test_get_decimals(self, step, expected):

@@ -112,9 +112,23 @@ class TestMaps:
         assert ax is not None
         # Default size: common width, height of a single map
         assert tuple(fig.get_size_inches()) == pytest.approx(figure_size(0.8))
+        # sym=True ignores vmin/vmax: the 99th percentile 29.18 is rounded up so the 5 levels have round boundaries
+        assert fig.axes[-1].get_xticks() == pytest.approx([-30, -18, -6, 6, 18, 30])
 
         fig.savefig(tmp_path / "test_plot_single_map.png")
         assert os.path.exists(tmp_path / "test_plot_single_map.png")
+
+    def test_plot_single_map_sym_ignores_outliers(self):
+        """Symmetric limits fitted to the maximum instead of the 99th percentile would include the outlier."""
+        values = np.linspace(-1, 1, 200).reshape(10, 20)
+        values[0, 0] = 50  # a single outlier, 0.5% of the points
+        data = xr.DataArray(
+            values, dims=["lat", "lon"], coords={"lat": np.linspace(-80, 80, 10), "lon": np.linspace(0, 342, 20)}
+        )
+        fig, _ = plot_single_map(data=data, sym=True, return_fig=True, loglevel=LOGLEVEL)
+        # The 99th percentile of |data| is 0.99, rounded up so that the 11 levels are multiples of 0.1
+        assert fig.axes[-1].get_xticks()[-1] == pytest.approx(1.1)
+        plt.close(fig)
 
     def test_plot_single_map_hpx(self, tmp_path, data_era5):
         """
