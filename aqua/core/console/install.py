@@ -14,6 +14,7 @@ from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml, to_list
 
 from .catalog import CATPATH
+from .components import CORE_SHARED_ENTRIES, SHARED_OUTSIDE_CONFIG
 from .util import query_yes_no
 
 # folder used for reading/storing catalogs
@@ -66,11 +67,10 @@ class InstallMixin:
                 sys.exit(1)
 
     def _component_targets(self, component, source=None):
-        """Folders installed by a component, as (source, target) pairs.
+        """Folders owned by a component alone, as (source, target) pairs.
 
-        Project-scoped folders go to ``<configpath>/<dir>/<component>``, flat folders to ``<configpath>/<dir>``,
-        templates to ``<configpath>/templates/<dir>``. The ``files`` of a plugin are not whole folders and are not
-        listed here (see ``_component_files``).
+        Project folders go to ``<configpath>/<dir>/<component>``, exclusive folders to ``<configpath>/<dir>``.
+        The entries a component adds to the shared folders are not listed here (see ``_shared_entries``).
 
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
@@ -84,37 +84,57 @@ class InstallMixin:
         def src(*parts):
             return os.path.join(source, *parts) if source else None
 
-        targets = [(src(d), os.path.join(self.configpath, d, component)) for d in info["config"]]
-        targets += [(src(d), os.path.join(self.configpath, d)) for d in info["flat"]]
-        targets += [(src("..", "templates", d), os.path.join(self.configpath, "templates", d)) for d in info["templates"]]
+        targets = [(src(d), os.path.join(self.configpath, d, component)) for d in info["project"]]
+        targets += [(src(d), os.path.join(self.configpath, d)) for d in info["exclusive"]]
         return targets
 
     def _project_owned_dirs(self, component):
-        """Flat and templates folders of a project in the AQUA config folder: installed and removed with the project."""
-        info = self.components[component]
-        return [os.path.join(self.configpath, d) for d in info["flat"]] + [
-            os.path.join(self.configpath, "templates", d) for d in info["templates"]
-        ]
+        """Exclusive folders of a project in the AQUA config folder: installed and removed with the project."""
+        return [os.path.join(self.configpath, d) for d in self.components[component]["exclusive"]]
 
-    def _component_files(self, component, source):
-        """Extra files of a component, as (source, target) pairs: each file of its ``files`` folders goes to the
-        flat ``<configpath>/<dir>``.
+    def _shared_entries(self, component, source):
+        """Entries a component adds to the shared folders, as (source, target) pairs: each file or folder of its
+        ``shared`` folders goes to ``<configpath>/<dir>``, next to the entries of core and of the other projects.
 
         Args:
-            component (str): component name, e.g. 'claima'
+            component (str): component name, e.g. 'core', 'claima'
             source (str): config folder of the component package or repository
 
         Returns:
             list: (source, target) tuples
         """
-        files = []
-        for kind in self.components[component]["files"]:
-            folder = os.path.join(source, kind)
+        entries = []
+        for kind in self.components[component]["shared"]:
+            folder = os.path.join(source, "..", kind) if kind in SHARED_OUTSIDE_CONFIG else os.path.join(source, kind)
             if not os.path.isdir(folder):
                 self.logger.warning("%s declared by %s does not exist, skipping it", folder, component)
                 continue
-            files += [(os.path.join(folder, n), os.path.join(self.configpath, kind, n)) for n in sorted(os.listdir(folder))]
-        return files
+            # core installs a fixed list of its templates, a project everything it ships
+            names = CORE_SHARED_ENTRIES.get(kind) if component == "core" else None
+            for name in names or sorted(os.listdir(folder)):
+                entries.append((os.path.normpath(os.path.join(folder, name)), os.path.join(self.configpath, kind, name)))
+        return entries
+
+    def _check_shared_owner(self, name):
+        """Exit if an entry that a project adds to a shared folder is also shipped by core or by another installed
+        project: an update would overwrite it. On the first installation the entry is found on disk instead."""
+        mine = self._shared_entries(name, self.components[name]["path"])
+        clash = []
+        for other in ["core", *self._installed_projects()]:
+            source = self.components.get(other, {}).get("path")
+            if other == name or not source:
+                continue
+            theirs = {target for _, target in self._shared_entries(other, source)}
+            # the content of an exclusive folder of core that is also a shared one, e.g. its grids
+            theirs |= {
+                target
+                for _, target in mine
+                if other == "core" and os.path.exists(os.path.join(source, os.path.relpath(target, self.configpath)))
+            }
+            clash += [f"{target} (aqua-{other})" for _, target in mine if target in theirs]
+        if clash:
+            self.logger.error("Cannot update %s, these files or folders belong to another package: %s", name, ", ".join(clash))
+            sys.exit(1)
 
     def _validate_component_path(self, component, custom_path):
         """Validate that editable install path exists and return the source path
@@ -134,7 +154,7 @@ class InstallMixin:
 
     def _copy_component(self, component, source_path, link=False, update=False):
         """
-        Copy (or link) the folders and extra files of a component; when updating, those in editable mode are skipped.
+        Copy (or link) the folders and shared entries of a component; when updating, those in editable mode are skipped.
 
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
@@ -142,7 +162,7 @@ class InstallMixin:
             link (bool): link the folders and files instead of copying them
             update (bool): replace the folders and files already installed
         """
-        targets = self._component_targets(component, source_path) + self._component_files(component, source_path)
+        targets = self._component_targets(component, source_path) + self._shared_entries(component, source_path)
         if update:
             self._update_targets(component, targets)
         else:
@@ -180,7 +200,7 @@ class InstallMixin:
         Copy again the (source, target) pairs of an installed component, skipping the editable (linked) ones.
 
         The rule is the same for core and for a project: an installed folder belongs to its component and is
-        replaced, but for the links it holds (extra files of editable projects, files added with ``-e``), which are
+        replaced, but for the links it holds (shared entries of editable projects, files added with ``-e``), which are
         kept. What is removed and not copied again, e.g. a file added by the user, is listed in a warning first.
         """
         skipped = [target for _, target in targets if os.path.islink(target)]
@@ -228,7 +248,7 @@ class InstallMixin:
 
         They are neither links nor shipped by the package: files added by the user (in the core folders, with
         ``aqua grids|fixes|styles add``), or files that the package does not ship any more. In the core folders,
-        the extra files of the installed projects are not listed: each project copies its own again.
+        the shared entries of the installed projects are not listed: each project copies its own again.
 
         Args:
             component (str): component name, e.g. 'core', 'diagnostics', 'claima'
@@ -241,7 +261,7 @@ class InstallMixin:
         for name in self._installed_projects() if component == "core" else []:
             source = self.components[name]["path"]
             if source:
-                owned.update(t for _, t in self._component_files(name, source))
+                owned.update(t for _, t in self._shared_entries(name, source))
 
         unshipped = []
         for source, target in targets:
@@ -549,7 +569,7 @@ class InstallMixin:
         """Update the installation files of core and of every installed project: what is linked is left as it is.
 
         Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another;
-        the extra files of the projects are copied again after core has replaced its flat folders.
+        the shared entries of the projects are copied again after core has replaced its exclusive folders.
         The installed folders are replaced, for core as for a project: what nobody ships (e.g. a file copied with
         ``aqua grids add``, or written in a project folder) is lost, and listed in a warning.
         Only the installed projects are considered: one without its folders or its package, or breaking the
@@ -563,6 +583,7 @@ class InstallMixin:
         for name in projects:
             self._check_installed_project(name)
             self._project_source(name)
+            self._check_shared_owner(name)
 
         self._copy_component("core", self.components["core"]["path"], update=True)
         for name in projects:

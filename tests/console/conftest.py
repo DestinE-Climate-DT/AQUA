@@ -179,7 +179,9 @@ def project_install(tmp_path, monkeypatch):
     """
     monkeypatch.delenv("AQUA_PROJECT", raising=False)
 
-    def _build(project=("diagnostics", "claima"), folders=("analysis/diagnostics", "tools/diagnostics", "collections/claima")):
+    def _build(
+        project=("diagnostics", "claima"), folders=("analysis/diagnostics", "collections/diagnostics", "collections/claima")
+    ):
         config = {"machine": "ci", "catalog": None}
         if project is not None:
             config["project"] = (list(project) if isinstance(project, tuple) else project) or None

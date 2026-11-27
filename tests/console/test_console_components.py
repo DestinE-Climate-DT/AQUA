@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import sys
+from importlib import import_module
 from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as real_entry_points
 
@@ -34,14 +35,13 @@ def mock_plugin_entrypoint(monkeypatch, tmp_path_factory):
     """Register only fake aqua.plugins entry points: `mockplugin`, a copy of it named `mockother`, and broken ones.
 
     `mockother` is generated under a temporary folder, as a second installable project.
-    `mockplugin` stands for aqua-diagnostics as the project allowed to install templates folders.
     """
     plugin_path = os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua")
     other_path = str(tmp_path_factory.mktemp("mockother"))
     shutil.copytree(os.path.join(plugin_path, "mockplugin"), os.path.join(other_path, "mockother"))
-    # no templates: two projects shipping the same flat folder would collide
+    # only the project folder: two projects shipping the same exclusive folder or shared entries would collide
     with open(os.path.join(other_path, "mockother", "__init__.py"), "w", encoding="utf-8") as f:
-        f.write('__version__ = "0.1.0"\n\n\ndef get_install_dirs():\n    return {"contract": 2, "config": ["analysis"]}\n')
+        f.write('__version__ = "0.1.0"\n\n\ndef get_install_dirs():\n    return {"contract": 2, "project": ["analysis"]}\n')
     aqua.__path__.extend([plugin_path, other_path])
 
     def fake_entry_points(*args, **kwargs):
@@ -50,7 +50,6 @@ def mock_plugin_entrypoint(monkeypatch, tmp_path_factory):
         return real_entry_points(*args, **kwargs)
 
     monkeypatch.setattr(components_module, "entry_points", fake_entry_points)
-    monkeypatch.setattr(components_module, "TEMPLATES_PROJECTS", ("mockplugin",))
     discover_aqua_components.cache_clear()
     try:
         yield
@@ -87,47 +86,64 @@ class TestPluginContract:
 
     def test_missing_keys_default_to_empty_lists(self):
         """Fails if a v2 plugin must declare every key, or a single folder name is not read as a list."""
-        dirs = validate_install_dirs("claima", {"contract": 2, "config": ["analysis"], "files": "grids"})
-        assert dirs == {"config": ["analysis"], "flat": [], "templates": [], "files": ["grids"]}
+        dirs = validate_install_dirs("claima", {"contract": 2, "project": ["analysis"], "shared": "grids"})
+        assert dirs == {"project": ["analysis"], "exclusive": [], "shared": ["grids"]}
 
     @pytest.mark.parametrize(
         "data, match",
         [
             ({"config": ["mock_config"], "templates": ["mock_templates"]}, "uses an old plugin contract"),
-            ({"contract": 1, "config": ["analysis"]}, "uses an old plugin contract"),
-            ({"contract": 2, "config": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
-            ({"contract": 2, "flat": ["definitions", "grids", "tools"]}, "flat folder.s. grids, tools reserved by aqua-core"),
-            ({"contract": 2, "templates": ["mock_templates"]}, "only aqua-diagnostics can install templates folders"),
-            ({"contract": 2, "config": ["tools", "grids"]}, "config folder.s. grids not allowed, choose among analysis"),
-            ({"contract": 2, "files": ["styles", "catalogs"]}, "files folder.s. catalogs not allowed, choose among grids"),
+            ({"contract": 1, "project": ["analysis"]}, "uses an old plugin contract"),
+            ({"contract": 2, "project": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
+            # the names of the keys before `project`, `exclusive` and `shared`
+            ({"contract": 2, "config": ["analysis"], "flat": [], "files": []}, "unknown key.s. config, files, flat"),
+            ({"contract": 2, "project": ["analysis"], "templates": ["x"]}, "unknown key.s. templates"),
+            (
+                {"contract": 2, "project": ["analysis"], "exclusive": ["definitions", "grids", "tools", "templates"]},
+                "exclusive folder.s. grids, templates, tools reserved by aqua-core",
+            ),
+            (
+                {"contract": 2, "project": ["tools", "grids"]},
+                "project folder.s. grids, tools not allowed, choose among analysis",
+            ),
+            (
+                {"contract": 2, "project": ["analysis"], "shared": ["styles", "catalogs"]},
+                "shared folder.s. catalogs not allowed",
+            ),
+            ({"contract": 2, "shared": ["tools"]}, "at least one project folder is needed, among analysis, collections"),
+            ({"contract": 2, "exclusive": ["definitions"]}, "at least one project folder is needed"),
         ],
     )
     def test_invalid_install_dirs_are_rejected_naming_the_package(self, data, match):
-        """Fails if a v1 dictionary, an unknown key, a flat folder of core or of the project layout, a templates
-        folder of a project other than diagnostics, a config folder that is not project-scoped or a files folder other
-        than grids, fixes and styles is accepted, or the error omits the package."""
+        """Fails if a v1 dictionary, an unknown or renamed key, an exclusive folder of core, of the project layout or
+        among the shared ones, a project folder other than analysis and collections, a shared folder other than
+        grids, fixes, styles, tools and templates, or a plugin without project folders is accepted, or the error
+        omits the package."""
         with pytest.raises(ValueError, match=f"plugin aqua-mockplugin.*{match}"):
             validate_install_dirs("mockplugin", data)
 
-    def test_only_diagnostics_installs_templates(self):
-        """Fails if aqua-diagnostics cannot declare a templates folder, or can declare one of core."""
-        dirs = validate_install_dirs("diagnostics", {"contract": 2, "templates": "collections"})
-        assert dirs["templates"] == ["collections"]
-        with pytest.raises(ValueError, match="plugin aqua-diagnostics: templates folder.s. drop reserved by aqua-core"):
-            validate_install_dirs("diagnostics", {"contract": 2, "templates": ["collections", "drop"]})
+    def test_core_follows_the_contract_without_project_folders(self):
+        """Fails if core, which is not a project, needs a project folder or cannot own the folders reserved to it."""
+        dirs = validate_install_dirs("core", components_module.CORE_INSTALL_DIRS)
+        assert dirs == {
+            "project": [],
+            "exclusive": ["catgen", "data_model", "fixes", "grids", "styles"],
+            "shared": ["templates"],
+        }
 
     def test_unresolvable_path_returns_not_installed(self):
-        info = _resolve_component_info("doesnotexist_xyz", {"contract": 2, "config": ["analysis"]})
+        info = _resolve_component_info("doesnotexist_xyz", {"contract": 2, "project": ["analysis"]})
         assert (info["installed"], info["path"], info["error"]) == (False, None, None)
 
     def test_discover_resolves_v2_and_reports_broken_plugins(self, mock_plugin_entrypoint, monkeypatch):
-        """Fails if core is not flat, a v2 plugin is not installable, or a broken/old plugin is not reported."""
+        """Fails if core has project folders, a v2 plugin is not installable, or a broken/old plugin is not reported."""
         components = discover_aqua_components()
 
-        assert components["core"]["config"] == []
-        assert components["core"]["flat"] == ["catgen", "data_model", "fixes", "grids", "styles"]
+        assert components["core"]["project"] == []
+        assert components["core"]["exclusive"] == ["catgen", "data_model", "fixes", "grids", "styles"]
         assert components["mockplugin"]["installed"] is True
-        assert (components["mockplugin"]["config"], components["mockplugin"]["files"]) == (["analysis"], ["grids"])
+        assert components["mockplugin"]["project"] == ["analysis"]
+        assert components["mockplugin"]["shared"] == ["grids", "tools", "templates"]
         assert (components["brokenplugin"]["installed"], components["brokenplugin"]["error"]) == (False, None)
 
         monkeypatch.setattr("aqua.mockplugin.get_install_dirs", lambda: {"config": ["analysis"]})
@@ -382,11 +398,13 @@ MOCKPLUGIN_CONFIG = os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua", "mockplugin", 
 
 
 def _mockplugin_paths(home):
-    """Project folder, flat folder, templates folder and extra file installed by `mockplugin`."""
+    """What `mockplugin` installs: its project folder, its exclusive folder, and its entries in the shared templates,
+    tools and grids folders."""
     return {
         "analysis": os.path.join(home, "analysis", "mockplugin"),
         "flat": os.path.join(home, "mock_flat"),
         "templates": os.path.join(home, "templates", "mock_templates"),
+        "tool": os.path.join(home, "tools", "mocktool"),
         "grid": os.path.join(home, "grids", "mockplugin-grid.yaml"),
     }
 
@@ -626,12 +644,48 @@ class TestProjectVerbs:
         for path in ("analysis/mockplugin", "mock_flat", "grids/mockplugin-grid.yaml"):
             assert os.path.exists(os.path.join(home, path))
 
-    @pytest.mark.parametrize("clash, existing", [("grid", "grid"), ("flat", "flat_file")])
+    @pytest.mark.parametrize(
+        "shared, owner, entry", [("tools", "mockplugin", "tools/mocktool"), ("grids", "core", "grids/bcc.yaml")]
+    )
+    def test_update_refuses_a_shared_entry_of_another_package(
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, monkeypatch, shared, owner, entry
+    ):
+        """Fails if a project whose new version ships, in a shared folder, an entry of core or of another installed
+        project overwrites it with `aqua project update` or `aqua update`, instead of stopping before any change."""
+        _install_projects(run_aqua, "mockother", *(["mockplugin"] if owner == "mockplugin" else []))
+        # the new version of mockother: its package is a copy of mockplugin, so it ships tools/mocktool too
+        package = import_module("aqua.mockother").__path__[0]
+        dump_yaml(os.path.join(package, "config", "grids", "bcc.yaml"), {"grids": {}})
+        monkeypatch.setattr(
+            "aqua.mockother.get_install_dirs", lambda: {"contract": 2, "project": ["analysis"], "shared": [shared]}
+        )
+        discover_aqua_components.cache_clear()
+        shipped = os.path.join(home, "grids", "healpix.yaml")
+        os.remove(shipped)
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        for command in (["project", "update", "mockother"], ["update"]):
+            caplog.clear()
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(command)
+            assert excinfo.value.code == 1
+            target = os.path.join(home, *entry.split("/"))
+            messages = [r.getMessage() for r in caplog.records if "belong to another package" in r.getMessage()]
+            # `aqua update` stops at the first installed project of the clash, which can be either of the two
+            assert len(messages) == 1 and target in messages[0]
+            if command[0] == "project":
+                assert messages[0].startswith("Cannot update mockother, ") and messages[0].endswith(f"(aqua-{owner})")
+            assert not os.path.exists(shipped)
+
+    @pytest.mark.parametrize(
+        "clash, existing", [("grid", "grid"), ("flat", "flat_file"), ("tool", "tool"), ("templates", "templates")]
+    )
     def test_existing_flat_folder_or_extra_file_stops_install(
         self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, clash, existing
     ):
-        """Fails if an extra file or a flat folder of a project overwrites one already there (that `project remove`
-        would then delete), or the project is installed anyway."""
+        """Fails if an exclusive folder of a project, or one of its entries in the shared grids, tools and templates
+        folders, overwrites one already there (that `project remove` would then delete), or the project is installed
+        anyway."""
         run_aqua(["install", MACHINE, "--core"])
         paths = _mockplugin_paths(home)
         paths["flat_file"] = os.path.join(paths["flat"], "user.yaml")

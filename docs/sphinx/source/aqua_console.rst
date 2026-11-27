@@ -88,7 +88,7 @@ aqua install
 
 With this command the configuration file and the default data models, grids and fixes are copied to the destination folder.
 A bare ``aqua install`` installs AQUA core and, if ``aqua-diagnostics`` is installed in the current environment,
-the ``diagnostics`` project: its project-scoped folders go in a subfolder named after it (e.g. ``analysis/diagnostics``)
+the ``diagnostics`` project: its project folders go in a subfolder named after it (e.g. ``analysis/diagnostics``)
 and it is the active project, written in the ``project`` key of ``config-aqua.yaml``.
 Other projects (see :ref:`aqua-console-plugins`) are added with :ref:`aqua project add <aqua-project-add>`.
 
@@ -176,62 +176,76 @@ A plugin package needs two things:
        def get_install_dirs():
            return {
                "contract": 2,
-               "config": ["analysis", "collections", "tools"],
-               "flat": [],
-               "templates": [],
-               "files": ["grids"],
+               "project": ["analysis", "collections"],
+               "exclusive": [],
+               "shared": ["grids", "tools"],
            }
 
-The folder names are relative to the ``aqua/<name>/config`` folder of the package
-(``aqua/<name>/templates`` for ``templates``), and they are installed as follows:
+The three keys say **who owns** what is installed. The folder names are relative to the ``aqua/<name>/config``
+folder of the package (``aqua/<name>/templates`` for the shared ``templates``), and they are installed as follows:
 
 .. list-table::
    :header-rows: 1
 
    * - Key
      - Installed as
+     - Owner
      - Example (``aqua-diagnostics``)
-   * - ``config``
-     - project-scoped folders: ``<config>/<dir>/<name>``. The project-scoped folders are ``analysis``,
-       ``collections`` and ``tools``.
-     - ``analysis``, ``collections``, ``tools``
-   * - ``flat``
-     - whole folders owned by the project: ``<config>/<dir>``
+   * - ``project``
+     - a subfolder named after the project: ``<config>/<dir>/<name>``. Only ``analysis`` and ``collections``.
+     - the project, in its own subfolder
+     - ``analysis``, ``collections``
+   * - ``exclusive``
+     - a whole folder: ``<config>/<dir>``
+     - this project alone: no other package can write there
      - ``definitions``
-   * - ``templates``
-     - whole folders owned by the project: ``<config>/templates/<dir>`` (``aqua-diagnostics`` only)
-     - ``collections``
-   * - ``files``
-     - single files merged into the flat ``<config>/<dir>`` (e.g. an extra grid file); the file names must not
-       collide with those of AQUA core or of other projects
-     - none
+   * - ``shared``
+     - one entry (file or folder) at a time: ``<config>/<dir>/<entry>``. Only ``grids``, ``fixes``, ``styles``,
+       ``tools`` and ``templates``.
+     - each package owns its entries, which sit next to those of core and of the other projects
+     - ``tools`` (``tools/ecmean``, ...), ``templates`` (``templates/collections``)
 
 Rules:
 
 - ``"contract": 2`` is mandatory. A plugin returning a dictionary without it (the version 1 contract of
   older ``aqua-diagnostics`` releases) is rejected and ``aqua install`` stops with an error asking to update that plugin.
 - Missing keys default to an empty list and a single folder name is read as a one-item list.
-  Unknown keys are rejected, with an error naming the package.
-- ``config`` accepts only the project-scoped folders ``analysis``, ``collections`` and ``tools``, and ``files`` only
-  ``grids``, ``fixes`` and ``styles``: any other folder name is rejected.
+  Unknown keys are rejected, with an error naming the package: among them ``config``, ``flat``, ``files`` and
+  ``templates``, the names used before ``project``, ``exclusive`` and ``shared``.
+- ``project`` accepts only ``analysis`` and ``collections``, and at least one of them is mandatory:
+  these folders are what tells that a project is on disk. ``shared`` accepts only ``grids``, ``fixes``, ``styles``,
+  ``tools`` and ``templates``. Any other folder name is rejected.
 - In editable mode (``aqua project add <name> -e <path>``, ``<path>`` being the repository containing ``aqua/<name>/config``)
-  the links are made at the ``<config>/<dir>/<name>`` level,
+  the links are made at the ``<config>/<dir>/<name>`` level for the project folders, on the whole folder for the
+  exclusive ones and on each entry for the shared ones,
   so that different projects can be editable or not independently.
 - ``get_install_dirs()`` may check the version of AQUA core and raise an exception if it is too old:
   the message is shown by ``aqua install``.
-- The ``files`` of a project are copied (linked in editable mode) one by one into the flat folder:
-  the installation stops if a file with the same name already exists. ``aqua project update`` and
-  ``aqua project remove`` find them by listing the installed package again.
-- A ``flat`` folder belongs to the project that declares it: the installation stops if it already exists,
-  and ``aqua project remove`` deletes it. A project cannot declare as ``flat`` a folder of AQUA core or of the
-  project layout (``catgen``, ``data_model``, ``fixes``, ``grids``, ``styles``, ``analysis``, ``collections``,
-  ``tools``, ``templates``, ``catalogs``): to add files to these, use ``files``.
-- Only ``aqua-diagnostics`` can declare ``templates`` folders, so that each of them has a single owner: as the ``flat``
-  ones, they are installed and removed with it, and the installation stops if one already exists.
-  A project declaring ``templates`` is rejected, and ``aqua-diagnostics`` cannot declare one with the name of
-  a core template folder (``catgen``, ``drop``, ``gridbuilder``).
-- AQUA core installs ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles`` flat: ``catgen`` is a core tool
-  and it is not project-scoped.
+- An ``exclusive`` folder belongs to the project that declares it: the installation stops if it already exists,
+  ``aqua project update`` replaces it and ``aqua project remove`` deletes it. A project cannot declare as
+  ``exclusive`` a folder of AQUA core, of the project layout or among the shared ones (``catgen``, ``data_model``,
+  ``fixes``, ``grids``, ``styles``, ``tools``, ``templates``, ``analysis``, ``collections``, ``catalogs``):
+  to add something to these, use ``shared``.
+- The ``shared`` entries of a project are copied (linked in editable mode) one by one, at the first level of the
+  shared folder: a file such as ``grids/claima-grid.yaml``, or a folder such as ``tools/ecmean``, which is then
+  replaced as a whole by an update. Two packages cannot ship an entry with the same name: ``aqua project add`` stops
+  if the entry already exists, ``aqua project update`` and ``aqua update`` if it belongs to core or to another
+  installed project. So a project can add ``tools/<its tool>`` or ``templates/<its folder>``, but not a file inside
+  the ``tools/ecmean`` or ``templates/collections`` of another package.
+  ``aqua project update`` and ``aqua project remove`` find the entries by listing the installed package again:
+  an entry that a new version of the package does not ship any more is left in the installation.
+- ``tools`` holds the static files of a tool (e.g. ``tools/ecmean``) and ``templates`` the blank configuration files
+  to start from (e.g. ``templates/collections`` of ``aqua-diagnostics``): both are read whatever the active project.
+
+AQUA core is not a project, but its folders follow the same contract, with these exceptions:
+
+- it has no ``project`` folders, it is not listed by the ``project`` key and it is installed, updated and removed
+  only with the whole installation;
+- its ``exclusive`` folders are ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles``. The last three are
+  at the same time the shared folders where the projects, and the user with ``aqua grids|fixes|styles add``,
+  add their entries: ``aqua update`` replaces them, then every project copies its entries again;
+- in the shared ``templates`` it installs only ``catgen``, ``drop`` and ``gridbuilder``, not every folder of its package;
+- it ships nothing in ``tools``, which exists only once a project adds an entry to it.
 
 A package that is registered but cannot be imported (e.g. installed metadata left over after an incomplete
 removal) is skipped with a warning, rather than breaking the install.
@@ -272,11 +286,11 @@ since they already point to the developer's own working copy.
 The installed projects are those listed by the ``project`` key of ``config-aqua.yaml``: a package available in the
 environment but not installed with ``aqua project add`` is not touched.
 Each project is refreshed as by ``aqua project update``, so the other projects are kept;
-the extra files of the projects are copied again after core has replaced its flat folders.
+the shared entries of the projects are copied again after core has replaced its folders.
 The rule is the same for core and for the projects: an installed folder belongs to its package and is replaced.
 A file which the package does not ship is lost: one copied with e.g. ``aqua grids add``, one written by hand
 in a project folder, or one that the new version of the package removes or renames.
-Only links are kept: the extra files of an editable project and the files added with ``-e``.
+Only links are kept: the shared entries of an editable project and the files added with ``-e``.
 Before a folder is replaced, a warning lists what is about to be removed and is not copied again.
 The checks are those of ``aqua project update``, done for every installed project before any change:
 if the package of one of them is missing from the environment or breaks the plugin contract, nothing is updated.
@@ -293,8 +307,8 @@ This command validates the current installation and exits with a non-zero code i
 
 - the ``project`` key is present in ``config-aqua.yaml`` (see :ref:`aqua-pre-project`);
 - the active project is installed, i.e. listed by the ``project`` key;
-- every project listed by the ``project`` key has at least one of its project-scoped folders
-  (a single missing ``analysis``, ``collections`` or ``tools`` folder is only reported as a warning,
+- every project listed by the ``project`` key has at least one of its project folders
+  (a single missing ``analysis`` or ``collections`` folder is only reported as a warning,
   as a project folder that does not belong to a listed project);
 - every catalog listed by the ``catalog`` key has its folder, and its ``catalog.yaml`` can be loaded
   (a folder in ``catalogs`` which is not listed is only reported as a warning, and not loaded).
@@ -438,8 +452,8 @@ aqua project
 
 The ``project`` noun selects the AQUA project, i.e. the package shipping configuration (and optionally diagnostics)
 that AQUA uses: for example ``claima``, or ``diagnostics``, the default configuration installed by ``aqua install``
-(see :ref:`aqua-install`). Each project has its own subfolder in the project-scoped
-configuration folders ``analysis``, ``collections`` and ``tools`` (e.g. ``$HOME/.aqua/analysis/diagnostics``),
+(see :ref:`aqua-install`). Each project has its own subfolder in the project
+configuration folders ``analysis`` and ``collections`` (e.g. ``$HOME/.aqua/analysis/diagnostics``),
 while all the other folders (catalogs, grids, fixes, ``catgen``, ...) are shared.
 The installed projects are listed by the ``project`` key of ``config-aqua.yaml``, as the catalogs are by the
 ``catalog`` key: the first one is the active project (a single project is written as a plain name).
@@ -481,7 +495,7 @@ aqua project add <project> [-e path]
 
 This command adds a project to an existing installation and makes it the active one:
 once its files are installed, it is added at the top of the ``project`` key of ``config-aqua.yaml``.
-Its folders and extra files (see :ref:`aqua-console-plugins`) are copied from the package installed
+Its folders and shared entries (see :ref:`aqua-console-plugins`) are copied from the package installed
 in the current environment.
 As for ``aqua catalog add``, a project already installed (listed by the ``project`` key) is refused:
 use ``aqua project update``. A project folder with its name which is not listed is refused too and never deleted:
@@ -492,13 +506,13 @@ Once installed, ``aqua project set``, ``update``, ``remove`` and ``list`` handle
 
 .. option:: -e, --editable <path>
 
-    Link the folders and the extra files from the repository of the project at ``<path>``
+    Link the folders and the shared entries from the repository of the project at ``<path>``
     (the link is made at the ``<dir>/<project>`` level), as for ``aqua catalog add``.
 
 aqua project update <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This command copies again the folders and extra files of an installed project from its package:
+This command copies again the folders and shared entries of an installed project from its package:
 the folders are replaced, as ``aqua update`` does for core, and editable (linked) entries are skipped.
 A project installed entirely in editable mode follows its repository and is not touched.
 There is no ``aqua project update all``: ``aqua update`` updates core and every installed project.
@@ -511,8 +525,8 @@ There is no ``aqua project update all``: ``aqua update`` updates core and every 
 aqua project remove <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This command removes the ``analysis``, ``collections`` and ``tools`` folders of a project, its ``flat`` folders
-and ``templates`` folders and its extra files (only the links, in editable mode).
+This command removes the ``analysis`` and ``collections`` folders of a project, its ``exclusive`` folders
+and its entries in the shared folders (only the links, in editable mode).
 These are found from the project package: if it is not installed in the current environment, the command stops
 without removing anything.
 The project is removed from the ``project`` key: if it was the active project, the next installed one becomes active;

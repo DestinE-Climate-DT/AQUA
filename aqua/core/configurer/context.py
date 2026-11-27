@@ -30,7 +30,7 @@ PROJECT_KEY = "project"
 """Key of ``config-aqua.yaml`` holding the installed projects, the active one first (as ``catalog`` does)."""
 PROJECT_ENV = "AQUA_PROJECT"
 """Environment variable overriding the active project."""
-PROJECT_FOLDERS = ("analysis", "collections", "tools")
+PROJECT_FOLDERS = ("analysis", "collections")
 """Configuration folders with one subfolder per project (catgen is not project-scoped)."""
 PRE_PROJECT_MESSAGE = (
     f"No {PROJECT_KEY} set in {{config_file}}: this installation predates project support, run `aqua install` to upgrade it"
@@ -156,7 +156,7 @@ class ConfigContext:
         fallback from one project to another.
 
         Args:
-            name (str): Folder name, one of ``analysis``, ``collections``, ``tools``.
+            name (str): Folder name, one of ``analysis``, ``collections``.
 
         Returns:
             str: Path of the folder.

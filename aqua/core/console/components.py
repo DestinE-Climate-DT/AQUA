@@ -6,14 +6,15 @@ its ``get_install_dirs()`` returns a dictionary following the plugin contract ve
 
     {
         "contract": 2,
-        "config": ["analysis", "collections", "tools"],  # project-scoped: ~/.aqua/<dir>/<project>
-        "flat": ["definitions"],  # whole folders: ~/.aqua/<dir>
-        "templates": ["collections"],  # whole folders: ~/.aqua/templates/<dir>, only for aqua-diagnostics
-        "files": ["grids"],  # single files merged into the flat ~/.aqua/<dir>: grids, fixes or styles
+        "project": ["analysis", "collections"],  # its own subfolder: ~/.aqua/<dir>/<project>
+        "exclusive": ["definitions"],  # whole folders, owned by this project alone: ~/.aqua/<dir>
+        "shared": ["tools", "templates"],  # its entries, next to those of core and of the other projects:
+        # ~/.aqua/<dir>/<entry>, for grids, fixes, styles, tools or templates
     }
 
-Folder names are relative to ``aqua/<project>/config`` (``aqua/<project>/templates`` for ``templates``).
-Missing keys default to empty lists. Core is not a plugin, but its folders follow the same contract.
+The keys say who owns what is installed. Folder names are relative to ``aqua/<project>/config``
+(``aqua/<project>`` for ``templates``). Missing keys default to empty lists.
+Core is not a plugin, but its folders follow the same contract.
 """
 
 import importlib.resources as pypath
@@ -29,23 +30,28 @@ from aqua.core.util import to_list
 
 # plugin contract implemented by this aqua-core, and the folder lists it defines
 PLUGIN_CONTRACT = 2
-PLUGIN_KEYS = ("config", "flat", "templates", "files")
+PLUGIN_KEYS = ("project", "exclusive", "shared")
 
-# folders of aqua-core installed in the AQUA config folder: core is not a project, so all are flat
+# folders where a project can add its own entries (files or folders), next to those of core and of the others:
+# the core folders of the `aqua grids|fixes|styles add` commands, plus tools and templates
+SHARED_DIRS = ("grids", "fixes", "styles", "tools", "templates")
+
+# shared folders taken from aqua/<name>/<dir> of the package instead of aqua/<name>/config/<dir>
+SHARED_OUTSIDE_CONFIG = ("templates",)
+
+# folders of aqua-core installed in the AQUA config folder. Core is not a project and has no project folders;
+# its exclusive grids, fixes and styles are also shared folders, where the projects add their entries
 CORE_INSTALL_DIRS = {
     "contract": PLUGIN_CONTRACT,
-    "flat": ["catgen", "data_model", "fixes", "grids", "styles"],
-    "templates": ["catgen", "drop", "gridbuilder"],
+    "exclusive": ["catgen", "data_model", "fixes", "grids", "styles"],
+    "shared": ["templates"],
 }
 
-# core folders where a project can add single files: those of the `aqua grids|fixes|styles add` commands
-FILES_DIRS = ("grids", "fixes", "styles")
+# entries of a shared folder installed by core, where it does not install all those of its package
+CORE_SHARED_ENTRIES = {"templates": ("catgen", "drop", "gridbuilder")}
 
-# projects allowed to install templates folders: with a single owner, they are installed and removed with it
-TEMPLATES_PROJECTS = ("diagnostics",)
-
-# top-level folders of the AQUA config folder that a project cannot declare as flat
-RESERVED_FLAT_DIRS = (*CORE_INSTALL_DIRS["flat"], *PROJECT_FOLDERS, "templates", "catalogs")
+# top-level folders of the AQUA config folder that a project cannot declare as exclusive
+RESERVED_EXCLUSIVE_DIRS = (*CORE_INSTALL_DIRS["exclusive"], *PROJECT_FOLDERS, *SHARED_DIRS, "catalogs")
 
 # module-level logger, independent of any CLI's configured loglevel.
 # Callers that care about their own loglevel should re-log the (cached,
@@ -64,30 +70,33 @@ def validate_install_dirs(name, data):
         dict: one list per key of ``PLUGIN_KEYS``, empty if missing.
 
     Raises:
-        ValueError: if the plugin uses an old contract, an unknown key, a config folder that is not project-scoped,
-            a files folder other than ``FILES_DIRS``, a flat or templates folder reserved by core,
-            or templates folders without being allowed to (``TEMPLATES_PROJECTS``).
+        ValueError: if the plugin uses an old contract or an unknown key, declares no project folder or one other
+            than ``PROJECT_FOLDERS``, a shared folder other than ``SHARED_DIRS``, or an exclusive folder reserved
+            by core (``RESERVED_EXCLUSIVE_DIRS``).
     """
     if not isinstance(data, dict) or data.get("contract") != PLUGIN_CONTRACT:
         raise ValueError(f"plugin aqua-{name} uses an old plugin contract, please update aqua-{name} to a recent version")
     unknown = set(data) - set(PLUGIN_KEYS) - {"contract"}
     if unknown:
-        raise ValueError(f"plugin aqua-{name}: unknown key(s) {', '.join(sorted(unknown))} in get_install_dirs()")
+        raise ValueError(
+            f"plugin aqua-{name}: unknown key(s) {', '.join(sorted(unknown))} in get_install_dirs(), "
+            f"choose among {', '.join(PLUGIN_KEYS)}"
+        )
     dirs = {key: to_list(data.get(key)) for key in PLUGIN_KEYS}
-    for key, allowed in (("config", PROJECT_FOLDERS), ("files", FILES_DIRS)):
+    for key, allowed in (("project", PROJECT_FOLDERS), ("shared", SHARED_DIRS)):
         wrong = sorted(set(dirs[key]) - set(allowed))
         if wrong:
             raise ValueError(
                 f"plugin aqua-{name}: {key} folder(s) {', '.join(wrong)} not allowed, choose among {', '.join(allowed)}"
             )
-    reserved = sorted(set(dirs["flat"]) & set(RESERVED_FLAT_DIRS))
-    if name != "core" and reserved:
-        raise ValueError(f"plugin aqua-{name}: flat folder(s) {', '.join(reserved)} reserved by aqua-core")
-    if name not in ("core", *TEMPLATES_PROJECTS) and dirs["templates"]:
-        raise ValueError(f"plugin aqua-{name}: only aqua-{', aqua-'.join(TEMPLATES_PROJECTS)} can install templates folders")
-    clash = sorted(set(dirs["templates"]) & set(CORE_INSTALL_DIRS["templates"]))
-    if name != "core" and clash:
-        raise ValueError(f"plugin aqua-{name}: templates folder(s) {', '.join(clash)} reserved by aqua-core")
+    if name == "core":
+        return dirs
+    if not dirs["project"]:
+        # the project folders are what the console looks for on disk to tell that a project is installed
+        raise ValueError(f"plugin aqua-{name}: at least one project folder is needed, among {', '.join(PROJECT_FOLDERS)}")
+    reserved = sorted(set(dirs["exclusive"]) & set(RESERVED_EXCLUSIVE_DIRS))
+    if reserved:
+        raise ValueError(f"plugin aqua-{name}: exclusive folder(s) {', '.join(reserved)} reserved by aqua-core")
     return dirs
 
 

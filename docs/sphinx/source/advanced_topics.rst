@@ -374,8 +374,10 @@ This will make clear for the code where to find the AQUA catalog and the configu
 Active project and project folders
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The configuration folders ``analysis``, ``collections`` and ``tools`` are project-scoped:
+The configuration folders ``analysis`` and ``collections`` are project folders:
 each project installs its files in ``<configdir>/<folder>/<project>`` (see :ref:`aqua-project`).
+The ``tools`` and ``templates`` folders are instead shared by core and by all the projects, and do not depend
+on the active one: the files of a tool are in ``<configdir>/tools/<tool>``.
 The ``project`` key of ``config-aqua.yaml`` (written by ``aqua install`` and the ``aqua project`` verbs) lists the
 installed projects, as a single name or a list: the first one is the active project, unless the ``AQUA_PROJECT``
 environment variable selects another installed one.
@@ -391,9 +393,9 @@ In Python code, the active project and its folders are resolved by ``ConfigConte
     context = ConfigContext()
     context.projects                      # installed projects, the active one first, e.g. ["diagnostics", "claima"]
     context.project                       # e.g. "diagnostics", or None for an installation without project
-    context.get_project_folder("tools")   # <configdir>/tools/<project>
+    context.get_project_folder("analysis")  # <configdir>/analysis/<project>
 
-``get_project_folder`` accepts only ``analysis``, ``collections`` and ``tools`` (``catgen`` is not project-scoped)
+``get_project_folder`` accepts only ``analysis`` and ``collections`` (``catgen`` and ``tools`` are not project folders)
 and raises ``FileNotFoundError`` if no project is set, asking to run ``aqua install``, if the active project is not
 among the installed ones (e.g. a wrong ``AQUA_PROJECT``), or if the folder does not exist, naming the folder and the
 active project: there is no fallback from one project to another.

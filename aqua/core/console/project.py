@@ -93,12 +93,12 @@ class ProjectMixin:
         return self.components[name]["path"]
 
     def _project_install(self, name, source, link=False):
-        """Copy, or link, the folders and extra files of a project: what was created is removed if a copy fails."""
+        """Copy, or link, the folders and shared entries of a project: what was created is removed if a copy fails."""
         self.logger.info("Installing %s in %s mode", name, "editable" if link else "standard")
         self._copy_component(name, source, link=link)
 
     def project_update(self, args):
-        """Copy again the folders and extra files of an installed project, skipping the linked ones
+        """Copy again the folders and shared entries of an installed project, skipping the linked ones
 
         Args:
             args (argparse.Namespace): arguments from the command line
@@ -109,19 +109,20 @@ class ProjectMixin:
         """Update an installed project from its package, but for what is linked: the active project is unchanged."""
         self._check_installed_project(name)
         source = self._project_source(name)
+        self._check_shared_owner(name)
         # no early return for an editable project: the refresh skips each link, and still copies what is not one
         self._project_refresh(name, source)
 
     def _project_refresh(self, name, source):
-        """Replace the installed folders and extra files with those of the package, skipping the linked ones (with a
+        """Replace the installed folders and shared entries with those of the package, skipping the linked ones (with a
         warning if all are): as for core, what the package does not ship is removed, and listed in a warning."""
         self._copy_component(name, source, update=True)
 
     def project_remove(self, args):
-        """Remove the project-scoped folders and the extra files of an installed project
+        """Remove the project-scoped folders and the shared entries of an installed project
 
-        Its ``flat`` and ``templates`` folders are removed too.
-        These folders and the extra files are found from the package: without the package nothing is removed.
+        Its ``exclusive`` folders are removed too.
+        These folders and the shared entries are found from the package: without the package nothing is removed.
         If the project was active, another installed project becomes active, if any.
 
         Args:
@@ -161,7 +162,7 @@ class ProjectMixin:
     def _check_new_project(self, name):
         """Check the installation and exit if the project to be added is listed in config-aqua.yaml or is on disk.
 
-        Only the project folders are looked at here, without the package: its flat folders and extra files, known
+        Only the project folders are looked at here, without the package: its exclusive folders and shared entries, known
         from the package, are checked when it is installed.
         """
         self._check_project_layout(name)
@@ -201,7 +202,7 @@ class ProjectMixin:
 
     def _project_paths(self, name):
         """Project-scoped folders of a project in the installation: those of its package, if available."""
-        folders = self.components.get(name, {}).get("config") or PROJECT_FOLDERS
+        folders = self.components.get(name, {}).get("project") or PROJECT_FOLDERS
         return [os.path.join(self.configpath, folder, name) for folder in folders]
 
     def _project_editable(self, name):
@@ -209,11 +210,12 @@ class ProjectMixin:
         return self._is_editable(self._project_paths(name))
 
     def _project_targets(self, name):
-        """Everything a project installs: its project folders, its flat and templates folders and its extra files.
+        """Everything a project installs: its project folders, its exclusive folders and its entries in the shared
+        folders.
 
         The last two are known from the package, which must be available.
         """
         targets = [os.path.join(self.configpath, folder, name) for folder in PROJECT_FOLDERS]
         targets += self._project_owned_dirs(name)
-        targets += [target for _, target in self._component_files(name, self.components[name]["path"])]
+        targets += [target for _, target in self._shared_entries(name, self.components[name]["path"])]
         return targets

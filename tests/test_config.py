@@ -48,7 +48,7 @@ def test_show_catalog_content_basic():
                 assert isinstance(sources, list)
 
 
-def _project_install(root, project=None, folders=("analysis/diagnostics", "analysis/claima", "tools")):
+def _project_install(root, project=None, folders=("analysis/diagnostics", "analysis/claima", "collections")):
     """Write a minimal installation under ``root``, with the project key only if given (``""`` for an empty key):
     a name, or the list of the installed projects with the active one first."""
     config = {"machine": "ci"} if project is None else {"machine": "ci", "project": project or None}
@@ -96,7 +96,7 @@ def test_project_folder_refuses_project_not_listed(tmp_path, monkeypatch, key, i
 @pytest.mark.parametrize(
     "project, env, match",
     [
-        ("climatedt", None, r"tools folder for project 'climatedt' in .*tools/climatedt"),
+        ("climatedt", None, r"collections folder for project 'climatedt' in .*collections/climatedt"),
         (None, None, r"No project set in .*config-aqua.yaml: this installation predates project support, run `aqua install`"),
         (None, "claima", r"No project set in .*config-aqua.yaml: this installation predates project support"),
     ],
@@ -108,11 +108,22 @@ def test_project_folder_refuses_missing_folder_and_flat_layout(tmp_path, monkeyp
         monkeypatch.delenv("AQUA_PROJECT", raising=False)
     else:
         monkeypatch.setenv("AQUA_PROJECT", env)
-    # tools/ exists flat, but there is no tools/<project>: neither layout falls back to it
+    # collections/ exists flat, but there is no collections/<project>: neither layout falls back to it
     context = ConfigContext(configdir=_project_install(tmp_path, project=project))
 
     assert context.project == project
     with pytest.raises(FileNotFoundError, match=match):
+        context.get_project_folder("collections")
+
+
+@pytest.mark.aqua
+def test_tools_is_not_a_project_folder(tmp_path, monkeypatch):
+    """Fails if tools is still looked up per project: it is a shared folder, <configdir>/tools/<tool>, whatever the
+    active project."""
+    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+    context = ConfigContext(configdir=_project_install(tmp_path, project="diagnostics"))
+
+    with pytest.raises(ValueError, match="'tools' is not a project folder, choose among analysis, collections"):
         context.get_project_folder("tools")
 
 
