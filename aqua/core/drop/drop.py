@@ -148,7 +148,8 @@ class Drop:
                                          catalog entry generation is skipped.
             chunk_target (str, opt): Target size of the read chunks defined in a new catalog
                                      entry, e.g. '128MiB' or '0.2GiB', or 'auto' for Dask auto chunking.
-                                     Existing entries are not modified.
+                                     Existing entries are not modified. For zarr output it also sets the
+                                     size of the shards on disk, so that each read chunk is one shard.
                                      Default is DEFAULT_DROP_CHUNK_TARGET ('128MiB').
             **kwargs:                kwargs to be sent to the Reader, as 'zoom' or 'realization'
         """
@@ -520,6 +521,7 @@ class Drop:
                 tmpdir=self.tmpdir,
                 outdir=self.outdir,
                 compact=self.compact,
+                chunk_target=self.chunk_target,
                 filename_builder=self.outbuilder,
                 loglevel=self.loglevel,
             )

@@ -12,6 +12,7 @@ The following functions are available:
                         the difference with a reference as contourf
 - plot_timeseries: Plot monthly and annual timeseries
 - plot_seasonalcycle: Plot a seasonal cycle
+- plot_seasonalcycle_difference: Plot a seasonal cycle above its difference from a reference
 - plot_maps: Plot multiple maps using plot_single_map
 """
 from .gregory import plot_gregory_monthly, plot_gregory_annual
@@ -21,7 +22,7 @@ from .boxplot import boxplot
 from .index_plot import index_plot, indexes_plot
 from .single_map import plot_single_map, plot_single_map_diff
 from .styles import ConfigStyle
-from .timeseries import plot_timeseries, plot_seasonalcycle
+from .timeseries import plot_timeseries, plot_seasonalcycle, plot_seasonalcycle_difference
 from .multiple_maps import plot_maps, plot_maps_diff
 from .vertical_profiles import plot_vertical_profile, plot_vertical_profile_diff
 from .lat_lon_profiles import plot_lat_lon_profiles
@@ -35,7 +36,7 @@ __all__ = ["plot_gregory_monthly", "plot_gregory_annual",
            "index_plot", "indexes_plot",
            "plot_single_map", "plot_single_map_diff",
            "ConfigStyle",
-           "plot_timeseries", "plot_seasonalcycle",
+           "plot_timeseries", "plot_seasonalcycle", "plot_seasonalcycle_difference",
            "plot_maps", "plot_maps_diff",
            "plot_vertical_profile", "plot_vertical_profile_diff",
            "plot_lat_lon_profiles",
