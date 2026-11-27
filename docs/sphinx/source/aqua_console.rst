@@ -526,7 +526,7 @@ aqua {grids,fixes,styles} {add,remove,list}
 The ``grids``, ``fixes`` and ``styles`` nouns manage the files of the configuration folder with the same name:
 grids and fixes YAML files, and matplotlib style files (``.mplstyle``) used by the AQUA graphics.
 ``add`` copies a file to the configuration folder, or creates a symbolic link if the editable mode is used.
-A copied file lasts until the next ``aqua update``, which replaces the folder: ``add`` says so with a warning.
+A copied file lasts until the next ``aqua update``, which replaces the folder and lists it in a warning.
 Use the editable mode to keep a file across updates.
 This is useful if a new external file is created and needs to be added to the available ones.
 A grids or fixes file is added only if it can be merged with the files already installed.

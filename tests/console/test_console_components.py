@@ -459,9 +459,9 @@ class TestProjectVerbs:
         assert os.path.isfile(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
 
     def test_update_warns_about_the_files_it_removes(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, tmp_path):
-        """Fails if a copied grids file is added without saying that `aqua update` removes it, if `aqua update` removes
-        it, or a file written in a project folder, without naming it, or if a warning also names what is kept: a
-        linked file, a file shipped by core or by the project, the extra file of an installed project."""
+        """Fails if `aqua update` removes a copied grids file, or a file written in a project folder, without naming
+        it, or if a warning also names what is kept: a linked file, a file shipped by core or by the project, the
+        extra file of an installed project."""
         run_aqua(["install", MACHINE, "--core"])
         run_aqua(["project", "add", "mockplugin"])
         grids = os.path.join(home, "grids")
@@ -471,11 +471,7 @@ class TestProjectVerbs:
         caplog = aqua_caplog(logging.getLogger("AQUA"))
 
         run_aqua(["grids", "add", os.path.join(tmp_path, "linked-grid.yaml"), "-e"])
-        assert not [r for r in caplog.records if "aqua update" in r.getMessage()]
         run_aqua(["grids", "add", os.path.join(tmp_path, "copied-grid.yaml")])
-        assert [r.getMessage() for r in caplog.records if "aqua update" in r.getMessage()] == [
-            f"{copied} is a copy: `aqua update` will remove it. Add it with -e to keep it across updates"
-        ]
 
         user = os.path.join(_mockplugin_paths(home)["analysis"], "user.yaml")
         dump_yaml(user, {"user": True})
