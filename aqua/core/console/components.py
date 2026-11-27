@@ -47,9 +47,6 @@ CORE_INSTALL_DIRS = {
     "shared": ["templates"],
 }
 
-# entries of a shared folder installed by core, where it does not install all those of its package
-CORE_SHARED_ENTRIES = {"templates": ("catgen", "drop", "gridbuilder")}
-
 # top-level folders of the AQUA config folder that a project cannot declare as exclusive
 RESERVED_EXCLUSIVE_DIRS = (*CORE_INSTALL_DIRS["exclusive"], *PROJECT_FOLDERS, *SHARED_DIRS, "catalogs")
 

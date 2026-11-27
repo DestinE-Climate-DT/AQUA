@@ -200,7 +200,9 @@ Configuration file
 ------------------
 
 Although the default configuration file is contained in the ``aqua-diagnostics`` package,
-a template configuration file ``templates/config.aqua-analysis.tmpl`` is shipped in the ``aqua-core`` package and
+a template configuration file ``config.aqua-analysis.tmpl`` is shipped by the ``aqua-core`` package and installed by
+``aqua install`` in the ``templates/analysis`` folder of the AQUA configuration folder
+(by default ``$HOME/.aqua/templates/analysis``): it
 contains an example of list of diagnostics to run and technical details of the analysis.
 
 This template configuration file can be copied and modified to create a custom configuration file for the analysis.
@@ -222,7 +224,7 @@ The configuration file is divided in three main sections:
 
 Please noticed that a supplementary configuration file is needed for each diagnostic, which contains the specific configuration for that diagnostic (e.g. the variables to use, the time range, etc.).
 These files are specified in the ``script_path`` key of each diagnostic in the ``diagnostics``, and can be templated with jinja to allow for dynamic configuration based on the experiment kind or other parameters.
-The ``templates/config.exp-kind.tmpl`` file contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
+The ``config.exp-kind.tmpl`` file, in the same ``templates/analysis`` folder, contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
 
 The experiment kind file (``experiment_kind`` key of the ``job`` section) must define a ``default`` kind,
 which holds every definition used by the templates.

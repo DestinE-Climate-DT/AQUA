@@ -236,6 +236,7 @@ Rules:
   an entry that a new version of the package does not ship any more is left in the installation.
 - ``tools`` holds the static files of a tool (e.g. ``tools/ecmean``) and ``templates`` the blank configuration files
   to start from (e.g. ``templates/collections`` of ``aqua-diagnostics``): both are read whatever the active project.
+  AQUA core adds its own entries to ``templates``, as any package: ``analysis``, ``catgen``, ``drop`` and ``gridbuilder``.
 
 AQUA core is not a project, but its folders follow the same contract, with these exceptions:
 
@@ -244,7 +245,6 @@ AQUA core is not a project, but its folders follow the same contract, with these
 - its ``exclusive`` folders are ``catgen``, ``data_model``, ``fixes``, ``grids`` and ``styles``. The last three are
   at the same time the shared folders where the projects, and the user with ``aqua grids|fixes|styles add``,
   add their entries: ``aqua update`` replaces them, then every project copies its entries again;
-- in the shared ``templates`` it installs only ``catgen``, ``drop`` and ``gridbuilder``, not every folder of its package;
 - it ships nothing in ``tools``, which exists only once a project adds an entry to it.
 
 A package that is registered but cannot be imported (e.g. installed metadata left over after an incomplete

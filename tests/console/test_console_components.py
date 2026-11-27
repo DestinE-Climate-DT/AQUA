@@ -438,7 +438,8 @@ class TestProjectVerbs:
         assert not any(os.path.lexists(p) for p in paths.values())
         # the folders of core and of the other project stay
         assert os.path.isdir(os.path.join(home, "grids"))
-        assert os.path.isdir(os.path.join(home, "templates", "drop"))
+        # core installs every folder of its templates, as any package does with its shared entries
+        assert sorted(os.listdir(os.path.join(home, "templates"))) == ["analysis", "catgen", "drop", "gridbuilder"]
         assert os.path.isdir(os.path.join(home, "analysis", "mockother"))
 
         # the package is still there, but the project is not installed any more

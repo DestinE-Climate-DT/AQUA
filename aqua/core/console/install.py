@@ -14,7 +14,7 @@ from aqua.core.lock import SafeFileLock
 from aqua.core.util import dump_yaml, load_yaml, to_list
 
 from .catalog import CATPATH
-from .components import CORE_SHARED_ENTRIES, SHARED_OUTSIDE_CONFIG
+from .components import SHARED_OUTSIDE_CONFIG
 from .util import query_yes_no
 
 # folder used for reading/storing catalogs
@@ -109,9 +109,7 @@ class InstallMixin:
             if not os.path.isdir(folder):
                 self.logger.warning("%s declared by %s does not exist, skipping it", folder, component)
                 continue
-            # core installs a fixed list of its templates, a project everything it ships
-            names = CORE_SHARED_ENTRIES.get(kind) if component == "core" else None
-            for name in names or sorted(os.listdir(folder)):
+            for name in sorted(os.listdir(folder)):
                 entries.append((os.path.normpath(os.path.join(folder, name)), os.path.join(self.configpath, kind, name)))
         return entries
 
