@@ -499,6 +499,8 @@ grids and fixes YAML files, and matplotlib style files (``.mplstyle``) used by t
 ``add`` copies a file to the configuration folder, or creates a symbolic link if the editable mode is used.
 This is useful if a new external file is created and needs to be added to the available ones.
 A grids or fixes file is added only if it can be merged with the files already installed.
+A file which cannot be added (missing, not mergeable, not a ``.mplstyle`` for styles, or with a name already installed)
+stops the command with an error and exit code 1.
 ``remove`` removes a file (or its link), ``list`` lists the installed files.
 
 .. option:: <file>

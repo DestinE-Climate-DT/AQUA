@@ -22,8 +22,10 @@ class FilesMixin:
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        if self._check_file(kind=args.command, file=args.file):
-            self._file_add(kind=args.command, file=args.file, link=args.editable)
+        # _check_file logs the reason: as for the other nouns, nothing added is a failure
+        if not self._check_file(kind=args.command, file=args.file):
+            sys.exit(1)
+        self._file_add(kind=args.command, file=args.file, link=args.editable)
 
     def file_list(self, args):
         """List the installed grids, fixes or styles files, as given by the noun of the command

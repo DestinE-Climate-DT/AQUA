@@ -160,8 +160,16 @@ class TestGridAndFixOperations:
         # add wrong fix file
         fixtest = os.path.join(mydir, "antani.yaml")
         dump_yaml(fixtest, {"fixer_name": "antani"})
-        run_aqua(["fixes", "add", fixtest])
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["fixes", "add", fixtest])
+        assert excinfo.value.code == 1
         assert not os.path.exists(os.path.join(mydir, ".aqua/fixes/antani.yaml"))
+
+        # add a file which does not exist
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["grids", "add", os.path.join(mydir, "missing.yaml")])
+        assert excinfo.value.code == 1
+        assert not os.path.lexists(os.path.join(mydir, ".aqua/grids/missing.yaml"))
 
         # error for already existing file
         gridtest = os.path.join(mydir, "garelli.yaml")
@@ -221,7 +229,9 @@ class TestGridAndFixOperations:
 
         notastyle = os.path.join(mydir, "notastyle.yaml")
         dump_yaml(notastyle, {"grids": {}})
-        run_aqua(["styles", "add", notastyle])
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["styles", "add", notastyle])
+        assert excinfo.value.code == 1
         assert not os.path.exists(os.path.join(mydir, ".aqua/styles/notastyle.yaml"))
 
     def test_grids_deploy_entrypoint(self, aqua_install, run_aqua, monkeypatch):
