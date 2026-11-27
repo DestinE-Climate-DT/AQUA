@@ -648,7 +648,6 @@ class TestProjectVerbs:
         assert load_yaml(paths[existing]) == {"user": True}
         assert not os.path.exists(paths["analysis"])
 
-    @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores folder permissions")
     def test_failed_config_write_removes_the_project(self, mock_plugin_entrypoint, home, run_aqua, monkeypatch):
         """Fails if a project whose name cannot be written in config-aqua.yaml is left on disk, where neither
         `project add` nor `project remove` would accept it: as for a catalog, it is removed."""
@@ -667,7 +666,6 @@ class TestProjectVerbs:
         run_aqua(["project", "add", "mockplugin"])
         assert _project(home) == "mockplugin"
 
-    @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores folder permissions")
     def test_failed_copy_removes_the_partial_project(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
         """Fails if a copy failing midway leaves the folders copied before it, so that the project looks installed."""
         run_aqua(["install", MACHINE, "--core"])
@@ -676,12 +674,13 @@ class TestProjectVerbs:
         grids = os.path.dirname(paths["grid"])
         caplog = aqua_caplog(logging.getLogger("AQUA"))
 
-        os.chmod(grids, 0o555)  # the extra grid file is copied last, after the folders
-        try:
-            with pytest.raises(SystemExit) as excinfo:
-                run_aqua(["project", "add", "mockplugin"])
-        finally:
-            os.chmod(grids, 0o755)
+        # a file in place of the grids folder: the extra grid file, copied last after the folders, cannot be written.
+        # Not done with permissions, which root (the user of the CI) ignores
+        shutil.rmtree(grids)
+        with open(grids, "w", encoding="utf-8"):
+            pass
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "add", "mockplugin"])
 
         assert excinfo.value.code == 1
         assert any(r.getMessage().startswith("Cannot install mockplugin: ") for r in caplog.records)
