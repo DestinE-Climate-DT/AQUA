@@ -35,9 +35,9 @@ Nouns and their verbs:
    * - Noun
      - Verbs
    * - :ref:`catalog <aqua-catalog>`
-     - ``add <name> [-e path] [-r user/repo]``, ``remove <name>``, ``set <name>``, ``update <name|all>``, ``list``, ``avail [-r user/repo]``
+     - ``add <name> [-e path | -r user/repo]``, ``remove <name>``, ``set <name>``, ``update <name|all> [-r user/repo]``, ``list``, ``avail [-r user/repo]``
    * - :ref:`project <aqua-project>`
-     - ``set <name>``, ``list`` (``install <name> [-e path]``, ``update <name>``, ``remove <name>`` not available yet)
+     - ``add <name> [-e path]``, ``remove <name>``, ``set <name>``, ``update <name>``, ``list``
    * - :ref:`grids <aqua-grids>`
      - ``add <file> [-e]``, ``remove <file>``, ``list``, ``path <path>``, ``build ...``, ``deploy <name>``
    * - :ref:`fixes <aqua-fixes>`
@@ -731,7 +731,7 @@ Please update your scripts to the new syntax.
    * - Removed command
      - New command
    * - ``aqua add <catalog> [-e path] [-r user/repo]``
-     - ``aqua catalog add <catalog> [-e path] [-r user/repo]``
+     - ``aqua catalog add <catalog> [-e path | -r user/repo]``
    * - ``aqua remove <catalog>``
      - ``aqua catalog remove <catalog>``
    * - ``aqua set <catalog>``
