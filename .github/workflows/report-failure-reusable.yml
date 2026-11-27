@@ -64,7 +64,7 @@ jobs:
 
       - name: Use the supplied report
         if: inputs.result == 'failure' && inputs.report-artifact != ''
-        run: cp artifacts/*/report.md report.md
+        run: cp "$(find artifacts -name report.md | head -n 1)" report.md
 
       - name: Build failure report
         if: inputs.result == 'failure' && inputs.report-artifact == ''
