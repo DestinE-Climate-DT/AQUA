@@ -12,6 +12,7 @@ from fsspec.implementations.dirfs import DirFileSystem
 from utils_tests import AQUA_TESTS
 
 from aqua.core.console.main import AquaConsole
+from aqua.core.util import dump_yaml
 
 
 @pytest.fixture(scope="session")
@@ -30,11 +31,26 @@ def _restore_environ():
         yield
 
 
+class _FakeGitHub:
+    """What the tests can read from, and ask to, the local stand-in of GitHub."""
+
+    def __init__(self):
+        self.repositories = []  # the user/repo of every access, in order
+        self.fail = None  # an exception to raise when the files are downloaded, after their folders are created
+
+
 class _LocalGitHubFileSystem(DirFileSystem):
     """Directory exposed as the fsspec GitHub filesystem, whose `ls` returns plain paths by default."""
 
+    state = None
+
     def ls(self, path, detail=False, **kwargs):
         return super().ls(path, detail=detail, **kwargs)
+
+    def get(self, *args, **kwargs):
+        if self.state is not None and self.state.fail is not None:
+            raise self.state.fail
+        return super().get(*args, **kwargs)
 
 
 @pytest.fixture(scope="session")
@@ -59,16 +75,22 @@ def fake_github(monkeypatch, fake_github_repo):
 
     The fsspec GitHub client is the only thing replaced; the token is removed so that the console takes the
     unauthenticated fsspec path. The real GitHub access is covered by the `network` test in test_console_github.py.
+    It returns the repositories asked for, and can make the download fail (see `_FakeGitHub`).
     """
     real_filesystem = fsspec.filesystem
+    state = _FakeGitHub()
 
     def filesystem(protocol, *args, **kwargs):
         if protocol == "github":
-            return _LocalGitHubFileSystem(path=str(fake_github_repo), fs=real_filesystem("file"))
+            state.repositories.append(f"{kwargs.get('org')}/{kwargs.get('repo')}")
+            github = _LocalGitHubFileSystem(path=str(fake_github_repo), fs=real_filesystem("file"))
+            github.state = state
+            return github
         return real_filesystem(protocol, *args, **kwargs)
 
     monkeypatch.setattr(fsspec, "filesystem", filesystem)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    return state
 
 
 def _hide_aqua_config():
@@ -146,15 +168,41 @@ def run_aqua_console_with_input():
     return _run_aqua_console
 
 
+@pytest.fixture
+def project_install(tmp_path, monkeypatch):
+    """Return a function building a minimal installation under tmp_path, found through AQUA_CONFIG.
+
+    `project` is the value of the project key, a name or the list of the installed projects with the active one first:
+    by default `diagnostics` is active and `claima` is installed too. `project=None` writes no project key
+    (pre-project layout), `project=""` an empty one (no project installed), `folders` replaces the default project folders.
+    Returns the path of config-aqua.yaml.
+    """
+    monkeypatch.delenv("AQUA_PROJECT", raising=False)
+
+    def _build(
+        project=("diagnostics", "claima"), folders=("analysis/diagnostics", "collections/diagnostics", "collections/claima")
+    ):
+        config = {"machine": "ci", "catalog": None}
+        if project is not None:
+            config["project"] = (list(project) if isinstance(project, tuple) else project) or None
+        dump_yaml(os.path.join(tmp_path, "config-aqua.yaml"), config)
+        for folder in (*folders, "catalogs"):
+            os.makedirs(os.path.join(tmp_path, folder), exist_ok=True)
+        monkeypatch.setenv("AQUA_CONFIG", str(tmp_path))
+        return os.path.join(tmp_path, "config-aqua.yaml")
+
+    return _build
+
+
 @pytest.fixture(scope="session")
 def run_aqua():
-    """Run an AQUA console command in-process."""
+    """Run an AQUA console command in-process and return its exit status."""
 
     def _run_aqua_console(args):
         old_argv = sys.argv
         try:
             _set_aqua_args(args)
-            AquaConsole().execute()
+            return AquaConsole().execute()
         finally:
             sys.argv = old_argv
 

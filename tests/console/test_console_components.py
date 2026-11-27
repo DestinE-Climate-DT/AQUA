@@ -1,6 +1,10 @@
-"""Unit tests for AQUA console plugin component discovery."""
+"""Tests of the AQUA plugin contract v2 and of the per-project installation, with fake registered plugins."""
 
+import logging
 import os
+import shutil
+import sys
+from importlib import import_module
 from importlib.metadata import EntryPoint
 from importlib.metadata import entry_points as real_entry_points
 
@@ -8,25 +12,41 @@ import pytest
 
 import aqua
 from aqua.core.console import components as components_module
-from aqua.core.console.components import _resolve_component_info, discover_aqua_components
+from aqua.core.console import install as install_module
+from aqua.core.console.components import _resolve_component_info, discover_aqua_components, validate_install_dirs
+from aqua.core.console.parser import parse_arguments
+from aqua.core.util import dump_yaml, load_yaml
+
+pytestmark = pytest.mark.console
 
 MOCKPLUGIN_FIXTURE_ROOT = os.path.join(os.path.dirname(__file__), "..", "fixtures", "mockplugin")
 MACHINE = "github"
 MOCK_ENTRY_POINTS = [
     EntryPoint(name="mockplugin", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins"),
     EntryPoint(name="brokenplugin", value="aqua.brokenplugin:get_install_dirs", group="aqua.plugins"),
+    # a second installable project
+    EntryPoint(name="mockother", value="aqua.mockother:get_install_dirs", group="aqua.plugins"),
 ]
+OLD_CONTRACT = "plugin aqua-mockplugin uses an old plugin contract, please update aqua-mockplugin to a recent version"
 
 
 @pytest.fixture
-def mock_plugin_entrypoint(monkeypatch):
-    """Register fake aqua.plugins entry points for a test."""
+def mock_plugin_entrypoint(monkeypatch, tmp_path_factory):
+    """Register only fake aqua.plugins entry points: `mockplugin`, a copy of it named `mockother`, and broken ones.
+
+    `mockother` is generated under a temporary folder, as a second installable project.
+    """
     plugin_path = os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua")
-    aqua.__path__.append(plugin_path)
+    other_path = str(tmp_path_factory.mktemp("mockother"))
+    shutil.copytree(os.path.join(plugin_path, "mockplugin"), os.path.join(other_path, "mockother"))
+    # only the project folder: two projects shipping the same exclusive folder or shared entries would collide
+    with open(os.path.join(other_path, "mockother", "__init__.py"), "w", encoding="utf-8") as f:
+        f.write('__version__ = "0.1.0"\n\n\ndef get_install_dirs():\n    return {"contract": 2, "project": ["analysis"]}\n')
+    aqua.__path__.extend([plugin_path, other_path])
 
     def fake_entry_points(*args, **kwargs):
         if kwargs.get("group") == "aqua.plugins":
-            return list(real_entry_points(*args, **kwargs)) + MOCK_ENTRY_POINTS
+            return list(MOCK_ENTRY_POINTS)  # never the real plugins: the tests must not depend on the environment
         return real_entry_points(*args, **kwargs)
 
     monkeypatch.setattr(components_module, "entry_points", fake_entry_points)
@@ -35,171 +55,689 @@ def mock_plugin_entrypoint(monkeypatch):
         yield
     finally:
         aqua.__path__.remove(plugin_path)
+        aqua.__path__.remove(other_path)
         discover_aqua_components.cache_clear()
 
 
-@pytest.mark.console
-class TestComponentResolution:
-    """Tests for plugin discovery helpers in components.py."""
+@pytest.fixture
+def home(tmp_path, set_home, run_aqua_console_with_input):
+    """Temporary HOME: return the path of its `.aqua` folder, removed at the end of the test if installed."""
+    set_home(str(tmp_path))
+    configpath = os.path.join(str(tmp_path), ".aqua")
+    yield configpath
+    if os.path.exists(os.path.join(configpath, "config-aqua.yaml")):
+        run_aqua_console_with_input(["uninstall"], "yes")
 
-    def test_unknown_module_returns_not_installed(self):
-        info = _resolve_component_info("doesnotexist_xyz")
-        assert info == {"installed": False, "config_dirs": [], "template_dirs": [], "path": None}
 
-    def test_module_without_get_install_dirs_returns_not_installed(self, monkeypatch):
-        monkeypatch.setattr(components_module, "import_module", lambda name: object())
-        info = _resolve_component_info("somemodule")
-        assert info["installed"] is False
+def _install_projects(run_aqua, *projects):
+    """Install core, then the given projects with `aqua project add`."""
+    run_aqua(["install", MACHINE, "--core"])
+    for project in projects:
+        run_aqua(["project", "add", project])
 
-    def test_empty_dirs_are_not_installed_without_importing(self):
-        info = _resolve_component_info("whatever", data={"config": [], "templates": ["mock_templates"]})
-        assert info == {"installed": False, "config_dirs": [], "template_dirs": ["mock_templates"], "path": None}
+
+def _project(configpath):
+    """Project key of config-aqua.yaml: the installed projects, the active one first (a single name is a string)."""
+    return load_yaml(os.path.join(configpath, "config-aqua.yaml")).get("project")
+
+
+class TestPluginContract:
+    """The dictionary returned by get_install_dirs() and its resolution into component info."""
+
+    def test_missing_keys_default_to_empty_lists(self):
+        """Fails if a v2 plugin must declare every key, or a single folder name is not read as a list."""
+        dirs = validate_install_dirs("claima", {"contract": 2, "project": ["analysis"], "shared": "grids"})
+        assert dirs == {"project": ["analysis"], "exclusive": [], "shared": ["grids"]}
+
+    @pytest.mark.parametrize(
+        "data, match",
+        [
+            ({"config": ["mock_config"], "templates": ["mock_templates"]}, "uses an old plugin contract"),
+            ({"contract": 1, "project": ["analysis"]}, "uses an old plugin contract"),
+            ({"contract": 2, "project": ["analysis"], "extra": []}, "unknown key.s. extra in get_install_dirs"),
+            # the names of the keys before `project`, `exclusive` and `shared`
+            ({"contract": 2, "config": ["analysis"], "flat": [], "files": []}, "unknown key.s. config, files, flat"),
+            ({"contract": 2, "project": ["analysis"], "templates": ["x"]}, "unknown key.s. templates"),
+            (
+                {"contract": 2, "project": ["analysis"], "exclusive": ["definitions", "grids", "tools", "templates"]},
+                "exclusive folder.s. grids, templates, tools reserved by aqua-core",
+            ),
+            (
+                {"contract": 2, "project": ["tools", "grids"]},
+                "project folder.s. grids, tools not allowed, choose among analysis",
+            ),
+            (
+                {"contract": 2, "project": ["analysis"], "shared": ["styles", "catalogs"]},
+                "shared folder.s. catalogs not allowed",
+            ),
+            ({"contract": 2, "shared": ["tools"]}, "at least one project folder is needed, among analysis, collections"),
+            ({"contract": 2, "exclusive": ["definitions"]}, "at least one project folder is needed"),
+        ],
+    )
+    def test_invalid_install_dirs_are_rejected_naming_the_package(self, data, match):
+        """Fails if a v1 dictionary, an unknown or renamed key, an exclusive folder of core, of the project layout or
+        among the shared ones, a project folder other than analysis and collections, a shared folder other than
+        grids, fixes, styles, tools and templates, or a plugin without project folders is accepted, or the error
+        omits the package."""
+        with pytest.raises(ValueError, match=f"plugin aqua-mockplugin.*{match}"):
+            validate_install_dirs("mockplugin", data)
+
+    def test_core_follows_the_contract_without_project_folders(self):
+        """Fails if core, which is not a project, needs a project folder or cannot own the folders reserved to it."""
+        dirs = validate_install_dirs("core", components_module.CORE_INSTALL_DIRS)
+        assert dirs == {
+            "project": [],
+            "exclusive": ["catgen", "data_model", "fixes", "grids", "styles"],
+            "shared": ["templates"],
+        }
 
     def test_unresolvable_path_returns_not_installed(self):
-        info = _resolve_component_info("doesnotexist_xyz", data={"config": ["a"], "templates": ["b"]})
-        assert info["installed"] is False
+        info = _resolve_component_info("doesnotexist_xyz", {"contract": 2, "project": ["analysis"]})
+        assert (info["installed"], info["path"], info["error"]) == (False, None, None)
 
-    def test_resolves_via_get_install_dirs_when_no_data_given(self, mock_plugin_entrypoint):
-        info = _resolve_component_info("mockplugin")
-        assert info["installed"] is True
-        assert info["config_dirs"] == ["mock_config"]
-
-    def test_discover_ignores_a_plugin_named_core(self, mock_plugin_entrypoint, monkeypatch):
-        entry_points_with_core = MOCK_ENTRY_POINTS + [
-            EntryPoint(name="core", value="aqua.mockplugin:get_install_dirs", group="aqua.plugins")
-        ]
-        monkeypatch.setattr(
-            components_module,
-            "entry_points",
-            lambda *a, **k: entry_points_with_core if k.get("group") == "aqua.plugins" else real_entry_points(*a, **k),
-        )
-        discover_aqua_components.cache_clear()
-
-        with pytest.warns(UserWarning, match="Ignoring unexpected 'core'"):
-            components = discover_aqua_components()
-
-        assert components["core"]["config_dirs"] != ["mock_config"]
-
-
-@pytest.mark.console
-class TestPluginInstall:
-    """Tests exercising AquaConsole.install()/update() with a fake registered plugin"""
-
-    def test_bare_install_includes_plugin(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
-    ):
-        """A bare `aqua install` with no component flags must also install the discovered plugin"""
-        mydir = str(tmp_path)
-        set_home(mydir)
-
-        run_aqua(["install", MACHINE])
-
-        assert os.path.isfile(os.path.join(mydir, ".aqua", "mock_config", "dummy.yaml"))
-        assert os.path.isfile(os.path.join(mydir, ".aqua", "templates", "mock_templates", "dummy.tmpl"))
-
-        run_aqua_console_with_input(["uninstall"], "yes")
-
-    def test_core_install_excludes_plugin(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
-    ):
-        """`aqua install --core` installs the core files only, where a bare install adds the discovered plugin"""
-        mydir = str(tmp_path)
-        set_home(mydir)
-
-        run_aqua(["install", MACHINE, "--core"])
-
-        assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
-        assert not os.path.exists(os.path.join(mydir, ".aqua", "mock_config"))
-        assert not os.path.exists(os.path.join(mydir, ".aqua", "templates", "mock_templates"))
-
-        run_aqua_console_with_input(["uninstall"], "yes")
-
-    def test_editable_plugin_install_creates_symlinks(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
-    ):
-        """Requesting the plugin with a path installs it in editable (symlinked) mode"""
-        mydir = str(tmp_path)
-        set_home(mydir)
-
-        run_aqua(["install", MACHINE, "--core", "--mockplugin", MOCKPLUGIN_FIXTURE_ROOT])
-
-        assert os.path.islink(os.path.join(mydir, ".aqua", "mock_config"))
-
-        run_aqua_console_with_input(["uninstall"], "yes")
-
-    def test_plugin_without_core_fails_when_core_not_installed(self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua):
-        """Requesting only a plugin, with core never installed here, must fail explicitly rather than
-        silently installing core too"""
-        mydir = str(tmp_path)
-        set_home(mydir)
-
-        with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["install", MACHINE, "--mockplugin"])
-
-        assert excinfo.value.code == 1
-        assert not os.path.exists(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
-
-    def test_invalid_editable_plugin_path_fails(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
-    ):
-        """An invalid editable plugin path must fail after a core-only installation."""
-        mydir = str(tmp_path)
-        set_home(mydir)
-        run_aqua(["install", MACHINE, "--core"])
-
-        with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["install", MACHINE, "--mockplugin", str(tmp_path / "missing-plugin")])
-
-        assert excinfo.value.code == 1
-        assert not os.path.exists(os.path.join(mydir, ".aqua", "mock_config"))
-        run_aqua_console_with_input(["uninstall"], "yes")
-
-    def test_broken_plugin_does_not_crash_bare_install(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
-    ):
-        """A registered entry point whose module cannot be imported must not break a bare install"""
-        mydir = str(tmp_path)
-        set_home(mydir)
-
-        run_aqua(["install", MACHINE])
-        assert os.path.isfile(os.path.join(mydir, ".aqua", "config-aqua.yaml"))
-
-        run_aqua_console_with_input(["uninstall"], "yes")
-
-    def test_discover_reports_broken_plugin_as_not_installed(self, mock_plugin_entrypoint):
-        """discover_aqua_components must mark an unresolvable plugin as not installed, without raising"""
+    def test_discover_resolves_v2_and_reports_broken_plugins(self, mock_plugin_entrypoint, monkeypatch):
+        """Fails if core has project folders, a v2 plugin is not installable, or a broken/old plugin is not reported."""
         components = discover_aqua_components()
 
+        assert components["core"]["project"] == []
+        assert components["core"]["exclusive"] == ["catgen", "data_model", "fixes", "grids", "styles"]
         assert components["mockplugin"]["installed"] is True
-        assert components["brokenplugin"]["installed"] is False
+        assert components["mockplugin"]["project"] == ["analysis"]
+        assert components["mockplugin"]["shared"] == ["grids", "tools", "templates"]
+        assert (components["brokenplugin"]["installed"], components["brokenplugin"]["error"]) == (False, None)
 
-    def test_update_installation_updates_plugin_files(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
-    ):
-        """`aqua update` (standard mode) refreshes the plugin's installed config directory"""
-        mydir = str(tmp_path)
-        set_home(mydir)
+        monkeypatch.setattr("aqua.mockplugin.get_install_dirs", lambda: {"config": ["analysis"]})
+        discover_aqua_components.cache_clear()
+        components = discover_aqua_components()
+        assert (components["mockplugin"]["installed"], components["mockplugin"]["error"]) == (False, OLD_CONTRACT)
 
+    def test_install_has_only_core_and_diagnostics_flags(self, mock_plugin_entrypoint):
+        """Fails if a discovered plugin gets its own install flag, or -c/-d do not take an optional path."""
+        parser = parse_arguments()["main"]
+
+        args = parser.parse_args(["install", MACHINE, "-c", "-d", "/some/path"])
+        assert (args.core, args.diagnostics) == ("standard", "/some/path")
+        with pytest.raises(SystemExit) as excinfo:
+            parser.parse_args(["install", MACHINE, "--mockplugin"])
+        assert excinfo.value.code == 2
+
+
+class TestPluginInstall:
+    """`aqua install`, `update`, `list` and `check` with the fake plugins."""
+
+    def test_bare_install_skips_other_projects(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if a bare install installs a discovered project other than diagnostics, makes it active, leaves
+        `diagnostics` active without installing it, or drops the project key (the empty key marks an installation
+        with project support)."""
         run_aqua(["install", MACHINE])
-        plugin_file = os.path.join(mydir, ".aqua", "mock_config", "dummy.yaml")
-        os.remove(plugin_file)  # installed by `install`: only `update` can bring it back
-        run_aqua(["-v", "update"])
 
-        assert os.path.isfile(plugin_file)
+        assert os.path.isdir(os.path.join(home, "catgen"))  # core folders stay flat
+        assert not os.path.exists(os.path.join(home, "analysis", "mockplugin"))
+        # the fake plugins have no diagnostics package
+        assert load_yaml(os.path.join(home, "config-aqua.yaml")).get("project", "missing") is None
 
-        run_aqua_console_with_input(["uninstall"], "yes")
+    def test_adding_a_project_makes_it_active(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if core alone changes the template project, project folders are installed flat, or adding a
+        project does not switch to it."""
+        run_aqua(["install", MACHINE, "--core"])
+        assert not os.path.exists(os.path.join(home, "analysis"))
+        assert load_yaml(os.path.join(home, "config-aqua.yaml")).get("project", "missing") is None
 
-    def test_update_skips_editable_plugin_dirs(
-        self, mock_plugin_entrypoint, tmp_path, set_home, run_aqua, run_aqua_console_with_input
+        run_aqua(["project", "add", "mockplugin"])
+        assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
+        assert not os.path.exists(os.path.join(home, "analysis", "dummy.yaml"))
+        assert os.path.isfile(os.path.join(home, "templates", "mock_templates", "dummy.tmpl"))
+        assert _project(home) == "mockplugin"
+
+        run_aqua(["project", "add", "mockother"])
+        assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
+        assert _project(home) == ["mockother", "mockplugin"]
+
+    def test_editable_install_links_per_project_and_update_skips_it(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if the editable link is not made at `<dir>/<project>`, or `aqua update` replaces it."""
+        run_aqua(["install", MACHINE, "--core"])
+        run_aqua(["project", "add", "mockplugin", "-e", MOCKPLUGIN_FIXTURE_ROOT])
+        link = os.path.join(home, "analysis", "mockplugin")
+
+        assert os.path.islink(link) and not os.path.islink(os.path.join(home, "analysis"))
+        assert os.path.realpath(link) == os.path.realpath(
+            os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua", "mockplugin", "config", "analysis")
+        )
+
+        run_aqua(["update"])
+        assert os.path.islink(link)
+        assert os.path.islink(os.path.join(home, "templates", "mock_templates"))
+
+    def test_update_replaces_projects_and_preserves_others(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if `aqua update` does not restore a shipped file, keeps in a project folder a file the project does
+        not ship (core folders are replaced too: one rule), deletes a folder of another project, or loses the extra
+        files of a project when core replaces its flat folders."""
+        _install_projects(run_aqua, "mockplugin", "mockother")
+        shipped = os.path.join(home, "analysis", "mockplugin", "dummy.yaml")
+        os.remove(shipped)
+        user = os.path.join(home, "analysis", "mockplugin", "user.yaml")
+        dump_yaml(user, {"user": True})
+        foreign = os.path.join(home, "analysis", "foreign", "user.yaml")
+        os.makedirs(os.path.dirname(foreign))
+        dump_yaml(foreign, {"user": True})
+
+        run_aqua(["update"])
+
+        assert os.path.isfile(shipped)
+        assert os.path.isfile(os.path.join(home, "analysis", "mockother", "dummy.yaml"))
+        assert load_yaml(foreign) == {"user": True}
+        assert not os.path.exists(user)
+        assert os.path.isfile(os.path.join(home, "grids", "mockplugin-grid.yaml"))
+
+    def test_update_checks_only_the_installed_projects(self, mock_plugin_entrypoint, monkeypatch, home, run_aqua, aqua_caplog):
+        """Fails if `aqua update` stops for a broken plugin which is not installed here,
+        or changes the installation before stopping for a broken installed one."""
+        _install_projects(run_aqua, "mockother")
+        monkeypatch.setattr("aqua.mockplugin.get_install_dirs", lambda: {"config": ["analysis"], "templates": []})
+        discover_aqua_components.cache_clear()
+        shipped = os.path.join(home, "grids", "healpix.yaml")
+        os.remove(shipped)
+
+        run_aqua(["update"])
+        assert os.path.isfile(shipped)
+
+        # the same broken plugin, now listed as installed
+        os.remove(shipped)
+        os.makedirs(os.path.join(home, "analysis", "mockplugin"))
+        dump_yaml(
+            os.path.join(home, "config-aqua.yaml"),
+            {**load_yaml(os.path.join(home, "config-aqua.yaml")), "project": ["mockother", "mockplugin"]},
+        )
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["update"])
+        assert excinfo.value.code == 1
+        assert any(r.getMessage() == OLD_CONTRACT for r in caplog.records)
+        assert not os.path.exists(shipped)
+
+    def test_update_of_a_partly_linked_project_keeps_its_extra_files(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if `aqua update` skips a whole project because one of its folders is a link: core replaces `grids`,
+        so the extra file of the project there would be lost."""
+        _install_projects(run_aqua, "mockplugin")
+        folder = os.path.join(home, "analysis", "mockplugin")
+        shutil.rmtree(folder)
+        os.symlink(os.path.join(MOCKPLUGIN_CONFIG, "analysis"), folder)
+
+        run_aqua(["update"])
+
+        assert os.path.islink(folder)
+        assert os.path.isfile(os.path.join(home, "grids", "mockplugin-grid.yaml"))
+
+    def test_old_contract_plugin_stops_install(self, mock_plugin_entrypoint, monkeypatch, home, run_aqua, aqua_caplog):
+        """Fails if a plugin with the v1 contract is installed, or the installation starts before the error."""
+        run_aqua(["install", MACHINE, "--core"])
+        monkeypatch.setattr("aqua.mockplugin.get_install_dirs", lambda: {"config": ["analysis"], "templates": []})
+        discover_aqua_components.cache_clear()
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "add", "mockplugin"])
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage() == OLD_CONTRACT for r in caplog.records)
+        assert not os.path.exists(os.path.join(home, "analysis", "mockplugin"))
+
+    def test_diagnostics_without_core_fails_when_core_not_installed(self, mock_plugin_entrypoint, home, run_aqua):
+        """Requesting only diagnostics, with core never installed here, must fail explicitly rather than
+        silently installing core too"""
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["install", MACHINE, "-d"])
+
+        assert excinfo.value.code == 1
+        assert not os.path.exists(os.path.join(home, "config-aqua.yaml"))
+
+    def test_invalid_editable_plugin_path_fails(self, mock_plugin_entrypoint, tmp_path, home, run_aqua):
+        """An invalid editable plugin path must fail after a core-only installation."""
+        run_aqua(["install", MACHINE, "--core"])
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "add", "mockplugin", "-e", str(tmp_path / "missing-plugin")])
+
+        assert excinfo.value.code == 1
+        assert not os.path.exists(os.path.join(home, "analysis", "mockplugin"))
+
+    def test_list_shows_projects_with_mode_and_version(self, mock_plugin_entrypoint, home, run_aqua, capfd):
+        """Fails if `aqua list` misses a project, its mode or its package version."""
+        run_aqua(["install", MACHINE, "--core"])
+        run_aqua(["project", "add", "mockplugin", "-e", MOCKPLUGIN_FIXTURE_ROOT])
+        run_aqua(["project", "add", "mockother"])
+        capfd.readouterr()
+
+        run_aqua(["list"])
+
+        out = capfd.readouterr().out.splitlines()
+        assert "\t - mockother (standard, aqua-mockother 0.1.0)" in out
+        assert "\t - mockplugin (editable, aqua-mockplugin 0.1.0)" in out
+
+    def test_list_all_skips_plugins_not_installed(self, mock_plugin_entrypoint, home, run_aqua, capfd):
+        """Fails if `aqua list -a` lists (or crashes on) the folders of a plugin available but not installed."""
+        run_aqua(["install", MACHINE, "--core"])
+        capfd.readouterr()
+
+        run_aqua(["list", "-a"])
+
+        out = capfd.readouterr().out
+        assert f"AQUA current installed grids in {home}:" in out
+        assert "analysis" not in out and "mock_templates" not in out
+
+    def test_check_valid_installation(self, mock_plugin_entrypoint, home, run_aqua, capfd):
+        """Fails if `aqua check` rejects an installation with its active project and a loadable catalog."""
+        _install_projects(run_aqua, "mockplugin")
+        os.makedirs(os.path.join(home, "catalogs", "good"))
+        dump_yaml(os.path.join(home, "catalogs", "good", "catalog.yaml"), {"sources": {}})
+        # a folder which the catalog key does not list is not a catalog: it is not loaded, nor counted
+        os.makedirs(os.path.join(home, "catalogs", "stray"))
+        configfile = os.path.join(home, "config-aqua.yaml")
+        dump_yaml(configfile, {**load_yaml(configfile), "catalog": "good"})
+        capfd.readouterr()
+
+        run_aqua(["check"])
+
+        assert f"AQUA installation in {home} is valid (1 catalogs checked)" in capfd.readouterr().out
+
+    @pytest.mark.parametrize(
+        "breakage, message",
+        [
+            ("legacy", "No project set in"),
+            ("project", "Project ghost is listed in"),
+            ("project", "analysis/mockplugin does not belong to an installed project"),
+            ("catalog", "Catalog bad cannot be loaded from"),
+            ("catalog", "Catalog gone is listed in"),
+        ],
+    )
+    def test_check_failures(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, breakage, message):
+        """Fails if `aqua check` exits with 0 on a pre-project installation, a listed project without folders or a bad
+        catalog, a listed catalog without its folder, or does not report a project folder that is not listed."""
+        _install_projects(run_aqua, "mockplugin")
+        configfile = os.path.join(home, "config-aqua.yaml")
+        config = load_yaml(configfile)
+        if breakage == "legacy":
+            del config["project"]
+        elif breakage == "project":
+            config["project"] = "ghost"
+        else:
+            os.makedirs(os.path.join(home, "catalogs", "bad"))
+            with open(os.path.join(home, "catalogs", "bad", "catalog.yaml"), "w", encoding="utf-8") as f:
+                f.write("sources: [unclosed\n")
+            config["catalog"] = ["bad", "gone"]
+        dump_yaml(configfile, config)
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["check"])
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith(message) for r in caplog.records)
+
+    def test_update_refuses_pre_project_installation(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if `aqua update` writes nested project folders into an installation with the flat layout."""
+        run_aqua(["install", MACHINE, "--core"])
+        configfile = os.path.join(home, "config-aqua.yaml")
+        config = load_yaml(configfile)
+        del config["project"]
+        dump_yaml(configfile, config)
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["update"])
+
+        assert excinfo.value.code == 1
+        assert not os.path.exists(os.path.join(home, "analysis"))
+
+    def test_broken_plugin_does_not_crash_bare_install(self, mock_plugin_entrypoint, home, run_aqua):
+        """A registered entry point whose module cannot be imported must not break a bare install"""
+        run_aqua(["install", MACHINE])
+        assert os.path.isfile(os.path.join(home, "config-aqua.yaml"))
+
+
+MOCKPLUGIN_CONFIG = os.path.join(MOCKPLUGIN_FIXTURE_ROOT, "aqua", "mockplugin", "config")
+
+
+def _mockplugin_paths(home):
+    """What `mockplugin` installs: its project folder, its exclusive folder, and its entries in the shared templates,
+    tools and grids folders."""
+    return {
+        "analysis": os.path.join(home, "analysis", "mockplugin"),
+        "flat": os.path.join(home, "mock_flat"),
+        "templates": os.path.join(home, "templates", "mock_templates"),
+        "tool": os.path.join(home, "tools", "mocktool"),
+        "grid": os.path.join(home, "grids", "mockplugin-grid.yaml"),
+    }
+
+
+class TestProjectVerbs:
+    """`aqua project add`, `update` and `remove` with the fake plugins, on a core installation."""
+
+    def test_install_update_remove_standard(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if a project or its extra file is not copied, update does not restore shipped files or keeps a file
+        the project does not ship, or remove leaves the project folder, the flat folder, the templates folder or the
+        extra file behind, or deletes a folder of core or of another project, or if `aqua update` installs again the
+        removed project."""
+        _install_projects(run_aqua, "mockother")
+        paths = _mockplugin_paths(home)
+
+        run_aqua(["project", "add", "mockplugin"])
+        assert all(os.path.exists(p) and not os.path.islink(p) for p in paths.values())
+        assert _project(home) == ["mockplugin", "mockother"]
+
+        shipped = os.path.join(paths["analysis"], "dummy.yaml")
+        user = os.path.join(paths["analysis"], "user.yaml")
+        dump_yaml(shipped, {"dummy": False})
+        dump_yaml(paths["grid"], {"grids": {}})
+        dump_yaml(user, {"user": True})
+        run_aqua(["project", "update", "mockplugin"])
+        assert load_yaml(shipped) == {"dummy": True}
+        assert load_yaml(paths["grid"]) == load_yaml(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
+        assert not os.path.exists(user)
+
+        run_aqua(["project", "remove", "mockplugin"])
+        assert not any(os.path.lexists(p) for p in paths.values())
+        # the folders of core and of the other project stay
+        assert os.path.isdir(os.path.join(home, "grids"))
+        # core installs every folder of its templates, as any package does with its shared entries
+        assert sorted(os.listdir(os.path.join(home, "templates"))) == ["analysis", "catgen", "drop", "gridbuilder"]
+        assert os.path.isdir(os.path.join(home, "analysis", "mockother"))
+
+        # the package is still there, but the project is not installed any more
+        run_aqua(["update"])
+        assert not any(os.path.lexists(p) for p in paths.values())
+
+    def test_install_update_remove_editable(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if an editable project or its extra file is not linked, `project update` replaces a link or does not
+        say that there is nothing to update, `aqua update` loses the link of the extra file when core replaces its
+        grids folder (or keeps there a file that is not a link), or remove deletes the linked sources instead of the
+        links."""
+        run_aqua(["install", MACHINE, "--core"])
+        paths = _mockplugin_paths(home)
+
+        run_aqua(["project", "add", "mockplugin", "-e", MOCKPLUGIN_FIXTURE_ROOT])
+        assert all(os.path.islink(p) for p in paths.values())
+        assert os.path.realpath(paths["grid"]) == os.path.realpath(
+            os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml")
+        )
+
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+        run_aqua(["project", "update", "mockplugin"])
+        assert all(os.path.islink(p) for p in paths.values())
+        assert [r.getMessage() for r in caplog.records if "editable mode" in r.getMessage()] == [
+            "mockplugin is installed in editable mode: it follows its repository, nothing to update"
+        ]
+
+        user = os.path.join(home, "grids", "user-grid.yaml")
+        dump_yaml(user, {"grids": {}})
+        run_aqua(["update"])
+        assert all(os.path.islink(p) for p in paths.values())
+        assert not os.path.exists(user) and os.path.isfile(os.path.join(home, "grids", "bcc.yaml"))
+
+        run_aqua(["project", "remove", "mockplugin"])
+        assert not any(os.path.lexists(p) for p in paths.values())
+        assert os.path.isfile(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
+
+    def test_update_warns_about_the_files_it_removes(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, tmp_path):
+        """Fails if `aqua update` removes a copied grids file, or a file written in a project folder, without naming
+        it, or if a warning also names what is kept: a linked file, a file shipped by core or by the project, the
+        extra file of an installed project."""
+        run_aqua(["install", MACHINE, "--core"])
+        run_aqua(["project", "add", "mockplugin"])
+        grids = os.path.join(home, "grids")
+        for name in ("copied", "linked"):
+            dump_yaml(os.path.join(tmp_path, f"{name}-grid.yaml"), {"grids": {f"{name}-grid": "r100"}})
+        copied, linked = (os.path.join(grids, f"{name}-grid.yaml") for name in ("copied", "linked"))
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        run_aqua(["grids", "add", os.path.join(tmp_path, "linked-grid.yaml"), "-e"])
+        run_aqua(["grids", "add", os.path.join(tmp_path, "copied-grid.yaml")])
+
+        user = os.path.join(_mockplugin_paths(home)["analysis"], "user.yaml")
+        dump_yaml(user, {"user": True})
+        caplog.clear()
+        run_aqua(["update"])
+        removing = [
+            r.getMessage() for r in caplog.records if r.getMessage().startswith("Removing ") and ": not" in r.getMessage()
+        ]
+        tail = (
+            "An update replaces the installed folders and keeps only their links, "
+            "as the files added with `aqua grids|fixes|styles add -e`"
+        )
+        assert removing == [
+            f"Removing {copied}: not shipped by aqua-core. {tail}",
+            f"Removing {user}: not shipped by aqua-mockplugin. {tail}",
+        ]
+        assert not os.path.exists(copied) and not os.path.exists(user) and os.path.islink(linked)
+        assert os.path.isfile(_mockplugin_paths(home)["grid"]) and os.path.isfile(os.path.join(grids, "bcc.yaml"))
+
+    def test_remove_active_project_switches_to_another(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if removing the active project does not activate another installed one, or if removing the last
+        project leaves its name active or makes the installation look older than project support."""
+        _install_projects(run_aqua, "mockother", "mockplugin")
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        run_aqua(["project", "remove", "mockplugin"])
+        assert _project(home) == "mockother"
+
+        run_aqua(["project", "remove", "mockother"])
+        config = load_yaml(os.path.join(home, "config-aqua.yaml"))
+        assert "project" in config and config["project"] is None
+        assert [r.getMessage() for r in caplog.records if r.getMessage().startswith("Removed the active project")] == [
+            "Removed the active project mockplugin, mockother is now the active project",
+            "Removed the active project mockother, no project is installed",
+        ]
+        run_aqua(["project", "add", "mockplugin"])  # the installation still has the project layout
+        assert _project(home) == "mockplugin"
+
+    @pytest.mark.parametrize(
+        "command, message",
+        [
+            (["project", "add", "mockplugin"], "Project mockplugin is already installed"),
+            (["project", "add", "ghost"], "aqua.ghost package not found"),
+            (["project", "add", "diagnostics"], "diagnostics is installed with `aqua install -d`"),
+            (["project", "update", "mockother"], "Project mockother is not installed"),
+            (["project", "remove", "mockother"], "Project mockother is not installed"),
+        ],
+    )
+    def test_project_verb_errors(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, command, message):
+        """Fails if a project is installed twice, a missing package is installed, or a project not installed is
+        updated or removed."""
+        _install_projects(run_aqua, "mockplugin")
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(command)
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith(message) for r in caplog.records)
+        assert _project(home) == "mockplugin"
+
+    def test_diagnostics_only_install_fails_without_the_package(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if `aqua install -d` succeeds, or changes the active project, when aqua-diagnostics is missing."""
+        _install_projects(run_aqua, "mockplugin")
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["install", MACHINE, "-d"])
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("aqua.diagnostics package not found") for r in caplog.records)
+        assert _project(home) == "mockplugin"
+
+    @pytest.mark.parametrize("verb", ["set", "update", "remove"])
+    def test_project_verbs_ignore_a_folder_not_in_the_project_key(
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, verb
     ):
-        """`aqua update` must leave an editable plugin's config/template symlinks untouched"""
-        mydir = str(tmp_path)
-        set_home(mydir)
+        """Fails if a project folder that the project key does not list is taken as an installed project, as it
+        would be if the verbs looked at the folders: the same rule as for the catalogs."""
+        _install_projects(run_aqua, "mockplugin")
+        stray = os.path.join(home, "analysis", "mockother")
+        os.makedirs(stray)
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
 
-        run_aqua(["install", MACHINE, "--core", "--mockplugin", MOCKPLUGIN_FIXTURE_ROOT])
-        run_aqua(["-v", "update"])
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", verb, "mockother"])
 
-        assert os.path.islink(os.path.join(mydir, ".aqua", "mock_config"))
-        assert os.path.islink(os.path.join(mydir, ".aqua", "templates", "mock_templates"))
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("Project mockother is not installed") for r in caplog.records)
+        assert _project(home) == "mockplugin"
+        assert os.path.isdir(stray)
 
-        run_aqua_console_with_input(["uninstall"], "yes")
+    def test_project_add_refuses_a_folder_not_in_the_project_key(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if a project is added over a project folder that the project key does not list, or the folder is
+        deleted: the same rule as for the catalogs."""
+        _install_projects(run_aqua, "mockplugin")
+        stray = os.path.join(home, "analysis", "mockother")
+        os.makedirs(stray)
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "add", "mockother"])
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("Project mockother is not installed but") for r in caplog.records)
+        assert _project(home) == "mockplugin"
+        assert os.path.isdir(stray)
+
+    def test_project_verbs_refuse_a_listed_project_without_folders(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if a project of the project key whose folders are gone is set, updated or listed as installed,
+        or if `aqua project remove` followed by `aqua project add` cannot restore it."""
+        _install_projects(run_aqua, "mockplugin")
+        shutil.rmtree(os.path.join(home, "analysis", "mockplugin"))
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        for command in (
+            ["project", "set", "mockplugin"],
+            ["project", "update", "mockplugin"],
+            ["project", "list"],
+            ["update"],
+        ):
+            caplog.clear()
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(command)
+            assert excinfo.value.code == 1
+            assert any(r.getMessage().startswith("Project mockplugin is listed in") for r in caplog.records)
+            assert _project(home) == "mockplugin"
+            assert not os.path.exists(os.path.join(home, "analysis", "mockplugin"))
+
+        run_aqua(["project", "remove", "mockplugin"])
+        run_aqua(["project", "add", "mockplugin"])
+        assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
+        assert _project(home) == "mockplugin"
+
+    @pytest.mark.parametrize("command", [["project", "update", "mockplugin"], ["project", "remove", "mockplugin"], ["update"]])
+    def test_project_verbs_refuse_without_the_package(
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, monkeypatch, command
+    ):
+        """Fails if an installed project whose package is gone is updated, or removed in part leaving its flat folder
+        and extra files behind, or if `aqua update` skips it and core deletes its extra files."""
+        _install_projects(run_aqua, "mockplugin")
+        monkeypatch.setattr(sys.modules[__name__], "MOCK_ENTRY_POINTS", [])
+        discover_aqua_components.cache_clear()
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(command)
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("aqua.mockplugin package not found") for r in caplog.records)
+        assert _project(home) == "mockplugin"
+        for path in ("analysis/mockplugin", "mock_flat", "grids/mockplugin-grid.yaml"):
+            assert os.path.exists(os.path.join(home, path))
+
+    @pytest.mark.parametrize(
+        "shared, owner, entry", [("tools", "mockplugin", "tools/mocktool"), ("grids", "core", "grids/bcc.yaml")]
+    )
+    def test_update_refuses_a_shared_entry_of_another_package(
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, monkeypatch, shared, owner, entry
+    ):
+        """Fails if a project whose new version ships, in a shared folder, an entry of core or of another installed
+        project overwrites it with `aqua project update` or `aqua update`, instead of stopping before any change."""
+        _install_projects(run_aqua, "mockother", *(["mockplugin"] if owner == "mockplugin" else []))
+        # the new version of mockother: its package is a copy of mockplugin, so it ships tools/mocktool too
+        package = import_module("aqua.mockother").__path__[0]
+        dump_yaml(os.path.join(package, "config", "grids", "bcc.yaml"), {"grids": {}})
+        monkeypatch.setattr(
+            "aqua.mockother.get_install_dirs", lambda: {"contract": 2, "project": ["analysis"], "shared": [shared]}
+        )
+        discover_aqua_components.cache_clear()
+        shipped = os.path.join(home, "grids", "healpix.yaml")
+        os.remove(shipped)
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        for command in (["project", "update", "mockother"], ["update"]):
+            caplog.clear()
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(command)
+            assert excinfo.value.code == 1
+            target = os.path.join(home, *entry.split("/"))
+            messages = [r.getMessage() for r in caplog.records if "belong to another package" in r.getMessage()]
+            # `aqua update` stops at the first installed project of the clash, which can be either of the two
+            assert len(messages) == 1 and target in messages[0]
+            if command[0] == "project":
+                assert messages[0].startswith("Cannot update mockother, ") and messages[0].endswith(f"(aqua-{owner})")
+            assert not os.path.exists(shipped)
+
+    @pytest.mark.parametrize(
+        "clash, existing", [("grid", "grid"), ("flat", "flat_file"), ("tool", "tool"), ("templates", "templates")]
+    )
+    def test_existing_flat_folder_or_extra_file_stops_install(
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, clash, existing
+    ):
+        """Fails if an exclusive folder of a project, or one of its entries in the shared grids, tools and templates
+        folders, overwrites one already there (that `project remove` would then delete), or the project is installed
+        anyway."""
+        run_aqua(["install", MACHINE, "--core"])
+        paths = _mockplugin_paths(home)
+        paths["flat_file"] = os.path.join(paths["flat"], "user.yaml")
+        os.makedirs(os.path.dirname(paths[existing]), exist_ok=True)
+        dump_yaml(paths[existing], {"user": True})
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "add", "mockplugin"])
+
+        assert excinfo.value.code == 1
+        expected = f"Cannot install mockplugin, these files or folders already exist: {paths[clash]}"
+        assert any(r.getMessage() == expected for r in caplog.records)
+        assert load_yaml(paths[existing]) == {"user": True}
+        assert not os.path.exists(paths["analysis"])
+
+    def test_failed_config_write_removes_the_project(self, mock_plugin_entrypoint, home, run_aqua, monkeypatch):
+        """Fails if a project whose name cannot be written in config-aqua.yaml is left on disk, where neither
+        `project add` nor `project remove` would accept it: as for a catalog, it is removed."""
+        run_aqua(["install", MACHINE, "--core"])
+
+        def failing_dump_yaml(filepath, data):
+            raise PermissionError("Simulated write failure")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(install_module, "dump_yaml", failing_dump_yaml)
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(["project", "add", "mockplugin"])
+
+        assert excinfo.value.code == 1
+        assert not any(os.path.lexists(p) for p in _mockplugin_paths(home).values())
+        run_aqua(["project", "add", "mockplugin"])
+        assert _project(home) == "mockplugin"
+
+    def test_failed_copy_removes_the_partial_project(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
+        """Fails if a copy failing midway leaves the folders copied before it, so that the project looks installed."""
+        run_aqua(["install", MACHINE, "--core"])
+        paths = _mockplugin_paths(home)
+        templates = os.path.join(home, "templates", "mock_templates")
+        grids = os.path.dirname(paths["grid"])
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        # a file in place of the grids folder: the extra grid file, copied last after the folders, cannot be written.
+        # Not done with permissions, which root (the user of the CI) ignores
+        shutil.rmtree(grids)
+        with open(grids, "w", encoding="utf-8"):
+            pass
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["project", "add", "mockplugin"])
+
+        assert excinfo.value.code == 1
+        assert any(r.getMessage().startswith("Cannot install mockplugin: ") for r in caplog.records)
+        assert not any(os.path.lexists(p) for p in [*paths.values(), templates])
+        assert _project(home) != "mockplugin"

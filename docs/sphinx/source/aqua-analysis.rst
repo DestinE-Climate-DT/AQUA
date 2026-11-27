@@ -13,7 +13,8 @@ Basic usage
     aqua analysis <options>
 
 Without any argument, the script will look for a default configuration file ``config.aqua-analysis.yaml``
-in your installation folder (see :ref:`aqua-install`) and run all the diagnostics available in AQUA on an hard-coded dataset
+in the ``analysis`` folder of the active project of your installation (see :ref:`aqua-install` and :ref:`aqua_analysis_project`)
+and run all the diagnostics available in AQUA on an hard-coded dataset
 (IFS-NEMO-5km baseline-hist from ClimateDT gen2), which is available on LUMI.
 
 The output of the analysis directory in the ``./output`` folder.
@@ -64,7 +65,16 @@ so that the script can be used in a batch job or in a workflow. These override c
 .. option:: --config <config>
 
     The config file to use.
-    Default is ``config.aqua-analysis.yaml`` in the AQUA installation folder.
+    Default is ``config.aqua-analysis.yaml`` (``config.aqua-analysis-ensemble.yaml`` for ``aqua analysis ensemble``)
+    in the ``analysis`` folder of the project, see :ref:`aqua_analysis_project`.
+    An explicit config file wins over the project folder.
+
+.. option:: -p <project>, --project <project>
+
+    The project to use for this run instead of the active one: the default config file is taken from
+    ``analysis/<project>`` and ``AQUA_PROJECT`` is set to ``<project>`` for the diagnostic tools.
+    Without ``--config``, it stops with an error on an installation that predates project support:
+    run ``aqua install`` to upgrade it.
 
 .. option:: --regrid <target_grid>
 
@@ -168,11 +178,31 @@ only the setup checker log.
 The report can be disabled with ``report: false`` in the ``job`` section of the configuration file,
 while ``report_warnings: true`` lists also the distinct ``WARNING`` messages.
 
+.. _aqua_analysis_project:
+
+Projects
+--------
+
+An installation can hold the configuration of several projects, each in its own subfolder of the
+project-scoped configuration folders (e.g. ``~/.aqua/analysis/<project>``); one of them is the active project
+(see :ref:`aqua-project-context`).
+``aqua analysis`` takes its default configuration file from the ``analysis`` folder of the active project,
+or of the installed project selected with ``-p/--project``.
+
+Before reading the configuration file, ``aqua analysis`` exports the project name (e.g. ``diagnostics``) as
+``AQUA_PROJECT``: the file can use it as ``${AQUA_PROJECT}``, and the diagnostic tools inherit it, so they read
+the configuration of the same project.
+On an installation that predates project support (no ``project`` key in ``config-aqua.yaml``)
+only an explicit ``--config`` works: the default configuration file is refused, and ``-p`` only sets ``AQUA_PROJECT``,
+which such an installation ignores. Run ``aqua install`` to upgrade the installation.
+
 Configuration file
 ------------------
 
 Although the default configuration file is contained in the ``aqua-diagnostics`` package,
-a template configuration file ``templates/config.aqua-analysis.tmpl`` is shipped in the ``aqua-core`` package and
+a template configuration file ``config.aqua-analysis.tmpl`` is shipped by the ``aqua-core`` package and installed by
+``aqua install`` in the ``templates/analysis`` folder of the AQUA configuration folder
+(by default ``$HOME/.aqua/templates/analysis``): it
 contains an example of list of diagnostics to run and technical details of the analysis.
 
 This template configuration file can be copied and modified to create a custom configuration file for the analysis.
@@ -194,7 +224,7 @@ The configuration file is divided in three main sections:
 
 Please noticed that a supplementary configuration file is needed for each diagnostic, which contains the specific configuration for that diagnostic (e.g. the variables to use, the time range, etc.).
 These files are specified in the ``script_path`` key of each diagnostic in the ``diagnostics``, and can be templated with jinja to allow for dynamic configuration based on the experiment kind or other parameters.
-The ``templates/config.exp-kind.tmpl`` file contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
+The ``config.exp-kind.tmpl`` file, in the same ``templates/analysis`` folder, contains an example of how to use jinja templating in the diagnostic configuration files with the ``--kind`` option.
 
 The experiment kind file (``experiment_kind`` key of the ``job`` section) must define a ``default`` kind,
 which holds every definition used by the templates.

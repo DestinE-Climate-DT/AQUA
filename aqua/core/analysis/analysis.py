@@ -34,7 +34,8 @@ class Analysis:
         Args:
             config_file_path (str): Path to the AQUA analysis configuration file.
             default_config_name (str): Name of the config file to use, resolved in the
-                installed "analysis" config directory, when config_file_path is not provided.
+                "analysis" folder of the active project (``ConfigContext.get_project_folder``)
+                when config_file_path is not provided.
                 Allows different entry points (e.g. the ensemble one) to ship their own default
                 pipeline definition without duplicating any of the execution machinery.
             loglevel (str): Logging level for the analysis instance.
@@ -42,12 +43,12 @@ class Analysis:
         self.loglevel = loglevel
         self.logger = log_configure(log_level=loglevel, log_name="AquaAnalysis")
 
-        self.aqua_configdir = ConfigContext().get_config_dir()
+        self.context = ConfigContext(loglevel=loglevel)
+        self.aqua_configdir = self.context.get_config_dir()
 
-        if config_file_path is None:
-            self.config_file_path = os.path.join(self.aqua_configdir, "analysis", default_config_name)
-        else:
-            self.config_file_path = os.path.expandvars(config_file_path)
+        # the default config is resolved by get_config, the analysis folder is not needed before
+        self.default_config_name = default_config_name
+        self.config_file_path = os.path.expandvars(config_file_path) if config_file_path else None
 
         self.config = None
         self.aqua_core_path = None
@@ -78,11 +79,19 @@ class Analysis:
         self._results_lock = threading.Lock()
 
     def get_config(self):
-        """Load the configuration file and return the config dictionary."""
+        """Load the configuration file and return the config dictionary.
+
+        Without an explicit config file, the default one is taken from the analysis folder of the active project.
+
+        Raises:
+            FileNotFoundError: If the config file, or the analysis folder of the project, does not exist.
+        """
+        if self.config_file_path is None:
+            analysis_folder = self.context.get_project_folder("analysis")
+            self.config_file_path = os.path.join(analysis_folder, self.default_config_name)
 
         if not os.path.exists(self.config_file_path):
-            self.logger.error("Config file %s not found.", self.config_file_path)
-            sys.exit(1)
+            raise FileNotFoundError(f"Config file {self.config_file_path} not found.")
 
         self.config = load_yaml(self.config_file_path)
         self.logger.info("AQUA analysis config loaded: %s", self.config_file_path)

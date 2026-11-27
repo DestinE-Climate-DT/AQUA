@@ -1,7 +1,11 @@
-# Minimal stand-in mirroring the real aqua.diagnostics entry-point contract
-MOCKPLUGIN_CONFIG_DIRECTORIES = ["mock_config"]
-MOCKPLUGIN_TEMPLATE_DIRECTORIES = ["mock_templates"]
+# Minimal stand-in of a project plugin following the plugin contract v2 (see aqua.core.console.components)
+__version__ = "0.1.0"
 
 
 def get_install_dirs():
-    return {"config": MOCKPLUGIN_CONFIG_DIRECTORIES, "templates": MOCKPLUGIN_TEMPLATE_DIRECTORIES}
+    return {
+        "contract": 2,
+        "project": ["analysis"],
+        "exclusive": ["mock_flat"],
+        "shared": ["grids", "tools", "templates"],
+    }

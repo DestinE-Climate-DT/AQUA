@@ -57,22 +57,22 @@ class TestAquaConsole:
 
         # add unexesting catalog from path
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["add", "config/ueeeeee/ci"])
+            run_aqua(["catalog", "add", "config/ueeeeee/ci"])
         assert excinfo.value.code == 1
 
         # add non existing catalog from default
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "add", "antani"])
+            run_aqua(["-v", "catalog", "add", "antani"])
         assert excinfo.value.code == 1
 
         # add from wrongly formatted repository
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "add", "pippo", "--repository", "thisisnotauserandrepo"])
+            run_aqua(["-v", "catalog", "add", "pippo", "--repository", "thisisnotauserandrepo"])
         assert excinfo.value.code == 1
 
         # add existing folder which is not a catalog
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["add", "config/fixes"])
+            run_aqua(["catalog", "add", "config/fixes"])
         assert excinfo.value.code == 1
 
         # create a test for DROP
@@ -131,28 +131,33 @@ class TestAquaConsole:
         assert os.path.exists(os.path.join(mydir, ".aqua"))
 
         # add catalog again and error
-        run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
+        run_aqua(["-v", "catalog", "add", "ci", "-e", catalog_copy_path])
         caplog = aqua_caplog(logging.getLogger("AQUA"))
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "add", "ci", "-e", catalog_copy_path])
+            run_aqua(["-v", "catalog", "add", "ci", "-e", catalog_copy_path])
         assert excinfo.value.code == 1
         # the catalog exists: it is not a path that is missing
-        assert any("Catalog ci already installed" in message for message in caplog.messages)
+        assert any("Catalog ci is already installed" in message for message in caplog.messages)
+
+        # a local folder and a repository are two sources: only one can be given
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["catalog", "add", "obs", "-e", catalog_copy_path, "-r", "user/repo"])
+        assert excinfo.value.code == 2
         assert os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
         # error for updating a missing catalog
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "update", "-c", "antani"])
+            run_aqua(["-v", "catalog", "update", "antani"])
         assert excinfo.value.code == 1
 
         # add non existing catalog editable
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["-v", "add", "ci", "-e", "config/catalogs/baciugo"])
+            run_aqua(["-v", "catalog", "add", "ci", "-e", "config/catalogs/baciugo"])
         assert excinfo.value.code == 1
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/baciugo"))
 
         # remove existing catalog from link
-        run_aqua(["remove", "ci"])
+        run_aqua(["catalog", "remove", "ci"])
         assert not os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
     def test_console_with_links(self, tmp_path, set_home, run_aqua_console_with_input):
@@ -254,7 +259,7 @@ class TestAquaConsole:
         run_aqua(["install", MACHINE])
         capfd.readouterr()
 
-        run_aqua(["add", "ci", "-e", "AQUA_tests/catalog_copy"])
+        run_aqua(["catalog", "add", "ci", "-e", "AQUA_tests/catalog_copy"])
         out, err = capfd.readouterr()
         assert "WARNING" not in out + err
         assert os.path.islink(os.path.join(mydir, ".aqua/catalogs/ci"))
@@ -270,7 +275,7 @@ class TestAquaConsole:
         notacatalog = tmp_path / "notacatalog"
         notacatalog.mkdir()
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["add", "notacatalog", "-e", str(notacatalog)])
+            run_aqua(["catalog", "add", "notacatalog", "-e", str(notacatalog)])
         assert excinfo.value.code == 1
         assert not os.path.lexists(os.path.join(mydir, ".aqua/catalogs/notacatalog"))
         config = load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))

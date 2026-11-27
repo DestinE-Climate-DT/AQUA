@@ -6,6 +6,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from aqua.core.analysis import Analysis
+from aqua.core.configurer.context import PROJECT_ENV
 from aqua.core.logger import log_configure
 from aqua.core.util import expand_env_vars, get_arg
 
@@ -45,7 +46,10 @@ def analysis_parser(parser=None):
 
     # configuration
     parser.add_argument("-o", "--outputdir", type=str, help="Output directory")
-    parser.add_argument("--config", type=str, help="Configuration file")
+    parser.add_argument(
+        "--config", type=str, help="Configuration file (default: config.aqua-analysis[-<target>].yaml of the project)"
+    )
+    parser.add_argument("-p", "--project", type=str, help="Project of the analysis configuration, instead of the active one")
     parser.add_argument("-k", "--kind", type=str, help="Experiment kind to be run (e.g. historical, scenario, etc.)")
     parser.add_argument("--setup_checker", action="store_true", help="Run the setup checker")
 
@@ -77,17 +81,28 @@ def analysis_execute(args):
     target = getattr(args, "target", None)
     default_config_name = f"config.aqua-analysis-{target}.yaml" if target else "config.aqua-analysis.yaml"
 
+    # -p overrides the active project for this run and for the diagnostic tools it starts
+    project = getattr(args, "project", None)
+    if project:
+        os.environ[PROJECT_ENV] = project
+
     # Initialize analyzer
     analyzer = Analysis(config_file_path=args.config, loglevel=loglevel, default_config_name=default_config_name)
 
     # Load config and get AQUA paths
-    config = analyzer.get_config()
+    try:
+        config = analyzer.get_config()
+    except FileNotFoundError as e:
+        logger.error("%s", e)
+        sys.exit(1)
     aqua_core_path, aqua_diagnostics_path, aqua_configdir = analyzer.get_aqua_paths()
 
     # TODO: make a function or move it into the class
     os.environ["AQUA_CORE"] = aqua_core_path
     os.environ["AQUA_DIAGNOSTICS"] = aqua_diagnostics_path
     os.environ["AQUA_CONFIG"] = aqua_configdir if "AQUA_CONFIG" not in os.environ else os.environ["AQUA_CONFIG"]
+    if analyzer.context.project:  # inherited by the diagnostic tools and usable as ${AQUA_PROJECT} in the config
+        os.environ[PROJECT_ENV] = analyzer.context.project
     config = expand_env_vars(config)  # expand environment variables in the config
 
     # extract default

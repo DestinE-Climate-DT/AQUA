@@ -16,27 +16,29 @@ from aqua.core.util import dump_yaml, load_multi_yaml, load_yaml
 class FilesMixin:
     """Mixin for AQUA file operations"""
 
-    def fixes_add(self, args):
-        """Add a fix file
+    def file_add(self, args):
+        """Add a grids, fixes or styles file, as given by the noun of the command
 
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        compatible = self._check_file(kind="fixes", file=args.file)
-        if compatible:
-            self._file_add(kind="fixes", file=args.file, link=args.editable)
+        # _check_file logs the reason: as for the other nouns, nothing added is a failure
+        if not self._check_file(kind=args.command, file=args.file):
+            sys.exit(1)
+        self._file_add(kind=args.command, file=args.file, link=args.editable)
 
-    def grids_add(self, args):
-        """Add a grid file
+    def file_list(self, args):
+        """List the installed grids, fixes or styles files, as given by the noun of the command
 
         Args:
             args (argparse.Namespace): arguments from the command line
         """
-        compatible = self._check_file(kind="grids", file=args.file)
-        if compatible:
-            self._file_add(kind="grids", file=args.file, link=args.editable)
+        self._check()
+        folder = os.path.join(self.configpath, args.command)
+        print(f"AQUA current installed {args.command} in {folder}:")
+        self._list_folder(folder)
 
-    def grids_set(self, args):
+    def grids_path(self, args):
         """
         Set the grids (and concurrently the weights and areas) paths in the config-aqua.yaml
         This will override the grids paths defined in the individual catalogs
@@ -79,7 +81,7 @@ class FilesMixin:
         Deploy the grids selected by the user, which can specify a source_grid_name.
 
         Since by default every catalog has is own grids folder,
-        this utility allows to deploy the grids only if the grids_set method has been
+        this utility allows to deploy the grids only if the grids_path method has been
         used to set the grids path in the config-aqua.yaml file.
 
         Args:
@@ -89,10 +91,10 @@ class FilesMixin:
         grid_deployer.deploy(source_grid_name=args.source_grid_name)
 
     def _file_add(self, kind, file, link=False):
-        """Add a personalized file to the fixes/grids folder
+        """Add a personalized file to the fixes/grids/styles folder
 
         Args:
-            kind (str): the kind of file to be added, either 'fixes' or 'grids'
+            kind (str): the kind of file to be added: 'fixes', 'grids' or 'styles'
             file (str): the file to be added
             link (bool): whether to add the file as a link or not
         """
@@ -108,28 +110,25 @@ class FilesMixin:
             else:
                 self.logger.info("Installing %s to %s", file, pathfile)
                 shutil.copy(file, pathfile)
+                self.logger.info("%s is a copy: `aqua update` will remove it. Add it with -e to keep it", pathfile)
         else:
             self.logger.error("%s for file %s already installed, or a file with the same name exists", kind, file)
             sys.exit(1)
 
-    def remove_file(self, args):
-        """Add a personalized file to the fixes/grids folder
+    def file_remove(self, args):
+        """Remove a grids, fixes or styles file, as given by the noun of the command
 
         Args:
-            kind (str): the kind of file to be added, either 'fixes' or 'grids'
-            file (str): the file to be added
+            args (argparse.Namespace): arguments from the command line
         """
 
         self._check()
         kind = args.command
         file = os.path.basename(args.file)
         pathfile = f"{self.configpath}/{kind}/{file}"
-        if os.path.exists(pathfile):
-            self.logger.info("Removing %s", pathfile)
-            if os.path.islink(pathfile):
-                os.unlink(pathfile)
-            else:
-                os.remove(pathfile)
+        # lexists: an editable file whose source is gone is a dangling link, still to be removed
+        if os.path.lexists(pathfile):
+            self._remove_target(pathfile)
         else:
             self.logger.error("%s file %s is not installed in AQUA, cannot remove it", kind, file)
             sys.exit(1)
@@ -137,16 +136,22 @@ class FilesMixin:
     def _check_file(self, kind, file=None):
         """
         Check if a new file can be merged with AQUA load_multi_yaml()
-        It works also without a new file to check that the existing files are compatible
+        It works also without a new file to check that the existing files are compatible.
+        Styles are matplotlib style files, not YAML: only their extension is checked.
 
         Args:
-            kind (str): the kind of file to be added, either 'fixes' or 'grids'
+            kind (str): the kind of file to be added: 'fixes', 'grids' or 'styles'
             file (str): the file to be added
         """
-        if kind not in ["fixes", "grids"]:
-            raise ValueError("Kind must be either fixes or grids")
+        if kind not in ["fixes", "grids", "styles"]:
+            raise ValueError("Kind must be fixes, grids or styles")
 
         self._check()
+        if kind == "styles":
+            if file is not None and not (os.path.isfile(file) and file.endswith(".mplstyle")):
+                self.logger.error("%s is not a valid matplotlib style file (.mplstyle)!", file)
+                return False
+            return True
         try:
             _ = (
                 load_multi_yaml(folder_path=f"{self.configpath}/{kind}", filenames=[file])
