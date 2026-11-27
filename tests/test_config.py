@@ -51,6 +51,7 @@ def test_show_catalog_content_basic():
 
 
 @pytest.mark.aqua
+@pytest.mark.parametrize("first_import", ["import aqua", "from aqua.core.util import to_list"], ids=["public", "util"])
 @pytest.mark.parametrize(
     "location,overrides",
     [
@@ -77,8 +78,8 @@ def test_show_catalog_content_basic():
         ),
     ],
 )
-def test_config_defaults_at_import(tmp_path, location, overrides):
-    """Configured defaults must reach consumer imports and captured argument defaults."""
+def test_config_defaults_at_import(tmp_path, location, overrides, first_import):
+    """Every entry point must load configured values before consumers capture defaults."""
     configdir = tmp_path / ".aqua" if location == "home" else tmp_path
     if location != "missing":
         if location == "lower":
@@ -101,7 +102,7 @@ def test_config_defaults_at_import(tmp_path, location, overrides):
     }
     if location != "missing" and overrides:
         expected.update(overrides)
-    script = f"expected = {expected!r}\n" + """
+    script = f"{first_import}\nexpected = {expected!r}\n" + """
 import importlib
 from inspect import signature
 
