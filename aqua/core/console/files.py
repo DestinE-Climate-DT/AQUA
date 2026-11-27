@@ -114,7 +114,7 @@ class FilesMixin:
             self.logger.error("%s for file %s already installed, or a file with the same name exists", kind, file)
             sys.exit(1)
 
-    def remove_file(self, args):
+    def file_remove(self, args):
         """Remove a grids, fixes or styles file, as given by the noun of the command
 
         Args:

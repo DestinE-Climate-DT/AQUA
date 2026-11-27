@@ -131,8 +131,9 @@ Optional arguments are:
     allowing developers to work on their local copy of AQUA diagnostics.
 
 .. note::
-    ``-c`` alone installs only core; ``-d`` alone adds diagnostics to an existing installation,
-    as ``aqua project add diagnostics``. Without ``-c`` and ``-d``, both are installed in standard mode.
+    ``-c`` alone installs only core; ``-d`` alone adds diagnostics to an existing installation, with the same steps
+    as ``aqua project add`` for the other projects. It is the only way to install diagnostics:
+    ``aqua project add diagnostics`` is refused. Without ``-c`` and ``-d``, both are installed in standard mode.
 
 .. option:: --path, -p <path>
 
@@ -292,7 +293,8 @@ This command validates the current installation and exits with a non-zero code i
 - every project listed by the ``project`` key has at least one of its project-scoped folders
   (a single missing ``analysis``, ``collections`` or ``tools`` folder is only reported as a warning,
   as a project folder that does not belong to a listed project);
-- the ``catalog.yaml`` of every installed catalog can be loaded.
+- every catalog listed by the ``catalog`` key has its folder, and its ``catalog.yaml`` can be loaded
+  (a folder in ``catalogs`` which is not listed is only reported as a warning, and not loaded).
 
 .. _aqua-catalog:
 
@@ -340,6 +342,9 @@ if a matching catalog is found. It is possible to specify a different repository
 As shown below, it is also possible to specify a local path and install the catalog from there.
 Similarly to the installation command, this will create symbolic links to the local folder,
 ideal for developers.
+As for ``aqua project add``, a catalog already installed (listed by the ``catalog`` key) is refused:
+use ``aqua catalog update``. A folder with the same name in ``catalogs`` which is not listed is refused too
+and never deleted: remove it by hand first.
 
 .. option:: catalog
 
@@ -358,6 +363,7 @@ ideal for developers.
     It is possible to specify a different repository to explore.
     The format is ``user/repo``. For example, ``DestinE-Climate-DT/Climate-DT-catalog``.
     If this option is not specified, the default repository will be used.
+    It cannot be used together with ``--editable``.
 
 .. _aqua-remove:
 
@@ -381,7 +387,8 @@ aqua catalog set <catalog>
 This command sets the default main catalog to be used.
 As for ``aqua catalog update``, ``remove`` and ``list``, the catalog must be installed,
 i.e. listed by the ``catalog`` key of ``config-aqua.yaml``: a folder copied by hand in ``catalogs`` is not.
-If a listed catalog has no folder, these commands stop with an error: add it again with ``aqua catalog add``.
+If a listed catalog has no folder, these commands stop with an error: as for a project without its folders,
+``aqua catalog remove`` followed by ``aqua catalog add`` restores it.
 Since it is possible to have multiple catalogs installed and accessible at the same time,
 if more than one catalog is present it will move the selected catalog to the top of the list.
 The ``Reader`` behaviour will be then, if multiple triplets of ``model``, ``exp``, ``source`` are found in multiple
@@ -399,6 +406,8 @@ aqua catalog update <catalog>
 
 This command downloads the catalog again from the Climate-DT repository, overwriting the current installation.
 The active catalog does not change: use ``aqua catalog set`` for that.
+As for ``aqua catalog add``, the downloaded catalog must load: if it does not, or the download fails
+or is interrupted, the installed catalog is kept as it was.
 A catalog installed in editable mode follows its repository: it is not touched, with a warning,
 and ``aqua catalog update all`` goes on with the other catalogs.
 
@@ -407,10 +416,17 @@ and ``aqua catalog update all`` goes on with the other catalogs.
     The name of the catalog to be updated, or ``all`` to update all the catalogs installed not in editable mode.
     **It is a mandatory argument.**
 
+.. option:: --repository, -r <user/repo>
+
+    The repository to download the catalog from, as for ``aqua catalog add``.
+    AQUA does not record where a catalog was added from: without this option the default repository is used,
+    also for a catalog added with ``-r``.
+
 aqua catalog list
 ^^^^^^^^^^^^^^^^^
 
-This command lists the installed catalogs, showing which ones are installed in editable mode.
+This command lists the installed catalogs by name, as ``aqua project list`` does for the projects:
+each one is ``standard`` or ``editable``, with the path it links to.
 
 .. _aqua-project:
 
@@ -464,6 +480,12 @@ This command adds a project to an existing installation and makes it the active 
 once its files are installed, it is added at the top of the ``project`` key of ``config-aqua.yaml``.
 Its folders and extra files (see :ref:`aqua-console-plugins`) are copied from the package installed
 in the current environment.
+As for ``aqua catalog add``, a project already installed (listed by the ``project`` key) is refused:
+use ``aqua project update``. A project folder with its name which is not listed is refused too and never deleted:
+remove it by hand first.
+If the project cannot be written in ``config-aqua.yaml``, what was installed is removed.
+``diagnostics`` is refused: it is installed with ``aqua install -d``, also in an existing installation.
+Once installed, ``aqua project set``, ``update``, ``remove`` and ``list`` handle it as any other project.
 
 .. option:: -e, --editable <path>
 
@@ -476,6 +498,7 @@ aqua project update <project>
 This command copies again the folders and extra files of an installed project from its package:
 shipped files are overwritten, user files with other names are kept, editable (linked) entries are skipped.
 A project installed entirely in editable mode follows its repository and is not touched.
+There is no ``aqua project update all``: ``aqua update`` updates core and every installed project.
 
 .. note::
     The update never deletes a file: a file that the new version of the package removes or renames stays in the

@@ -137,7 +137,12 @@ class TestAquaConsole:
             run_aqua(["-v", "catalog", "add", "ci", "-e", catalog_copy_path])
         assert excinfo.value.code == 1
         # the catalog exists: it is not a path that is missing
-        assert any("Catalog ci already installed" in message for message in caplog.messages)
+        assert any("Catalog ci is already installed" in message for message in caplog.messages)
+
+        # a local folder and a repository are two sources: only one can be given
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["catalog", "add", "obs", "-e", catalog_copy_path, "-r", "user/repo"])
+        assert excinfo.value.code == 2
         assert os.path.exists(os.path.join(mydir, ".aqua/catalogs/ci"))
 
         # error for updating a missing catalog

@@ -106,10 +106,12 @@ def parse_arguments():
     )
 
     catalog_add_parser.add_argument("catalog", metavar="CATALOG_NAME", help="Catalog to be installed")
-    catalog_add_parser.add_argument(
+    # the source of the catalog: a local folder to link, or a GitHub repository to download from
+    catalog_source = catalog_add_parser.add_mutually_exclusive_group()
+    catalog_source.add_argument(
         "-e", "--editable", type=str, help="Install a catalog in editable mode from the original source: provide the Path"
     )
-    catalog_add_parser.add_argument(
+    catalog_source.add_argument(
         "-r", "--repository", type=str, help="Install a catalog from a specific repository: provide the user/repo string"
     )
 
@@ -119,6 +121,9 @@ def parse_arguments():
 
     catalog_update_parser.add_argument(
         "catalog", metavar="CATALOG_NAME", help="Catalog to be updated, or 'all' for every installed catalog"
+    )
+    catalog_update_parser.add_argument(
+        "-r", "--repository", type=str, help="Update a catalog from a specific repository: provide the user/repo string"
     )
 
     catalog_avail_parser.add_argument(

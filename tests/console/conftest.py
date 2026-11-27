@@ -31,11 +31,26 @@ def _restore_environ():
         yield
 
 
+class _FakeGitHub:
+    """What the tests can read from, and ask to, the local stand-in of GitHub."""
+
+    def __init__(self):
+        self.repositories = []  # the user/repo of every access, in order
+        self.fail = None  # an exception to raise when the files are downloaded, after their folders are created
+
+
 class _LocalGitHubFileSystem(DirFileSystem):
     """Directory exposed as the fsspec GitHub filesystem, whose `ls` returns plain paths by default."""
 
+    state = None
+
     def ls(self, path, detail=False, **kwargs):
         return super().ls(path, detail=detail, **kwargs)
+
+    def get(self, *args, **kwargs):
+        if self.state is not None and self.state.fail is not None:
+            raise self.state.fail
+        return super().get(*args, **kwargs)
 
 
 @pytest.fixture(scope="session")
@@ -60,16 +75,22 @@ def fake_github(monkeypatch, fake_github_repo):
 
     The fsspec GitHub client is the only thing replaced; the token is removed so that the console takes the
     unauthenticated fsspec path. The real GitHub access is covered by the `network` test in test_console_github.py.
+    It returns the repositories asked for, and can make the download fail (see `_FakeGitHub`).
     """
     real_filesystem = fsspec.filesystem
+    state = _FakeGitHub()
 
     def filesystem(protocol, *args, **kwargs):
         if protocol == "github":
-            return _LocalGitHubFileSystem(path=str(fake_github_repo), fs=real_filesystem("file"))
+            state.repositories.append(f"{kwargs.get('org')}/{kwargs.get('repo')}")
+            github = _LocalGitHubFileSystem(path=str(fake_github_repo), fs=real_filesystem("file"))
+            github.state = state
+            return github
         return real_filesystem(protocol, *args, **kwargs)
 
     monkeypatch.setattr(fsspec, "filesystem", filesystem)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    return state
 
 
 def _hide_aqua_config():

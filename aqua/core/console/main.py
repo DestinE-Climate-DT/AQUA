@@ -13,8 +13,6 @@ from .catgen import catgen_execute
 from .components import discover_aqua_components
 from .drop import drop_execute
 from .files import FilesMixin
-
-# this are used to check existence of aqua.diagnostics
 from .install import InstallMixin
 from .parser import parse_arguments
 from .project import ProjectMixin
@@ -41,7 +39,7 @@ class AquaConsole(InstallMixin, CatalogMixin, FilesMixin, ProjectMixin):
         self.logger = None
         self.loglevel = "WARNING"
 
-        files = {"add": self.file_add, "remove": self.remove_file, "list": self.file_list}
+        files = {"add": self.file_add, "remove": self.file_remove, "list": self.file_list}
         self.command_map = {
             "install": self.install,
             "uninstall": self.uninstall,

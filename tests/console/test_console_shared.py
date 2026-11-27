@@ -7,18 +7,25 @@ import tempfile
 
 import pytest
 
-from aqua.core.console import catalog
+from aqua.core.console import install
 from aqua.core.gridbuilder.griddeploy import GridDeployer
 from aqua.core.util import dump_yaml, load_yaml, to_list
 
 pytestmark = pytest.mark.console
 
 
+def _add_listed_catalog(mydir, name):
+    """List again, as the last one, a catalog whose folder is in the installation."""
+    configfile = os.path.join(mydir, ".aqua", "config-aqua.yaml")
+    cfg = load_yaml(configfile)
+    dump_yaml(configfile, {**cfg, "catalog": [*to_list(cfg["catalog"]), name]})
+
+
 @pytest.mark.xdist_group(name="console_catalog_operations")
 class TestCatalogOperations:
     """Catalog add, update, and remove operations."""
 
-    def test_catalog_operations(self, aqua_install, run_aqua, fake_github, capfd):
+    def test_catalog_operations(self, aqua_install, run_aqua, fake_github, fake_github_repo, capfd):
         """Test catalog add, set, update, remove operations."""
         mydir = aqua_install
 
@@ -44,22 +51,31 @@ class TestCatalogOperations:
             assert excinfo.value.code == 1
             assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == ["ci", "obs"]
             assert os.path.isdir(stray)
+        # add refuses it too, without deleting it: the folder is not a catalog that AQUA installed
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["catalog", "add", "stray"])
+        assert excinfo.value.code == 1
+        assert os.path.isdir(stray)
         capfd.readouterr()
         run_aqua(["catalog", "list"])
         listed = capfd.readouterr().out
-        assert "catalogs/ci" in listed and "catalogs/obs" in listed and "stray" not in listed
+        assert "- ci (standard)" in listed and "- obs (standard)" in listed and "stray" not in listed
         os.rmdir(stray)
 
-        # a catalog of the key whose folder is gone stops every verb, with the way to restore it
+        # a catalog of the key whose folder is gone stops every verb but remove, with the way to restore it
         obs = os.path.join(mydir, ".aqua/catalogs/obs")
         os.rename(obs, obs + ".moved")
-        for command in (["set", "obs"], ["update", "obs"], ["update", "all"], ["remove", "obs"], ["list"]):
+        for command in (["set", "obs"], ["update", "obs"], ["update", "all"], ["list"], ["add", "obs"]):
             with pytest.raises(SystemExit) as excinfo:
                 run_aqua(["catalog", *command])
             assert excinfo.value.code == 1
             assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == ["ci", "obs"]
             assert not os.path.exists(obs)
+        # remove is the way out, as for a project without its folders: the catalog is then added again
+        run_aqua(["catalog", "remove", "obs"])
+        assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == "ci"
         os.rename(obs + ".moved", obs)
+        _add_listed_catalog(mydir, "obs")
 
         # update the installation files: a modified file of the installation is restored
         fixes = os.path.join(mydir, ".aqua/fixes/ifs.yaml")
@@ -80,6 +96,49 @@ class TestCatalogOperations:
         assert os.path.isfile(os.path.join(mydir, ".aqua/catalogs/obs/catalog.yaml"))
         assert not os.path.exists(leftover)
         assert load_yaml(os.path.join(mydir, ".aqua", "config-aqua.yaml"))["catalog"] == ["ci", "obs"]
+
+        # update from another repository: -r reaches GitHub, also for all, and a wrong format stops before any access
+        obs = os.path.join(mydir, ".aqua/catalogs/obs")
+        run_aqua(["catalog", "update", "obs", "-r", "someone/some-catalogs"])
+        assert fake_github.repositories[-1] == "someone/some-catalogs"
+        run_aqua(["catalog", "update", "all", "-r", "someone/some-catalogs"])
+        assert fake_github.repositories[-2:] == ["someone/some-catalogs"] * 2
+        accesses = len(fake_github.repositories)
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["catalog", "update", "obs", "-r", "notarepository"])
+        assert excinfo.value.code == 1
+        assert len(fake_github.repositories) == accesses and os.path.isfile(os.path.join(obs, "catalog.yaml"))
+
+        # a failed or interrupted download does not lose the installed catalog: it is put back, without leftovers
+        with open(leftover, "w", encoding="utf-8") as f:
+            f.write("still here\n")
+        for error, raised in ((OSError("connection lost"), SystemExit), (KeyboardInterrupt(), KeyboardInterrupt)):
+            fake_github.fail = error
+            with pytest.raises(raised):
+                run_aqua(["catalog", "update", "obs"])
+            assert os.path.isfile(leftover) and os.path.isfile(os.path.join(obs, "catalog.yaml"))
+            assert sorted(os.listdir(os.path.join(mydir, ".aqua/catalogs"))) == ["ci", "obs"]
+
+        # a backup left by an update which was killed is the good copy: the next update starts from it
+        os.rename(obs, obs + ".backup")
+        os.makedirs(obs)
+        with pytest.raises(KeyboardInterrupt):
+            run_aqua(["catalog", "update", "obs"])
+        assert os.path.isfile(leftover)
+        assert sorted(os.listdir(os.path.join(mydir, ".aqua/catalogs"))) == ["ci", "obs"]
+        fake_github.fail = None
+
+        # as for add, the downloaded catalog must load: if it does not, the installed one is kept
+        broken = os.path.join(str(fake_github_repo), "catalogs", "obs", "catalog.yaml")
+        os.rename(broken, broken + ".moved")
+        try:
+            with pytest.raises(SystemExit) as excinfo:
+                run_aqua(["catalog", "update", "obs"])
+        finally:
+            os.rename(broken + ".moved", broken)
+        assert excinfo.value.code == 1
+        assert os.path.isfile(leftover)
+        os.remove(leftover)
 
         # remove catalog
         run_aqua(["catalog", "remove", "ci"])
@@ -264,16 +323,16 @@ class TestCatalogListingAndErrors:
         run_aqua(["catalog", "add", "ciccio", "-e", catalog_copy_path])
         run_aqua(["catalog", "list"])
         out, _ = capfd.readouterr()
-        assert "AQUA current installed catalogs in" in out
-        assert "ciccio (editable" in out
+        assert "AQUA catalogs installed in" in out
+        assert "- ciccio (editable, " in out
         assert "ifs.yaml" not in out
 
         run_aqua(["list", "-a"])
 
         out, _ = capfd.readouterr()
-        assert "AQUA current installed catalogs in" in out
+        assert "AQUA catalogs installed in" in out
         assert "ci" in out
-        assert "ciccio (editable" in out
+        assert "- ciccio (editable, " in out
         assert "ifs.yaml" in out
         assert "healpix.yaml" in out
 
@@ -298,10 +357,11 @@ class TestCatalogListingAndErrors:
         assert excinfo.value.code == 1
 
     @pytest.mark.parametrize("is_editable", [False, True])
-    def test_add_catalog_cleanup_on_failure(self, aqua_install, run_aqua, monkeypatch, is_editable):
+    def test_add_catalog_cleanup_on_failure(self, aqua_install, run_aqua, monkeypatch, fake_github, is_editable):
         """Test that failed catalog additions are properly cleaned up without remote access."""
         mydir = aqua_install
-        catalog_name = f"cleanup_test_{'editable' if is_editable else 'standard'}"
+        # the standard one must be in the repository, or the download would not start
+        catalog_name = "cleanup_test_editable" if is_editable else "climatedt-gen2"
         catalog_path = os.path.join(mydir, ".aqua/catalogs", catalog_name)
 
         if is_editable:
@@ -313,25 +373,20 @@ class TestCatalogListingAndErrors:
                 with open(os.path.join(src_dir, "machine.yaml"), "w", encoding="utf-8") as f:
                     f.write("{}")
 
-                # define a mock failing dump_yaml function to fail during _catalog_set
+                # define a mock failing dump_yaml function to fail during _catalog_key_set
                 def failing_dump_yaml(filepath, data):
                     if "config-aqua.yaml" in filepath:
                         raise PermissionError("Simulated write failure")
                     return dump_yaml(filepath, data)
 
                 # replace the dump_yaml function with the mock failing function
-                monkeypatch.setattr(catalog, "dump_yaml", failing_dump_yaml)
+                monkeypatch.setattr(install, "dump_yaml", failing_dump_yaml)
 
                 with pytest.raises(SystemExit) as excinfo:
                     run_aqua(["-v", "catalog", "add", catalog_name, "-e", src_dir])
         else:
-            # Simulate a failed download after the catalog directory was created.
-            def fail_after_partial_download(self, catalog, repository=None):
-                os.makedirs(os.path.join(self.configpath, "catalogs", catalog))
-                raise SystemExit(1)
-
-            monkeypatch.setattr(catalog.CatalogMixin, "_catalog_add_github", fail_after_partial_download)
-
+            # the download fails after the catalog directory was created
+            fake_github.fail = OSError("connection lost")
             with pytest.raises(SystemExit) as excinfo:
                 run_aqua(["-v", "catalog", "add", catalog_name])
 

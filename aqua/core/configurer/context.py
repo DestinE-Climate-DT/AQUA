@@ -24,6 +24,8 @@ from aqua.core.util.yaml import load_yaml
 from .locator import ConfigLocator
 from .packages import ConfigPackages
 
+CATALOG_KEY = "catalog"
+"""Key of ``config-aqua.yaml`` holding the installed catalogs, the active one first."""
 PROJECT_KEY = "project"
 """Key of ``config-aqua.yaml`` holding the installed projects, the active one first (as ``catalog`` does)."""
 PROJECT_ENV = "AQUA_PROJECT"
@@ -171,6 +173,7 @@ class ConfigContext:
             if self.has_project_layout():
                 raise FileNotFoundError(
                     f"No active project in {self.config_file}: add one with `aqua project add <name>` "
+                    "(`aqua install -d` for diagnostics) "
                     "or select an installed one with `aqua project set <name>`"
                 )
             raise FileNotFoundError(PRE_PROJECT_MESSAGE.format(config_file=self.config_file))
@@ -178,7 +181,7 @@ class ConfigContext:
         if self.project not in self.projects:
             raise FileNotFoundError(
                 f"Project '{self.project}' is not installed (installed: {', '.join(self.projects) or 'none'}): "
-                "add it with `aqua project add`"
+                "add it with `aqua project add` (`aqua install -d` for diagnostics)"
             )
 
         folder = os.path.join(self.configdir, name, self.project)
