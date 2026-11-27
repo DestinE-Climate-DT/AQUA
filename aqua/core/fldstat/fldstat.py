@@ -5,12 +5,11 @@ import regionmask
 import xarray as xr
 from smmregrid import GridInspector
 
+from aqua.core.default import DEFAULT_AREA_TOLERANCE
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
-
-AREA_TOLERANCE = 1.5e-5  # minimum tolerance for coordinate alignment
 
 
 class FldStat:
@@ -307,7 +306,7 @@ class FldStat:
         return area.rename(matching_dims)
 
     def align_area_coordinates(
-        self, data: xr.Dataset | xr.DataArray, area: xr.Dataset | xr.DataArray, tolerance: float = AREA_TOLERANCE
+        self, data: xr.Dataset | xr.DataArray, area: xr.Dataset | xr.DataArray, tolerance: float = DEFAULT_AREA_TOLERANCE
     ):
         """
         Check if the coordinates of the area and data are aligned.
