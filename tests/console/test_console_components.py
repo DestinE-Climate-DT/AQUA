@@ -632,6 +632,7 @@ class TestProjectVerbs:
         run_aqua(["project", "add", "mockplugin"])
         assert _project(home) == "mockplugin"
 
+    @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root ignores folder permissions")
     def test_failed_copy_removes_the_partial_project(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
         """Fails if a copy failing midway leaves the folders copied before it, so that the project looks installed."""
         run_aqua(["install", MACHINE, "--core"])
