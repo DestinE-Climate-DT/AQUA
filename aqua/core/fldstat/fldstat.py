@@ -5,12 +5,11 @@ import regionmask
 import xarray as xr
 from smmregrid import GridInspector
 
+from aqua.core.default import AREA_TOLERANCE
 from aqua.core.logger import log_configure, log_history
 from aqua.core.util import multiply_units
 
 from .area_selection import AreaSelection
-
-AREA_TOLERANCE = 1.5e-5  # tolerance for coordinate alignment
 
 
 class FldStat:
@@ -307,7 +306,7 @@ class FldStat:
         return area.rename(matching_dims)
 
     def align_area_coordinates(
-        self, data: xr.Dataset | xr.DataArray, area: xr.Dataset | xr.DataArray, tolerance: int = AREA_TOLERANCE
+        self, data: xr.Dataset | xr.DataArray, area: xr.Dataset | xr.DataArray, tolerance: float = AREA_TOLERANCE
     ):
         """
         Check if the coordinates of the area and data are aligned.
@@ -316,7 +315,8 @@ class FldStat:
         Args:
             data (xr.DataArray or xr.Dataset): The input data to align with the area.
             area (xr.DataArray or xr.Dataset): The area data.
-            tolerance (float): Tolerance for coordinate alignment.
+            tolerance (float): Minimum tolerance for coordinate alignment, raised to one rounding step
+                of the lower-precision coordinate (e.g. 3.05e-5 for float32 longitudes up to 360).
 
         Returns:
             xr.DataArray or xr.Dataset: The area with aligned coordinates.
@@ -342,13 +342,20 @@ class FldStat:
                     area = area.reindex({coord: area_coord[::-1]})
                     continue
 
-                # Tolerance-based check np.isclose with an absolute+relative
-                # tolerance avoids this instability.
-                if np.allclose(area_coord, data_coord, atol=tolerance, rtol=0):
+                # Tolerance-based check: the tolerance cannot be below one rounding step of the
+                # lower-precision coordinate (float32 coordinates change by one step through CDO)
+                coord_tolerance = tolerance
+                float_dtypes = [c.dtype for c in (area_coord, data_coord) if np.issubdtype(c.dtype, np.floating)]
+                if float_dtypes:
+                    dtype = min(float_dtypes, key=lambda d: d.itemsize)
+                    rounding_step = np.spacing(np.abs(data_coord.values).max().astype(dtype))
+                    coord_tolerance = max(tolerance, float(rounding_step))
+
+                if np.allclose(area_coord, data_coord, atol=coord_tolerance, rtol=0):
                     self.logger.warning(
                         "Coordinate '%s' aligned within tolerance %.1e (differences below float precision noise).",
                         coord,
-                        tolerance,
+                        coord_tolerance,
                     )
                     # assign data's coordinate values (treated as the reference)
                     area = area.assign_coords({coord: data_coord})
