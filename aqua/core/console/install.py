@@ -424,24 +424,19 @@ class InstallMixin:
 
         Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another;
         the extra files of the projects are copied again after core has replaced its flat folders.
+        Only the installed projects are considered: one without its folders or its package, or breaking the
+        plugin contract, stops the update before any change, as for ``aqua project update``.
         """
         self._check_project_layout()
         self.logger.info("Updating AQUA installation...")
 
-        # as `aqua project update`: a listed project without folders stops the update before any change
-        for name in self._installed_projects():
-            self._check_project_folders(name)
+        # the same checks of `aqua project update`, for every installed project and before any change
+        projects = self._installed_projects()
+        for name in projects:
+            self._check_project_update(name)
 
-        failed = False
-        installed = ["core", *self._installed_projects()]
-        for name, info in self.components.items():
-            if info["error"]:
-                self.logger.error("Cannot update %s: %s", name, info["error"])
-                failed = True
-            elif info["path"] is not None and name in installed:
-                self._copy_component(name, info["path"], update=True)
-        if failed:
-            sys.exit(1)
+        for name in ["core", *projects]:
+            self._copy_component(name, self.components[name]["path"], update=True)
 
     def _copy_update_folder_file(self, source, target, link=False, update=False):
         """Generic function to copy or update a source to a target folder"""

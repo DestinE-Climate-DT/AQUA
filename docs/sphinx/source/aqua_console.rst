@@ -274,6 +274,9 @@ Each project is refreshed as by ``aqua project update``, so other projects and u
 the extra files of the projects are copied again after core has replaced its flat folders.
 Core folders are replaced, so a file copied there with e.g. ``aqua grids add`` is lost, but their links are kept:
 the extra files of an editable project and the files added with ``-e``.
+The checks are those of ``aqua project update``, done for every installed project before any change:
+if the package of one of them is missing from the environment or breaks the plugin contract, nothing is updated.
+A broken package which is not installed as a project does not stop the update.
 An installation that predates project support is refused (see :ref:`aqua-pre-project`).
 To update the catalogs, use :ref:`aqua-catalog-update`.
 

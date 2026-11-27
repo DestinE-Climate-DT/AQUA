@@ -108,8 +108,7 @@ class ProjectMixin:
             args (argparse.Namespace): arguments from the command line
         """
         self._check_installed_project(args.project)
-        self._check_project_folders(args.project)
-        self._check_project_package(args.project)
+        self._check_project_update(args.project)
         self._copy_component(args.project, self.components[args.project]["path"], update=True)
 
     def project_remove(self, args):
@@ -177,6 +176,11 @@ class ProjectMixin:
                 name,
             )
             sys.exit(1)
+
+    def _check_project_update(self, name):
+        """Exit if a listed project cannot be updated: shared by `aqua project update` and `aqua update`."""
+        self._check_project_folders(name)
+        self._check_project_package(name)
 
     def _check_project_package(self, name):
         """Exit if the package of a project is not available or breaks the plugin contract."""

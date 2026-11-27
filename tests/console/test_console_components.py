@@ -211,6 +211,32 @@ class TestPluginInstall:
         assert load_yaml(user) == {"user": True}
         assert os.path.isfile(os.path.join(home, "grids", "mockplugin-grid.yaml"))
 
+    def test_update_checks_only_the_installed_projects(self, mock_plugin_entrypoint, monkeypatch, home, run_aqua, aqua_caplog):
+        """Fails if `aqua update` stops for a broken plugin which is not installed here,
+        or changes the installation before stopping for a broken installed one."""
+        _install_projects(run_aqua, "mockother")
+        monkeypatch.setattr("aqua.mockplugin.get_install_dirs", lambda: {"config": ["analysis"], "templates": []})
+        discover_aqua_components.cache_clear()
+        shipped = os.path.join(home, "grids", "healpix.yaml")
+        os.remove(shipped)
+
+        run_aqua(["update"])
+        assert os.path.isfile(shipped)
+
+        # the same broken plugin, now listed as installed
+        os.remove(shipped)
+        os.makedirs(os.path.join(home, "analysis", "mockplugin"))
+        dump_yaml(
+            os.path.join(home, "config-aqua.yaml"),
+            {**load_yaml(os.path.join(home, "config-aqua.yaml")), "project": ["mockother", "mockplugin"]},
+        )
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+        with pytest.raises(SystemExit) as excinfo:
+            run_aqua(["update"])
+        assert excinfo.value.code == 1
+        assert any(r.getMessage() == OLD_CONTRACT for r in caplog.records)
+        assert not os.path.exists(shipped)
+
     def test_old_contract_plugin_stops_install(self, mock_plugin_entrypoint, monkeypatch, home, run_aqua, aqua_caplog):
         """Fails if a plugin with the v1 contract is installed, or the installation starts before the error."""
         run_aqua(["install", MACHINE, "--core"])
@@ -508,19 +534,19 @@ class TestProjectVerbs:
         assert os.path.isfile(os.path.join(home, "analysis", "mockplugin", "dummy.yaml"))
         assert _project(home) == "mockplugin"
 
-    @pytest.mark.parametrize("verb", ["update", "remove"])
+    @pytest.mark.parametrize("command", [["project", "update", "mockplugin"], ["project", "remove", "mockplugin"], ["update"]])
     def test_project_verbs_refuse_without_the_package(
-        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, monkeypatch, verb
+        self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, monkeypatch, command
     ):
         """Fails if an installed project whose package is gone is updated, or removed in part leaving its flat folder
-        and extra files behind."""
+        and extra files behind, or if `aqua update` skips it and core deletes its extra files."""
         _install_projects(run_aqua, "mockplugin")
         monkeypatch.setattr(sys.modules[__name__], "MOCK_ENTRY_POINTS", [])
         discover_aqua_components.cache_clear()
         caplog = aqua_caplog(logging.getLogger("AQUA"))
 
         with pytest.raises(SystemExit) as excinfo:
-            run_aqua(["project", verb, "mockplugin"])
+            run_aqua(command)
 
         assert excinfo.value.code == 1
         assert any(r.getMessage().startswith("aqua.mockplugin package not found") for r in caplog.records)
