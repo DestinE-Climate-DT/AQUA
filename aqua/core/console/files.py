@@ -110,6 +110,9 @@ class FilesMixin:
             else:
                 self.logger.info("Installing %s to %s", file, pathfile)
                 shutil.copy(file, pathfile)
+                self.logger.warning(
+                    "%s is a copy: `aqua update` will remove it. Add it with -e to keep it across updates", pathfile
+                )
         else:
             self.logger.error("%s for file %s already installed, or a file with the same name exists", kind, file)
             sys.exit(1)

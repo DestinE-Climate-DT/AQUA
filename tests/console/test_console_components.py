@@ -456,6 +456,35 @@ class TestProjectVerbs:
         assert not any(os.path.lexists(p) for p in paths.values())
         assert os.path.isfile(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
 
+    def test_update_warns_about_the_files_it_removes(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, tmp_path):
+        """Fails if a copied grids file is added without saying that `aqua update` removes it, if `aqua update` removes
+        it without naming it, or if the warning also names what is kept: a linked file, a file shipped by core, the
+        extra file of an installed project."""
+        run_aqua(["install", MACHINE, "--core"])
+        run_aqua(["project", "add", "mockplugin"])
+        grids = os.path.join(home, "grids")
+        for name in ("copied", "linked"):
+            dump_yaml(os.path.join(tmp_path, f"{name}-grid.yaml"), {"grids": {f"{name}-grid": "r100"}})
+        copied, linked = (os.path.join(grids, f"{name}-grid.yaml") for name in ("copied", "linked"))
+        caplog = aqua_caplog(logging.getLogger("AQUA"))
+
+        run_aqua(["grids", "add", os.path.join(tmp_path, "linked-grid.yaml"), "-e"])
+        assert not [r for r in caplog.records if "aqua update" in r.getMessage()]
+        run_aqua(["grids", "add", os.path.join(tmp_path, "copied-grid.yaml")])
+        assert [r.getMessage() for r in caplog.records if "aqua update" in r.getMessage()] == [
+            f"{copied} is a copy: `aqua update` will remove it. Add it with -e to keep it across updates"
+        ]
+
+        caplog.clear()
+        run_aqua(["update"])
+        removing = [r.getMessage() for r in caplog.records if r.getMessage().startswith("Removing ")]
+        assert removing == [
+            f"Removing {copied}: not shipped by aqua-core or by an installed project. "
+            "A file added with `aqua grids|fixes|styles add -e` is kept by the update"
+        ]
+        assert not os.path.exists(copied) and os.path.islink(linked)
+        assert os.path.isfile(_mockplugin_paths(home)["grid"]) and os.path.isfile(os.path.join(grids, "bcc.yaml"))
+
     def test_remove_active_project_switches_to_another(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
         """Fails if removing the active project does not activate another installed one, or if removing the last
         project leaves its name active or makes the installation look older than project support."""

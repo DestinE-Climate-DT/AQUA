@@ -215,6 +215,34 @@ class InstallMixin:
                 self._remove_target(entry)
         return kept
 
+    def _core_unshipped(self, projects):
+        """Entries of the core folders that an update deletes and does not copy again.
+
+        They are neither links, nor shipped by the core package, nor owned by one of the installed projects:
+        files copied with ``aqua grids|fixes|styles add``, or files that core does not ship any more.
+
+        Args:
+            projects (list): names of the installed projects
+
+        Returns:
+            list: paths about to be deleted
+        """
+        owned = set()
+        for name in projects:
+            source = self.components[name]["path"]
+            owned.update(t for _, t in self._component_targets(name, source) + self._component_files(name, source))
+
+        unshipped = []
+        for source, target in self._component_targets("core", self.components["core"]["path"]):
+            if os.path.islink(target) or not os.path.isdir(target) or not os.path.isdir(source):
+                continue
+            shipped = set(os.listdir(source))
+            for name in sorted(os.listdir(target)):
+                entry = os.path.join(target, name)
+                if name not in shipped and not os.path.islink(entry) and entry not in owned:
+                    unshipped.append(entry)
+        return unshipped
+
     def _remove_target(self, target):
         """Remove an installed file, link or folder, if present."""
         if os.path.islink(target) or os.path.isfile(target):
@@ -511,7 +539,8 @@ class InstallMixin:
 
         Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another;
         the extra files of the projects are copied again after core has replaced its flat folders.
-        Only the installed projects are considered: one without its folders or its package, or breaking the
+        What core replaces and nobody ships (e.g. a file copied with ``aqua grids add``) is lost: it is listed in a
+        warning. Only the installed projects are considered: one without its folders or its package, or breaking the
         plugin contract, stops the update before any change, as for ``aqua project update``.
         """
         self._check_project_layout()
@@ -522,6 +551,14 @@ class InstallMixin:
         for name in projects:
             self._check_installed_project(name)
             self._project_source(name)
+
+        unshipped = self._core_unshipped(projects)
+        if unshipped:
+            self.logger.warning(
+                "Removing %s: not shipped by aqua-core or by an installed project. "
+                "A file added with `aqua grids|fixes|styles add -e` is kept by the update",
+                ", ".join(unshipped),
+            )
 
         self._copy_component("core", self.components["core"]["path"], update=True)
         for name in projects:

@@ -275,6 +275,8 @@ Each project is refreshed as by ``aqua project update``, so other projects and u
 the extra files of the projects are copied again after core has replaced its flat folders.
 Core folders are replaced, so a file copied there with e.g. ``aqua grids add`` is lost, but their links are kept:
 the extra files of an editable project and the files added with ``-e``.
+Before any change, a warning lists what is about to be removed and is not copied again:
+the entries which are neither links nor shipped by aqua-core or by an installed project.
 The checks are those of ``aqua project update``, done for every installed project before any change:
 if the package of one of them is missing from the environment or breaks the plugin contract, nothing is updated.
 A broken package which is not installed as a project does not stop the update.
@@ -523,6 +525,8 @@ aqua {grids,fixes,styles} {add,remove,list}
 The ``grids``, ``fixes`` and ``styles`` nouns manage the files of the configuration folder with the same name:
 grids and fixes YAML files, and matplotlib style files (``.mplstyle``) used by the AQUA graphics.
 ``add`` copies a file to the configuration folder, or creates a symbolic link if the editable mode is used.
+A copied file lasts until the next ``aqua update``, which replaces the folder: ``add`` says so with a warning.
+Use the editable mode to keep a file across updates.
 This is useful if a new external file is created and needs to be added to the available ones.
 A grids or fixes file is added only if it can be merged with the files already installed.
 A file which cannot be added (missing, not mergeable, not a ``.mplstyle`` for styles, or with a name already installed)
