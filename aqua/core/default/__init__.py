@@ -10,7 +10,7 @@ DEFAULT_NPROC = 4
 
 # Spatial defaults
 DEFAULT_COORDS = {"lat_min": -90, "lat_max": 90, "lon_min": 0, "lon_max": 360}
-DEFAULT_AREA_TOLERANCE = 1.5e-5  # minimum tolerance to align area and data coordinates in field statistics
+AREA_TOLERANCE = 1.5e-5  # minimum tolerance to align area and data coordinates in field statistics
 
 # Define internal names for coordinates
 AQUA_LONGITUDE = "longitude"
