@@ -1,4 +1,21 @@
-"""Central default constants to avoid circular imports."""
+"""Central defaults, optionally overridden by config-aqua.yaml at AQUA import."""
+
+from collections.abc import Mapping
+
+from aqua.core.configurer import ConfigContext
+
+# Only these constants may be overridden in the configuration's defaults section.
+_CONFIGURABLE_DEFAULTS = (
+    "DEFAULT_DATAMODEL",
+    "DEFAULT_CONVENTION",
+    "DEFAULT_REGRID_METHOD",
+    "DEFAULT_ENGINE",
+    "DEFAULT_NPROC",
+    "DEFAULT_DROP_GRID",
+    "DEFAULT_DROP_CHUNK_TARGET",
+    "DEFAULT_NA_THRES",
+)
+
 DEFAULT_REALIZATION = "r1"
 
 # Reader/backend defaults
@@ -57,3 +74,25 @@ DEFAULT_2D_DIMENSIONS = [DEFAULT_DIMENSION, DEFAULT_DIMENSION_MASK, DEFAULT_DIME
 # max fraction of missing source weights before a target cell is NaN: 'auto' is the smmregrid default of each
 # method (0.5 for conservative, 1e-6 for bil/bic, 1.0 otherwise)
 DEFAULT_NA_THRES = "auto"
+
+
+def _load_defaults():
+    """Apply configured defaults before importing their consumers."""
+    try:
+        config = ConfigContext().config_dict
+    except FileNotFoundError:
+        return  # Importing AQUA must work before `aqua install`.
+
+    if not isinstance(config, Mapping):
+        raise ValueError("config-aqua.yaml must contain a mapping")
+    defaults = config.get("defaults", {})
+    if not isinstance(defaults, Mapping):
+        raise ValueError("config-aqua.yaml: defaults must be a mapping")
+    defaults = {
+        "DEFAULT_" + name.upper().removeprefix("DEFAULT_") if isinstance(name, str) else name: value
+        for name, value in defaults.items()
+    }
+    for name in defaults:
+        if name not in _CONFIGURABLE_DEFAULTS:
+            raise ValueError(f"config-aqua.yaml: unsupported default {name!r}")
+    globals().update(defaults)

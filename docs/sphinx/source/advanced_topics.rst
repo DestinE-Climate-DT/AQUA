@@ -44,6 +44,32 @@ The configuration file is used to specify the following parameters:
 One or all the paths can be specified in the configuration file.
 If a path is not specified in the configuration file, the default path specified in the catalog will be used.
 
+An optional **defaults** block overrides the following constants in ``aqua.core.default``.
+The values below are the built-in defaults; include only the entries you want to change:
+
+.. code-block:: yaml
+
+    defaults:
+        DEFAULT_DATAMODEL: aqua
+        DEFAULT_CONVENTION: eccodes
+        DEFAULT_REGRID_METHOD: ycon
+        DEFAULT_ENGINE: gsv
+        DEFAULT_NPROC: 4
+        DEFAULT_DROP_GRID: lon-lat-r100
+        DEFAULT_DROP_CHUNK_TARGET: 128MiB
+        DEFAULT_NA_THRES: auto
+
+These defaults are read once when AQUA is imported, from the configuration located by
+``AQUA_CONFIG`` or, otherwise, ``$HOME/.aqua``. Restart Python or the notebook kernel
+after editing them. Omitted entries keep their built-in values. Explicit arguments
+and catalog or grid settings retain their existing behavior.
+
+Only the eight keys shown above are accepted. Keys are case-insensitive and the
+``DEFAULT_`` prefix is optional: ``engine``, ``default_engine`` and ``DEFAULT_ENGINE``
+all override ``DEFAULT_ENGINE``. Values are passed through unchanged, without type or
+content checks. Unsupported keys raise ``ValueError`` during import. Omitting the block or using
+``defaults: {}`` keeps all built-in defaults.
+
 The configuration folder after the installation has this structure:
 
 .. code-block:: text
