@@ -209,7 +209,7 @@ The folder names are relative to the ``aqua/<name>/config`` folder of the packag
 Rules:
 
 - ``"contract": 2`` is mandatory. A plugin returning a dictionary without it (the version 1 contract of
-  ``aqua-diagnostics`` < 0.27.0) is rejected and ``aqua install`` stops with an error asking to update that plugin.
+  older ``aqua-diagnostics`` releases) is rejected and ``aqua install`` stops with an error asking to update that plugin.
 - Missing keys default to an empty list and a single folder name is read as a one-item list.
   Unknown keys are rejected, with an error naming the package.
 - ``config`` accepts only the project-scoped folders ``analysis``, ``collections`` and ``tools``, and ``files`` only
@@ -271,12 +271,13 @@ This command will update the configuration files of AQUA core and of every proje
 since they already point to the developer's own working copy.
 The installed projects are those listed by the ``project`` key of ``config-aqua.yaml``: a package available in the
 environment but not installed with ``aqua project add`` is not touched.
-Each project is refreshed as by ``aqua project update``, so other projects and user files are kept;
+Each project is refreshed as by ``aqua project update``, so the other projects are kept;
 the extra files of the projects are copied again after core has replaced its flat folders.
-Core folders are replaced, so a file copied there with e.g. ``aqua grids add`` is lost, but their links are kept:
-the extra files of an editable project and the files added with ``-e``.
-Before any change, a warning lists what is about to be removed and is not copied again:
-the entries which are neither links nor shipped by aqua-core or by an installed project.
+The rule is the same for core and for the projects: an installed folder belongs to its package and is replaced.
+A file which the package does not ship is lost: one copied with e.g. ``aqua grids add``, one written by hand
+in a project folder, or one that the new version of the package removes or renames.
+Only links are kept: the extra files of an editable project and the files added with ``-e``.
+Before a folder is replaced, a warning lists what is about to be removed and is not copied again.
 The checks are those of ``aqua project update``, done for every installed project before any change:
 if the package of one of them is missing from the environment or breaks the plugin contract, nothing is updated.
 A broken package which is not installed as a project does not stop the update.
@@ -498,14 +499,14 @@ aqua project update <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This command copies again the folders and extra files of an installed project from its package:
-shipped files are overwritten, user files with other names are kept, editable (linked) entries are skipped.
+the folders are replaced, as ``aqua update`` does for core, and editable (linked) entries are skipped.
 A project installed entirely in editable mode follows its repository and is not touched.
 There is no ``aqua project update all``: ``aqua update`` updates core and every installed project.
 
-.. note::
-    The update never deletes a file: a file that the new version of the package removes or renames stays in the
-    installation, next to the new one. This keeps the user files; to get rid of the old files, use
-    ``aqua project remove <project>`` followed by ``aqua project add <project>``.
+.. warning::
+    The folders of a project belong to its package: a file written there by hand, or one that the new version of
+    the package removes or renames, is deleted by the update, which lists it in a warning first.
+    Keep your own files outside the project folders, or install the project in editable mode.
 
 aqua project remove <project>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

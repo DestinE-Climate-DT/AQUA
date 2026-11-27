@@ -69,7 +69,7 @@ def validate_install_dirs(name, data):
             or templates folders without being allowed to (``TEMPLATES_PROJECTS``).
     """
     if not isinstance(data, dict) or data.get("contract") != PLUGIN_CONTRACT:
-        raise ValueError(f"plugin aqua-{name} uses an old plugin contract, please update it (e.g. aqua-diagnostics>=0.27.0)")
+        raise ValueError(f"plugin aqua-{name} uses an old plugin contract, please update aqua-{name} to a recent version")
     unknown = set(data) - set(PLUGIN_KEYS) - {"contract"}
     if unknown:
         raise ValueError(f"plugin aqua-{name}: unknown key(s) {', '.join(sorted(unknown))} in get_install_dirs()")

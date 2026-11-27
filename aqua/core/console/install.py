@@ -179,14 +179,22 @@ class InstallMixin:
         """
         Copy again the (source, target) pairs of an installed component, skipping the editable (linked) ones.
 
-        Core folders are replaced, but for the links they hold (extra files of editable projects, files added with
-        ``-e``), which are kept. Project folders are copied over the installed ones, so user files with other names
-        are kept, as well as files removed or renamed in the package.
+        The rule is the same for core and for a project: an installed folder belongs to its component and is
+        replaced, but for the links it holds (extra files of editable projects, files added with ``-e``), which are
+        kept. What is removed and not copied again, e.g. a file added by the user, is listed in a warning first.
         """
         skipped = [target for _, target in targets if os.path.islink(target)]
         if skipped and len(skipped) == len(targets):
             self._warn_editable(component)
             return
+        unshipped = self._unshipped(component, targets)
+        if unshipped:
+            self.logger.warning(
+                "Removing %s: not shipped by aqua-%s. An update replaces the installed folders and keeps only "
+                "their links, as the files added with `aqua grids|fixes|styles add -e`",
+                ", ".join(unshipped),
+                component,
+            )
         for source, target in targets:
             if target in skipped:
                 self.logger.info("Skipping %s (editable mode)", target)
@@ -194,7 +202,7 @@ class InstallMixin:
                 self.logger.warning("%s declared by %s does not exist, skipping it", source, component)
             elif os.path.isdir(source):
                 self.logger.info("Updating %s ...", target)
-                kept = self._clean_core_folder(target) if component == "core" else []
+                kept = self._clean_folder(target)
                 # a kept link is never written through, even if the package ships a file with its name
                 shutil.copytree(
                     source, target, dirs_exist_ok=True, ignore=lambda folder, _, kept=kept: kept if folder == source else []
@@ -203,8 +211,8 @@ class InstallMixin:
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 self._copy_update_folder_file(source, target, update=True)
 
-    def _clean_core_folder(self, folder):
-        """Empty an installed core folder, if present, but for its links: return the names of the links kept."""
+    def _clean_folder(self, folder):
+        """Empty an installed folder, if present, but for its links: return the names of the links kept."""
         kept = []
         for name in os.listdir(folder) if os.path.isdir(folder) else []:
             entry = os.path.join(folder, name)
@@ -215,25 +223,28 @@ class InstallMixin:
                 self._remove_target(entry)
         return kept
 
-    def _core_unshipped(self, projects):
-        """Entries of the core folders that an update deletes and does not copy again.
+    def _unshipped(self, component, targets):
+        """Entries of the installed folders of a component that an update deletes and does not copy again.
 
-        They are neither links, nor shipped by the core package, nor owned by one of the installed projects:
-        files copied with ``aqua grids|fixes|styles add``, or files that core does not ship any more.
+        They are neither links nor shipped by the package: files added by the user (in the core folders, with
+        ``aqua grids|fixes|styles add``), or files that the package does not ship any more. In the core folders,
+        the extra files of the installed projects are not listed: each project copies its own again.
 
         Args:
-            projects (list): names of the installed projects
+            component (str): component name, e.g. 'core', 'diagnostics', 'claima'
+            targets (list): (source, target) tuples of the component
 
         Returns:
             list: paths about to be deleted
         """
         owned = set()
-        for name in projects:
+        for name in self._installed_projects() if component == "core" else []:
             source = self.components[name]["path"]
-            owned.update(t for _, t in self._component_targets(name, source) + self._component_files(name, source))
+            if source:
+                owned.update(t for _, t in self._component_files(name, source))
 
         unshipped = []
-        for source, target in self._component_targets("core", self.components["core"]["path"]):
+        for source, target in targets:
             if os.path.islink(target) or not os.path.isdir(target) or not os.path.isdir(source):
                 continue
             shipped = set(os.listdir(source))
@@ -539,8 +550,9 @@ class InstallMixin:
 
         Each project is refreshed per ``<dir>/<project>``, so updating one project never deletes another;
         the extra files of the projects are copied again after core has replaced its flat folders.
-        What core replaces and nobody ships (e.g. a file copied with ``aqua grids add``) is lost: it is listed in a
-        warning. Only the installed projects are considered: one without its folders or its package, or breaking the
+        The installed folders are replaced, for core as for a project: what nobody ships (e.g. a file copied with
+        ``aqua grids add``, or written in a project folder) is lost, and listed in a warning.
+        Only the installed projects are considered: one without its folders or its package, or breaking the
         plugin contract, stops the update before any change, as for ``aqua project update``.
         """
         self._check_project_layout()
@@ -551,14 +563,6 @@ class InstallMixin:
         for name in projects:
             self._check_installed_project(name)
             self._project_source(name)
-
-        unshipped = self._core_unshipped(projects)
-        if unshipped:
-            self.logger.warning(
-                "Removing %s: not shipped by aqua-core or by an installed project. "
-                "A file added with `aqua grids|fixes|styles add -e` is kept by the update",
-                ", ".join(unshipped),
-            )
 
         self._copy_component("core", self.components["core"]["path"], update=True)
         for name in projects:

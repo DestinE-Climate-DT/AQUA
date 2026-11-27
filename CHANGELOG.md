@@ -19,7 +19,7 @@ Complete list:
 - Console verbs behave the same for catalogs and projects: `aqua catalog set`, `update`, `remove` and `list` act on the catalogs of the `catalog` key; `aqua catalog add` and `aqua project add` refuse a name already listed or already on disk; `aqua catalog list` prints a name and mode per line (#3414)
 - `aqua catalog update` does not change the active catalog, keeps the installed one if the download fails, and takes `-r/--repository`; `-e` and `-r` of `aqua catalog add` are mutually exclusive (#3414)
 - `aqua update` stops before any change if the package of an installed project is missing; `aqua grids|fixes|styles add` exits 1 on a file that cannot be added; `aqua check` validates the catalogs of the `catalog` key (#3414)
-- `aqua update` lists in a warning the files it removes from the core folders and does not copy again; `aqua grids|fixes|styles add` warns that a copied file lasts until the next `aqua update` (#3414)
+- `aqua update` and `aqua project update` replace the installed folders of a project as those of core: a file not shipped by the package is removed, and listed in a warning first; only links are kept. `aqua grids|fixes|styles add` warns that a copied file lasts until the next `aqua update` (#3414)
 - `aqua project add diagnostics` is refused: diagnostics is installed with `aqua install -d`, also in an existing installation (#3414)
 - Timeseries plots no longer fail when a series has a single time step, e.g. one year of annual data (#3431)
 - New `plot_seasonalcycle_difference` graphics function: seasonal cycle above its difference from a reference (#3417)

@@ -113,8 +113,8 @@ class ProjectMixin:
         self._project_refresh(name, source)
 
     def _project_refresh(self, name, source):
-        """Copy the package over the installed folders and extra files, skipping the linked ones (with a warning if
-        all are): user files with other names are kept."""
+        """Replace the installed folders and extra files with those of the package, skipping the linked ones (with a
+        warning if all are): as for core, what the package does not ship is removed, and listed in a warning."""
         self._copy_component(name, source, update=True)
 
     def project_remove(self, args):

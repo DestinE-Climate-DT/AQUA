@@ -26,7 +26,7 @@ MOCK_ENTRY_POINTS = [
     # a second installable project
     EntryPoint(name="mockother", value="aqua.mockother:get_install_dirs", group="aqua.plugins"),
 ]
-OLD_CONTRACT = "plugin aqua-mockplugin uses an old plugin contract, please update it (e.g. aqua-diagnostics>=0.27.0)"
+OLD_CONTRACT = "plugin aqua-mockplugin uses an old plugin contract, please update aqua-mockplugin to a recent version"
 
 
 @pytest.fixture
@@ -192,9 +192,10 @@ class TestPluginInstall:
         assert os.path.islink(link)
         assert os.path.islink(os.path.join(home, "templates", "mock_templates"))
 
-    def test_update_refreshes_projects_and_preserves_others(self, mock_plugin_entrypoint, home, run_aqua):
-        """Fails if `aqua update` does not restore a shipped file, deletes a user file or a folder of another project,
-        or loses the extra files of a project when core replaces its flat folders."""
+    def test_update_replaces_projects_and_preserves_others(self, mock_plugin_entrypoint, home, run_aqua):
+        """Fails if `aqua update` does not restore a shipped file, keeps in a project folder a file the project does
+        not ship (core folders are replaced too: one rule), deletes a folder of another project, or loses the extra
+        files of a project when core replaces its flat folders."""
         _install_projects(run_aqua, "mockplugin", "mockother")
         shipped = os.path.join(home, "analysis", "mockplugin", "dummy.yaml")
         os.remove(shipped)
@@ -209,7 +210,7 @@ class TestPluginInstall:
         assert os.path.isfile(shipped)
         assert os.path.isfile(os.path.join(home, "analysis", "mockother", "dummy.yaml"))
         assert load_yaml(foreign) == {"user": True}
-        assert load_yaml(user) == {"user": True}
+        assert not os.path.exists(user)
         assert os.path.isfile(os.path.join(home, "grids", "mockplugin-grid.yaml"))
 
     def test_update_checks_only_the_installed_projects(self, mock_plugin_entrypoint, monkeypatch, home, run_aqua, aqua_caplog):
@@ -394,9 +395,10 @@ class TestProjectVerbs:
     """`aqua project add`, `update` and `remove` with the fake plugins, on a core installation."""
 
     def test_install_update_remove_standard(self, mock_plugin_entrypoint, home, run_aqua):
-        """Fails if a project or its extra file is not copied, update does not restore shipped files or deletes a user
-        file, or remove leaves the project folder, the flat folder, the templates folder or the extra file behind, or
-        deletes a folder of core or of another project, or if `aqua update` installs again the removed project."""
+        """Fails if a project or its extra file is not copied, update does not restore shipped files or keeps a file
+        the project does not ship, or remove leaves the project folder, the flat folder, the templates folder or the
+        extra file behind, or deletes a folder of core or of another project, or if `aqua update` installs again the
+        removed project."""
         _install_projects(run_aqua, "mockother")
         paths = _mockplugin_paths(home)
 
@@ -412,7 +414,7 @@ class TestProjectVerbs:
         run_aqua(["project", "update", "mockplugin"])
         assert load_yaml(shipped) == {"dummy": True}
         assert load_yaml(paths["grid"]) == load_yaml(os.path.join(MOCKPLUGIN_CONFIG, "grids", "mockplugin-grid.yaml"))
-        assert load_yaml(user) == {"user": True}
+        assert not os.path.exists(user)
 
         run_aqua(["project", "remove", "mockplugin"])
         assert not any(os.path.lexists(p) for p in paths.values())
@@ -458,8 +460,8 @@ class TestProjectVerbs:
 
     def test_update_warns_about_the_files_it_removes(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog, tmp_path):
         """Fails if a copied grids file is added without saying that `aqua update` removes it, if `aqua update` removes
-        it without naming it, or if the warning also names what is kept: a linked file, a file shipped by core, the
-        extra file of an installed project."""
+        it, or a file written in a project folder, without naming it, or if a warning also names what is kept: a
+        linked file, a file shipped by core or by the project, the extra file of an installed project."""
         run_aqua(["install", MACHINE, "--core"])
         run_aqua(["project", "add", "mockplugin"])
         grids = os.path.join(home, "grids")
@@ -475,14 +477,22 @@ class TestProjectVerbs:
             f"{copied} is a copy: `aqua update` will remove it. Add it with -e to keep it across updates"
         ]
 
+        user = os.path.join(_mockplugin_paths(home)["analysis"], "user.yaml")
+        dump_yaml(user, {"user": True})
         caplog.clear()
         run_aqua(["update"])
-        removing = [r.getMessage() for r in caplog.records if r.getMessage().startswith("Removing ")]
-        assert removing == [
-            f"Removing {copied}: not shipped by aqua-core or by an installed project. "
-            "A file added with `aqua grids|fixes|styles add -e` is kept by the update"
+        removing = [
+            r.getMessage() for r in caplog.records if r.getMessage().startswith("Removing ") and ": not" in r.getMessage()
         ]
-        assert not os.path.exists(copied) and os.path.islink(linked)
+        tail = (
+            "An update replaces the installed folders and keeps only their links, "
+            "as the files added with `aqua grids|fixes|styles add -e`"
+        )
+        assert removing == [
+            f"Removing {copied}: not shipped by aqua-core. {tail}",
+            f"Removing {user}: not shipped by aqua-mockplugin. {tail}",
+        ]
+        assert not os.path.exists(copied) and not os.path.exists(user) and os.path.islink(linked)
         assert os.path.isfile(_mockplugin_paths(home)["grid"]) and os.path.isfile(os.path.join(grids, "bcc.yaml"))
 
     def test_remove_active_project_switches_to_another(self, mock_plugin_entrypoint, home, run_aqua, aqua_caplog):
